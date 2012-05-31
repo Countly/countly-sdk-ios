@@ -1,4 +1,3 @@
-
 // Countly.m
 // 
 // This code is provided under the MIT License.
@@ -161,7 +160,7 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
     }];
 
     NSString *data = [queue_ objectAtIndex:0];
-    NSString *urlString = [NSString stringWithFormat:@COUNTLY_URL"/?%@", data];
+    NSString *urlString = [NSString stringWithFormat:@COUNTLY_URL"?%@", data];
     NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:urlString]];
     connection_ = [NSURLConnection connectionWithRequest:request delegate:self];		
 }
