@@ -23,9 +23,10 @@ Countly iOS SDK includes necessary tools to track your application. In order to 
 7. Click the **+** button
 8. Select CoreTelephony.framework, select **Optional** (instead of Required)
 9. *(optional)* Drag and drop the added framework to the **Frameworks** group
-10. In your application delegate, import `Countly.h` 
+10. Add `#define COUNTLY_URL "http://your_server/i"` to your prefix replacing *your_server* with your server address
+11. In your application delegate, import `Countly.h` 
 and inside `application:didFinishLaunchingWithOptions:`  add the line;
-`[[Countly sharedInstance] start:@"YOUR_APP_KEY"];` at the beginning of the function. 
+`[[Countly sharedInstance] start:@"YOUR_APP_KEY"];` at the beginning of the function.
 
 It should finally look like this:
 
