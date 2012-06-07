@@ -1,7 +1,7 @@
 // Countly.m
-// 
+//
 // This code is provided under the MIT License.
-// 
+//
 // Please visit www.count.ly for more information.
 
 
@@ -11,11 +11,6 @@
 #   define COUNTLY_LOG(fmt, ...) NSLog(fmt, ##__VA_ARGS__)
 #else
 #   define COUNTLY_LOG(...)
-#endif
-
-#ifndef COUNTLY_URL
-#error You should define your COUNTLY_URL as below...
-//#define COUNTLY_URL "http://your_server/i"
 #endif
 
 #define COUNTLY_VERSION "1.0"
@@ -57,7 +52,7 @@
 }
 
 + (NSString *)carrier
-{		
+{
 	if (NSClassFromString(@"CTTelephonyNetworkInfo"))
 	{
 		CTTelephonyNetworkInfo *netinfo = [[[CTTelephonyNetworkInfo alloc] init] autorelease];
@@ -74,7 +69,7 @@
 	CGFloat scale = [[UIScreen mainScreen] respondsToSelector:@selector(scale)] ? [[UIScreen mainScreen] scale] : 1.f;
 	CGSize res = CGSizeMake(bounds.size.width * scale, bounds.size.height * scale);
 	NSString *result = [NSString stringWithFormat:@"%gx%g", res.width, res.height];
-		
+
 	return result;
 }
 
@@ -84,23 +79,23 @@
 }
 
 + (NSString *)metrics
-{	
+{
 	NSString *result = @"{";
-	
+
 	result = [result stringByAppendingFormat:@"\"%@\":\"%@\"", @"_device", [DeviceInfo device]];
-	
+
 	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_os", @"iOS"];
-	
-	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_os_version", [DeviceInfo osVersion]];	
+
+	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_os_version", [DeviceInfo osVersion]];
 
 	NSString *carrier = [DeviceInfo carrier];
 	if (carrier != nil)
 		result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_carrier", carrier];
-		
+
 	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_resolution", [DeviceInfo resolution]];
 
 	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_locale", [DeviceInfo locale]];
-	
+
 	result = [result stringByAppendingString:@"}"];
 
 	result = [result stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
@@ -114,8 +109,9 @@
 {
 	NSMutableArray *queue_;
 	NSURLConnection *connection_;
-    UIBackgroundTaskIdentifier bgTask_;
-	NSString *appKey;    
+  UIBackgroundTaskIdentifier bgTask_;
+	NSString *appKey;
+  NSString *appHost;
 }
 
 @property (nonatomic, copy) NSString *appKey;
@@ -127,12 +123,13 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 @implementation ConnectionQueue : NSObject
 
 @synthesize appKey;
+@synthesize appHost;
 
 + (ConnectionQueue *)sharedInstance
 {
 	if (s_sharedConnectionQueue == nil)
 		s_sharedConnectionQueue = [[ConnectionQueue alloc] init];
-	
+
 	return s_sharedConnectionQueue;
 }
 
@@ -144,6 +141,7 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 		connection_ = nil;
         bgTask_ = UIBackgroundTaskInvalid;
         appKey = nil;
+        appHost = nil;
 	}
 	return self;
 }
@@ -153,22 +151,22 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
     if (connection_ != nil || bgTask_ != UIBackgroundTaskInvalid || [queue_ count] == 0)
         return;
 
-    UIApplication *app = [UIApplication sharedApplication];        
-    bgTask_ = [app beginBackgroundTaskWithExpirationHandler:^{ 
-        [app endBackgroundTask:bgTask_]; 
+    UIApplication *app = [UIApplication sharedApplication];
+    bgTask_ = [app beginBackgroundTaskWithExpirationHandler:^{
+        [app endBackgroundTask:bgTask_];
         bgTask_ = UIBackgroundTaskInvalid;
     }];
 
     NSString *data = [queue_ objectAtIndex:0];
-    NSString *urlString = [NSString stringWithFormat:@COUNTLY_URL"?%@", data];
+    NSString *urlString = [NSString stringWithFormat:@"%@/i?%@",appHost, data];
     NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:urlString]];
-    connection_ = [NSURLConnection connectionWithRequest:request delegate:self];		
+    connection_ = [NSURLConnection connectionWithRequest:request delegate:self];
 }
 
 - (void)beginSession
 {
-	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&sdk_version="COUNTLY_VERSION"&begin_session=1&metrics=%@", 
-					  appKey, 
+	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&sdk_version="COUNTLY_VERSION"&begin_session=1&metrics=%@",
+					  appKey,
 					  [DeviceInfo udid],
 					  [DeviceInfo metrics]];
 	[queue_ addObject:data];
@@ -196,14 +194,14 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
     UIApplication *app = [UIApplication sharedApplication];
     if (bgTask_ != UIBackgroundTaskInvalid)
     {
-        [app endBackgroundTask:bgTask_]; 
+        [app endBackgroundTask:bgTask_];
         bgTask_ = UIBackgroundTaskInvalid;
     }
-	
+
     connection_ = nil;
-	
+
     [queue_ removeObjectAtIndex:0];
-	
+
     [self tick];
 }
 
@@ -214,10 +212,10 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
     UIApplication *app = [UIApplication sharedApplication];
     if (bgTask_ != UIBackgroundTaskInvalid)
     {
-        [app endBackgroundTask:bgTask_]; 
+        [app endBackgroundTask:bgTask_];
         bgTask_ = UIBackgroundTaskInvalid;
     }
-	
+
     connection_ = nil;
 }
 
@@ -265,7 +263,8 @@ static Countly *s_sharedCountly = nil;
 										   userInfo:nil
 											repeats:YES];
 	lastTime = CFAbsoluteTimeGetCurrent();
-	[[ConnectionQueue sharedInstance] setAppKey:appKey];
+  [[ConnectionQueue sharedInstance] setAppKey:appKey];
+  [[ConnectionQueue sharedInstance] setAppHost:appHost];
 	[[ConnectionQueue sharedInstance] beginSession];
 }
 
@@ -278,7 +277,7 @@ static Countly *s_sharedCountly = nil;
 	double currTime = CFAbsoluteTimeGetCurrent();
 	unsentSessionLength += currTime - lastTime;
 	lastTime = currTime;
-	
+
 	int duration = unsentSessionLength;
 	[[ConnectionQueue sharedInstance] updateSessionWithDuration:duration];
 	unsentSessionLength -= duration;
@@ -287,7 +286,7 @@ static Countly *s_sharedCountly = nil;
 - (void)suspend
 {
 	isSuspended = YES;
-	
+
 	double currTime = CFAbsoluteTimeGetCurrent();
 	unsentSessionLength += currTime - lastTime;
 

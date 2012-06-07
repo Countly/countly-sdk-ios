@@ -1,8 +1,8 @@
 
 // Countly.h
-// 
+//
 // This code is provided under the MIT License.
-// 
+//
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
@@ -17,7 +17,7 @@
 
 + (Countly *)sharedInstance;
 
-- (void)start:(NSString *)appKey;
+- (void)start:(NSString *)appKey withHost:(NSString *)appHost;
 
 
 @end
