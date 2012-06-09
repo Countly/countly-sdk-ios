@@ -251,11 +251,22 @@ static Countly *s_sharedCountly = nil;
 {
 	if (self = [super init])
 	{
+		timer = nil;
 		isSuspended = NO;
 		unsentSessionLength = 0;
-		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(didEnterBackgroundCallBack:) name:UIApplicationDidEnterBackgroundNotification object:nil];
-		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(willEnterForegroundCallBack:) name:UIApplicationWillEnterForegroundNotification object:nil];
-		[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(willTerminateCallBack:) name:UIApplicationWillTerminateNotification object:nil];
+		
+		[[NSNotificationCenter defaultCenter] addObserver:self 
+												 selector:@selector(didEnterBackgroundCallBack:) 
+													 name:UIApplicationDidEnterBackgroundNotification 
+												   object:nil];
+		[[NSNotificationCenter defaultCenter] addObserver:self 
+												 selector:@selector(willEnterForegroundCallBack:) 
+													 name:UIApplicationWillEnterForegroundNotification 
+												   object:nil];
+		[[NSNotificationCenter defaultCenter] addObserver:self 
+												 selector:@selector(willTerminateCallBack:) 
+													 name:UIApplicationWillTerminateNotification 
+												   object:nil];
 	}
 	return self;
 }
@@ -318,7 +329,13 @@ static Countly *s_sharedCountly = nil;
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidEnterBackgroundNotification object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillEnterForegroundNotification object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillTerminateNotification object:nil];
-
+	
+	if(timer) 
+	{
+		[timer invalidate];
+		timer = nil;
+	}
+	
 	[super dealloc];
 }
 
