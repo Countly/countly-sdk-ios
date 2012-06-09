@@ -109,12 +109,13 @@
 {
 	NSMutableArray *queue_;
 	NSURLConnection *connection_;
-  UIBackgroundTaskIdentifier bgTask_;
+	UIBackgroundTaskIdentifier bgTask_;
 	NSString *appKey;
-  NSString *appHost;
+	NSString *appHost;
 }
 
 @property (nonatomic, copy) NSString *appKey;
+@property (nonatomic, copy) NSString *appHost;
 
 @end
 
@@ -153,12 +154,12 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 
     UIApplication *app = [UIApplication sharedApplication];
     bgTask_ = [app beginBackgroundTaskWithExpirationHandler:^{
-        [app endBackgroundTask:bgTask_];
-        bgTask_ = UIBackgroundTaskInvalid;
+		[app endBackgroundTask:bgTask_];
+		bgTask_ = UIBackgroundTaskInvalid;
     }];
 
     NSString *data = [queue_ objectAtIndex:0];
-    NSString *urlString = [NSString stringWithFormat:@"%@/i?%@",appHost, data];
+    NSString *urlString = [NSString stringWithFormat:@"%@/i?%@", self.appHost, data];
     NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:urlString]];
     connection_ = [NSURLConnection connectionWithRequest:request delegate:self];
 }
@@ -222,9 +223,14 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 - (void)dealloc
 {
 	[super dealloc];
+	
 	if (connection_)
 		[connection_ cancel];
+
 	[queue_ release];
+	
+	self.appKey = nil;
+	self.appHost = nil;
 }
 
 @end
@@ -237,7 +243,6 @@ static Countly *s_sharedCountly = nil;
 {
 	if (s_sharedCountly == nil)
 		s_sharedCountly = [[Countly alloc] init];
-
 
 	return s_sharedCountly;
 }
@@ -255,7 +260,7 @@ static Countly *s_sharedCountly = nil;
 	return self;
 }
 
-- (void)start:(NSString *)appKey
+- (void)start:(NSString *)appKey withHost:(NSString *)appHost
 {
 	timer = [NSTimer scheduledTimerWithTimeInterval:30.0
 											 target:self
@@ -263,8 +268,8 @@ static Countly *s_sharedCountly = nil;
 										   userInfo:nil
 											repeats:YES];
 	lastTime = CFAbsoluteTimeGetCurrent();
-  [[ConnectionQueue sharedInstance] setAppKey:appKey];
-  [[ConnectionQueue sharedInstance] setAppHost:appHost];
+	[[ConnectionQueue sharedInstance] setAppKey:appKey];
+	[[ConnectionQueue sharedInstance] setAppHost:appHost];
 	[[ConnectionQueue sharedInstance] beginSession];
 }
 
