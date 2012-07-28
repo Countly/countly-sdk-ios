@@ -16,11 +16,6 @@ Countly iOS SDK includes necessary tools to track your application. In order to 
 
 1. Download Countly iOS SDK.
 2. Add these files to your project under Xcode: `Countly.h` `Countly.m` `Countly_OpenUDID.h` `Countly_OpenUDID.m`
-3. If your project uses automatic reference counting (ARC), you should disable it for the sources `Countly_OpenUDID.m` and `Countly.m`:
-3a. Select your project
-3b. Select the **Build Phases** tab
-3c. Open **Compile Sources** tab
-3d. Double click `Countly.m` and `Countly_OpenUDID.m` and add `-fno-objc-arc` flag
 3. In the project navigator, select your project
 4. Select your project
 5. Select the **Build Phases** tab
@@ -42,6 +37,12 @@ It should finally look like this:
 // your code
 }
 </pre>
+
+Note: If your project uses automatic reference counting (ARC), you should disable it for the sources `Countly_OpenUDID.m` and `Countly.m`:
+1. Select your project
+2. Select the **Build Phases** tab
+3. Open **Compile Sources** tab
+4. Double click `Countly.m` and `Countly_OpenUDID.m` and add `-fno-objc-arc` flag
 
 Note: Before upgrading to a new SDK, do not forget to remove the existing, older SDK from your project.
 
