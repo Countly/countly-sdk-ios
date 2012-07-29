@@ -39,7 +39,7 @@
 #if __has_feature(objc_arc)
 #error This file uses the classic non-ARC retain/release model; hints below... 
     // to selectively compile this file as non-ARC, do as follows:
-    // https://img.skitch.com/20120411-bcku69k1uw528cwh9frh5px8ya.png
+    // https://img.skitch.com/20120717-g3ag5h9a6ehkgpmpjiuen3qpwp.png
 #endif
 
 #import "Countly_OpenUDID.h"
@@ -121,21 +121,30 @@ static int const kOpenUDIDRedundancySlots = 100;
 //        _openUDID = [[UIDevice currentDevice] uniqueIdentifier];
 //    }
 #endif
-    // Next we try to use an alternative method which uses the host name, process ID, and a time stamp
-    // We then hash it with md5 to get 32 bytes, and then add 4 extra random bytes
-    // Collision is possible of course, but unlikely and suitable for most industry needs (e.g.. aggregate tracking)
+    // Next we generate a UUID.
+    // UUIDs (Universally Unique Identifiers), also known as GUIDs (Globally Unique Identifiers) or IIDs 
+    // (Interface Identifiers), are 128-bit values guaranteed to be unique. A UUID is made unique over 
+    // both space and time by combining a value unique to the computer on which it was generated—usually the
+    // Ethernet hardware address—and a value representing the number of 100-nanosecond intervals since 
+    // October 15, 1582 at 00:00:00.
+    // We then hash this UUID with md5 to get 32 bytes, and then add 4 extra random bytes
+    // Collision is possible of course, but unlikely and suitable for most industry needs (e.g. aggregate tracking)
     //
     if (_openUDID==nil) {
+        CFUUIDRef uuid = CFUUIDCreate(kCFAllocatorDefault);
+        CFStringRef cfstring = CFUUIDCreateString(kCFAllocatorDefault, uuid);
+        const char *cStr = CFStringGetCStringPtr(cfstring,CFStringGetFastestEncoding(cfstring));
         unsigned char result[16];
-        const char *cStr = [[[NSProcessInfo processInfo] globallyUniqueString] UTF8String];
         CC_MD5( cStr, strlen(cStr), result );
+        CFRelease(uuid);
+
         _openUDID = [NSString stringWithFormat:
                 @"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%08x",
                 result[0], result[1], result[2], result[3], 
                 result[4], result[5], result[6], result[7],
                 result[8], result[9], result[10], result[11],
                 result[12], result[13], result[14], result[15],
-                arc4random() % 4294967295];  
+                     (NSUInteger)(arc4random() % NSUIntegerMax)];  
     }
     
     // Call to other developers in the Open Source community:

@@ -23,6 +23,59 @@
 #include <sys/types.h>
 #include <sys/sysctl.h>
 
+
+/// Utilities for encoding and decoding URL arguments.
+/// This code is from the project google-toolbox-for-mac
+@interface NSString (GTMNSStringURLArgumentsAdditions)
+
+/// Returns a string that is escaped properly to be a URL argument.
+//
+/// This differs from stringByAddingPercentEscapesUsingEncoding: in that it
+/// will escape all the reserved characters (per RFC 3986
+/// <http://www.ietf.org/rfc/rfc3986.txt>) which
+/// stringByAddingPercentEscapesUsingEncoding would leave.
+///
+/// This will also escape '%', so this should not be used on a string that has
+/// already been escaped unless double-escaping is the desired result.
+- (NSString*)gtm_stringByEscapingForURLArgument;
+
+/// Returns the unescaped version of a URL argument
+//
+/// This has the same behavior as stringByReplacingPercentEscapesUsingEncoding:,
+/// except that it will also convert '+' to space.
+- (NSString*)gtm_stringByUnescapingFromURLArgument;
+
+@end
+
+#define GTMNSMakeCollectable(cf) ((id)(cf))
+#define GTMCFAutorelease(cf) ([GTMNSMakeCollectable(cf) autorelease])
+
+@implementation NSString (GTMNSStringURLArgumentsAdditions)
+
+- (NSString*)gtm_stringByEscapingForURLArgument {
+	// Encode all the reserved characters, per RFC 3986
+	// (<http://www.ietf.org/rfc/rfc3986.txt>)
+	CFStringRef escaped = 
+    CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault,
+                                            (CFStringRef)self,
+                                            NULL,
+                                            (CFStringRef)@"!*'();:@&=+$,/?%#[]",
+                                            kCFStringEncodingUTF8);
+	return GTMCFAutorelease(escaped);
+}
+
+- (NSString*)gtm_stringByUnescapingFromURLArgument {
+	NSMutableString *resultString = [NSMutableString stringWithString:self];
+	[resultString replaceOccurrencesOfString:@"+"
+								  withString:@" "
+									 options:NSLiteralSearch
+									   range:NSMakeRange(0, [resultString length])];
+	return [resultString stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+}
+
+@end
+
+
 @interface DeviceInfo : NSObject
 {
 }
@@ -78,6 +131,11 @@
 	return [[NSLocale currentLocale] localeIdentifier];
 }
 
++ (NSString *)appVersion
+{
+	return [[[NSBundle mainBundle] infoDictionary] objectForKey:(NSString*)kCFBundleVersionKey];
+}
+
 + (NSString *)metrics
 {
 	NSString *result = @"{";
@@ -96,9 +154,11 @@
 
 	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_locale", [DeviceInfo locale]];
 
+	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_app_version", [DeviceInfo appVersion]];
+
 	result = [result stringByAppendingString:@"}"];
 
-	result = [result stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+	result = [result gtm_stringByEscapingForURLArgument];
 
 	return result;
 }
@@ -330,7 +390,7 @@ static Countly *s_sharedCountly = nil;
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillEnterForegroundNotification object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillTerminateNotification object:nil];
 	
-	if(timer) 
+	if (timer)
 	{
 		[timer invalidate];
 		timer = nil;
