@@ -226,9 +226,10 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 
 - (void)beginSession
 {
-	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&sdk_version="COUNTLY_VERSION"&begin_session=1&metrics=%@",
+	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_VERSION"&begin_session=1&metrics=%@",
 					  appKey,
 					  [DeviceInfo udid],
+					  time(NULL),
 					  [DeviceInfo metrics]];
 	[queue_ addObject:data];
 	[self tick];
@@ -236,14 +237,22 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 
 - (void)updateSessionWithDuration:(int)duration
 {
-	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&session_duration=%d", appKey, [DeviceInfo udid], duration];
+	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&session_duration=%d",
+					  appKey,
+					  [DeviceInfo udid],
+					  time(NULL),
+					  duration];
 	[queue_ addObject:data];
 	[self tick];
 }
 
 - (void)endSessionWithDuration:(int)duration
 {
-	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&end_session=1&session_duration=%d", appKey, [DeviceInfo udid], duration];
+	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&end_session=1&session_duration=%d",
+					  appKey,
+					  [DeviceInfo udid],
+					  time(NULL),
+					  duration];
 	[queue_ addObject:data];
 	[self tick];
 }
