@@ -672,7 +672,7 @@ static Countly *s_sharedCountly = nil;
 	if (timer)
 	{
 		[timer invalidate];
-        [timer release];
+		timer = nil;
 	}
 
     [eventQueue release];
