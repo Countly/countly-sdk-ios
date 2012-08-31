@@ -170,8 +170,7 @@
 }
 
 @property (nonatomic, copy) NSString *key;
-@property (nonatomic, copy) NSString *segmentationKey;
-@property (nonatomic, copy) NSString *segmentationValue;
+@property (nonatomic, retain) NSDictionary *segmentation;
 @property (nonatomic, assign) int count;
 @property (nonatomic, assign) double sum;
 @property (nonatomic, assign) double timestamp;
@@ -181,8 +180,7 @@
 @implementation Event
 
 @synthesize key = key_;
-@synthesize segmentationKey = segmentationKey_;
-@synthesize segmentationValue = segmentationValue_;
+@synthesize segmentation = segmentation_;
 @synthesize count = count_;
 @synthesize sum = sum_;
 @synthesize timestamp = timestamp_;
@@ -192,8 +190,7 @@
     if (self = [super init])
     {
         key_ = nil;
-        segmentationKey_ = nil;
-        segmentationValue_ = nil;
+        segmentation_ = nil;
         count_ = 0;
         sum_ = 0;
         timestamp_ = 0;
@@ -204,8 +201,7 @@
 - (void)dealloc
 {
     [key_ release];
-    [segmentationKey_ release];
-    [segmentationValue_ release];
+    [segmentation_ release];
     [super dealloc];
 }
 
@@ -256,11 +252,24 @@
         
             result = [result stringByAppendingFormat:@"\"%@\":\"%@\"", @"key", event.key];
         
-            if (event.segmentationKey && event.segmentationValue)
+            if (event.segmentation)
             {
-                result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"seg_key", event.segmentationKey];
-            
-                result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"seg_val", event.segmentationValue];
+                NSString *segmentation = @"{";
+                
+                NSArray *keys = [event.segmentation allKeys];
+                for (int i = 0; i < keys.count; ++i)
+                {
+                    NSString *key = [keys objectAtIndex:i];
+                    NSString *value = [event.segmentation objectForKey:key];
+                    
+                    segmentation = [segmentation stringByAppendingFormat:@"\"%@\":\"%@\"", key, value];
+                    
+                    if (i + 1 < keys.count)
+                        segmentation = [segmentation stringByAppendingString:@","];
+                }
+                segmentation = [segmentation stringByAppendingString:@"}"];
+
+                result = [result stringByAppendingFormat:@",\"%@\":%@", @"segmentation", segmentation];
             }
         
             result = [result stringByAppendingFormat:@",\"%@\":%d", @"count", event.count];
@@ -273,7 +282,7 @@
             result = [result stringByAppendingString:@"}"];
         
             if (i + 1 < events_.count)
-            result = [result stringByAppendingString:@","];
+                result = [result stringByAppendingString:@","];
         }
 
         [events_ release];
@@ -333,15 +342,14 @@
     }
 }
 
-- (void)recordEvent:(NSString *)key segmentationKey:(NSString *)segmentationKey segmentationValue:(NSString *)segmentationValue count:(int)count;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count;
 {
     @synchronized (self)
     {
         for (Event *event in events_)
         {
             if ([event.key isEqualToString:key] &&
-                event.segmentationKey && [event.segmentationKey isEqualToString:segmentationKey] &&
-                event.segmentationValue && [event.segmentationValue isEqualToString:segmentationValue])
+                event.segmentation && [event.segmentation isEqualToDictionary:segmentation])
             {
                 event.count += count;
                 event.timestamp = (event.timestamp + time(NULL)) / 2;
@@ -351,23 +359,21 @@
 
         Event *event = [[Event alloc] init];
         event.key = key;
-        event.segmentationKey = segmentationKey;
-        event.segmentationValue = segmentationValue;
+        event.segmentation = segmentation;
         event.count = count;
         event.timestamp = time(NULL);
         [events_ addObject:event];
     }
 }
 
-- (void)recordEvent:(NSString *)key segmentationKey:(NSString *)segmentationKey segmentationValue:(NSString *)segmentationValue count:(int)count sum:(double)sum;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count sum:(double)sum;
 {
     @synchronized (self)
     {
         for (Event *event in events_)
         {
             if ([event.key isEqualToString:key] &&
-                event.segmentationKey && [event.segmentationKey isEqualToString:segmentationKey] &&
-                event.segmentationValue && [event.segmentationValue isEqualToString:segmentationValue])
+                event.segmentation && [event.segmentation isEqualToDictionary:segmentation])
             {
                 event.count += count;
                 event.sum += sum;
@@ -378,8 +384,7 @@
     
         Event *event = [[Event alloc] init];
         event.key = key;
-        event.segmentationKey = segmentationKey;
-        event.segmentationValue = segmentationValue;
+        event.segmentation = segmentation;
         event.count = count;
         event.sum = sum;
         event.timestamp = time(NULL);
@@ -605,17 +610,17 @@ static Countly *s_sharedCountly = nil;
         [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
 }
 
-- (void)recordEvent:(NSString *)key segmentationKey:(NSString *)segmentationKey segmentationValue:(NSString *)segmentationValue count:(int)count
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count
 {
-    [eventQueue recordEvent:key segmentationKey:segmentationKey segmentationValue:segmentationValue count:count];
+    [eventQueue recordEvent:key segmentation:segmentation count:count];
 
     if (eventQueue.count >= 5)
         [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
 }
 
-- (void)recordEvent:(NSString *)key segmentationKey:(NSString *)segmentationKey segmentationValue:(NSString *)segmentationValue count:(int)count sum:(double)sum
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count sum:(double)sum
 {
-    [eventQueue recordEvent:key segmentationKey:segmentationKey segmentationValue:segmentationValue count:count sum:sum];
+    [eventQueue recordEvent:key segmentation:segmentation count:count sum:sum];
 
     if (eventQueue.count >= 5)
         [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
@@ -670,10 +675,10 @@ static Countly *s_sharedCountly = nil;
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillTerminateNotification object:nil];
 	
 	if (timer)
-	{
-		[timer invalidate];
-		timer = nil;
-	}
+    {
+        [timer invalidate];
+        timer = nil;
+    }
 
     [eventQueue release];
 	

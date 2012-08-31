@@ -25,9 +25,9 @@
 
 - (void)recordEvent:(NSString *)key count:(int)count sum:(double)sum;
 
-- (void)recordEvent:(NSString *)key segmentationKey:(NSString *)segmentationKey segmentationValue:(NSString *)segmentationValue count:(int)count;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count;
 
-- (void)recordEvent:(NSString *)key segmentationKey:(NSString *)segmentationKey segmentationValue:(NSString *)segmentationValue count:(int)count sum:(double)sum;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count sum:(double)sum;
 
 @end
 
