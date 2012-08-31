@@ -647,6 +647,9 @@ static Countly *s_sharedCountly = nil;
 {
 	isSuspended = YES;
 
+    if (eventQueue.count > 0)
+        [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
+
 	double currTime = CFAbsoluteTimeGetCurrent();
 	unsentSessionLength += currTime - lastTime;
 
