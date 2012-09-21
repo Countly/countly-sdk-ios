@@ -17,6 +17,7 @@
 
 #import "Countly.h"
 #import "Countly_OpenUDID.h"
+#import <UIKit/UIKit.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import <CoreTelephony/CTCarrier.h>
 
