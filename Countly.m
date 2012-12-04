@@ -316,6 +316,7 @@
         event.count = count;
         event.timestamp = time(NULL);
         [events_ addObject:event];
+        [event release];
     }
 }
 
@@ -340,6 +341,7 @@
         event.sum = sum;
         event.timestamp = time(NULL);
         [events_ addObject:event];
+        [event release];
     }
 }
 
@@ -364,6 +366,7 @@
         event.count = count;
         event.timestamp = time(NULL);
         [events_ addObject:event];
+        [event release];
     }
 }
 
@@ -390,6 +393,7 @@
         event.sum = sum;
         event.timestamp = time(NULL);
         [events_ addObject:event];
+        [event release];
     }
 }
 
