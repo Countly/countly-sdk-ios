@@ -8,7 +8,7 @@ Countly Server;
 Other Countly SDK repositories;
 
 - [Countly Android SDK (countly-sdk-android)](https://github.com/Countly/countly-sdk-android)
-
+- [Countly Blackberry Webworks SDK (countly-sdk-blackberry-webworks)](https://github.com/Countly/countly-sdk-blackberry-webworks)
 
 ##Installation
 
