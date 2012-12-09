@@ -14,7 +14,7 @@ Other Countly SDK repositories;
 - [Countly Android SDK (countly-sdk-android)](https://github.com/Countly/countly-sdk-android)
 - [Countly Blackberry Webworks SDK (countly-sdk-blackberry-webworks)](https://github.com/Countly/countly-sdk-blackberry-webworks)
 
-##Installation
+##Installing iOS SDK
 
 Countly iOS SDK includes necessary tools to track your application. In order to integrate SDK to your application, follow these steps.
 
