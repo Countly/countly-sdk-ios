@@ -31,7 +31,7 @@ Countly iOS SDK includes necessary tools to track your application. In order to 
 and inside `application:didFinishLaunchingWithOptions:`  add the line;
 `[[Countly sharedInstance] start:@"YOUR_APP_KEY" withHost:@"http://YOUR_API_HOST.com"];` at the beginning of the function.
 
-Note that if you use Countly Cloud, you must set withHost parameter to http://cloud.count.ly for step 10.
+**Note:** if you use Countly Cloud, you must set withHost parameter to http://cloud.count.ly for step 10.
 
 It should finally look like this:
 
