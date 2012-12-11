@@ -49,7 +49,7 @@ Note: Before upgrading to a new SDK, do not forget to remove the existing, older
 
 Check Countly Server source code here: 
 
-- [Countly Server (countly-server)](https://github.com/Countly/countly-server)
+- [Countly Server](https://github.com/Countly/countly-server)
 
 There are also other Countly SDK repositories below:
 
