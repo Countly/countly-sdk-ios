@@ -5,6 +5,8 @@ from mobile devices, and visualizes this information to analyze mobile applicati
 There are two parts of Countly: the server that collects and analyzes data, and mobile SDK that sends this 
 data (for iOS, Android, Windows Phone and Blackberry). Both parts are open source.
 
+This repository includes the SDK for iOS.
+
 ##Installing iOS SDK
 
 Countly iOS SDK includes necessary tools to track your application. In order to integrate SDK to your application, follow these steps.
