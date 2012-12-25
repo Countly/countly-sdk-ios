@@ -134,7 +134,11 @@
 
 + (NSString *)appVersion
 {
-	return [[[NSBundle mainBundle] infoDictionary] objectForKey:(NSString*)kCFBundleVersionKey];
+    NSString *result = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
+    if ([result length] == 0)
+        result = [[NSBundle mainBundle] objectForInfoDictionaryKey:(NSString*)kCFBundleVersionKey];
+
+    return result;
 }
 
 + (NSString *)metrics
