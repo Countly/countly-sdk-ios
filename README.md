@@ -22,9 +22,9 @@ Countly iOS SDK includes necessary tools to track your application. In order to 
 9. *(optional)* Drag and drop the added framework to the **Frameworks** group
 10. In your application delegate, import `Countly.h`
 and inside `application:didFinishLaunchingWithOptions:`  add the line;
-`[[Countly sharedInstance] start:@"YOUR_APP_KEY" withHost:@"http://YOUR_API_HOST.com"];` at the beginning of the function.
+`[[Countly sharedInstance] start:@"YOUR_APP_KEY" withHost:@"https://YOUR_API_HOST.com"];` at the beginning of the function.
 
-**Note:** if you use Countly Cloud, you must set withHost parameter to http://cloud.count.ly for step 10.
+**Note:** if you use Countly Cloud, you must set withHost parameter to https://cloud.count.ly for step 10.
 
 It should finally look like this:
 
