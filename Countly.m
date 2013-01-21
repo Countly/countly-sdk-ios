@@ -170,7 +170,7 @@
 
 @end
 
-@interface Event : NSObject
+@interface CountlyEvent : NSObject
 {
 }
 
@@ -182,7 +182,7 @@
 
 @end
 
-@implementation Event
+@implementation CountlyEvent
 
 @synthesize key = key_;
 @synthesize segmentation = segmentation_;
@@ -251,7 +251,7 @@
     {
         for (int i = 0; i < events_.count; ++i)
         {
-            Event *event = [events_ objectAtIndex:i];
+            CountlyEvent *event = [events_ objectAtIndex:i];
         
             result = [result stringByAppendingString:@"{"];
         
@@ -305,7 +305,7 @@
 {
     @synchronized (self)
     {
-        for (Event *event in events_)
+        for (CountlyEvent *event in events_)
         {
             if ([event.key isEqualToString:key])
             {
@@ -315,7 +315,7 @@
             }
         }
     
-        Event *event = [[Event alloc] init];
+        CountlyEvent *event = [[CountlyEvent alloc] init];
         event.key = key;
         event.count = count;
         event.timestamp = time(NULL);
@@ -328,7 +328,7 @@
 {
     @synchronized (self)
     {
-        for (Event *event in events_)
+        for (CountlyEvent *event in events_)
         {
             if ([event.key isEqualToString:key])
             {
@@ -339,7 +339,7 @@
             }
         }
     
-        Event *event = [[Event alloc] init];
+        CountlyEvent *event = [[CountlyEvent alloc] init];
         event.key = key;
         event.count = count;
         event.sum = sum;
@@ -353,7 +353,7 @@
 {
     @synchronized (self)
     {
-        for (Event *event in events_)
+        for (CountlyEvent *event in events_)
         {
             if ([event.key isEqualToString:key] &&
                 event.segmentation && [event.segmentation isEqualToDictionary:segmentation])
@@ -364,7 +364,7 @@
             }
         }
 
-        Event *event = [[Event alloc] init];
+        CountlyEvent *event = [[CountlyEvent alloc] init];
         event.key = key;
         event.segmentation = segmentation;
         event.count = count;
@@ -378,7 +378,7 @@
 {
     @synchronized (self)
     {
-        for (Event *event in events_)
+        for (CountlyEvent *event in events_)
         {
             if ([event.key isEqualToString:key] &&
                 event.segmentation && [event.segmentation isEqualToDictionary:segmentation])
@@ -390,7 +390,7 @@
             }
         }
     
-        Event *event = [[Event alloc] init];
+        CountlyEvent *event = [[CountlyEvent alloc] init];
         event.key = key;
         event.segmentation = segmentation;
         event.count = count;
