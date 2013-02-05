@@ -13,6 +13,8 @@
 #   define COUNTLY_LOG(...)
 #endif
 
+#define COUNTLY_IGNORE_INVALID_CERTIFICATES 0
+
 #define COUNTLY_VERSION "1.0"
 
 #import "Countly.h"
@@ -526,7 +528,7 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 
 - (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)err
 {
-	COUNTLY_LOG(@"error -> %@", [queue_ objectAtIndex:0]);
+	COUNTLY_LOG(@"error -> %@: %@", [queue_ objectAtIndex:0], err);
 
     UIApplication *app = [UIApplication sharedApplication];
     if (bgTask_ != UIBackgroundTaskInvalid)
@@ -537,6 +539,16 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 
     connection_ = nil;
 }
+
+#if COUNTLY_IGNORE_INVALID_CERTIFICATES
+- (void)connection:(NSURLConnection *)connection willSendRequestForAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge
+{
+    if ([challenge.protectionSpace.authenticationMethod isEqualToString:NSURLAuthenticationMethodServerTrust])
+        [challenge.sender useCredential:[NSURLCredential credentialForTrust:challenge.protectionSpace.serverTrust] forAuthenticationChallenge:challenge];
+    
+    [[challenge sender] continueWithoutCredentialForAuthenticationChallenge:challenge];
+}
+#endif
 
 - (void)dealloc
 {
