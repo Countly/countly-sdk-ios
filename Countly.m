@@ -5,15 +5,19 @@
 // Please visit www.count.ly for more information.
 
 
+#ifndef COUNTLY_DEBUG
 #define COUNTLY_DEBUG 0
+#endif
+
+#ifndef COUNTLY_IGNORE_INVALID_CERTIFICATES
+#define COUNTLY_IGNORE_INVALID_CERTIFICATES 1
+#endif
 
 #if COUNTLY_DEBUG
 #   define COUNTLY_LOG(fmt, ...) NSLog(fmt, ##__VA_ARGS__)
 #else
 #   define COUNTLY_LOG(...)
 #endif
-
-#define COUNTLY_IGNORE_INVALID_CERTIFICATES 0
 
 #define COUNTLY_VERSION "1.0"
 
