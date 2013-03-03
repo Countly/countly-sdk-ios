@@ -10,7 +10,7 @@
 #endif
 
 #ifndef COUNTLY_IGNORE_INVALID_CERTIFICATES
-#define COUNTLY_IGNORE_INVALID_CERTIFICATES 1
+#define COUNTLY_IGNORE_INVALID_CERTIFICATES 0
 #endif
 
 #if COUNTLY_DEBUG
@@ -33,7 +33,7 @@
 
 /// Utilities for encoding and decoding URL arguments.
 /// This code is from the project google-toolbox-for-mac
-@interface NSString (GTMNSStringURLArgumentsAdditions)
+@interface NSString (Countly_Additions)
 
 /// Returns a string that is escaped properly to be a URL argument.
 //
@@ -44,22 +44,22 @@
 ///
 /// This will also escape '%', so this should not be used on a string that has
 /// already been escaped unless double-escaping is the desired result.
-- (NSString*)gtm_stringByEscapingForURLArgument;
+- (NSString*)countly_stringByEscapingForURLArgument;
 
 /// Returns the unescaped version of a URL argument
 //
 /// This has the same behavior as stringByReplacingPercentEscapesUsingEncoding:,
 /// except that it will also convert '+' to space.
-- (NSString*)gtm_stringByUnescapingFromURLArgument;
+- (NSString*)countly_stringByUnescapingFromURLArgument;
 
 @end
 
 #define GTMNSMakeCollectable(cf) ((id)(cf))
 #define GTMCFAutorelease(cf) ([GTMNSMakeCollectable(cf) autorelease])
 
-@implementation NSString (GTMNSStringURLArgumentsAdditions)
+@implementation NSString (Countly_Additions)
 
-- (NSString*)gtm_stringByEscapingForURLArgument {
+- (NSString*)countly_stringByEscapingForURLArgument {
 	// Encode all the reserved characters, per RFC 3986
 	// (<http://www.ietf.org/rfc/rfc3986.txt>)
 	CFStringRef escaped = 
@@ -71,7 +71,7 @@
 	return GTMCFAutorelease(escaped);
 }
 
-- (NSString*)gtm_stringByUnescapingFromURLArgument {
+- (NSString*)countly_stringByUnescapingFromURLArgument {
 	NSMutableString *resultString = [NSMutableString stringWithString:self];
 	[resultString replaceOccurrencesOfString:@"+"
 								  withString:@" "
@@ -169,7 +169,7 @@
 
 	result = [result stringByAppendingString:@"}"];
 
-	result = [result gtm_stringByEscapingForURLArgument];
+	result = [result countly_stringByEscapingForURLArgument];
 
 	return result;
 }
@@ -302,7 +302,7 @@
         
     result = [result stringByAppendingString:@"]"];
     
-    result = [result gtm_stringByEscapingForURLArgument];
+    result = [result countly_stringByEscapingForURLArgument];
 
 	return result;
 }
