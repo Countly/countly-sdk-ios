@@ -23,9 +23,16 @@
 
 #import "Countly.h"
 #import "Countly_OpenUDID.h"
+
+#define TARGET_IOS (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
+
+#if TARGET_IOS
+
 #import <UIKit/UIKit.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import <CoreTelephony/CTCarrier.h>
+
+#endif
 
 #include <sys/types.h>
 #include <sys/sysctl.h>
@@ -97,40 +104,71 @@
 
 + (NSString *)device
 {
+#if TARGET_IOS
+    char *modelKey = "hw.machine";
+#else
+    char *modelKey = "hw.model";
+#endif
     size_t size;
-    sysctlbyname("hw.machine", NULL, &size, NULL, 0);
-    char *machine = malloc(size);
-    sysctlbyname("hw.machine", machine, &size, NULL, 0);
-    NSString *platform = [NSString stringWithUTF8String:machine];
-    free(machine);
-    return platform;
+    sysctlbyname(modelKey, NULL, &size, NULL, 0);
+    char *model = malloc(size);
+    sysctlbyname(modelKey, model, &size, NULL, 0);
+    NSString *modelString = [NSString stringWithUTF8String:model];
+    free(model);
+    
+    return modelString;
+}
+
++ (NSString *)os
+{
+#if TARGET_IOS
+    return @"iOS";
+#else
+    return @"OS X";
+#endif
 }
 
 + (NSString *)osVersion
 {
+#if TARGET_IOS
 	return [[UIDevice currentDevice] systemVersion];
+#else
+    SInt32 majorVersion, minorVersion, bugFixVersion;
+    Gestalt(gestaltSystemVersionMajor, &majorVersion);
+    Gestalt(gestaltSystemVersionMinor, &minorVersion);
+    Gestalt(gestaltSystemVersionBugFix, &bugFixVersion);
+    
+    NSString *systemVersion = (bugFixVersion > 0) ? [NSString stringWithFormat:@"%d.%d.%d", majorVersion, minorVersion, bugFixVersion] : [NSString stringWithFormat:@"%d.%d", majorVersion, minorVersion];
+    return systemVersion;
+#endif
 }
 
 + (NSString *)carrier
 {
+#if TARGET_IOS
 	if (NSClassFromString(@"CTTelephonyNetworkInfo"))
 	{
 		CTTelephonyNetworkInfo *netinfo = [[[CTTelephonyNetworkInfo alloc] init] autorelease];
 		CTCarrier *carrier = [netinfo subscriberCellularProvider];
 		return [carrier carrierName];
 	}
-
+#endif
 	return nil;
 }
 
 + (NSString *)resolution
 {
+#if TARGET_IOS
 	CGRect bounds = [[UIScreen mainScreen] bounds];
 	CGFloat scale = [[UIScreen mainScreen] respondsToSelector:@selector(scale)] ? [[UIScreen mainScreen] scale] : 1.f;
 	CGSize res = CGSizeMake(bounds.size.width * scale, bounds.size.height * scale);
 	NSString *result = [NSString stringWithFormat:@"%gx%g", res.width, res.height];
 
 	return result;
+#else
+    NSRect screenRect = [[NSScreen mainScreen] frame];
+    return [NSString stringWithFormat:@"%.1fx%.1f", screenRect.size.width, screenRect.size.height];
+#endif
 }
 
 + (NSString *)locale
@@ -153,7 +191,7 @@
 
 	result = [result stringByAppendingFormat:@"\"%@\":\"%@\"", @"_device", [DeviceInfo device]];
 
-	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_os", @"iOS"];
+	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_os", [DeviceInfo os]];
 
 	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_os_version", [DeviceInfo osVersion]];
 
@@ -413,9 +451,11 @@
 {
 	NSMutableArray *queue_;
 	NSURLConnection *connection_;
-	UIBackgroundTaskIdentifier bgTask_;
 	NSString *appKey;
 	NSString *appHost;
+#if TARGET_IOS
+	UIBackgroundTaskIdentifier bgTask_;
+#endif
 }
 
 @property (nonatomic, copy) NSString *appKey;
@@ -444,15 +484,19 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 	{
 		queue_ = [[NSMutableArray alloc] init];
 		connection_ = nil;
-        bgTask_ = UIBackgroundTaskInvalid;
         appKey = nil;
         appHost = nil;
+#if TARGET_IOS
+        bgTask_ = UIBackgroundTaskInvalid;
+#endif
 	}
 	return self;
 }
 
 - (void) tick
 {
+
+#if TARGET_IOS
     if (connection_ != nil || bgTask_ != UIBackgroundTaskInvalid || [queue_ count] == 0)
         return;
 
@@ -461,6 +505,10 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 		[app endBackgroundTask:bgTask_];
 		bgTask_ = UIBackgroundTaskInvalid;
     }];
+#else
+    if (connection_ != nil || [queue_ count] == 0)
+        return;
+#endif
 
     NSString *data = [queue_ objectAtIndex:0];
     NSString *urlString = [NSString stringWithFormat:@"%@/i?%@", self.appHost, data];
@@ -515,13 +563,15 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection
 {
 	COUNTLY_LOG(@"ok -> %@", [queue_ objectAtIndex:0]);
-
+    
+#if TARGET_IOS
     UIApplication *app = [UIApplication sharedApplication];
     if (bgTask_ != UIBackgroundTaskInvalid)
     {
         [app endBackgroundTask:bgTask_];
         bgTask_ = UIBackgroundTaskInvalid;
     }
+#endif
 
     connection_ = nil;
 
@@ -534,12 +584,14 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 {
 	COUNTLY_LOG(@"error -> %@: %@", [queue_ objectAtIndex:0], err);
 
+#if TARGET_IOS
     UIApplication *app = [UIApplication sharedApplication];
     if (bgTask_ != UIBackgroundTaskInvalid)
     {
         [app endBackgroundTask:bgTask_];
         bgTask_ = UIBackgroundTaskInvalid;
     }
+#endif
 
     connection_ = nil;
 }
@@ -589,8 +641,8 @@ static Countly *s_sharedCountly = nil;
 		isSuspended = NO;
 		unsentSessionLength = 0;
         eventQueue = [[EventQueue alloc] init];
-		
-		[[NSNotificationCenter defaultCenter] addObserver:self 
+#if TARGET_IOS
+		[[NSNotificationCenter defaultCenter] addObserver:self
 												 selector:@selector(didEnterBackgroundCallBack:) 
 													 name:UIApplicationDidEnterBackgroundNotification 
 												   object:nil];
@@ -602,6 +654,8 @@ static Countly *s_sharedCountly = nil;
 												 selector:@selector(willTerminateCallBack:) 
 													 name:UIApplicationWillTerminateNotification 
 												   object:nil];
+#endif
+
 	}
 	return self;
 }
@@ -698,9 +752,11 @@ static Countly *s_sharedCountly = nil;
 
 - (void)dealloc
 {
+#if TARGET_IOS
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidEnterBackgroundNotification object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillEnterForegroundNotification object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillTerminateNotification object:nil];
+#endif
 	
 	if (timer)
     {
