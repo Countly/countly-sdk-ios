@@ -5,16 +5,16 @@ It collects data from mobile devices, and visualizes this information to analyze
 usage and end-user behavior. There are two parts of Countly: the server that collects and analyzes data, 
 and mobile SDK that sends this data. Both parts are open source with different licensing terms.
 
-This repository includes the SDK for iOS.
+This repository includes the SDK for iOS and Mac OS X.
 
-##Installing iOS SDK
+##Installing the SDK
 
-Countly iOS SDK includes necessary tools to track your application. In order to integrate SDK to your application, follow these steps.
+The Countly SDK includes necessary tools to track your application. In order to integrate SDK to your application, follow these steps.
 
-1. Download Countly iOS SDK.
+1. Download the Countly SDK (or clone it in your project as a git submodule).
 2. Add these files to your project under Xcode: `Countly.h` `Countly.m` `Countly_OpenUDID.h` `Countly_OpenUDID.m`
-3. In the project navigator, select your project
-4. Select your project
+3. For an OS X target, skip to step 11. For iOS, continue with step 4.
+4. Select your project in the Project Navigator and select your project again under the "Project" column
 5. Select the **Build Phases** tab
 6. Open **Link Binaries With Libraries** expander
 7. Click the **+** button
@@ -53,12 +53,10 @@ Check Countly Server source code here:
 
 There are also other Countly SDK repositories below:
 
-- [Countly iOS SDK](https://github.com/Countly/countly-sdk-ios)
 - [Countly Android SDK](https://github.com/Countly/countly-sdk-android)
 - [Countly Windows Phone SDK](https://github.com/Countly/countly-sdk-windows-phone)
 - [Countly Blackberry Webworks SDK](https://github.com/Countly/countly-sdk-blackberry-webworks)
 - [Countly Blackberry Cascades SDK](https://github.com/craigmj/countly-sdk-blackberry10-cascades) (Community supported)
-- [Countly Mac OS X SDK](https://github.com/mrballoon/countly-sdk-osx) (Community supported)
 - [Countly Appcelerator Titanium SDK](https://github.com/euforic/Titanium-Count.ly) (Community supported)
 - [Countly Unity3D SDK](https://github.com/Countly/countly-sdk-unity) (Community supported)
 
