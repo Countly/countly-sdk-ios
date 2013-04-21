@@ -24,9 +24,7 @@
 #import "Countly.h"
 #import "Countly_OpenUDID.h"
 
-#define TARGET_IOS (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-
-#if TARGET_IOS
+#if TARGET_OS_IPHONE
 
 #import <UIKit/UIKit.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
@@ -104,7 +102,7 @@
 
 + (NSString *)device
 {
-#if TARGET_IOS
+#if TARGET_OS_IPHONE
     char *modelKey = "hw.machine";
 #else
     char *modelKey = "hw.model";
@@ -121,7 +119,7 @@
 
 + (NSString *)os
 {
-#if TARGET_IOS
+#if TARGET_OS_IPHONE
     return @"iOS";
 #else
     return @"OS X";
@@ -130,7 +128,7 @@
 
 + (NSString *)osVersion
 {
-#if TARGET_IOS
+#if TARGET_OS_IPHONE
 	return [[UIDevice currentDevice] systemVersion];
 #else
     SInt32 majorVersion, minorVersion, bugFixVersion;
@@ -145,7 +143,7 @@
 
 + (NSString *)carrier
 {
-#if TARGET_IOS
+#if TARGET_OS_IPHONE
 	if (NSClassFromString(@"CTTelephonyNetworkInfo"))
 	{
 		CTTelephonyNetworkInfo *netinfo = [[[CTTelephonyNetworkInfo alloc] init] autorelease];
@@ -158,7 +156,7 @@
 
 + (NSString *)resolution
 {
-#if TARGET_IOS
+#if TARGET_OS_IPHONE
 	CGRect bounds = [[UIScreen mainScreen] bounds];
 	CGFloat scale = [[UIScreen mainScreen] respondsToSelector:@selector(scale)] ? [[UIScreen mainScreen] scale] : 1.f;
 	CGSize res = CGSizeMake(bounds.size.width * scale, bounds.size.height * scale);
@@ -453,7 +451,7 @@
 	NSURLConnection *connection_;
 	NSString *appKey;
 	NSString *appHost;
-#if TARGET_IOS
+#if TARGET_OS_IPHONE
 	UIBackgroundTaskIdentifier bgTask_;
 #endif
 }
@@ -486,7 +484,7 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 		connection_ = nil;
         appKey = nil;
         appHost = nil;
-#if TARGET_IOS
+#if TARGET_OS_IPHONE
         bgTask_ = UIBackgroundTaskInvalid;
 #endif
 	}
@@ -496,7 +494,7 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 - (void) tick
 {
 
-#if TARGET_IOS
+#if TARGET_OS_IPHONE
     if (connection_ != nil || bgTask_ != UIBackgroundTaskInvalid || [queue_ count] == 0)
         return;
 
@@ -564,7 +562,7 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 {
 	COUNTLY_LOG(@"ok -> %@", [queue_ objectAtIndex:0]);
     
-#if TARGET_IOS
+#if TARGET_OS_IPHONE
     UIApplication *app = [UIApplication sharedApplication];
     if (bgTask_ != UIBackgroundTaskInvalid)
     {
@@ -584,7 +582,7 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 {
 	COUNTLY_LOG(@"error -> %@: %@", [queue_ objectAtIndex:0], err);
 
-#if TARGET_IOS
+#if TARGET_OS_IPHONE
     UIApplication *app = [UIApplication sharedApplication];
     if (bgTask_ != UIBackgroundTaskInvalid)
     {
@@ -641,7 +639,7 @@ static Countly *s_sharedCountly = nil;
 		isSuspended = NO;
 		unsentSessionLength = 0;
         eventQueue = [[EventQueue alloc] init];
-#if TARGET_IOS
+#if TARGET_OS_IPHONE
 		[[NSNotificationCenter defaultCenter] addObserver:self
 												 selector:@selector(didEnterBackgroundCallBack:) 
 													 name:UIApplicationDidEnterBackgroundNotification 
@@ -752,7 +750,7 @@ static Countly *s_sharedCountly = nil;
 
 - (void)dealloc
 {
-#if TARGET_IOS
+#if TARGET_OS_IPHONE
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidEnterBackgroundNotification object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillEnterForegroundNotification object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillTerminateNotification object:nil];
