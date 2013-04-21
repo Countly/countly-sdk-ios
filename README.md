@@ -53,6 +53,7 @@ Check Countly Server source code here:
 
 There are also other Countly SDK repositories below:
 
+- [Countly iOS SDK](https://github.com/Countly/countly-sdk-ios)
 - [Countly Android SDK](https://github.com/Countly/countly-sdk-android)
 - [Countly Windows Phone SDK](https://github.com/Countly/countly-sdk-windows-phone)
 - [Countly Blackberry Webworks SDK](https://github.com/Countly/countly-sdk-blackberry-webworks)
