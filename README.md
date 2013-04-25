@@ -26,6 +26,8 @@ and inside `application:didFinishLaunchingWithOptions:`  add the line;
 
 **Note:** if you use Countly Cloud, you must set withHost parameter to https://cloud.count.ly for step 10.
 
+**Note:** Make sure you use App Key (found under Management -> Applications) and not API Key. Entering API Key will not work. 
+
 It should finally look like this:
 
 <pre class="prettyprint">
