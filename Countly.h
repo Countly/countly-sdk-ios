@@ -11,6 +11,7 @@
 
 @interface Countly : NSObject {
 	double unsentSessionLength;
+    NSTimeInterval updateInterval;
 	NSTimer *timer;
 	double lastTime;
 	BOOL isSuspended;
@@ -28,6 +29,8 @@
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count;
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count sum:(double)sum;
+
+- (void)setUpdateInterval:(NSTimeInterval)interval;
 
 @end
 
