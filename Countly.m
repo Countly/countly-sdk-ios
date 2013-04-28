@@ -635,7 +635,7 @@ static Countly *s_sharedCountly = nil;
 {
 	if (self = [super init])
 	{
-        updateInterval = 30.0;
+		self.updateInterval = 30.0;
 		timer = nil;
 		isSuspended = NO;
 		unsentSessionLength = 0;
@@ -659,14 +659,9 @@ static Countly *s_sharedCountly = nil;
 	return self;
 }
 
-- (void)setUpdateInterval:(NSTimeInterval)interval
-{
-    updateInterval = interval;
-}
-
 - (void)start:(NSString *)appKey withHost:(NSString *)appHost
 {
-	timer = [NSTimer scheduledTimerWithTimeInterval:updateInterval
+	timer = [NSTimer scheduledTimerWithTimeInterval:self.updateInterval
 											 target:self
 										   selector:@selector(onTimer:)
 										   userInfo:nil

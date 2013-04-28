@@ -11,12 +11,13 @@
 
 @interface Countly : NSObject {
 	double unsentSessionLength;
-    NSTimeInterval updateInterval;
 	NSTimer *timer;
 	double lastTime;
 	BOOL isSuspended;
     EventQueue *eventQueue;
 }
+
+@property (nonatomic, assign) NSTimeInterval updateInterval;
 
 + (Countly *)sharedInstance;
 
@@ -29,8 +30,6 @@
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count;
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count sum:(double)sum;
-
-- (void)setUpdateInterval:(NSTimeInterval)interval;
 
 @end
 
