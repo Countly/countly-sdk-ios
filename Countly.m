@@ -602,6 +602,17 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
     
     [[challenge sender] continueWithoutCredentialForAuthenticationChallenge:challenge];
 }
+
+- (BOOL)connection:(NSURLConnection *)connection canAuthenticateAgainstProtectionSpace:(NSURLProtectionSpace *)protectionSpace
+{
+    return [protectionSpace.authenticationMethod isEqualToString:NSURLAuthenticationMethodServerTrust];
+}
+
+- (void)connection:(NSURLConnection *)connection didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge
+{
+    [self connection:connection willSendRequestForAuthenticationChallenge:challenge];
+}
+
 #endif
 
 - (void)dealloc
