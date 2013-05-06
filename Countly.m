@@ -608,7 +608,7 @@ static Countly *s_sharedCountly = nil;
 
 - (void)start:(NSString *)appKey withHost:(NSString *)appHost
 {
-	timer = [NSTimer scheduledTimerWithTimeInterval:30.0
+	timer = [NSTimer scheduledTimerWithTimeInterval:300.0
 											 target:self
 										   selector:@selector(onTimer:)
 										   userInfo:nil
@@ -623,7 +623,7 @@ static Countly *s_sharedCountly = nil;
 {
     [eventQueue recordEvent:key count:count];
     
-    if (eventQueue.count >= 5)
+    if (eventQueue.count >= 10)
         [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
 }
 
@@ -631,7 +631,7 @@ static Countly *s_sharedCountly = nil;
 {
     [eventQueue recordEvent:key count:count sum:sum];
 
-    if (eventQueue.count >= 5)
+    if (eventQueue.count >= 10)
         [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
 }
 
@@ -639,7 +639,7 @@ static Countly *s_sharedCountly = nil;
 {
     [eventQueue recordEvent:key segmentation:segmentation count:count];
 
-    if (eventQueue.count >= 5)
+    if (eventQueue.count >= 10)
         [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
 }
 
@@ -647,7 +647,7 @@ static Countly *s_sharedCountly = nil;
 {
     [eventQueue recordEvent:key segmentation:segmentation count:count sum:sum];
 
-    if (eventQueue.count >= 5)
+    if (eventQueue.count >= 10)
         [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
 }
 
