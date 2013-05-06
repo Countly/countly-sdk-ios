@@ -608,7 +608,7 @@ static Countly *s_sharedCountly = nil;
 
 - (void)start:(NSString *)appKey withHost:(NSString *)appHost
 {
-	timer = [NSTimer scheduledTimerWithTimeInterval:300.0
+	timer = [NSTimer scheduledTimerWithTimeInterval:60.0
 											 target:self
 										   selector:@selector(onTimer:)
 										   userInfo:nil
