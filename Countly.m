@@ -291,7 +291,7 @@
     
     @synchronized (self)
     {
-        for (int i = 0; i < events_.count; ++i)
+        for (NSUInteger i = 0; i < events_.count; ++i)
         {
             CountlyEvent *event = [events_ objectAtIndex:i];
         
@@ -304,7 +304,7 @@
                 NSString *segmentation = @"{";
                 
                 NSArray *keys = [event.segmentation allKeys];
-                for (int i = 0; i < keys.count; ++i)
+                for (NSUInteger i = 0; i < keys.count; ++i)
                 {
                     NSString *key = [keys objectAtIndex:i];
                     NSString *value = [event.segmentation objectForKey:key];
@@ -687,7 +687,7 @@ static Countly *s_sharedCountly = nil;
 {
     [eventQueue recordEvent:key count:count];
     
-    if (eventQueue.count >= 5)
+    if (eventQueue.count >= 10)
         [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
 }
 
@@ -695,7 +695,7 @@ static Countly *s_sharedCountly = nil;
 {
     [eventQueue recordEvent:key count:count sum:sum];
 
-    if (eventQueue.count >= 5)
+    if (eventQueue.count >= 10)
         [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
 }
 
@@ -703,7 +703,7 @@ static Countly *s_sharedCountly = nil;
 {
     [eventQueue recordEvent:key segmentation:segmentation count:count];
 
-    if (eventQueue.count >= 5)
+    if (eventQueue.count >= 10)
         [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
 }
 
@@ -711,7 +711,7 @@ static Countly *s_sharedCountly = nil;
 {
     [eventQueue recordEvent:key segmentation:segmentation count:count sum:sum];
 
-    if (eventQueue.count >= 5)
+    if (eventQueue.count >= 10)
         [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
 }
 
