@@ -17,6 +17,8 @@
     EventQueue *eventQueue;
 }
 
+@property (nonatomic, assign) NSTimeInterval updateInterval;
+
 + (Countly *)sharedInstance;
 
 - (void)start:(NSString *)appKey withHost:(NSString *)appHost;
@@ -28,6 +30,8 @@
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count;
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count sum:(double)sum;
+
+- (void)flushQueue;
 
 @end
 

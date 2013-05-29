@@ -10,7 +10,7 @@
 #endif
 
 #ifndef COUNTLY_IGNORE_INVALID_CERTIFICATES
-#define COUNTLY_IGNORE_INVALID_CERTIFICATES 1
+#define COUNTLY_IGNORE_INVALID_CERTIFICATES 0
 #endif
 
 #if COUNTLY_DEBUG
@@ -23,9 +23,14 @@
 
 #import "Countly.h"
 #import "Countly_OpenUDID.h"
+
+#if TARGET_OS_IPHONE
+
 #import <UIKit/UIKit.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import <CoreTelephony/CTCarrier.h>
+
+#endif
 
 #include <sys/types.h>
 #include <sys/sysctl.h>
@@ -33,7 +38,7 @@
 
 /// Utilities for encoding and decoding URL arguments.
 /// This code is from the project google-toolbox-for-mac
-@interface NSString (GTMNSStringURLArgumentsAdditions)
+@interface NSString (Countly_Additions)
 
 /// Returns a string that is escaped properly to be a URL argument.
 //
@@ -44,22 +49,22 @@
 ///
 /// This will also escape '%', so this should not be used on a string that has
 /// already been escaped unless double-escaping is the desired result.
-- (NSString*)gtm_stringByEscapingForURLArgument;
+- (NSString*)countly_stringByEscapingForURLArgument;
 
 /// Returns the unescaped version of a URL argument
 //
 /// This has the same behavior as stringByReplacingPercentEscapesUsingEncoding:,
 /// except that it will also convert '+' to space.
-- (NSString*)gtm_stringByUnescapingFromURLArgument;
+- (NSString*)countly_stringByUnescapingFromURLArgument;
 
 @end
 
 #define GTMNSMakeCollectable(cf) ((id)(cf))
 #define GTMCFAutorelease(cf) ([GTMNSMakeCollectable(cf) autorelease])
 
-@implementation NSString (GTMNSStringURLArgumentsAdditions)
+@implementation NSString (Countly_Additions)
 
-- (NSString*)gtm_stringByEscapingForURLArgument {
+- (NSString*)countly_stringByEscapingForURLArgument {
 	// Encode all the reserved characters, per RFC 3986
 	// (<http://www.ietf.org/rfc/rfc3986.txt>)
 	CFStringRef escaped = 
@@ -71,7 +76,7 @@
 	return GTMCFAutorelease(escaped);
 }
 
-- (NSString*)gtm_stringByUnescapingFromURLArgument {
+- (NSString*)countly_stringByUnescapingFromURLArgument {
 	NSMutableString *resultString = [NSMutableString stringWithString:self];
 	[resultString replaceOccurrencesOfString:@"+"
 								  withString:@" "
@@ -97,40 +102,71 @@
 
 + (NSString *)device
 {
+#if TARGET_OS_IPHONE
+    char *modelKey = "hw.machine";
+#else
+    char *modelKey = "hw.model";
+#endif
     size_t size;
-    sysctlbyname("hw.machine", NULL, &size, NULL, 0);
-    char *machine = malloc(size);
-    sysctlbyname("hw.machine", machine, &size, NULL, 0);
-    NSString *platform = [NSString stringWithUTF8String:machine];
-    free(machine);
-    return platform;
+    sysctlbyname(modelKey, NULL, &size, NULL, 0);
+    char *model = malloc(size);
+    sysctlbyname(modelKey, model, &size, NULL, 0);
+    NSString *modelString = [NSString stringWithUTF8String:model];
+    free(model);
+    
+    return modelString;
+}
+
++ (NSString *)os
+{
+#if TARGET_OS_IPHONE
+    return @"iOS";
+#else
+    return @"OS X";
+#endif
 }
 
 + (NSString *)osVersion
 {
+#if TARGET_OS_IPHONE
 	return [[UIDevice currentDevice] systemVersion];
+#else
+    SInt32 majorVersion, minorVersion, bugFixVersion;
+    Gestalt(gestaltSystemVersionMajor, &majorVersion);
+    Gestalt(gestaltSystemVersionMinor, &minorVersion);
+    Gestalt(gestaltSystemVersionBugFix, &bugFixVersion);
+    
+    NSString *systemVersion = (bugFixVersion > 0) ? [NSString stringWithFormat:@"%d.%d.%d", majorVersion, minorVersion, bugFixVersion] : [NSString stringWithFormat:@"%d.%d", majorVersion, minorVersion];
+    return systemVersion;
+#endif
 }
 
 + (NSString *)carrier
 {
+#if TARGET_OS_IPHONE
 	if (NSClassFromString(@"CTTelephonyNetworkInfo"))
 	{
 		CTTelephonyNetworkInfo *netinfo = [[[CTTelephonyNetworkInfo alloc] init] autorelease];
 		CTCarrier *carrier = [netinfo subscriberCellularProvider];
 		return [carrier carrierName];
 	}
-
+#endif
 	return nil;
 }
 
 + (NSString *)resolution
 {
+#if TARGET_OS_IPHONE
 	CGRect bounds = [[UIScreen mainScreen] bounds];
 	CGFloat scale = [[UIScreen mainScreen] respondsToSelector:@selector(scale)] ? [[UIScreen mainScreen] scale] : 1.f;
 	CGSize res = CGSizeMake(bounds.size.width * scale, bounds.size.height * scale);
 	NSString *result = [NSString stringWithFormat:@"%gx%g", res.width, res.height];
 
 	return result;
+#else
+    NSRect screenRect = [[NSScreen mainScreen] frame];
+    return [NSString stringWithFormat:@"%.1fx%.1f", screenRect.size.width, screenRect.size.height];
+#endif
 }
 
 + (NSString *)locale
@@ -153,7 +189,7 @@
 
 	result = [result stringByAppendingFormat:@"\"%@\":\"%@\"", @"_device", [DeviceInfo device]];
 
-	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_os", @"iOS"];
+	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_os", [DeviceInfo os]];
 
 	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_os_version", [DeviceInfo osVersion]];
 
@@ -169,7 +205,7 @@
 
 	result = [result stringByAppendingString:@"}"];
 
-	result = [result gtm_stringByEscapingForURLArgument];
+	result = [result countly_stringByEscapingForURLArgument];
 
 	return result;
 }
@@ -302,7 +338,7 @@
         
     result = [result stringByAppendingString:@"]"];
     
-    result = [result gtm_stringByEscapingForURLArgument];
+    result = [result countly_stringByEscapingForURLArgument];
 
 	return result;
 }
@@ -413,9 +449,11 @@
 {
 	NSMutableArray *queue_;
 	NSURLConnection *connection_;
-	UIBackgroundTaskIdentifier bgTask_;
 	NSString *appKey;
 	NSString *appHost;
+#if TARGET_OS_IPHONE
+	UIBackgroundTaskIdentifier bgTask_;
+#endif
 }
 
 @property (nonatomic, copy) NSString *appKey;
@@ -444,15 +482,19 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 	{
 		queue_ = [[NSMutableArray alloc] init];
 		connection_ = nil;
-        bgTask_ = UIBackgroundTaskInvalid;
         appKey = nil;
         appHost = nil;
+#if TARGET_OS_IPHONE
+        bgTask_ = UIBackgroundTaskInvalid;
+#endif
 	}
 	return self;
 }
 
 - (void) tick
 {
+
+#if TARGET_OS_IPHONE
     if (connection_ != nil || bgTask_ != UIBackgroundTaskInvalid || [queue_ count] == 0)
         return;
 
@@ -461,6 +503,10 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 		[app endBackgroundTask:bgTask_];
 		bgTask_ = UIBackgroundTaskInvalid;
     }];
+#else
+    if (connection_ != nil || [queue_ count] == 0)
+        return;
+#endif
 
     NSString *data = [queue_ objectAtIndex:0];
     NSString *urlString = [NSString stringWithFormat:@"%@/i?%@", self.appHost, data];
@@ -515,13 +561,15 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection
 {
 	COUNTLY_LOG(@"ok -> %@", [queue_ objectAtIndex:0]);
-
+    
+#if TARGET_OS_IPHONE
     UIApplication *app = [UIApplication sharedApplication];
     if (bgTask_ != UIBackgroundTaskInvalid)
     {
         [app endBackgroundTask:bgTask_];
         bgTask_ = UIBackgroundTaskInvalid;
     }
+#endif
 
     connection_ = nil;
 
@@ -534,12 +582,14 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 {
 	COUNTLY_LOG(@"error -> %@: %@", [queue_ objectAtIndex:0], err);
 
+#if TARGET_OS_IPHONE
     UIApplication *app = [UIApplication sharedApplication];
     if (bgTask_ != UIBackgroundTaskInvalid)
     {
         [app endBackgroundTask:bgTask_];
         bgTask_ = UIBackgroundTaskInvalid;
     }
+#endif
 
     connection_ = nil;
 }
@@ -552,6 +602,17 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
     
     [[challenge sender] continueWithoutCredentialForAuthenticationChallenge:challenge];
 }
+
+- (BOOL)connection:(NSURLConnection *)connection canAuthenticateAgainstProtectionSpace:(NSURLProtectionSpace *)protectionSpace
+{
+    return [protectionSpace.authenticationMethod isEqualToString:NSURLAuthenticationMethodServerTrust];
+}
+
+- (void)connection:(NSURLConnection *)connection didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge
+{
+    [self connection:connection willSendRequestForAuthenticationChallenge:challenge];
+}
+
 #endif
 
 - (void)dealloc
@@ -585,12 +646,13 @@ static Countly *s_sharedCountly = nil;
 {
 	if (self = [super init])
 	{
+		self.updateInterval = 30.0;
 		timer = nil;
 		isSuspended = NO;
 		unsentSessionLength = 0;
         eventQueue = [[EventQueue alloc] init];
-		
-		[[NSNotificationCenter defaultCenter] addObserver:self 
+#if TARGET_OS_IPHONE
+		[[NSNotificationCenter defaultCenter] addObserver:self
 												 selector:@selector(didEnterBackgroundCallBack:) 
 													 name:UIApplicationDidEnterBackgroundNotification 
 												   object:nil];
@@ -602,13 +664,15 @@ static Countly *s_sharedCountly = nil;
 												 selector:@selector(willTerminateCallBack:) 
 													 name:UIApplicationWillTerminateNotification 
 												   object:nil];
+#endif
+
 	}
 	return self;
 }
 
 - (void)start:(NSString *)appKey withHost:(NSString *)appHost
 {
-	timer = [NSTimer scheduledTimerWithTimeInterval:60.0
+	timer = [NSTimer scheduledTimerWithTimeInterval:self.updateInterval
 											 target:self
 										   selector:@selector(onTimer:)
 										   userInfo:nil
@@ -668,6 +732,12 @@ static Countly *s_sharedCountly = nil;
         [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
 }
 
+- (void)flushQueue
+{
+    if (eventQueue.count > 0)
+        [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
+}
+
 - (void)suspend
 {
 	isSuspended = YES;
@@ -698,9 +768,11 @@ static Countly *s_sharedCountly = nil;
 
 - (void)dealloc
 {
+#if TARGET_OS_IPHONE
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidEnterBackgroundNotification object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillEnterForegroundNotification object:nil];
     [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillTerminateNotification object:nil];
+#endif
 	
 	if (timer)
     {
