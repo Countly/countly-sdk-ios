@@ -187,7 +187,9 @@ static int const kOpenUDIDRedundancySlots = 100;
     {
       // generate a new uuid and store it in user defaults
       CFUUIDRef uuid = CFUUIDCreate(NULL);
-      appUID = (NSString *) CFUUIDCreateString(NULL, uuid);
+      CFStringRef uuidString = CFUUIDCreateString(NULL, uuid);
+      appUID = (NSString *) uuidString;
+      CFRelease(uuidString);
       CFRelease(uuid);
     }
   
