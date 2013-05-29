@@ -732,6 +732,12 @@ static Countly *s_sharedCountly = nil;
         [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
 }
 
+- (void)flushQueue
+{
+    if (eventQueue.count > 0)
+        [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
+}
+
 - (void)suspend
 {
 	isSuspended = YES;
