@@ -230,14 +230,39 @@
 {
     if (self = [super init])
     {
-        events_ = [[NSMutableArray alloc] init];
+        NSMutableArray *storedEvents = [NSMutableArray arrayWithContentsOfFile:[self dataFilePath]];
+        if (storedEvents) {
+            events_ = storedEvents;
+        }
+        else {
+            events_ = [[NSMutableArray alloc] init];
+        }
+        
+        [[NSNotificationCenter defaultCenter] addObserver:self
+												 selector:@selector(willTerminateCallBack:)
+													 name:UIApplicationWillTerminateNotification
+												   object:nil];
     }
     return self;
 }
 
+-(NSString *)dataFilePath
+{
+    NSString *docsPath = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES)[0];
+    NSString *fileName = @"Countly_Data";
+    return [docsPath stringByAppendingPathComponent:fileName];
+}
+
+-(void)willTerminateCallBack:(NSNotification *)notification
+{
+    [events_ writeToFile:[self dataFilePath] atomically:YES];
+}
+
+
 - (void)dealloc
 {
     [events_ release];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillTerminateNotification object:nil];
     [super dealloc];
 }
 
