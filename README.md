@@ -12,15 +12,16 @@ This repository includes the SDK for iOS.
 Countly iOS SDK includes necessary tools to track your application. In order to integrate SDK to your application, follow these steps.
 
 1. Download Countly iOS SDK.
-2. Add these files to your project under Xcode: `Countly.h` `Countly.m` `Countly_OpenUDID.h` `Countly_OpenUDID.m`
+2. Add these files to your project under Xcode: `Countly.h` `Countly.m`
 3. In the project navigator, select your project
 4. Select your project
 5. Select the **Build Phases** tab
 6. Open **Link Binaries With Libraries** expander
 7. Click the **+** button
 8. Select CoreTelephony.framework, select **Optional** (instead of Required)
-9. *(optional)* Drag and drop the added framework to the **Frameworks** group
-10. In your application delegate, import `Countly.h`
+9. Click the **+** button
+10. Select AdSupport.framework
+11. In your application delegate, import `Countly.h`
 and inside `application:didFinishLaunchingWithOptions:`  add the line;
 `[[Countly sharedInstance] start:@"YOUR_APP_KEY" withHost:@"https://YOUR_API_HOST.com"];` at the beginning of the function.
 
@@ -28,7 +29,7 @@ and inside `application:didFinishLaunchingWithOptions:`  add the line;
 
 **Note:** Make sure you use App Key (found under Management -> Applications) and not API Key. Entering API Key will not work. 
 
-It should finally look like this:
+It should look like this:
 
 <pre class="prettyprint">
 #import "Countly.h"  // newly added line
