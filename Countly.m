@@ -435,6 +435,8 @@
     dispatch_once(&onceToken, ^{
         s_sharedConnectionQueue = [[self alloc] init];
     });
+
+    return s_sharedConnectionQueue;
 }
 
 - (id)init
