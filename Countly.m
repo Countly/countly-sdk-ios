@@ -423,19 +423,20 @@
 
 @end
 
-static ConnectionQueue *s_sharedConnectionQueue = nil;
-
 @implementation ConnectionQueue : NSObject
 
 @synthesize appKey;
 @synthesize appHost;
 
-+ (ConnectionQueue *)sharedInstance
++ (instancetype)sharedInstance
 {
-	if (s_sharedConnectionQueue == nil)
-		s_sharedConnectionQueue = [[ConnectionQueue alloc] init];
+    static ConnectionQueue *s_sharedConnectionQueue = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        s_sharedConnectionQueue = [[self alloc] init];
+    });
 
-	return s_sharedConnectionQueue;
+    return s_sharedConnectionQueue;
 }
 
 - (id)init
@@ -569,16 +570,17 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 
 @end
 
-static Countly *s_sharedCountly = nil;
-
 @implementation Countly
 
-+ (Countly *)sharedInstance
++ (instancetype)sharedInstance
 {
-	if (s_sharedCountly == nil)
-		s_sharedCountly = [[Countly alloc] init];
-
-	return s_sharedCountly;
+    static Countly *s_sharedCountly = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        s_sharedCountly = [[self alloc] init];
+    });
+    
+    return s_sharedCountly;
 }
 
 - (id)init
