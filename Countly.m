@@ -22,10 +22,10 @@
 #define COUNTLY_VERSION "1.0"
 
 #import "Countly.h"
-#import "Countly_OpenUDID.h"
-#import <UIKit/UIKit.h>
+#import <AdSupport/AdSupport.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import <CoreTelephony/CTCarrier.h>
+#import <UIKit/UIKit.h>
 
 #include <sys/types.h>
 #include <sys/sysctl.h>
@@ -92,7 +92,7 @@
 
 + (NSString *)udid
 {
-	return [Countly_OpenUDID value];
+	return [[[ASIdentifierManager sharedManager] advertisingIdentifier] UUIDString];
 }
 
 + (NSString *)device
