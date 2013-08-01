@@ -19,8 +19,9 @@ Countly iOS SDK includes necessary tools to track your application. In order to 
 6. Open **Link Binaries With Libraries** expander
 7. Click the **+** button
 8. Select CoreTelephony.framework, select **Optional** (instead of Required)
-9. *(optional)* Drag and drop the added framework to the **Frameworks** group
-10. In your application delegate, import `Countly.h`
+9. Select CoreData.framework
+10. *(optional)* Drag and drop the added framework to the **Frameworks** group
+11. In your application delegate, import `Countly.h`
 and inside `application:didFinishLaunchingWithOptions:`  add the line;
 `[[Countly sharedInstance] start:@"YOUR_APP_KEY" withHost:@"https://YOUR_API_HOST.com"];` at the beginning of the function.
 
@@ -44,7 +45,7 @@ Note: If your project uses automatic reference counting (ARC), you should disabl
 1. Select your project
 2. Select the **Build Phases** tab
 3. Open **Compile Sources** tab
-4. Double click `Countly.m` and `Countly_OpenUDID.m` and add `-fno-objc-arc` flag
+4. Double click `Countly.m`, `Countly_OpenUDID.m` and `Countly_DB.m` and add `-fno-objc-arc` flag
 
 Note: Before upgrading to a new SDK, do not forget to remove the existing, older SDK from your project.
 
