@@ -26,6 +26,7 @@
 #import <UIKit/UIKit.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import <CoreTelephony/CTCarrier.h>
+#import "CountlyDB.h"
 
 #include <sys/types.h>
 #include <sys/sysctl.h>
@@ -62,7 +63,7 @@
 - (NSString*)gtm_stringByEscapingForURLArgument {
 	// Encode all the reserved characters, per RFC 3986
 	// (<http://www.ietf.org/rfc/rfc3986.txt>)
-	CFStringRef escaped = 
+	CFStringRef escaped =
     CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault,
                                             (CFStringRef)self,
                                             NULL,
@@ -119,7 +120,7 @@
 		CTCarrier *carrier = [netinfo subscriberCellularProvider];
 		return [carrier carrierName];
 	}
-
+    
 	return nil;
 }
 
@@ -129,7 +130,7 @@
 	CGFloat scale = [[UIScreen mainScreen] respondsToSelector:@selector(scale)] ? [[UIScreen mainScreen] scale] : 1.f;
 	CGSize res = CGSizeMake(bounds.size.width * scale, bounds.size.height * scale);
 	NSString *result = [NSString stringWithFormat:@"%gx%g", res.width, res.height];
-
+    
 	return result;
 }
 
@@ -143,34 +144,34 @@
     NSString *result = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
     if ([result length] == 0)
         result = [[NSBundle mainBundle] objectForInfoDictionaryKey:(NSString*)kCFBundleVersionKey];
-
+    
     return result;
 }
 
 + (NSString *)metrics
 {
 	NSString *result = @"{";
-
+    
 	result = [result stringByAppendingFormat:@"\"%@\":\"%@\"", @"_device", [DeviceInfo device]];
-
+    
 	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_os", @"iOS"];
-
+    
 	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_os_version", [DeviceInfo osVersion]];
-
+    
 	NSString *carrier = [DeviceInfo carrier];
 	if (carrier != nil)
 		result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_carrier", carrier];
-
+    
 	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_resolution", [DeviceInfo resolution]];
-
+    
 	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_locale", [DeviceInfo locale]];
-
+    
 	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_app_version", [DeviceInfo appVersion]];
-
+    
 	result = [result stringByAppendingString:@"}"];
-
+    
 	result = [result gtm_stringByEscapingForURLArgument];
-
+    
 	return result;
 }
 
@@ -219,25 +220,14 @@
 @end
 
 @interface EventQueue : NSObject
-{
-    NSMutableArray *events_;
-}
+
 @end
+
 
 @implementation EventQueue
 
-- (id)init
-{
-    if (self = [super init])
-    {
-        events_ = [[NSMutableArray alloc] init];
-    }
-    return self;
-}
-
 - (void)dealloc
 {
-    [events_ release];
     [super dealloc];
 }
 
@@ -245,9 +235,10 @@
 {
     @synchronized (self)
     {
-        return [events_ count];
+        return [[CountlyDB sharedInstance] getEventCount];
     }
 }
+
 
 - (NSString *)events
 {
@@ -255,14 +246,16 @@
     
     @synchronized (self)
     {
-        for (NSUInteger i = 0; i < events_.count; ++i)
+        NSArray* events = [[[CountlyDB sharedInstance] getEvents] copy];
+        for (NSUInteger i = 0; i < events.count; ++i)
         {
-            CountlyEvent *event = [events_ objectAtIndex:i];
-        
+            
+            CountlyEvent *event = [self convertNSManagedObjectToCountlyEvent:[events objectAtIndex:i]];
+            
             result = [result stringByAppendingString:@"{"];
-        
+            
             result = [result stringByAppendingFormat:@"\"%@\":\"%@\"", @"key", event.key];
-        
+            
             if (event.segmentation)
             {
                 NSString *segmentation = @"{";
@@ -279,53 +272,79 @@
                         segmentation = [segmentation stringByAppendingString:@","];
                 }
                 segmentation = [segmentation stringByAppendingString:@"}"];
-
+                
                 result = [result stringByAppendingFormat:@",\"%@\":%@", @"segmentation", segmentation];
             }
-        
+            
             result = [result stringByAppendingFormat:@",\"%@\":%d", @"count", event.count];
-        
+            
             if (event.sum > 0)
                 result = [result stringByAppendingFormat:@",\"%@\":%g", @"sum", event.sum];
-        
+            
             result = [result stringByAppendingFormat:@",\"%@\":%ld", @"timestamp", (time_t)event.timestamp];
-        
+            
             result = [result stringByAppendingString:@"}"];
-        
-            if (i + 1 < events_.count)
+            
+            if (i + 1 < events.count)
                 result = [result stringByAppendingString:@","];
+            
+            [[CountlyDB sharedInstance] removeFromQueue:[events objectAtIndex:i]];
+            
         }
-
-        [events_ release];
-        events_ = [[NSMutableArray alloc] init];
-    }
         
+        [events release];
+        
+    }
+    
     result = [result stringByAppendingString:@"]"];
     
     result = [result gtm_stringByEscapingForURLArgument];
-
+    
 	return result;
+}
+
+-(CountlyEvent*) convertNSManagedObjectToCountlyEvent:(NSManagedObject*)managedObject{
+    CountlyEvent* event = [[CountlyEvent alloc] init];
+    event.key = [managedObject valueForKey:@"key"];
+    if ([managedObject valueForKey:@"count"])
+        event.count = ((NSNumber*) [managedObject valueForKey:@"count"]).doubleValue;
+    if ([managedObject valueForKey:@"sum"])
+        event.sum = ((NSNumber*) [managedObject valueForKey:@"sum"]).doubleValue;
+    if ([managedObject valueForKey:@"timestamp"])
+        event.timestamp = ((NSNumber*) [managedObject valueForKey:@"timestamp"]).doubleValue;
+    if ([managedObject valueForKey:@"segmentation"])
+        event.segmentation = [managedObject valueForKey:@"segmentation"];
+    return event;
 }
 
 - (void)recordEvent:(NSString *)key count:(int)count
 {
     @synchronized (self)
     {
-        for (CountlyEvent *event in events_)
+        NSArray* events = [[CountlyDB sharedInstance] getEvents];
+        for (NSManagedObject* obj in events)
         {
+            CountlyEvent *event = [self convertNSManagedObjectToCountlyEvent:obj];
             if ([event.key isEqualToString:key])
             {
                 event.count += count;
                 event.timestamp = (event.timestamp + time(NULL)) / 2;
+                
+                [obj setValue:[NSNumber numberWithDouble:event.count] forKey:@"count"];
+                [obj setValue:[NSNumber numberWithDouble:event.timestamp] forKey:@"timestamp"];
+                
+                [[CountlyDB sharedInstance] saveContext];
                 return;
             }
         }
-    
+        
         CountlyEvent *event = [[CountlyEvent alloc] init];
         event.key = key;
         event.count = count;
         event.timestamp = time(NULL);
-        [events_ addObject:event];
+        
+        [[CountlyDB sharedInstance] createEvent:event.key count:event.count sum:event.sum segmentation:event.segmentation timestamp:event.timestamp];
+        
         [event release];
     }
 }
@@ -334,23 +353,34 @@
 {
     @synchronized (self)
     {
-        for (CountlyEvent *event in events_)
+        NSArray* events = [[CountlyDB sharedInstance] getEvents];
+        for (NSManagedObject* obj in events)
         {
+            CountlyEvent *event = [self convertNSManagedObjectToCountlyEvent:obj];
             if ([event.key isEqualToString:key])
             {
                 event.count += count;
                 event.sum += sum;
                 event.timestamp = (event.timestamp + time(NULL)) / 2;
+                
+                [obj setValue:[NSNumber numberWithDouble:event.count] forKey:@"count"];
+                [obj setValue:[NSNumber numberWithDouble:event.sum] forKey:@"sum"];
+                [obj setValue:[NSNumber numberWithDouble:event.timestamp] forKey:@"timestamp"];
+                
+                [[CountlyDB sharedInstance] saveContext];
+                
                 return;
             }
         }
-    
+        
         CountlyEvent *event = [[CountlyEvent alloc] init];
         event.key = key;
         event.count = count;
         event.sum = sum;
         event.timestamp = time(NULL);
-        [events_ addObject:event];
+        
+        [[CountlyDB sharedInstance] createEvent:event.key count:event.count sum:event.sum segmentation:event.segmentation timestamp:event.timestamp];
+        
         [event release];
     }
 }
@@ -359,23 +389,34 @@
 {
     @synchronized (self)
     {
-        for (CountlyEvent *event in events_)
+        
+        NSArray* events = [[CountlyDB sharedInstance] getEvents];
+        for (NSManagedObject* obj in events)
         {
+            CountlyEvent *event = [self convertNSManagedObjectToCountlyEvent:obj];
             if ([event.key isEqualToString:key] &&
                 event.segmentation && [event.segmentation isEqualToDictionary:segmentation])
             {
                 event.count += count;
                 event.timestamp = (event.timestamp + time(NULL)) / 2;
+                
+                [obj setValue:[NSNumber numberWithDouble:event.count] forKey:@"count"];
+                [obj setValue:[NSNumber numberWithDouble:event.timestamp] forKey:@"timestamp"];
+                
+                [[CountlyDB sharedInstance] saveContext];
+                
                 return;
             }
         }
-
+        
         CountlyEvent *event = [[CountlyEvent alloc] init];
         event.key = key;
         event.segmentation = segmentation;
         event.count = count;
         event.timestamp = time(NULL);
-        [events_ addObject:event];
+        
+        [[CountlyDB sharedInstance] createEvent:event.key count:event.count sum:event.sum segmentation:event.segmentation timestamp:event.timestamp];
+        
         [event release];
     }
 }
@@ -384,25 +425,37 @@
 {
     @synchronized (self)
     {
-        for (CountlyEvent *event in events_)
+        
+        NSArray* events = [[[CountlyDB sharedInstance] getEvents] copy];
+        for (NSManagedObject* obj in events)
         {
+            CountlyEvent *event = [self convertNSManagedObjectToCountlyEvent:obj];
             if ([event.key isEqualToString:key] &&
                 event.segmentation && [event.segmentation isEqualToDictionary:segmentation])
             {
                 event.count += count;
                 event.sum += sum;
                 event.timestamp = (event.timestamp + time(NULL)) / 2;
+                
+                [obj setValue:[NSNumber numberWithDouble:event.count] forKey:@"count"];
+                [obj setValue:[NSNumber numberWithDouble:event.sum] forKey:@"sum"];
+                [obj setValue:[NSNumber numberWithDouble:event.timestamp] forKey:@"timestamp"];
+                
+                [[CountlyDB sharedInstance] saveContext];
+                
                 return;
             }
         }
-    
+        
         CountlyEvent *event = [[CountlyEvent alloc] init];
         event.key = key;
         event.segmentation = segmentation;
         event.count = count;
         event.sum = sum;
         event.timestamp = time(NULL);
-        [events_ addObject:event];
+        
+        [[CountlyDB sharedInstance] createEvent:event.key count:event.count sum:event.sum segmentation:event.segmentation timestamp:event.timestamp];
+        
         [event release];
     }
 }
@@ -411,7 +464,6 @@
 
 @interface ConnectionQueue : NSObject
 {
-	NSMutableArray *queue_;
 	NSURLConnection *connection_;
 	UIBackgroundTaskIdentifier bgTask_;
 	NSString *appKey;
@@ -434,7 +486,7 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 {
 	if (s_sharedConnectionQueue == nil)
 		s_sharedConnectionQueue = [[ConnectionQueue alloc] init];
-
+    
 	return s_sharedConnectionQueue;
 }
 
@@ -442,7 +494,6 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 {
 	if (self = [super init])
 	{
-		queue_ = [[NSMutableArray alloc] init];
 		connection_ = nil;
         bgTask_ = UIBackgroundTaskInvalid;
         appKey = nil;
@@ -453,19 +504,23 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 
 - (void) tick
 {
-    if (connection_ != nil || bgTask_ != UIBackgroundTaskInvalid || [queue_ count] == 0)
+    NSArray* dataQueue = [[[CountlyDB sharedInstance] getQueue] copy];
+    
+    if (connection_ != nil || bgTask_ != UIBackgroundTaskInvalid || [dataQueue count] == 0)
         return;
-
+    
     UIApplication *app = [UIApplication sharedApplication];
     bgTask_ = [app beginBackgroundTaskWithExpirationHandler:^{
 		[app endBackgroundTask:bgTask_];
 		bgTask_ = UIBackgroundTaskInvalid;
     }];
-
-    NSString *data = [queue_ objectAtIndex:0];
+    
+    NSString *data = [[dataQueue objectAtIndex:0] valueForKey:@"post"];
     NSString *urlString = [NSString stringWithFormat:@"%@/i?%@", self.appHost, data];
     NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:urlString]];
     connection_ = [NSURLConnection connectionWithRequest:request delegate:self];
+    
+    [dataQueue release];
 }
 
 - (void)beginSession
@@ -475,7 +530,9 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 					  [DeviceInfo udid],
 					  time(NULL),
 					  [DeviceInfo metrics]];
-	[queue_ addObject:data];
+    
+    [[CountlyDB sharedInstance] addToQueue:data];
+    
 	[self tick];
 }
 
@@ -486,7 +543,9 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 					  [DeviceInfo udid],
 					  time(NULL),
 					  duration];
-	[queue_ addObject:data];
+    
+    [[CountlyDB sharedInstance] addToQueue:data];
+    
 	[self tick];
 }
 
@@ -497,7 +556,9 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 					  [DeviceInfo udid],
 					  time(NULL),
 					  duration];
-	[queue_ addObject:data];
+    
+    [[CountlyDB sharedInstance] addToQueue:data];
+    
 	[self tick];
 }
 
@@ -508,39 +569,49 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 					  [DeviceInfo udid],
 					  time(NULL),
 					  events];
-	[queue_ addObject:data];
+    
+    [[CountlyDB sharedInstance] addToQueue:data];
+    
 	[self tick];
 }
 
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection
 {
-	COUNTLY_LOG(@"ok -> %@", [queue_ objectAtIndex:0]);
-
+    
+    NSArray* dataQueue = [[[CountlyDB sharedInstance] getQueue] copy];
+    
+	COUNTLY_LOG(@"ok -> %@", [dataQueue objectAtIndex:0]);
+    
     UIApplication *app = [UIApplication sharedApplication];
     if (bgTask_ != UIBackgroundTaskInvalid)
     {
         [app endBackgroundTask:bgTask_];
         bgTask_ = UIBackgroundTaskInvalid;
     }
-
+    
     connection_ = nil;
-
-    [queue_ removeObjectAtIndex:0];
-
+    
+    [[CountlyDB sharedInstance] removeFromQueue:[dataQueue objectAtIndex:0]];
+    
+    [dataQueue release];
+    
     [self tick];
 }
 
 - (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)err
 {
-	COUNTLY_LOG(@"error -> %@: %@", [queue_ objectAtIndex:0], err);
-
+    #if COUNTLY_DEBUG
+        NSArray* dataQueue = [[[CountlyDB sharedInstance] getQueue] copy];
+        COUNTLY_LOG(@"error -> %@: %@", [dataQueue objectAtIndex:0], err);
+    #endif
+    
     UIApplication *app = [UIApplication sharedApplication];
     if (bgTask_ != UIBackgroundTaskInvalid)
     {
         [app endBackgroundTask:bgTask_];
         bgTask_ = UIBackgroundTaskInvalid;
     }
-
+    
     connection_ = nil;
 }
 
@@ -560,8 +631,6 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 	
 	if (connection_)
 		[connection_ cancel];
-
-	[queue_ release];
 	
 	self.appKey = nil;
 	self.appHost = nil;
@@ -577,7 +646,7 @@ static Countly *s_sharedCountly = nil;
 {
 	if (s_sharedCountly == nil)
 		s_sharedCountly = [[Countly alloc] init];
-
+    
 	return s_sharedCountly;
 }
 
@@ -590,17 +659,17 @@ static Countly *s_sharedCountly = nil;
 		unsentSessionLength = 0;
         eventQueue = [[EventQueue alloc] init];
 		
-		[[NSNotificationCenter defaultCenter] addObserver:self 
-												 selector:@selector(didEnterBackgroundCallBack:) 
-													 name:UIApplicationDidEnterBackgroundNotification 
+		[[NSNotificationCenter defaultCenter] addObserver:self
+												 selector:@selector(didEnterBackgroundCallBack:)
+													 name:UIApplicationDidEnterBackgroundNotification
 												   object:nil];
-		[[NSNotificationCenter defaultCenter] addObserver:self 
-												 selector:@selector(willEnterForegroundCallBack:) 
-													 name:UIApplicationWillEnterForegroundNotification 
+		[[NSNotificationCenter defaultCenter] addObserver:self
+												 selector:@selector(willEnterForegroundCallBack:)
+													 name:UIApplicationWillEnterForegroundNotification
 												   object:nil];
-		[[NSNotificationCenter defaultCenter] addObserver:self 
-												 selector:@selector(willTerminateCallBack:) 
-													 name:UIApplicationWillTerminateNotification 
+		[[NSNotificationCenter defaultCenter] addObserver:self
+												 selector:@selector(willTerminateCallBack:)
+													 name:UIApplicationWillTerminateNotification
 												   object:nil];
 	}
 	return self;
@@ -630,7 +699,7 @@ static Countly *s_sharedCountly = nil;
 - (void)recordEvent:(NSString *)key count:(int)count sum:(double)sum
 {
     [eventQueue recordEvent:key count:count sum:sum];
-
+    
     if (eventQueue.count >= 10)
         [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
 }
@@ -638,7 +707,7 @@ static Countly *s_sharedCountly = nil;
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count
 {
     [eventQueue recordEvent:key segmentation:segmentation count:count];
-
+    
     if (eventQueue.count >= 10)
         [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
 }
@@ -646,7 +715,7 @@ static Countly *s_sharedCountly = nil;
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count sum:(double)sum
 {
     [eventQueue recordEvent:key segmentation:segmentation count:count sum:sum];
-
+    
     if (eventQueue.count >= 10)
         [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
 }
@@ -655,15 +724,15 @@ static Countly *s_sharedCountly = nil;
 {
 	if (isSuspended == YES)
 		return;
-
+    
 	double currTime = CFAbsoluteTimeGetCurrent();
 	unsentSessionLength += currTime - lastTime;
 	lastTime = currTime;
-
+    
 	int duration = unsentSessionLength;
 	[[ConnectionQueue sharedInstance] updateSessionWithDuration:duration];
 	unsentSessionLength -= duration;
-
+    
     if (eventQueue.count > 0)
         [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
 }
@@ -671,13 +740,13 @@ static Countly *s_sharedCountly = nil;
 - (void)suspend
 {
 	isSuspended = YES;
-
+    
     if (eventQueue.count > 0)
         [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
-
+    
 	double currTime = CFAbsoluteTimeGetCurrent();
 	unsentSessionLength += currTime - lastTime;
-
+    
 	int duration = unsentSessionLength;
 	[[ConnectionQueue sharedInstance] endSessionWithDuration:duration];
 	unsentSessionLength -= duration;
@@ -686,9 +755,9 @@ static Countly *s_sharedCountly = nil;
 - (void)resume
 {
 	lastTime = CFAbsoluteTimeGetCurrent();
-
+    
 	[[ConnectionQueue sharedInstance] beginSession];
-
+    
 	isSuspended = NO;
 }
 
@@ -707,7 +776,7 @@ static Countly *s_sharedCountly = nil;
         [timer invalidate];
         timer = nil;
     }
-
+    
     [eventQueue release];
 	
 	[super dealloc];
@@ -717,7 +786,7 @@ static Countly *s_sharedCountly = nil;
 {
 	COUNTLY_LOG(@"Countly didEnterBackgroundCallBack");
 	[self suspend];
-
+    
 }
 
 - (void)willEnterForegroundCallBack:(NSNotification *)notification
@@ -729,6 +798,7 @@ static Countly *s_sharedCountly = nil;
 - (void)willTerminateCallBack:(NSNotification *)notification
 {
 	COUNTLY_LOG(@"Countly willTerminateCallBack");
+    [[CountlyDB sharedInstance] saveContext];
 	[self exit];
 }
 
