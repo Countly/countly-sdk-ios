@@ -8,6 +8,10 @@
 
 #import "CountlyDB.h"
 
+#ifndef COUNTLY_DEBUG
+#define COUNTLY_DEBUG 0
+#endif
+
 #if COUNTLY_DEBUG
 #   define COUNTLY_LOG(fmt, ...) NSLog(fmt, ##__VA_ARGS__)
 #else
