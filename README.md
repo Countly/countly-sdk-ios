@@ -12,7 +12,7 @@ This repository includes the SDK for iOS.
 Countly iOS SDK includes necessary tools to track your application. In order to integrate SDK to your application, follow these steps.
 
 1. Download Countly iOS SDK.
-2. Add these files to your project under Xcode: `Countly.h` `Countly.m` `Countly_OpenUDID.h` `Countly_OpenUDID.m` `CountlyDB.h` `CountlyDB.m`
+2. Add these files to your project under Xcode: `Countly.h` `Countly.m` `Countly_OpenUDID.h` `Countly_OpenUDID.m` `CountlyDB.h` `CountlyDB.m` and `Countly.xcdatamodeld`
 3. In the project navigator, select your project
 4. Select your project
 5. Select the **Build Phases** tab
