@@ -422,17 +422,31 @@
 static ConnectionQueue *s_sharedConnectionQueue = nil;
 @implementation ConnectionQueue : NSObject
 
-+ (ConnectionQueue *)sharedInstance {
++ (instancetype)sharedInstance {
 	if (!s_sharedConnectionQueue) {
 		static dispatch_once_t onceToken;
 		dispatch_once(&onceToken, ^{
 			if ( /*still*/ !s_sharedConnectionQueue) {
-				s_sharedConnectionQueue = ConnectionQueue.new;
+				s_sharedConnectionQueue = self.new;
 			}
 		});
 	}
 	
 	return s_sharedConnectionQueue;
+}
+
+- (void)dealloc {
+	if (self.connection) {
+		[self.connection cancel];
+		self.connection = nil;
+	}
+	if (self.bgTask != UIBackgroundTaskInvalid) {
+		[self stopBackgroundTask];
+	}
+	
+	self.appKey = nil;
+	self.appHost = nil;
+	[super dealloc];
 }
 
 - (void)tick {
@@ -564,31 +578,17 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
     }
 }
 
-- (void)dealloc {
-	if (self.connection) {
-		[self.connection cancel];
-		self.connection = nil;
-	}
-	if (self.bgTask != UIBackgroundTaskInvalid) {
-		[self stopBackgroundTask];
-	}
-	
-	self.appKey = nil;
-	self.appHost = nil;
-	[super dealloc];
-}
-
 @end
 
 static Countly *s_sharedCountly = nil;
 @implementation Countly
 
-+ (Countly *)sharedInstance {
++ (instancetype)sharedInstance {
 	if (!s_sharedCountly) {
 		static dispatch_once_t onceToken;
 		dispatch_once(&onceToken, ^{
 			if ( /*still*/ !s_sharedCountly) {
-				s_sharedCountly = Countly.new;
+				s_sharedCountly = self.new;
 			}
 		});
 	}
