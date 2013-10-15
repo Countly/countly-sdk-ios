@@ -83,21 +83,27 @@
 
 @end
 
-
 @interface DeviceInfo : NSObject
-{
-}
+
++ (NSString *)udid;
++ (NSString *)device;
++ (NSString *)osVersion;
++ (NSString *)carrier;
++ (NSString *)resolution;
++ (NSString *)locale;
++ (NSString *)appVersion;
+
++ (NSString *)metrics;
+
 @end
 
 @implementation DeviceInfo
 
-+ (NSString *)udid
-{
++ (NSString *)udid {
 	return [Countly_OpenUDID value];
 }
 
-+ (NSString *)device
-{
++ (NSString *)device {
     size_t size;
     sysctlbyname("hw.machine", NULL, &size, NULL, 0);
     char *machine = malloc(size);
@@ -107,43 +113,36 @@
     return platform;
 }
 
-+ (NSString *)osVersion
-{
-	return [[UIDevice currentDevice] systemVersion];
++ (NSString *)osVersion {
+	return UIDevice.currentDevice.systemVersion;
 }
 
-+ (NSString *)carrier
-{
-	if (NSClassFromString(@"CTTelephonyNetworkInfo"))
-	{
-		CTTelephonyNetworkInfo *netinfo = [[[CTTelephonyNetworkInfo alloc] init] autorelease];
-		CTCarrier *carrier = [netinfo subscriberCellularProvider];
-		return [carrier carrierName];
-	}
-    
-	return nil;
++ (NSString *)carrier {
+	if (!NSClassFromString(@"CTTelephonyNetworkInfo"))
+		return nil;
+	
+	CTTelephonyNetworkInfo *netinfo = [CTTelephonyNetworkInfo.new autorelease];
+	CTCarrier *carrier = netinfo.subscriberCellularProvider;
+	return carrier.carrierName;
 }
 
-+ (NSString *)resolution
-{
-	CGRect bounds = [[UIScreen mainScreen] bounds];
-	CGFloat scale = [[UIScreen mainScreen] respondsToSelector:@selector(scale)] ? [[UIScreen mainScreen] scale] : 1.f;
++ (NSString *)resolution {
+	CGRect bounds = UIScreen.mainScreen.bounds;
+	CGFloat scale = [UIScreen.mainScreen respondsToSelector:@selector(scale)] ? UIScreen.mainScreen.scale : 1.f;
 	CGSize res = CGSizeMake(bounds.size.width * scale, bounds.size.height * scale);
 	NSString *result = [NSString stringWithFormat:@"%gx%g", res.width, res.height];
     
 	return result;
 }
 
-+ (NSString *)locale
-{
-	return [[NSLocale currentLocale] localeIdentifier];
++ (NSString *)locale {
+	return [NSLocale.currentLocale localeIdentifier];
 }
 
-+ (NSString *)appVersion
-{
-    NSString *result = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
-    if ([result length] == 0)
-        result = [[NSBundle mainBundle] objectForInfoDictionaryKey:(NSString*)kCFBundleVersionKey];
++ (NSString *)appVersion {
+    NSString *result = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
+    if (result.length == 0)
+        result = [NSBundle.mainBundle objectForInfoDictionaryKey:(NSString*)kCFBundleVersionKey];
     
     return result;
 }
