@@ -148,31 +148,24 @@
     return result;
 }
 
-+ (NSString *)metrics
-{
-	NSString *result = @"{";
++ (NSString *)metrics {
+	NSMutableDictionary* metricsDictionary = NSMutableDictionary.dictionary;
+	[metricsDictionary setObject:DeviceInfo.device forKey:@"_device"];
+	[metricsDictionary setObject:@"iOS" forKey:@"_os"];
+	[metricsDictionary setObject:DeviceInfo.osVersion forKey:@"_os_version"];
     
-	result = [result stringByAppendingFormat:@"\"%@\":\"%@\"", @"_device", [DeviceInfo device]];
+	NSString *carrier = DeviceInfo.carrier;
+	if (carrier) {
+		[metricsDictionary setObject:carrier forKey:@"_carrier"];
+	}
+
+	[metricsDictionary setObject:DeviceInfo.resolution forKey:@"_resolution"];
+	[metricsDictionary setObject:DeviceInfo.locale forKey:@"_locale"];
+	[metricsDictionary setObject:DeviceInfo.appVersion forKey:@"_app_version"];
+	
+	NSString* json = _countly_jsonFromObject(metricsDictionary);
     
-	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_os", @"iOS"];
-    
-	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_os_version", [DeviceInfo osVersion]];
-    
-	NSString *carrier = [DeviceInfo carrier];
-	if (carrier != nil)
-		result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_carrier", carrier];
-    
-	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_resolution", [DeviceInfo resolution]];
-    
-	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_locale", [DeviceInfo locale]];
-    
-	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_app_version", [DeviceInfo appVersion]];
-    
-	result = [result stringByAppendingString:@"}"];
-    
-	result = [result gtm_stringByEscapingForURLArgument];
-    
-	return result;
+	return [json gtm_stringByEscapingForURLArgument];
 }
 
 @end
