@@ -11,20 +11,20 @@
 
 @interface CountlyDB : NSObject
 
-@property (readonly, strong, nonatomic) NSManagedObjectContext *managedObjectContext;
-@property (readonly, strong, nonatomic) NSManagedObjectModel *managedObjectModel;
-@property (readonly, strong, nonatomic) NSPersistentStoreCoordinator *persistentStoreCoordinator;
+@property (readonly, nonatomic) NSManagedObjectContext *managedObjectContext;
+@property (readonly, nonatomic) NSManagedObjectModel *managedObjectModel;
+@property (readonly, nonatomic) NSPersistentStoreCoordinator *persistentStoreCoordinator;
 
-+(CountlyDB*) sharedInstance;
++ (CountlyDB*) sharedInstance;
 
--(void)createEvent:(NSString*) eventKey count:(double)count sum:(double)sum segmentation:(NSDictionary*)segmentation timestamp:(double)timestamp;
--(void)addToQueue:(NSString*)postData;
--(void)deleteEvent:(NSManagedObject*)eventObj;
--(void)removeFromQueue:(NSManagedObject*)postDataObj;
--(NSArray*) getEvents;
--(NSArray*) getQueue;
--(NSUInteger)getEventCount;
--(NSUInteger)getQueueCount;
+- (void)createEvent:(NSString*) eventKey count:(double)count sum:(double)sum segmentation:(NSDictionary*)segmentation timestamp:(double)timestamp;
+- (void)addToQueue:(NSString*)postData;
+- (void)deleteEvent:(NSManagedObject*)eventObj;
+- (void)removeFromQueue:(NSManagedObject*)postDataObj;
+- (NSArray*)events;
+- (NSArray*)queue;
+- (NSUInteger)eventCount;
+- (NSUInteger)queueCount;
 - (void)saveContext;
 
 @end
