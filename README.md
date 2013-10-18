@@ -40,7 +40,8 @@ It should finally look like this:
 }
 </pre>
 
-Note: If your project uses automatic reference counting (ARC), you should disable it for the sources `Countly_OpenUDID.m` and `Countly.m`:
+Note: If your project uses automatic reference counting (ARC), you should disable it for the 
+sources `Countly.m`, `Countly_OpenUDID.m` and `CountlyDB.m`:
 
 1. Select your project
 2. Select the **Build Phases** tab
