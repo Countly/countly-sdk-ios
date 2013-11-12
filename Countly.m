@@ -24,6 +24,7 @@
 #define FAIL_LIMIT 5
 #define QUEUE_SEND_TRESHOLD 10
 #define TICK_DELAY_AFTER_FAIL 10
+#define DEFAULT_UPDATE_INTERVAL 30.0
 
 #import "Countly.h"
 #import "Countly_OpenUDID.h"
@@ -645,6 +646,12 @@ static Countly *s_sharedCountly = nil;
 #endif
 	}
 	return self;
+}
+
+- (NSTimeInterval)updateInterval {
+	if (_updateInterval==0)
+		self.updateInterval = DEFAULT_UPDATE_INTERVAL;
+	return _updateInterval;
 }
 
 - (void)start:(NSString *)appKey withHost:(NSString *)appHost {
