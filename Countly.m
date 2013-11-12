@@ -363,11 +363,11 @@ NSString* CountlyURLUnescapedString(NSString* string);
 
 @end
 
-@interface ConnectionQueue : NSObject
+@interface CountlyConnectionQueue : NSObject
 {
        int failCount;
 }
-+ (ConnectionQueue *)sharedInstance;
++ (CountlyConnectionQueue *)sharedInstance;
 
 @property (nonatomic, copy) NSString *appKey;
 @property (nonatomic, copy) NSString *appHost;
@@ -378,8 +378,8 @@ NSString* CountlyURLUnescapedString(NSString* string);
 
 @end
 
-static ConnectionQueue *s_sharedConnectionQueue = nil;
-@implementation ConnectionQueue : NSObject
+static CountlyConnectionQueue *s_sharedConnectionQueue = nil;
+@implementation CountlyConnectionQueue : NSObject
 
 + (instancetype)sharedInstance {
 	if (!s_sharedConnectionQueue) {
@@ -613,34 +613,34 @@ static Countly *s_sharedCountly = nil;
 										   userInfo:nil
 											repeats:YES];
 	lastTime = CFAbsoluteTimeGetCurrent();
-	ConnectionQueue.sharedInstance.appKey = appKey;
-	ConnectionQueue.sharedInstance.appHost = appHost;
-	[ConnectionQueue.sharedInstance beginSession];
+	CountlyConnectionQueue.sharedInstance.appKey = appKey;
+	CountlyConnectionQueue.sharedInstance.appHost = appHost;
+	[CountlyConnectionQueue.sharedInstance beginSession];
 }
 
 - (void)recordEvent:(NSString *)key count:(int)count {
     [eventQueue recordEvent:key count:count];
     
     if (eventQueue.count >= QUEUE_SEND_TRESHOLD)
-        [ConnectionQueue.sharedInstance recordEvents:eventQueue.events];
+        [CountlyConnectionQueue.sharedInstance recordEvents:eventQueue.events];
 }
 - (void)recordEvent:(NSString *)key count:(int)count sum:(double)sum {
     [eventQueue recordEvent:key count:count sum:sum];
     
     if (eventQueue.count >= QUEUE_SEND_TRESHOLD)
-        [ConnectionQueue.sharedInstance recordEvents:eventQueue.events];
+        [CountlyConnectionQueue.sharedInstance recordEvents:eventQueue.events];
 }
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count {
     [eventQueue recordEvent:key segmentation:segmentation count:count];
     
     if (eventQueue.count >= QUEUE_SEND_TRESHOLD)
-        [ConnectionQueue.sharedInstance recordEvents:eventQueue.events];
+        [CountlyConnectionQueue.sharedInstance recordEvents:eventQueue.events];
 }
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count sum:(double)sum {
     [eventQueue recordEvent:key segmentation:segmentation count:count sum:sum];
     
     if (eventQueue.count >= QUEUE_SEND_TRESHOLD)
-        [ConnectionQueue.sharedInstance recordEvents:eventQueue.events];
+        [CountlyConnectionQueue.sharedInstance recordEvents:eventQueue.events];
 }
 
 - (void)onTimer:(NSTimer *)timer {
@@ -652,35 +652,35 @@ static Countly *s_sharedCountly = nil;
 	lastTime = currTime;
     
 	int duration = unsentSessionLength;
-	[ConnectionQueue.sharedInstance updateSessionWithDuration:duration];
+	[CountlyConnectionQueue.sharedInstance updateSessionWithDuration:duration];
 	unsentSessionLength -= duration;
     
     if (eventQueue.count > 0)
-        [ConnectionQueue.sharedInstance recordEvents:eventQueue.events];
+        [CountlyConnectionQueue.sharedInstance recordEvents:eventQueue.events];
 }
 
 - (void)flushQueue {
     if (eventQueue.count > 0)
-        [ConnectionQueue.sharedInstance recordEvents:eventQueue.events];
+        [CountlyConnectionQueue.sharedInstance recordEvents:eventQueue.events];
 }
 
 - (void)suspend {
 	isSuspended = YES;
     
     if (eventQueue.count > 0)
-        [ConnectionQueue.sharedInstance recordEvents:eventQueue.events];
+        [CountlyConnectionQueue.sharedInstance recordEvents:eventQueue.events];
     
 	double currTime = CFAbsoluteTimeGetCurrent();
 	unsentSessionLength += currTime - lastTime;
     
 	int duration = unsentSessionLength;
-	[ConnectionQueue.sharedInstance endSessionWithDuration:duration];
+	[CountlyConnectionQueue.sharedInstance endSessionWithDuration:duration];
 	unsentSessionLength -= duration;
 }
 - (void)resume {
 	lastTime = CFAbsoluteTimeGetCurrent();
     
-	[ConnectionQueue.sharedInstance beginSession];
+	[CountlyConnectionQueue.sharedInstance beginSession];
     
 	isSuspended = NO;
 }
