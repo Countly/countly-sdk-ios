@@ -208,7 +208,7 @@ NSString* CountlyURLUnescapedString(NSString* string);
 
 @end
 
-@interface EventQueue : NSObject
+@interface CountlyEventQueue : NSObject
 
 - (NSUInteger)count;
 - (NSString *)events;
@@ -219,7 +219,7 @@ NSString* CountlyURLUnescapedString(NSString* string);
 
 @end
 
-@implementation EventQueue
+@implementation CountlyEventQueue
 
 - (void)dealloc {
     [super dealloc];
@@ -580,7 +580,7 @@ static Countly *s_sharedCountly = nil;
 }
 - (id)init {
 	if (self = [super init]) {
-        eventQueue = EventQueue.new;
+        eventQueue = CountlyEventQueue.new;
 		
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 		[NSNotificationCenter.defaultCenter addObserver:self

@@ -7,14 +7,14 @@
 
 #import <Foundation/Foundation.h>
 
-@class EventQueue;
+@class CountlyEventQueue;
 
 @interface Countly : NSObject {
 	double unsentSessionLength;
 	NSTimer *timer;
 	double lastTime;
 	BOOL isSuspended;
-    EventQueue *eventQueue;
+    CountlyEventQueue *eventQueue;
 }
 
 + (instancetype)sharedInstance;
