@@ -21,6 +21,10 @@
 
 #define COUNTLY_VERSION "1.0"
 
+#define FAIL_LIMIT 5
+#define QUEUE_COUNT 10
+#define TICK_DELAY_AFTER_FAIL 10
+
 #import "Countly.h"
 #import "Countly_OpenUDID.h"
 
@@ -407,7 +411,9 @@
 @end
 
 @interface ConnectionQueue : NSObject
-
+{
+       int failCount;
+}
 + (ConnectionQueue *)sharedInstance;
 
 @property (nonatomic, copy) NSString *appKey;
@@ -471,6 +477,7 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
     NSString *urlString = [NSString stringWithFormat:@"%@/i?%@", self.appHost, data];
     NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:urlString]];
     self.connection = [NSURLConnection connectionWithRequest:request delegate:self];
+    
 }
 
 - (void)beginSession {
@@ -532,6 +539,7 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 #endif
     
     self.connection = nil;
+    failCount = 0;
     
     [CountlyDB.sharedInstance removeFromQueue:[dataQueue objectAtIndex:0]];
     
@@ -539,15 +547,19 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 }
 
 - (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)err {
-    #if COUNTLY_DEBUG
-        NSArray* dataQueue = [[CountlyDB.sharedInstance.queue copy] autorelease];
-        COUNTLY_LOG(@"error -> %@: %@", [dataQueue objectAtIndex:0], err);
-    #endif
+    NSArray* dataQueue = [[CountlyDB.sharedInstance.queue copy] autorelease];
+#if COUNTLY_DEBUG
+    COUNTLY_LOG(@"error -> %@: %@", [dataQueue objectAtIndex:0], err);
+#endif
+
+    if (dataQueue.count == 0 || failCount > FAIL_LIMIT) return;
     
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 	[self stopBackgroundTask];
 #endif
     self.connection = nil;
+    failCount++;
+    [self performSelector:@selector(tick) withObject:nil afterDelay:TICK_DELAY_AFTER_FAIL];
 }
 
 #if COUNTLY_IGNORE_INVALID_CERTIFICATES
@@ -646,25 +658,25 @@ static Countly *s_sharedCountly = nil;
 - (void)recordEvent:(NSString *)key count:(int)count {
     [eventQueue recordEvent:key count:count];
     
-    if (eventQueue.count >= 10)
+    if (eventQueue.count >= QUEUE_COUNT)
         [ConnectionQueue.sharedInstance recordEvents:eventQueue.events];
 }
 - (void)recordEvent:(NSString *)key count:(int)count sum:(double)sum {
     [eventQueue recordEvent:key count:count sum:sum];
     
-    if (eventQueue.count >= 10)
+    if (eventQueue.count >= QUEUE_COUNT)
         [ConnectionQueue.sharedInstance recordEvents:eventQueue.events];
 }
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count {
     [eventQueue recordEvent:key segmentation:segmentation count:count];
     
-    if (eventQueue.count >= 10)
+    if (eventQueue.count >= QUEUE_COUNT)
         [ConnectionQueue.sharedInstance recordEvents:eventQueue.events];
 }
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count sum:(double)sum {
     [eventQueue recordEvent:key segmentation:segmentation count:count sum:sum];
     
-    if (eventQueue.count >= 10)
+    if (eventQueue.count >= QUEUE_COUNT)
         [ConnectionQueue.sharedInstance recordEvents:eventQueue.events];
 }
 
