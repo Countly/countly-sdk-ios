@@ -41,57 +41,9 @@
 #include <sys/types.h>
 #include <sys/sysctl.h>
 
-
-/// Utilities for encoding and decoding URL arguments.
-/// This code is from the project google-toolbox-for-mac
-@interface NSString (Countly_Additions)
-
-/// Returns a string that is escaped properly to be a URL argument.
-//
-/// This differs from stringByAddingPercentEscapesUsingEncoding: in that it
-/// will escape all the reserved characters (per RFC 3986
-/// <http://www.ietf.org/rfc/rfc3986.txt>) which
-/// stringByAddingPercentEscapesUsingEncoding would leave.
-///
-/// This will also escape '%', so this should not be used on a string that has
-/// already been escaped unless double-escaping is the desired result.
-- (NSString*)countly_stringByEscapingForURLArgument;
-
-/// Returns the unescaped version of a URL argument
-//
-/// This has the same behavior as stringByReplacingPercentEscapesUsingEncoding:,
-/// except that it will also convert '+' to space.
-- (NSString*)countly_stringByUnescapingFromURLArgument;
-
-@end
-
-#define GTMNSMakeCollectable(cf) ((id)(cf))
-#define GTMCFAutorelease(cf) ([GTMNSMakeCollectable(cf) autorelease])
-
-@implementation NSString (Countly_Additions)
-
-- (NSString*)countly_stringByEscapingForURLArgument {
-	// Encode all the reserved characters, per RFC 3986
-	// (<http://www.ietf.org/rfc/rfc3986.txt>)
-	CFStringRef escaped =
-    CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault,
-                                            (CFStringRef)self,
-                                            NULL,
-                                            (CFStringRef)@"!*'();:@&=+$,/?%#[]",
-                                            kCFStringEncodingUTF8);
-	return GTMCFAutorelease(escaped);
-}
-
-- (NSString*)countly_stringByUnescapingFromURLArgument {
-	NSMutableString *resultString = [NSMutableString stringWithString:self];
-	[resultString replaceOccurrencesOfString:@"+"
-								  withString:@" "
-									 options:NSLiteralSearch
-									   range:NSMakeRange(0, [resultString length])];
-	return [resultString stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
-}
-
-@end
+NSString* CountlyJSONFromObject(id object);
+NSString* CountlyURLEscapedString(NSString* string);
+NSString* CountlyURLUnescapedString(NSString* string);
 
 @interface DeviceInfo : NSObject
 
@@ -207,9 +159,9 @@
 	[metricsDictionary setObject:DeviceInfo.locale forKey:@"_locale"];
 	[metricsDictionary setObject:DeviceInfo.appVersion forKey:@"_app_version"];
 	
-	NSString* json = _countly_jsonFromObject(metricsDictionary);
+	NSString* json = CountlyJSONFromObject(metricsDictionary);
     
-	return [json countly_stringByEscapingForURLArgument];
+	return CountlyURLEscapedString(json);
 }
 
 @end
@@ -295,7 +247,7 @@
         
     }
     
-	return [_countly_jsonFromObject(result) countly_stringByEscapingForURLArgument];
+	return CountlyURLEscapedString(CountlyJSONFromObject(result));
 }
 - (void)recordEvent:(NSString *)key count:(int)count {
     @synchronized (self) {
@@ -752,7 +704,9 @@ static Countly *s_sharedCountly = nil;
 
 @end
 
-NSString* _countly_jsonFromObject(id object) {
+#pragma mark - Supplemental Functions
+
+NSString* CountlyJSONFromObject(id object) {
 	NSError *err = nil;
 	
 	NSData *data = [NSJSONSerialization dataWithJSONObject:object
@@ -763,4 +717,23 @@ NSString* _countly_jsonFromObject(id object) {
 		NSLog(@"%@", [err description]);
 	
 	return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding].autorelease;
+}
+NSString* CountlyURLEscapedString(NSString* string) {
+	// Encode all the reserved characters, per RFC 3986
+	// (<http://www.ietf.org/rfc/rfc3986.txt>)
+	CFStringRef escaped =
+    CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault,
+                                            (CFStringRef)string,
+                                            NULL,
+                                            (CFStringRef)@"!*'();:@&=+$,/?%#[]",
+                                            kCFStringEncodingUTF8);
+	return [(NSString*)escaped autorelease];
+}
+NSString* CountlyURLUnescapedString(NSString* string) {
+	NSMutableString *resultString = [NSMutableString stringWithString:string];
+	[resultString replaceOccurrencesOfString:@"+"
+								  withString:@" "
+									 options:NSLiteralSearch
+									   range:NSMakeRange(0, [resultString length])];
+	return [resultString stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
 }

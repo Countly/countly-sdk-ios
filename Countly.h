@@ -31,5 +31,3 @@
 @property (nonatomic, assign) NSTimeInterval updateInterval;
 
 @end
-
-NSString* _countly_jsonFromObject(id object);
