@@ -116,7 +116,7 @@ static int const kOpenUDIDRedundancySlots = 100;
     
     // August 2011: One day, this may no longer be allowed in iOS. When that is, just comment this line out.
     // March 25th 2012: this day has come, let's remove this "outlawed" call... 
-#if TARGET_OS_IPHONE	
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR	
 //    if([UIDevice instancesRespondToSelector:@selector(uniqueIdentifier)]){
 //        _openUDID = [[UIDevice currentDevice] uniqueIdentifier];
 //    }
@@ -135,17 +135,17 @@ static int const kOpenUDIDRedundancySlots = 100;
         CFStringRef cfstring = CFUUIDCreateString(kCFAllocatorDefault, uuid);
         const char *cStr = CFStringGetCStringPtr(cfstring,CFStringGetFastestEncoding(cfstring));
         unsigned char result[16];
-        CC_MD5( cStr, strlen(cStr), result );
+        CC_MD5( cStr, (CC_LONG)strlen(cStr), result );
         CFRelease(cfstring);
         CFRelease(uuid);
 
         _openUDID = [NSString stringWithFormat:
-                @"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%08x",
+                @"%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%08lx",
                 result[0], result[1], result[2], result[3], 
                 result[4], result[5], result[6], result[7],
                 result[8], result[9], result[10], result[11],
                 result[12], result[13], result[14], result[15],
-                     (NSUInteger)(arc4random() % NSUIntegerMax)];  
+                     (unsigned long)(arc4random() % NSUIntegerMax)];
     }
     
     // Call to other developers in the Open Source community:

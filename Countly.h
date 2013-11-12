@@ -7,28 +7,27 @@
 
 #import <Foundation/Foundation.h>
 
-@class EventQueue;
+@class CountlyEventQueue;
 
 @interface Countly : NSObject {
 	double unsentSessionLength;
 	NSTimer *timer;
 	double lastTime;
 	BOOL isSuspended;
-    EventQueue *eventQueue;
+    CountlyEventQueue *eventQueue;
 }
 
-+ (Countly *)sharedInstance;
++ (instancetype)sharedInstance;
 
 - (void)start:(NSString *)appKey withHost:(NSString *)appHost;
 
 - (void)recordEvent:(NSString *)key count:(int)count;
-
 - (void)recordEvent:(NSString *)key count:(int)count sum:(double)sum;
-
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count;
-
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count sum:(double)sum;
 
+- (void)flushQueue;
+
+@property (nonatomic, assign) NSTimeInterval updateInterval;
+
 @end
-
-
