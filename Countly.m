@@ -45,7 +45,7 @@ NSString* CountlyJSONFromObject(id object);
 NSString* CountlyURLEscapedString(NSString* string);
 NSString* CountlyURLUnescapedString(NSString* string);
 
-@interface DeviceInfo : NSObject
+@interface CountlyDeviceInfo : NSObject
 
 + (NSString *)udid;
 + (NSString *)device;
@@ -59,7 +59,7 @@ NSString* CountlyURLUnescapedString(NSString* string);
 
 @end
 
-@implementation DeviceInfo
+@implementation CountlyDeviceInfo
 
 + (NSString *)udid {
 	return [Countly_OpenUDID value];
@@ -146,18 +146,18 @@ NSString* CountlyURLUnescapedString(NSString* string);
 
 + (NSString *)metrics {
 	NSMutableDictionary* metricsDictionary = NSMutableDictionary.dictionary;
-	[metricsDictionary setObject:DeviceInfo.device forKey:@"_device"];
+	[metricsDictionary setObject:CountlyDeviceInfo.device forKey:@"_device"];
 	[metricsDictionary setObject:@"iOS" forKey:@"_os"];
-	[metricsDictionary setObject:DeviceInfo.osVersion forKey:@"_os_version"];
+	[metricsDictionary setObject:CountlyDeviceInfo.osVersion forKey:@"_os_version"];
     
-	NSString *carrier = DeviceInfo.carrier;
+	NSString *carrier = CountlyDeviceInfo.carrier;
 	if (carrier) {
 		[metricsDictionary setObject:carrier forKey:@"_carrier"];
 	}
 
-	[metricsDictionary setObject:DeviceInfo.resolution forKey:@"_resolution"];
-	[metricsDictionary setObject:DeviceInfo.locale forKey:@"_locale"];
-	[metricsDictionary setObject:DeviceInfo.appVersion forKey:@"_app_version"];
+	[metricsDictionary setObject:CountlyDeviceInfo.resolution forKey:@"_resolution"];
+	[metricsDictionary setObject:CountlyDeviceInfo.locale forKey:@"_locale"];
+	[metricsDictionary setObject:CountlyDeviceInfo.appVersion forKey:@"_app_version"];
 	
 	NSString* json = CountlyJSONFromObject(metricsDictionary);
     
@@ -436,9 +436,9 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 - (void)beginSession {
 	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_VERSION"&begin_session=1&metrics=%@",
 					  self.appKey,
-					  [DeviceInfo udid],
+					  [CountlyDeviceInfo udid],
 					  time(NULL),
-					  [DeviceInfo metrics]];
+					  [CountlyDeviceInfo metrics]];
     
     [CountlyDB.sharedInstance addToQueue:data];
     
@@ -448,7 +448,7 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 - (void)updateSessionWithDuration:(int)duration {
 	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&session_duration=%d",
 					  self.appKey,
-					  [DeviceInfo udid],
+					  [CountlyDeviceInfo udid],
 					  time(NULL),
 					  duration];
     
@@ -460,7 +460,7 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 - (void)endSessionWithDuration:(int)duration {
 	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&end_session=1&session_duration=%d",
 					  self.appKey,
-					  [DeviceInfo udid],
+					  [CountlyDeviceInfo udid],
 					  time(NULL),
 					  duration];
     
@@ -472,7 +472,7 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 - (void)recordEvents:(NSString *)events {
 	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&events=%@",
 					  self.appKey,
-					  [DeviceInfo udid],
+					  [CountlyDeviceInfo udid],
 					  time(NULL),
 					  events];
     
