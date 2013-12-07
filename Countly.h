@@ -15,6 +15,7 @@
 	double lastTime;
 	BOOL isSuspended;
     EventQueue *eventQueue;
+    NSTimeInterval _updateInterval;
 }
 
 @property (nonatomic, assign) NSTimeInterval updateInterval;

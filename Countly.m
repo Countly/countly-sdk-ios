@@ -136,7 +136,7 @@
     Gestalt(gestaltSystemVersionMinor, &minorVersion);
     Gestalt(gestaltSystemVersionBugFix, &bugFixVersion);
     
-    NSString *systemVersion = (bugFixVersion > 0) ? [NSString stringWithFormat:@"%d.%d.%d", majorVersion, minorVersion, bugFixVersion] : [NSString stringWithFormat:@"%d.%d", majorVersion, minorVersion];
+    NSString *systemVersion = (bugFixVersion > 0) ? [NSString stringWithFormat:@"%d.%d.%d", (int)majorVersion, (int)minorVersion, (int)bugFixVersion] : [NSString stringWithFormat:@"%d.%d", (int)majorVersion, (int)minorVersion];
     return systemVersion;
 #endif
 }
@@ -214,6 +214,11 @@
 
 @interface CountlyEvent : NSObject
 {
+    NSString *key_;
+    NSDictionary *segmentation_;
+    int count_;
+    double sum_;
+    double timestamp_;
 }
 
 @property (nonatomic, copy) NSString *key;
@@ -633,6 +638,8 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 static Countly *s_sharedCountly = nil;
 
 @implementation Countly
+
+@synthesize updateInterval = _updateInterval;
 
 + (Countly *)sharedInstance
 {
