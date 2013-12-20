@@ -65,7 +65,8 @@
 
 @implementation NSString (GTMNSStringURLArgumentsAdditions)
 
-- (NSString*)gtm_stringByEscapingForURLArgument {
+- (NSString*)gtm_stringByEscapingForURLArgument
+{
 	// Encode all the reserved characters, per RFC 3986
 	// (<http://www.ietf.org/rfc/rfc3986.txt>)
 	CFStringRef escaped =
@@ -77,7 +78,8 @@
 	return GTMCFAutorelease(escaped);
 }
 
-- (NSString*)gtm_stringByUnescapingFromURLArgument {
+- (NSString*)gtm_stringByUnescapingFromURLArgument
+{
 	NSMutableString *resultString = [NSMutableString stringWithString:self];
 	[resultString replaceOccurrencesOfString:@"+"
 								  withString:@" "
@@ -262,7 +264,6 @@
         NSArray* events = [[[CountlyDB sharedInstance] getEvents] copy];
         for (NSUInteger i = 0; i < events.count; ++i)
         {
-            
             CountlyEvent *event = [self convertNSManagedObjectToCountlyEvent:[events objectAtIndex:i]];
             
             result = [result stringByAppendingString:@"{"];
@@ -306,7 +307,6 @@
         }
         
         [events release];
-        
     }
     
     result = [result stringByAppendingString:@"]"];
@@ -316,7 +316,8 @@
 	return result;
 }
 
--(CountlyEvent*) convertNSManagedObjectToCountlyEvent:(NSManagedObject*)managedObject{
+-(CountlyEvent*) convertNSManagedObjectToCountlyEvent:(NSManagedObject*)managedObject
+{
     CountlyEvent* event = [[CountlyEvent alloc] init];
     event.key = [managedObject valueForKey:@"key"];
     if ([managedObject valueForKey:@"count"])

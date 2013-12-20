@@ -9,7 +9,8 @@
 
 @class CountlyEventQueue;
 
-@interface Countly : NSObject {
+@interface Countly : NSObject
+{
 	double unsentSessionLength;
 	NSTimer *timer;
 	double lastTime;
