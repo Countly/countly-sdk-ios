@@ -4,6 +4,7 @@
 //
 // Please visit www.count.ly for more information.
 
+#pragma mark - Directives
 
 #ifndef COUNTLY_DEBUG
 #define COUNTLY_DEBUG 0
@@ -20,6 +21,8 @@
 #endif
 
 #define COUNTLY_VERSION "1.0"
+#define COUNTLY_DEFAULT_UPDATE_INTERVAL 60.0
+#define COUNTLY_EVENT_SEND_THRESHOLD 10
 
 #import "Countly.h"
 #import "Countly_OpenUDID.h"
@@ -31,6 +34,8 @@
 #include <sys/types.h>
 #include <sys/sysctl.h>
 
+
+#pragma mark - Category - GTMNSStringURLArgumentsAdditions
 
 /// Utilities for encoding and decoding URL arguments.
 /// This code is from the project google-toolbox-for-mac
@@ -84,12 +89,14 @@
 @end
 
 
-@interface DeviceInfo : NSObject
+#pragma mark - CountlyDeviceInfo
+
+@interface CountlyDeviceInfo : NSObject
 {
 }
 @end
 
-@implementation DeviceInfo
+@implementation CountlyDeviceInfo
 
 + (NSString *)udid
 {
@@ -152,21 +159,21 @@
 {
 	NSString *result = @"{";
     
-	result = [result stringByAppendingFormat:@"\"%@\":\"%@\"", @"_device", [DeviceInfo device]];
+	result = [result stringByAppendingFormat:@"\"%@\":\"%@\"", @"_device", [CountlyDeviceInfo device]];
     
 	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_os", @"iOS"];
     
-	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_os_version", [DeviceInfo osVersion]];
+	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_os_version", [CountlyDeviceInfo osVersion]];
     
-	NSString *carrier = [DeviceInfo carrier];
+	NSString *carrier = [CountlyDeviceInfo carrier];
 	if (carrier != nil)
 		result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_carrier", carrier];
     
-	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_resolution", [DeviceInfo resolution]];
+	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_resolution", [CountlyDeviceInfo resolution]];
     
-	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_locale", [DeviceInfo locale]];
+	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_locale", [CountlyDeviceInfo locale]];
     
-	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_app_version", [DeviceInfo appVersion]];
+	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_app_version", [CountlyDeviceInfo appVersion]];
     
 	result = [result stringByAppendingString:@"}"];
     
@@ -176,6 +183,9 @@
 }
 
 @end
+
+
+#pragma mark - CountlyEvent
 
 @interface CountlyEvent : NSObject
 {
@@ -219,12 +229,15 @@
 
 @end
 
-@interface EventQueue : NSObject
+
+#pragma mark - CountlyEventQueue
+
+@interface CountlyEventQueue : NSObject
 
 @end
 
 
-@implementation EventQueue
+@implementation CountlyEventQueue
 
 - (void)dealloc
 {
@@ -462,7 +475,10 @@
 
 @end
 
-@interface ConnectionQueue : NSObject
+
+#pragma mark - CountlyConnectionQueue
+
+@interface CountlyConnectionQueue : NSObject
 {
 	NSURLConnection *connection_;
 	UIBackgroundTaskIdentifier bgTask_;
@@ -475,19 +491,19 @@
 
 @end
 
-static ConnectionQueue *s_sharedConnectionQueue = nil;
+static CountlyConnectionQueue *s_sharedCountlyConnectionQueue = nil;
 
-@implementation ConnectionQueue : NSObject
+@implementation CountlyConnectionQueue : NSObject
 
 @synthesize appKey;
 @synthesize appHost;
 
-+ (ConnectionQueue *)sharedInstance
++ (CountlyConnectionQueue *)sharedInstance
 {
-	if (s_sharedConnectionQueue == nil)
-		s_sharedConnectionQueue = [[ConnectionQueue alloc] init];
+	if (s_sharedCountlyConnectionQueue == nil)
+		s_sharedCountlyConnectionQueue = [[CountlyConnectionQueue alloc] init];
     
-	return s_sharedConnectionQueue;
+	return s_sharedCountlyConnectionQueue;
 }
 
 - (id)init
@@ -527,9 +543,9 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 {
 	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_VERSION"&begin_session=1&metrics=%@",
 					  appKey,
-					  [DeviceInfo udid],
+					  [CountlyDeviceInfo udid],
 					  time(NULL),
-					  [DeviceInfo metrics]];
+					  [CountlyDeviceInfo metrics]];
     
     [[CountlyDB sharedInstance] addToQueue:data];
     
@@ -540,7 +556,7 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 {
 	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&session_duration=%d",
 					  appKey,
-					  [DeviceInfo udid],
+					  [CountlyDeviceInfo udid],
 					  time(NULL),
 					  duration];
     
@@ -553,7 +569,7 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 {
 	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&end_session=1&session_duration=%d",
 					  appKey,
-					  [DeviceInfo udid],
+					  [CountlyDeviceInfo udid],
 					  time(NULL),
 					  duration];
     
@@ -566,7 +582,7 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 {
 	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&events=%@",
 					  appKey,
-					  [DeviceInfo udid],
+					  [CountlyDeviceInfo udid],
 					  time(NULL),
 					  events];
     
@@ -638,6 +654,9 @@ static ConnectionQueue *s_sharedConnectionQueue = nil;
 
 @end
 
+
+#pragma mark - Countly Core
+
 static Countly *s_sharedCountly = nil;
 
 @implementation Countly
@@ -657,7 +676,7 @@ static Countly *s_sharedCountly = nil;
 		timer = nil;
 		isSuspended = NO;
 		unsentSessionLength = 0;
-        eventQueue = [[EventQueue alloc] init];
+        eventQueue = [[CountlyEventQueue alloc] init];
 		
 		[[NSNotificationCenter defaultCenter] addObserver:self
 												 selector:@selector(didEnterBackgroundCallBack:)
@@ -677,47 +696,47 @@ static Countly *s_sharedCountly = nil;
 
 - (void)start:(NSString *)appKey withHost:(NSString *)appHost
 {
-	timer = [NSTimer scheduledTimerWithTimeInterval:60.0
+	timer = [NSTimer scheduledTimerWithTimeInterval:COUNTLY_DEFAULT_UPDATE_INTERVAL
 											 target:self
 										   selector:@selector(onTimer:)
 										   userInfo:nil
 											repeats:YES];
 	lastTime = CFAbsoluteTimeGetCurrent();
-	[[ConnectionQueue sharedInstance] setAppKey:appKey];
-	[[ConnectionQueue sharedInstance] setAppHost:appHost];
-	[[ConnectionQueue sharedInstance] beginSession];
+	[[CountlyConnectionQueue sharedInstance] setAppKey:appKey];
+	[[CountlyConnectionQueue sharedInstance] setAppHost:appHost];
+	[[CountlyConnectionQueue sharedInstance] beginSession];
 }
 
 - (void)recordEvent:(NSString *)key count:(int)count
 {
     [eventQueue recordEvent:key count:count];
     
-    if (eventQueue.count >= 10)
-        [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
+    if (eventQueue.count >= COUNTLY_EVENT_SEND_THRESHOLD)
+        [[CountlyConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
 }
 
 - (void)recordEvent:(NSString *)key count:(int)count sum:(double)sum
 {
     [eventQueue recordEvent:key count:count sum:sum];
     
-    if (eventQueue.count >= 10)
-        [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
+    if (eventQueue.count >= COUNTLY_EVENT_SEND_THRESHOLD)
+        [[CountlyConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count
 {
     [eventQueue recordEvent:key segmentation:segmentation count:count];
     
-    if (eventQueue.count >= 10)
-        [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
+    if (eventQueue.count >= COUNTLY_EVENT_SEND_THRESHOLD)
+        [[CountlyConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count sum:(double)sum
 {
     [eventQueue recordEvent:key segmentation:segmentation count:count sum:sum];
     
-    if (eventQueue.count >= 10)
-        [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
+    if (eventQueue.count >= COUNTLY_EVENT_SEND_THRESHOLD)
+        [[CountlyConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
 }
 
 - (void)onTimer:(NSTimer *)timer
@@ -730,11 +749,11 @@ static Countly *s_sharedCountly = nil;
 	lastTime = currTime;
     
 	int duration = unsentSessionLength;
-	[[ConnectionQueue sharedInstance] updateSessionWithDuration:duration];
+	[[CountlyConnectionQueue sharedInstance] updateSessionWithDuration:duration];
 	unsentSessionLength -= duration;
     
     if (eventQueue.count > 0)
-        [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
+        [[CountlyConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
 }
 
 - (void)suspend
@@ -742,13 +761,13 @@ static Countly *s_sharedCountly = nil;
 	isSuspended = YES;
     
     if (eventQueue.count > 0)
-        [[ConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
+        [[CountlyConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
     
 	double currTime = CFAbsoluteTimeGetCurrent();
 	unsentSessionLength += currTime - lastTime;
     
 	int duration = unsentSessionLength;
-	[[ConnectionQueue sharedInstance] endSessionWithDuration:duration];
+	[[CountlyConnectionQueue sharedInstance] endSessionWithDuration:duration];
 	unsentSessionLength -= duration;
 }
 
@@ -756,7 +775,7 @@ static Countly *s_sharedCountly = nil;
 {
 	lastTime = CFAbsoluteTimeGetCurrent();
     
-	[[ConnectionQueue sharedInstance] beginSession];
+	[[CountlyConnectionQueue sharedInstance] beginSession];
     
 	isSuspended = NO;
 }
