@@ -28,14 +28,15 @@
 @synthesize managedObjectModel = _managedObjectModel;
 @synthesize persistentStoreCoordinator = _persistentStoreCoordinator;
 
-+(CountlyDB*) sharedInstance
++(instancetype)sharedInstance
 {
-    static CountlyDB* _sharedInstance;
-    if (!_sharedInstance) _sharedInstance = [[CountlyDB alloc] init];
-    return _sharedInstance;
+    static CountlyDB* s_sharedCountlyDB;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{s_sharedCountlyDB = self.new;});
+	return s_sharedCountlyDB;
 }
 
-- (void)dealloc
+-(void)dealloc
 {
     [_managedObjectContext release];
     [_managedObjectModel release];
@@ -165,23 +166,25 @@
     return [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject];
 }
 
-#pragma mark - Core Data stack
+#pragma mark - Core Data Stack
 
 // Returns the managed object context for the application.
 // If the context doesn't already exist, it is created and bound to the persistent store coordinator for the application.
 - (NSManagedObjectContext *)managedObjectContext
 {
     if (_managedObjectContext != nil)
-    {
         return _managedObjectContext;
-    }
     
-    NSPersistentStoreCoordinator *coordinator = [self persistentStoreCoordinator];
-    if (coordinator != nil)
-    {
-        _managedObjectContext = [[NSManagedObjectContext alloc] init];
-        [_managedObjectContext setPersistentStoreCoordinator:coordinator];
-    }
+    static dispatch_once_t onceToken;
+	dispatch_once(&onceToken, ^{
+        NSPersistentStoreCoordinator *coordinator = [self persistentStoreCoordinator];
+        if (coordinator != nil)
+        {
+            _managedObjectContext = [[NSManagedObjectContext alloc] init];
+            [_managedObjectContext setPersistentStoreCoordinator:coordinator];
+        }
+    });
+    
     return _managedObjectContext;
 }
 
@@ -190,11 +193,14 @@
 - (NSManagedObjectModel *)managedObjectModel
 {
     if (_managedObjectModel != nil)
-    {
         return _managedObjectModel;
-    }
-    NSURL *modelURL = [[NSBundle mainBundle] URLForResource:@"Countly" withExtension:@"momd"];
-    _managedObjectModel = [[NSManagedObjectModel alloc] initWithContentsOfURL:modelURL];
+
+    static dispatch_once_t onceToken;
+	dispatch_once(&onceToken, ^{
+        NSURL *modelURL = [[NSBundle mainBundle] URLForResource:@"Countly" withExtension:@"momd"];
+        _managedObjectModel = [[NSManagedObjectModel alloc] initWithContentsOfURL:modelURL];
+    });
+
     return _managedObjectModel;
 }
 
@@ -203,19 +209,17 @@
 - (NSPersistentStoreCoordinator *)persistentStoreCoordinator
 {
     if (_persistentStoreCoordinator != nil)
-    {
         return _persistentStoreCoordinator;
-    }
     
-    NSURL *storeURL = [[self applicationDocumentsDirectory] URLByAppendingPathComponent:@"Countly.sqlite"];
+    static dispatch_once_t onceToken;
+	dispatch_once(&onceToken, ^{
+        NSURL *storeURL = [[self applicationDocumentsDirectory] URLByAppendingPathComponent:@"Countly.sqlite"];
+        NSError *error = nil;
+        _persistentStoreCoordinator = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:[self managedObjectModel]];
+        if (![_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:nil error:&error])
+            COUNTLY_LOG(@"Unresolved error %@, %@", error, [error userInfo]);
+    });
 
-    NSError *error = nil;
-    _persistentStoreCoordinator = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:[self managedObjectModel]];
-    if (![_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:nil error:&error])
-    {
-        NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
-    }
-    
     return _persistentStoreCoordinator;
 }
 

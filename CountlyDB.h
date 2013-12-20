@@ -15,7 +15,7 @@
 @property (readonly, strong, nonatomic) NSManagedObjectModel *managedObjectModel;
 @property (readonly, strong, nonatomic) NSPersistentStoreCoordinator *persistentStoreCoordinator;
 
-+(CountlyDB*) sharedInstance;
++(instancetype)sharedInstance;
 
 -(void)createEvent:(NSString*) eventKey count:(double)count sum:(double)sum segmentation:(NSDictionary*)segmentation timestamp:(double)timestamp;
 -(void)addToQueue:(NSString*)postData;

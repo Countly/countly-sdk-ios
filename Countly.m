@@ -487,23 +487,24 @@
 	NSString *appHost;
 }
 
++ (instancetype)sharedInstance;
+
 @property (nonatomic, copy) NSString *appKey;
 @property (nonatomic, copy) NSString *appHost;
 
 @end
 
-static CountlyConnectionQueue *s_sharedCountlyConnectionQueue = nil;
 
 @implementation CountlyConnectionQueue : NSObject
 
 @synthesize appKey;
 @synthesize appHost;
 
-+ (CountlyConnectionQueue *)sharedInstance
++ (instancetype)sharedInstance
 {
-	if (s_sharedCountlyConnectionQueue == nil)
-		s_sharedCountlyConnectionQueue = [[CountlyConnectionQueue alloc] init];
-    
+    static CountlyConnectionQueue *s_sharedCountlyConnectionQueue = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{s_sharedCountlyConnectionQueue = self.new;});
 	return s_sharedCountlyConnectionQueue;
 }
 
@@ -658,15 +659,13 @@ static CountlyConnectionQueue *s_sharedCountlyConnectionQueue = nil;
 
 #pragma mark - Countly Core
 
-static Countly *s_sharedCountly = nil;
-
 @implementation Countly
 
-+ (Countly *)sharedInstance
++ (instancetype)sharedInstance
 {
-	if (s_sharedCountly == nil)
-		s_sharedCountly = [[Countly alloc] init];
-    
+    static Countly *s_sharedCountly = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{s_sharedCountly = self.new;});
 	return s_sharedCountly;
 }
 
