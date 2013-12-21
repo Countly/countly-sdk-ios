@@ -35,52 +35,39 @@
 #include <sys/sysctl.h>
 
 
-#pragma mark - Category - GTMNSStringURLArgumentsAdditions
+#pragma mark - Helper Functions
 
-/// Utilities for encoding and decoding URL arguments.
-/// This code is from the project google-toolbox-for-mac
-@interface NSString (GTMNSStringURLArgumentsAdditions)
+NSString* CountlyJSONFromObject(id object);
+NSString* CountlyURLEscapedString(NSString* string);
+NSString* CountlyURLUnescapedString(NSString* string);
 
-/// Returns a string that is escaped properly to be a URL argument.
-//
-/// This differs from stringByAddingPercentEscapesUsingEncoding: in that it
-/// will escape all the reserved characters (per RFC 3986
-/// <http://www.ietf.org/rfc/rfc3986.txt>) which
-/// stringByAddingPercentEscapesUsingEncoding would leave.
-///
-/// This will also escape '%', so this should not be used on a string that has
-/// already been escaped unless double-escaping is the desired result.
-- (NSString*)gtm_stringByEscapingForURLArgument;
+NSString* CountlyJSONFromObject(id object)
+{
+	NSError *error = nil;
+	NSData *data = [NSJSONSerialization dataWithJSONObject:object options:0 error:&error];
+	
+	if (error)
+        COUNTLY_LOG(@"%@", [err description]);
+	
+	return [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease];
+}
 
-/// Returns the unescaped version of a URL argument
-//
-/// This has the same behavior as stringByReplacingPercentEscapesUsingEncoding:,
-/// except that it will also convert '+' to space.
-- (NSString*)gtm_stringByUnescapingFromURLArgument;
-
-@end
-
-#define GTMNSMakeCollectable(cf) ((id)(cf))
-#define GTMCFAutorelease(cf) ([GTMNSMakeCollectable(cf) autorelease])
-
-@implementation NSString (GTMNSStringURLArgumentsAdditions)
-
-- (NSString*)gtm_stringByEscapingForURLArgument
+NSString* CountlyURLEscapedString(NSString* string)
 {
 	// Encode all the reserved characters, per RFC 3986
 	// (<http://www.ietf.org/rfc/rfc3986.txt>)
 	CFStringRef escaped =
     CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault,
-                                            (CFStringRef)self,
+                                            (CFStringRef)string,
                                             NULL,
                                             (CFStringRef)@"!*'();:@&=+$,/?%#[]",
                                             kCFStringEncodingUTF8);
-	return GTMCFAutorelease(escaped);
+	return [(NSString*)escaped autorelease];
 }
 
-- (NSString*)gtm_stringByUnescapingFromURLArgument
+NSString* CountlyURLUnescapedString(NSString* string)
 {
-	NSMutableString *resultString = [NSMutableString stringWithString:self];
+	NSMutableString *resultString = [NSMutableString stringWithString:string];
 	[resultString replaceOccurrencesOfString:@"+"
 								  withString:@" "
 									 options:NSLiteralSearch
@@ -88,14 +75,21 @@
 	return [resultString stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
 }
 
-@end
-
 
 #pragma mark - CountlyDeviceInfo
 
 @interface CountlyDeviceInfo : NSObject
-{
-}
+
++ (NSString *)udid;
++ (NSString *)device;
++ (NSString *)osVersion;
++ (NSString *)carrier;
++ (NSString *)resolution;
++ (NSString *)locale;
++ (NSString *)appVersion;
+
++ (NSString *)metrics;
+
 @end
 
 @implementation CountlyDeviceInfo
@@ -159,29 +153,20 @@
 
 + (NSString *)metrics
 {
-	NSString *result = @"{";
+    NSMutableDictionary* metricsDictionary = [NSMutableDictionary dictionary];
+	[metricsDictionary setObject:CountlyDeviceInfo.device forKey:@"_device"];
+	[metricsDictionary setObject:@"iOS" forKey:@"_os"];
+	[metricsDictionary setObject:CountlyDeviceInfo.osVersion forKey:@"_os_version"];
     
-	result = [result stringByAppendingFormat:@"\"%@\":\"%@\"", @"_device", [CountlyDeviceInfo device]];
-    
-	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_os", @"iOS"];
-    
-	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_os_version", [CountlyDeviceInfo osVersion]];
-    
-	NSString *carrier = [CountlyDeviceInfo carrier];
-	if (carrier != nil)
-		result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_carrier", carrier];
-    
-	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_resolution", [CountlyDeviceInfo resolution]];
-    
-	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_locale", [CountlyDeviceInfo locale]];
-    
-	result = [result stringByAppendingFormat:@",\"%@\":\"%@\"", @"_app_version", [CountlyDeviceInfo appVersion]];
-    
-	result = [result stringByAppendingString:@"}"];
-    
-	result = [result gtm_stringByEscapingForURLArgument];
-    
-	return result;
+	NSString *carrier = CountlyDeviceInfo.carrier;
+	if (carrier)
+        [metricsDictionary setObject:carrier forKey:@"_carrier"];
+
+	[metricsDictionary setObject:CountlyDeviceInfo.resolution forKey:@"_resolution"];
+	[metricsDictionary setObject:CountlyDeviceInfo.locale forKey:@"_locale"];
+	[metricsDictionary setObject:CountlyDeviceInfo.appVersion forKey:@"_app_version"];
+	
+	return CountlyURLEscapedString(CountlyJSONFromObject(metricsDictionary));
 }
 
 @end
@@ -311,7 +296,7 @@
     
     result = [result stringByAppendingString:@"]"];
     
-    result = [result gtm_stringByEscapingForURLArgument];
+    result = CountlyURLEscapedString(result);
     
 	return result;
 }
