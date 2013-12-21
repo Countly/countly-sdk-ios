@@ -214,6 +214,32 @@ NSString* CountlyURLUnescapedString(NSString* string)
     [super dealloc];
 }
 
++ (CountlyEvent*)objectWithManagedObject:(NSManagedObject*)managedObject
+{
+	CountlyEvent* event = [[CountlyEvent new] autorelease];
+	
+	event.key = [managedObject valueForKey:@"key"];
+	event.count = [[managedObject valueForKey:@"count"] doubleValue];
+	event.sum = [[managedObject valueForKey:@"sum"] doubleValue];
+	event.timestamp = [[managedObject valueForKey:@"timestamp"] doubleValue];
+	event.segmentation = [managedObject valueForKey:@"segmentation"];
+    return event;
+}
+
+- (NSDictionary*)serializedData
+{
+	NSMutableDictionary* eventData = NSMutableDictionary.dictionary;
+	[eventData setObject:self.key forKey:@"key"];
+	if (self.segmentation)
+    {
+		[eventData setObject:self.segmentation forKey:@"segmentation"];
+	}
+	[eventData setObject:@(self.count) forKey:@"count"];
+	[eventData setObject:@(self.sum) forKey:@"sum"];
+	[eventData setObject:@(self.timestamp) forKey:@"timestamp"];
+	return eventData;
+}
+
 @end
 
 
@@ -242,78 +268,22 @@ NSString* CountlyURLUnescapedString(NSString* string)
 
 - (NSString *)events
 {
-    NSString *result = @"[";
+    NSMutableArray* result = [NSMutableArray array];
     
-    @synchronized (self)
+	@synchronized (self)
     {
-        NSArray* events = [[[CountlyDB sharedInstance] getEvents] copy];
-        for (NSUInteger i = 0; i < events.count; ++i)
+		NSArray* events = [[[[CountlyDB sharedInstance] getEvents] copy] autorelease];
+		for (id managedEventObject in events)
         {
-            CountlyEvent *event = [self convertNSManagedObjectToCountlyEvent:[events objectAtIndex:i]];
+			CountlyEvent* event = [CountlyEvent objectWithManagedObject:managedEventObject];
             
-            result = [result stringByAppendingString:@"{"];
+			[result addObject:event.serializedData];
             
-            result = [result stringByAppendingFormat:@"\"%@\":\"%@\"", @"key", event.key];
-            
-            if (event.segmentation)
-            {
-                NSString *segmentation = @"{";
-                
-                NSArray *keys = [event.segmentation allKeys];
-                for (NSUInteger i = 0; i < keys.count; ++i)
-                {
-                    NSString *key = [keys objectAtIndex:i];
-                    NSString *value = [event.segmentation objectForKey:key];
-                    
-                    segmentation = [segmentation stringByAppendingFormat:@"\"%@\":\"%@\"", key, value];
-                    
-                    if (i + 1 < keys.count)
-                        segmentation = [segmentation stringByAppendingString:@","];
-                }
-                segmentation = [segmentation stringByAppendingString:@"}"];
-                
-                result = [result stringByAppendingFormat:@",\"%@\":%@", @"segmentation", segmentation];
-            }
-            
-            result = [result stringByAppendingFormat:@",\"%@\":%d", @"count", event.count];
-            
-            if (event.sum > 0)
-                result = [result stringByAppendingFormat:@",\"%@\":%g", @"sum", event.sum];
-            
-            result = [result stringByAppendingFormat:@",\"%@\":%ld", @"timestamp", (time_t)event.timestamp];
-            
-            result = [result stringByAppendingString:@"}"];
-            
-            if (i + 1 < events.count)
-                result = [result stringByAppendingString:@","];
-            
-            [[CountlyDB sharedInstance] removeFromQueue:[events objectAtIndex:i]];
-            
+            [CountlyDB.sharedInstance removeFromQueue:managedEventObject];
         }
-        
-        [events release];
     }
     
-    result = [result stringByAppendingString:@"]"];
-    
-    result = CountlyURLEscapedString(result);
-    
-	return result;
-}
-
--(CountlyEvent*) convertNSManagedObjectToCountlyEvent:(NSManagedObject*)managedObject
-{
-    CountlyEvent* event = [[CountlyEvent alloc] init];
-    event.key = [managedObject valueForKey:@"key"];
-    if ([managedObject valueForKey:@"count"])
-        event.count = ((NSNumber*) [managedObject valueForKey:@"count"]).doubleValue;
-    if ([managedObject valueForKey:@"sum"])
-        event.sum = ((NSNumber*) [managedObject valueForKey:@"sum"]).doubleValue;
-    if ([managedObject valueForKey:@"timestamp"])
-        event.timestamp = ((NSNumber*) [managedObject valueForKey:@"timestamp"]).doubleValue;
-    if ([managedObject valueForKey:@"segmentation"])
-        event.segmentation = [managedObject valueForKey:@"segmentation"];
-    return event;
+	return CountlyURLEscapedString(CountlyJSONFromObject(result));
 }
 
 - (void)recordEvent:(NSString *)key count:(int)count
@@ -323,7 +293,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
         NSArray* events = [[CountlyDB sharedInstance] getEvents];
         for (NSManagedObject* obj in events)
         {
-            CountlyEvent *event = [self convertNSManagedObjectToCountlyEvent:obj];
+            CountlyEvent *event = [CountlyEvent objectWithManagedObject:obj];
             if ([event.key isEqualToString:key])
             {
                 event.count += count;
@@ -355,7 +325,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
         NSArray* events = [[CountlyDB sharedInstance] getEvents];
         for (NSManagedObject* obj in events)
         {
-            CountlyEvent *event = [self convertNSManagedObjectToCountlyEvent:obj];
+            CountlyEvent *event = [CountlyEvent objectWithManagedObject:obj];
             if ([event.key isEqualToString:key])
             {
                 event.count += count;
@@ -392,7 +362,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
         NSArray* events = [[CountlyDB sharedInstance] getEvents];
         for (NSManagedObject* obj in events)
         {
-            CountlyEvent *event = [self convertNSManagedObjectToCountlyEvent:obj];
+            CountlyEvent *event = [CountlyEvent objectWithManagedObject:obj];
             if ([event.key isEqualToString:key] &&
                 event.segmentation && [event.segmentation isEqualToDictionary:segmentation])
             {
@@ -428,7 +398,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
         NSArray* events = [[[CountlyDB sharedInstance] getEvents] copy];
         for (NSManagedObject* obj in events)
         {
-            CountlyEvent *event = [self convertNSManagedObjectToCountlyEvent:obj];
+            CountlyEvent *event = [CountlyEvent objectWithManagedObject:obj];
             if ([event.key isEqualToString:key] &&
                 event.segmentation && [event.segmentation isEqualToDictionary:segmentation])
             {
