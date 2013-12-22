@@ -1,10 +1,9 @@
+// CountlyDB.m
 //
-//  CountlyDB.m
-//  Countly
+// This code is provided under the MIT License.
 //
-//  Created by Nesim Tunç on 21.07.2013.
-//  Copyright (c) 2013 Nesim Tunç. All rights reserved.
-//
+// Please visit www.count.ly for more information.
+
 
 #import "CountlyDB.h"
 
@@ -24,10 +23,6 @@
 
 @implementation CountlyDB
 
-@synthesize managedObjectContext = _managedObjectContext;
-@synthesize managedObjectModel = _managedObjectModel;
-@synthesize persistentStoreCoordinator = _persistentStoreCoordinator;
-
 +(instancetype)sharedInstance
 {
     static CountlyDB* s_sharedCountlyDB;
@@ -36,15 +31,7 @@
 	return s_sharedCountlyDB;
 }
 
--(void)dealloc
-{
-    [_managedObjectContext release];
-    [_managedObjectModel release];
-    [_persistentStoreCoordinator release];
-    [super dealloc];
-}
-
--(void)createEvent:(NSString*) eventKey count:(double)count sum:(double)sum segmentation:(NSDictionary*)segmentation timestamp:(double)timestamp
+-(void)createEvent:(NSString*) eventKey count:(double)count sum:(double)sum segmentation:(NSDictionary*)segmentation timestamp:(NSTimeInterval)timestamp
 {
     NSManagedObjectContext *context = [self managedObjectContext];
     NSManagedObject *newManagedObject = [NSEntityDescription insertNewObjectForEntityForName:@"Event" inManagedObjectContext:context];
@@ -85,11 +72,11 @@
 -(NSArray*) getEvents
 {
     NSFetchRequest *fetchRequest = [[[NSFetchRequest alloc] init] autorelease];
-    NSEntityDescription *entity = [NSEntityDescription entityForName:@"Event" inManagedObjectContext:self.managedObjectContext];
+    NSEntityDescription *entity = [NSEntityDescription entityForName:@"Event" inManagedObjectContext:[self managedObjectContext]];
     [fetchRequest setEntity:entity];
     
     NSError* error = nil;
-    NSArray* result = [_managedObjectContext executeFetchRequest:fetchRequest error:&error];
+    NSArray* result = [[self managedObjectContext] executeFetchRequest:fetchRequest error:&error];
     
     if (!error){
         COUNTLY_LOG(@"Unresolved error %@, %@", error, [error userInfo]);
@@ -101,11 +88,11 @@
 -(NSArray*) getQueue
 {
     NSFetchRequest *fetchRequest = [[[NSFetchRequest alloc] init] autorelease];
-    NSEntityDescription *entity = [NSEntityDescription entityForName:@"Data" inManagedObjectContext:self.managedObjectContext];
+    NSEntityDescription *entity = [NSEntityDescription entityForName:@"Data" inManagedObjectContext:[self managedObjectContext]];
     [fetchRequest setEntity:entity];
     
     NSError* error = nil;
-    NSArray* result = [_managedObjectContext executeFetchRequest:fetchRequest error:&error];
+    NSArray* result = [[self managedObjectContext] executeFetchRequest:fetchRequest error:&error];
     
     if (!error)
     {
@@ -118,11 +105,11 @@
 -(NSUInteger)getEventCount
 {
     NSFetchRequest *fetchRequest = [[[NSFetchRequest alloc] init] autorelease];
-    NSEntityDescription *entity = [NSEntityDescription entityForName:@"Event" inManagedObjectContext:self.managedObjectContext];
+    NSEntityDescription *entity = [NSEntityDescription entityForName:@"Event" inManagedObjectContext:[self managedObjectContext]];
     [fetchRequest setEntity:entity];
     
     NSError* error = nil;
-    NSUInteger count = [_managedObjectContext countForFetchRequest:fetchRequest error:&error];
+    NSUInteger count = [[self managedObjectContext] countForFetchRequest:fetchRequest error:&error];
     
     if (!error)
     {
@@ -134,11 +121,11 @@
 -(NSUInteger)getQueueCount
 {
     NSFetchRequest *fetchRequest = [[[NSFetchRequest alloc] init] autorelease];
-    NSEntityDescription *entity = [NSEntityDescription entityForName:@"Data" inManagedObjectContext:self.managedObjectContext];
+    NSEntityDescription *entity = [NSEntityDescription entityForName:@"Data" inManagedObjectContext:[self managedObjectContext]];
     [fetchRequest setEntity:entity];
     
     NSError* error = nil;
-    NSUInteger count = [_managedObjectContext countForFetchRequest:fetchRequest error:&error];
+    NSUInteger count = [[self managedObjectContext] countForFetchRequest:fetchRequest error:&error];
     
     if (!error)
     {
@@ -151,7 +138,7 @@
 - (void)saveContext
 {
     NSError *error = nil;
-    NSManagedObjectContext *managedObjectContext = self.managedObjectContext;
+    NSManagedObjectContext *managedObjectContext = [self managedObjectContext];
     if (managedObjectContext != nil)
     {
         if ([managedObjectContext hasChanges] && ![managedObjectContext save:&error])
@@ -166,61 +153,61 @@
     return [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject];
 }
 
-#pragma mark - Core Data Stack
+#pragma mark - Core Data Instance
 
-// Returns the managed object context for the application.
-// If the context doesn't already exist, it is created and bound to the persistent store coordinator for the application.
 - (NSManagedObjectContext *)managedObjectContext
 {
-    if (_managedObjectContext != nil)
-        return _managedObjectContext;
+    static NSManagedObjectContext* s_managedObjectContext;
+    
+    if (s_managedObjectContext != nil)
+        return s_managedObjectContext;
     
     static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
         NSPersistentStoreCoordinator *coordinator = [self persistentStoreCoordinator];
         if (coordinator != nil)
         {
-            _managedObjectContext = [[NSManagedObjectContext alloc] init];
-            [_managedObjectContext setPersistentStoreCoordinator:coordinator];
+            s_managedObjectContext = [[NSManagedObjectContext alloc] init];
+            [s_managedObjectContext setPersistentStoreCoordinator:coordinator];
         }
     });
     
-    return _managedObjectContext;
+    return s_managedObjectContext;
 }
 
-// Returns the managed object model for the application.
-// If the model doesn't already exist, it is created from the application's model.
 - (NSManagedObjectModel *)managedObjectModel
 {
-    if (_managedObjectModel != nil)
-        return _managedObjectModel;
+    static NSManagedObjectModel* s_managedObjectModel;
+
+    if (s_managedObjectModel != nil)
+        return s_managedObjectModel;
 
     static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
         NSURL *modelURL = [[NSBundle mainBundle] URLForResource:@"Countly" withExtension:@"momd"];
-        _managedObjectModel = [[NSManagedObjectModel alloc] initWithContentsOfURL:modelURL];
+        s_managedObjectModel = [[NSManagedObjectModel alloc] initWithContentsOfURL:modelURL];
     });
 
-    return _managedObjectModel;
+    return s_managedObjectModel;
 }
 
-// Returns the persistent store coordinator for the application.
-// If the coordinator doesn't already exist, it is created and the application's store added to it.
 - (NSPersistentStoreCoordinator *)persistentStoreCoordinator
 {
-    if (_persistentStoreCoordinator != nil)
-        return _persistentStoreCoordinator;
+    static NSPersistentStoreCoordinator* s_persistentStoreCoordinator;
+    
+    if (s_persistentStoreCoordinator != nil)
+        return s_persistentStoreCoordinator;
     
     static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
         NSURL *storeURL = [[self applicationDocumentsDirectory] URLByAppendingPathComponent:@"Countly.sqlite"];
         NSError *error = nil;
-        _persistentStoreCoordinator = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:[self managedObjectModel]];
-        if (![_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:nil error:&error])
+        s_persistentStoreCoordinator = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:[self managedObjectModel]];
+        if (![s_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:nil error:&error])
             COUNTLY_LOG(@"Unresolved error %@, %@", error, [error userInfo]);
     });
 
-    return _persistentStoreCoordinator;
+    return s_persistentStoreCoordinator;
 }
 
 @end

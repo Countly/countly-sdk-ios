@@ -182,35 +182,16 @@ NSString* CountlyURLUnescapedString(NSString* string)
 @property (nonatomic, retain) NSDictionary *segmentation;
 @property (nonatomic, assign) int count;
 @property (nonatomic, assign) double sum;
-@property (nonatomic, assign) double timestamp;
+@property (nonatomic, assign) NSTimeInterval timestamp;
 
 @end
 
 @implementation CountlyEvent
 
-@synthesize key = key_;
-@synthesize segmentation = segmentation_;
-@synthesize count = count_;
-@synthesize sum = sum_;
-@synthesize timestamp = timestamp_;
-
-- (id)init
-{
-    if (self = [super init])
-    {
-        key_ = nil;
-        segmentation_ = nil;
-        count_ = 0;
-        sum_ = 0;
-        timestamp_ = 0;
-    }
-    return self;
-}
-
 - (void)dealloc
 {
-    [key_ release];
-    [segmentation_ release];
+    self.key = nil;
+    self.segmentation = nil;
     [super dealloc];
 }
 
@@ -435,25 +416,18 @@ NSString* CountlyURLUnescapedString(NSString* string)
 #pragma mark - CountlyConnectionQueue
 
 @interface CountlyConnectionQueue : NSObject
-{
-	NSURLConnection *connection_;
-	UIBackgroundTaskIdentifier bgTask_;
-	NSString *appKey;
-	NSString *appHost;
-}
-
-+ (instancetype)sharedInstance;
 
 @property (nonatomic, copy) NSString *appKey;
 @property (nonatomic, copy) NSString *appHost;
+@property (nonatomic, retain) NSURLConnection *connection;
+@property (nonatomic, assign) UIBackgroundTaskIdentifier bgTask;
+
++ (instancetype)sharedInstance;
 
 @end
 
 
 @implementation CountlyConnectionQueue : NSObject
-
-@synthesize appKey;
-@synthesize appHost;
 
 + (instancetype)sharedInstance
 {
@@ -463,35 +437,23 @@ NSString* CountlyURLUnescapedString(NSString* string)
 	return s_sharedCountlyConnectionQueue;
 }
 
-- (id)init
-{
-	if (self = [super init])
-	{
-		connection_ = nil;
-        bgTask_ = UIBackgroundTaskInvalid;
-        appKey = nil;
-        appHost = nil;
-	}
-	return self;
-}
-
 - (void) tick
 {
     NSArray* dataQueue = [[[CountlyDB sharedInstance] getQueue] copy];
     
-    if (connection_ != nil || bgTask_ != UIBackgroundTaskInvalid || [dataQueue count] == 0)
+    if (self.connection != nil || self.bgTask != UIBackgroundTaskInvalid || [dataQueue count] == 0)
         return;
     
     UIApplication *app = [UIApplication sharedApplication];
-    bgTask_ = [app beginBackgroundTaskWithExpirationHandler:^{
-		[app endBackgroundTask:bgTask_];
-		bgTask_ = UIBackgroundTaskInvalid;
+    self.bgTask = [app beginBackgroundTaskWithExpirationHandler:^{
+		[app endBackgroundTask:self.bgTask];
+		self.bgTask = UIBackgroundTaskInvalid;
     }];
     
     NSString *data = [[dataQueue objectAtIndex:0] valueForKey:@"post"];
     NSString *urlString = [NSString stringWithFormat:@"%@/i?%@", self.appHost, data];
     NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:urlString]];
-    connection_ = [NSURLConnection connectionWithRequest:request delegate:self];
+    self.connection = [NSURLConnection connectionWithRequest:request delegate:self];
     
     [dataQueue release];
 }
@@ -499,7 +461,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 - (void)beginSession
 {
 	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_VERSION"&begin_session=1&metrics=%@",
-					  appKey,
+					  self.appKey,
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
 					  [CountlyDeviceInfo metrics]];
@@ -512,7 +474,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 - (void)updateSessionWithDuration:(int)duration
 {
 	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&session_duration=%d",
-					  appKey,
+					  self.appKey,
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
 					  duration];
@@ -525,7 +487,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 - (void)endSessionWithDuration:(int)duration
 {
 	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&end_session=1&session_duration=%d",
-					  appKey,
+					  self.appKey,
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
 					  duration];
@@ -538,7 +500,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 - (void)recordEvents:(NSString *)events
 {
 	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&events=%@",
-					  appKey,
+					  self.appKey,
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
 					  events];
@@ -556,13 +518,13 @@ NSString* CountlyURLUnescapedString(NSString* string)
 	COUNTLY_LOG(@"ok -> %@", [dataQueue objectAtIndex:0]);
     
     UIApplication *app = [UIApplication sharedApplication];
-    if (bgTask_ != UIBackgroundTaskInvalid)
+    if (self.bgTask != UIBackgroundTaskInvalid)
     {
-        [app endBackgroundTask:bgTask_];
-        bgTask_ = UIBackgroundTaskInvalid;
+        [app endBackgroundTask:self.bgTask];
+        self.bgTask = UIBackgroundTaskInvalid;
     }
     
-    connection_ = nil;
+    self.connection = nil;
     
     [[CountlyDB sharedInstance] removeFromQueue:[dataQueue objectAtIndex:0]];
     
@@ -579,13 +541,13 @@ NSString* CountlyURLUnescapedString(NSString* string)
     #endif
     
     UIApplication *app = [UIApplication sharedApplication];
-    if (bgTask_ != UIBackgroundTaskInvalid)
+    if (self.bgTask != UIBackgroundTaskInvalid)
     {
-        [app endBackgroundTask:bgTask_];
-        bgTask_ = UIBackgroundTaskInvalid;
+        [app endBackgroundTask:self.bgTask];
+        self.bgTask = UIBackgroundTaskInvalid;
     }
     
-    connection_ = nil;
+    self.connection = nil;
 }
 
 #if COUNTLY_IGNORE_INVALID_CERTIFICATES
@@ -600,13 +562,15 @@ NSString* CountlyURLUnescapedString(NSString* string)
 
 - (void)dealloc
 {
-	[super dealloc];
-	
-	if (connection_)
-		[connection_ cancel];
-	
+	if (self.connection)
+    {
+		[self.connection cancel];
+        self.connection = nil;
+    }
 	self.appKey = nil;
 	self.appHost = nil;
+
+	[super dealloc];
 }
 
 @end
