@@ -280,8 +280,8 @@ NSString* CountlyURLUnescapedString(NSString* string)
                 event.count += count;
                 event.timestamp = (event.timestamp + time(NULL)) / 2;
                 
-                [obj setValue:[NSNumber numberWithDouble:event.count] forKey:@"count"];
-                [obj setValue:[NSNumber numberWithDouble:event.timestamp] forKey:@"timestamp"];
+                [obj setValue:@(event.count) forKey:@"count"];
+                [obj setValue:@(event.timestamp) forKey:@"timestamp"];
                 
                 [[CountlyDB sharedInstance] saveContext];
                 return;
@@ -313,9 +313,9 @@ NSString* CountlyURLUnescapedString(NSString* string)
                 event.sum += sum;
                 event.timestamp = (event.timestamp + time(NULL)) / 2;
                 
-                [obj setValue:[NSNumber numberWithDouble:event.count] forKey:@"count"];
-                [obj setValue:[NSNumber numberWithDouble:event.sum] forKey:@"sum"];
-                [obj setValue:[NSNumber numberWithDouble:event.timestamp] forKey:@"timestamp"];
+                [obj setValue:@(event.count) forKey:@"count"];
+                [obj setValue:@(event.sum) forKey:@"sum"];
+                [obj setValue:@(event.timestamp) forKey:@"timestamp"];
                 
                 [[CountlyDB sharedInstance] saveContext];
                 
@@ -350,8 +350,8 @@ NSString* CountlyURLUnescapedString(NSString* string)
                 event.count += count;
                 event.timestamp = (event.timestamp + time(NULL)) / 2;
                 
-                [obj setValue:[NSNumber numberWithDouble:event.count] forKey:@"count"];
-                [obj setValue:[NSNumber numberWithDouble:event.timestamp] forKey:@"timestamp"];
+                [obj setValue:@(event.count) forKey:@"count"];
+                [obj setValue:@(event.timestamp) forKey:@"timestamp"];
                 
                 [[CountlyDB sharedInstance] saveContext];
                 
@@ -387,9 +387,9 @@ NSString* CountlyURLUnescapedString(NSString* string)
                 event.sum += sum;
                 event.timestamp = (event.timestamp + time(NULL)) / 2;
                 
-                [obj setValue:[NSNumber numberWithDouble:event.count] forKey:@"count"];
-                [obj setValue:[NSNumber numberWithDouble:event.sum] forKey:@"sum"];
-                [obj setValue:[NSNumber numberWithDouble:event.timestamp] forKey:@"timestamp"];
+                [obj setValue:@(event.count) forKey:@"count"];
+                [obj setValue:@(event.sum) forKey:@"sum"];
+                [obj setValue:@(event.timestamp) forKey:@"timestamp"];
                 
                 [[CountlyDB sharedInstance] saveContext];
                 
@@ -450,7 +450,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 		self.bgTask = UIBackgroundTaskInvalid;
     }];
     
-    NSString *data = [[dataQueue objectAtIndex:0] valueForKey:@"post"];
+    NSString *data = [dataQueue[0] valueForKey:@"post"];
     NSString *urlString = [NSString stringWithFormat:@"%@/i?%@", self.appHost, data];
     NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:urlString]];
     self.connection = [NSURLConnection connectionWithRequest:request delegate:self];
@@ -515,7 +515,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
     
     NSArray* dataQueue = [[[CountlyDB sharedInstance] getQueue] copy];
     
-	COUNTLY_LOG(@"ok -> %@", [dataQueue objectAtIndex:0]);
+	COUNTLY_LOG(@"ok -> %@", dataQueue[0]);
     
     UIApplication *app = [UIApplication sharedApplication];
     if (self.bgTask != UIBackgroundTaskInvalid)
@@ -526,7 +526,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
     
     self.connection = nil;
     
-    [[CountlyDB sharedInstance] removeFromQueue:[dataQueue objectAtIndex:0]];
+    [[CountlyDB sharedInstance] removeFromQueue:dataQueue[0]];
     
     [dataQueue release];
     
@@ -537,7 +537,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 {
     #if COUNTLY_DEBUG
         NSArray* dataQueue = [[[CountlyDB sharedInstance] getQueue] copy];
-        COUNTLY_LOG(@"error -> %@: %@", [dataQueue objectAtIndex:0], err);
+        COUNTLY_LOG(@"error -> %@: %@", dataQueue[0], err);
     #endif
     
     UIApplication *app = [UIApplication sharedApplication];

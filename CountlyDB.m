@@ -37,9 +37,9 @@
     NSManagedObject *newManagedObject = [NSEntityDescription insertNewObjectForEntityForName:@"Event" inManagedObjectContext:context];
 
     [newManagedObject setValue:eventKey forKey:@"key"];
-    [newManagedObject setValue:[NSNumber numberWithDouble:count] forKey:@"count"];
-    [newManagedObject setValue:[NSNumber numberWithDouble:sum] forKey:@"sum"];
-    [newManagedObject setValue:[NSNumber numberWithDouble:timestamp] forKey:@"timestamp"];
+    [newManagedObject setValue:@(count) forKey:@"count"];
+    [newManagedObject setValue:@(sum) forKey:@"sum"];
+    [newManagedObject setValue:@(timestamp) forKey:@"timestamp"];
     [newManagedObject setValue:segmentation forKey:@"segmentation"];
     
     [self saveContext];
