@@ -47,7 +47,7 @@ NSString* CountlyJSONFromObject(id object)
 	NSData *data = [NSJSONSerialization dataWithJSONObject:object options:0 error:&error];
 	
 	if (error)
-        COUNTLY_LOG(@"%@", [err description]);
+        COUNTLY_LOG(@"%@", [error description]);
 	
 	return [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease];
 }
@@ -271,7 +271,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 {
     @synchronized (self)
     {
-        NSArray* events = [[CountlyDB sharedInstance] getEvents];
+        NSArray* events = [[[[CountlyDB sharedInstance] getEvents] copy] autorelease];
         for (NSManagedObject* obj in events)
         {
             CountlyEvent *event = [CountlyEvent objectWithManagedObject:obj];
@@ -288,14 +288,12 @@ NSString* CountlyURLUnescapedString(NSString* string)
             }
         }
         
-        CountlyEvent *event = [[CountlyEvent alloc] init];
+        CountlyEvent *event = [[CountlyEvent new] autorelease];
         event.key = key;
         event.count = count;
         event.timestamp = time(NULL);
         
         [[CountlyDB sharedInstance] createEvent:event.key count:event.count sum:event.sum segmentation:event.segmentation timestamp:event.timestamp];
-        
-        [event release];
     }
 }
 
@@ -303,7 +301,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 {
     @synchronized (self)
     {
-        NSArray* events = [[CountlyDB sharedInstance] getEvents];
+        NSArray* events = [[[[CountlyDB sharedInstance] getEvents] copy] autorelease];
         for (NSManagedObject* obj in events)
         {
             CountlyEvent *event = [CountlyEvent objectWithManagedObject:obj];
@@ -323,15 +321,13 @@ NSString* CountlyURLUnescapedString(NSString* string)
             }
         }
         
-        CountlyEvent *event = [[CountlyEvent alloc] init];
+        CountlyEvent *event = [[CountlyEvent new] autorelease];
         event.key = key;
         event.count = count;
         event.sum = sum;
         event.timestamp = time(NULL);
         
         [[CountlyDB sharedInstance] createEvent:event.key count:event.count sum:event.sum segmentation:event.segmentation timestamp:event.timestamp];
-        
-        [event release];
     }
 }
 
@@ -339,8 +335,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 {
     @synchronized (self)
     {
-        
-        NSArray* events = [[CountlyDB sharedInstance] getEvents];
+        NSArray* events = [[[[CountlyDB sharedInstance] getEvents] copy] autorelease];
         for (NSManagedObject* obj in events)
         {
             CountlyEvent *event = [CountlyEvent objectWithManagedObject:obj];
@@ -359,15 +354,13 @@ NSString* CountlyURLUnescapedString(NSString* string)
             }
         }
         
-        CountlyEvent *event = [[CountlyEvent alloc] init];
+        CountlyEvent *event = [[CountlyEvent new] autorelease];
         event.key = key;
         event.segmentation = segmentation;
         event.count = count;
         event.timestamp = time(NULL);
         
         [[CountlyDB sharedInstance] createEvent:event.key count:event.count sum:event.sum segmentation:event.segmentation timestamp:event.timestamp];
-        
-        [event release];
     }
 }
 
@@ -375,8 +368,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 {
     @synchronized (self)
     {
-        
-        NSArray* events = [[[CountlyDB sharedInstance] getEvents] copy];
+        NSArray* events = [[[[CountlyDB sharedInstance] getEvents] copy] autorelease];
         for (NSManagedObject* obj in events)
         {
             CountlyEvent *event = [CountlyEvent objectWithManagedObject:obj];
@@ -397,7 +389,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
             }
         }
         
-        CountlyEvent *event = [[CountlyEvent alloc] init];
+        CountlyEvent *event = [[CountlyEvent new] autorelease];
         event.key = key;
         event.segmentation = segmentation;
         event.count = count;
@@ -405,8 +397,6 @@ NSString* CountlyURLUnescapedString(NSString* string)
         event.timestamp = time(NULL);
         
         [[CountlyDB sharedInstance] createEvent:event.key count:event.count sum:event.sum segmentation:event.segmentation timestamp:event.timestamp];
-        
-        [event release];
     }
 }
 
@@ -439,7 +429,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 
 - (void) tick
 {
-    NSArray* dataQueue = [[[CountlyDB sharedInstance] getQueue] copy];
+    NSArray* dataQueue = [[[[CountlyDB sharedInstance] getQueue] copy] autorelease];
     
     if (self.connection != nil || self.bgTask != UIBackgroundTaskInvalid || [dataQueue count] == 0)
         return;
@@ -454,8 +444,6 @@ NSString* CountlyURLUnescapedString(NSString* string)
     NSString *urlString = [NSString stringWithFormat:@"%@/i?%@", self.appHost, data];
     NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:urlString]];
     self.connection = [NSURLConnection connectionWithRequest:request delegate:self];
-    
-    [dataQueue release];
 }
 
 - (void)beginSession
