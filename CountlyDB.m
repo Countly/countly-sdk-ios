@@ -78,7 +78,8 @@
     NSError* error = nil;
     NSArray* result = [[self managedObjectContext] executeFetchRequest:fetchRequest error:&error];
     
-    if (!error){
+    if (error)
+    {
         COUNTLY_LOG(@"Unresolved error %@, %@", error, [error userInfo]);
     }
     
@@ -94,7 +95,7 @@
     NSError* error = nil;
     NSArray* result = [[self managedObjectContext] executeFetchRequest:fetchRequest error:&error];
     
-    if (!error)
+    if (error)
     {
          COUNTLY_LOG(@"Unresolved error %@, %@", error, [error userInfo]);
     }
@@ -111,10 +112,11 @@
     NSError* error = nil;
     NSUInteger count = [[self managedObjectContext] countForFetchRequest:fetchRequest error:&error];
     
-    if (!error)
+    if (error)
     {
         COUNTLY_LOG(@"Unresolved error %@, %@", error, [error userInfo]);
     }
+    
     return count;
 }
 
@@ -127,10 +129,11 @@
     NSError* error = nil;
     NSUInteger count = [[self managedObjectContext] countForFetchRequest:fetchRequest error:&error];
     
-    if (!error)
+    if (error)
     {
         COUNTLY_LOG(@"Unresolved error %@, %@", error, [error userInfo]);
     }
+    
     return count;
 }
 
