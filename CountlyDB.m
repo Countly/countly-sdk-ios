@@ -84,7 +84,7 @@
     
     if (error)
     {
-        COUNTLY_LOG(@"Unresolved error %@, %@", error, [error userInfo]);
+        COUNTLY_LOG(@"CoreData error %@, %@", error, [error userInfo]);
     }
     
     return result;
@@ -101,7 +101,7 @@
     
     if (error)
     {
-         COUNTLY_LOG(@"Unresolved error %@, %@", error, [error userInfo]);
+         COUNTLY_LOG(@"CoreData error %@, %@", error, [error userInfo]);
     }
     
     return result;
@@ -118,7 +118,7 @@
     
     if (error)
     {
-        COUNTLY_LOG(@"Unresolved error %@, %@", error, [error userInfo]);
+        COUNTLY_LOG(@"CoreData error %@, %@", error, [error userInfo]);
     }
     
     return count;
@@ -135,7 +135,7 @@
     
     if (error)
     {
-        COUNTLY_LOG(@"Unresolved error %@, %@", error, [error userInfo]);
+        COUNTLY_LOG(@"CoreData error %@, %@", error, [error userInfo]);
     }
     
     return count;
@@ -150,7 +150,7 @@
     {
         if ([managedObjectContext hasChanges] && ![managedObjectContext save:&error])
         {
-           COUNTLY_LOG(@"Unresolved error %@, %@", error, [error userInfo]);
+           COUNTLY_LOG(@"CoreData error %@, %@", error, [error userInfo]);
         }
     }
 }
@@ -211,7 +211,7 @@
         NSError *error = nil;
         s_persistentStoreCoordinator = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:[self managedObjectModel]];
         if (![s_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:nil error:&error])
-            COUNTLY_LOG(@"Unresolved error %@, %@", error, [error userInfo]);
+            COUNTLY_LOG(@"CoreData error %@, %@", error, [error userInfo]);
     });
 
     return s_persistentStoreCoordinator;

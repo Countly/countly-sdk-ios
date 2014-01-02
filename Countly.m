@@ -448,6 +448,8 @@ NSString* CountlyURLUnescapedString(NSString* string)
     NSString *urlString = [NSString stringWithFormat:@"%@/i?%@", self.appHost, data];
     NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:urlString]];
     self.connection = [NSURLConnection connectionWithRequest:request delegate:self];
+
+    COUNTLY_LOG(@"Request Started \n %@", [dataQueue[0] description]);
 }
 
 - (void)beginSession
@@ -504,10 +506,9 @@ NSString* CountlyURLUnescapedString(NSString* string)
 
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection
 {
-    
     NSArray* dataQueue = [[[CountlyDB sharedInstance] getQueue] copy];
     
-	COUNTLY_LOG(@"ok -> %@", dataQueue[0]);
+	COUNTLY_LOG(@"Request Completed\n");
     
     UIApplication *app = [UIApplication sharedApplication];
     if (self.bgTask != UIBackgroundTaskInvalid)
@@ -528,8 +529,8 @@ NSString* CountlyURLUnescapedString(NSString* string)
 - (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)err
 {
     #if COUNTLY_DEBUG
-        NSArray* dataQueue = [[[CountlyDB sharedInstance] getQueue] copy];
-        COUNTLY_LOG(@"error -> %@: %@", dataQueue[0], err);
+        NSArray* dataQueue = [[[[CountlyDB sharedInstance] getQueue] copy] autorelease];
+        COUNTLY_LOG(@"Request Failed \n %@: %@", [dataQueue[0] description], [err description]);
     #endif
     
     UIApplication *app = [UIApplication sharedApplication];
@@ -719,20 +720,20 @@ NSString* CountlyURLUnescapedString(NSString* string)
 
 - (void)didEnterBackgroundCallBack:(NSNotification *)notification
 {
-	COUNTLY_LOG(@"Countly didEnterBackgroundCallBack");
+	COUNTLY_LOG(@"App didEnterBackground");
 	[self suspend];
     
 }
 
 - (void)willEnterForegroundCallBack:(NSNotification *)notification
 {
-	COUNTLY_LOG(@"Countly willEnterForegroundCallBack");
+	COUNTLY_LOG(@"App willEnterForeground");
 	[self resume];
 }
 
 - (void)willTerminateCallBack:(NSNotification *)notification
 {
-	COUNTLY_LOG(@"Countly willTerminateCallBack");
+	COUNTLY_LOG(@"App willTerminate");
     [[CountlyDB sharedInstance] saveContext];
 	[self exit];
 }
