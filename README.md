@@ -26,8 +26,8 @@ and inside `application:didFinishLaunchingWithOptions:`  add the line;
 `[[Countly sharedInstance] start:@"YOUR_APP_KEY" withHost:@"https://YOUR_API_HOST.com"];` at the beginning of the function.
 
 **Note:** if you use Countly Cloud, you must set withHost parameter to https://cloud.count.ly for step 11.
-
-**Note:** Make sure you use App Key (found under Management -> Applications) and not API Key. Entering API Key will not work. 
+Or you can use [[Countly sharedInstance] startOnCloudWithAppKey:@"YOUR_APP_KEY"]; directly.
+**Note:** Make sure you use App Key (found under Management -> Applications) and not API Key or App ID. Entering API Key or App ID will not work.
 
 It should finally look like this:
 
@@ -62,7 +62,7 @@ There are also other Countly SDK repositories below:
 - [Countly Windows Phone SDK](https://github.com/Countly/countly-sdk-windows-phone)
 - [Countly Blackberry Webworks SDK](https://github.com/Countly/countly-sdk-blackberry-webworks)
 - [Countly Blackberry Cascades SDK](https://github.com/craigmj/countly-sdk-blackberry10-cascades) (Community supported)
-- [Countly Mac OS X SDK](https://github.com/mrballoon/countly-sdk-osx) (Community supported)
+- [Countly Mac OS X SDK](https://github.com/AriX/countly-sdk-cocoa) (Community supported)
 - [Countly Appcelerator Titanium SDK](https://github.com/euforic/Titanium-Count.ly) (Community supported)
 - [Countly Unity3D SDK](https://github.com/Countly/countly-sdk-unity) (Community supported)
 

@@ -6,6 +6,10 @@
 
 #pragma mark - Directives
 
+#if __has_feature(objc_arc)
+#error This is a non-ARC class. Please add -fno-objc-arc flag for Countly.m, Countly_OpenUDID.m and CountlyDB.m under Build Phases > Compile Sources
+#endif
+
 #ifndef COUNTLY_DEBUG
 #define COUNTLY_DEBUG 0
 #endif
@@ -612,6 +616,11 @@ NSString* CountlyURLUnescapedString(NSString* string)
 	[[CountlyConnectionQueue sharedInstance] setAppKey:appKey];
 	[[CountlyConnectionQueue sharedInstance] setAppHost:appHost];
 	[[CountlyConnectionQueue sharedInstance] beginSession];
+}
+
+- (void)startOnCloudWithAppKey:(NSString *)appKey
+{
+    [self start:appKey withHost:@"https://cloud.count.ly"];
 }
 
 - (void)recordEvent:(NSString *)key count:(int)count

@@ -37,9 +37,7 @@
 */
 
 #if __has_feature(objc_arc)
-#error This file uses the classic non-ARC retain/release model; hints below... 
-    // to selectively compile this file as non-ARC, do as follows:
-    // https://img.skitch.com/20120717-g3ag5h9a6ehkgpmpjiuen3qpwp.png
+#error This is a non-ARC class. Please add -fno-objc-arc flag for Countly.m, Countly_OpenUDID.m and CountlyDB.m under Build Phases > Compile Sources
 #endif
 
 #import "Countly_OpenUDID.h"
