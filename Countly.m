@@ -264,7 +264,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
             
 			[result addObject:event.serializedData];
             
-            [CountlyDB.sharedInstance removeFromQueue:managedEventObject];
+            [CountlyDB.sharedInstance deleteEvent:managedEventObject];
         }
     }
     
