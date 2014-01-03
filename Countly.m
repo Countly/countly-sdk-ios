@@ -30,10 +30,13 @@
 
 #import "Countly.h"
 #import "Countly_OpenUDID.h"
+#import "CountlyDB.h"
+
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 #import <UIKit/UIKit.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import <CoreTelephony/CTCarrier.h>
-#import "CountlyDB.h"
+#endif
 
 #include <sys/types.h>
 #include <sys/sysctl.h>
@@ -105,40 +108,66 @@ NSString* CountlyURLUnescapedString(NSString* string)
 
 + (NSString *)device
 {
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+    char *modelKey = "hw.machine";
+#else
+    char *modelKey = "hw.model";
+#endif
     size_t size;
-    sysctlbyname("hw.machine", NULL, &size, NULL, 0);
-    char *machine = malloc(size);
-    sysctlbyname("hw.machine", machine, &size, NULL, 0);
-    NSString *platform = [NSString stringWithUTF8String:machine];
-    free(machine);
-    return platform;
+    sysctlbyname(modelKey, NULL, &size, NULL, 0);
+    char *model = malloc(size);
+    sysctlbyname(modelKey, model, &size, NULL, 0);
+    NSString *modelString = [NSString stringWithUTF8String:model];
+    free(model);
+    return modelString;
 }
 
 + (NSString *)osVersion
 {
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 	return [[UIDevice currentDevice] systemVersion];
+#else
+    SInt32 majorVersion, minorVersion, bugFixVersion;
+    Gestalt(gestaltSystemVersionMajor, &majorVersion);
+    Gestalt(gestaltSystemVersionMinor, &minorVersion);
+    Gestalt(gestaltSystemVersionBugFix, &bugFixVersion);
+    if (bugFixVersion > 0)
+    {
+    	return [NSString stringWithFormat:@"%d.%d.%d", majorVersion, minorVersion, bugFixVersion];
+    }
+    else
+    {
+    	return [NSString stringWithFormat:@"%d.%d", majorVersion, minorVersion];
+    }
+#endif
 }
 
 + (NSString *)carrier
 {
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 	if (NSClassFromString(@"CTTelephonyNetworkInfo"))
 	{
 		CTTelephonyNetworkInfo *netinfo = [[[CTTelephonyNetworkInfo alloc] init] autorelease];
 		CTCarrier *carrier = [netinfo subscriberCellularProvider];
 		return [carrier carrierName];
 	}
-    
+#endif
 	return nil;
 }
 
 + (NSString *)resolution
 {
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 	CGRect bounds = [[UIScreen mainScreen] bounds];
 	CGFloat scale = [[UIScreen mainScreen] respondsToSelector:@selector(scale)] ? [[UIScreen mainScreen] scale] : 1.f;
 	CGSize res = CGSizeMake(bounds.size.width * scale, bounds.size.height * scale);
 	NSString *result = [NSString stringWithFormat:@"%gx%g", res.width, res.height];
     
 	return result;
+#else
+    NSRect screenRect = NSScreen.mainScreen.frame;
+    return [NSString stringWithFormat:@"%.1fx%.1f", screenRect.size.width, screenRect.size.height];
+#endif
 }
 
 + (NSString *)locale
@@ -414,7 +443,9 @@ NSString* CountlyURLUnescapedString(NSString* string)
 @property (nonatomic, copy) NSString *appKey;
 @property (nonatomic, copy) NSString *appHost;
 @property (nonatomic, retain) NSURLConnection *connection;
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 @property (nonatomic, assign) UIBackgroundTaskIdentifier bgTask;
+#endif
 
 + (instancetype)sharedInstance;
 
@@ -435,7 +466,11 @@ NSString* CountlyURLUnescapedString(NSString* string)
 {
     NSArray* dataQueue = [[[[CountlyDB sharedInstance] getQueue] copy] autorelease];
     
-    if (self.connection != nil || self.bgTask != UIBackgroundTaskInvalid || [dataQueue count] == 0)
+    if (self.connection != nil || [dataQueue count] == 0)
+        return;
+
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+    if (self.bgTask != UIBackgroundTaskInvalid)
         return;
     
     UIApplication *app = [UIApplication sharedApplication];
@@ -443,6 +478,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 		[app endBackgroundTask:self.bgTask];
 		self.bgTask = UIBackgroundTaskInvalid;
     }];
+#endif
     
     NSString *data = [dataQueue[0] valueForKey:@"post"];
     NSString *urlString = [NSString stringWithFormat:@"%@/i?%@", self.appHost, data];
@@ -510,13 +546,15 @@ NSString* CountlyURLUnescapedString(NSString* string)
     
 	COUNTLY_LOG(@"Request Completed\n");
     
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
     UIApplication *app = [UIApplication sharedApplication];
     if (self.bgTask != UIBackgroundTaskInvalid)
     {
         [app endBackgroundTask:self.bgTask];
         self.bgTask = UIBackgroundTaskInvalid;
     }
-    
+#endif
+
     self.connection = nil;
     
     [[CountlyDB sharedInstance] removeFromQueue:dataQueue[0]];
@@ -533,12 +571,14 @@ NSString* CountlyURLUnescapedString(NSString* string)
         COUNTLY_LOG(@"Request Failed \n %@: %@", [dataQueue[0] description], [err description]);
     #endif
     
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
     UIApplication *app = [UIApplication sharedApplication];
     if (self.bgTask != UIBackgroundTaskInvalid)
     {
         [app endBackgroundTask:self.bgTask];
         self.bgTask = UIBackgroundTaskInvalid;
     }
+#endif
     
     self.connection = nil;
 }
@@ -589,7 +629,8 @@ NSString* CountlyURLUnescapedString(NSString* string)
 		isSuspended = NO;
 		unsentSessionLength = 0;
         eventQueue = [[CountlyEventQueue alloc] init];
-		
+
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 		[[NSNotificationCenter defaultCenter] addObserver:self
 												 selector:@selector(didEnterBackgroundCallBack:)
 													 name:UIApplicationDidEnterBackgroundNotification
@@ -602,6 +643,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 												 selector:@selector(willTerminateCallBack:)
 													 name:UIApplicationWillTerminateNotification
 												   object:nil];
+#endif
 	}
 	return self;
 }
@@ -703,10 +745,10 @@ NSString* CountlyURLUnescapedString(NSString* string)
 
 - (void)dealloc
 {
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationDidEnterBackgroundNotification object:nil];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillEnterForegroundNotification object:nil];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIApplicationWillTerminateNotification object:nil];
-	
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
+#endif
+    
 	if (timer)
     {
         [timer invalidate];
@@ -722,7 +764,6 @@ NSString* CountlyURLUnescapedString(NSString* string)
 {
 	COUNTLY_LOG(@"App didEnterBackground");
 	[self suspend];
-    
 }
 
 - (void)willEnterForegroundCallBack:(NSNotification *)notification
