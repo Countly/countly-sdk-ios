@@ -89,6 +89,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 
 + (NSString *)udid;
 + (NSString *)device;
++ (NSString *)osName;
 + (NSString *)osVersion;
 + (NSString *)carrier;
 + (NSString *)resolution;
@@ -120,6 +121,15 @@ NSString* CountlyURLUnescapedString(NSString* string)
     NSString *modelString = [NSString stringWithUTF8String:model];
     free(model);
     return modelString;
+}
+
++ (NSString *)osName
+{
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+	return @"iOS";
+#else
+	return @"OS X";
+#endif
 }
 
 + (NSString *)osVersion
@@ -188,7 +198,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 {
     NSMutableDictionary* metricsDictionary = [NSMutableDictionary dictionary];
 	[metricsDictionary setObject:CountlyDeviceInfo.device forKey:@"_device"];
-	[metricsDictionary setObject:@"iOS" forKey:@"_os"];
+	[metricsDictionary setObject:CountlyDeviceInfo.osName forKey:@"_os"];
 	[metricsDictionary setObject:CountlyDeviceInfo.osVersion forKey:@"_os_version"];
     
 	NSString *carrier = CountlyDeviceInfo.carrier;
