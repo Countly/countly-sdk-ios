@@ -26,7 +26,8 @@ and inside `application:didFinishLaunchingWithOptions:`  add the line;
 `[[Countly sharedInstance] start:@"YOUR_APP_KEY" withHost:@"https://YOUR_API_HOST.com"];` at the beginning of the function.
 
 **Note:** if you use Countly Cloud, you must set withHost parameter to https://cloud.count.ly for step 11.
-Or you can use [[Countly sharedInstance] startOnCloudWithAppKey:@"YOUR_APP_KEY"]; directly.
+Or you can use `[[Countly sharedInstance] startOnCloudWithAppKey:@"YOUR_APP_KEY"];` directly.
+
 **Note:** Make sure you use App Key (found under Management -> Applications) and not API Key or App ID. Entering API Key or App ID will not work.
 
 It should finally look like this:
