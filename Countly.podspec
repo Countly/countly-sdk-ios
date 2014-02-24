@@ -31,7 +31,7 @@ Pod::Spec.new do |s|
   s.summary  = 'Countly is an innovative, real-time, open source mobile analytics platform.'
   s.homepage = 'https://github.com/Countly/countly-sdk-ios'
   s.author  = {'Countly' => 'hello@count.ly'}
-  s.source   = { :git => 'https://github.com/Countly/countly-sdk-ios.git', :tag => '2.0.0' }
+  s.source   = { :git => 'https://github.com/Countly/countly-sdk-ios.git', :tag => s.version.to_s }
   s.source_files = '*.{h,m}'
   s.resources = '*.{xcdatamodeld}'
   s.requires_arc = false
