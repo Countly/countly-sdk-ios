@@ -160,6 +160,26 @@
     return [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject];
 }
 
+- (NSURL *)applicationSupportDirectory
+{
+    NSURL *url = [[[NSFileManager defaultManager] URLsForDirectory:NSApplicationSupportDirectory inDomains:NSUserDomainMask] lastObject];
+    [self createDirectoryIfNecessary:url];
+    return url;
+}
+
+- (void)createDirectoryIfNecessary:(NSURL *)url
+{
+    NSError *error = nil;
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    if (![fileManager fileExistsAtPath:[url absoluteString]])
+    {
+        if (![fileManager createDirectoryAtURL:url withIntermediateDirectories:YES attributes:nil error:&error])
+        {
+            COUNTLY_LOG(@"Error creating directory: %@ %@", error, [error userInfo]);
+        }
+    }
+}
+
 #pragma mark - Core Data Instance
 
 - (NSManagedObjectContext *)managedObjectContext
@@ -207,11 +227,21 @@
     
     static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
-        NSURL *storeURL = [[self applicationDocumentsDirectory] URLByAppendingPathComponent:@"Countly.sqlite"];
+        NSURL *storeURL = [[self applicationSupportDirectory] URLByAppendingPathComponent:@"Countly.sqlite"];
         NSError *error = nil;
         s_persistentStoreCoordinator = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:[self managedObjectModel]];
-        if (![s_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:nil error:&error])
+        if ([s_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:nil error:&error])
+        {
+            // Exclude database from backups
+            if (![storeURL setResourceValue:@YES forKey:NSURLIsExcludedFromBackupKey error:&error])
+            {
+                COUNTLY_LOG(@"Unable to exclude Countly persistent store from backups (%@), error: %@", storeURL.absoluteString, error);
+            }
+        }
+        else
+        {
             COUNTLY_LOG(@"CoreData error %@, %@", error, [error userInfo]);
+        }
     });
 
     return s_persistentStoreCoordinator;
