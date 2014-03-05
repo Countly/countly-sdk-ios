@@ -137,7 +137,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 	return [[UIDevice currentDevice] systemVersion];
 #else
-    NSInteger majorVersion = 0, minorVersion = 0, bugFixVersion = 0;
+	NSInteger majorVersion = 0, minorVersion = 0, bugFixVersion = 0;
 	NSString *version = [[NSDictionary dictionaryWithContentsOfFile:@"/System/Library/CoreServices/SystemVersion.plist"] objectForKey:@"ProductVersion"];
 	NSArray *components = [version componentsSeparatedByString:@"."];
 	NSUInteger count = components.count;
