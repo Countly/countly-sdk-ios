@@ -58,7 +58,7 @@ Note: Before upgrading to a new SDK, do not forget to remove the existing, older
 Countly iOS SDK benefits from Cocoapods. For more information, go to [Countly CocoaPods Github directory](https://github.com/CocoaPods/Specs/tree/master/Countly)
 
 
-### Other resources ### 
+### Other resources ###
 
 Check Countly Server source code here: 
 
