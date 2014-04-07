@@ -41,7 +41,9 @@ It should finally look like this:
 }
 </pre>
 
-Note: If your project uses automatic reference counting (ARC), you should disable it for the 
+### Using ARC ###
+
+If your project uses automatic reference counting (ARC), you should disable it for the 
 sources `Countly.m`, `Countly_OpenUDID.m` and `CountlyDB.m`:
 
 1. Select your project
@@ -51,6 +53,12 @@ sources `Countly.m`, `Countly_OpenUDID.m` and `CountlyDB.m`:
 
 Note: Before upgrading to a new SDK, do not forget to remove the existing, older SDK from your project.
 
+### Using CocoaPods ###
+
+Countly iOS SDK benefits from Cocoapods. For more information, go to [Countly CocoaPods Github directory](https://github.com/CocoaPods/Specs/tree/master/Countly)
+
+
+### Other resources ### 
 
 Check Countly Server source code here: 
 
