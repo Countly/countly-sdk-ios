@@ -137,18 +137,21 @@ NSString* CountlyURLUnescapedString(NSString* string)
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 	return [[UIDevice currentDevice] systemVersion];
 #else
-    SInt32 majorVersion, minorVersion, bugFixVersion;
-    Gestalt(gestaltSystemVersionMajor, &majorVersion);
-    Gestalt(gestaltSystemVersionMinor, &minorVersion);
-    Gestalt(gestaltSystemVersionBugFix, &bugFixVersion);
-    if (bugFixVersion > 0)
-    {
-    	return [NSString stringWithFormat:@"%d.%d.%d", majorVersion, minorVersion, bugFixVersion];
-    }
-    else
-    {
-    	return [NSString stringWithFormat:@"%d.%d", majorVersion, minorVersion];
-    }
+	NSInteger majorVersion = 0, minorVersion = 0, bugFixVersion = 0;
+	NSString *version = [[NSDictionary dictionaryWithContentsOfFile:@"/System/Library/CoreServices/SystemVersion.plist"] objectForKey:@"ProductVersion"];
+	NSArray *components = [version componentsSeparatedByString:@"."];
+	NSUInteger count = components.count;
+	if (count >= 1) majorVersion = [components[0] integerValue];
+	if (count >= 2) minorVersion = [components[1] integerValue];
+	if (count >= 3) bugFixVersion = [components[2] integerValue];
+	if (bugFixVersion > 0)
+	{
+		return [NSString stringWithFormat:@"%d.%d.%d", (int)majorVersion, (int)minorVersion, (int)bugFixVersion];
+	}
+	else
+	{
+		return [NSString stringWithFormat:@"%d.%d", (int)majorVersion, (int)minorVersion];
+	}
 #endif
 }
 
