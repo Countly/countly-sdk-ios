@@ -495,7 +495,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
     NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:urlString]];
     self.connection = [NSURLConnection connectionWithRequest:request delegate:self];
 
-    COUNTLY_LOG(@"Request Started \n %@", [dataQueue[0] description]);
+    COUNTLY_LOG(@"Request Started \n %@", urlString);
 }
 
 - (void)beginSession
