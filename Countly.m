@@ -168,15 +168,13 @@ NSString* CountlyURLUnescapedString(NSString* string)
 + (NSString *)resolution
 {
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
-	CGRect bounds = [[UIScreen mainScreen] bounds];
-	CGFloat scale = [[UIScreen mainScreen] respondsToSelector:@selector(scale)] ? [[UIScreen mainScreen] scale] : 1.f;
-	CGSize res = CGSizeMake(bounds.size.width * scale, bounds.size.height * scale);
-	NSString *result = [NSString stringWithFormat:@"%gx%g", res.width, res.height];
-    
-	return result;
+	CGRect bounds = UIScreen.mainScreen.bounds;
+	CGFloat scale = [UIScreen.mainScreen respondsToSelector:@selector(scale)] ? [UIScreen.mainScreen scale] : 1.f;
+    return [NSString stringWithFormat:@"%gx%g", bounds.size.width * scale, bounds.size.height * scale];
 #else
     NSRect screenRect = NSScreen.mainScreen.frame;
-    return [NSString stringWithFormat:@"%.1fx%.1f", screenRect.size.width, screenRect.size.height];
+    CGFloat scale = [NSScreen.mainScreen backingScaleFactor];
+    return [NSString stringWithFormat:@"%gx%g", screenRect.size.width * scale, screenRect.size.height * scale];
 #endif
 }
 
