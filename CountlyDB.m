@@ -160,6 +160,21 @@
     return [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject];
 }
 
+- (NSURL *)applicationSupportDirectory
+{
+    NSFileManager *fm = NSFileManager.defaultManager;
+    NSURL *url = [[fm URLsForDirectory:NSApplicationSupportDirectory inDomains:NSUserDomainMask] lastObject];
+    NSError *error = nil;
+    
+    if (![fm fileExistsAtPath:[url absoluteString]])
+    {
+        [fm createDirectoryAtURL:url withIntermediateDirectories:YES attributes:nil error:&error];
+        if(error) COUNTLY_LOG(@"Can not create Application Support directory: %@", error);
+    }
+
+    return url;
+}
+
 #pragma mark - Core Data Instance
 
 - (NSManagedObjectContext *)managedObjectContext
@@ -207,11 +222,34 @@
     
     static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
-        NSURL *storeURL = [[self applicationDocumentsDirectory] URLByAppendingPathComponent:@"Countly.sqlite"];
-        NSError *error = nil;
+        
         s_persistentStoreCoordinator = [[NSPersistentStoreCoordinator alloc] initWithManagedObjectModel:[self managedObjectModel]];
-        if (![s_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:nil error:&error])
-            COUNTLY_LOG(@"CoreData error %@, %@", error, [error userInfo]);
+        
+        NSError *error=nil;
+        NSURL *storeURL = [[self applicationSupportDirectory] URLByAppendingPathComponent:@"Countly.sqlite"];
+        NSURL *oldStoreURL = [[self applicationDocumentsDirectory] URLByAppendingPathComponent:@"Countly.sqlite"];
+        
+        if([NSFileManager.defaultManager fileExistsAtPath:oldStoreURL.path])
+        {
+            NSPersistentStore* oldStore = [s_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:oldStoreURL options:nil error:&error];
+            if(error) COUNTLY_LOG(@"Old store opening error %@",error);
+
+            [s_persistentStoreCoordinator migratePersistentStore:oldStore toURL:storeURL options:nil withType:NSSQLiteStoreType error:&error];
+            if(error) COUNTLY_LOG(@"Old store migrating error %@",error);
+            
+            [NSFileManager.defaultManager removeItemAtPath:oldStoreURL.path error:&error];
+            [NSFileManager.defaultManager removeItemAtPath:[oldStoreURL.path stringByAppendingString:@"-shm"] error:&error];
+            [NSFileManager.defaultManager removeItemAtPath:[oldStoreURL.path stringByAppendingString:@"-wal"] error:&error];
+            if(error) COUNTLY_LOG(@"Old store deleting error %@",error);
+        }
+        else
+        {
+            [s_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:nil error:&error];
+            if(error) COUNTLY_LOG(@"Store opening error %@", error);
+        }
+        
+        [storeURL setResourceValue:@YES forKey:NSURLIsExcludedFromBackupKey error:&error];
+        if(error) COUNTLY_LOG(@"Unable to exclude Countly persistent store from backups (%@), error: %@", storeURL.absoluteString, error);
     });
 
     return s_persistentStoreCoordinator;
