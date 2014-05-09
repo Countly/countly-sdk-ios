@@ -32,6 +32,12 @@
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count sum:(double)sum;
 
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+- (void)startCrashReporting;
+
+void CCL(const char* function, NSUInteger line, NSString* message);
+#define CountlyCrashLog(format, ...) CCL(__FUNCTION__,__LINE__, [NSString stringWithFormat:(format), ##__VA_ARGS__])
+#endif
 @end
 
 

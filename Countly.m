@@ -776,4 +776,176 @@ NSString* CountlyURLUnescapedString(NSString* string)
 	[self exit];
 }
 
+#pragma mark - CrashReporting
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#import <mach/mach.h>
+#import <mach/mach_host.h>
+#import <arpa/inet.h>
+#import <ifaddrs.h>
+
+#define kCountlyCrashEvent   @"[CLY]_crash"
+
+- (void)startCrashReporting
+{
+    NSSetUncaughtExceptionHandler(&CountlyUncaughtExceptionHandler);
+}
+
+void CountlyUncaughtExceptionHandler(NSException *exception)
+{
+    NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
+    crashReport[@"name"] = exception.name;
+    crashReport[@"description"] = exception.debugDescription;
+    crashReport[@"stack"] = [exception.callStackSymbols componentsJoinedByString:@"\n"];
+    crashReport[@"freeRAM"] = @(Countly.sharedInstance.freeRAM);
+    crashReport[@"totalRAM"] = @(Countly.sharedInstance.totalRAM);
+    crashReport[@"freeDisk"] = @(Countly.sharedInstance.freeDisk);
+    crashReport[@"totalDisk"] = @(Countly.sharedInstance.totalDisk);
+    crashReport[@"batteryLevel"] = @(Countly.sharedInstance.batteryLevel);
+    crashReport[@"orientation"] = @(Countly.sharedInstance.orientation);
+    crashReport[@"connection"] = @(Countly.sharedInstance.connectionType);
+    crashReport[@"proximity"] = @(Countly.sharedInstance.isProximitySensorActive);
+    crashReport[@"jailbroken"] = @(Countly.sharedInstance.isJailbroken);
+    if(CountlyCustomCrashLogs)
+        crashReport[@"customLogs"] = [CountlyCustomCrashLogs componentsJoinedByString:@"\n"];
+
+
+   
+    CountlyEvent *event = CountlyEvent.new.autorelease;
+    event.key = kCountlyCrashEvent;
+    event.segmentation = crashReport;
+    event.count = 1;
+    event.timestamp = time(NULL);
+   
+    NSString *urlString = [NSString stringWithFormat:@"%@/i?app_key=%@&device_id=%@&timestamp=%ld&events=%@",
+                           CountlyConnectionQueue.sharedInstance.appHost,
+                           CountlyConnectionQueue.sharedInstance.appKey,
+                           [CountlyDeviceInfo udid],
+                           time(NULL),
+                           CountlyURLEscapedString(CountlyJSONFromObject(@[event.serializedData]))];
+    
+    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+
+    COUNTLY_LOG(@"CrashReporting URL: %@", urlString);
+
+    NSURLResponse* response = nil;
+	NSError* error = nil;
+	NSData* recvData = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
+	
+	if (error || !recvData)
+    {
+        COUNTLY_LOG(@"CrashReporting failed, report stored to try again later");
+        [CountlyConnectionQueue.sharedInstance recordEvents:CountlyURLEscapedString(CountlyJSONFromObject(@[event.serializedData]))];
+    }
+}
+
+static NSMutableArray *CountlyCustomCrashLogs = nil;
+
+void CCL(const char* function, NSUInteger line, NSString* message)
+{
+    static NSDateFormatter* df = nil;
+    
+    if( CountlyCustomCrashLogs == nil )
+    {
+        CountlyCustomCrashLogs = NSMutableArray.new;
+        df = NSDateFormatter.new;
+        df.dateFormat = @"yyyy-MM-dd HH:mm:ss.SSS";
+    }
+
+    NSString* f = [[NSString.alloc initWithUTF8String:function].autorelease stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"-[]"]];
+    NSString* log = [NSString stringWithFormat:@"[%@] <%@ %li> %@",[df stringFromDate:NSDate.date],f,(unsigned long)line,message];
+    [CountlyCustomCrashLogs addObject:log];
+}
+
+- (unsigned long long)freeRAM
+{
+    vm_statistics_data_t vms;
+    mach_msg_type_number_t ic = HOST_VM_INFO_COUNT;
+    kern_return_t kr = host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t)&vms, &ic);
+    if(kr != KERN_SUCCESS)
+        return -1;
+
+    return vm_page_size * (vms.free_count);
+}
+
+- (unsigned long long)totalRAM
+{
+    return NSProcessInfo.processInfo.physicalMemory;
+}
+
+- (unsigned long long)freeDisk
+{
+    return [[NSFileManager.defaultManager attributesOfFileSystemForPath:NSHomeDirectory() error:nil][NSFileSystemFreeSize] longLongValue];
+}
+
+- (unsigned long long)totalDisk
+{
+    return [[NSFileManager.defaultManager attributesOfFileSystemForPath:NSHomeDirectory() error:nil][NSFileSystemSize] longLongValue];
+}
+
+- (NSInteger)batteryLevel
+{
+    UIDevice.currentDevice.batteryMonitoringEnabled = YES;
+    return UIDevice.currentDevice.batteryLevel*100;
+}
+
+- (NSInteger)orientation
+{
+    return UIDevice.currentDevice.orientation;
+}
+
+-(NSUInteger)connectionType
+{
+    typedef enum:NSInteger {CLYConnectionNone, CLYConnectionCellNetwork, CLYConnectionWiFi} CLYConnectionType;
+    CLYConnectionType connType = CLYConnectionNone;
+    
+    @try
+    {
+        struct ifaddrs *interfaces, *i;
+       
+        if (!getifaddrs(&interfaces))
+        {
+            i = interfaces;
+            
+            while(i != NULL)
+            {
+                if(i->ifa_addr->sa_family == AF_INET)
+                {
+                    if([[NSString stringWithUTF8String:i->ifa_name] isEqualToString:@"pdp_ip0"])
+                    {
+                        connType = CLYConnectionCellNetwork;
+                    }
+                    else if([[NSString stringWithUTF8String:i->ifa_name] isEqualToString:@"en0"])
+                    {
+                        connType = CLYConnectionWiFi;
+                        break;
+                    }
+                }
+                
+                i = i->ifa_next;
+            }
+        }
+        
+        freeifaddrs(interfaces);
+    }
+    @catch (NSException *exception)
+    {
+    
+    }
+
+    return connType;
+}
+
+- (BOOL)isProximitySensorActive
+{
+    return UIDevice.currentDevice.proximityState;
+}
+
+- (BOOL)isJailbroken
+{
+    FILE *f = fopen("/bin/bash", "r");
+    BOOL isJailbroken = (f != NULL);
+    fclose(f);
+    return isJailbroken;
+}
+#endif
 @end
