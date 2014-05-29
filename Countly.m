@@ -782,12 +782,21 @@ NSString* CountlyURLUnescapedString(NSString* string)
 #import <mach/mach_host.h>
 #import <arpa/inet.h>
 #import <ifaddrs.h>
+#include <libkern/OSAtomic.h>
+#include <execinfo.h>
 
-#define kCountlyCrashEvent   @"[CLY]_crash"
+#define kCountlyCrashEventKey   @"[CLY]_crash"
+#define kCountlyCrashUserInfoKey @"[CLY]_stack_trace"
 
 - (void)startCrashReporting
 {
     NSSetUncaughtExceptionHandler(&CountlyUncaughtExceptionHandler);
+    signal(SIGABRT, CountlySignalHandler);
+	signal(SIGILL, CountlySignalHandler);
+	signal(SIGSEGV, CountlySignalHandler);
+	signal(SIGFPE, CountlySignalHandler);
+	signal(SIGBUS, CountlySignalHandler);
+	signal(SIGPIPE, CountlySignalHandler);
 }
 
 void CountlyUncaughtExceptionHandler(NSException *exception)
@@ -795,7 +804,10 @@ void CountlyUncaughtExceptionHandler(NSException *exception)
     NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
     crashReport[@"name"] = exception.name;
     crashReport[@"description"] = exception.debugDescription;
-    crashReport[@"stack"] = [exception.callStackSymbols componentsJoinedByString:@"\n"];
+    if (exception.userInfo[kCountlyCrashUserInfoKey])
+        crashReport[@"stack"] = [exception.userInfo[kCountlyCrashUserInfoKey] componentsJoinedByString:@"\n"];
+    else
+        crashReport[@"stack"] = [exception.callStackSymbols componentsJoinedByString:@"\n"];
     crashReport[@"freeRAM"] = @(Countly.sharedInstance.freeRAM);
     crashReport[@"totalRAM"] = @(Countly.sharedInstance.totalRAM);
     crashReport[@"freeDisk"] = @(Countly.sharedInstance.freeDisk);
@@ -811,7 +823,7 @@ void CountlyUncaughtExceptionHandler(NSException *exception)
 
    
     CountlyEvent *event = CountlyEvent.new.autorelease;
-    event.key = kCountlyCrashEvent;
+    event.key = kCountlyCrashEventKey;
     event.segmentation = crashReport;
     event.count = 1;
     event.timestamp = time(NULL);
@@ -836,6 +848,37 @@ void CountlyUncaughtExceptionHandler(NSException *exception)
         COUNTLY_LOG(@"CrashReporting failed, report stored to try again later");
         [CountlyConnectionQueue.sharedInstance recordEvents:CountlyURLEscapedString(CountlyJSONFromObject(@[event.serializedData]))];
     }
+    
+    NSSetUncaughtExceptionHandler(NULL);
+	signal(SIGABRT, SIG_DFL);
+	signal(SIGILL, SIG_DFL);
+	signal(SIGSEGV, SIG_DFL);
+	signal(SIGFPE, SIG_DFL);
+	signal(SIGBUS, SIG_DFL);
+	signal(SIGPIPE, SIG_DFL);
+}
+
+void CountlySignalHandler(int signalCode)
+{
+    void* callstack[128];
+    NSInteger frames = backtrace(callstack, 128);
+    char **lines = backtrace_symbols(callstack, (int)frames);
+    
+    const NSInteger startOffset = 1;
+	NSMutableArray *backtrace = [NSMutableArray arrayWithCapacity:frames];
+    
+    for (NSInteger i = startOffset; i < frames; i++)
+        [backtrace addObject:[NSString stringWithUTF8String:lines[i]]];
+    
+    free(lines);
+    
+	NSMutableDictionary *userInfo =[NSMutableDictionary dictionaryWithObject:@(signalCode) forKey:@"signal_code"];
+	[userInfo setObject:backtrace forKey:kCountlyCrashUserInfoKey];
+    NSString *reason = [NSString stringWithFormat:@"App terminated by SIG%@",[NSString stringWithUTF8String:sys_signame[signalCode]].uppercaseString];
+
+    NSException *e = [NSException exceptionWithName:@"Fatal Signal" reason:reason userInfo:userInfo];
+
+    CountlyUncaughtExceptionHandler(e);
 }
 
 static NSMutableArray *CountlyCustomCrashLogs = nil;
