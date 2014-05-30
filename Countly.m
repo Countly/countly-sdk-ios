@@ -804,10 +804,6 @@ void CountlyUncaughtExceptionHandler(NSException *exception)
     NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
     crashReport[@"name"] = exception.name;
     crashReport[@"description"] = exception.debugDescription;
-    if (exception.userInfo[kCountlyCrashUserInfoKey])
-        crashReport[@"stack"] = [exception.userInfo[kCountlyCrashUserInfoKey] componentsJoinedByString:@"\n"];
-    else
-        crashReport[@"stack"] = [exception.callStackSymbols componentsJoinedByString:@"\n"];
     crashReport[@"freeRAM"] = @(Countly.sharedInstance.freeRAM);
     crashReport[@"totalRAM"] = @(Countly.sharedInstance.totalRAM);
     crashReport[@"freeDisk"] = @(Countly.sharedInstance.freeDisk);
@@ -817,11 +813,24 @@ void CountlyUncaughtExceptionHandler(NSException *exception)
     crashReport[@"connection"] = @(Countly.sharedInstance.connectionType);
     crashReport[@"proximity"] = @(Countly.sharedInstance.isProximitySensorActive);
     crashReport[@"jailbroken"] = @(Countly.sharedInstance.isJailbroken);
+
     if(CountlyCustomCrashLogs)
         crashReport[@"customLogs"] = [CountlyCustomCrashLogs componentsJoinedByString:@"\n"];
 
+    NSArray* stackArray = exception.userInfo[kCountlyCrashUserInfoKey];
+    if(!stackArray) stackArray = exception.callStackSymbols;
 
-   
+    NSMutableString* stackString = NSMutableString.string;
+    for (NSString* line in stackArray)
+    {
+        NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"\\s+\\s" options:0 error:nil];
+        NSString *cleanLine = [regex stringByReplacingMatchesInString:line options:0 range:(NSRange){0,line.length} withTemplate:@"  "];
+        [stackString appendString:cleanLine];
+        [stackString appendString:@"\n"];
+    }
+    
+    crashReport[@"stack"] = stackString;
+
     CountlyEvent *event = CountlyEvent.new.autorelease;
     event.key = kCountlyCrashEventKey;
     event.segmentation = crashReport;
@@ -928,7 +937,7 @@ void CCL(const char* function, NSUInteger line, NSString* message)
 - (NSInteger)batteryLevel
 {
     UIDevice.currentDevice.batteryMonitoringEnabled = YES;
-    return UIDevice.currentDevice.batteryLevel*100;
+    return abs(UIDevice.currentDevice.batteryLevel*100);
 }
 
 - (NSInteger)orientation
