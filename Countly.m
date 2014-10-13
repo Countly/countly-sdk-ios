@@ -31,6 +31,7 @@
 #import "Countly.h"
 #import "Countly_OpenUDID.h"
 #import "CountlyDB.h"
+#import <objc/runtime.h>
 
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 #import <UIKit/UIKit.h>
@@ -40,7 +41,6 @@
 
 #include <sys/types.h>
 #include <sys/sysctl.h>
-
 
 #pragma mark - Helper Functions
 
@@ -440,6 +440,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 @property (nonatomic, copy) NSString *appKey;
 @property (nonatomic, copy) NSString *appHost;
 @property (nonatomic, retain) NSURLConnection *connection;
+@property (nonatomic) BOOL startedWithTest;
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 @property (nonatomic, assign) UIBackgroundTaskIdentifier bgTask;
 #endif
@@ -496,6 +497,30 @@ NSString* CountlyURLUnescapedString(NSString* string)
     [[CountlyDB sharedInstance] addToQueue:data];
     
 	[self tick];
+}
+
+- (void)tokenSession:(NSString *)token
+{
+    // Test modes: 0 = production mode, 1 = development build, 2 = Ad Hoc build
+    int testMode;
+#ifndef __OPTIMIZE__
+    testMode = 1;
+#else
+    testMode = self.startedWithTest ? 2 : 0;
+#endif
+    
+    COUNTLY_LOG(@"Sending APN token in mode %d", testMode);
+    
+    NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_VERSION"&token_session=1&ios_token=%@&test_mode=%d",
+                      self.appKey,
+                      [CountlyDeviceInfo udid],
+                      time(NULL),
+                      [token length] ? token : @"",
+                      testMode];
+    
+    [[CountlyDB sharedInstance] addToQueue:data];
+    
+    [self tick];
 }
 
 - (void)updateSessionWithDuration:(int)duration
@@ -560,6 +585,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
     
     [self tick];
 }
+
 
 - (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)err
 {
@@ -662,6 +688,30 @@ NSString* CountlyURLUnescapedString(NSString* string)
 {
     [self start:appKey withHost:@"https://cloud.count.ly"];
 }
+
+- (void)startWithMessagingUsing:(NSString *)appKey withHost:(NSString *)appHost andOptions:(NSDictionary *)options
+{
+    [self start:appKey withHost:appHost];
+    
+    NSDictionary *notification = [options objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
+    if (notification) {
+        COUNTLY_LOG(@"Got notification on app launch: %@", notification);
+        [self handleRemoteNotification:notification displayingMessage:NO];
+    }
+}
+
+- (void)startWithTestMessagingUsing:(NSString *)appKey withHost:(NSString *)appHost andOptions:(NSDictionary *)options
+{
+    [self start:appKey withHost:appHost];
+    [[CountlyConnectionQueue sharedInstance] setStartedWithTest:YES];
+    
+    NSDictionary *notification = [options objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
+    if (notification) {
+        COUNTLY_LOG(@"Got notification on app launch: %@", notification);
+        [self handleRemoteNotification:notification displayingMessage:NO];
+    }
+}
+
 
 - (void)recordEvent:(NSString *)key count:(int)count
 {
@@ -774,6 +824,122 @@ NSString* CountlyURLUnescapedString(NSString* string)
 	COUNTLY_LOG(@"App willTerminate");
     [[CountlyDB sharedInstance] saveContext];
 	[self exit];
+}
+
+#define kPushToMessage      1
+#define kPushToOpenLink     2
+#define kPushToUpdate       3
+#define kPushToReview       4
+#define kPushEventKeyOpen   @"[CLY]_push_open"
+#define kPushEventKeyAction @"[CLY]_push_action"
+#define kPushDefaultButtonTitles =
+static NSString *kPushInfoKey = @"kPushInfoKey";
+
+- (BOOL) handleRemoteNotification:(NSDictionary *)info withButtonTitles:(NSArray *)titles {
+    return [self handleRemoteNotification:info displayingMessage:YES withButtonTitles:titles];
+}
+
+- (BOOL) handleRemoteNotification:(NSDictionary *)info {
+    return [self handleRemoteNotification:info displayingMessage:YES];
+}
+
+- (BOOL) handleRemoteNotification:(NSDictionary *)info displayingMessage:(BOOL)displayMessage {
+    return [self handleRemoteNotification:info displayingMessage:displayMessage
+                         withButtonTitles:@[@"Cancel", @"OK", @"Open", @"Update", @"Review"]];
+}
+
+- (BOOL) handleRemoteNotification:(NSDictionary *)info displayingMessage:(BOOL)displayMessage withButtonTitles:(NSArray *)titles {
+    COUNTLY_LOG(@"Handling remote notification (display? %d): %@", displayMessage, info);
+    
+    NSDictionary *aps = info[@"aps"];
+    NSDictionary *countly = info[@"c"];
+    
+    if (countly[@"i"]) {
+        COUNTLY_LOG(@"Message identity: %@", countly[@"i"]);
+
+        [self recordPushOpenForCountlyDictionary:countly];
+        NSString *appName = [[[NSBundle mainBundle] infoDictionary] objectForKey:(NSString*)kCFBundleNameKey];
+        NSString *message = [aps objectForKey:@"alert"];
+        
+        int type = 0;
+        NSString *action = nil;
+        
+        if ([aps objectForKey:@"content-available"]) {
+            return NO;
+        } else if (countly[@"l"]) {
+            type = kPushToOpenLink;
+            action = titles[2];
+        } else if (countly[@"r"]) {
+            type = kPushToReview;
+            action = titles[4];
+        } else if (countly[@"u"]) {
+            type = kPushToUpdate;
+            action = titles[3];
+        } else if (displayMessage) {
+            type = kPushToMessage;
+            action = nil;
+        }
+        
+        if (type && [message length]) {
+            UIAlertView *alert;
+            if (action) {
+                alert = [[UIAlertView alloc] initWithTitle:appName message:message delegate:self
+                                         cancelButtonTitle:titles[0] otherButtonTitles:action, nil];
+            } else {
+                alert = [[UIAlertView alloc] initWithTitle:appName message:message delegate:self
+                                         cancelButtonTitle:titles[0] otherButtonTitles:nil];
+            }
+            alert.tag = type;
+            objc_setAssociatedObject(alert, &kPushInfoKey, info, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            [alert show];
+            return YES;
+        }
+    }
+    
+    return NO;
+}
+
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
+    NSDictionary *info = (NSDictionary *)objc_getAssociatedObject(self, &kPushInfoKey);
+    objc_setAssociatedObject(alertView, &kPushInfoKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
+    if (alertView.tag == kPushToMessage) {
+        // do nothing
+    } else if (buttonIndex != alertView.cancelButtonIndex) {
+        if (alertView.tag == kPushToOpenLink) {
+            [self recordPushActionForCountlyDictionary:info[@"c"]];
+            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:info[@"c"][@"l"]]];
+        } else if (alertView.tag == kPushToUpdate) {
+            [self recordPushActionForCountlyDictionary:info[@"c"]];
+            NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"itms-apps://ax.itunes.apple.com/WebObjects/MZStore.woa/wa/viewSoftwareUpdate?id=%@&mt=8", info[@"c"][@"u"]]];
+            [[UIApplication sharedApplication] openURL:url];
+        } else if (alertView.tag == kPushToReview) {
+            [self recordPushActionForCountlyDictionary:info[@"c"]];
+            NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"itms-apps://ax.itunes.apple.com/WebObjects/MZStore.woa/wa/viewContentsUserReviews?type=Purple+Software&id=%@", info[@"c"][@"r"]]];
+            [[UIApplication sharedApplication] openURL:url];
+        }
+    }
+}
+
+- (void)recordPushOpenForCountlyDictionary:(NSDictionary *)c {
+    [self recordEvent:kPushEventKeyOpen segmentation:@{@"i": c[@"i"]} count:1];
+}
+
+- (void)recordPushActionForCountlyDictionary:(NSDictionary *)c {
+    [self recordEvent:kPushEventKeyAction segmentation:@{@"i": c[@"i"]} count:1];
+}
+
+- (void)didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
+    const unsigned *tokenBytes = [deviceToken bytes];
+    NSString *token = [NSString stringWithFormat:@"%08x%08x%08x%08x%08x%08x%08x%08x",
+                       ntohl(tokenBytes[0]), ntohl(tokenBytes[1]), ntohl(tokenBytes[2]),
+                       ntohl(tokenBytes[3]), ntohl(tokenBytes[4]), ntohl(tokenBytes[5]),
+                       ntohl(tokenBytes[6]), ntohl(tokenBytes[7])];
+    [[CountlyConnectionQueue sharedInstance] tokenSession:token];
+}
+
+- (void)didFailToRegisterForRemoteNotifications {
+    [[CountlyConnectionQueue sharedInstance] tokenSession:nil];
 }
 
 @end

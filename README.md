@@ -41,6 +41,51 @@ It should finally look like this:
 }
 </pre>
 
+##Countly Messaging support
+This SDK can be used for Countly analytics, Countly Messaging push notification service or both at the same time. If the only thing you need is Countly analytics, you can skip this section. If you want yo use Countly Messaging, you'll need to add a few more lines of Countly code to your application delegate:
+<pre class="prettyprint">
+#import "Countly.h"  // newly added line
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+{
+[[Countly sharedInstance] startWithMessagingUsing:@"TYPE_HERE_YOUR_APP_KEY_GENERATED_IN_COUNTLY_ADMIN_DASHBOARD" withHost:@"http://TYPE_HERE_URL_WHERE_API_IS_HOSTED" andOptions:launchOptions]; // newly added line
+    UIUserNotificationSettings* notificationSettings = [UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert | UIUserNotificationTypeBadge | UIUserNotificationTypeSound categories:nil];
+    [[UIApplication sharedApplication] registerUserNotificationSettings:notificationSettings];
+    
+    // your code
+
+    return YES;
+}
+
+- (void)application:(UIApplication *)application didRegisterUserNotificationSettings:(UIUserNotificationSettings *)notificationSettings {
+    [application registerForRemoteNotifications];
+}
+
+- (void) application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
+    [[Countly sharedInstance] didRegisterForRemoteNotificationsWithDeviceToken:deviceToken];
+}
+
+- (void) application:(UIApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error {
+    [[Countly sharedInstance] didFailToRegisterForRemoteNotifications];
+}
+
+</pre>
+`startWithMessagingUsing:withHost:andOptions:`, `didRegisterForRemoteNotificationsWithDeviceToken:`, `didFailToRegisterForRemoteNotifications` are required for Countly Messaging to work properly. The latter Countly SDK method `handleRemoteNotification:` is the one that handles most of your Push Notification work for you. Here is what it does:
+
+1. Analyzes notification in `userInfo` and if it's a Countly notification (has `"c"` dictionary in `userInfo`), processes it and returns `TRUE`. Otherwise, or if notification analysis says that you're responsible for message processing (see 'Silent' switch below), it returns `FALSE`.
+2. Automatically makes callbacks to Countly Messaging server to calculate number of push notifications open and number of notifications with positive reactions.
+3. Processes common types of notifications automagically. You don't have to do anything.
+    * It displays `UIAlertView` when new message arrives and your app is in foreground.
+    * It displays `UIAlertView` when new message arrives and your app is terminated or in background, but launched by tapping push notification with action (see link, app update and app review below).
+    * It also displays special kinds of `UIAlertView`:
+        * For notifications with **links** (you ask user to open a link to some blog post, for instance);
+        * For **app update** notifications (you ask user to update the app, and pressing OK button takes a user to the app update page of App Store);
+        * For **app review** notifications (you ask user to review the app, and pressing OK button takes a user to the app review page of App Store).
+    * Doesn't do anything except for 'message open' callback to Countly Messaging server if you specify 'Silent' switch in dashboard. This effectively sets `content-available` to `true` in your message so you could process it in `application:didReceiveRemoteNotification:fetchCompletionHandler` method to do some background processing. And, in this case `handleRemoteNotification:` returns `FALSE`.
+4.  Still lets you process push notifications as you whish in any of three application delegate methods. You can even disable Countly processing for all notifications, just don't call `handleRemoteNotification:` and pass nil as options in `startWithMessagingUsing:forHost:andOptions:`. But in this case don't forget to call  `[[Countly sharedInstance] recordPushActionForDictionary:` with `"c"` dictionary from notification `userInfo` if you want to have correct 'ACTIONS PERFORMED' metric in dashboard.
+
+###Localization
+By default, Countly shows your app name as a title of alert and following english alert button names: Cancel, OK, Open, Update, Review. If you want to customize them, there is a handy method `handleRemoteNotification:withButtonTitles:` which you can use instead of `handleRemoteNotification:` and provide `NSArray` of `NSString`s in the same order they are listed above.
+
 ### Using ARC ###
 
 If your project uses automatic reference counting (ARC), you should disable it for the 
