@@ -517,10 +517,12 @@ NSString* CountlyURLUnescapedString(NSString* string)
                       time(NULL),
                       [token length] ? token : @"",
                       testMode];
-    
-    [[CountlyDB sharedInstance] addToQueue:data];
-    
-    [self tick];
+
+    // Not right now to prevent race with begin_session=1 when adding new user
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [[CountlyDB sharedInstance] addToQueue:data];
+        [self tick];
+    });
 }
 
 - (void)updateSessionWithDuration:(int)duration
