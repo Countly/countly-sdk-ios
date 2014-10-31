@@ -72,7 +72,7 @@ You can see detailed user information on your Countly Analytics Dashboard by rec
                                                 kCLYUserPicture: @"http://example.com/photo.png"
                                             }];</pre>
 
-Alle keys are optional:
+All keys are optional:
 
 `kCLYUserName` - (String) User's full name
 

@@ -11,7 +11,7 @@
 #endif
 
 #ifndef COUNTLY_DEBUG
-#define COUNTLY_DEBUG 1
+#define COUNTLY_DEBUG 0
 #endif
 
 #ifndef COUNTLY_IGNORE_INVALID_CERTIFICATES
