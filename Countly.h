@@ -32,6 +32,16 @@
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count sum:(double)sum;
 
+- (void)recordUserDetails:(NSDictionary *)userDetails;
+        extern NSString* const kCLYUserName;
+        extern NSString* const kCLYUserUsername;
+        extern NSString* const kCLYUserEmail;
+        extern NSString* const kCLYUserOrganization;
+        extern NSString* const kCLYUserPhone;
+        extern NSString* const kCLYUserGender;
+        extern NSString* const kCLYUserPicture;
+        extern NSString* const kCLYUserBirthYear;
+
 @end
 
 

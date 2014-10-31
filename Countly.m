@@ -11,7 +11,7 @@
 #endif
 
 #ifndef COUNTLY_DEBUG
-#define COUNTLY_DEBUG 0
+#define COUNTLY_DEBUG 1
 #endif
 
 #ifndef COUNTLY_IGNORE_INVALID_CERTIFICATES
@@ -197,6 +197,90 @@ NSString* CountlyURLUnescapedString(NSString* string)
 	[metricsDictionary setObject:CountlyDeviceInfo.appVersion forKey:@"_app_version"];
 	
 	return CountlyURLEscapedString(CountlyJSONFromObject(metricsDictionary));
+}
+
+@end
+
+
+#pragma mark - CountlyUserDetails
+@interface CountlyUserDetails : NSObject
+
+@property(nonatomic,strong) NSString* name;
+@property(nonatomic,strong) NSString* username;
+@property(nonatomic,strong) NSString* email;
+@property(nonatomic,strong) NSString* organization;
+@property(nonatomic,strong) NSString* phone;
+@property(nonatomic,strong) NSString* gender;
+@property(nonatomic,strong) NSString* picture;
+@property(nonatomic,readwrite) NSInteger birthYear;
+
++(CountlyUserDetails*)sharedUserDetails;
+-(void)deserialize:(NSDictionary*)userDictionary;
+-(NSString*)serialize;
+
+@end
+
+@implementation CountlyUserDetails
+
+NSString* const kCLYUserName = @"name";
+NSString* const kCLYUserUsername = @"username";
+NSString* const kCLYUserEmail = @"email";
+NSString* const kCLYUserOrganization = @"organization";
+NSString* const kCLYUserPhone = @"phone";
+NSString* const kCLYUserGender = @"gender";
+NSString* const kCLYUserPicture = @"picture";
+NSString* const kCLYUserBirthYear = @"byear";
+
++(CountlyUserDetails*)sharedUserDetails
+{
+    static CountlyUserDetails *s_CountlyUserDetails = nil;
+    static dispatch_once_t onceToken;
+    
+    dispatch_once(&onceToken, ^{s_CountlyUserDetails = CountlyUserDetails.new;});
+    return s_CountlyUserDetails;
+}
+
+-(void)deserialize:(NSDictionary*)userDictionary
+{
+    if(userDictionary[kCLYUserName])
+        self.name = userDictionary[kCLYUserName];
+    if(userDictionary[kCLYUserUsername])
+        self.username = userDictionary[kCLYUserUsername];
+    if(userDictionary[kCLYUserEmail])
+        self.email = userDictionary[kCLYUserEmail];
+    if(userDictionary[kCLYUserOrganization])
+        self.organization = userDictionary[kCLYUserOrganization];
+    if(userDictionary[kCLYUserPhone])
+        self.phone = userDictionary[kCLYUserPhone];
+    if(userDictionary[kCLYUserGender])
+        self.gender = userDictionary[kCLYUserGender];
+    if(userDictionary[kCLYUserPicture])
+        self.picture = userDictionary[kCLYUserPicture];
+    if(userDictionary[kCLYUserBirthYear])
+        self.birthYear = [userDictionary[kCLYUserBirthYear] integerValue];
+}
+
+- (NSString *)serialize
+{
+    NSMutableDictionary* userDictionary = [NSMutableDictionary dictionary];
+    if(self.name)
+        userDictionary[kCLYUserName] = self.name;
+    if(self.username)
+        userDictionary[kCLYUserUsername] = self.username;
+    if(self.email)
+        userDictionary[kCLYUserEmail] = self.email;
+    if(self.organization)
+        userDictionary[kCLYUserOrganization] = self.organization;
+    if(self.phone)
+        userDictionary[kCLYUserPhone] = self.phone;
+    if(self.gender)
+        userDictionary[kCLYUserGender] = self.gender;
+    if(self.picture)
+        userDictionary[kCLYUserPicture] = self.picture;
+    if(self.birthYear!=0)
+        userDictionary[kCLYUserBirthYear] = @(self.birthYear);
+    
+    return CountlyURLEscapedString(CountlyJSONFromObject(userDictionary));
 }
 
 @end
@@ -524,6 +608,19 @@ NSString* CountlyURLUnescapedString(NSString* string)
 	[self tick];
 }
 
+- (void)sendUserDetails
+{
+    NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_VERSION"&user_details=%@",
+                      self.appKey,
+                      [CountlyDeviceInfo udid],
+                      time(NULL),
+                      [[CountlyUserDetails sharedUserDetails] serialize]];
+    
+    [[CountlyDB sharedInstance] addToQueue:data];
+    
+    [self tick];
+}
+
 - (void)recordEvents:(NSString *)events
 {
 	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&events=%@",
@@ -694,6 +791,14 @@ NSString* CountlyURLUnescapedString(NSString* string)
     if (eventQueue.count >= COUNTLY_EVENT_SEND_THRESHOLD)
         [[CountlyConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
 }
+
+- (void)recordUserDetails:(NSDictionary *)userDetails
+{
+    NSLog(@"%s",__FUNCTION__);
+    [CountlyUserDetails.sharedUserDetails deserialize:userDetails];
+    [CountlyConnectionQueue.sharedInstance sendUserDetails];
+}
+
 
 - (void)onTimer:(NSTimer *)timer
 {
