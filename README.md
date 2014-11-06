@@ -57,6 +57,12 @@ Note: Before upgrading to a new SDK, do not forget to remove the existing, older
 
 Countly iOS SDK benefits from Cocoapods. For more information, go to [Countly CocoaPods Github directory](https://github.com/CocoaPods/Specs/tree/master/Countly)
 
+### Using IDFA ###
+
+By default, Countly iOS SDK uses OpenUDID to track devices. But you can use IDFA (Identifier for Advertisers) instead of OpenUDID by setting `COUNTLY_PREFER_IDFA` preprocessor flag.
+
+**Note:** Please make sure you follow the instructions specified in [iTunes Connect Developer Guide](https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/SubmittingTheApp.html) - The Advertising Identifier (IDFA) section.
+Otherwise your app may get rejected due to "Use of IDFA without displaying any ads".
 
 ### Other resources ###
 

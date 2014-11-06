@@ -18,6 +18,10 @@
 #define COUNTLY_IGNORE_INVALID_CERTIFICATES 0
 #endif
 
+#ifndef COUNTLY_PREFER_IDFA
+#define COUNTLY_PREFER_IDFA 0
+#endif
+
 #if COUNTLY_DEBUG
 #   define COUNTLY_LOG(fmt, ...) NSLog(fmt, ##__VA_ARGS__)
 #else
@@ -36,6 +40,9 @@
 #import <UIKit/UIKit.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import <CoreTelephony/CTCarrier.h>
+#if COUNTLY_PREFER_IDFA
+#import <AdSupport/ASIdentifierManager.h>
+#endif
 #endif
 
 #include <sys/types.h>
@@ -104,7 +111,14 @@ NSString* CountlyURLUnescapedString(NSString* string)
 
 + (NSString *)udid
 {
+#if COUNTLY_PREFER_IDFA && (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
+    if(ASIdentifierManager.sharedManager.isAdvertisingTrackingEnabled)
+        return ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
+
+    return [Countly_OpenUDID value];
+#else
 	return [Countly_OpenUDID value];
+#endif
 }
 
 + (NSString *)device
