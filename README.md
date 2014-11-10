@@ -66,7 +66,10 @@ By default, Countly iOS SDK uses OpenUDID to track devices. But you can use IDFA
 Otherwise your app may get rejected due to "Use of IDFA without displaying any ads".
 
 
-##Countly Messaging support
+##Countly Push Notifications
+
+**Important note:** In order to use Countly Push Notifications, you must use `messaging` branch of countly-server repository and `messaging` branch of countly-sdk-ios repository.
+
 This SDK can be used for Countly analytics, Countly Messaging push notification service or both at the same time. If the only thing you need is Countly analytics, you can skip this section. If you want yo use Countly Messaging, you'll need to add a few more lines of Countly code to your application delegate:
 <pre class="prettyprint">
 #import "Countly.h"  // newly added line
