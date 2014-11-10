@@ -113,6 +113,40 @@ While push notifications in Countly Messaging are properly localized, there is s
 
 
 
+### Countly User Details (Enterprise Version Only)###
+You can see detailed user information on your Countly Analytics Dashboard by recording user details with following method:
+
+<pre class="prettyprint">[Countly.sharedInstance recordUserDetails: @{
+                                                kCLYUserName: @"John DOE",
+                                                kCLYUserEmail: @"johndoe@example.com",
+                                                kCLYUserBirthYear: @1970,
+                                                kCLYUserGender: @"M",
+                                                kCLYUserOrganization: @"United Nations",
+                                                kCLYUserPhone: @"+1234567890",
+                                                kCLYUserUsername: @"johndoe",
+                                                kCLYUserPicture: @"http://example.com/photo.png"
+                                            }];</pre>
+
+All keys are optional:
+
+`kCLYUserName` - (String) User's full name
+
+`kCLYUserEmail` - (String) User's email address
+
+`kCLYUserBirthYear` - (Integer) User's year of birth as integer
+
+`kCLYUserGender` - (String) User's gender as M for male and F for female
+
+`kCLYUserOrganization` - (String) User's organization
+
+`kCLYUserPhone` - (String) User's phone number with country code
+
+`kCLYUserUsername` - (String) User's nickname
+
+`kCLYUserPicture` - (String) WWW URL to User's avatar or profile picture
+
+
+
 ### Other resources ###
 
 Check Countly Server source code here: 
