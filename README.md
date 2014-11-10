@@ -57,6 +57,15 @@ Note: Before upgrading to a new SDK, do not forget to remove the existing, older
 
 Countly iOS SDK benefits from Cocoapods. For more information, go to [Countly CocoaPods Github directory](https://github.com/CocoaPods/Specs/tree/master/Countly)
 
+
+### Using IDFA ###
+
+By default, Countly iOS SDK uses OpenUDID to track devices. But you can use IDFA (Identifier for Advertisers) instead of OpenUDID by setting `COUNTLY_PREFER_IDFA` preprocessor flag.
+
+**Note:** Please make sure you follow the instructions specified in [iTunes Connect Developer Guide](https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/SubmittingTheApp.html) - The Advertising Identifier (IDFA) section.
+Otherwise your app may get rejected due to "Use of IDFA without displaying any ads".
+
+
 ##Countly Messaging support
 This SDK can be used for Countly analytics, Countly Messaging push notification service or both at the same time. If the only thing you need is Countly analytics, you can skip this section. If you want yo use Countly Messaging, you'll need to add a few more lines of Countly code to your application delegate:
 <pre class="prettyprint">
@@ -101,6 +110,40 @@ This SDK can be used for Countly analytics, Countly Messaging push notification 
 
 ### Push Notifications Localization
 While push notifications in Countly Messaging are properly localized, there is still space for localization in the way notifications are displayed. By default, Countly uses your app name for a title of notification alert and following english words for alert button names: Cancel, OK, Open, Update, Review. If you want to customize them, there is a handy method `handleRemoteNotification:withButtonTitles:` which you can use instead of `handleRemoteNotification:` and provide `NSArray` of `NSString`s in the same order they are listed above.
+
+
+
+### Countly User Details (Enterprise Version Only)###
+You can see detailed user information on your Countly Analytics Dashboard by recording user details with following method:
+
+<pre class="prettyprint">[Countly.sharedInstance recordUserDetails: @{
+                                                kCLYUserName: @"John DOE",
+                                                kCLYUserEmail: @"johndoe@example.com",
+                                                kCLYUserBirthYear: @1970,
+                                                kCLYUserGender: @"M",
+                                                kCLYUserOrganization: @"United Nations",
+                                                kCLYUserPhone: @"+1234567890",
+                                                kCLYUserUsername: @"johndoe",
+                                                kCLYUserPicture: @"http://example.com/photo.png"
+                                            }];</pre>
+
+All keys are optional:
+
+`kCLYUserName` - (String) User's full name
+
+`kCLYUserEmail` - (String) User's email address
+
+`kCLYUserBirthYear` - (Integer) User's year of birth as integer
+
+`kCLYUserGender` - (String) User's gender as M for male and F for female
+
+`kCLYUserOrganization` - (String) User's organization
+
+`kCLYUserPhone` - (String) User's phone number with country code
+
+`kCLYUserUsername` - (String) User's nickname
+
+`kCLYUserPicture` - (String) WWW URL to User's avatar or profile picture
 
 
 
