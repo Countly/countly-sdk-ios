@@ -11,7 +11,7 @@ This repository includes the Countly iOS & OS X SDK.
 Need help? See [Countly SDK for iOS and OS X](http://resources.count.ly/v1.0/docs/countly-sdk-for-ios-and-os-x) documentation at [Countly Resources](http://resources.count.ly).
 
 
-### Other resources ###
+### Other Github resources ###
 
 Check Countly Server source code here: 
 
