@@ -227,6 +227,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 @property(nonatomic,strong) NSString* gender;
 @property(nonatomic,strong) NSString* picture;
 @property(nonatomic,readwrite) NSInteger birthYear;
+@property(nonatomic,readwrite) NSDictionary* custom;
 
 +(CountlyUserDetails*)sharedUserDetails;
 -(void)deserialize:(NSDictionary*)userDictionary;
@@ -244,6 +245,7 @@ NSString* const kCLYUserPhone = @"phone";
 NSString* const kCLYUserGender = @"gender";
 NSString* const kCLYUserPicture = @"picture";
 NSString* const kCLYUserBirthYear = @"byear";
+NSString* const kCLYUserCustom = @"custom";
 
 +(CountlyUserDetails*)sharedUserDetails
 {
@@ -272,6 +274,8 @@ NSString* const kCLYUserBirthYear = @"byear";
         self.picture = userDictionary[kCLYUserPicture];
     if(userDictionary[kCLYUserBirthYear])
         self.birthYear = [userDictionary[kCLYUserBirthYear] integerValue];
+    if(userDictionary[kCLYUserCustom])
+        self.custom = userDictionary[kCLYUserCustom];
 }
 
 - (NSString *)serialize
@@ -293,6 +297,8 @@ NSString* const kCLYUserBirthYear = @"byear";
         userDictionary[kCLYUserPicture] = self.picture;
     if(self.birthYear!=0)
         userDictionary[kCLYUserBirthYear] = @(self.birthYear);
+    if(self.custom)
+        userDictionary[kCLYUserCustom] = self.custom;
     
     return CountlyURLEscapedString(CountlyJSONFromObject(userDictionary));
 }

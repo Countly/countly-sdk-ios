@@ -41,6 +41,7 @@
         extern NSString* const kCLYUserGender;
         extern NSString* const kCLYUserPicture;
         extern NSString* const kCLYUserBirthYear;
+        extern NSString* const kCLYUserCustom;
 
 @end
 
