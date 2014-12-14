@@ -98,6 +98,8 @@ NSString* CountlyURLUnescapedString(NSString* string)
 
 + (NSString *)metrics;
 
++ (NSString *)bundleId;
+
 @end
 
 @implementation CountlyDeviceInfo
@@ -197,6 +199,11 @@ NSString* CountlyURLUnescapedString(NSString* string)
 	[metricsDictionary setObject:CountlyDeviceInfo.appVersion forKey:@"_app_version"];
 	
 	return CountlyURLEscapedString(CountlyJSONFromObject(metricsDictionary));
+}
+
++ (NSString *)bundleId
+{
+    return [[NSBundle mainBundle] bundleIdentifier];
 }
 
 @end
@@ -636,6 +643,12 @@ NSString* CountlyURLUnescapedString(NSString* string)
 
 #pragma mark - Countly Core
 
+@interface Countly ()
+
+@property (nonatomic, strong) NSMutableDictionary *messageInfos;
+
+@end
+
 @implementation Countly
 
 + (instancetype)sharedInstance
@@ -654,6 +667,8 @@ NSString* CountlyURLUnescapedString(NSString* string)
 		isSuspended = NO;
 		unsentSessionLength = 0;
         eventQueue = [[CountlyEventQueue alloc] init];
+        
+        self.messageInfos = [NSMutableDictionary new];
 
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 		[[NSNotificationCenter defaultCenter] addObserver:self
@@ -712,6 +727,61 @@ NSString* CountlyURLUnescapedString(NSString* string)
         COUNTLY_LOG(@"Got notification on app launch: %@", notification);
         [self handleRemoteNotification:notification displayingMessage:NO];
     }
+    
+    [self withAppStoreId:^(NSString *appId) {
+        NSLog(@"ID: %@", appId);
+    }];
+}
+
+- (NSMutableSet *) countlyNotificationCategories {
+    return [self countlyNotificationCategoriesWithActionTitles:@[@"Cancel", @"Open", @"Update", @"Review"]];
+}
+
+- (NSMutableSet *) countlyNotificationCategoriesWithActionTitles:(NSArray *)actions {
+    UIMutableUserNotificationCategory *url = [UIMutableUserNotificationCategory new],
+                                      *upd = [UIMutableUserNotificationCategory new],
+                                      *rev = [UIMutableUserNotificationCategory new];
+    
+    url.identifier = @"[CLY]_url";
+    upd.identifier = @"[CLY]_update";
+    rev.identifier = @"[CLY]_review";
+
+    UIMutableUserNotificationAction *cancel = [UIMutableUserNotificationAction new],
+                                      *open = [UIMutableUserNotificationAction new],
+                                    *update = [UIMutableUserNotificationAction new],
+                                    *review = [UIMutableUserNotificationAction new];
+    
+    cancel.identifier = @"[CLY]_cancel";
+    open.identifier   = @"[CLY]_open";
+    update.identifier = @"[CLY]_update";
+    review.identifier = @"[CLY]_review";
+    
+    cancel.title = actions[0];
+    open.title   = actions[1];
+    update.title = actions[2];
+    review.title = actions[3];
+
+    cancel.activationMode = UIUserNotificationActivationModeBackground;
+    open.activationMode   = UIUserNotificationActivationModeForeground;
+    update.activationMode = UIUserNotificationActivationModeForeground;
+    review.activationMode = UIUserNotificationActivationModeForeground;
+    
+    cancel.destructive = NO;
+    open.destructive   = NO;
+    update.destructive = NO;
+    review.destructive = NO;
+    
+    
+    [url setActions:@[cancel, open] forContext:UIUserNotificationActionContextMinimal];
+    [url setActions:@[cancel, open] forContext:UIUserNotificationActionContextDefault];
+    
+    [upd setActions:@[cancel, update] forContext:UIUserNotificationActionContextMinimal];
+    [upd setActions:@[cancel, update] forContext:UIUserNotificationActionContextDefault];
+    
+    [rev setActions:@[cancel, review] forContext:UIUserNotificationActionContextMinimal];
+    [rev setActions:@[cancel, review] forContext:UIUserNotificationActionContextDefault];
+    
+    return [NSMutableSet setWithObjects:url, upd, rev, nil];
 }
 
 
@@ -834,8 +904,8 @@ NSString* CountlyURLUnescapedString(NSString* string)
 #define kPushToReview       4
 #define kPushEventKeyOpen   @"[CLY]_push_open"
 #define kPushEventKeyAction @"[CLY]_push_action"
-#define kPushDefaultButtonTitles =
-static NSString *kPushInfoKey = @"kPushInfoKey";
+#define kAppIdPropertyKey   @"[CLY]_app_id"
+#define kCountlyAppId       @"695261996"
 
 - (BOOL) handleRemoteNotification:(NSDictionary *)info withButtonTitles:(NSArray *)titles {
     return [self handleRemoteNotification:info displayingMessage:YES withButtonTitles:titles];
@@ -847,7 +917,7 @@ static NSString *kPushInfoKey = @"kPushInfoKey";
 
 - (BOOL) handleRemoteNotification:(NSDictionary *)info displayingMessage:(BOOL)displayMessage {
     return [self handleRemoteNotification:info displayingMessage:displayMessage
-                         withButtonTitles:@[@"Cancel", @"OK", @"Open", @"Update", @"Review"]];
+                         withButtonTitles:@[@"Cancel", @"Open", @"Update", @"Review"]];
 }
 
 - (BOOL) handleRemoteNotification:(NSDictionary *)info displayingMessage:(BOOL)displayMessage withButtonTitles:(NSArray *)titles {
@@ -857,7 +927,7 @@ static NSString *kPushInfoKey = @"kPushInfoKey";
     NSDictionary *countly = info[@"c"];
     
     if (countly[@"i"]) {
-        COUNTLY_LOG(@"Message identity: %@", countly[@"i"]);
+        COUNTLY_LOG(@"Message id: %@", countly[@"i"]);
 
         [self recordPushOpenForCountlyDictionary:countly];
         NSString *appName = [[[NSBundle mainBundle] infoDictionary] objectForKey:(NSString*)kCFBundleNameKey];
@@ -870,13 +940,13 @@ static NSString *kPushInfoKey = @"kPushInfoKey";
             return NO;
         } else if (countly[@"l"]) {
             type = kPushToOpenLink;
-            action = titles[2];
-        } else if (countly[@"r"]) {
+            action = titles[1];
+        } else if (countly[@"r"] != nil) {
             type = kPushToReview;
-            action = titles[4];
-        } else if (countly[@"u"]) {
-            type = kPushToUpdate;
             action = titles[3];
+        } else if (countly[@"u"] != nil) {
+            type = kPushToUpdate;
+            action = titles[2];
         } else if (displayMessage) {
             type = kPushToMessage;
             action = nil;
@@ -892,7 +962,9 @@ static NSString *kPushInfoKey = @"kPushInfoKey";
                                          cancelButtonTitle:titles[0] otherButtonTitles:nil];
             }
             alert.tag = type;
-            objc_setAssociatedObject(alert, &kPushInfoKey, info, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            
+            _messageInfos[alert.description] = info;
+
             [alert show];
             return YES;
         }
@@ -902,8 +974,8 @@ static NSString *kPushInfoKey = @"kPushInfoKey";
 }
 
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
-    NSDictionary *info = (NSDictionary *)objc_getAssociatedObject(self, &kPushInfoKey);
-    objc_setAssociatedObject(alertView, &kPushInfoKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    NSDictionary *info = _messageInfos[alertView.description];
+    [_messageInfos removeObjectForKey:alertView.description];
 
     if (alertView.tag == kPushToMessage) {
         // do nothing
@@ -912,15 +984,107 @@ static NSString *kPushInfoKey = @"kPushInfoKey";
             [self recordPushActionForCountlyDictionary:info[@"c"]];
             [[UIApplication sharedApplication] openURL:[NSURL URLWithString:info[@"c"][@"l"]]];
         } else if (alertView.tag == kPushToUpdate) {
-            [self recordPushActionForCountlyDictionary:info[@"c"]];
-            NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"itms-apps://ax.itunes.apple.com/WebObjects/MZStore.woa/wa/viewSoftwareUpdate?id=%@&mt=8", info[@"c"][@"u"]]];
-            [[UIApplication sharedApplication] openURL:url];
+            if ([info[@"c"][@"u"] length]) {
+                [self openUpdate:info[@"c"][@"u"] forInfo:info];
+            } else {
+                [self withAppStoreId:^(NSString *appStoreId) {
+                    [self openUpdate:appStoreId forInfo:info];
+                }];
+            }
         } else if (alertView.tag == kPushToReview) {
-            [self recordPushActionForCountlyDictionary:info[@"c"]];
-            NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"itms-apps://ax.itunes.apple.com/WebObjects/MZStore.woa/wa/viewContentsUserReviews?type=Purple+Software&id=%@", info[@"c"][@"r"]]];
-            [[UIApplication sharedApplication] openURL:url];
+            if ([info[@"c"][@"r"] length]) {
+                [self openReview:info[@"c"][@"r"] forInfo:info];
+            } else {
+                [self withAppStoreId:^(NSString *appStoreId) {
+                    [self openReview:appStoreId forInfo:info];
+                }];
+            }
         }
     }
+}
+
+- (void) withAppStoreId:(void (^)(NSString *))block{
+    NSString *appStoreId = [[NSUserDefaults standardUserDefaults] stringForKey:kAppIdPropertyKey];
+    if (appStoreId) {
+        block(appStoreId);
+    } else {
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+            NSString *appStoreId = nil;
+            NSString *bundle = [CountlyDeviceInfo bundleId];
+//            NSString *bundle = @"ru.byblos.byblos";
+            //get country
+            NSString *appStoreCountry = [(NSLocale *)[NSLocale currentLocale] objectForKey:NSLocaleCountryCode];
+            if ([appStoreCountry isEqualToString:@"150"]) {
+                appStoreCountry = @"eu";
+            } else if ([[appStoreCountry stringByReplacingOccurrencesOfString:@"[A-Za-z]{2}" withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, 2)] length]) {
+                appStoreCountry = @"us";
+            }
+            
+            NSString *iTunesServiceURL = [NSString stringWithFormat:@"http://itunes.apple.com/%@/lookup", appStoreCountry];
+            iTunesServiceURL = [iTunesServiceURL stringByAppendingFormat:@"?bundleId=%@", bundle];
+            
+            NSError *error = nil;
+            NSURLResponse *response = nil;
+            NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:iTunesServiceURL] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
+            NSData *data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
+            NSInteger statusCode = ((NSHTTPURLResponse *)response).statusCode;
+            if (data && statusCode == 200) {
+                
+                id json = [[NSJSONSerialization JSONObjectWithData:data options:(NSJSONReadingOptions)0 error:&error][@"results"] lastObject];
+                
+                if (!error && [json isKindOfClass:[NSDictionary class]]) {
+                    NSString *bundleID = json[@"bundleId"];
+                    if (bundleID && [bundleID isEqualToString:bundle]) {
+                        appStoreId = [json[@"trackId"] stringValue];
+                    }
+                }
+            }
+            
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [[NSUserDefaults standardUserDefaults] setObject:appStoreId forKey:kAppIdPropertyKey];
+                [[NSUserDefaults standardUserDefaults] synchronize];
+                block(appStoreId);
+            });
+        });
+    }
+
+}
+
+- (void) openUpdate:(NSString *)appId forInfo:(NSDictionary *)info {
+    if (!appId) appId = kCountlyAppId;
+
+    NSString *urlFormat = nil;
+#if TARGET_OS_IPHONE
+    urlFormat = @"itms-apps://itunes.apple.com/app/id%@";
+#else
+    urlFormat = @"macappstore://itunes.apple.com/app/id%@";
+#endif
+
+    [self recordPushActionForCountlyDictionary:info[@"c"]];
+    
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:urlFormat, appId]];
+    [[UIApplication sharedApplication] openURL:url];
+}
+
+- (void) openReview:(NSString *)appId forInfo:(NSDictionary *)info{
+    if (!appId) appId = kCountlyAppId;
+    
+    NSString *urlFormat = nil;
+#if TARGET_OS_IPHONE
+    float iOSVersion = [[UIDevice currentDevice].systemVersion floatValue];
+    if (iOSVersion >= 7.0f && iOSVersion < 7.1f) {
+        urlFormat = @"itms-apps://itunes.apple.com/app/id%@";
+    } else {
+        urlFormat = @"itms-apps://itunes.apple.com/WebObjects/MZStore.woa/wa/viewContentsUserReviews?type=Purple+Software&id=%@";
+    }
+#else
+    urlFormat = @"macappstore://itunes.apple.com/app/id%@";
+#endif
+
+    [self recordPushActionForCountlyDictionary:info[@"c"]];
+    
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:urlFormat, appId]];
+    [[UIApplication sharedApplication] openURL:url];
 }
 
 - (void)recordPushOpenForCountlyDictionary:(NSDictionary *)c {

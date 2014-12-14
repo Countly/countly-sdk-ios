@@ -47,6 +47,17 @@
 - (void)didFailToRegisterForRemoteNotifications;
 
 /**
+ * Create a set of UIMutableUserNotificationCategory'ies which you can register in addition to your ones to enable iOS 8 actions.
+ */
+- (NSMutableSet *) countlyNotificationCategories;
+
+/**
+ * Create a set of UIMutableUserNotificationCategory'ies which you can register in addition to your ones to enable iOS 8 actions. This method gives you ability to provide localized or just different versions of your action titles.
+ * @param titles Array of NSString objects in following order: Cancel, Open, Update, Review
+ */
+- (NSMutableSet *) countlyNotificationCategoriesWithActionTitles:(NSArray *)actions;
+
+/**
  * Method that does automatic processing for Countly Messaging:
  * - It records that the message has been received.
  * - In case of standard Countly messages (Message, URL, Update, Review) it displays alert with app name as a title:
@@ -56,7 +67,7 @@
  * --- for Review - Cancel & Review buttons.
  * Whenever user presses one of (Open, Update, Review) buttons Countly performs corresponding action (opens up a Safari for URL type, opens your app page in App Store for Update and review section of your app in App Store for Review) and records Action event so you could then see conversion rates in Countly Dashboard.
  * @param info Dictionary you got from application:didReceiveRemoteNotification:
- * @param titles Array of NSString objects in following order: Cancel, OK, Open, Update, Review
+ * @param titles Array of NSString objects in following order: Cancel, Open, Update, Review
  * @return TRUE When Countly has successfully handled notification and presented alert, FALSE otherwise.
  */
 - (BOOL)handleRemoteNotification:(NSDictionary *)info withButtonTitles:(NSArray *)titles;
