@@ -40,7 +40,9 @@
         extern NSString* const kCLYUserPhone;
         extern NSString* const kCLYUserGender;
         extern NSString* const kCLYUserPicture;
+        extern NSString* const kCLYUserPicturePath;
         extern NSString* const kCLYUserBirthYear;
+        extern NSString* const kCLYUserCustom;
 
 @end
 

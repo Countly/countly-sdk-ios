@@ -89,6 +89,16 @@ NSString* CountlyURLUnescapedString(NSString* string)
 	return [resultString stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
 }
 
+@interface NSMutableData (AppendStringUTF8)
+-(void)appendStringUTF8:(NSString*)string;
+@end
+
+@implementation NSMutableData (AppendStringUTF8)
+-(void)appendStringUTF8:(NSString*)string
+{
+    [self appendData:[string dataUsingEncoding:NSUTF8StringEncoding]];
+}
+@end
 
 #pragma mark - CountlyDeviceInfo
 
@@ -226,7 +236,9 @@ NSString* CountlyURLUnescapedString(NSString* string)
 @property(nonatomic,strong) NSString* phone;
 @property(nonatomic,strong) NSString* gender;
 @property(nonatomic,strong) NSString* picture;
+@property(nonatomic,strong) NSString* picturePath;
 @property(nonatomic,readwrite) NSInteger birthYear;
+@property(nonatomic,strong) NSDictionary* custom;
 
 +(CountlyUserDetails*)sharedUserDetails;
 -(void)deserialize:(NSDictionary*)userDictionary;
@@ -243,7 +255,9 @@ NSString* const kCLYUserOrganization = @"organization";
 NSString* const kCLYUserPhone = @"phone";
 NSString* const kCLYUserGender = @"gender";
 NSString* const kCLYUserPicture = @"picture";
+NSString* const kCLYUserPicturePath = @"picturePath";
 NSString* const kCLYUserBirthYear = @"byear";
+NSString* const kCLYUserCustom = @"custom";
 
 +(CountlyUserDetails*)sharedUserDetails
 {
@@ -270,8 +284,12 @@ NSString* const kCLYUserBirthYear = @"byear";
         self.gender = userDictionary[kCLYUserGender];
     if(userDictionary[kCLYUserPicture])
         self.picture = userDictionary[kCLYUserPicture];
+    if(userDictionary[kCLYUserPicturePath])
+        self.picturePath = userDictionary[kCLYUserPicturePath];
     if(userDictionary[kCLYUserBirthYear])
         self.birthYear = [userDictionary[kCLYUserBirthYear] integerValue];
+    if(userDictionary[kCLYUserCustom])
+        self.custom = userDictionary[kCLYUserCustom];
 }
 
 - (NSString *)serialize
@@ -291,12 +309,44 @@ NSString* const kCLYUserBirthYear = @"byear";
         userDictionary[kCLYUserGender] = self.gender;
     if(self.picture)
         userDictionary[kCLYUserPicture] = self.picture;
+    if(self.picturePath)
+        userDictionary[kCLYUserPicturePath] = self.picturePath;
     if(self.birthYear!=0)
         userDictionary[kCLYUserBirthYear] = @(self.birthYear);
+    if(self.custom)
+        userDictionary[kCLYUserCustom] = self.custom;
     
     return CountlyURLEscapedString(CountlyJSONFromObject(userDictionary));
 }
 
+-(NSString*)extractPicturePathFromURLString:(NSString*)URLString
+{
+    NSString* unescaped = CountlyURLUnescapedString(URLString);
+    NSRange rPicturePathKey = [unescaped rangeOfString:kCLYUserPicturePath];
+    if (rPicturePathKey.location == NSNotFound)
+        return nil;
+
+    NSString* picturePath = nil;
+
+    @try
+    {
+        NSRange rSearchForEnding = (NSRange){0,unescaped.length};
+        rSearchForEnding.location = rPicturePathKey.location+rPicturePathKey.length+3;
+        rSearchForEnding.length = rSearchForEnding.length - rSearchForEnding.location;
+        NSRange rEnding = [unescaped rangeOfString:@"\",\"" options:0 range:rSearchForEnding];
+        picturePath = [unescaped substringWithRange:(NSRange){rSearchForEnding.location,rEnding.location-rSearchForEnding.location}];
+        picturePath = [picturePath stringByReplacingOccurrencesOfString:@"\\/" withString:@"/"];
+    
+    }
+    @catch (NSException *exception)
+    {
+        COUNTLY_LOG(@"Cannot extract picture path!");
+        picturePath = @"";
+    }
+
+    COUNTLY_LOG(@"Extracted picturePath: %@", picturePath);
+    return picturePath;
+}
 @end
 
 
@@ -577,7 +627,45 @@ NSString* const kCLYUserBirthYear = @"byear";
     
     NSString *data = [dataQueue[0] valueForKey:@"post"];
     NSString *urlString = [NSString stringWithFormat:@"%@/i?%@", self.appHost, data];
-    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+    NSMutableURLRequest * request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+    
+    NSString* picturePath = [CountlyUserDetails.sharedUserDetails extractPicturePathFromURLString:urlString];
+    if(picturePath && ![picturePath isEqualToString:@""])
+    {
+        COUNTLY_LOG(@"picturePath: %@", picturePath);
+
+        NSArray* allowedFileTypes = @[@"gif",@"png",@"jpg",@"jpeg"];
+        NSString* fileExt = picturePath.pathExtension.lowercaseString;
+        NSInteger fileExtIndex = [allowedFileTypes indexOfObject:fileExt];
+        
+        if(fileExtIndex != NSNotFound)
+        {
+            NSData* imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:picturePath]];
+
+            if (fileExtIndex == 1) imageData = UIImagePNGRepresentation([UIImage imageWithData:imageData]); //NOTE: for png upload fix. (png file data read directly from disk fails on upload)
+            if (fileExtIndex == 2) fileExtIndex = 3; //NOTE: for mime type jpg -> jpeg
+            
+            if (imageData)
+            {
+                COUNTLY_LOG(@"local image retrieved from picturePath");
+                
+                NSString *boundary = @"c1c673d52fea01a50318d915b6966d5e";
+                
+                [request setHTTPMethod:@"POST"];
+                NSString *contentType = [@"multipart/form-data; boundary=" stringByAppendingString:boundary];
+                [request addValue:contentType forHTTPHeaderField: @"Content-Type"];
+                
+                NSMutableData *body = NSMutableData.data;
+                [body appendStringUTF8:[NSString stringWithFormat:@"--%@\r\n", boundary]];
+                [body appendStringUTF8:[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"pictureFile\"; filename=\"%@\"\r\n",picturePath.lastPathComponent]];
+                [body appendStringUTF8:[NSString stringWithFormat:@"Content-Type: image/%@\r\n\r\n", allowedFileTypes[fileExtIndex]]];
+                [body appendData:imageData];
+                [body appendStringUTF8:[NSString stringWithFormat:@"\r\n--%@--\r\n", boundary]];
+                [request setHTTPBody:body];
+            }
+        }
+    }
+
     self.connection = [NSURLConnection connectionWithRequest:request delegate:self];
 
     COUNTLY_LOG(@"Request Started \n %@", urlString);
