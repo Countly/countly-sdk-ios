@@ -122,10 +122,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 + (NSString *)udid
 {
 #if COUNTLY_PREFER_IDFA && (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-    if(ASIdentifierManager.sharedManager.isAdvertisingTrackingEnabled)
-        return ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
-
-    return [Countly_OpenUDID value];
+    return ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
 #else
 	return [Countly_OpenUDID value];
 #endif
