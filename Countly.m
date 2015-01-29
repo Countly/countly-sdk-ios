@@ -638,8 +638,9 @@ NSString* const kCLYUserCustom = @"custom";
         if(fileExtIndex != NSNotFound)
         {
             NSData* imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:picturePath]];
-
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
             if (fileExtIndex == 1) imageData = UIImagePNGRepresentation([UIImage imageWithData:imageData]); //NOTE: for png upload fix. (png file data read directly from disk fails on upload)
+#endif
             if (fileExtIndex == 2) fileExtIndex = 3; //NOTE: for mime type jpg -> jpeg
             
             if (imageData)
