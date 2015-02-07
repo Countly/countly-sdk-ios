@@ -206,7 +206,7 @@
 
     static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
-        NSURL *modelURL = [[NSBundle mainBundle] URLForResource:@"Countly" withExtension:@"momd"];
+        NSURL *modelURL = [[NSBundle bundleForClass:[CountlyDB class]] URLForResource:@"Countly" withExtension:@"momd"];
         s_managedObjectModel = [[NSManagedObjectModel alloc] initWithContentsOfURL:modelURL];
     });
 
