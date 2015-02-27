@@ -139,7 +139,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
     sysctlbyname(modelKey, NULL, &size, NULL, 0);
     char *model = malloc(size);
     sysctlbyname(modelKey, model, &size, NULL, 0);
-    NSString *modelString = [NSString stringWithUTF8String:model];
+    NSString *modelString = @(model);
     free(model);
     return modelString;
 }
@@ -205,17 +205,17 @@ NSString* CountlyURLUnescapedString(NSString* string)
 + (NSString *)metrics
 {
     NSMutableDictionary* metricsDictionary = [NSMutableDictionary dictionary];
-	[metricsDictionary setObject:CountlyDeviceInfo.device forKey:@"_device"];
-	[metricsDictionary setObject:CountlyDeviceInfo.osName forKey:@"_os"];
-	[metricsDictionary setObject:CountlyDeviceInfo.osVersion forKey:@"_os_version"];
+	metricsDictionary[@"_device"] = CountlyDeviceInfo.device;
+	metricsDictionary[@"_os"] = CountlyDeviceInfo.osName;
+	metricsDictionary[@"_os_version"] = CountlyDeviceInfo.osVersion;
     
 	NSString *carrier = CountlyDeviceInfo.carrier;
 	if (carrier)
-        [metricsDictionary setObject:carrier forKey:@"_carrier"];
+        metricsDictionary[@"_carrier"] = carrier;
 
-	[metricsDictionary setObject:CountlyDeviceInfo.resolution forKey:@"_resolution"];
-	[metricsDictionary setObject:CountlyDeviceInfo.locale forKey:@"_locale"];
-	[metricsDictionary setObject:CountlyDeviceInfo.appVersion forKey:@"_app_version"];
+	metricsDictionary[@"_resolution"] = CountlyDeviceInfo.resolution;
+	metricsDictionary[@"_locale"] = CountlyDeviceInfo.locale;
+	metricsDictionary[@"_app_version"] = CountlyDeviceInfo.appVersion;
 	
 	return CountlyURLEscapedString(CountlyJSONFromObject(metricsDictionary));
 }
@@ -385,14 +385,14 @@ NSString* const kCLYUserCustom = @"custom";
 - (NSDictionary*)serializedData
 {
 	NSMutableDictionary* eventData = NSMutableDictionary.dictionary;
-	[eventData setObject:self.key forKey:@"key"];
+	eventData[@"key"] = self.key;
 	if (self.segmentation)
     {
-		[eventData setObject:self.segmentation forKey:@"segmentation"];
+		eventData[@"segmentation"] = self.segmentation;
 	}
-	[eventData setObject:@(self.count) forKey:@"count"];
-	[eventData setObject:@(self.sum) forKey:@"sum"];
-	[eventData setObject:@(self.timestamp) forKey:@"timestamp"];
+	eventData[@"count"] = @(self.count);
+	eventData[@"sum"] = @(self.sum);
+	eventData[@"timestamp"] = @(self.timestamp);
 	return eventData;
 }
 
@@ -815,7 +815,7 @@ NSString* const kCLYUserCustom = @"custom";
 	return s_sharedCountly;
 }
 
-- (id)init
+- (instancetype)init
 {
 	if (self = [super init])
 	{
