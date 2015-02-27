@@ -8,7 +8,7 @@
 #import "CountlyDB.h"
 
 #ifndef COUNTLY_DEBUG
-#define COUNTLY_DEBUG 1
+#define COUNTLY_DEBUG 0
 #endif
 
 #if COUNTLY_DEBUG
@@ -18,7 +18,6 @@
 #endif
 
 @interface CountlyDB()
-- (NSURL *)applicationDocumentsDirectory;
 @end
 
 @implementation CountlyDB
@@ -137,7 +136,6 @@
     return count;
 }
 
-
 - (void)saveContext
 {
     NSError *error = nil;
@@ -149,11 +147,6 @@
            COUNTLY_LOG(@"CoreData error %@, %@", error, [error userInfo]);
         }
     }
-}
-
-- (NSURL *)applicationDocumentsDirectory
-{
-    return [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject];
 }
 
 - (NSURL *)applicationSupportDirectory
@@ -223,29 +216,14 @@
         
         NSError *error=nil;
         NSURL *storeURL = [[self applicationSupportDirectory] URLByAppendingPathComponent:@"Countly.sqlite"];
-        NSURL *oldStoreURL = [[self applicationDocumentsDirectory] URLByAppendingPathComponent:@"Countly.sqlite"];
         
-        if([NSFileManager.defaultManager fileExistsAtPath:oldStoreURL.path])
-        {
-            NSPersistentStore* oldStore = [s_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:oldStoreURL options:nil error:&error];
-            if(error) COUNTLY_LOG(@"Old store opening error %@",error);
-
-            [s_persistentStoreCoordinator migratePersistentStore:oldStore toURL:storeURL options:nil withType:NSSQLiteStoreType error:&error];
-            if(error) COUNTLY_LOG(@"Old store migrating error %@",error);
-            
-            [NSFileManager.defaultManager removeItemAtPath:oldStoreURL.path error:&error];
-            [NSFileManager.defaultManager removeItemAtPath:[oldStoreURL.path stringByAppendingString:@"-shm"] error:&error];
-            [NSFileManager.defaultManager removeItemAtPath:[oldStoreURL.path stringByAppendingString:@"-wal"] error:&error];
-            if(error) COUNTLY_LOG(@"Old store deleting error %@",error);
-        }
-        else
-        {
-            [s_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:nil error:&error];
-            if(error) COUNTLY_LOG(@"Store opening error %@", error);
-        }
+        [s_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:nil error:&error];
+        if(error)
+            COUNTLY_LOG(@"Store opening error %@", error);
         
         [storeURL setResourceValue:@YES forKey:NSURLIsExcludedFromBackupKey error:&error];
-        if(error) COUNTLY_LOG(@"Unable to exclude Countly persistent store from backups (%@), error: %@", storeURL.absoluteString, error);
+        if(error)
+            COUNTLY_LOG(@"Unable to exclude Countly persistent store from backups (%@), error: %@", storeURL.absoluteString, error);
     });
 
     return s_persistentStoreCoordinator;
