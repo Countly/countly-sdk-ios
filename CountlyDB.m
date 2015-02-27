@@ -7,12 +7,8 @@
 
 #import "CountlyDB.h"
 
-#if __has_feature(objc_arc)
-#error  This is a non-ARC class. Please add -fno-objc-arc flag for Countly.m, Countly_OpenUDID.m and CountlyDB.m under Build Phases > Compile Sources
-#endif
-
 #ifndef COUNTLY_DEBUG
-#define COUNTLY_DEBUG 0
+#define COUNTLY_DEBUG 1
 #endif
 
 #if COUNTLY_DEBUG
@@ -75,7 +71,7 @@
 
 -(NSArray*) getEvents
 {
-    NSFetchRequest *fetchRequest = [[[NSFetchRequest alloc] init] autorelease];
+    NSFetchRequest *fetchRequest = [NSFetchRequest new];
     NSEntityDescription *entity = [NSEntityDescription entityForName:@"Event" inManagedObjectContext:[self managedObjectContext]];
     [fetchRequest setEntity:entity];
     
@@ -92,7 +88,7 @@
 
 -(NSArray*) getQueue
 {
-    NSFetchRequest *fetchRequest = [[[NSFetchRequest alloc] init] autorelease];
+    NSFetchRequest *fetchRequest = [NSFetchRequest new];
     NSEntityDescription *entity = [NSEntityDescription entityForName:@"Data" inManagedObjectContext:[self managedObjectContext]];
     [fetchRequest setEntity:entity];
     
@@ -109,7 +105,7 @@
 
 -(NSUInteger)getEventCount
 {
-    NSFetchRequest *fetchRequest = [[[NSFetchRequest alloc] init] autorelease];
+    NSFetchRequest *fetchRequest = [NSFetchRequest new];
     NSEntityDescription *entity = [NSEntityDescription entityForName:@"Event" inManagedObjectContext:[self managedObjectContext]];
     [fetchRequest setEntity:entity];
     
@@ -126,7 +122,7 @@
 
 -(NSUInteger)getQueueCount
 {
-    NSFetchRequest *fetchRequest = [[[NSFetchRequest alloc] init] autorelease];
+    NSFetchRequest *fetchRequest = [NSFetchRequest new];
     NSEntityDescription *entity = [NSEntityDescription entityForName:@"Data" inManagedObjectContext:[self managedObjectContext]];
     [fetchRequest setEntity:entity];
     

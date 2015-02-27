@@ -6,10 +6,6 @@
 
 #pragma mark - Directives
 
-#if __has_feature(objc_arc)
-#error This is a non-ARC class. Please add -fno-objc-arc flag for Countly.m, Countly_OpenUDID.m and CountlyDB.m under Build Phases > Compile Sources
-#endif
-
 #ifndef COUNTLY_DEBUG
 #define COUNTLY_DEBUG 0
 #endif
@@ -63,7 +59,7 @@ NSString* CountlyJSONFromObject(id object)
 	if (error)
         COUNTLY_LOG(@"%@", [error description]);
 	
-	return [[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] autorelease];
+	return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
 }
 
 NSString* CountlyURLEscapedString(NSString* string)
@@ -76,7 +72,7 @@ NSString* CountlyURLEscapedString(NSString* string)
                                             NULL,
                                             (CFStringRef)@"!*'();:@&=+$,/?%#[]",
                                             kCFStringEncodingUTF8);
-	return [(NSString*)escaped autorelease];
+	return (NSString*)CFBridgingRelease(escaped);
 }
 
 NSString* CountlyURLUnescapedString(NSString* string)
@@ -167,7 +163,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 	if (NSClassFromString(@"CTTelephonyNetworkInfo"))
 	{
-		CTTelephonyNetworkInfo *netinfo = [[[CTTelephonyNetworkInfo alloc] init] autorelease];
+		CTTelephonyNetworkInfo *netinfo = [CTTelephonyNetworkInfo new];
 		CTCarrier *carrier = [netinfo subscriberCellularProvider];
 		return [carrier carrierName];
 	}
@@ -367,12 +363,11 @@ NSString* const kCLYUserCustom = @"custom";
 {
     self.key = nil;
     self.segmentation = nil;
-    [super dealloc];
 }
 
 + (CountlyEvent*)objectWithManagedObject:(NSManagedObject*)managedObject
 {
-	CountlyEvent* event = [[CountlyEvent new] autorelease];
+	CountlyEvent* event = [CountlyEvent new];
 	
 	event.key = [managedObject valueForKey:@"key"];
 	event.count = [[managedObject valueForKey:@"count"] doubleValue];
@@ -408,11 +403,6 @@ NSString* const kCLYUserCustom = @"custom";
 
 @implementation CountlyEventQueue
 
-- (void)dealloc
-{
-    [super dealloc];
-}
-
 - (NSUInteger)count
 {
     @synchronized (self)
@@ -428,7 +418,7 @@ NSString* const kCLYUserCustom = @"custom";
     
 	@synchronized (self)
     {
-		NSArray* events = [[[[CountlyDB sharedInstance] getEvents] copy] autorelease];
+		NSArray* events = [[[CountlyDB sharedInstance] getEvents] copy];
 		for (id managedEventObject in events)
         {
 			CountlyEvent* event = [CountlyEvent objectWithManagedObject:managedEventObject];
@@ -446,7 +436,7 @@ NSString* const kCLYUserCustom = @"custom";
 {
     @synchronized (self)
     {
-        NSArray* events = [[[[CountlyDB sharedInstance] getEvents] copy] autorelease];
+        NSArray* events = [[[CountlyDB sharedInstance] getEvents] copy];
         for (NSManagedObject* obj in events)
         {
             CountlyEvent *event = [CountlyEvent objectWithManagedObject:obj];
@@ -463,7 +453,7 @@ NSString* const kCLYUserCustom = @"custom";
             }
         }
         
-        CountlyEvent *event = [[CountlyEvent new] autorelease];
+        CountlyEvent *event = [CountlyEvent new];
         event.key = key;
         event.count = count;
         event.timestamp = time(NULL);
@@ -476,7 +466,7 @@ NSString* const kCLYUserCustom = @"custom";
 {
     @synchronized (self)
     {
-        NSArray* events = [[[[CountlyDB sharedInstance] getEvents] copy] autorelease];
+        NSArray* events = [[[CountlyDB sharedInstance] getEvents] copy];
         for (NSManagedObject* obj in events)
         {
             CountlyEvent *event = [CountlyEvent objectWithManagedObject:obj];
@@ -496,7 +486,7 @@ NSString* const kCLYUserCustom = @"custom";
             }
         }
         
-        CountlyEvent *event = [[CountlyEvent new] autorelease];
+        CountlyEvent *event = [CountlyEvent new];
         event.key = key;
         event.count = count;
         event.sum = sum;
@@ -510,7 +500,7 @@ NSString* const kCLYUserCustom = @"custom";
 {
     @synchronized (self)
     {
-        NSArray* events = [[[[CountlyDB sharedInstance] getEvents] copy] autorelease];
+        NSArray* events = [[[CountlyDB sharedInstance] getEvents] copy];
         for (NSManagedObject* obj in events)
         {
             CountlyEvent *event = [CountlyEvent objectWithManagedObject:obj];
@@ -529,7 +519,7 @@ NSString* const kCLYUserCustom = @"custom";
             }
         }
         
-        CountlyEvent *event = [[CountlyEvent new] autorelease];
+        CountlyEvent *event = [CountlyEvent new];
         event.key = key;
         event.segmentation = segmentation;
         event.count = count;
@@ -543,7 +533,7 @@ NSString* const kCLYUserCustom = @"custom";
 {
     @synchronized (self)
     {
-        NSArray* events = [[[[CountlyDB sharedInstance] getEvents] copy] autorelease];
+        NSArray* events = [[[CountlyDB sharedInstance] getEvents] copy];
         for (NSManagedObject* obj in events)
         {
             CountlyEvent *event = [CountlyEvent objectWithManagedObject:obj];
@@ -564,7 +554,7 @@ NSString* const kCLYUserCustom = @"custom";
             }
         }
         
-        CountlyEvent *event = [[CountlyEvent new] autorelease];
+        CountlyEvent *event = [CountlyEvent new];
         event.key = key;
         event.segmentation = segmentation;
         event.count = count;
@@ -606,7 +596,7 @@ NSString* const kCLYUserCustom = @"custom";
 
 - (void) tick
 {
-    NSArray* dataQueue = [[[[CountlyDB sharedInstance] getQueue] copy] autorelease];
+    NSArray* dataQueue = [[[CountlyDB sharedInstance] getQueue] copy];
     
     if (self.connection != nil || [dataQueue count] == 0)
         return;
@@ -753,15 +743,13 @@ NSString* const kCLYUserCustom = @"custom";
     
     [[CountlyDB sharedInstance] removeFromQueue:dataQueue[0]];
     
-    [dataQueue release];
-    
     [self tick];
 }
 
 - (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)err
 {
     #if COUNTLY_DEBUG
-        NSArray* dataQueue = [[[[CountlyDB sharedInstance] getQueue] copy] autorelease];
+        NSArray* dataQueue = [[[CountlyDB sharedInstance] getQueue] copy];
         COUNTLY_LOG(@"Request Failed \n %@: %@", [dataQueue[0] description], [err description]);
     #endif
     
@@ -796,8 +784,6 @@ NSString* const kCLYUserCustom = @"custom";
     }
 	self.appKey = nil;
 	self.appHost = nil;
-
-	[super dealloc];
 }
 
 @end
@@ -956,10 +942,6 @@ NSString* const kCLYUserCustom = @"custom";
         [timer invalidate];
         timer = nil;
     }
-    
-    [eventQueue release];
-	
-	[super dealloc];
 }
 
 - (void)didEnterBackgroundCallBack:(NSNotification *)notification
