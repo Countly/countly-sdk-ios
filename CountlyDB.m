@@ -170,9 +170,6 @@
 {
     static NSManagedObjectContext* s_managedObjectContext;
     
-    if (s_managedObjectContext != nil)
-        return s_managedObjectContext;
-    
     static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
         NSPersistentStoreCoordinator *coordinator = [self persistentStoreCoordinator];
@@ -190,9 +187,6 @@
 {
     static NSManagedObjectModel* s_managedObjectModel;
 
-    if (s_managedObjectModel != nil)
-        return s_managedObjectModel;
-
     static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
         NSURL *modelURL = [[NSBundle mainBundle] URLForResource:@"Countly" withExtension:@"momd"];
@@ -205,9 +199,6 @@
 - (NSPersistentStoreCoordinator *)persistentStoreCoordinator
 {
     static NSPersistentStoreCoordinator* s_persistentStoreCoordinator;
-    
-    if (s_persistentStoreCoordinator != nil)
-        return s_persistentStoreCoordinator;
     
     static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
