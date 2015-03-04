@@ -124,10 +124,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 + (NSString *)udid
 {
 #if COUNTLY_PREFER_IDFA && (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
-    if(ASIdentifierManager.sharedManager.isAdvertisingTrackingEnabled)
-        return ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
-
-    return [Countly_OpenUDID value];
+    return ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
 #else
 	return [Countly_OpenUDID value];
 #endif
@@ -230,6 +227,130 @@ NSString* CountlyURLUnescapedString(NSString* string)
     return [[NSBundle mainBundle] bundleIdentifier];
 }
 
+@end
+
+
+#pragma mark - CountlyUserDetails
+@interface CountlyUserDetails : NSObject
+
+@property(nonatomic,strong) NSString* name;
+@property(nonatomic,strong) NSString* username;
+@property(nonatomic,strong) NSString* email;
+@property(nonatomic,strong) NSString* organization;
+@property(nonatomic,strong) NSString* phone;
+@property(nonatomic,strong) NSString* gender;
+@property(nonatomic,strong) NSString* picture;
+@property(nonatomic,strong) NSString* picturePath;
+@property(nonatomic,readwrite) NSInteger birthYear;
+@property(nonatomic,strong) NSDictionary* custom;
+
++(CountlyUserDetails*)sharedUserDetails;
+-(void)deserialize:(NSDictionary*)userDictionary;
+-(NSString*)serialize;
+
+@end
+
+@implementation CountlyUserDetails
+
+NSString* const kCLYUserName = @"name";
+NSString* const kCLYUserUsername = @"username";
+NSString* const kCLYUserEmail = @"email";
+NSString* const kCLYUserOrganization = @"organization";
+NSString* const kCLYUserPhone = @"phone";
+NSString* const kCLYUserGender = @"gender";
+NSString* const kCLYUserPicture = @"picture";
+NSString* const kCLYUserPicturePath = @"picturePath";
+NSString* const kCLYUserBirthYear = @"byear";
+NSString* const kCLYUserCustom = @"custom";
+
++(CountlyUserDetails*)sharedUserDetails
+{
+    static CountlyUserDetails *s_CountlyUserDetails = nil;
+    static dispatch_once_t onceToken;
+    
+    dispatch_once(&onceToken, ^{s_CountlyUserDetails = CountlyUserDetails.new;});
+    return s_CountlyUserDetails;
+}
+
+-(void)deserialize:(NSDictionary*)userDictionary
+{
+    if(userDictionary[kCLYUserName])
+        self.name = userDictionary[kCLYUserName];
+    if(userDictionary[kCLYUserUsername])
+        self.username = userDictionary[kCLYUserUsername];
+    if(userDictionary[kCLYUserEmail])
+        self.email = userDictionary[kCLYUserEmail];
+    if(userDictionary[kCLYUserOrganization])
+        self.organization = userDictionary[kCLYUserOrganization];
+    if(userDictionary[kCLYUserPhone])
+        self.phone = userDictionary[kCLYUserPhone];
+    if(userDictionary[kCLYUserGender])
+        self.gender = userDictionary[kCLYUserGender];
+    if(userDictionary[kCLYUserPicture])
+        self.picture = userDictionary[kCLYUserPicture];
+    if(userDictionary[kCLYUserPicturePath])
+        self.picturePath = userDictionary[kCLYUserPicturePath];
+    if(userDictionary[kCLYUserBirthYear])
+        self.birthYear = [userDictionary[kCLYUserBirthYear] integerValue];
+    if(userDictionary[kCLYUserCustom])
+        self.custom = userDictionary[kCLYUserCustom];
+}
+
+- (NSString *)serialize
+{
+    NSMutableDictionary* userDictionary = [NSMutableDictionary dictionary];
+    if(self.name)
+        userDictionary[kCLYUserName] = self.name;
+    if(self.username)
+        userDictionary[kCLYUserUsername] = self.username;
+    if(self.email)
+        userDictionary[kCLYUserEmail] = self.email;
+    if(self.organization)
+        userDictionary[kCLYUserOrganization] = self.organization;
+    if(self.phone)
+        userDictionary[kCLYUserPhone] = self.phone;
+    if(self.gender)
+        userDictionary[kCLYUserGender] = self.gender;
+    if(self.picture)
+        userDictionary[kCLYUserPicture] = self.picture;
+    if(self.picturePath)
+        userDictionary[kCLYUserPicturePath] = self.picturePath;
+    if(self.birthYear!=0)
+        userDictionary[kCLYUserBirthYear] = @(self.birthYear);
+    if(self.custom)
+        userDictionary[kCLYUserCustom] = self.custom;
+    
+    return CountlyURLEscapedString(CountlyJSONFromObject(userDictionary));
+}
+
+-(NSString*)extractPicturePathFromURLString:(NSString*)URLString
+{
+    NSString* unescaped = CountlyURLUnescapedString(URLString);
+    NSRange rPicturePathKey = [unescaped rangeOfString:kCLYUserPicturePath];
+    if (rPicturePathKey.location == NSNotFound)
+        return nil;
+
+    NSString* picturePath = nil;
+
+    @try
+    {
+        NSRange rSearchForEnding = (NSRange){0,unescaped.length};
+        rSearchForEnding.location = rPicturePathKey.location+rPicturePathKey.length+3;
+        rSearchForEnding.length = rSearchForEnding.length - rSearchForEnding.location;
+        NSRange rEnding = [unescaped rangeOfString:@"\",\"" options:0 range:rSearchForEnding];
+        picturePath = [unescaped substringWithRange:(NSRange){rSearchForEnding.location,rEnding.location-rSearchForEnding.location}];
+        picturePath = [picturePath stringByReplacingOccurrencesOfString:@"\\/" withString:@"/"];
+    
+    }
+    @catch (NSException *exception)
+    {
+        COUNTLY_LOG(@"Cannot extract picture path!");
+        picturePath = @"";
+    }
+
+    COUNTLY_LOG(@"Extracted picturePath: %@", picturePath);
+    return picturePath;
+}
 @end
 
 
@@ -649,8 +770,9 @@ NSString* const kCLYUserCustom = @"custom";
         if(fileExtIndex != NSNotFound)
         {
             NSData* imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:picturePath]];
-
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
             if (fileExtIndex == 1) imageData = UIImagePNGRepresentation([UIImage imageWithData:imageData]); //NOTE: for png upload fix. (png file data read directly from disk fails on upload)
+#endif
             if (fileExtIndex == 2) fileExtIndex = 3; //NOTE: for mime type jpg -> jpeg
             
             if (imageData)
