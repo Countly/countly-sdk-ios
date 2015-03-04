@@ -18,6 +18,10 @@
 #define COUNTLY_IGNORE_INVALID_CERTIFICATES 0
 #endif
 
+#ifndef COUNTLY_PREFER_IDFA
+#define COUNTLY_PREFER_IDFA 0
+#endif
+
 #if COUNTLY_DEBUG
 #   define COUNTLY_LOG(fmt, ...) NSLog(fmt, ##__VA_ARGS__)
 #else
@@ -37,6 +41,9 @@
 #import <UIKit/UIKit.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import <CoreTelephony/CTCarrier.h>
+#if COUNTLY_PREFER_IDFA
+#import <AdSupport/ASIdentifierManager.h>
+#endif
 #endif
 
 #include <sys/types.h>
@@ -82,6 +89,16 @@ NSString* CountlyURLUnescapedString(NSString* string)
 	return [resultString stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
 }
 
+@interface NSMutableData (AppendStringUTF8)
+-(void)appendStringUTF8:(NSString*)string;
+@end
+
+@implementation NSMutableData (AppendStringUTF8)
+-(void)appendStringUTF8:(NSString*)string
+{
+    [self appendData:[string dataUsingEncoding:NSUTF8StringEncoding]];
+}
+@end
 
 #pragma mark - CountlyDeviceInfo
 
@@ -106,7 +123,14 @@ NSString* CountlyURLUnescapedString(NSString* string)
 
 + (NSString *)udid
 {
+#if COUNTLY_PREFER_IDFA && (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
+    if(ASIdentifierManager.sharedManager.isAdvertisingTrackingEnabled)
+        return ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
+
+    return [Countly_OpenUDID value];
+#else
 	return [Countly_OpenUDID value];
+#endif
 }
 
 + (NSString *)device
@@ -206,6 +230,130 @@ NSString* CountlyURLUnescapedString(NSString* string)
     return [[NSBundle mainBundle] bundleIdentifier];
 }
 
+@end
+
+
+#pragma mark - CountlyUserDetails
+@interface CountlyUserDetails : NSObject
+
+@property(nonatomic,strong) NSString* name;
+@property(nonatomic,strong) NSString* username;
+@property(nonatomic,strong) NSString* email;
+@property(nonatomic,strong) NSString* organization;
+@property(nonatomic,strong) NSString* phone;
+@property(nonatomic,strong) NSString* gender;
+@property(nonatomic,strong) NSString* picture;
+@property(nonatomic,strong) NSString* picturePath;
+@property(nonatomic,readwrite) NSInteger birthYear;
+@property(nonatomic,strong) NSDictionary* custom;
+
++(CountlyUserDetails*)sharedUserDetails;
+-(void)deserialize:(NSDictionary*)userDictionary;
+-(NSString*)serialize;
+
+@end
+
+@implementation CountlyUserDetails
+
+NSString* const kCLYUserName = @"name";
+NSString* const kCLYUserUsername = @"username";
+NSString* const kCLYUserEmail = @"email";
+NSString* const kCLYUserOrganization = @"organization";
+NSString* const kCLYUserPhone = @"phone";
+NSString* const kCLYUserGender = @"gender";
+NSString* const kCLYUserPicture = @"picture";
+NSString* const kCLYUserPicturePath = @"picturePath";
+NSString* const kCLYUserBirthYear = @"byear";
+NSString* const kCLYUserCustom = @"custom";
+
++(CountlyUserDetails*)sharedUserDetails
+{
+    static CountlyUserDetails *s_CountlyUserDetails = nil;
+    static dispatch_once_t onceToken;
+    
+    dispatch_once(&onceToken, ^{s_CountlyUserDetails = CountlyUserDetails.new;});
+    return s_CountlyUserDetails;
+}
+
+-(void)deserialize:(NSDictionary*)userDictionary
+{
+    if(userDictionary[kCLYUserName])
+        self.name = userDictionary[kCLYUserName];
+    if(userDictionary[kCLYUserUsername])
+        self.username = userDictionary[kCLYUserUsername];
+    if(userDictionary[kCLYUserEmail])
+        self.email = userDictionary[kCLYUserEmail];
+    if(userDictionary[kCLYUserOrganization])
+        self.organization = userDictionary[kCLYUserOrganization];
+    if(userDictionary[kCLYUserPhone])
+        self.phone = userDictionary[kCLYUserPhone];
+    if(userDictionary[kCLYUserGender])
+        self.gender = userDictionary[kCLYUserGender];
+    if(userDictionary[kCLYUserPicture])
+        self.picture = userDictionary[kCLYUserPicture];
+    if(userDictionary[kCLYUserPicturePath])
+        self.picturePath = userDictionary[kCLYUserPicturePath];
+    if(userDictionary[kCLYUserBirthYear])
+        self.birthYear = [userDictionary[kCLYUserBirthYear] integerValue];
+    if(userDictionary[kCLYUserCustom])
+        self.custom = userDictionary[kCLYUserCustom];
+}
+
+- (NSString *)serialize
+{
+    NSMutableDictionary* userDictionary = [NSMutableDictionary dictionary];
+    if(self.name)
+        userDictionary[kCLYUserName] = self.name;
+    if(self.username)
+        userDictionary[kCLYUserUsername] = self.username;
+    if(self.email)
+        userDictionary[kCLYUserEmail] = self.email;
+    if(self.organization)
+        userDictionary[kCLYUserOrganization] = self.organization;
+    if(self.phone)
+        userDictionary[kCLYUserPhone] = self.phone;
+    if(self.gender)
+        userDictionary[kCLYUserGender] = self.gender;
+    if(self.picture)
+        userDictionary[kCLYUserPicture] = self.picture;
+    if(self.picturePath)
+        userDictionary[kCLYUserPicturePath] = self.picturePath;
+    if(self.birthYear!=0)
+        userDictionary[kCLYUserBirthYear] = @(self.birthYear);
+    if(self.custom)
+        userDictionary[kCLYUserCustom] = self.custom;
+    
+    return CountlyURLEscapedString(CountlyJSONFromObject(userDictionary));
+}
+
+-(NSString*)extractPicturePathFromURLString:(NSString*)URLString
+{
+    NSString* unescaped = CountlyURLUnescapedString(URLString);
+    NSRange rPicturePathKey = [unescaped rangeOfString:kCLYUserPicturePath];
+    if (rPicturePathKey.location == NSNotFound)
+        return nil;
+
+    NSString* picturePath = nil;
+
+    @try
+    {
+        NSRange rSearchForEnding = (NSRange){0,unescaped.length};
+        rSearchForEnding.location = rPicturePathKey.location+rPicturePathKey.length+3;
+        rSearchForEnding.length = rSearchForEnding.length - rSearchForEnding.location;
+        NSRange rEnding = [unescaped rangeOfString:@"\",\"" options:0 range:rSearchForEnding];
+        picturePath = [unescaped substringWithRange:(NSRange){rSearchForEnding.location,rEnding.location-rSearchForEnding.location}];
+        picturePath = [picturePath stringByReplacingOccurrencesOfString:@"\\/" withString:@"/"];
+    
+    }
+    @catch (NSException *exception)
+    {
+        COUNTLY_LOG(@"Cannot extract picture path!");
+        picturePath = @"";
+    }
+
+    COUNTLY_LOG(@"Extracted picturePath: %@", picturePath);
+    return picturePath;
+}
 @end
 
 
@@ -487,7 +635,45 @@ NSString* CountlyURLUnescapedString(NSString* string)
     
     NSString *data = [dataQueue[0] valueForKey:@"post"];
     NSString *urlString = [NSString stringWithFormat:@"%@/i?%@", self.appHost, data];
-    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+    NSMutableURLRequest * request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+    
+    NSString* picturePath = [CountlyUserDetails.sharedUserDetails extractPicturePathFromURLString:urlString];
+    if(picturePath && ![picturePath isEqualToString:@""])
+    {
+        COUNTLY_LOG(@"picturePath: %@", picturePath);
+
+        NSArray* allowedFileTypes = @[@"gif",@"png",@"jpg",@"jpeg"];
+        NSString* fileExt = picturePath.pathExtension.lowercaseString;
+        NSInteger fileExtIndex = [allowedFileTypes indexOfObject:fileExt];
+        
+        if(fileExtIndex != NSNotFound)
+        {
+            NSData* imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:picturePath]];
+
+            if (fileExtIndex == 1) imageData = UIImagePNGRepresentation([UIImage imageWithData:imageData]); //NOTE: for png upload fix. (png file data read directly from disk fails on upload)
+            if (fileExtIndex == 2) fileExtIndex = 3; //NOTE: for mime type jpg -> jpeg
+            
+            if (imageData)
+            {
+                COUNTLY_LOG(@"local image retrieved from picturePath");
+                
+                NSString *boundary = @"c1c673d52fea01a50318d915b6966d5e";
+                
+                [request setHTTPMethod:@"POST"];
+                NSString *contentType = [@"multipart/form-data; boundary=" stringByAppendingString:boundary];
+                [request addValue:contentType forHTTPHeaderField: @"Content-Type"];
+                
+                NSMutableData *body = NSMutableData.data;
+                [body appendStringUTF8:[NSString stringWithFormat:@"--%@\r\n", boundary]];
+                [body appendStringUTF8:[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"pictureFile\"; filename=\"%@\"\r\n",picturePath.lastPathComponent]];
+                [body appendStringUTF8:[NSString stringWithFormat:@"Content-Type: image/%@\r\n\r\n", allowedFileTypes[fileExtIndex]]];
+                [body appendData:imageData];
+                [body appendStringUTF8:[NSString stringWithFormat:@"\r\n--%@--\r\n", boundary]];
+                [request setHTTPBody:body];
+            }
+        }
+    }
+
     self.connection = [NSURLConnection connectionWithRequest:request delegate:self];
 
     COUNTLY_LOG(@"Request Started \n %@", urlString);
@@ -556,6 +742,19 @@ NSString* CountlyURLUnescapedString(NSString* string)
     [[CountlyDB sharedInstance] addToQueue:data];
     
 	[self tick];
+}
+
+- (void)sendUserDetails
+{
+    NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_VERSION"&user_details=%@",
+                      self.appKey,
+                      [CountlyDeviceInfo udid],
+                      time(NULL),
+                      [[CountlyUserDetails sharedUserDetails] serialize]];
+    
+    [[CountlyDB sharedInstance] addToQueue:data];
+    
+    [self tick];
 }
 
 - (void)recordEvents:(NSString *)events
@@ -816,6 +1015,14 @@ NSString* CountlyURLUnescapedString(NSString* string)
     if (eventQueue.count >= COUNTLY_EVENT_SEND_THRESHOLD)
         [[CountlyConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
 }
+
+- (void)recordUserDetails:(NSDictionary *)userDetails
+{
+    NSLog(@"%s",__FUNCTION__);
+    [CountlyUserDetails.sharedUserDetails deserialize:userDetails];
+    [CountlyConnectionQueue.sharedInstance sendUserDetails];
+}
+
 
 - (void)onTimer:(NSTimer *)timer
 {
