@@ -692,6 +692,7 @@ NSString* const kCLYUserCustom = @"custom";
 	[self tick];
 }
 
+static NSString *location;
 - (void)tokenSession:(NSString *)token
 {
     // Test modes: 0 = production mode, 1 = development build, 2 = Ad Hoc build
@@ -718,13 +719,25 @@ NSString* const kCLYUserCustom = @"custom";
     });
 }
 
+- (void)setLocation:(double)latitude longitude:(double)longitude
+{
+    location = [NSString stringWithFormat:@"%f,%f", latitude, longitude];
+}
+
 - (void)updateSessionWithDuration:(int)duration
 {
-	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&session_duration=%d",
+    NSString *loc = @"";
+    if (location != nil) {
+        loc = location;
+        location = nil;
+    }
+    
+	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&session_duration=%d&location=%@",
 					  self.appKey,
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
-					  duration];
+					  duration,
+                      loc];
     
     [[CountlyDB sharedInstance] addToQueue:data];
     
