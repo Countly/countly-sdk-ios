@@ -990,7 +990,17 @@ static NSString *location;
     [rev setActions:@[cancel, review] forContext:UIUserNotificationActionContextMinimal];
     [rev setActions:@[cancel, review] forContext:UIUserNotificationActionContextDefault];
     
-    return [NSMutableSet setWithObjects:url, upd, rev, nil];
+    NSMutableSet *set = [NSMutableSet setWithObjects:url, upd, rev, nil];
+    
+    [url release];
+    [upd release];
+    [rev release];
+    [cancel release];
+    [open release];
+    [update release];
+    [review release];
+    
+    return set;
 }
 
 
