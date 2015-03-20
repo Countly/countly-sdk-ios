@@ -7,10 +7,6 @@
 
 #import "CountlyDB.h"
 
-#if __has_feature(objc_arc)
-#error  This is a non-ARC class. Please add -fno-objc-arc flag for Countly.m, Countly_OpenUDID.m and CountlyDB.m under Build Phases > Compile Sources
-#endif
-
 #ifndef COUNTLY_DEBUG
 #define COUNTLY_DEBUG 0
 #endif
@@ -22,7 +18,6 @@
 #endif
 
 @interface CountlyDB()
-- (NSURL *)applicationDocumentsDirectory;
 @end
 
 @implementation CountlyDB
@@ -75,7 +70,7 @@
 
 -(NSArray*) getEvents
 {
-    NSFetchRequest *fetchRequest = [[[NSFetchRequest alloc] init] autorelease];
+    NSFetchRequest *fetchRequest = [NSFetchRequest new];
     NSEntityDescription *entity = [NSEntityDescription entityForName:@"Event" inManagedObjectContext:[self managedObjectContext]];
     [fetchRequest setEntity:entity];
     
@@ -92,7 +87,7 @@
 
 -(NSArray*) getQueue
 {
-    NSFetchRequest *fetchRequest = [[[NSFetchRequest alloc] init] autorelease];
+    NSFetchRequest *fetchRequest = [NSFetchRequest new];
     NSEntityDescription *entity = [NSEntityDescription entityForName:@"Data" inManagedObjectContext:[self managedObjectContext]];
     [fetchRequest setEntity:entity];
     
@@ -109,7 +104,7 @@
 
 -(NSUInteger)getEventCount
 {
-    NSFetchRequest *fetchRequest = [[[NSFetchRequest alloc] init] autorelease];
+    NSFetchRequest *fetchRequest = [NSFetchRequest new];
     NSEntityDescription *entity = [NSEntityDescription entityForName:@"Event" inManagedObjectContext:[self managedObjectContext]];
     [fetchRequest setEntity:entity];
     
@@ -126,7 +121,7 @@
 
 -(NSUInteger)getQueueCount
 {
-    NSFetchRequest *fetchRequest = [[[NSFetchRequest alloc] init] autorelease];
+    NSFetchRequest *fetchRequest = [NSFetchRequest new];
     NSEntityDescription *entity = [NSEntityDescription entityForName:@"Data" inManagedObjectContext:[self managedObjectContext]];
     [fetchRequest setEntity:entity];
     
@@ -141,7 +136,6 @@
     return count;
 }
 
-
 - (void)saveContext
 {
     NSError *error = nil;
@@ -153,11 +147,6 @@
            COUNTLY_LOG(@"CoreData error %@, %@", error, [error userInfo]);
         }
     }
-}
-
-- (NSURL *)applicationDocumentsDirectory
-{
-    return [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject];
 }
 
 - (NSURL *)applicationSupportDirectory
@@ -181,9 +170,6 @@
 {
     static NSManagedObjectContext* s_managedObjectContext;
     
-    if (s_managedObjectContext != nil)
-        return s_managedObjectContext;
-    
     static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
         NSPersistentStoreCoordinator *coordinator = [self persistentStoreCoordinator];
@@ -201,9 +187,6 @@
 {
     static NSManagedObjectModel* s_managedObjectModel;
 
-    if (s_managedObjectModel != nil)
-        return s_managedObjectModel;
-
     static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
         NSURL *modelURL = [[NSBundle mainBundle] URLForResource:@"Countly" withExtension:@"momd"];
@@ -220,9 +203,6 @@
 {
     static NSPersistentStoreCoordinator* s_persistentStoreCoordinator;
     
-    if (s_persistentStoreCoordinator != nil)
-        return s_persistentStoreCoordinator;
-    
     static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
         
@@ -230,29 +210,14 @@
         
         NSError *error=nil;
         NSURL *storeURL = [[self applicationSupportDirectory] URLByAppendingPathComponent:@"Countly.sqlite"];
-        NSURL *oldStoreURL = [[self applicationDocumentsDirectory] URLByAppendingPathComponent:@"Countly.sqlite"];
         
-        if([NSFileManager.defaultManager fileExistsAtPath:oldStoreURL.path])
-        {
-            NSPersistentStore* oldStore = [s_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:oldStoreURL options:nil error:&error];
-            if(error) COUNTLY_LOG(@"Old store opening error %@",error);
-
-            [s_persistentStoreCoordinator migratePersistentStore:oldStore toURL:storeURL options:nil withType:NSSQLiteStoreType error:&error];
-            if(error) COUNTLY_LOG(@"Old store migrating error %@",error);
-            
-            [NSFileManager.defaultManager removeItemAtPath:oldStoreURL.path error:&error];
-            [NSFileManager.defaultManager removeItemAtPath:[oldStoreURL.path stringByAppendingString:@"-shm"] error:&error];
-            [NSFileManager.defaultManager removeItemAtPath:[oldStoreURL.path stringByAppendingString:@"-wal"] error:&error];
-            if(error) COUNTLY_LOG(@"Old store deleting error %@",error);
-        }
-        else
-        {
-            [s_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:nil error:&error];
-            if(error) COUNTLY_LOG(@"Store opening error %@", error);
-        }
+        [s_persistentStoreCoordinator addPersistentStoreWithType:NSSQLiteStoreType configuration:nil URL:storeURL options:nil error:&error];
+        if(error)
+            COUNTLY_LOG(@"Store opening error %@", error);
         
         [storeURL setResourceValue:@YES forKey:NSURLIsExcludedFromBackupKey error:&error];
-        if(error) COUNTLY_LOG(@"Unable to exclude Countly persistent store from backups (%@), error: %@", storeURL.absoluteString, error);
+        if(error)
+            COUNTLY_LOG(@"Unable to exclude Countly persistent store from backups (%@), error: %@", storeURL.absoluteString, error);
     });
 
     return s_persistentStoreCoordinator;
