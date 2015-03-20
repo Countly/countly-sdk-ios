@@ -31,6 +31,7 @@
 #import "Countly.h"
 #import "Countly_OpenUDID.h"
 #import "CountlyDB.h"
+#import <objc/runtime.h>
 
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 #import <UIKit/UIKit.h>
@@ -43,7 +44,6 @@
 
 #include <sys/types.h>
 #include <sys/sysctl.h>
-
 
 #pragma mark - Helper Functions
 
@@ -110,6 +110,8 @@ NSString* CountlyURLUnescapedString(NSString* string)
 + (NSString *)appVersion;
 
 + (NSString *)metrics;
+
++ (NSString *)bundleId;
 
 @end
 
@@ -214,6 +216,11 @@ NSString* CountlyURLUnescapedString(NSString* string)
 	metricsDictionary[@"_app_version"] = CountlyDeviceInfo.appVersion;
 	
 	return CountlyURLEscapedString(CountlyJSONFromObject(metricsDictionary));
+}
+
++ (NSString *)bundleId
+{
+    return [[NSBundle mainBundle] bundleIdentifier];
 }
 
 @end
@@ -341,7 +348,6 @@ NSString* const kCLYUserCustom = @"custom";
     return picturePath;
 }
 @end
-
 
 #pragma mark - CountlyEvent
 
@@ -575,6 +581,7 @@ NSString* const kCLYUserCustom = @"custom";
 @property (nonatomic, copy) NSString *appKey;
 @property (nonatomic, copy) NSString *appHost;
 @property (nonatomic, retain) NSURLConnection *connection;
+@property (nonatomic) BOOL startedWithTest;
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 @property (nonatomic, assign) UIBackgroundTaskIdentifier bgTask;
 #endif
@@ -672,13 +679,52 @@ NSString* const kCLYUserCustom = @"custom";
 	[self tick];
 }
 
+static NSString *location;
+- (void)tokenSession:(NSString *)token
+{
+    // Test modes: 0 = production mode, 1 = development build, 2 = Ad Hoc build
+    int testMode;
+#ifndef __OPTIMIZE__
+    testMode = 1;
+#else
+    testMode = self.startedWithTest ? 2 : 0;
+#endif
+    
+    COUNTLY_LOG(@"Sending APN token in mode %d", testMode);
+    
+    NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_VERSION"&token_session=1&ios_token=%@&test_mode=%d",
+                      self.appKey,
+                      [CountlyDeviceInfo udid],
+                      time(NULL),
+                      [token length] ? token : @"",
+                      testMode];
+
+    // Not right now to prevent race with begin_session=1 when adding new user
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [[CountlyDB sharedInstance] addToQueue:data];
+        [self tick];
+    });
+}
+
+- (void)setLocation:(double)latitude longitude:(double)longitude
+{
+    location = [NSString stringWithFormat:@"%f,%f", latitude, longitude];
+}
+
 - (void)updateSessionWithDuration:(int)duration
 {
-	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&session_duration=%d",
+    NSString *loc = @"";
+    if (location != nil) {
+        loc = location;
+        location = nil;
+    }
+    
+	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&session_duration=%d&location=%@",
 					  self.appKey,
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
-					  duration];
+					  duration,
+                      loc];
     
     [[CountlyDB sharedInstance] addToQueue:data];
     
@@ -746,6 +792,7 @@ NSString* const kCLYUserCustom = @"custom";
     [self tick];
 }
 
+
 - (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)err
 {
     #if COUNTLY_DEBUG
@@ -791,6 +838,12 @@ NSString* const kCLYUserCustom = @"custom";
 
 #pragma mark - Countly Core
 
+@interface Countly ()
+
+@property (nonatomic, strong) NSMutableDictionary *messageInfos;
+
+@end
+
 @implementation Countly
 
 + (instancetype)sharedInstance
@@ -809,6 +862,8 @@ NSString* const kCLYUserCustom = @"custom";
 		isSuspended = NO;
 		unsentSessionLength = 0;
         eventQueue = [[CountlyEventQueue alloc] init];
+        
+        self.messageInfos = [NSMutableDictionary new];
 
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 		[[NSNotificationCenter defaultCenter] addObserver:self
@@ -845,6 +900,95 @@ NSString* const kCLYUserCustom = @"custom";
 {
     [self start:appKey withHost:@"https://cloud.count.ly"];
 }
+
+- (void)startWithMessagingUsing:(NSString *)appKey withHost:(NSString *)appHost andOptions:(NSDictionary *)options
+{
+    [self start:appKey withHost:appHost];
+    
+    NSDictionary *notification = [options objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
+    if (notification) {
+        COUNTLY_LOG(@"Got notification on app launch: %@", notification);
+        [self handleRemoteNotification:notification displayingMessage:NO];
+    }
+}
+
+- (void)startWithTestMessagingUsing:(NSString *)appKey withHost:(NSString *)appHost andOptions:(NSDictionary *)options
+{
+    [self start:appKey withHost:appHost];
+    [[CountlyConnectionQueue sharedInstance] setStartedWithTest:YES];
+    
+    NSDictionary *notification = [options objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
+    if (notification) {
+        COUNTLY_LOG(@"Got notification on app launch: %@", notification);
+        [self handleRemoteNotification:notification displayingMessage:NO];
+    }
+    
+    [self withAppStoreId:^(NSString *appId) {
+        NSLog(@"ID: %@", appId);
+    }];
+}
+
+- (NSMutableSet *) countlyNotificationCategories {
+    return [self countlyNotificationCategoriesWithActionTitles:@[@"Cancel", @"Open", @"Update", @"Review"]];
+}
+
+- (NSMutableSet *) countlyNotificationCategoriesWithActionTitles:(NSArray *)actions {
+    UIMutableUserNotificationCategory *url = [UIMutableUserNotificationCategory new],
+                                      *upd = [UIMutableUserNotificationCategory new],
+                                      *rev = [UIMutableUserNotificationCategory new];
+    
+    url.identifier = @"[CLY]_url";
+    upd.identifier = @"[CLY]_update";
+    rev.identifier = @"[CLY]_review";
+
+    UIMutableUserNotificationAction *cancel = [UIMutableUserNotificationAction new],
+                                      *open = [UIMutableUserNotificationAction new],
+                                    *update = [UIMutableUserNotificationAction new],
+                                    *review = [UIMutableUserNotificationAction new];
+    
+    cancel.identifier = @"[CLY]_cancel";
+    open.identifier   = @"[CLY]_open";
+    update.identifier = @"[CLY]_update";
+    review.identifier = @"[CLY]_review";
+    
+    cancel.title = actions[0];
+    open.title   = actions[1];
+    update.title = actions[2];
+    review.title = actions[3];
+
+    cancel.activationMode = UIUserNotificationActivationModeBackground;
+    open.activationMode   = UIUserNotificationActivationModeForeground;
+    update.activationMode = UIUserNotificationActivationModeForeground;
+    review.activationMode = UIUserNotificationActivationModeForeground;
+    
+    cancel.destructive = NO;
+    open.destructive   = NO;
+    update.destructive = NO;
+    review.destructive = NO;
+    
+    
+    [url setActions:@[cancel, open] forContext:UIUserNotificationActionContextMinimal];
+    [url setActions:@[cancel, open] forContext:UIUserNotificationActionContextDefault];
+    
+    [upd setActions:@[cancel, update] forContext:UIUserNotificationActionContextMinimal];
+    [upd setActions:@[cancel, update] forContext:UIUserNotificationActionContextDefault];
+    
+    [rev setActions:@[cancel, review] forContext:UIUserNotificationActionContextMinimal];
+    [rev setActions:@[cancel, review] forContext:UIUserNotificationActionContextDefault];
+    
+    NSMutableSet *set = [NSMutableSet setWithObjects:url, upd, rev, nil];
+    
+    [url release];
+    [upd release];
+    [rev release];
+    [cancel release];
+    [open release];
+    [update release];
+    [review release];
+    
+    return set;
+}
+
 
 - (void)recordEvent:(NSString *)key count:(int)count
 {
@@ -961,6 +1105,216 @@ NSString* const kCLYUserCustom = @"custom";
 	COUNTLY_LOG(@"App willTerminate");
     [[CountlyDB sharedInstance] saveContext];
 	[self exit];
+}
+
+#define kPushToMessage      1
+#define kPushToOpenLink     2
+#define kPushToUpdate       3
+#define kPushToReview       4
+#define kPushEventKeyOpen   @"[CLY]_push_open"
+#define kPushEventKeyAction @"[CLY]_push_action"
+#define kAppIdPropertyKey   @"[CLY]_app_id"
+#define kCountlyAppId       @"695261996"
+
+- (BOOL) handleRemoteNotification:(NSDictionary *)info withButtonTitles:(NSArray *)titles {
+    return [self handleRemoteNotification:info displayingMessage:YES withButtonTitles:titles];
+}
+
+- (BOOL) handleRemoteNotification:(NSDictionary *)info {
+    return [self handleRemoteNotification:info displayingMessage:YES];
+}
+
+- (BOOL) handleRemoteNotification:(NSDictionary *)info displayingMessage:(BOOL)displayMessage {
+    return [self handleRemoteNotification:info displayingMessage:displayMessage
+                         withButtonTitles:@[@"Cancel", @"Open", @"Update", @"Review"]];
+}
+
+- (BOOL) handleRemoteNotification:(NSDictionary *)info displayingMessage:(BOOL)displayMessage withButtonTitles:(NSArray *)titles {
+    COUNTLY_LOG(@"Handling remote notification (display? %d): %@", displayMessage, info);
+    
+    NSDictionary *aps = info[@"aps"];
+    NSDictionary *countly = info[@"c"];
+    
+    if (countly[@"i"]) {
+        COUNTLY_LOG(@"Message id: %@", countly[@"i"]);
+
+        [self recordPushOpenForCountlyDictionary:countly];
+        NSString *appName = [[[NSBundle mainBundle] infoDictionary] objectForKey:(NSString*)kCFBundleNameKey];
+        NSString *message = [aps objectForKey:@"alert"];
+        
+        int type = 0;
+        NSString *action = nil;
+        
+        if ([aps objectForKey:@"content-available"]) {
+            return NO;
+        } else if (countly[@"l"]) {
+            type = kPushToOpenLink;
+            action = titles[1];
+        } else if (countly[@"r"] != nil) {
+            type = kPushToReview;
+            action = titles[3];
+        } else if (countly[@"u"] != nil) {
+            type = kPushToUpdate;
+            action = titles[2];
+        } else if (displayMessage) {
+            type = kPushToMessage;
+            action = nil;
+        }
+        
+        if (type && [message length]) {
+            UIAlertView *alert;
+            if (action) {
+                alert = [[UIAlertView alloc] initWithTitle:appName message:message delegate:self
+                                         cancelButtonTitle:titles[0] otherButtonTitles:action, nil];
+            } else {
+                alert = [[UIAlertView alloc] initWithTitle:appName message:message delegate:self
+                                         cancelButtonTitle:titles[0] otherButtonTitles:nil];
+            }
+            alert.tag = type;
+            
+            _messageInfos[alert.description] = info;
+
+            [alert show];
+            return YES;
+        }
+    }
+    
+    return NO;
+}
+
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
+    NSDictionary *info = _messageInfos[alertView.description];
+    [_messageInfos removeObjectForKey:alertView.description];
+
+    if (alertView.tag == kPushToMessage) {
+        // do nothing
+    } else if (buttonIndex != alertView.cancelButtonIndex) {
+        if (alertView.tag == kPushToOpenLink) {
+            [self recordPushActionForCountlyDictionary:info[@"c"]];
+            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:info[@"c"][@"l"]]];
+        } else if (alertView.tag == kPushToUpdate) {
+            if ([info[@"c"][@"u"] length]) {
+                [self openUpdate:info[@"c"][@"u"] forInfo:info];
+            } else {
+                [self withAppStoreId:^(NSString *appStoreId) {
+                    [self openUpdate:appStoreId forInfo:info];
+                }];
+            }
+        } else if (alertView.tag == kPushToReview) {
+            if ([info[@"c"][@"r"] length]) {
+                [self openReview:info[@"c"][@"r"] forInfo:info];
+            } else {
+                [self withAppStoreId:^(NSString *appStoreId) {
+                    [self openReview:appStoreId forInfo:info];
+                }];
+            }
+        }
+    }
+}
+
+- (void) withAppStoreId:(void (^)(NSString *))block{
+    NSString *appStoreId = [[NSUserDefaults standardUserDefaults] stringForKey:kAppIdPropertyKey];
+    if (appStoreId) {
+        block(appStoreId);
+    } else {
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+            NSString *appStoreId = nil;
+            NSString *bundle = [CountlyDeviceInfo bundleId];
+//            NSString *bundle = @"ru.byblos.byblos";
+            //get country
+            NSString *appStoreCountry = [(NSLocale *)[NSLocale currentLocale] objectForKey:NSLocaleCountryCode];
+            if ([appStoreCountry isEqualToString:@"150"]) {
+                appStoreCountry = @"eu";
+            } else if ([[appStoreCountry stringByReplacingOccurrencesOfString:@"[A-Za-z]{2}" withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, 2)] length]) {
+                appStoreCountry = @"us";
+            }
+            
+            NSString *iTunesServiceURL = [NSString stringWithFormat:@"http://itunes.apple.com/%@/lookup", appStoreCountry];
+            iTunesServiceURL = [iTunesServiceURL stringByAppendingFormat:@"?bundleId=%@", bundle];
+            
+            NSError *error = nil;
+            NSURLResponse *response = nil;
+            NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:iTunesServiceURL] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
+            NSData *data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
+            NSInteger statusCode = ((NSHTTPURLResponse *)response).statusCode;
+            if (data && statusCode == 200) {
+                
+                id json = [[NSJSONSerialization JSONObjectWithData:data options:(NSJSONReadingOptions)0 error:&error][@"results"] lastObject];
+                
+                if (!error && [json isKindOfClass:[NSDictionary class]]) {
+                    NSString *bundleID = json[@"bundleId"];
+                    if (bundleID && [bundleID isEqualToString:bundle]) {
+                        appStoreId = [json[@"trackId"] stringValue];
+                    }
+                }
+            }
+            
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [[NSUserDefaults standardUserDefaults] setObject:appStoreId forKey:kAppIdPropertyKey];
+                [[NSUserDefaults standardUserDefaults] synchronize];
+                block(appStoreId);
+            });
+        });
+    }
+
+}
+
+- (void) openUpdate:(NSString *)appId forInfo:(NSDictionary *)info {
+    if (!appId) appId = kCountlyAppId;
+
+    NSString *urlFormat = nil;
+#if TARGET_OS_IPHONE
+    urlFormat = @"itms-apps://itunes.apple.com/app/id%@";
+#else
+    urlFormat = @"macappstore://itunes.apple.com/app/id%@";
+#endif
+
+    [self recordPushActionForCountlyDictionary:info[@"c"]];
+    
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:urlFormat, appId]];
+    [[UIApplication sharedApplication] openURL:url];
+}
+
+- (void) openReview:(NSString *)appId forInfo:(NSDictionary *)info{
+    if (!appId) appId = kCountlyAppId;
+    
+    NSString *urlFormat = nil;
+#if TARGET_OS_IPHONE
+    float iOSVersion = [[UIDevice currentDevice].systemVersion floatValue];
+    if (iOSVersion >= 7.0f && iOSVersion < 7.1f) {
+        urlFormat = @"itms-apps://itunes.apple.com/app/id%@";
+    } else {
+        urlFormat = @"itms-apps://itunes.apple.com/WebObjects/MZStore.woa/wa/viewContentsUserReviews?type=Purple+Software&id=%@";
+    }
+#else
+    urlFormat = @"macappstore://itunes.apple.com/app/id%@";
+#endif
+
+    [self recordPushActionForCountlyDictionary:info[@"c"]];
+    
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:urlFormat, appId]];
+    [[UIApplication sharedApplication] openURL:url];
+}
+
+- (void)recordPushOpenForCountlyDictionary:(NSDictionary *)c {
+    [self recordEvent:kPushEventKeyOpen segmentation:@{@"i": c[@"i"]} count:1];
+}
+
+- (void)recordPushActionForCountlyDictionary:(NSDictionary *)c {
+    [self recordEvent:kPushEventKeyAction segmentation:@{@"i": c[@"i"]} count:1];
+}
+
+- (void)didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
+    const unsigned *tokenBytes = [deviceToken bytes];
+    NSString *token = [NSString stringWithFormat:@"%08x%08x%08x%08x%08x%08x%08x%08x",
+                       ntohl(tokenBytes[0]), ntohl(tokenBytes[1]), ntohl(tokenBytes[2]),
+                       ntohl(tokenBytes[3]), ntohl(tokenBytes[4]), ntohl(tokenBytes[5]),
+                       ntohl(tokenBytes[6]), ntohl(tokenBytes[7])];
+    [[CountlyConnectionQueue sharedInstance] tokenSession:token];
+}
+
+- (void)didFailToRegisterForRemoteNotifications {
+    [[CountlyConnectionQueue sharedInstance] tokenSession:nil];
 }
 
 @end
