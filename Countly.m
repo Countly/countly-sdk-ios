@@ -582,6 +582,7 @@ NSString* const kCLYUserCustom = @"custom";
 @property (nonatomic, copy) NSString *appHost;
 @property (nonatomic, retain) NSURLConnection *connection;
 @property (nonatomic) BOOL startedWithTest;
+@property (nonatomic, strong) NSString *locationString;
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 @property (nonatomic, assign) UIBackgroundTaskIdentifier bgTask;
 #endif
@@ -679,7 +680,6 @@ NSString* const kCLYUserCustom = @"custom";
 	[self tick];
 }
 
-static NSString *location;
 - (void)tokenSession:(NSString *)token
 {
     // Test modes: 0 = production mode, 1 = development build, 2 = Ad Hoc build
@@ -706,25 +706,19 @@ static NSString *location;
     });
 }
 
-- (void)setLocation:(double)latitude longitude:(double)longitude
-{
-    location = [NSString stringWithFormat:@"%f,%f", latitude, longitude];
-}
-
 - (void)updateSessionWithDuration:(int)duration
 {
-    NSString *loc = @"";
-    if (location != nil) {
-        loc = location;
-        location = nil;
-    }
-    
-	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&session_duration=%d&location=%@",
+	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&session_duration=%d",
 					  self.appKey,
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
-					  duration,
-                      loc];
+					  duration];
+
+    if (self.locationString)
+    {
+        data = [data stringByAppendingFormat:@"&location=%@",self.locationString];
+        self.locationString = nil;
+    }
     
     [[CountlyDB sharedInstance] addToQueue:data];
     
@@ -978,14 +972,6 @@ static NSString *location;
     
     NSMutableSet *set = [NSMutableSet setWithObjects:url, upd, rev, nil];
     
-    [url release];
-    [upd release];
-    [rev release];
-    [cancel release];
-    [open release];
-    [update release];
-    [review release];
-    
     return set;
 }
 
@@ -1027,6 +1013,11 @@ static NSString *location;
     NSLog(@"%s",__FUNCTION__);
     [CountlyUserDetails.sharedUserDetails deserialize:userDetails];
     [CountlyConnectionQueue.sharedInstance sendUserDetails];
+}
+
+- (void)setLocation:(double)latitude longitude:(double)longitude
+{
+    CountlyConnectionQueue.sharedInstance.locationString = [NSString stringWithFormat:@"%f,%f", latitude, longitude];
 }
 
 
