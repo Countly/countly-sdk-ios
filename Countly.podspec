@@ -1,13 +1,13 @@
 Pod::Spec.new do |s|
   s.name     = 'Countly'
-  s.version  = '2.0.0'
+  s.version  = '3.0.0'
   s.license      = {
     :type => 'COMMUNITY',
     :text => <<-LICENSE
               COUNTLY MOBILE ANALYTICS COMMUNITY EDITION LICENSE
               --------------------------------------------------
 
-              Copyright (c) 2012, 2014 Countly
+              Copyright (c) 2012, 2015 Countly
 
               Permission is hereby granted, free of charge, to any person obtaining a copy
               of this software and associated documentation files (the "Software"), to deal
@@ -34,7 +34,7 @@ Pod::Spec.new do |s|
   s.source   = { :git => 'https://github.com/Countly/countly-sdk-ios.git', :tag => s.version.to_s }
   s.source_files = '*.{h,m}'
   s.resources = '*.{xcdatamodeld}'
-  s.requires_arc = false
+  s.requires_arc = true
   s.ios.deployment_target = '5.0'
   s.osx.deployment_target = '10.8'
   s.ios.weak_framework = 'CoreTelephony', 'CoreData'
