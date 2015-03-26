@@ -24,7 +24,7 @@
 #   define COUNTLY_LOG(...)
 #endif
 
-#define COUNTLY_VERSION "2.0"
+#define COUNTLY_SDK_VERSION "3.0.0"
 #define COUNTLY_DEFAULT_UPDATE_INTERVAL 60.0
 #define COUNTLY_EVENT_SEND_THRESHOLD 10
 
@@ -669,7 +669,7 @@ NSString* const kCLYUserCustom = @"custom";
 
 - (void)beginSession
 {
-	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_VERSION"&begin_session=1&metrics=%@",
+	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_SDK_VERSION"&begin_session=1&metrics=%@",
 					  self.appKey,
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
@@ -692,7 +692,7 @@ NSString* const kCLYUserCustom = @"custom";
     
     COUNTLY_LOG(@"Sending APN token in mode %d", testMode);
     
-    NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_VERSION"&token_session=1&ios_token=%@&test_mode=%d",
+    NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_SDK_VERSION"&token_session=1&ios_token=%@&test_mode=%d",
                       self.appKey,
                       [CountlyDeviceInfo udid],
                       time(NULL),
@@ -740,7 +740,7 @@ NSString* const kCLYUserCustom = @"custom";
 
 - (void)sendUserDetails
 {
-    NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_VERSION"&user_details=%@",
+    NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_SDK_VERSION"&user_details=%@",
                       self.appKey,
                       [CountlyDeviceInfo udid],
                       time(NULL),
