@@ -44,6 +44,8 @@ extern NSString* const kCLYUserPicturePath;
 extern NSString* const kCLYUserBirthYear;
 extern NSString* const kCLYUserCustom;
 
+#pragma mark - Countly Messaging
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 /**
  * Countly Messaging support
  */
@@ -105,7 +107,7 @@ extern NSString* const kCLYUserCustom;
  * @param c NSDictionary of @"c" userInfo key.
  */
 - (void)recordPushActionForCountlyDictionary:(NSDictionary *)c;
-
+#endif
 @end
 
 

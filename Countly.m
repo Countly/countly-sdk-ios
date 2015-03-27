@@ -895,6 +895,7 @@ NSString* const kCLYUserCustom = @"custom";
     [self start:appKey withHost:@"https://cloud.count.ly"];
 }
 
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 - (void)startWithMessagingUsing:(NSString *)appKey withHost:(NSString *)appHost andOptions:(NSDictionary *)options
 {
     [self start:appKey withHost:appHost];
@@ -974,7 +975,7 @@ NSString* const kCLYUserCustom = @"custom";
     
     return set;
 }
-
+#endif
 
 - (void)recordEvent:(NSString *)key count:(int)count
 {
@@ -1098,6 +1099,10 @@ NSString* const kCLYUserCustom = @"custom";
 	[self exit];
 }
 
+
+#pragma mark - Countly Messaging
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+
 #define kPushToMessage      1
 #define kPushToOpenLink     2
 #define kPushToUpdate       3
@@ -1211,8 +1216,6 @@ NSString* const kCLYUserCustom = @"custom";
         dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
             NSString *appStoreId = nil;
             NSString *bundle = [CountlyDeviceInfo bundleId];
-//            NSString *bundle = @"ru.byblos.byblos";
-            //get country
             NSString *appStoreCountry = [(NSLocale *)[NSLocale currentLocale] objectForKey:NSLocaleCountryCode];
             if ([appStoreCountry isEqualToString:@"150"]) {
                 appStoreCountry = @"eu";
@@ -1307,5 +1310,5 @@ NSString* const kCLYUserCustom = @"custom";
 - (void)didFailToRegisterForRemoteNotifications {
     [[CountlyConnectionQueue sharedInstance] tokenSession:nil];
 }
-
+#endif
 @end
