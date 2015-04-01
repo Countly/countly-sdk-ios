@@ -47,6 +47,11 @@ extern NSString* const kCLYUserCustom;
 #pragma mark - Countly Messaging
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 /**
+ * Set Messaging in DeveloperMode Override.
+ */
+- (void)setMessagingDeveloperMode;
+
+/**
  * Countly Messaging support
  */
 - (void)startWithMessagingUsing:(NSString *)appKey withHost:(NSString *)appHost andOptions:(NSDictionary *)options;
