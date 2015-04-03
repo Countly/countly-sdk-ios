@@ -609,7 +609,7 @@ NSString* const kCLYUserCustom = @"custom";
     if (self.connection != nil || [dataQueue count] == 0)
         return;
 
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
     if (self.bgTask != UIBackgroundTaskInvalid)
         return;
     
@@ -770,7 +770,7 @@ NSString* const kCLYUserCustom = @"custom";
     
 	COUNTLY_LOG(@"Request Completed\n");
     
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
     UIApplication *app = [UIApplication sharedApplication];
     if (self.bgTask != UIBackgroundTaskInvalid)
     {
@@ -794,7 +794,7 @@ NSString* const kCLYUserCustom = @"custom";
         COUNTLY_LOG(@"Request Failed \n %@: %@", [dataQueue[0] description], [err description]);
     #endif
     
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
     UIApplication *app = [UIApplication sharedApplication];
     if (self.bgTask != UIBackgroundTaskInvalid)
     {
@@ -895,7 +895,7 @@ NSString* const kCLYUserCustom = @"custom";
     [self start:appKey withHost:@"https://cloud.count.ly"];
 }
 
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
 - (void)startWithMessagingUsing:(NSString *)appKey withHost:(NSString *)appHost andOptions:(NSDictionary *)options
 {
     [self start:appKey withHost:appHost];
@@ -1101,7 +1101,7 @@ NSString* const kCLYUserCustom = @"custom";
 
 
 #pragma mark - Countly Messaging
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
 
 #define kPushToMessage      1
 #define kPushToOpenLink     2
