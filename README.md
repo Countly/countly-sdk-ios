@@ -8,7 +8,7 @@ and mobile SDK that sends this data. Both parts are open source with different l
 
 This repository includes the Countly iOS & OS X SDK.
 
-Need help? See [Countly SDK for iOS and OS X](http://resources.count.ly/v1.0/docs/countly-sdk-for-ios-and-os-x) documentation at [Countly Resources](http://resources.count.ly).
+Need help? See [Countly SDK for iOS and OS X](http://resources.count.ly/v1.0/docs/countly-sdk-for-ios-and-os-x) documentation at [Countly Resources](http://resources.count.ly). For more information about Countly Enterprise Edition, see [comparison of different Countly editions](https://count.ly/compare/)
 
 
 ### Other Github resources ###
@@ -17,15 +17,7 @@ Check Countly Server source code here:
 
 - [Countly Server](https://github.com/Countly/countly-server)
 
-There are also other Countly SDK repositories below:
-
-- [Countly iOS SDK](https://github.com/Countly/countly-sdk-ios)
-- [Countly Android SDK](https://github.com/Countly/countly-sdk-android)
-- [Countly Windows Phone SDK](https://github.com/Countly/countly-sdk-windows-phone)
-- [Countly Blackberry Webworks SDK](https://github.com/Countly/countly-sdk-blackberry-webworks)
-- [Countly Blackberry Cascades SDK](https://github.com/craigmj/countly-sdk-blackberry10-cascades) (Community supported)
-- [Countly Appcelerator Titanium SDK](https://github.com/euforic/Titanium-Count.ly) (Community supported)
-- [Countly Unity3D SDK](https://github.com/Countly/countly-sdk-unity) (Community supported)
+There are also other Countly SDK repositories (both official and community supported) on [Countly resources](http://resources.count.ly/v1.0/docs/downloading-sdks).
 
 ##How can I help you with your efforts?
 Glad you asked. We need ideas, feedbacks and constructive comments. All your suggestions will be taken care with upmost importance. 
