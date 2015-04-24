@@ -6,10 +6,6 @@
 
 #pragma mark - Directives
 
-#if __has_feature(objc_arc)
-#error This is a non-ARC class. Please add -fno-objc-arc flag for Countly.m, Countly_OpenUDID.m and CountlyDB.m under Build Phases > Compile Sources
-#endif
-
 #ifndef COUNTLY_DEBUG
 #define COUNTLY_DEBUG 0
 #endif
@@ -48,6 +44,12 @@
 
 #include <sys/types.h>
 #include <sys/sysctl.h>
+#import <mach/mach.h>
+#import <mach/mach_host.h>
+#import <arpa/inet.h>
+#import <ifaddrs.h>
+#include <libkern/OSAtomic.h>
+#include <execinfo.h>
 
 #pragma mark - Helper Functions
 
@@ -1318,13 +1320,7 @@ NSString* const kCLYUserCustom = @"custom";
 
 
 #pragma mark - Countly CrashReporting
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
-#import <mach/mach.h>
-#import <mach/mach_host.h>
-#import <arpa/inet.h>
-#import <ifaddrs.h>
-#include <libkern/OSAtomic.h>
-#include <execinfo.h>
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
 
 #define kCountlyCrashEventKey   @"[CLY]_crash"
 #define kCountlyCrashUserInfoKey @"[CLY]_stack_trace"
@@ -1372,7 +1368,7 @@ void CountlyUncaughtExceptionHandler(NSException *exception)
     
     crashReport[@"stack"] = stackString;
 
-    CountlyEvent *event = CountlyEvent.new.autorelease;
+    CountlyEvent *event = CountlyEvent.new;
     event.key = kCountlyCrashEventKey;
     event.segmentation = crashReport;
     event.count = 1;
@@ -1444,7 +1440,7 @@ void CCL(const char* function, NSUInteger line, NSString* message)
         df.dateFormat = @"yyyy-MM-dd HH:mm:ss.SSS";
     }
 
-    NSString* f = [[NSString.alloc initWithUTF8String:function].autorelease stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"-[]"]];
+    NSString* f = [[NSString.alloc initWithUTF8String:function] stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"-[]"]];
     NSString* log = [NSString stringWithFormat:@"[%@] <%@ %li> %@",[df stringFromDate:NSDate.date],f,(unsigned long)line,message];
     [CountlyCustomCrashLogs addObject:log];
 }
@@ -1478,7 +1474,7 @@ void CCL(const char* function, NSUInteger line, NSString* message)
 - (NSInteger)batteryLevel
 {
     UIDevice.currentDevice.batteryMonitoringEnabled = YES;
-    return abs(UIDevice.currentDevice.batteryLevel*100);
+    return abs((NSInteger)UIDevice.currentDevice.batteryLevel*100);
 }
 
 - (NSInteger)orientation
