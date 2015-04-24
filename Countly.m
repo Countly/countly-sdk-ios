@@ -1350,6 +1350,7 @@ void CountlyUncaughtExceptionHandler(NSException *exception)
     crashReport[@"connection"] = @(Countly.sharedInstance.connectionType);
     crashReport[@"proximity"] = @(Countly.sharedInstance.isProximitySensorActive);
     crashReport[@"jailbroken"] = @(Countly.sharedInstance.isJailbroken);
+    crashReport[@"opengl"] = @(Countly.sharedInstance.GLESversion);
 
     if(CountlyCustomCrashLogs)
         crashReport[@"customLogs"] = [CountlyCustomCrashLogs componentsJoinedByString:@"\n"];
@@ -1474,7 +1475,7 @@ void CCL(const char* function, NSUInteger line, NSString* message)
 - (NSInteger)batteryLevel
 {
     UIDevice.currentDevice.batteryMonitoringEnabled = YES;
-    return abs((NSInteger)UIDevice.currentDevice.batteryLevel*100);
+    return abs((int)UIDevice.currentDevice.batteryLevel*100);
 }
 
 - (NSInteger)orientation
@@ -1536,5 +1537,21 @@ void CCL(const char* function, NSUInteger line, NSString* message)
     fclose(f);
     return isJailbroken;
 }
+
+- (float)GLESversion
+{
+    EAGLContext *aContext;
+    
+    aContext = [EAGLContext.alloc initWithAPI:kEAGLRenderingAPIOpenGLES3];
+    if(aContext)
+        return 3.0;
+    
+    aContext = [EAGLContext.alloc initWithAPI:kEAGLRenderingAPIOpenGLES2];
+    if(aContext)
+        return 2.0;
+    
+    return 1.0;
+}
+
 #endif
 @end
