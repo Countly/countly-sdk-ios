@@ -36,10 +36,6 @@
  distribution.
 */
 
-#if __has_feature(objc_arc)
-#error This is a non-ARC class. Please add -fno-objc-arc flag for Countly.m, Countly_OpenUDID.m and CountlyDB.m under Build Phases > Compile Sources
-#endif
-
 #import "Countly_OpenUDID.h"
 #import <CommonCrypto/CommonDigest.h> // Need to import for CC_MD5 access
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
@@ -172,7 +168,7 @@ static int const kOpenUDIDRedundancySlots = 100;
         if (error!=nil)
             *error = [NSError errorWithDomain:kOpenUDIDDomain
                                          code:kOpenUDIDErrorNone
-                                     userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"OpenUDID in cache from first call",@"description", nil]];
+                                     userInfo:@{@"description": @"OpenUDID in cache from first call"}];
         return kOpenUDIDSessionCache;
     }
     
@@ -185,7 +181,7 @@ static int const kOpenUDIDRedundancySlots = 100;
     {
       // generate a new uuid and store it in user defaults
       CFUUIDRef uuid = CFUUIDCreate(NULL);
-      appUID = (NSString *) CFUUIDCreateString(NULL, uuid);
+      appUID = (NSString *) CFBridgingRelease(CFUUIDCreateString(NULL, uuid));
       CFRelease(uuid);
     }
   
@@ -202,9 +198,9 @@ static int const kOpenUDIDRedundancySlots = 100;
     id localDict = [defaults objectForKey:kOpenUDIDKey];
     if ([localDict isKindOfClass:[NSDictionary class]]) {
         localDict = [NSMutableDictionary dictionaryWithDictionary:localDict]; // we might need to set/overwrite the redundancy slot
-        openUDID = [localDict objectForKey:kOpenUDIDKey];
-        myRedundancySlotPBid = [localDict objectForKey:kOpenUDIDSlotKey];
-        optedOutDate = [localDict objectForKey:kOpenUDIDOOTSKey];
+        openUDID = localDict[kOpenUDIDKey];
+        myRedundancySlotPBid = localDict[kOpenUDIDSlotKey];
+        optedOutDate = localDict[kOpenUDIDOOTSKey];
         optedOut = optedOutDate!=nil;
         OpenUDIDLog(@"localDict = %@",localDict);
     }
@@ -227,7 +223,7 @@ static int const kOpenUDIDRedundancySlots = 100;
             if (availableSlotPBid==nil) availableSlotPBid = slotPBid;
         } else {
             NSDictionary* dict = [Countly_OpenUDID _getDictFromPasteboard:slotPB];
-            NSString* oudid = [dict objectForKey:kOpenUDIDKey];
+            NSString* oudid = dict[kOpenUDIDKey];
             OpenUDIDLog(@"SlotPB dict = %@",dict);
             if (oudid==nil) {
                 // availableSlotPBid could inside a non null slot where no oudid can be found
@@ -235,16 +231,16 @@ static int const kOpenUDIDRedundancySlots = 100;
             } else {
                 // increment the frequency of this oudid key
                 int count = [[frequencyDict valueForKey:oudid] intValue];
-                [frequencyDict setObject:[NSNumber numberWithInt:++count] forKey:oudid];
+                frequencyDict[oudid] = @(++count);
             }
             // if we have a match with the app unique id,
             // then let's look if the external UIPasteboard representation marks this app as OptedOut
-            NSString* gid = [dict objectForKey:kOpenUDIDAppUIDKey];
+            NSString* gid = dict[kOpenUDIDAppUIDKey];
             if (gid!=nil && [gid isEqualToString:appUID]) {
                 myRedundancySlotPBid = slotPBid;
                 // the local dictionary is prime on the opt-out subject, so ignore if already opted-out locally
                 if (optedOut) {
-                    optedOutDate = [dict objectForKey:kOpenUDIDOOTSKey];
+                    optedOutDate = dict[kOpenUDIDOOTSKey];
                     optedOut = optedOutDate!=nil;   
                 }
             }
@@ -275,10 +271,10 @@ static int const kOpenUDIDRedundancySlots = 100;
         //
         if (localDict==nil) { 
             localDict = [NSMutableDictionary dictionaryWithCapacity:4];
-            [localDict setObject:openUDID forKey:kOpenUDIDKey];
-            [localDict setObject:appUID forKey:kOpenUDIDAppUIDKey];
-            [localDict setObject:[NSDate date] forKey:kOpenUDIDTSKey];
-            if (optedOut) [localDict setObject:optedOutDate forKey:kOpenUDIDTSKey];
+            localDict[kOpenUDIDKey] = openUDID;
+            localDict[kOpenUDIDAppUIDKey] = appUID;
+            localDict[kOpenUDIDTSKey] = [NSDate date];
+            if (optedOut) localDict[kOpenUDIDTSKey] = optedOutDate;
             saveLocalDictToDefaults = YES;
         }
     }
@@ -303,7 +299,7 @@ static int const kOpenUDIDRedundancySlots = 100;
         // save slotPBid to the defaults, and remember to save later
         //
         if (localDict) {
-            [localDict setObject:availableSlotPBid forKey:kOpenUDIDSlotKey];
+            localDict[kOpenUDIDSlotKey] = availableSlotPBid;
             saveLocalDictToDefaults = YES;
         }
         
@@ -326,9 +322,9 @@ static int const kOpenUDIDRedundancySlots = 100;
     if (optedOut) {
         if (error!=nil) *error = [NSError errorWithDomain:kOpenUDIDDomain
                                                      code:kOpenUDIDErrorOptedOut
-                                                 userInfo:[NSDictionary dictionaryWithObjectsAndKeys:[NSString stringWithFormat:@"Application with unique id %@ is opted-out from OpenUDID as of %@",appUID,optedOutDate],@"description", nil]];
+                                                 userInfo:@{@"description": [NSString stringWithFormat:@"Application with unique id %@ is opted-out from OpenUDID as of %@",appUID,optedOutDate]}];
             
-        kOpenUDIDSessionCache = [[NSString stringWithFormat:@"%040x",0] retain];
+        kOpenUDIDSessionCache = [NSString stringWithFormat:@"%040x",0];
         return kOpenUDIDSessionCache;
     }
 
@@ -338,13 +334,13 @@ static int const kOpenUDIDRedundancySlots = 100;
         if (isCompromised)
             *error = [NSError errorWithDomain:kOpenUDIDDomain
                                          code:kOpenUDIDErrorCompromised
-                                     userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"Found a discrepancy between stored OpenUDID (reliable) and redundant copies; one of the apps on the device is most likely corrupting the OpenUDID protocol",@"description", nil]];
+                                     userInfo:@{@"description": @"Found a discrepancy between stored OpenUDID (reliable) and redundant copies; one of the apps on the device is most likely corrupting the OpenUDID protocol"}];
         else
             *error = [NSError errorWithDomain:kOpenUDIDDomain
                                          code:kOpenUDIDErrorNone
-                                     userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"OpenUDID succesfully retrieved",@"description", nil]];
+                                     userInfo:@{@"description": @"OpenUDID succesfully retrieved"}];
     }
-    kOpenUDIDSessionCache = [openUDID retain];
+    kOpenUDIDSessionCache = openUDID;
     return kOpenUDIDSessionCache;
 }
 
@@ -365,7 +361,7 @@ static int const kOpenUDIDRedundancySlots = 100;
 
     // set the opt-out date or remove key, according to parameter
     if (optOutValue)
-        [dict setObject:[NSDate date] forKey:kOpenUDIDOOTSKey];
+        dict[kOpenUDIDOOTSKey] = [NSDate date];
     else
         [dict removeObjectForKey:kOpenUDIDOOTSKey];
 
