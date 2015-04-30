@@ -1348,9 +1348,10 @@ void CountlyUncaughtExceptionHandler(NSException *exception)
     crashReport[@"batteryLevel"] = @(Countly.sharedInstance.batteryLevel);
     crashReport[@"orientation"] = @(Countly.sharedInstance.orientation);
     crashReport[@"connection"] = @(Countly.sharedInstance.connectionType);
+    crashReport[@"opengl"] = @(Countly.sharedInstance.OpenGLESversion);
     crashReport[@"proximity"] = @(Countly.sharedInstance.isProximitySensorActive);
     crashReport[@"jailbroken"] = @(Countly.sharedInstance.isJailbroken);
-    crashReport[@"opengl"] = @(Countly.sharedInstance.GLESversion);
+    crashReport[@"inBackground"] = @(Countly.sharedInstance.isInBackground);
 
     if(CountlyCustomCrashLogs)
         crashReport[@"customLogs"] = [CountlyCustomCrashLogs componentsJoinedByString:@"\n"];
@@ -1525,6 +1526,21 @@ void CCL(const char* function, NSUInteger line, NSString* message)
     return connType;
 }
 
+- (float)OpenGLESversion
+{
+    EAGLContext *aContext;
+    
+    aContext = [EAGLContext.alloc initWithAPI:kEAGLRenderingAPIOpenGLES3];
+    if(aContext)
+        return 3.0;
+    
+    aContext = [EAGLContext.alloc initWithAPI:kEAGLRenderingAPIOpenGLES2];
+    if(aContext)
+        return 2.0;
+    
+    return 1.0;
+}
+
 - (BOOL)isProximitySensorActive
 {
     return UIDevice.currentDevice.proximityState;
@@ -1538,19 +1554,9 @@ void CCL(const char* function, NSUInteger line, NSString* message)
     return isJailbroken;
 }
 
-- (float)GLESversion
+- (BOOL)isInBackground
 {
-    EAGLContext *aContext;
-    
-    aContext = [EAGLContext.alloc initWithAPI:kEAGLRenderingAPIOpenGLES3];
-    if(aContext)
-        return 3.0;
-    
-    aContext = [EAGLContext.alloc initWithAPI:kEAGLRenderingAPIOpenGLES2];
-    if(aContext)
-        return 2.0;
-    
-    return 1.0;
+    return UIApplication.sharedApplication.applicationState == UIApplicationStateBackground;
 }
 
 #endif
