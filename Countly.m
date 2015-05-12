@@ -25,8 +25,13 @@
 #endif
 
 #define COUNTLY_SDK_VERSION "3.0.0"
+#ifndef COUNTLY_TARGET_WATCHKIT
 #define COUNTLY_DEFAULT_UPDATE_INTERVAL 60.0
 #define COUNTLY_EVENT_SEND_THRESHOLD 10
+#else
+#define COUNTLY_DEFAULT_UPDATE_INTERVAL 10.0
+#define COUNTLY_EVENT_SEND_THRESHOLD 3
+#endif
 
 #import "Countly.h"
 #import "Countly_OpenUDID.h"
