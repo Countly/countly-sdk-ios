@@ -34,7 +34,7 @@ To use Countly iOS SDK in WatchKit apps:
 3) For both WatchKit Extension target and Container App target enable App Groups under Capabilities section. 
    ( For details: http://is.gd/ConfiguringAppGroups )
 4) Uncomment COUNTLY_APP_GROUP_ID line and specify Application Group Identifier there
-5) Inside awakeWithContext:(id)context method of your projects main entry point class (InterfaceController.m by default) start Countly as usual
+5) Inside awakeWithContext:(id)context method of your watch app's main entry point (InterfaceController.m by default), start Countly as usual
     [[Countly sharedInstance] start:@"YOUR_APP_KEY" withHost:@"https://YOUR_API_HOST.com"];
 6) That's it. You should see a new session on your Dashboard, when you run WatchKit Extension target. 
    And you can record custom events as usual. 
