@@ -119,7 +119,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 
 + (NSString *)udid
 {
-#if COUNTLY_PREFER_IDFA && (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
+#if COUNTLY_PREFER_IDFA && (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR || COUNTLY_TARGET_WATCHKIT)
     return ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
 #else
 	return [Countly_OpenUDID value];
