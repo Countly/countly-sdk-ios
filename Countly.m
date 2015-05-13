@@ -680,6 +680,10 @@ NSString* const kCLYUserCustom = @"custom";
 					  time(NULL),
 					  [CountlyDeviceInfo metrics]];
     
+#ifdef COUNTLY_TARGET_WATCHKIT
+    data = [data stringByAppendingString:@"&segment=[CLY]_apple_watch"];
+#endif
+    
     [[CountlyDB sharedInstance] addToQueue:data];
     
 	[self tick];
@@ -719,6 +723,10 @@ NSString* const kCLYUserCustom = @"custom";
 					  time(NULL),
 					  duration];
 
+#ifdef COUNTLY_TARGET_WATCHKIT
+    data = [data stringByAppendingString:@"&segment=[CLY]_apple_watch"];
+#endif
+    
     if (self.locationString)
     {
         data = [data stringByAppendingFormat:@"&location=%@",self.locationString];
@@ -737,6 +745,10 @@ NSString* const kCLYUserCustom = @"custom";
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
 					  duration];
+
+#ifdef COUNTLY_TARGET_WATCHKIT
+    data = [data stringByAppendingString:@"&segment=[CLY]_apple_watch"];
+#endif    
     
     [[CountlyDB sharedInstance] addToQueue:data];
     
@@ -763,6 +775,10 @@ NSString* const kCLYUserCustom = @"custom";
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
 					  events];
+
+#ifdef COUNTLY_TARGET_WATCHKIT
+    data = [data stringByAppendingString:@"&segment=[CLY]_apple_watch"];
+#endif
     
     [[CountlyDB sharedInstance] addToQueue:data];
     
