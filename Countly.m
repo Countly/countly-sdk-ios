@@ -903,7 +903,7 @@ NSString* const kCLYUserCustom = @"custom";
     NSDictionary *notification = [options objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
     if (notification) {
         COUNTLY_LOG(@"Got notification on app launch: %@", notification);
-        [self handleRemoteNotification:notification displayingMessage:NO];
+//        [self handleRemoteNotification:notification displayingMessage:NO];
     }
 }
 
