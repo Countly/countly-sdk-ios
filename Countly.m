@@ -1179,7 +1179,7 @@ NSString* const kCLYUserCustom = @"custom";
 }
 
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
-    NSDictionary *info = _messageInfos[alertView.description];
+    NSDictionary *info = [_messageInfos[alertView.description] copy];
     [_messageInfos removeObjectForKey:alertView.description];
 
     if (alertView.tag == kPushToMessage) {
