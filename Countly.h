@@ -107,6 +107,16 @@ extern NSString* const kCLYUserCustom;
  * @param c NSDictionary of @"c" userInfo key.
  */
 - (void)recordPushActionForCountlyDictionary:(NSDictionary *)c;
+/** 
+ * Whether request operations should consult the credential storage for authenticating the connection. YES by default
+ */
+@property(nonatomic) BOOL shouldUseCredentialStorage;
+/**
+ * Block called during an authentication challenge. If COUNTLY_IGNORE_INVALID_CERTIFICATES is unset, the block is called
+ * to handle the authentication challenge. If COUNTLY_IGNORE_INVALID_CERTIFICATES is unset and no block is provided, the 
+ * the authentication challenge is cancelled.
+ */
+@property(nonatomic, copy) void(^customCredentialChallengeBlock)(NSURLConnection * connection, NSURLAuthenticationChallenge * challenge);
 #endif
 @end
 

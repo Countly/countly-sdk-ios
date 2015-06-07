@@ -1,4 +1,3 @@
-// Countly.m
 //
 // This code is provided under the MIT License.
 //
@@ -587,6 +586,9 @@ NSString* const kCLYUserCustom = @"custom";
 @property (nonatomic, assign) UIBackgroundTaskIdentifier bgTask;
 #endif
 
+@property(nonatomic) BOOL shouldUseCredentialStore;
+@property(nonatomic, copy) void(^customCredentialChallengeBlock)(NSURLConnection * connection, NSURLAuthenticationChallenge * challenge);
+
 + (instancetype)sharedInstance;
 
 @end
@@ -806,15 +808,29 @@ NSString* const kCLYUserCustom = @"custom";
     self.connection = nil;
 }
 
-#if COUNTLY_IGNORE_INVALID_CERTIFICATES
+- (BOOL) connectionShouldUseCredentialStorage:(NSURL*) connection
+{
+    return self.shouldUseCredentialStore;
+}
+ 
 - (void)connection:(NSURLConnection *)connection willSendRequestForAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge
 {
+#if COUNTLY_IGNORE_INVALID_CERTIFICATES
     if ([challenge.protectionSpace.authenticationMethod isEqualToString:NSURLAuthenticationMethodServerTrust])
         [challenge.sender useCredential:[NSURLCredential credentialForTrust:challenge.protectionSpace.serverTrust] forAuthenticationChallenge:challenge];
     
     [[challenge sender] continueWithoutCredentialForAuthenticationChallenge:challenge];
-}
+#else
+    if(self.customCredentialChallengeBlock)
+    {
+        self.customCredentialChallengeBlock(connection, challenge);
+    }
+    else
+    {
+        [[challenge sender] cancelAuthenticationChallenge:challenge];
+    }
 #endif
+}
 
 - (void)dealloc
 {
@@ -856,6 +872,7 @@ NSString* const kCLYUserCustom = @"custom";
 		isSuspended = NO;
 		unsentSessionLength = 0;
         eventQueue = [[CountlyEventQueue alloc] init];
+        self.shouldUseCredentialStorage = YES;
         
         self.messageInfos = [NSMutableDictionary new];
 
@@ -1311,4 +1328,23 @@ NSString* const kCLYUserCustom = @"custom";
     [[CountlyConnectionQueue sharedInstance] tokenSession:nil];
 }
 #endif
+
+- (void) setShouldUseCredentialStorage:(BOOL)shouldUseCredentialStorage
+{
+    [CountlyConnectionQueue sharedInstance].shouldUseCredentialStore = shouldUseCredentialStorage;
+}
+- (BOOL) shouldUseStoreCredentialStore
+{
+    return [CountlyConnectionQueue sharedInstance].shouldUseCredentialStore;
+}
+
+#pragma mark - Custom Challenge
+- (void) setCustomCredentialChallengeBlock:(void (^)(NSURLConnection *, NSURLAuthenticationChallenge *))customCredentialChallengeBlock
+{
+    [CountlyConnectionQueue sharedInstance].customCredentialChallengeBlock = customCredentialChallengeBlock;
+}
+- (void (^)(NSURLConnection *, NSURLAuthenticationChallenge *)) customCredentialChallengeBlock
+{
+    return [CountlyConnectionQueue sharedInstance].customCredentialChallengeBlock;
+}
 @end
