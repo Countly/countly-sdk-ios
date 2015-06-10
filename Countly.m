@@ -1379,7 +1379,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     crashReport[@"_name"] = exception.debugDescription;
     crashReport[@"_nonfatal"] = @(nonfatal);
     
-    //need current state not free and in megabytes
+
     crashReport[@"_ram_current"] = @((Countly.sharedInstance.totalRAM-Countly.sharedInstance.freeRAM)/1048576);
     crashReport[@"_ram_total"] = @(Countly.sharedInstance.totalRAM/1048576);
     crashReport[@"_disk_current"] = @((Countly.sharedInstance.totalDisk-Countly.sharedInstance.freeDisk)/1048576);
@@ -1392,7 +1392,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     crashReport[@"_opengl"] = @(Countly.sharedInstance.OpenGLESversion);
     crashReport[@"_root"] = @(Countly.sharedInstance.isJailbroken);
     crashReport[@"_background"] = @(Countly.sharedInstance.isInBackground);
-    crashReport[@"_run"] = @(time(NULL)-Countly.sharedInstance->startTime);
+    crashReport[@"_run"] = @(Countly.sharedInstance.timeSinceLaunch);
     
     if(Countly.sharedInstance->crashCustom){
         crashReport[@"_custom"] = Countly.sharedInstance->crashCustom;
@@ -1579,6 +1579,11 @@ void CCL(const char* function, NSUInteger line, NSString* message)
         return 2.0;
     
     return 1.0;
+}
+
+-(long)timeSinceLaunch
+{
+    return time(NULL)-startTime;
 }
 
 - (BOOL)isProximitySensorActive
