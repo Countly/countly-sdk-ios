@@ -629,6 +629,14 @@ NSString* const kCLYUserCustom = @"custom";
     NSString *data = [dataQueue[0] valueForKey:@"post"];
     NSString *urlString = [NSString stringWithFormat:@"%@/i?%@", self.appHost, data];
     NSMutableURLRequest * request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+
+    if([data rangeOfString:@"&crash="].location != NSNotFound)
+    {
+        urlString = [NSString stringWithFormat:@"%@/i", self.appHost];
+        request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+        request.HTTPMethod = @"POST";
+        request.HTTPBody = [data dataUsingEncoding:NSUTF8StringEncoding];
+    }
     
     NSString* picturePath = [CountlyUserDetails.sharedUserDetails extractPicturePathFromURLString:urlString];
     if(picturePath && ![picturePath isEqualToString:@""])
