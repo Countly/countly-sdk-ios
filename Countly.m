@@ -1415,15 +1415,17 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     
     crashReport[@"_error"] = stackString;
    
-    NSString *urlString = [NSString stringWithFormat:@"%@/i?app_key=%@&device_id=%@&timestamp=%ld&crash=%@",
-                           CountlyConnectionQueue.sharedInstance.appHost,
+    NSString *urlString = [NSString stringWithFormat:@"%@/i", CountlyConnectionQueue.sharedInstance.appHost];
+
+    NSString *queryString = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&crash=%@",
                            CountlyConnectionQueue.sharedInstance.appKey,
                            [CountlyDeviceInfo udid],
                            time(NULL),
                            CountlyURLEscapedString(CountlyJSONFromObject(crashReport))];
     
-    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:urlString]];
-
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+    request.HTTPMethod = @"POST";
+    request.HTTPBody = [queryString dataUsingEncoding:NSUTF8StringEncoding];
     COUNTLY_LOG(@"CrashReporting URL: %@", urlString);
 
     NSURLResponse* response = nil;
