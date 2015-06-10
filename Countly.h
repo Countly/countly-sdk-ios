@@ -17,7 +17,6 @@
 	double lastTime;
 	BOOL isSuspended;
     CountlyEventQueue *eventQueue;
-    NSDictionary* crashCustom;
 }
 
 + (instancetype)sharedInstance;

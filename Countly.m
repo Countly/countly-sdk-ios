@@ -854,6 +854,7 @@ NSString* const kCLYUserCustom = @"custom";
 @interface Countly ()
 
 @property (nonatomic, strong) NSMutableDictionary *messageInfos;
+@property (nonatomic, strong) NSDictionary* crashCustom;
 
 @end
 
@@ -876,7 +877,7 @@ NSString* const kCLYUserCustom = @"custom";
 		isSuspended = NO;
 		unsentSessionLength = 0;
         eventQueue = [[CountlyEventQueue alloc] init];
-        crashCustom = NULL;
+        self.crashCustom = nil;
         
         self.messageInfos = [NSMutableDictionary new];
 
@@ -1353,7 +1354,7 @@ NSString* const kCLYUserCustom = @"custom";
 
 - (void)startCrashReportingWithSegments:(NSDictionary *)segments
 {
-    crashCustom = segments;
+    self.crashCustom = segments;
     [self startCrashReporting];
 }
 
@@ -1394,9 +1395,8 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     crashReport[@"_background"] = @(Countly.sharedInstance.isInBackground);
     crashReport[@"_run"] = @(Countly.sharedInstance.timeSinceLaunch);
     
-    if(Countly.sharedInstance->crashCustom){
-        crashReport[@"_custom"] = Countly.sharedInstance->crashCustom;
-    }
+    if(Countly.sharedInstance.crashCustom)
+        crashReport[@"_custom"] = Countly.sharedInstance.crashCustom;
 
     if(CountlyCustomCrashLogs)
         crashReport[@"_logs"] = [CountlyCustomCrashLogs componentsJoinedByString:@"\n"];
@@ -1521,10 +1521,10 @@ void CCL(const char* function, NSUInteger line, NSString* message)
 - (NSString*)orientation
 {
     NSArray *orientations = @[@"Unknown", @"Portrait", @"PortraitUpsideDown", @"LandscapeLeft", @"LandscapeRight", @"FaceUp", @"FaceDown"];
-    return [orientations objectAtIndex:UIDevice.currentDevice.orientation];
+    return orientations[UIDevice.currentDevice.orientation];
 }
 
--(NSUInteger)connectionType
+- (NSUInteger)connectionType
 {
     typedef enum:NSInteger {CLYConnectionNone, CLYConnectionCellNetwork, CLYConnectionWiFi} CLYConnectionType;
     CLYConnectionType connType = CLYConnectionNone;
@@ -1581,7 +1581,7 @@ void CCL(const char* function, NSUInteger line, NSString* message)
     return 1.0;
 }
 
--(long)timeSinceLaunch
+- (long)timeSinceLaunch
 {
     return time(NULL)-startTime;
 }
