@@ -13,9 +13,11 @@
 {
 	double unsentSessionLength;
 	NSTimer *timer;
+    time_t startTime;
 	double lastTime;
 	BOOL isSuspended;
     CountlyEventQueue *eventQueue;
+    NSDictionary* crashCustom;
 }
 
 + (instancetype)sharedInstance;
@@ -140,6 +142,8 @@ extern NSString* const kCLYUserCustom;
  */
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 - (void)startCrashReporting;
+- (void)startCrashReportingWithSegments:(NSDictionary *)segments;
+- (void)recordHandledException:(NSException *)exception;
 
 void CCL(const char* function, NSUInteger line, NSString* message);
 #define CountlyCrashLog(format, ...) CCL(__FUNCTION__,__LINE__, [NSString stringWithFormat:(format), ##__VA_ARGS__])

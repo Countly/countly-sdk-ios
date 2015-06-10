@@ -757,6 +757,19 @@ NSString* const kCLYUserCustom = @"custom";
     [self tick];
 }
 
+- (void)sendCrashReport:(NSString *)report
+{
+    NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_SDK_VERSION"&crash=%@",
+                      self.appKey,
+                      [CountlyDeviceInfo udid],
+                      time(NULL),
+                      report];
+    
+    [[CountlyDB sharedInstance] addToQueue:data];
+    
+    [self tick];
+}
+
 - (void)recordEvents:(NSString *)events
 {
 	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&events=%@",
@@ -859,9 +872,11 @@ NSString* const kCLYUserCustom = @"custom";
 	if (self = [super init])
 	{
 		timer = nil;
+        startTime = time(NULL);
 		isSuspended = NO;
 		unsentSessionLength = 0;
         eventQueue = [[CountlyEventQueue alloc] init];
+        crashCustom = NULL;
         
         self.messageInfos = [NSMutableDictionary new];
 
@@ -1336,25 +1351,55 @@ NSString* const kCLYUserCustom = @"custom";
 	signal(SIGPIPE, CountlySignalHandler);
 }
 
+- (void)startCrashReportingWithSegments:(NSDictionary *)segments
+{
+    crashCustom = segments;
+    [self startCrashReporting];
+}
+
+- (void)recordHandledException:(NSException *)exception
+{
+    CountlyExceptionHandler(exception, true);
+}
+
 void CountlyUncaughtExceptionHandler(NSException *exception)
 {
+    CountlyExceptionHandler(exception, false);
+}
+
+void CountlyExceptionHandler(NSException *exception, bool nonfatal)
+{
     NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
-    crashReport[@"name"] = exception.name;
-    crashReport[@"description"] = exception.debugDescription;
-    crashReport[@"freeRAM"] = @(Countly.sharedInstance.freeRAM);
-    crashReport[@"totalRAM"] = @(Countly.sharedInstance.totalRAM);
-    crashReport[@"freeDisk"] = @(Countly.sharedInstance.freeDisk);
-    crashReport[@"totalDisk"] = @(Countly.sharedInstance.totalDisk);
-    crashReport[@"batteryLevel"] = @(Countly.sharedInstance.batteryLevel);
-    crashReport[@"orientation"] = @(Countly.sharedInstance.orientation);
-    crashReport[@"connection"] = @(Countly.sharedInstance.connectionType);
-    crashReport[@"opengl"] = @(Countly.sharedInstance.OpenGLESversion);
-    crashReport[@"proximity"] = @(Countly.sharedInstance.isProximitySensorActive);
-    crashReport[@"jailbroken"] = @(Countly.sharedInstance.isJailbroken);
-    crashReport[@"inBackground"] = @(Countly.sharedInstance.isInBackground);
+    
+    crashReport[@"_os"] = CountlyDeviceInfo.osName;
+    crashReport[@"_os_version"] = CountlyDeviceInfo.osVersion;
+    crashReport[@"_device"] = CountlyDeviceInfo.device;
+    crashReport[@"_resolution"] = CountlyDeviceInfo.resolution;
+    crashReport[@"_app_version"] = CountlyDeviceInfo.appVersion;
+    crashReport[@"_name"] = exception.debugDescription;
+    crashReport[@"_nonfatal"] = @(nonfatal);
+    
+    //need current state not free and in megabytes
+    crashReport[@"_ram_current"] = @((Countly.sharedInstance.totalRAM-Countly.sharedInstance.freeRAM)/1048576);
+    crashReport[@"_ram_total"] = @(Countly.sharedInstance.totalRAM/1048576);
+    crashReport[@"_disk_current"] = @((Countly.sharedInstance.totalDisk-Countly.sharedInstance.freeDisk)/1048576);
+    crashReport[@"_disk_total"] = @(Countly.sharedInstance.totalDisk/1048576);
+    
+    
+    crashReport[@"_bat"] = @(Countly.sharedInstance.batteryLevel*100);
+    crashReport[@"_orientation"] = Countly.sharedInstance.orientation;
+    crashReport[@"_online"] = @((Countly.sharedInstance.connectionType)? 1 : 0 );
+    crashReport[@"_opengl"] = @(Countly.sharedInstance.OpenGLESversion);
+    crashReport[@"_root"] = @(Countly.sharedInstance.isJailbroken);
+    crashReport[@"_background"] = @(Countly.sharedInstance.isInBackground);
+    crashReport[@"_run"] = @(time(NULL)-Countly.sharedInstance->startTime);
+    
+    if(Countly.sharedInstance->crashCustom){
+        crashReport[@"_custom"] = Countly.sharedInstance->crashCustom;
+    }
 
     if(CountlyCustomCrashLogs)
-        crashReport[@"customLogs"] = [CountlyCustomCrashLogs componentsJoinedByString:@"\n"];
+        crashReport[@"_logs"] = [CountlyCustomCrashLogs componentsJoinedByString:@"\n"];
 
     NSArray* stackArray = exception.userInfo[kCountlyCrashUserInfoKey];
     if(!stackArray) stackArray = exception.callStackSymbols;
@@ -1368,20 +1413,14 @@ void CountlyUncaughtExceptionHandler(NSException *exception)
         [stackString appendString:@"\n"];
     }
     
-    crashReport[@"stack"] = stackString;
-
-    CountlyEvent *event = CountlyEvent.new;
-    event.key = kCountlyCrashEventKey;
-    event.segmentation = crashReport;
-    event.count = 1;
-    event.timestamp = time(NULL);
+    crashReport[@"_error"] = stackString;
    
-    NSString *urlString = [NSString stringWithFormat:@"%@/i?app_key=%@&device_id=%@&timestamp=%ld&events=%@",
+    NSString *urlString = [NSString stringWithFormat:@"%@/i?app_key=%@&device_id=%@&timestamp=%ld&crash=%@",
                            CountlyConnectionQueue.sharedInstance.appHost,
                            CountlyConnectionQueue.sharedInstance.appKey,
                            [CountlyDeviceInfo udid],
                            time(NULL),
-                           CountlyURLEscapedString(CountlyJSONFromObject(@[event.serializedData]))];
+                           CountlyURLEscapedString(CountlyJSONFromObject(crashReport))];
     
     NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:urlString]];
 
@@ -1394,7 +1433,7 @@ void CountlyUncaughtExceptionHandler(NSException *exception)
 	if (error || !recvData)
     {
         COUNTLY_LOG(@"CrashReporting failed, report stored to try again later");
-        [CountlyConnectionQueue.sharedInstance recordEvents:CountlyURLEscapedString(CountlyJSONFromObject(@[event.serializedData]))];
+        [CountlyConnectionQueue.sharedInstance sendCrashReport:CountlyURLEscapedString(CountlyJSONFromObject(crashReport))];
     }
     
     NSSetUncaughtExceptionHandler(NULL);
@@ -1479,9 +1518,10 @@ void CCL(const char* function, NSUInteger line, NSString* message)
     return abs((int)UIDevice.currentDevice.batteryLevel*100);
 }
 
-- (NSInteger)orientation
+- (NSString*)orientation
 {
-    return UIDevice.currentDevice.orientation;
+    NSArray *orientations = @[@"Unknown", @"Portrait", @"PortraitUpsideDown", @"LandscapeLeft", @"LandscapeRight", @"FaceUp", @"FaceDown"];
+    return [orientations objectAtIndex:UIDevice.currentDevice.orientation];
 }
 
 -(NSUInteger)connectionType
