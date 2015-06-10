@@ -757,7 +757,7 @@ NSString* const kCLYUserCustom = @"custom";
     [self tick];
 }
 
-- (void)sendCrashReport:(NSString *)report
+- (void)storeCrashReportToTryLater:(NSString *)report
 {
     NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_SDK_VERSION"&crash=%@",
                       self.appKey,
@@ -1433,7 +1433,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
 	if (error || !recvData)
     {
         COUNTLY_LOG(@"CrashReporting failed, report stored to try again later");
-        [CountlyConnectionQueue.sharedInstance sendCrashReport:CountlyURLEscapedString(CountlyJSONFromObject(crashReport))];
+        [CountlyConnectionQueue.sharedInstance storeCrashReportToTryLater:CountlyURLEscapedString(CountlyJSONFromObject(crashReport))];
     }
     
     NSSetUncaughtExceptionHandler(NULL);
