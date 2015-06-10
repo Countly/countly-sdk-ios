@@ -1346,7 +1346,6 @@ NSString* const kCLYUserCustom = @"custom";
 #pragma mark - Countly CrashReporting
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
 
-#define kCountlyCrashEventKey   @"[CLY]_crash"
 #define kCountlyCrashUserInfoKey @"[CLY]_stack_trace"
 
 - (void)startCrashReporting
@@ -1594,11 +1593,6 @@ void CCL(const char* function, NSUInteger line, NSString* message)
 - (long)timeSinceLaunch
 {
     return time(NULL)-startTime;
-}
-
-- (BOOL)isProximitySensorActive
-{
-    return UIDevice.currentDevice.proximityState;
 }
 
 - (BOOL)isJailbroken
