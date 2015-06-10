@@ -1386,7 +1386,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     crashReport[@"_disk_total"] = @(Countly.sharedInstance.totalDisk/1048576);
     
     
-    crashReport[@"_bat"] = @(Countly.sharedInstance.batteryLevel*100);
+    crashReport[@"_bat"] = @(Countly.sharedInstance.batteryLevel);
     crashReport[@"_orientation"] = Countly.sharedInstance.orientation;
     crashReport[@"_online"] = @((Countly.sharedInstance.connectionType)? 1 : 0 );
     crashReport[@"_opengl"] = @(Countly.sharedInstance.OpenGLESversion);
@@ -1515,7 +1515,7 @@ void CCL(const char* function, NSUInteger line, NSString* message)
 - (NSInteger)batteryLevel
 {
     UIDevice.currentDevice.batteryMonitoringEnabled = YES;
-    return abs((int)UIDevice.currentDevice.batteryLevel*100);
+    return abs((int)(UIDevice.currentDevice.batteryLevel*100));
 }
 
 - (NSString*)orientation
