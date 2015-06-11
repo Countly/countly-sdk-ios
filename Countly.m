@@ -1369,7 +1369,7 @@ NSString* const kCLYUserCustom = @"custom";
 
 
 #pragma mark - Countly CrashReporting
-#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
 
 #define kCountlyCrashUserInfoKey @"[CLY]_stack_trace"
 
