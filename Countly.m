@@ -25,8 +25,14 @@
 #endif
 
 #define COUNTLY_SDK_VERSION "3.0.0"
+#ifndef COUNTLY_TARGET_WATCHKIT
 #define COUNTLY_DEFAULT_UPDATE_INTERVAL 60.0
 #define COUNTLY_EVENT_SEND_THRESHOLD 10
+#else
+#define COUNTLY_DEFAULT_UPDATE_INTERVAL 10.0
+#define COUNTLY_EVENT_SEND_THRESHOLD 3
+#import <WatchKit/WatchKit.h>
+#endif
 
 #import "Countly.h"
 #import "Countly_OpenUDID.h"
@@ -44,6 +50,12 @@
 
 #include <sys/types.h>
 #include <sys/sysctl.h>
+#import <mach/mach.h>
+#import <mach/mach_host.h>
+#import <arpa/inet.h>
+#import <ifaddrs.h>
+#include <libkern/OSAtomic.h>
+#include <execinfo.h>
 
 #pragma mark - Helper Functions
 
@@ -119,7 +131,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 
 + (NSString *)udid
 {
-#if COUNTLY_PREFER_IDFA && (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
+#if COUNTLY_PREFER_IDFA && (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR || COUNTLY_TARGET_WATCHKIT)
     return ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
 #else
 	return [Countly_OpenUDID value];
@@ -609,7 +621,7 @@ NSString* const kCLYUserCustom = @"custom";
     if (self.connection != nil || [dataQueue count] == 0)
         return;
 
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
     if (self.bgTask != UIBackgroundTaskInvalid)
         return;
     
@@ -623,7 +635,16 @@ NSString* const kCLYUserCustom = @"custom";
     NSString *data = [dataQueue[0] valueForKey:@"post"];
     NSString *urlString = [NSString stringWithFormat:@"%@/i?%@", self.appHost, data];
     NSMutableURLRequest * request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+
+    if([data rangeOfString:@"&crash="].location != NSNotFound)
+    {
+        urlString = [NSString stringWithFormat:@"%@/i", self.appHost];
+        request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+        request.HTTPMethod = @"POST";
+        request.HTTPBody = [data dataUsingEncoding:NSUTF8StringEncoding];
+    }
     
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
     NSString* picturePath = [CountlyUserDetails.sharedUserDetails extractPicturePathFromURLString:urlString];
     if(picturePath && ![picturePath isEqualToString:@""])
     {
@@ -636,9 +657,7 @@ NSString* const kCLYUserCustom = @"custom";
         if(fileExtIndex != NSNotFound)
         {
             NSData* imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:picturePath]];
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
             if (fileExtIndex == 1) imageData = UIImagePNGRepresentation([UIImage imageWithData:imageData]); //NOTE: for png upload fix. (png file data read directly from disk fails on upload)
-#endif
             if (fileExtIndex == 2) fileExtIndex = 3; //NOTE: for mime type jpg -> jpeg
             
             if (imageData)
@@ -661,6 +680,7 @@ NSString* const kCLYUserCustom = @"custom";
             }
         }
     }
+#endif
 
     self.connection = [NSURLConnection connectionWithRequest:request delegate:self];
 
@@ -674,6 +694,8 @@ NSString* const kCLYUserCustom = @"custom";
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
 					  [CountlyDeviceInfo metrics]];
+    
+    data = [self addWatchSegmentation:data];
     
     [[CountlyDB sharedInstance] addToQueue:data];
     
@@ -714,6 +736,8 @@ NSString* const kCLYUserCustom = @"custom";
 					  time(NULL),
 					  duration];
 
+    data = [self addWatchSegmentation:data];
+    
     if (self.locationString)
     {
         data = [data stringByAppendingFormat:@"&location=%@",self.locationString];
@@ -732,6 +756,8 @@ NSString* const kCLYUserCustom = @"custom";
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
 					  duration];
+
+    data = [self addWatchSegmentation:data];
     
     [[CountlyDB sharedInstance] addToQueue:data];
     
@@ -751,6 +777,19 @@ NSString* const kCLYUserCustom = @"custom";
     [self tick];
 }
 
+- (void)storeCrashReportToTryLater:(NSString *)report
+{
+    NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_SDK_VERSION"&crash=%@",
+                      self.appKey,
+                      [CountlyDeviceInfo udid],
+                      time(NULL),
+                      report];
+    
+    [[CountlyDB sharedInstance] addToQueue:data];
+    
+    [self tick];
+}
+
 - (void)recordEvents:(NSString *)events
 {
 	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&events=%@",
@@ -758,6 +797,8 @@ NSString* const kCLYUserCustom = @"custom";
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
 					  events];
+
+    data = [self addWatchSegmentation:data];
     
     [[CountlyDB sharedInstance] addToQueue:data];
     
@@ -770,7 +811,7 @@ NSString* const kCLYUserCustom = @"custom";
     
 	COUNTLY_LOG(@"Request Completed\n");
     
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
     UIApplication *app = [UIApplication sharedApplication];
     if (self.bgTask != UIBackgroundTaskInvalid)
     {
@@ -794,7 +835,7 @@ NSString* const kCLYUserCustom = @"custom";
         COUNTLY_LOG(@"Request Failed \n %@: %@", [dataQueue[0] description], [err description]);
     #endif
     
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
     UIApplication *app = [UIApplication sharedApplication];
     if (self.bgTask != UIBackgroundTaskInvalid)
     {
@@ -816,6 +857,17 @@ NSString* const kCLYUserCustom = @"custom";
 }
 #endif
 
+- (NSString*)addWatchSegmentation:(NSString*)s
+{
+#ifdef COUNTLY_TARGET_WATCHKIT
+    NSString* watchSegmentationKey = @"[CLY]_apple_watch";
+    NSString* watchModel = (WKInterfaceDevice.currentDevice.screenBounds.size.width == 136.0)?@"38mm":@"42mm";
+    NSString* segmentation = [NSString stringWithFormat:@"{\"%@\":\"%@\"}", watchSegmentationKey, watchModel];
+    return [s stringByAppendingFormat:@"&segment=%@", CountlyURLEscapedString(segmentation)];
+#endif
+    return s;
+}
+
 - (void)dealloc
 {
 	if (self.connection)
@@ -835,6 +887,7 @@ NSString* const kCLYUserCustom = @"custom";
 @interface Countly ()
 
 @property (nonatomic, strong) NSMutableDictionary *messageInfos;
+@property (nonatomic, strong) NSDictionary* crashCustom;
 
 @end
 
@@ -853,9 +906,11 @@ NSString* const kCLYUserCustom = @"custom";
 	if (self = [super init])
 	{
 		timer = nil;
+        startTime = time(NULL);
 		isSuspended = NO;
 		unsentSessionLength = 0;
         eventQueue = [[CountlyEventQueue alloc] init];
+        self.crashCustom = nil;
         
         self.messageInfos = [NSMutableDictionary new];
 
@@ -895,7 +950,7 @@ NSString* const kCLYUserCustom = @"custom";
     [self start:appKey withHost:@"https://cloud.count.ly"];
 }
 
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
 - (void)startWithMessagingUsing:(NSString *)appKey withHost:(NSString *)appHost andOptions:(NSDictionary *)options
 {
     [self start:appKey withHost:appHost];
@@ -1101,7 +1156,7 @@ NSString* const kCLYUserCustom = @"custom";
 
 
 #pragma mark - Countly Messaging
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
 
 #define kPushToMessage      1
 #define kPushToOpenLink     2
@@ -1310,5 +1365,273 @@ NSString* const kCLYUserCustom = @"custom";
 - (void)didFailToRegisterForRemoteNotifications {
     [[CountlyConnectionQueue sharedInstance] tokenSession:nil];
 }
+#endif
+
+
+#pragma mark - Countly CrashReporting
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
+
+#define kCountlyCrashUserInfoKey @"[CLY]_stack_trace"
+
+- (void)startCrashReporting
+{
+    NSSetUncaughtExceptionHandler(&CountlyUncaughtExceptionHandler);
+    signal(SIGABRT, CountlySignalHandler);
+	signal(SIGILL, CountlySignalHandler);
+	signal(SIGSEGV, CountlySignalHandler);
+	signal(SIGFPE, CountlySignalHandler);
+	signal(SIGBUS, CountlySignalHandler);
+	signal(SIGPIPE, CountlySignalHandler);
+}
+
+- (void)startCrashReportingWithSegments:(NSDictionary *)segments
+{
+    self.crashCustom = segments;
+    [self startCrashReporting];
+}
+
+- (void)recordHandledException:(NSException *)exception
+{
+    CountlyExceptionHandler(exception, true);
+}
+
+void CountlyUncaughtExceptionHandler(NSException *exception)
+{
+    CountlyExceptionHandler(exception, false);
+}
+
+void CountlyExceptionHandler(NSException *exception, bool nonfatal)
+{
+    NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
+    
+    crashReport[@"_os"] = CountlyDeviceInfo.osName;
+    crashReport[@"_os_version"] = CountlyDeviceInfo.osVersion;
+    crashReport[@"_device"] = CountlyDeviceInfo.device;
+    crashReport[@"_resolution"] = CountlyDeviceInfo.resolution;
+    crashReport[@"_app_version"] = CountlyDeviceInfo.appVersion;
+    crashReport[@"_name"] = exception.debugDescription;
+    crashReport[@"_nonfatal"] = @(nonfatal);
+    
+
+    crashReport[@"_ram_current"] = @((Countly.sharedInstance.totalRAM-Countly.sharedInstance.freeRAM)/1048576);
+    crashReport[@"_ram_total"] = @(Countly.sharedInstance.totalRAM/1048576);
+    crashReport[@"_disk_current"] = @((Countly.sharedInstance.totalDisk-Countly.sharedInstance.freeDisk)/1048576);
+    crashReport[@"_disk_total"] = @(Countly.sharedInstance.totalDisk/1048576);
+    
+    
+    crashReport[@"_bat"] = @(Countly.sharedInstance.batteryLevel);
+    crashReport[@"_orientation"] = Countly.sharedInstance.orientation;
+    crashReport[@"_online"] = @((Countly.sharedInstance.connectionType)? 1 : 0 );
+    crashReport[@"_opengl"] = @(Countly.sharedInstance.OpenGLESversion);
+    crashReport[@"_root"] = @(Countly.sharedInstance.isJailbroken);
+    crashReport[@"_background"] = @(Countly.sharedInstance.isInBackground);
+    crashReport[@"_run"] = @(Countly.sharedInstance.timeSinceLaunch);
+    
+    if(Countly.sharedInstance.crashCustom)
+        crashReport[@"_custom"] = Countly.sharedInstance.crashCustom;
+
+    if(CountlyCustomCrashLogs)
+        crashReport[@"_logs"] = [CountlyCustomCrashLogs componentsJoinedByString:@"\n"];
+
+    NSArray* stackArray = exception.userInfo[kCountlyCrashUserInfoKey];
+    if(!stackArray) stackArray = exception.callStackSymbols;
+
+    NSMutableString* stackString = NSMutableString.string;
+    for (NSString* line in stackArray)
+    {
+        NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"\\s+\\s" options:0 error:nil];
+        NSString *cleanLine = [regex stringByReplacingMatchesInString:line options:0 range:(NSRange){0,line.length} withTemplate:@"  "];
+        [stackString appendString:cleanLine];
+        [stackString appendString:@"\n"];
+    }
+    
+    crashReport[@"_error"] = stackString;
+   
+    NSString *urlString = [NSString stringWithFormat:@"%@/i", CountlyConnectionQueue.sharedInstance.appHost];
+
+    NSString *queryString = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&crash=%@",
+                           CountlyConnectionQueue.sharedInstance.appKey,
+                           [CountlyDeviceInfo udid],
+                           time(NULL),
+                           CountlyURLEscapedString(CountlyJSONFromObject(crashReport))];
+    
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+    request.HTTPMethod = @"POST";
+    request.HTTPBody = [queryString dataUsingEncoding:NSUTF8StringEncoding];
+    COUNTLY_LOG(@"CrashReporting URL: %@", urlString);
+
+    NSURLResponse* response = nil;
+	NSError* error = nil;
+	NSData* recvData = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
+	
+	if (error || !recvData)
+    {
+        COUNTLY_LOG(@"CrashReporting failed, report stored to try again later");
+        [CountlyConnectionQueue.sharedInstance storeCrashReportToTryLater:CountlyURLEscapedString(CountlyJSONFromObject(crashReport))];
+    }
+    
+    NSSetUncaughtExceptionHandler(NULL);
+	signal(SIGABRT, SIG_DFL);
+	signal(SIGILL, SIG_DFL);
+	signal(SIGSEGV, SIG_DFL);
+	signal(SIGFPE, SIG_DFL);
+	signal(SIGBUS, SIG_DFL);
+	signal(SIGPIPE, SIG_DFL);
+}
+
+void CountlySignalHandler(int signalCode)
+{
+    void* callstack[128];
+    NSInteger frames = backtrace(callstack, 128);
+    char **lines = backtrace_symbols(callstack, (int)frames);
+    
+    const NSInteger startOffset = 1;
+	NSMutableArray *backtrace = [NSMutableArray arrayWithCapacity:frames];
+    
+    for (NSInteger i = startOffset; i < frames; i++)
+        [backtrace addObject:[NSString stringWithUTF8String:lines[i]]];
+    
+    free(lines);
+    
+	NSMutableDictionary *userInfo =[NSMutableDictionary dictionaryWithObject:@(signalCode) forKey:@"signal_code"];
+	[userInfo setObject:backtrace forKey:kCountlyCrashUserInfoKey];
+    NSString *reason = [NSString stringWithFormat:@"App terminated by SIG%@",[NSString stringWithUTF8String:sys_signame[signalCode]].uppercaseString];
+
+    NSException *e = [NSException exceptionWithName:@"Fatal Signal" reason:reason userInfo:userInfo];
+
+    CountlyUncaughtExceptionHandler(e);
+}
+
+static NSMutableArray *CountlyCustomCrashLogs = nil;
+
+void CCL(const char* function, NSUInteger line, NSString* message)
+{
+    static NSDateFormatter* df = nil;
+    
+    if( CountlyCustomCrashLogs == nil )
+    {
+        CountlyCustomCrashLogs = NSMutableArray.new;
+        df = NSDateFormatter.new;
+        df.dateFormat = @"yyyy-MM-dd HH:mm:ss.SSS";
+    }
+
+    NSString* f = [[NSString.alloc initWithUTF8String:function] stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"-[]"]];
+    NSString* log = [NSString stringWithFormat:@"[%@] <%@ %li> %@",[df stringFromDate:NSDate.date],f,(unsigned long)line,message];
+    [CountlyCustomCrashLogs addObject:log];
+}
+
+- (unsigned long long)freeRAM
+{
+    vm_statistics_data_t vms;
+    mach_msg_type_number_t ic = HOST_VM_INFO_COUNT;
+    kern_return_t kr = host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t)&vms, &ic);
+    if(kr != KERN_SUCCESS)
+        return -1;
+
+    return vm_page_size * (vms.free_count);
+}
+
+- (unsigned long long)totalRAM
+{
+    return NSProcessInfo.processInfo.physicalMemory;
+}
+
+- (unsigned long long)freeDisk
+{
+    return [[NSFileManager.defaultManager attributesOfFileSystemForPath:NSHomeDirectory() error:nil][NSFileSystemFreeSize] longLongValue];
+}
+
+- (unsigned long long)totalDisk
+{
+    return [[NSFileManager.defaultManager attributesOfFileSystemForPath:NSHomeDirectory() error:nil][NSFileSystemSize] longLongValue];
+}
+
+- (NSInteger)batteryLevel
+{
+    UIDevice.currentDevice.batteryMonitoringEnabled = YES;
+    return abs((int)(UIDevice.currentDevice.batteryLevel*100));
+}
+
+- (NSString*)orientation
+{
+    NSArray *orientations = @[@"Unknown", @"Portrait", @"PortraitUpsideDown", @"LandscapeLeft", @"LandscapeRight", @"FaceUp", @"FaceDown"];
+    return orientations[UIDevice.currentDevice.orientation];
+}
+
+- (NSUInteger)connectionType
+{
+    typedef enum:NSInteger {CLYConnectionNone, CLYConnectionCellNetwork, CLYConnectionWiFi} CLYConnectionType;
+    CLYConnectionType connType = CLYConnectionNone;
+    
+    @try
+    {
+        struct ifaddrs *interfaces, *i;
+       
+        if (!getifaddrs(&interfaces))
+        {
+            i = interfaces;
+            
+            while(i != NULL)
+            {
+                if(i->ifa_addr->sa_family == AF_INET)
+                {
+                    if([[NSString stringWithUTF8String:i->ifa_name] isEqualToString:@"pdp_ip0"])
+                    {
+                        connType = CLYConnectionCellNetwork;
+                    }
+                    else if([[NSString stringWithUTF8String:i->ifa_name] isEqualToString:@"en0"])
+                    {
+                        connType = CLYConnectionWiFi;
+                        break;
+                    }
+                }
+                
+                i = i->ifa_next;
+            }
+        }
+        
+        freeifaddrs(interfaces);
+    }
+    @catch (NSException *exception)
+    {
+    
+    }
+
+    return connType;
+}
+
+- (float)OpenGLESversion
+{
+    EAGLContext *aContext;
+    
+    aContext = [EAGLContext.alloc initWithAPI:kEAGLRenderingAPIOpenGLES3];
+    if(aContext)
+        return 3.0;
+    
+    aContext = [EAGLContext.alloc initWithAPI:kEAGLRenderingAPIOpenGLES2];
+    if(aContext)
+        return 2.0;
+    
+    return 1.0;
+}
+
+- (long)timeSinceLaunch
+{
+    return time(NULL)-startTime;
+}
+
+- (BOOL)isJailbroken
+{
+    FILE *f = fopen("/bin/bash", "r");
+    BOOL isJailbroken = (f != NULL);
+    fclose(f);
+    return isJailbroken;
+}
+
+- (BOOL)isInBackground
+{
+    return UIApplication.sharedApplication.applicationState == UIApplicationStateBackground;
+}
+
 #endif
 @end
