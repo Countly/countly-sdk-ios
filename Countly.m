@@ -31,6 +31,7 @@
 #else
 #define COUNTLY_DEFAULT_UPDATE_INTERVAL 10.0
 #define COUNTLY_EVENT_SEND_THRESHOLD 3
+#import <WatchKit/WatchKit.h>
 #endif
 
 #import "Countly.h"
@@ -680,9 +681,7 @@ NSString* const kCLYUserCustom = @"custom";
 					  time(NULL),
 					  [CountlyDeviceInfo metrics]];
     
-#ifdef COUNTLY_TARGET_WATCHKIT
-    data = [data stringByAppendingString:@"&segment=[CLY]_apple_watch"];
-#endif
+    data = [self addWatchSegmentation:data];
     
     [[CountlyDB sharedInstance] addToQueue:data];
     
@@ -723,9 +722,7 @@ NSString* const kCLYUserCustom = @"custom";
 					  time(NULL),
 					  duration];
 
-#ifdef COUNTLY_TARGET_WATCHKIT
-    data = [data stringByAppendingString:@"&segment=[CLY]_apple_watch"];
-#endif
+    data = [self addWatchSegmentation:data];
     
     if (self.locationString)
     {
@@ -746,9 +743,7 @@ NSString* const kCLYUserCustom = @"custom";
 					  time(NULL),
 					  duration];
 
-#ifdef COUNTLY_TARGET_WATCHKIT
-    data = [data stringByAppendingString:@"&segment=[CLY]_apple_watch"];
-#endif    
+    data = [self addWatchSegmentation:data];
     
     [[CountlyDB sharedInstance] addToQueue:data];
     
@@ -776,9 +771,7 @@ NSString* const kCLYUserCustom = @"custom";
 					  time(NULL),
 					  events];
 
-#ifdef COUNTLY_TARGET_WATCHKIT
-    data = [data stringByAppendingString:@"&segment=[CLY]_apple_watch"];
-#endif
+    data = [self addWatchSegmentation:data];
     
     [[CountlyDB sharedInstance] addToQueue:data];
     
@@ -836,6 +829,17 @@ NSString* const kCLYUserCustom = @"custom";
     [[challenge sender] continueWithoutCredentialForAuthenticationChallenge:challenge];
 }
 #endif
+
+- (NSString*)addWatchSegmentation:(NSString*)s
+{
+#ifdef COUNTLY_TARGET_WATCHKIT
+    NSString* watchSegmentationKey = @"[CLY]_apple_watch";
+    NSString* watchModel = (WKInterfaceDevice.currentDevice.screenBounds.size.width == 136.0)?@"38mm":@"42mm";
+    NSString* segmentation = [NSString stringWithFormat:@"{\"%@\":\"%@\"}", watchSegmentationKey, watchModel];
+    return [s stringByAppendingFormat:@"&segment=%@", CountlyURLEscapedString(segmentation)];
+#endif
+    return s;
+}
 
 - (void)dealloc
 {
