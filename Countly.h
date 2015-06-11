@@ -46,7 +46,7 @@ extern NSString* const kCLYUserBirthYear;
 extern NSString* const kCLYUserCustom;
 
 #pragma mark - Countly Messaging
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
 /**
  * Countly Messaging support
  */

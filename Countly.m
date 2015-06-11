@@ -25,8 +25,14 @@
 #endif
 
 #define COUNTLY_SDK_VERSION "3.0.0"
+#ifndef COUNTLY_TARGET_WATCHKIT
 #define COUNTLY_DEFAULT_UPDATE_INTERVAL 60.0
 #define COUNTLY_EVENT_SEND_THRESHOLD 10
+#else
+#define COUNTLY_DEFAULT_UPDATE_INTERVAL 10.0
+#define COUNTLY_EVENT_SEND_THRESHOLD 3
+#import <WatchKit/WatchKit.h>
+#endif
 
 #import "Countly.h"
 #import "Countly_OpenUDID.h"
@@ -125,7 +131,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 
 + (NSString *)udid
 {
-#if COUNTLY_PREFER_IDFA && (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR)
+#if COUNTLY_PREFER_IDFA && (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR || COUNTLY_TARGET_WATCHKIT)
     return ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
 #else
 	return [Countly_OpenUDID value];
@@ -615,7 +621,7 @@ NSString* const kCLYUserCustom = @"custom";
     if (self.connection != nil || [dataQueue count] == 0)
         return;
 
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
     if (self.bgTask != UIBackgroundTaskInvalid)
         return;
     
@@ -638,6 +644,7 @@ NSString* const kCLYUserCustom = @"custom";
         request.HTTPBody = [data dataUsingEncoding:NSUTF8StringEncoding];
     }
     
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
     NSString* picturePath = [CountlyUserDetails.sharedUserDetails extractPicturePathFromURLString:urlString];
     if(picturePath && ![picturePath isEqualToString:@""])
     {
@@ -650,9 +657,7 @@ NSString* const kCLYUserCustom = @"custom";
         if(fileExtIndex != NSNotFound)
         {
             NSData* imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:picturePath]];
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
             if (fileExtIndex == 1) imageData = UIImagePNGRepresentation([UIImage imageWithData:imageData]); //NOTE: for png upload fix. (png file data read directly from disk fails on upload)
-#endif
             if (fileExtIndex == 2) fileExtIndex = 3; //NOTE: for mime type jpg -> jpeg
             
             if (imageData)
@@ -675,6 +680,7 @@ NSString* const kCLYUserCustom = @"custom";
             }
         }
     }
+#endif
 
     self.connection = [NSURLConnection connectionWithRequest:request delegate:self];
 
@@ -688,6 +694,8 @@ NSString* const kCLYUserCustom = @"custom";
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
 					  [CountlyDeviceInfo metrics]];
+    
+    data = [self addWatchSegmentation:data];
     
     [[CountlyDB sharedInstance] addToQueue:data];
     
@@ -728,6 +736,8 @@ NSString* const kCLYUserCustom = @"custom";
 					  time(NULL),
 					  duration];
 
+    data = [self addWatchSegmentation:data];
+    
     if (self.locationString)
     {
         data = [data stringByAppendingFormat:@"&location=%@",self.locationString];
@@ -746,6 +756,8 @@ NSString* const kCLYUserCustom = @"custom";
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
 					  duration];
+
+    data = [self addWatchSegmentation:data];
     
     [[CountlyDB sharedInstance] addToQueue:data];
     
@@ -785,6 +797,8 @@ NSString* const kCLYUserCustom = @"custom";
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
 					  events];
+
+    data = [self addWatchSegmentation:data];
     
     [[CountlyDB sharedInstance] addToQueue:data];
     
@@ -797,7 +811,7 @@ NSString* const kCLYUserCustom = @"custom";
     
 	COUNTLY_LOG(@"Request Completed\n");
     
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
     UIApplication *app = [UIApplication sharedApplication];
     if (self.bgTask != UIBackgroundTaskInvalid)
     {
@@ -821,7 +835,7 @@ NSString* const kCLYUserCustom = @"custom";
         COUNTLY_LOG(@"Request Failed \n %@: %@", [dataQueue[0] description], [err description]);
     #endif
     
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
     UIApplication *app = [UIApplication sharedApplication];
     if (self.bgTask != UIBackgroundTaskInvalid)
     {
@@ -842,6 +856,17 @@ NSString* const kCLYUserCustom = @"custom";
     [[challenge sender] continueWithoutCredentialForAuthenticationChallenge:challenge];
 }
 #endif
+
+- (NSString*)addWatchSegmentation:(NSString*)s
+{
+#ifdef COUNTLY_TARGET_WATCHKIT
+    NSString* watchSegmentationKey = @"[CLY]_apple_watch";
+    NSString* watchModel = (WKInterfaceDevice.currentDevice.screenBounds.size.width == 136.0)?@"38mm":@"42mm";
+    NSString* segmentation = [NSString stringWithFormat:@"{\"%@\":\"%@\"}", watchSegmentationKey, watchModel];
+    return [s stringByAppendingFormat:@"&segment=%@", CountlyURLEscapedString(segmentation)];
+#endif
+    return s;
+}
 
 - (void)dealloc
 {
@@ -925,7 +950,7 @@ NSString* const kCLYUserCustom = @"custom";
     [self start:appKey withHost:@"https://cloud.count.ly"];
 }
 
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
 - (void)startWithMessagingUsing:(NSString *)appKey withHost:(NSString *)appHost andOptions:(NSDictionary *)options
 {
     [self start:appKey withHost:appHost];
@@ -1131,7 +1156,7 @@ NSString* const kCLYUserCustom = @"custom";
 
 
 #pragma mark - Countly Messaging
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
 
 #define kPushToMessage      1
 #define kPushToOpenLink     2
