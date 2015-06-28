@@ -79,6 +79,13 @@ To use Countly iOS SDK in WatchKit apps:
     NSManagedObjectContext *context = [self managedObjectContext];
     NSManagedObject *newManagedObject = [NSEntityDescription insertNewObjectForEntityForName:@"Data" inManagedObjectContext:context];
     
+#ifdef COUNTLY_TARGET_WATCHKIT
+    NSString* watchSegmentationKey = @"[CLY]_apple_watch";
+    NSString* watchModel = (WKInterfaceDevice.currentDevice.screenBounds.size.width == 136.0)?@"38mm":@"42mm";
+    NSString* segmentation = [NSString stringWithFormat:@"{\"%@\":\"%@\"}", watchSegmentationKey, watchModel];
+    postData = [postData stringByAppendingFormat:@"&segment=%@", CountlyURLEscapedString(segmentation)];
+#endif
+
     [newManagedObject setValue:postData forKey:@"post"];
     
     [self saveContext];

@@ -695,8 +695,6 @@ NSString* const kCLYUserCustom = @"custom";
 					  time(NULL),
 					  [CountlyDeviceInfo metrics]];
     
-    data = [self addWatchSegmentation:data];
-    
     [[CountlyDB sharedInstance] addToQueue:data];
     
 	[self tick];
@@ -735,8 +733,6 @@ NSString* const kCLYUserCustom = @"custom";
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
 					  duration];
-
-    data = [self addWatchSegmentation:data];
     
     if (self.locationString)
     {
@@ -756,8 +752,6 @@ NSString* const kCLYUserCustom = @"custom";
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
 					  duration];
-
-    data = [self addWatchSegmentation:data];
     
     [[CountlyDB sharedInstance] addToQueue:data];
     
@@ -797,8 +791,6 @@ NSString* const kCLYUserCustom = @"custom";
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
 					  events];
-
-    data = [self addWatchSegmentation:data];
     
     [[CountlyDB sharedInstance] addToQueue:data];
     
@@ -856,17 +848,6 @@ NSString* const kCLYUserCustom = @"custom";
     [[challenge sender] continueWithoutCredentialForAuthenticationChallenge:challenge];
 }
 #endif
-
-- (NSString*)addWatchSegmentation:(NSString*)s
-{
-#ifdef COUNTLY_TARGET_WATCHKIT
-    NSString* watchSegmentationKey = @"[CLY]_apple_watch";
-    NSString* watchModel = (WKInterfaceDevice.currentDevice.screenBounds.size.width == 136.0)?@"38mm":@"42mm";
-    NSString* segmentation = [NSString stringWithFormat:@"{\"%@\":\"%@\"}", watchSegmentationKey, watchModel];
-    return [s stringByAppendingFormat:@"&segment=%@", CountlyURLEscapedString(segmentation)];
-#endif
-    return s;
-}
 
 - (void)dealloc
 {
