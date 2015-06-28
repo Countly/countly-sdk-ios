@@ -148,6 +148,11 @@ extern NSString* const kCLYUserCustom;
 - (void)startCrashReportingWithSegments:(NSDictionary *)segments;
 - (void)recordHandledException:(NSException *)exception;
 
+- (void)crashTest;
+- (void)crashTest2;
+- (void)crashTest3;
+- (void)crashTest4;
+
 void CCL(const char* function, NSUInteger line, NSString* message);
 #define CountlyCrashLog(format, ...) CCL(__FUNCTION__,__LINE__, [NSString stringWithFormat:(format), ##__VA_ARGS__])
 #endif

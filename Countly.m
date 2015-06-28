@@ -1438,6 +1438,36 @@ NSString* const kCLYUserCustom = @"custom";
     CountlyExceptionHandler(exception, true);
 }
 
+- (void)crashTest
+{
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wundeclared-selector"
+    [self performSelector:@selector(thisIsTheUnrecognizedSelectorCausingTheCrash)];
+    #pragma clang diagnostic pop
+}
+
+- (void)crashTest2
+{
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wunused-variable"
+    NSArray* anArray = @[@"one",@"two",@"three"];
+    NSString* myCrashingString = anArray[5];
+    #pragma clang diagnostic pop
+}
+
+- (void)crashTest3
+{
+    int *nullPointer = NULL;
+    *nullPointer = 2015;
+}
+
+- (void)crashTest4
+{
+    CGRect aRect = (CGRect){0.0/0.0, 0.0, 100.0, 100.0};
+    UIView *crashView = UIView.new;
+    crashView.frame = aRect;
+}
+
 void CountlyUncaughtExceptionHandler(NSException *exception)
 {
     CountlyExceptionHandler(exception, false);
