@@ -25,6 +25,8 @@
 
 - (void)startOnCloudWithAppKey:(NSString *)appKey;
 
+- (void)endBackgroundSessionWithCompletionHandler:(void (^)(UIBackgroundFetchResult result))completionHandler;
+
 - (void)recordEvent:(NSString *)key count:(int)count;
 
 - (void)recordEvent:(NSString *)key count:(int)count sum:(double)sum;

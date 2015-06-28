@@ -950,6 +950,49 @@ NSString* const kCLYUserCustom = @"custom";
     [self start:appKey withHost:@"https://cloud.count.ly"];
 }
 
+- (void)endBackgroundSessionWithCompletionHandler:(void (^)(UIBackgroundFetchResult result))completionHandler
+{
+    if (eventQueue.count > 0)
+    {
+        NSString *eventsQueryString = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&events=%@",
+                                       CountlyConnectionQueue.sharedInstance.appKey,
+                                       [CountlyDeviceInfo udid],
+                                       time(NULL),
+                                       [eventQueue events]];
+        
+        [CountlyDB.sharedInstance addToQueue:eventsQueryString];
+    }
+    
+    double currTime = CFAbsoluteTimeGetCurrent();
+    unsentSessionLength += currTime - lastTime;
+    int duration = unsentSessionLength;
+    
+    NSString *endSessionQueryString = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&end_session=1&session_duration=%d",
+                                       CountlyConnectionQueue.sharedInstance.appKey,
+                                       [CountlyDeviceInfo udid],
+                                       time(NULL),
+                                       duration];
+    
+    NSString *urlString = [NSString stringWithFormat:@"%@/i?%@", CountlyConnectionQueue.sharedInstance.appHost, endSessionQueryString];
+    [NSURLConnection sendAsynchronousRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:urlString]]
+                                       queue:NSOperationQueue.mainQueue
+                           completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError)
+     {
+         if(connectionError)
+         {
+             completionHandler(UIBackgroundFetchResultFailed);
+         }
+         else
+         {
+             COUNTLY_LOG(@"Background session end successful");
+             unsentSessionLength -= duration;
+             completionHandler(UIBackgroundFetchResultNewData);
+         }
+     }];
+}
+
+
+
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
 - (void)startWithMessagingUsing:(NSString *)appKey withHost:(NSString *)appHost andOptions:(NSDictionary *)options
 {
