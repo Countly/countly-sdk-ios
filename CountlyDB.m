@@ -22,6 +22,7 @@
 #   ifndef COUNTLY_APP_GROUP_ID
 #       error "Application Group Identifier not specified! Please uncomment the line above and specify it."
 #   endif
+#import <WatchKit/WatchKit.h>
 #endif
 
 /*
@@ -83,7 +84,13 @@ To use Countly iOS SDK in WatchKit apps:
     NSString* watchSegmentationKey = @"[CLY]_apple_watch";
     NSString* watchModel = (WKInterfaceDevice.currentDevice.screenBounds.size.width == 136.0)?@"38mm":@"42mm";
     NSString* segmentation = [NSString stringWithFormat:@"{\"%@\":\"%@\"}", watchSegmentationKey, watchModel];
-    postData = [postData stringByAppendingFormat:@"&segment=%@", CountlyURLEscapedString(segmentation)];
+    NSString* escapedSegmentation = (NSString*)CFBridgingRelease(
+    CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault,
+                                            (CFStringRef)segmentation,
+                                            NULL,
+                                            (CFStringRef)@"!*'();:@&=+$,/?%#[]",
+                                            kCFStringEncodingUTF8));
+    postData = [postData stringByAppendingFormat:@"&segment=%@", escapedSegmentation];
 #endif
 
     [newManagedObject setValue:postData forKey:@"post"];

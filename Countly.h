@@ -6,6 +6,7 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 
 @class CountlyEventQueue;
 
