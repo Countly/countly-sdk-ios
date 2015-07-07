@@ -6,8 +6,9 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
 #import <UIKit/UIKit.h>
-
+#endif
 @class CountlyEventQueue;
 
 @interface Countly : NSObject
@@ -25,8 +26,6 @@
 - (void)start:(NSString *)appKey withHost:(NSString *)appHost;
 
 - (void)startOnCloudWithAppKey:(NSString *)appKey;
-
-- (void)endBackgroundSessionWithCompletionHandler:(void (^)(UIBackgroundFetchResult result))completionHandler;
 
 - (void)recordEvent:(NSString *)key count:(int)count;
 
@@ -157,4 +156,11 @@ extern NSString* const kCLYUserCustom;
 void CCL(const char* function, NSUInteger line, NSString* message);
 #define CountlyCrashLog(format, ...) CCL(__FUNCTION__,__LINE__, [NSString stringWithFormat:(format), ##__VA_ARGS__])
 #endif
+
+
+#pragma mark - Countly Background Fetch Session Ending
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
+- (void)endBackgroundSessionWithCompletionHandler:(void (^)(UIBackgroundFetchResult result))completionHandler;
+#endif
+
 @end
