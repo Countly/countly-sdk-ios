@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name     = 'Countly'
-  s.version  = '3.0.0'
+  s.version  = '15.06.01'
   s.license      = {
     :type => 'COMMUNITY',
     :text => <<-LICENSE
