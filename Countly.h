@@ -18,7 +18,6 @@
     time_t startTime;
 	double lastTime;
 	BOOL isSuspended;
-    CountlyEventQueue *eventQueue;
 }
 
 + (instancetype)sharedInstance;

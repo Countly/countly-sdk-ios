@@ -7,7 +7,7 @@
 #pragma mark - Directives
 
 #ifndef COUNTLY_DEBUG
-#define COUNTLY_DEBUG 0
+#define COUNTLY_DEBUG 1
 #endif
 
 #ifndef COUNTLY_IGNORE_INVALID_CERTIFICATES
@@ -37,7 +37,6 @@
 
 #import "Countly.h"
 #import "Countly_OpenUDID.h"
-#import "CountlyDB.h"
 #import <objc/runtime.h>
 
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
@@ -384,21 +383,9 @@ NSString* const kCLYUserCustom = @"custom";
     self.segmentation = nil;
 }
 
-+ (CountlyEvent*)objectWithManagedObject:(NSManagedObject*)managedObject
+- (NSDictionary*)dictionaryRepresentation
 {
-	CountlyEvent* event = [CountlyEvent new];
-	
-	event.key = [managedObject valueForKey:@"key"];
-	event.count = [[managedObject valueForKey:@"count"] doubleValue];
-	event.sum = [[managedObject valueForKey:@"sum"] doubleValue];
-	event.timestamp = [[managedObject valueForKey:@"timestamp"] doubleValue];
-	event.segmentation = [managedObject valueForKey:@"segmentation"];
-    return event;
-}
-
-- (NSDictionary*)serializedData
-{
-	NSMutableDictionary* eventData = NSMutableDictionary.dictionary;
+    NSMutableDictionary* eventData = NSMutableDictionary.dictionary;
 	eventData[@"key"] = self.key;
 	if (self.segmentation)
     {
@@ -412,176 +399,121 @@ NSString* const kCLYUserCustom = @"custom";
 
 @end
 
+#pragma mark - Countly Persistency
 
-#pragma mark - CountlyEventQueue
+@interface CountlyDB : NSObject
 
-@interface CountlyEventQueue : NSObject
++(instancetype)sharedInstance;
+
+-(void)addToQueue:(NSString*)queryString;
+- (void)saveToFile;
+@property (nonatomic,strong) NSMutableArray* recordedEvents;
+@property (nonatomic,strong) NSMutableArray* queuedRequests;
 
 @end
 
 
-@implementation CountlyEventQueue
+//#   define COUNTLY_APP_GROUP_ID @"group.example.myapp"
+#if COUNTLY_TARGET_WATCHKIT
+#   ifndef COUNTLY_APP_GROUP_ID
+#       error "Application Group Identifier not specified! Please uncomment the line above and specify it."
+#   endif
+#import <WatchKit/WatchKit.h>
+#endif
 
-- (NSUInteger)count
+@implementation CountlyDB
+
++(instancetype)sharedInstance
 {
-    @synchronized (self)
-    {
-        return [[CountlyDB sharedInstance] getEventCount];
-    }
+    static CountlyDB* s_sharedCountlyDB;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{s_sharedCountlyDB = self.new;});
+    return s_sharedCountlyDB;
 }
 
+- (instancetype)init
+{
+    self = [super init];
+    if (self)
+    {
+        NSData* readData = [NSData dataWithContentsOfURL:[self storageFileURL]];
+        NSError* error = nil;
+    
+        if(readData)
+            self.queuedRequests = [[NSJSONSerialization JSONObjectWithData:readData options:0 error:&error] mutableCopy];
+    
+        if(error){COUNTLY_LOG(@"Unable to restore read data, error: %@", error);}
+
+        if(!self.queuedRequests)
+            self.queuedRequests = NSMutableArray.new;
+
+        self.recordedEvents = NSMutableArray.new;
+    }
+    
+    return self;
+}
+
+-(void)addToQueue:(NSString*)queryString
+{
+#ifdef COUNTLY_TARGET_WATCHKIT
+    NSDictionary* watchSegmentation = @{@"[CLY]_apple_watch":(WKInterfaceDevice.currentDevice.screenBounds.size.width == 136.0)?@"38mm":@"42mm"};
+    
+    queryString = [queryString stringByAppendingFormat:@"&segment=%@", CountlyURLEscapedString(CountlyJSONFromObject(watchSegmentation))];
+#endif
+    
+    [self.queuedRequests addObject:queryString];
+}
 
 - (NSString *)events
 {
-    NSMutableArray* result = [NSMutableArray array];
+    NSMutableArray* temp = [NSMutableArray array];
     
-	@synchronized (self)
+    @synchronized (self)
     {
-		NSArray* events = [[[CountlyDB sharedInstance] getEvents] copy];
-		for (id managedEventObject in events)
+        for (CountlyEvent* event in self.recordedEvents.copy)
         {
-			CountlyEvent* event = [CountlyEvent objectWithManagedObject:managedEventObject];
-            
-			[result addObject:event.serializedData];
-            
-            [CountlyDB.sharedInstance deleteEvent:managedEventObject];
+            [temp addObject:[event dictionaryRepresentation]];
+            [self.recordedEvents removeObject:event];
         }
     }
     
-	return CountlyURLEscapedString(CountlyJSONFromObject(result));
+    return CountlyURLEscapedString(CountlyJSONFromObject(temp));
 }
 
-- (void)recordEvent:(NSString *)key count:(int)count
+- (NSURL *)storageFileURL
 {
-    @synchronized (self)
+    static NSURL *url = nil;
+
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
     {
-        NSArray* events = [[[CountlyDB sharedInstance] getEvents] copy];
-        for (NSManagedObject* obj in events)
+#ifdef COUNTLY_APP_GROUP_ID
+        url = [[NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:COUNTLY_APP_GROUP_ID] URLByAppendingPathComponent:@"Countly.dat"];
+#else
+        url = [[NSFileManager.defaultManager URLsForDirectory:NSApplicationSupportDirectory inDomains:NSUserDomainMask] lastObject];
+        NSError *error = nil;
+
+        if (![NSFileManager.defaultManager fileExistsAtPath:url.absoluteString])
         {
-            CountlyEvent *event = [CountlyEvent objectWithManagedObject:obj];
-            if ([event.key isEqualToString:key])
-            {
-                event.count += count;
-                event.timestamp = (event.timestamp + time(NULL)) / 2;
-                
-                [obj setValue:@(event.count) forKey:@"count"];
-                [obj setValue:@(event.timestamp) forKey:@"timestamp"];
-                
-                [[CountlyDB sharedInstance] saveContext];
-                return;
-            }
+            [NSFileManager.defaultManager createDirectoryAtURL:url withIntermediateDirectories:YES attributes:nil error:&error];
+            if(error) COUNTLY_LOG(@"Can not create Application Support directory: %@", error);
         }
-        
-        CountlyEvent *event = [CountlyEvent new];
-        event.key = key;
-        event.count = count;
-        event.timestamp = time(NULL);
-        
-        [[CountlyDB sharedInstance] createEvent:event.key count:event.count sum:event.sum segmentation:event.segmentation timestamp:event.timestamp];
-    }
+
+        url = [url URLByAppendingPathComponent:@"Countly.dat"];
+#endif
+    });
+    
+    return url;
 }
 
-- (void)recordEvent:(NSString *)key count:(int)count sum:(double)sum
+- (void)saveToFile
 {
-    @synchronized (self)
-    {
-        NSArray* events = [[[CountlyDB sharedInstance] getEvents] copy];
-        for (NSManagedObject* obj in events)
-        {
-            CountlyEvent *event = [CountlyEvent objectWithManagedObject:obj];
-            if ([event.key isEqualToString:key])
-            {
-                event.count += count;
-                event.sum += sum;
-                event.timestamp = (event.timestamp + time(NULL)) / 2;
-                
-                [obj setValue:@(event.count) forKey:@"count"];
-                [obj setValue:@(event.sum) forKey:@"sum"];
-                [obj setValue:@(event.timestamp) forKey:@"timestamp"];
-                
-                [[CountlyDB sharedInstance] saveContext];
-                
-                return;
-            }
-        }
-        
-        CountlyEvent *event = [CountlyEvent new];
-        event.key = key;
-        event.count = count;
-        event.sum = sum;
-        event.timestamp = time(NULL);
-        
-        [[CountlyDB sharedInstance] createEvent:event.key count:event.count sum:event.sum segmentation:event.segmentation timestamp:event.timestamp];
-    }
-}
+    NSError* error = nil;
+    NSData* saveData = [NSJSONSerialization dataWithJSONObject:self.queuedRequests options:0 error:&error];
+    if(error)
+        COUNTLY_LOG(@"Cannot convert to JSON data, error: %@", error);
 
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count;
-{
-    @synchronized (self)
-    {
-        NSArray* events = [[[CountlyDB sharedInstance] getEvents] copy];
-        for (NSManagedObject* obj in events)
-        {
-            CountlyEvent *event = [CountlyEvent objectWithManagedObject:obj];
-            if ([event.key isEqualToString:key] &&
-                event.segmentation && [event.segmentation isEqualToDictionary:segmentation])
-            {
-                event.count += count;
-                event.timestamp = (event.timestamp + time(NULL)) / 2;
-                
-                [obj setValue:@(event.count) forKey:@"count"];
-                [obj setValue:@(event.timestamp) forKey:@"timestamp"];
-                
-                [[CountlyDB sharedInstance] saveContext];
-                
-                return;
-            }
-        }
-        
-        CountlyEvent *event = [CountlyEvent new];
-        event.key = key;
-        event.segmentation = segmentation;
-        event.count = count;
-        event.timestamp = time(NULL);
-        
-        [[CountlyDB sharedInstance] createEvent:event.key count:event.count sum:event.sum segmentation:event.segmentation timestamp:event.timestamp];
-    }
-}
-
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count sum:(double)sum;
-{
-    @synchronized (self)
-    {
-        NSArray* events = [[[CountlyDB sharedInstance] getEvents] copy];
-        for (NSManagedObject* obj in events)
-        {
-            CountlyEvent *event = [CountlyEvent objectWithManagedObject:obj];
-            if ([event.key isEqualToString:key] &&
-                event.segmentation && [event.segmentation isEqualToDictionary:segmentation])
-            {
-                event.count += count;
-                event.sum += sum;
-                event.timestamp = (event.timestamp + time(NULL)) / 2;
-                
-                [obj setValue:@(event.count) forKey:@"count"];
-                [obj setValue:@(event.sum) forKey:@"sum"];
-                [obj setValue:@(event.timestamp) forKey:@"timestamp"];
-                
-                [[CountlyDB sharedInstance] saveContext];
-                
-                return;
-            }
-        }
-        
-        CountlyEvent *event = [CountlyEvent new];
-        event.key = key;
-        event.segmentation = segmentation;
-        event.count = count;
-        event.sum = sum;
-        event.timestamp = time(NULL);
-        
-        [[CountlyDB sharedInstance] createEvent:event.key count:event.count sum:event.sum segmentation:event.segmentation timestamp:event.timestamp];
-    }
+    [saveData writeToFile:[self storageFileURL].path atomically:YES];
 }
 
 @end
@@ -617,32 +549,20 @@ NSString* const kCLYUserCustom = @"custom";
 
 - (void) tick
 {
-    NSArray* dataQueue = [[[CountlyDB sharedInstance] getQueue] copy];
-    
-    if (self.connection != nil || [dataQueue count] == 0)
+    if (self.connection != nil || CountlyDB.sharedInstance.queuedRequests.count == 0)
         return;
 
-#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
-    if (self.bgTask != UIBackgroundTaskInvalid)
-        return;
+    [self startBackgroundTask];
     
-    UIApplication *app = [UIApplication sharedApplication];
-    self.bgTask = [app beginBackgroundTaskWithExpirationHandler:^{
-		[app endBackgroundTask:self.bgTask];
-		self.bgTask = UIBackgroundTaskInvalid;
-    }];
-#endif
-    
-    NSString *data = [dataQueue[0] valueForKey:@"post"];
-    NSString *urlString = [NSString stringWithFormat:@"%@/i?%@", self.appHost, data];
+    NSString *urlString = [NSString stringWithFormat:@"%@/i?%@", self.appHost, CountlyDB.sharedInstance.queuedRequests.firstObject];
     NSMutableURLRequest * request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
 
-    if([data rangeOfString:@"&crash="].location != NSNotFound)
+    if([CountlyDB.sharedInstance.queuedRequests.firstObject rangeOfString:@"&crash="].location != NSNotFound)
     {
         urlString = [NSString stringWithFormat:@"%@/i", self.appHost];
         request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
         request.HTTPMethod = @"POST";
-        request.HTTPBody = [data dataUsingEncoding:NSUTF8StringEncoding];
+        request.HTTPBody = [CountlyDB.sharedInstance.queuedRequests.firstObject dataUsingEncoding:NSUTF8StringEncoding];
     }
     
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
@@ -785,7 +705,7 @@ NSString* const kCLYUserCustom = @"custom";
     [self tick];
 }
 
-- (void)recordEvents:(NSString *)events
+- (void)sendEvents:(NSString *)events
 {
 	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&events=%@",
 					  self.appKey,
@@ -800,42 +720,25 @@ NSString* const kCLYUserCustom = @"custom";
 
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection
 {
-    NSArray* dataQueue = [[[CountlyDB sharedInstance] getQueue] copy];
-    
 	COUNTLY_LOG(@"Request Completed\n");
     
-#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
-    UIApplication *app = [UIApplication sharedApplication];
-    if (self.bgTask != UIBackgroundTaskInvalid)
-    {
-        [app endBackgroundTask:self.bgTask];
-        self.bgTask = UIBackgroundTaskInvalid;
-    }
-#endif
-
     self.connection = nil;
     
-    [[CountlyDB sharedInstance] removeFromQueue:dataQueue[0]];
+    [CountlyDB.sharedInstance.queuedRequests removeObjectAtIndex:0];
     
+    [CountlyDB.sharedInstance saveToFile];
+
+    [self finishBackgroundTask];
+
     [self tick];
 }
 
 
 - (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)err
 {
-    #if COUNTLY_DEBUG
-        NSArray* dataQueue = [[[CountlyDB sharedInstance] getQueue] copy];
-        COUNTLY_LOG(@"Request Failed \n %@: %@", [dataQueue[0] description], [err description]);
-    #endif
-    
-#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
-    UIApplication *app = [UIApplication sharedApplication];
-    if (self.bgTask != UIBackgroundTaskInvalid)
-    {
-        [app endBackgroundTask:self.bgTask];
-        self.bgTask = UIBackgroundTaskInvalid;
-    }
-#endif
+    COUNTLY_LOG(@"Request Failed \n %@: %@", [CountlyDB.sharedInstance.queuedRequests.firstObject description], [err description]);
+
+    [self finishBackgroundTask];
     
     self.connection = nil;
 }
@@ -849,6 +752,31 @@ NSString* const kCLYUserCustom = @"custom";
     [[challenge sender] continueWithoutCredentialForAuthenticationChallenge:challenge];
 }
 #endif
+
+-(void)startBackgroundTask
+{
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
+    if (self.bgTask != UIBackgroundTaskInvalid)
+        return;
+    
+    self.bgTask = [UIApplication.sharedApplication beginBackgroundTaskWithExpirationHandler:^
+    {
+        [UIApplication.sharedApplication endBackgroundTask:self.bgTask];
+        self.bgTask = UIBackgroundTaskInvalid;
+    }];
+#endif
+}
+
+-(void)finishBackgroundTask
+{
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
+    if (self.bgTask != UIBackgroundTaskInvalid)
+    {
+        [UIApplication.sharedApplication endBackgroundTask:self.bgTask];
+        self.bgTask = UIBackgroundTaskInvalid;
+    }
+#endif
+}
 
 - (void)dealloc
 {
@@ -891,7 +819,6 @@ NSString* const kCLYUserCustom = @"custom";
         startTime = time(NULL);
 		isSuspended = NO;
 		unsentSessionLength = 0;
-        eventQueue = [[CountlyEventQueue alloc] init];
         self.crashCustom = nil;
         
         self.messageInfos = [NSMutableDictionary new];
@@ -1016,34 +943,71 @@ NSString* const kCLYUserCustom = @"custom";
 
 - (void)recordEvent:(NSString *)key count:(int)count
 {
-    [eventQueue recordEvent:key count:count];
-    
-    if (eventQueue.count >= COUNTLY_EVENT_SEND_THRESHOLD)
-        [[CountlyConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
+    [self recordEvent:key count:count sum:0];
 }
 
 - (void)recordEvent:(NSString *)key count:(int)count sum:(double)sum
 {
-    [eventQueue recordEvent:key count:count sum:sum];
+    @synchronized (self)
+    {
+        for (CountlyEvent* event in CountlyDB.sharedInstance.recordedEvents)
+        {
+            if ([event.key isEqualToString:key])
+            {
+                event.count += count;
+                event.sum += sum;
+                event.timestamp = (event.timestamp + time(NULL)) / 2;
+                return;
+            }
+        }
     
-    if (eventQueue.count >= COUNTLY_EVENT_SEND_THRESHOLD)
-        [[CountlyConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
+        CountlyEvent *event = [CountlyEvent new];
+        event.key = key;
+        event.count = count;
+        event.sum = sum;
+        event.timestamp = time(NULL);
+        
+        [CountlyDB.sharedInstance.recordedEvents addObject:event];
+    
+    }
+
+    if (CountlyDB.sharedInstance.recordedEvents.count >= COUNTLY_EVENT_SEND_THRESHOLD)
+        [[CountlyConnectionQueue sharedInstance] sendEvents:[CountlyDB.sharedInstance events]];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count
 {
-    [eventQueue recordEvent:key segmentation:segmentation count:count];
-    
-    if (eventQueue.count >= COUNTLY_EVENT_SEND_THRESHOLD)
-        [[CountlyConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
+    [self recordEvent:key segmentation:segmentation count:count sum:0];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count sum:(double)sum
 {
-    [eventQueue recordEvent:key segmentation:segmentation count:count sum:sum];
+    @synchronized (self)
+    {
+        for (CountlyEvent* event in CountlyDB.sharedInstance.recordedEvents)
+        {
+            if ([event.key isEqualToString:key] && event.segmentation &&
+            [event.segmentation isEqualToDictionary:segmentation])
+            {
+                event.count += count;
+                event.sum += sum;
+                event.timestamp = (event.timestamp + time(NULL)) / 2;
+                return;
+            }
+        }
     
-    if (eventQueue.count >= COUNTLY_EVENT_SEND_THRESHOLD)
-        [[CountlyConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
+        CountlyEvent *event = [CountlyEvent new];
+        event.key = key;
+        event.segmentation = segmentation;
+        event.count = count;
+        event.sum = sum;
+        event.timestamp = time(NULL);
+        
+        [CountlyDB.sharedInstance.recordedEvents addObject:event];
+    }
+    
+    if (CountlyDB.sharedInstance.recordedEvents.count >= COUNTLY_EVENT_SEND_THRESHOLD)
+        [[CountlyConnectionQueue sharedInstance] sendEvents:[CountlyDB.sharedInstance events]];
 }
 
 - (void)recordUserDetails:(NSDictionary *)userDetails
@@ -1072,16 +1036,16 @@ NSString* const kCLYUserCustom = @"custom";
 	[[CountlyConnectionQueue sharedInstance] updateSessionWithDuration:duration];
 	unsentSessionLength -= duration;
     
-    if (eventQueue.count > 0)
-        [[CountlyConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
+    if (CountlyDB.sharedInstance.recordedEvents.count > 0)
+        [[CountlyConnectionQueue sharedInstance] sendEvents:[CountlyDB.sharedInstance events]];
 }
 
 - (void)suspend
 {
 	isSuspended = YES;
     
-    if (eventQueue.count > 0)
-        [[CountlyConnectionQueue sharedInstance] recordEvents:[eventQueue events]];
+    if (CountlyDB.sharedInstance.recordedEvents.count > 0)
+        [[CountlyConnectionQueue sharedInstance] sendEvents:[CountlyDB.sharedInstance events]];
     
 	double currTime = CFAbsoluteTimeGetCurrent();
 	unsentSessionLength += currTime - lastTime;
@@ -1100,10 +1064,6 @@ NSString* const kCLYUserCustom = @"custom";
 	isSuspended = NO;
 }
 
-- (void)exit
-{
-}
-
 - (void)dealloc
 {
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
@@ -1120,7 +1080,8 @@ NSString* const kCLYUserCustom = @"custom";
 - (void)didEnterBackgroundCallBack:(NSNotification *)notification
 {
 	COUNTLY_LOG(@"App didEnterBackground");
-	[self suspend];
+    [self suspend];
+    [CountlyDB.sharedInstance saveToFile];
 }
 
 - (void)willEnterForegroundCallBack:(NSNotification *)notification
@@ -1132,8 +1093,8 @@ NSString* const kCLYUserCustom = @"custom";
 - (void)willTerminateCallBack:(NSNotification *)notification
 {
 	COUNTLY_LOG(@"App willTerminate");
-    [[CountlyDB sharedInstance] saveContext];
-	[self exit];
+    [self suspend];
+    [CountlyDB.sharedInstance saveToFile];
 }
 
 
@@ -1652,13 +1613,13 @@ void CCL(const char* function, NSUInteger line, NSString* message)
 
 - (void)endBackgroundSessionWithCompletionHandler:(void (^)(UIBackgroundFetchResult result))completionHandler
 {
-    if (eventQueue.count > 0)
+    if (CountlyDB.sharedInstance.recordedEvents.count > 0)
     {
         NSString *eventsQueryString = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&events=%@",
                                        CountlyConnectionQueue.sharedInstance.appKey,
                                        [CountlyDeviceInfo udid],
                                        time(NULL),
-                                       [eventQueue events]];
+                                       [CountlyDB.sharedInstance events]];
         
         [CountlyDB.sharedInstance addToQueue:eventsQueryString];
     }
