@@ -705,15 +705,15 @@ NSString* const kCLYUserCustom = @"custom";
     [self tick];
 }
 
-- (void)sendEvents:(NSString *)events
+- (void)sendEvents
 {
-	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&events=%@",
+	NSString* eventsQueryString = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&events=%@",
 					  self.appKey,
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
-					  events];
+					  [CountlyDB.sharedInstance events]];
     
-    [[CountlyDB sharedInstance] addToQueue:data];
+    [[CountlyDB sharedInstance] addToQueue:eventsQueryString];
     
 	[self tick];
 }
@@ -972,7 +972,7 @@ NSString* const kCLYUserCustom = @"custom";
     }
 
     if (CountlyDB.sharedInstance.recordedEvents.count >= COUNTLY_EVENT_SEND_THRESHOLD)
-        [[CountlyConnectionQueue sharedInstance] sendEvents:[CountlyDB.sharedInstance events]];
+        [[CountlyConnectionQueue sharedInstance] sendEvents];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count
@@ -1007,7 +1007,7 @@ NSString* const kCLYUserCustom = @"custom";
     }
     
     if (CountlyDB.sharedInstance.recordedEvents.count >= COUNTLY_EVENT_SEND_THRESHOLD)
-        [[CountlyConnectionQueue sharedInstance] sendEvents:[CountlyDB.sharedInstance events]];
+        [[CountlyConnectionQueue sharedInstance] sendEvents];
 }
 
 - (void)recordUserDetails:(NSDictionary *)userDetails
@@ -1037,7 +1037,7 @@ NSString* const kCLYUserCustom = @"custom";
 	unsentSessionLength -= duration;
     
     if (CountlyDB.sharedInstance.recordedEvents.count > 0)
-        [[CountlyConnectionQueue sharedInstance] sendEvents:[CountlyDB.sharedInstance events]];
+        [[CountlyConnectionQueue sharedInstance] sendEvents];
 }
 
 - (void)suspend
@@ -1045,7 +1045,7 @@ NSString* const kCLYUserCustom = @"custom";
 	isSuspended = YES;
     
     if (CountlyDB.sharedInstance.recordedEvents.count > 0)
-        [[CountlyConnectionQueue sharedInstance] sendEvents:[CountlyDB.sharedInstance events]];
+        [[CountlyConnectionQueue sharedInstance] sendEvents];
     
 	double currTime = CFAbsoluteTimeGetCurrent();
 	unsentSessionLength += currTime - lastTime;
