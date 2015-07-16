@@ -795,6 +795,13 @@ NSString* const kCLYUserCustom = @"custom";
 #pragma mark - Countly Core
 
 @interface Countly ()
+{
+    double unsentSessionLength;
+    NSTimer *timer;
+    time_t startTime;
+    double lastTime;
+    BOOL isSuspended;
+}
 
 @property (nonatomic, strong) NSMutableDictionary *messageInfos;
 @property (nonatomic, strong) NSDictionary* crashCustom;

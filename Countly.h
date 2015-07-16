@@ -6,19 +6,8 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
-#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
-#import <UIKit/UIKit.h>
-#endif
-@class CountlyEventQueue;
 
 @interface Countly : NSObject
-{
-	double unsentSessionLength;
-	NSTimer *timer;
-    time_t startTime;
-	double lastTime;
-	BOOL isSuspended;
-}
 
 + (instancetype)sharedInstance;
 
