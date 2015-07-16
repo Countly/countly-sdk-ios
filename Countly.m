@@ -610,13 +610,13 @@ NSString* const kCLYUserCustom = @"custom";
 
 - (void)beginSession
 {
-	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_SDK_VERSION"&begin_session=1&metrics=%@",
+	NSString* queryString = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_SDK_VERSION"&begin_session=1&metrics=%@",
 					  self.appKey,
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
 					  [CountlyDeviceInfo metrics]];
     
-    [[CountlyDB sharedInstance] addToQueue:data];
+    [CountlyDB.sharedInstance addToQueue:queryString];
     
 	[self tick];
 }
@@ -633,7 +633,7 @@ NSString* const kCLYUserCustom = @"custom";
     
     COUNTLY_LOG(@"Sending APN token in mode %d", testMode);
     
-    NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_SDK_VERSION"&token_session=1&ios_token=%@&test_mode=%d",
+    NSString* queryString = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_SDK_VERSION"&token_session=1&ios_token=%@&test_mode=%d",
                       self.appKey,
                       [CountlyDeviceInfo udid],
                       time(NULL),
@@ -642,14 +642,14 @@ NSString* const kCLYUserCustom = @"custom";
 
     // Not right now to prevent race with begin_session=1 when adding new user
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [[CountlyDB sharedInstance] addToQueue:data];
+        [CountlyDB.sharedInstance addToQueue:queryString];
         [self tick];
     });
 }
 
 - (void)updateSessionWithDuration:(int)duration
 {
-	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&session_duration=%d",
+	NSString* queryString = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&session_duration=%d",
 					  self.appKey,
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
@@ -657,50 +657,50 @@ NSString* const kCLYUserCustom = @"custom";
     
     if (self.locationString)
     {
-        data = [data stringByAppendingFormat:@"&location=%@",self.locationString];
+        queryString = [queryString stringByAppendingFormat:@"&location=%@",self.locationString];
         self.locationString = nil;
     }
     
-    [[CountlyDB sharedInstance] addToQueue:data];
+    [CountlyDB.sharedInstance addToQueue:queryString];
     
 	[self tick];
 }
 
 - (void)endSessionWithDuration:(int)duration
 {
-	NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&end_session=1&session_duration=%d",
+	NSString* queryString = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&end_session=1&session_duration=%d",
 					  self.appKey,
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
 					  duration];
     
-    [[CountlyDB sharedInstance] addToQueue:data];
+    [CountlyDB.sharedInstance addToQueue:queryString];
     
 	[self tick];
 }
 
 - (void)sendUserDetails
 {
-    NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_SDK_VERSION"&user_details=%@",
+    NSString* queryString = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_SDK_VERSION"&user_details=%@",
                       self.appKey,
                       [CountlyDeviceInfo udid],
                       time(NULL),
                       [[CountlyUserDetails sharedUserDetails] serialize]];
     
-    [[CountlyDB sharedInstance] addToQueue:data];
+    [CountlyDB.sharedInstance addToQueue:queryString];
     
     [self tick];
 }
 
 - (void)storeCrashReportToTryLater:(NSString *)report
 {
-    NSString *data = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_SDK_VERSION"&crash=%@",
+    NSString* queryString = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_SDK_VERSION"&crash=%@",
                       self.appKey,
                       [CountlyDeviceInfo udid],
                       time(NULL),
                       report];
     
-    [[CountlyDB sharedInstance] addToQueue:data];
+    [CountlyDB.sharedInstance addToQueue:queryString];
     
     [self tick];
 }
@@ -713,7 +713,7 @@ NSString* const kCLYUserCustom = @"custom";
 					  time(NULL),
 					  [CountlyDB.sharedInstance events]];
     
-    [[CountlyDB sharedInstance] addToQueue:eventsQueryString];
+    [CountlyDB.sharedInstance addToQueue:eventsQueryString];
     
 	[self tick];
 }
