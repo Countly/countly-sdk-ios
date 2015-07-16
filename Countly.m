@@ -484,12 +484,14 @@ NSString* const kCLYUserCustom = @"custom";
 
 - (void)saveToFile
 {
-    NSError* error = nil;
-    NSData* saveData = [NSJSONSerialization dataWithJSONObject:self.queuedRequests options:0 error:&error];
-    if(error)
-        COUNTLY_LOG(@"Cannot convert to JSON data, error: %@", error);
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
+    {
+        NSError* error = nil;
+        NSData* saveData = [NSJSONSerialization dataWithJSONObject:self.queuedRequests options:0 error:&error];
+        if(error){COUNTLY_LOG(@"Cannot convert to JSON data, error: %@", error);}
 
-    [saveData writeToFile:[self storageFileURL].path atomically:YES];
+        [saveData writeToFile:[self storageFileURL].path atomically:YES];
+    });
 }
 
 @end
