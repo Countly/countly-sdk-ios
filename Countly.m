@@ -456,22 +456,6 @@ NSString* const kCLYUserCustom = @"custom";
     [self.queuedRequests addObject:queryString];
 }
 
-- (NSString *)events
-{
-    NSMutableArray* temp = [NSMutableArray array];
-    
-    @synchronized (self)
-    {
-        for (CountlyEvent* event in self.recordedEvents.copy)
-        {
-            [temp addObject:[event dictionaryRepresentation]];
-            [self.recordedEvents removeObject:event];
-        }
-    }
-    
-    return CountlyURLEscapedString(CountlyJSONFromObject(temp));
-}
-
 - (NSURL *)storageFileURL
 {
     static NSURL *url = nil;
@@ -699,11 +683,21 @@ NSString* const kCLYUserCustom = @"custom";
 
 - (void)sendEvents
 {
-	NSString* eventsQueryString = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&events=%@",
+    NSMutableArray* eventsArray = NSMutableArray.new;
+    @synchronized (self)
+    {
+        for (CountlyEvent* event in CountlyDB.sharedInstance.recordedEvents.copy)
+        {
+            [eventsArray addObject:[event dictionaryRepresentation]];
+            [CountlyDB.sharedInstance.recordedEvents removeObject:event];
+        }
+    }
+    
+    NSString* eventsQueryString = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&events=%@",
 					  self.appKey,
 					  [CountlyDeviceInfo udid],
 					  time(NULL),
-					  [CountlyDB.sharedInstance events]];
+					  CountlyURLEscapedString(CountlyJSONFromObject(eventsArray))];
     
     [CountlyDB.sharedInstance addToQueue:eventsQueryString];
     
