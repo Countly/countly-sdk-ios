@@ -249,7 +249,7 @@ NSString* CountlyURLUnescapedString(NSString* string)
 @property(nonatomic,strong) NSString* gender;
 @property(nonatomic,strong) NSString* picture;
 @property(nonatomic,strong) NSString* picturePath;
-@property(nonatomic,readwrite) NSInteger birthYear;
+@property(nonatomic,assign) NSInteger birthYear;
 @property(nonatomic,strong) NSDictionary* custom;
 
 +(CountlyUserDetails*)sharedUserDetails;
@@ -364,11 +364,9 @@ NSString* const kCLYUserCustom = @"custom";
 #pragma mark - CountlyEvent
 
 @interface CountlyEvent : NSObject
-{
-}
 
-@property (nonatomic, copy) NSString *key;
-@property (nonatomic, retain) NSDictionary *segmentation;
+@property (nonatomic, strong) NSString *key;
+@property (nonatomic, strong) NSDictionary *segmentation;
 @property (nonatomic, assign) int count;
 @property (nonatomic, assign) double sum;
 @property (nonatomic, assign) NSTimeInterval timestamp;
@@ -376,12 +374,6 @@ NSString* const kCLYUserCustom = @"custom";
 @end
 
 @implementation CountlyEvent
-
-- (void)dealloc
-{
-    self.key = nil;
-    self.segmentation = nil;
-}
 
 - (NSDictionary*)dictionaryRepresentation
 {
@@ -523,12 +515,12 @@ NSString* const kCLYUserCustom = @"custom";
 
 @interface CountlyConnectionQueue : NSObject
 
-@property (nonatomic, copy) NSString *appKey;
-@property (nonatomic, copy) NSString *appHost;
-@property (nonatomic, retain) NSURLConnection *connection;
-@property (nonatomic) BOOL startedWithTest;
+@property (nonatomic, strong) NSString *appKey;
+@property (nonatomic, strong) NSString *appHost;
+@property (nonatomic, strong) NSURLConnection *connection;
+@property (nonatomic, assign) BOOL startedWithTest;
 @property (nonatomic, strong) NSString *locationString;
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
 @property (nonatomic, assign) UIBackgroundTaskIdentifier bgTask;
 #endif
 
