@@ -391,9 +391,9 @@ NSString* const kCLYUserCustom = @"custom";
 
 @end
 
-#pragma mark - Countly Persistency
+#pragma mark - CountlyPersistency
 
-@interface CountlyDB : NSObject
+@interface CountlyPersistency : NSObject
 
 +(instancetype)sharedInstance;
 
@@ -413,14 +413,14 @@ NSString* const kCLYUserCustom = @"custom";
 #import <WatchKit/WatchKit.h>
 #endif
 
-@implementation CountlyDB
+@implementation CountlyPersistency
 
 +(instancetype)sharedInstance
 {
-    static CountlyDB* s_sharedCountlyDB;
+    static CountlyPersistency* s_sharedCountlyPersistency;
     static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{s_sharedCountlyDB = self.new;});
-    return s_sharedCountlyDB;
+    dispatch_once(&onceToken, ^{s_sharedCountlyPersistency = self.new;});
+    return s_sharedCountlyPersistency;
 }
 
 - (instancetype)init
@@ -527,20 +527,20 @@ NSString* const kCLYUserCustom = @"custom";
 
 - (void) tick
 {
-    if (self.connection != nil || CountlyDB.sharedInstance.queuedRequests.count == 0)
+    if (self.connection != nil || CountlyPersistency.sharedInstance.queuedRequests.count == 0)
         return;
 
     [self startBackgroundTask];
     
-    NSString *urlString = [NSString stringWithFormat:@"%@/i?%@", self.appHost, CountlyDB.sharedInstance.queuedRequests.firstObject];
+    NSString *urlString = [NSString stringWithFormat:@"%@/i?%@", self.appHost, CountlyPersistency.sharedInstance.queuedRequests.firstObject];
     NSMutableURLRequest * request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
 
-    if([CountlyDB.sharedInstance.queuedRequests.firstObject rangeOfString:@"&crash="].location != NSNotFound)
+    if([CountlyPersistency.sharedInstance.queuedRequests.firstObject rangeOfString:@"&crash="].location != NSNotFound)
     {
         urlString = [NSString stringWithFormat:@"%@/i", self.appHost];
         request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
         request.HTTPMethod = @"POST";
-        request.HTTPBody = [CountlyDB.sharedInstance.queuedRequests.firstObject dataUsingEncoding:NSUTF8StringEncoding];
+        request.HTTPBody = [CountlyPersistency.sharedInstance.queuedRequests.firstObject dataUsingEncoding:NSUTF8StringEncoding];
     }
     
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
@@ -591,7 +591,7 @@ NSString* const kCLYUserCustom = @"custom";
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&begin_session=1&metrics=%@",
                              [CountlyDeviceInfo metrics]];
     
-    [CountlyDB.sharedInstance addToQueue:queryString];
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
     
 	[self tick];
 }
@@ -614,7 +614,7 @@ NSString* const kCLYUserCustom = @"custom";
 
     // Not right now to prevent race with begin_session=1 when adding new user
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [CountlyDB.sharedInstance addToQueue:queryString];
+        [CountlyPersistency.sharedInstance addToQueue:queryString];
         [self tick];
     });
 }
@@ -629,7 +629,7 @@ NSString* const kCLYUserCustom = @"custom";
         self.locationString = nil;
     }
     
-    [CountlyDB.sharedInstance addToQueue:queryString];
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
     
 	[self tick];
 }
@@ -638,7 +638,7 @@ NSString* const kCLYUserCustom = @"custom";
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&end_session=1&session_duration=%d", duration];
     
-    [CountlyDB.sharedInstance addToQueue:queryString];
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
     
 	[self tick];
 }
@@ -648,7 +648,7 @@ NSString* const kCLYUserCustom = @"custom";
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&user_details=%@",
                              [CountlyUserDetails.sharedUserDetails serialize]];
     
-    [CountlyDB.sharedInstance addToQueue:queryString];
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
     
     [self tick];
 }
@@ -657,9 +657,9 @@ NSString* const kCLYUserCustom = @"custom";
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&crash=%@", report];
     
-    [CountlyDB.sharedInstance addToQueue:queryString];
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
     
-    [CountlyDB.sharedInstance saveToFile];
+    [CountlyPersistency.sharedInstance saveToFile];
 }
 
 - (void)sendEvents
@@ -667,17 +667,17 @@ NSString* const kCLYUserCustom = @"custom";
     NSMutableArray* eventsArray = NSMutableArray.new;
     @synchronized (self)
     {
-        for (CountlyEvent* event in CountlyDB.sharedInstance.recordedEvents.copy)
+        for (CountlyEvent* event in CountlyPersistency.sharedInstance.recordedEvents.copy)
         {
             [eventsArray addObject:[event dictionaryRepresentation]];
-            [CountlyDB.sharedInstance.recordedEvents removeObject:event];
+            [CountlyPersistency.sharedInstance.recordedEvents removeObject:event];
         }
     }
     
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&events=%@",
                                    CountlyURLEscapedString(CountlyJSONFromObject(eventsArray))];
     
-    [CountlyDB.sharedInstance addToQueue:queryString];
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
     
 	[self tick];
 }
@@ -688,9 +688,9 @@ NSString* const kCLYUserCustom = @"custom";
     
     self.connection = nil;
     
-    [CountlyDB.sharedInstance.queuedRequests removeObjectAtIndex:0];
+    [CountlyPersistency.sharedInstance.queuedRequests removeObjectAtIndex:0];
     
-    [CountlyDB.sharedInstance saveToFile];
+    [CountlyPersistency.sharedInstance saveToFile];
 
     [self finishBackgroundTask];
 
@@ -700,7 +700,7 @@ NSString* const kCLYUserCustom = @"custom";
 
 - (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)err
 {
-    COUNTLY_LOG(@"Request Failed \n %@: %@", [CountlyDB.sharedInstance.queuedRequests.firstObject description], [err description]);
+    COUNTLY_LOG(@"Request Failed \n %@: %@", [CountlyPersistency.sharedInstance.queuedRequests.firstObject description], [err description]);
 
     [self finishBackgroundTask];
     
@@ -749,17 +749,6 @@ NSString* const kCLYUserCustom = @"custom";
                                         [CountlyDeviceInfo udid],
                                         time(NULL),
                                         COUNTLY_SDK_VERSION];
-}
-
-- (void)dealloc
-{
-	if (self.connection)
-    {
-		[self.connection cancel];
-        self.connection = nil;
-    }
-	self.appKey = nil;
-	self.appHost = nil;
 }
 
 @end
@@ -930,7 +919,7 @@ NSString* const kCLYUserCustom = @"custom";
 {
     @synchronized (self)
     {
-        for (CountlyEvent* event in CountlyDB.sharedInstance.recordedEvents)
+        for (CountlyEvent* event in CountlyPersistency.sharedInstance.recordedEvents)
         {
             if ([event.key isEqualToString:key])
             {
@@ -947,11 +936,11 @@ NSString* const kCLYUserCustom = @"custom";
         event.sum = sum;
         event.timestamp = time(NULL);
         
-        [CountlyDB.sharedInstance.recordedEvents addObject:event];
+        [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
     
     }
 
-    if (CountlyDB.sharedInstance.recordedEvents.count >= COUNTLY_EVENT_SEND_THRESHOLD)
+    if (CountlyPersistency.sharedInstance.recordedEvents.count >= COUNTLY_EVENT_SEND_THRESHOLD)
         [[CountlyConnectionQueue sharedInstance] sendEvents];
 }
 
@@ -964,7 +953,7 @@ NSString* const kCLYUserCustom = @"custom";
 {
     @synchronized (self)
     {
-        for (CountlyEvent* event in CountlyDB.sharedInstance.recordedEvents)
+        for (CountlyEvent* event in CountlyPersistency.sharedInstance.recordedEvents)
         {
             if ([event.key isEqualToString:key] && event.segmentation &&
             [event.segmentation isEqualToDictionary:segmentation])
@@ -983,10 +972,10 @@ NSString* const kCLYUserCustom = @"custom";
         event.sum = sum;
         event.timestamp = time(NULL);
         
-        [CountlyDB.sharedInstance.recordedEvents addObject:event];
+        [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
     }
     
-    if (CountlyDB.sharedInstance.recordedEvents.count >= COUNTLY_EVENT_SEND_THRESHOLD)
+    if (CountlyPersistency.sharedInstance.recordedEvents.count >= COUNTLY_EVENT_SEND_THRESHOLD)
         [[CountlyConnectionQueue sharedInstance] sendEvents];
 }
 
@@ -1016,7 +1005,7 @@ NSString* const kCLYUserCustom = @"custom";
 	[[CountlyConnectionQueue sharedInstance] updateSessionWithDuration:duration];
 	unsentSessionLength -= duration;
     
-    if (CountlyDB.sharedInstance.recordedEvents.count > 0)
+    if (CountlyPersistency.sharedInstance.recordedEvents.count > 0)
         [[CountlyConnectionQueue sharedInstance] sendEvents];
 }
 
@@ -1024,7 +1013,7 @@ NSString* const kCLYUserCustom = @"custom";
 {
 	isSuspended = YES;
     
-    if (CountlyDB.sharedInstance.recordedEvents.count > 0)
+    if (CountlyPersistency.sharedInstance.recordedEvents.count > 0)
         [[CountlyConnectionQueue sharedInstance] sendEvents];
     
 	double currTime = CFAbsoluteTimeGetCurrent();
@@ -1061,7 +1050,7 @@ NSString* const kCLYUserCustom = @"custom";
 {
 	COUNTLY_LOG(@"App didEnterBackground");
     [self suspend];
-    [CountlyDB.sharedInstance saveToFile];
+    [CountlyPersistency.sharedInstance saveToFile];
 }
 
 - (void)willEnterForegroundCallBack:(NSNotification *)notification
@@ -1074,7 +1063,7 @@ NSString* const kCLYUserCustom = @"custom";
 {
 	COUNTLY_LOG(@"App willTerminate");
     [self suspend];
-    [CountlyDB.sharedInstance saveToFile];
+    [CountlyPersistency.sharedInstance saveToFile];
 }
 
 
