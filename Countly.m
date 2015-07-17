@@ -474,9 +474,9 @@ NSString* const kCLYUserCustom = @"custom";
 
 
 
-#pragma mark - CountlyConnectionQueue
+#pragma mark - CountlyConnectionManager
 
-@interface CountlyConnectionQueue : NSObject
+@interface CountlyConnectionManager : NSObject
 
 @property (nonatomic, strong) NSString* appKey;
 @property (nonatomic, strong) NSString* appHost;
@@ -490,14 +490,14 @@ NSString* const kCLYUserCustom = @"custom";
 + (instancetype)sharedInstance;
 @end
 
-@implementation CountlyConnectionQueue : NSObject
+@implementation CountlyConnectionManager : NSObject
 
 + (instancetype)sharedInstance
 {
-    static CountlyConnectionQueue *s_sharedCountlyConnectionQueue = nil;
+    static CountlyConnectionManager *s_sharedCountlyConnectionManager = nil;
     static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{s_sharedCountlyConnectionQueue = self.new;});
-	return s_sharedCountlyConnectionQueue;
+    dispatch_once(&onceToken, ^{s_sharedCountlyConnectionManager = self.new;});
+	return s_sharedCountlyConnectionManager;
 }
 
 - (void)tick
@@ -803,9 +803,9 @@ NSString* const kCLYUserCustom = @"custom";
 										   userInfo:nil
 											repeats:YES];
 	lastTime = CFAbsoluteTimeGetCurrent();
-	CountlyConnectionQueue.sharedInstance.appKey = appKey;
-	CountlyConnectionQueue.sharedInstance.appHost = appHost;
-	[CountlyConnectionQueue.sharedInstance beginSession];
+	CountlyConnectionManager.sharedInstance.appKey = appKey;
+	CountlyConnectionManager.sharedInstance.appHost = appHost;
+	[CountlyConnectionManager.sharedInstance beginSession];
 }
 
 - (void)startOnCloudWithAppKey:(NSString*)appKey
@@ -828,7 +828,7 @@ NSString* const kCLYUserCustom = @"custom";
 - (void)startWithTestMessagingUsing:(NSString *)appKey withHost:(NSString *)appHost andOptions:(NSDictionary *)options
 {
     [self start:appKey withHost:appHost];
-    CountlyConnectionQueue.sharedInstance.startedWithTest = YES;
+    CountlyConnectionManager.sharedInstance.startedWithTest = YES;
     
     NSDictionary *notification = [options objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
     if (notification) {
@@ -875,7 +875,7 @@ NSString* const kCLYUserCustom = @"custom";
     }
 
     if (CountlyPersistency.sharedInstance.recordedEvents.count >= COUNTLY_EVENT_SEND_THRESHOLD)
-        [CountlyConnectionQueue.sharedInstance sendEvents];
+        [CountlyConnectionManager.sharedInstance sendEvents];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count
@@ -910,19 +910,19 @@ NSString* const kCLYUserCustom = @"custom";
     }
     
     if (CountlyPersistency.sharedInstance.recordedEvents.count >= COUNTLY_EVENT_SEND_THRESHOLD)
-        [CountlyConnectionQueue.sharedInstance sendEvents];
+        [CountlyConnectionManager.sharedInstance sendEvents];
 }
 
 - (void)recordUserDetails:(NSDictionary *)userDetails
 {
     NSLog(@"%s",__FUNCTION__);
     [CountlyUserDetails.sharedInstance deserialize:userDetails];
-    [CountlyConnectionQueue.sharedInstance sendUserDetails];
+    [CountlyConnectionManager.sharedInstance sendUserDetails];
 }
 
 - (void)setLocation:(double)latitude longitude:(double)longitude
 {
-    CountlyConnectionQueue.sharedInstance.locationString = [NSString stringWithFormat:@"%f,%f", latitude, longitude];
+    CountlyConnectionManager.sharedInstance.locationString = [NSString stringWithFormat:@"%f,%f", latitude, longitude];
 }
 
 #pragma mark ---
@@ -937,11 +937,11 @@ NSString* const kCLYUserCustom = @"custom";
 	lastTime = currTime;
     
 	int duration = unsentSessionLength;
-	[CountlyConnectionQueue.sharedInstance updateSessionWithDuration:duration];
+	[CountlyConnectionManager.sharedInstance updateSessionWithDuration:duration];
 	unsentSessionLength -= duration;
     
     if (CountlyPersistency.sharedInstance.recordedEvents.count > 0)
-        [CountlyConnectionQueue.sharedInstance sendEvents];
+        [CountlyConnectionManager.sharedInstance sendEvents];
 }
 
 - (void)suspend
@@ -949,13 +949,13 @@ NSString* const kCLYUserCustom = @"custom";
 	isSuspended = YES;
     
     if (CountlyPersistency.sharedInstance.recordedEvents.count > 0)
-        [CountlyConnectionQueue.sharedInstance sendEvents];
+        [CountlyConnectionManager.sharedInstance sendEvents];
     
 	double currTime = CFAbsoluteTimeGetCurrent();
 	unsentSessionLength += currTime - lastTime;
     
 	int duration = unsentSessionLength;
-	[CountlyConnectionQueue.sharedInstance endSessionWithDuration:duration];
+	[CountlyConnectionManager.sharedInstance endSessionWithDuration:duration];
 	unsentSessionLength -= duration;
 }
 
@@ -963,7 +963,7 @@ NSString* const kCLYUserCustom = @"custom";
 {
 	lastTime = CFAbsoluteTimeGetCurrent();
     
-	[CountlyConnectionQueue.sharedInstance beginSession];
+	[CountlyConnectionManager.sharedInstance beginSession];
     
 	isSuspended = NO;
 }
@@ -1281,12 +1281,12 @@ NSString* const kCLYUserCustom = @"custom";
                        ntohl(tokenBytes[0]), ntohl(tokenBytes[1]), ntohl(tokenBytes[2]),
                        ntohl(tokenBytes[3]), ntohl(tokenBytes[4]), ntohl(tokenBytes[5]),
                        ntohl(tokenBytes[6]), ntohl(tokenBytes[7])];
-    [CountlyConnectionQueue.sharedInstance sendPushToken:token];
+    [CountlyConnectionManager.sharedInstance sendPushToken:token];
 }
 
 - (void)didFailToRegisterForRemoteNotifications
 {
-    [CountlyConnectionQueue.sharedInstance sendPushToken:nil];
+    [CountlyConnectionManager.sharedInstance sendPushToken:nil];
 }
 #endif
 
@@ -1371,9 +1371,9 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     
     crashReport[@"_error"] = stackString;
    
-    NSString *urlString = [NSString stringWithFormat:@"%@/i", CountlyConnectionQueue.sharedInstance.appHost];
+    NSString *urlString = [NSString stringWithFormat:@"%@/i", CountlyConnectionManager.sharedInstance.appHost];
 
-    NSString *queryString = [[CountlyConnectionQueue.sharedInstance queryEssentials] stringByAppendingFormat:@"&crash=%@",
+    NSString *queryString = [[CountlyConnectionManager.sharedInstance queryEssentials] stringByAppendingFormat:@"&crash=%@",
                              CountlyURLEscapedString(CountlyJSONFromObject(crashReport))];
     
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
@@ -1388,7 +1388,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
 	if (error || !recvData)
     {
         COUNTLY_LOG(@"CrashReporting failed, report stored to try again later");
-        [CountlyConnectionQueue.sharedInstance sendCrashReportLater:CountlyURLEscapedString(CountlyJSONFromObject(crashReport))];
+        [CountlyConnectionManager.sharedInstance sendCrashReportLater:CountlyURLEscapedString(CountlyJSONFromObject(crashReport))];
     }
     
     NSSetUncaughtExceptionHandler(NULL);
