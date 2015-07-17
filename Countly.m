@@ -65,7 +65,7 @@ NSString* CountlyJSONFromObject(id object)
 {
 	NSError *error = nil;
 	NSData *data = [NSJSONSerialization dataWithJSONObject:object options:0 error:&error];
-    if(error){ COUNTLY_LOG(@"%@", [error description]); }
+    if(error){ COUNTLY_LOG(@"Cannot create JSON from object %@", error); }
 	
 	return [NSString.alloc initWithData:data encoding:NSUTF8StringEncoding];
 }
@@ -411,7 +411,7 @@ NSString* const kCLYUserCustom = @"custom";
         if(readData)
             self.queuedRequests = [[NSJSONSerialization JSONObjectWithData:readData options:0 error:&error] mutableCopy];
     
-        if(error){COUNTLY_LOG(@"Unable to restore read data, error: %@", error);}
+        if(error){ COUNTLY_LOG(@"Cannot restore the data read from disk, error: %@", error); }
 
         if(!self.queuedRequests)
             self.queuedRequests = NSMutableArray.new;
@@ -449,7 +449,7 @@ NSString* const kCLYUserCustom = @"custom";
         if (![NSFileManager.defaultManager fileExistsAtPath:url.absoluteString])
         {
             [NSFileManager.defaultManager createDirectoryAtURL:url withIntermediateDirectories:YES attributes:nil error:&error];
-            if(error) COUNTLY_LOG(@"Can not create Application Support directory: %@", error);
+            if(error){ COUNTLY_LOG(@"Cannot create Application Support directory: %@", error); }
         }
 
         url = [url URLByAppendingPathComponent:@"Countly.dat"];
@@ -465,7 +465,7 @@ NSString* const kCLYUserCustom = @"custom";
     {
         NSError* error = nil;
         NSData* saveData = [NSJSONSerialization dataWithJSONObject:self.queuedRequests options:0 error:&error];
-        if(error){COUNTLY_LOG(@"Cannot convert to JSON data, error: %@", error);}
+        if(error){ COUNTLY_LOG(@"Cannot convert to JSON data, error: %@", error); }
 
         [saveData writeToFile:[self storageFileURL].path atomically:YES];
     });
@@ -679,9 +679,9 @@ NSString* const kCLYUserCustom = @"custom";
 }
 
 
-- (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)err
+- (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error
 {
-    COUNTLY_LOG(@"Request Failed \n %@: %@", [CountlyPersistency.sharedInstance.queuedRequests.firstObject description], [err description]);
+    COUNTLY_LOG(@"Request Failed \n %@: %@", [CountlyPersistency.sharedInstance.queuedRequests.firstObject description], error);
 
     [self finishBackgroundTask];
     
