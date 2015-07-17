@@ -19,9 +19,9 @@
 #endif
 
 #if COUNTLY_DEBUG
-#   define COUNTLY_LOG(fmt, ...) NSLog(fmt, ##__VA_ARGS__)
+#define COUNTLY_LOG(fmt, ...) NSLog(fmt, ##__VA_ARGS__)
 #else
-#   define COUNTLY_LOG(...)
+#define COUNTLY_LOG(...)
 #endif
 
 #define COUNTLY_SDK_VERSION @"15.06.01"
@@ -57,33 +57,23 @@
 #include <libkern/OSAtomic.h>
 #include <execinfo.h>
 
-#pragma mark - Helper Functions
 
-NSString* CountlyJSONFromObject(id object);
-NSString* CountlyURLEscapedString(NSString* string);
-NSString* CountlyURLUnescapedString(NSString* string);
+
+#pragma mark - Helper Functions
 
 NSString* CountlyJSONFromObject(id object)
 {
 	NSError *error = nil;
 	NSData *data = [NSJSONSerialization dataWithJSONObject:object options:0 error:&error];
+    if(error){ COUNTLY_LOG(@"%@", [error description]); }
 	
-	if (error)
-        COUNTLY_LOG(@"%@", [error description]);
-	
-	return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+	return [NSString.alloc initWithData:data encoding:NSUTF8StringEncoding];
 }
 
 NSString* CountlyURLEscapedString(NSString* string)
 {
-	// Encode all the reserved characters, per RFC 3986
-	// (<http://www.ietf.org/rfc/rfc3986.txt>)
-	CFStringRef escaped =
-    CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault,
-                                            (CFStringRef)string,
-                                            NULL,
-                                            (CFStringRef)@"!*'();:@&=+$,/?%#[]",
-                                            kCFStringEncodingUTF8);
+	CFStringRef escaped = CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault,(CFStringRef)string, NULL,
+                                                                  (CFStringRef)@"!*'();:@&=+$,/?%#[]", kCFStringEncodingUTF8);
 	return (NSString*)CFBridgingRelease(escaped);
 }
 
@@ -93,38 +83,26 @@ NSString* CountlyURLUnescapedString(NSString* string)
 	[resultString replaceOccurrencesOfString:@"+"
 								  withString:@" "
 									 options:NSLiteralSearch
-									   range:NSMakeRange(0, [resultString length])];
+									   range:NSMakeRange(0, resultString.length)];
 	return [resultString stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
 }
 
 @interface NSMutableData (AppendStringUTF8)
--(void)appendStringUTF8:(NSString*)string;
+- (void)appendStringUTF8:(NSString*)string;
 @end
 
 @implementation NSMutableData (AppendStringUTF8)
--(void)appendStringUTF8:(NSString*)string
+- (void)appendStringUTF8:(NSString*)string
 {
     [self appendData:[string dataUsingEncoding:NSUTF8StringEncoding]];
 }
 @end
 
+
+
 #pragma mark - CountlyDeviceInfo
 
 @interface CountlyDeviceInfo : NSObject
-
-+ (NSString *)udid;
-+ (NSString *)device;
-+ (NSString *)osName;
-+ (NSString *)osVersion;
-+ (NSString *)carrier;
-+ (NSString *)resolution;
-+ (NSString *)locale;
-+ (NSString *)appVersion;
-
-+ (NSString *)metrics;
-
-+ (NSString *)bundleId;
-
 @end
 
 @implementation CountlyDeviceInfo
@@ -200,21 +178,21 @@ NSString* CountlyURLUnescapedString(NSString* string)
 
 + (NSString *)locale
 {
-	return [[NSLocale currentLocale] localeIdentifier];
+	return NSLocale.currentLocale.localeIdentifier;
 }
 
 + (NSString *)appVersion
 {
-    NSString *result = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
-    if ([result length] == 0)
-        result = [[NSBundle mainBundle] objectForInfoDictionaryKey:(NSString*)kCFBundleVersionKey];
+    NSString *result = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
+    if (result.length == 0)
+        result = [NSBundle.mainBundle objectForInfoDictionaryKey:(NSString*)kCFBundleVersionKey];
     
     return result;
 }
 
 + (NSString *)metrics
 {
-    NSMutableDictionary* metricsDictionary = [NSMutableDictionary dictionary];
+    NSMutableDictionary* metricsDictionary = NSMutableDictionary.new;
 	metricsDictionary[@"_device"] = CountlyDeviceInfo.device;
 	metricsDictionary[@"_os"] = CountlyDeviceInfo.osName;
 	metricsDictionary[@"_os_version"] = CountlyDeviceInfo.osVersion;
@@ -232,30 +210,29 @@ NSString* CountlyURLUnescapedString(NSString* string)
 
 + (NSString *)bundleId
 {
-    return [[NSBundle mainBundle] bundleIdentifier];
+    return NSBundle.mainBundle.bundleIdentifier;
 }
-
 @end
+
 
 
 #pragma mark - CountlyUserDetails
 @interface CountlyUserDetails : NSObject
 
-@property(nonatomic,strong) NSString* name;
-@property(nonatomic,strong) NSString* username;
-@property(nonatomic,strong) NSString* email;
-@property(nonatomic,strong) NSString* organization;
-@property(nonatomic,strong) NSString* phone;
-@property(nonatomic,strong) NSString* gender;
-@property(nonatomic,strong) NSString* picture;
-@property(nonatomic,strong) NSString* picturePath;
-@property(nonatomic,assign) NSInteger birthYear;
-@property(nonatomic,strong) NSDictionary* custom;
+@property(nonatomic, strong) NSString* name;
+@property(nonatomic, strong) NSString* username;
+@property(nonatomic, strong) NSString* email;
+@property(nonatomic, strong) NSString* organization;
+@property(nonatomic, strong) NSString* phone;
+@property(nonatomic, strong) NSString* gender;
+@property(nonatomic, strong) NSString* picture;
+@property(nonatomic, strong) NSString* picturePath;
+@property(nonatomic, assign) NSInteger birthYear;
+@property(nonatomic, strong) NSDictionary* custom;
 
-+(CountlyUserDetails*)sharedUserDetails;
--(void)deserialize:(NSDictionary*)userDictionary;
--(NSString*)serialize;
-
++ (CountlyUserDetails *)sharedInstance;
+- (void)deserialize:(NSDictionary*)userDictionary;
+- (NSString *)serialize;
 @end
 
 @implementation CountlyUserDetails
@@ -271,7 +248,7 @@ NSString* const kCLYUserPicturePath = @"picturePath";
 NSString* const kCLYUserBirthYear = @"byear";
 NSString* const kCLYUserCustom = @"custom";
 
-+(CountlyUserDetails*)sharedUserDetails
++ (CountlyUserDetails *)sharedInstance
 {
     static CountlyUserDetails *s_CountlyUserDetails = nil;
     static dispatch_once_t onceToken;
@@ -280,7 +257,7 @@ NSString* const kCLYUserCustom = @"custom";
     return s_CountlyUserDetails;
 }
 
--(void)deserialize:(NSDictionary*)userDictionary
+- (void)deserialize:(NSDictionary*)userDictionary
 {
     if(userDictionary[kCLYUserName])
         self.name = userDictionary[kCLYUserName];
@@ -306,7 +283,7 @@ NSString* const kCLYUserCustom = @"custom";
 
 - (NSString *)serialize
 {
-    NSMutableDictionary* userDictionary = [NSMutableDictionary dictionary];
+    NSMutableDictionary* userDictionary = NSMutableDictionary.new;
     if(self.name)
         userDictionary[kCLYUserName] = self.name;
     if(self.username)
@@ -331,7 +308,7 @@ NSString* const kCLYUserCustom = @"custom";
     return CountlyURLEscapedString(CountlyJSONFromObject(userDictionary));
 }
 
--(NSString*)extractPicturePathFromURLString:(NSString*)URLString
+- (NSString *)extractPicturePathFromURLString:(NSString*)URLString
 {
     NSString* unescaped = CountlyURLUnescapedString(URLString);
     NSRange rPicturePathKey = [unescaped rangeOfString:kCLYUserPicturePath];
@@ -361,21 +338,22 @@ NSString* const kCLYUserCustom = @"custom";
 }
 @end
 
+
+
 #pragma mark - CountlyEvent
 
 @interface CountlyEvent : NSObject
 
-@property (nonatomic, strong) NSString *key;
-@property (nonatomic, strong) NSDictionary *segmentation;
+@property (nonatomic, strong) NSString* key;
+@property (nonatomic, strong) NSDictionary* segmentation;
 @property (nonatomic, assign) int count;
 @property (nonatomic, assign) double sum;
 @property (nonatomic, assign) NSTimeInterval timestamp;
-
 @end
 
 @implementation CountlyEvent
 
-- (NSDictionary*)dictionaryRepresentation
+- (NSDictionary *)dictionaryRepresentation
 {
     NSMutableDictionary* eventData = NSMutableDictionary.dictionary;
 	eventData[@"key"] = self.key;
@@ -388,20 +366,19 @@ NSString* const kCLYUserCustom = @"custom";
 	eventData[@"timestamp"] = @(self.timestamp);
 	return eventData;
 }
-
 @end
+
+
 
 #pragma mark - CountlyPersistency
 
 @interface CountlyPersistency : NSObject
 
-+(instancetype)sharedInstance;
-
--(void)addToQueue:(NSString*)queryString;
++ (instancetype)sharedInstance;
+- (void)addToQueue:(NSString*)queryString;
 - (void)saveToFile;
-@property (nonatomic,strong) NSMutableArray* recordedEvents;
-@property (nonatomic,strong) NSMutableArray* queuedRequests;
-
+@property (nonatomic, strong) NSMutableArray* recordedEvents;
+@property (nonatomic, strong) NSMutableArray* queuedRequests;
 @end
 
 
@@ -415,7 +392,7 @@ NSString* const kCLYUserCustom = @"custom";
 
 @implementation CountlyPersistency
 
-+(instancetype)sharedInstance
++ (instancetype)sharedInstance
 {
     static CountlyPersistency* s_sharedCountlyPersistency;
     static dispatch_once_t onceToken;
@@ -445,7 +422,7 @@ NSString* const kCLYUserCustom = @"custom";
     return self;
 }
 
--(void)addToQueue:(NSString*)queryString
+- (void)addToQueue:(NSString*)queryString
 {
 #ifdef COUNTLY_TARGET_WATCHKIT
     NSDictionary* watchSegmentation = @{@"[CLY]_apple_watch":(WKInterfaceDevice.currentDevice.screenBounds.size.width == 136.0)?@"38mm":@"42mm"};
@@ -493,27 +470,25 @@ NSString* const kCLYUserCustom = @"custom";
         [saveData writeToFile:[self storageFileURL].path atomically:YES];
     });
 }
-
 @end
+
 
 
 #pragma mark - CountlyConnectionQueue
 
 @interface CountlyConnectionQueue : NSObject
 
-@property (nonatomic, strong) NSString *appKey;
-@property (nonatomic, strong) NSString *appHost;
-@property (nonatomic, strong) NSURLConnection *connection;
+@property (nonatomic, strong) NSString* appKey;
+@property (nonatomic, strong) NSString* appHost;
+@property (nonatomic, strong) NSURLConnection* connection;
 @property (nonatomic, assign) BOOL startedWithTest;
-@property (nonatomic, strong) NSString *locationString;
+@property (nonatomic, strong) NSString* locationString;
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
 @property (nonatomic, assign) UIBackgroundTaskIdentifier bgTask;
 #endif
 
 + (instancetype)sharedInstance;
-
 @end
-
 
 @implementation CountlyConnectionQueue : NSObject
 
@@ -525,7 +500,7 @@ NSString* const kCLYUserCustom = @"custom";
 	return s_sharedCountlyConnectionQueue;
 }
 
-- (void) tick
+- (void)tick
 {
     if (self.connection != nil || CountlyPersistency.sharedInstance.queuedRequests.count == 0)
         return;
@@ -544,7 +519,7 @@ NSString* const kCLYUserCustom = @"custom";
     }
     
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
-    NSString* picturePath = [CountlyUserDetails.sharedUserDetails extractPicturePathFromURLString:urlString];
+    NSString* picturePath = [CountlyUserDetails.sharedInstance extractPicturePathFromURLString:urlString];
     if(picturePath && ![picturePath isEqualToString:@""])
     {
         COUNTLY_LOG(@"picturePath: %@", picturePath);
@@ -565,7 +540,7 @@ NSString* const kCLYUserCustom = @"custom";
                 
                 NSString *boundary = @"c1c673d52fea01a50318d915b6966d5e";
                 
-                [request setHTTPMethod:@"POST"];
+                request.HTTPMethod = @"POST";
                 NSString *contentType = [@"multipart/form-data; boundary=" stringByAppendingString:boundary];
                 [request addValue:contentType forHTTPHeaderField: @"Content-Type"];
                 
@@ -575,7 +550,7 @@ NSString* const kCLYUserCustom = @"custom";
                 [body appendStringUTF8:[NSString stringWithFormat:@"Content-Type: image/%@\r\n\r\n", allowedFileTypes[fileExtIndex]]];
                 [body appendData:imageData];
                 [body appendStringUTF8:[NSString stringWithFormat:@"\r\n--%@--\r\n", boundary]];
-                [request setHTTPBody:body];
+                request.HTTPBody = body;
             }
         }
     }
@@ -586,6 +561,8 @@ NSString* const kCLYUserCustom = @"custom";
     COUNTLY_LOG(@"Request Started \n %@", urlString);
 }
 
+#pragma mark ---
+
 - (void)beginSession
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&begin_session=1&metrics=%@",
@@ -594,29 +571,6 @@ NSString* const kCLYUserCustom = @"custom";
     [CountlyPersistency.sharedInstance addToQueue:queryString];
     
 	[self tick];
-}
-
-- (void)tokenSession:(NSString *)token
-{
-    // Test modes: 0 = production mode, 1 = development build, 2 = Ad Hoc build
-    int testMode;
-#ifndef __OPTIMIZE__
-    testMode = 1;
-#else
-    testMode = self.startedWithTest ? 2 : 0;
-#endif
-    
-    COUNTLY_LOG(@"Sending APN token in mode %d", testMode);
-    
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&token_session=1&ios_token=%@&test_mode=%d",
-                             [token length] ? token : @"",
-                             testMode];
-
-    // Not right now to prevent race with begin_session=1 when adding new user
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        [CountlyPersistency.sharedInstance addToQueue:queryString];
-        [self tick];
-    });
 }
 
 - (void)updateSessionWithDuration:(int)duration
@@ -643,25 +597,6 @@ NSString* const kCLYUserCustom = @"custom";
 	[self tick];
 }
 
-- (void)sendUserDetails
-{
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&user_details=%@",
-                             [CountlyUserDetails.sharedUserDetails serialize]];
-    
-    [CountlyPersistency.sharedInstance addToQueue:queryString];
-    
-    [self tick];
-}
-
-- (void)storeCrashReportToTryLater:(NSString *)report
-{
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&crash=%@", report];
-    
-    [CountlyPersistency.sharedInstance addToQueue:queryString];
-    
-    [CountlyPersistency.sharedInstance saveToFile];
-}
-
 - (void)sendEvents
 {
     NSMutableArray* eventsArray = NSMutableArray.new;
@@ -675,12 +610,58 @@ NSString* const kCLYUserCustom = @"custom";
     }
     
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&events=%@",
-                                   CountlyURLEscapedString(CountlyJSONFromObject(eventsArray))];
+                             CountlyURLEscapedString(CountlyJSONFromObject(eventsArray))];
     
     [CountlyPersistency.sharedInstance addToQueue:queryString];
     
-	[self tick];
+    [self tick];
 }
+
+#pragma mark ---
+
+- (void)sendPushToken:(NSString*)token
+{
+    // Test modes: 0 = production mode, 1 = development build, 2 = Ad Hoc build
+    int testMode;
+#ifndef __OPTIMIZE__
+    testMode = 1;
+#else
+    testMode = self.startedWithTest ? 2 : 0;
+#endif
+    
+    COUNTLY_LOG(@"Sending APN token in mode %d", testMode);
+    
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&token_session=1&ios_token=%@&test_mode=%d",
+                             [token length] ? token : @"",
+                             testMode];
+
+    // Not right now to prevent race with begin_session=1 when adding new user
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [CountlyPersistency.sharedInstance addToQueue:queryString];
+        [self tick];
+    });
+}
+
+- (void)sendUserDetails
+{
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&user_details=%@",
+                             [CountlyUserDetails.sharedInstance serialize]];
+    
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
+    
+    [self tick];
+}
+
+- (void)sendCrashReportLater:(NSString *)report
+{
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&crash=%@", report];
+    
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
+    
+    [CountlyPersistency.sharedInstance saveToFile];
+}
+
+#pragma mark ---
 
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection
 {
@@ -717,7 +698,9 @@ NSString* const kCLYUserCustom = @"custom";
 }
 #endif
 
--(void)startBackgroundTask
+#pragma mark ---
+
+- (void)startBackgroundTask
 {
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
     if (self.bgTask != UIBackgroundTaskInvalid)
@@ -731,7 +714,7 @@ NSString* const kCLYUserCustom = @"custom";
 #endif
 }
 
--(void)finishBackgroundTask
+- (void)finishBackgroundTask
 {
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
     if (self.bgTask != UIBackgroundTaskInvalid)
@@ -742,7 +725,7 @@ NSString* const kCLYUserCustom = @"custom";
 #endif
 }
 
--(NSString*)queryEssentials
+- (NSString *)queryEssentials
 {
     return [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version=%@",
                                         self.appKey,
@@ -750,7 +733,6 @@ NSString* const kCLYUserCustom = @"custom";
                                         time(NULL),
                                         COUNTLY_SDK_VERSION];
 }
-
 @end
 
 
@@ -790,27 +772,30 @@ NSString* const kCLYUserCustom = @"custom";
 		unsentSessionLength = 0;
         self.crashCustom = nil;
         
-        self.messageInfos = [NSMutableDictionary new];
+        self.messageInfos = NSMutableDictionary.new;
 
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
-		[[NSNotificationCenter defaultCenter] addObserver:self
+		[NSNotificationCenter.defaultCenter addObserver:self
 												 selector:@selector(didEnterBackgroundCallBack:)
 													 name:UIApplicationDidEnterBackgroundNotification
 												   object:nil];
-		[[NSNotificationCenter defaultCenter] addObserver:self
+		[NSNotificationCenter.defaultCenter addObserver:self
 												 selector:@selector(willEnterForegroundCallBack:)
 													 name:UIApplicationWillEnterForegroundNotification
 												   object:nil];
-		[[NSNotificationCenter defaultCenter] addObserver:self
+		[NSNotificationCenter.defaultCenter addObserver:self
 												 selector:@selector(willTerminateCallBack:)
 													 name:UIApplicationWillTerminateNotification
 												   object:nil];
 #endif
 	}
-	return self;
+
+    return self;
 }
 
-- (void)start:(NSString *)appKey withHost:(NSString *)appHost
+#pragma mark ---
+
+- (void)start:(NSString *)appKey withHost:(NSString*)appHost
 {
 	timer = [NSTimer scheduledTimerWithTimeInterval:COUNTLY_DEFAULT_UPDATE_INTERVAL
 											 target:self
@@ -818,12 +803,12 @@ NSString* const kCLYUserCustom = @"custom";
 										   userInfo:nil
 											repeats:YES];
 	lastTime = CFAbsoluteTimeGetCurrent();
-	[[CountlyConnectionQueue sharedInstance] setAppKey:appKey];
-	[[CountlyConnectionQueue sharedInstance] setAppHost:appHost];
-	[[CountlyConnectionQueue sharedInstance] beginSession];
+	CountlyConnectionQueue.sharedInstance.appKey = appKey;
+	CountlyConnectionQueue.sharedInstance.appHost = appHost;
+	[CountlyConnectionQueue.sharedInstance beginSession];
 }
 
-- (void)startOnCloudWithAppKey:(NSString *)appKey
+- (void)startOnCloudWithAppKey:(NSString*)appKey
 {
     [self start:appKey withHost:@"https://cloud.count.ly"];
 }
@@ -843,7 +828,7 @@ NSString* const kCLYUserCustom = @"custom";
 - (void)startWithTestMessagingUsing:(NSString *)appKey withHost:(NSString *)appHost andOptions:(NSDictionary *)options
 {
     [self start:appKey withHost:appHost];
-    [[CountlyConnectionQueue sharedInstance] setStartedWithTest:YES];
+    CountlyConnectionQueue.sharedInstance.startedWithTest = YES;
     
     NSDictionary *notification = [options objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
     if (notification) {
@@ -855,60 +840,9 @@ NSString* const kCLYUserCustom = @"custom";
         NSLog(@"ID: %@", appId);
     }];
 }
-
-- (NSMutableSet *) countlyNotificationCategories {
-    return [self countlyNotificationCategoriesWithActionTitles:@[@"Cancel", @"Open", @"Update", @"Review"]];
-}
-
-- (NSMutableSet *) countlyNotificationCategoriesWithActionTitles:(NSArray *)actions {
-    UIMutableUserNotificationCategory *url = [UIMutableUserNotificationCategory new],
-                                      *upd = [UIMutableUserNotificationCategory new],
-                                      *rev = [UIMutableUserNotificationCategory new];
-    
-    url.identifier = @"[CLY]_url";
-    upd.identifier = @"[CLY]_update";
-    rev.identifier = @"[CLY]_review";
-
-    UIMutableUserNotificationAction *cancel = [UIMutableUserNotificationAction new],
-                                      *open = [UIMutableUserNotificationAction new],
-                                    *update = [UIMutableUserNotificationAction new],
-                                    *review = [UIMutableUserNotificationAction new];
-    
-    cancel.identifier = @"[CLY]_cancel";
-    open.identifier   = @"[CLY]_open";
-    update.identifier = @"[CLY]_update";
-    review.identifier = @"[CLY]_review";
-    
-    cancel.title = actions[0];
-    open.title   = actions[1];
-    update.title = actions[2];
-    review.title = actions[3];
-
-    cancel.activationMode = UIUserNotificationActivationModeBackground;
-    open.activationMode   = UIUserNotificationActivationModeForeground;
-    update.activationMode = UIUserNotificationActivationModeForeground;
-    review.activationMode = UIUserNotificationActivationModeForeground;
-    
-    cancel.destructive = NO;
-    open.destructive   = NO;
-    update.destructive = NO;
-    review.destructive = NO;
-    
-    
-    [url setActions:@[cancel, open] forContext:UIUserNotificationActionContextMinimal];
-    [url setActions:@[cancel, open] forContext:UIUserNotificationActionContextDefault];
-    
-    [upd setActions:@[cancel, update] forContext:UIUserNotificationActionContextMinimal];
-    [upd setActions:@[cancel, update] forContext:UIUserNotificationActionContextDefault];
-    
-    [rev setActions:@[cancel, review] forContext:UIUserNotificationActionContextMinimal];
-    [rev setActions:@[cancel, review] forContext:UIUserNotificationActionContextDefault];
-    
-    NSMutableSet *set = [NSMutableSet setWithObjects:url, upd, rev, nil];
-    
-    return set;
-}
 #endif
+
+#pragma mark ---
 
 - (void)recordEvent:(NSString *)key count:(int)count
 {
@@ -941,7 +875,7 @@ NSString* const kCLYUserCustom = @"custom";
     }
 
     if (CountlyPersistency.sharedInstance.recordedEvents.count >= COUNTLY_EVENT_SEND_THRESHOLD)
-        [[CountlyConnectionQueue sharedInstance] sendEvents];
+        [CountlyConnectionQueue.sharedInstance sendEvents];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count
@@ -976,13 +910,13 @@ NSString* const kCLYUserCustom = @"custom";
     }
     
     if (CountlyPersistency.sharedInstance.recordedEvents.count >= COUNTLY_EVENT_SEND_THRESHOLD)
-        [[CountlyConnectionQueue sharedInstance] sendEvents];
+        [CountlyConnectionQueue.sharedInstance sendEvents];
 }
 
 - (void)recordUserDetails:(NSDictionary *)userDetails
 {
     NSLog(@"%s",__FUNCTION__);
-    [CountlyUserDetails.sharedUserDetails deserialize:userDetails];
+    [CountlyUserDetails.sharedInstance deserialize:userDetails];
     [CountlyConnectionQueue.sharedInstance sendUserDetails];
 }
 
@@ -991,6 +925,7 @@ NSString* const kCLYUserCustom = @"custom";
     CountlyConnectionQueue.sharedInstance.locationString = [NSString stringWithFormat:@"%f,%f", latitude, longitude];
 }
 
+#pragma mark ---
 
 - (void)onTimer:(NSTimer *)timer
 {
@@ -1002,11 +937,11 @@ NSString* const kCLYUserCustom = @"custom";
 	lastTime = currTime;
     
 	int duration = unsentSessionLength;
-	[[CountlyConnectionQueue sharedInstance] updateSessionWithDuration:duration];
+	[CountlyConnectionQueue.sharedInstance updateSessionWithDuration:duration];
 	unsentSessionLength -= duration;
     
     if (CountlyPersistency.sharedInstance.recordedEvents.count > 0)
-        [[CountlyConnectionQueue sharedInstance] sendEvents];
+        [CountlyConnectionQueue.sharedInstance sendEvents];
 }
 
 - (void)suspend
@@ -1014,13 +949,13 @@ NSString* const kCLYUserCustom = @"custom";
 	isSuspended = YES;
     
     if (CountlyPersistency.sharedInstance.recordedEvents.count > 0)
-        [[CountlyConnectionQueue sharedInstance] sendEvents];
+        [CountlyConnectionQueue.sharedInstance sendEvents];
     
 	double currTime = CFAbsoluteTimeGetCurrent();
 	unsentSessionLength += currTime - lastTime;
     
 	int duration = unsentSessionLength;
-	[[CountlyConnectionQueue sharedInstance] endSessionWithDuration:duration];
+	[CountlyConnectionQueue.sharedInstance endSessionWithDuration:duration];
 	unsentSessionLength -= duration;
 }
 
@@ -1028,23 +963,12 @@ NSString* const kCLYUserCustom = @"custom";
 {
 	lastTime = CFAbsoluteTimeGetCurrent();
     
-	[[CountlyConnectionQueue sharedInstance] beginSession];
+	[CountlyConnectionQueue.sharedInstance beginSession];
     
 	isSuspended = NO;
 }
 
-- (void)dealloc
-{
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
-    [[NSNotificationCenter defaultCenter] removeObserver:self];
-#endif
-    
-	if (timer)
-    {
-        [timer invalidate];
-        timer = nil;
-    }
-}
+#pragma mark ---
 
 - (void)didEnterBackgroundCallBack:(NSNotification *)notification
 {
@@ -1066,6 +990,79 @@ NSString* const kCLYUserCustom = @"custom";
     [CountlyPersistency.sharedInstance saveToFile];
 }
 
+#pragma mark ---
+
+#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
+- (NSMutableSet *) countlyNotificationCategories
+{
+    return [self countlyNotificationCategoriesWithActionTitles:@[@"Cancel", @"Open", @"Update", @"Review"]];
+}
+
+- (NSMutableSet *) countlyNotificationCategoriesWithActionTitles:(NSArray *)actions
+{
+    UIMutableUserNotificationCategory *url = [UIMutableUserNotificationCategory new],
+    *upd = [UIMutableUserNotificationCategory new],
+    *rev = [UIMutableUserNotificationCategory new];
+    
+    url.identifier = @"[CLY]_url";
+    upd.identifier = @"[CLY]_update";
+    rev.identifier = @"[CLY]_review";
+    
+    UIMutableUserNotificationAction *cancel = [UIMutableUserNotificationAction new],
+    *open = [UIMutableUserNotificationAction new],
+    *update = [UIMutableUserNotificationAction new],
+    *review = [UIMutableUserNotificationAction new];
+    
+    cancel.identifier = @"[CLY]_cancel";
+    open.identifier   = @"[CLY]_open";
+    update.identifier = @"[CLY]_update";
+    review.identifier = @"[CLY]_review";
+    
+    cancel.title = actions[0];
+    open.title   = actions[1];
+    update.title = actions[2];
+    review.title = actions[3];
+    
+    cancel.activationMode = UIUserNotificationActivationModeBackground;
+    open.activationMode   = UIUserNotificationActivationModeForeground;
+    update.activationMode = UIUserNotificationActivationModeForeground;
+    review.activationMode = UIUserNotificationActivationModeForeground;
+    
+    cancel.destructive = NO;
+    open.destructive   = NO;
+    update.destructive = NO;
+    review.destructive = NO;
+    
+    
+    [url setActions:@[cancel, open] forContext:UIUserNotificationActionContextMinimal];
+    [url setActions:@[cancel, open] forContext:UIUserNotificationActionContextDefault];
+    
+    [upd setActions:@[cancel, update] forContext:UIUserNotificationActionContextMinimal];
+    [upd setActions:@[cancel, update] forContext:UIUserNotificationActionContextDefault];
+    
+    [rev setActions:@[cancel, review] forContext:UIUserNotificationActionContextMinimal];
+    [rev setActions:@[cancel, review] forContext:UIUserNotificationActionContextDefault];
+    
+    NSMutableSet *set = [NSMutableSet setWithObjects:url, upd, rev, nil];
+    
+    return set;
+}
+#endif
+
+- (void)dealloc
+{
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+    [NSNotificationCenter.defaultCenter removeObserver:self];
+#endif
+    
+    if (timer)
+        {
+        [timer invalidate];
+        timer = nil;
+        }
+}
+
+
 
 #pragma mark - Countly Messaging
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
@@ -1079,20 +1076,24 @@ NSString* const kCLYUserCustom = @"custom";
 #define kAppIdPropertyKey   @"[CLY]_app_id"
 #define kCountlyAppId       @"695261996"
 
-- (BOOL) handleRemoteNotification:(NSDictionary *)info withButtonTitles:(NSArray *)titles {
+- (BOOL)handleRemoteNotification:(NSDictionary *)info withButtonTitles:(NSArray *)titles
+{
     return [self handleRemoteNotification:info displayingMessage:YES withButtonTitles:titles];
 }
 
-- (BOOL) handleRemoteNotification:(NSDictionary *)info {
+- (BOOL)handleRemoteNotification:(NSDictionary *)info
+{
     return [self handleRemoteNotification:info displayingMessage:YES];
 }
 
-- (BOOL) handleRemoteNotification:(NSDictionary *)info displayingMessage:(BOOL)displayMessage {
+- (BOOL)handleRemoteNotification:(NSDictionary *)info displayingMessage:(BOOL)displayMessage
+{
     return [self handleRemoteNotification:info displayingMessage:displayMessage
                          withButtonTitles:@[@"Cancel", @"Open", @"Update", @"Review"]];
 }
 
-- (BOOL) handleRemoteNotification:(NSDictionary *)info displayingMessage:(BOOL)displayMessage withButtonTitles:(NSArray *)titles {
+- (BOOL)handleRemoteNotification:(NSDictionary *)info displayingMessage:(BOOL)displayMessage withButtonTitles:(NSArray *)titles
+{
     COUNTLY_LOG(@"Handling remote notification (display? %d): %@", displayMessage, info);
     
     NSDictionary *aps = info[@"aps"];
@@ -1102,7 +1103,7 @@ NSString* const kCLYUserCustom = @"custom";
         COUNTLY_LOG(@"Message id: %@", countly[@"i"]);
 
         [self recordPushOpenForCountlyDictionary:countly];
-        NSString *appName = [[[NSBundle mainBundle] infoDictionary] objectForKey:(NSString*)kCFBundleNameKey];
+        NSString *appName = [[NSBundle.mainBundle infoDictionary] objectForKey:(NSString*)kCFBundleNameKey];
         NSString *message = [aps objectForKey:@"alert"];
         
         int type = 0;
@@ -1145,7 +1146,10 @@ NSString* const kCLYUserCustom = @"custom";
     return NO;
 }
 
-- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
+#pragma mark ---
+
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
+{
     NSDictionary *info = [_messageInfos[alertView.description] copy];
     [_messageInfos removeObjectForKey:alertView.description];
 
@@ -1175,7 +1179,8 @@ NSString* const kCLYUserCustom = @"custom";
     }
 }
 
-- (void) withAppStoreId:(void (^)(NSString *))block{
+- (void)withAppStoreId:(void (^)(NSString *))block
+{
     NSString *appStoreId = [[NSUserDefaults standardUserDefaults] stringForKey:kAppIdPropertyKey];
     if (appStoreId) {
         block(appStoreId);
@@ -1220,7 +1225,8 @@ NSString* const kCLYUserCustom = @"custom";
 
 }
 
-- (void) openUpdate:(NSString *)appId forInfo:(NSDictionary *)info {
+- (void)openUpdate:(NSString *)appId forInfo:(NSDictionary *)info
+{
     if (!appId) appId = kCountlyAppId;
 
     NSString *urlFormat = nil;
@@ -1236,7 +1242,8 @@ NSString* const kCLYUserCustom = @"custom";
     [[UIApplication sharedApplication] openURL:url];
 }
 
-- (void) openReview:(NSString *)appId forInfo:(NSDictionary *)info{
+- (void)openReview:(NSString *)appId forInfo:(NSDictionary *)info
+{
     if (!appId) appId = kCountlyAppId;
     
     NSString *urlFormat = nil;
@@ -1257,27 +1264,32 @@ NSString* const kCLYUserCustom = @"custom";
     [[UIApplication sharedApplication] openURL:url];
 }
 
-- (void)recordPushOpenForCountlyDictionary:(NSDictionary *)c {
+- (void)recordPushOpenForCountlyDictionary:(NSDictionary *)c
+{
     [self recordEvent:kPushEventKeyOpen segmentation:@{@"i": c[@"i"]} count:1];
 }
 
-- (void)recordPushActionForCountlyDictionary:(NSDictionary *)c {
+- (void)recordPushActionForCountlyDictionary:(NSDictionary *)c
+{
     [self recordEvent:kPushEventKeyAction segmentation:@{@"i": c[@"i"]} count:1];
 }
 
-- (void)didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
+- (void)didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken
+{
     const unsigned *tokenBytes = [deviceToken bytes];
     NSString *token = [NSString stringWithFormat:@"%08x%08x%08x%08x%08x%08x%08x%08x",
                        ntohl(tokenBytes[0]), ntohl(tokenBytes[1]), ntohl(tokenBytes[2]),
                        ntohl(tokenBytes[3]), ntohl(tokenBytes[4]), ntohl(tokenBytes[5]),
                        ntohl(tokenBytes[6]), ntohl(tokenBytes[7])];
-    [[CountlyConnectionQueue sharedInstance] tokenSession:token];
+    [CountlyConnectionQueue.sharedInstance sendPushToken:token];
 }
 
-- (void)didFailToRegisterForRemoteNotifications {
-    [[CountlyConnectionQueue sharedInstance] tokenSession:nil];
+- (void)didFailToRegisterForRemoteNotifications
+{
+    [CountlyConnectionQueue.sharedInstance sendPushToken:nil];
 }
 #endif
+
 
 
 #pragma mark - Countly CrashReporting
@@ -1305,36 +1317,6 @@ NSString* const kCLYUserCustom = @"custom";
 - (void)recordHandledException:(NSException *)exception
 {
     CountlyExceptionHandler(exception, true);
-}
-
-- (void)crashTest
-{
-    #pragma clang diagnostic push
-    #pragma clang diagnostic ignored "-Wundeclared-selector"
-    [self performSelector:@selector(thisIsTheUnrecognizedSelectorCausingTheCrash)];
-    #pragma clang diagnostic pop
-}
-
-- (void)crashTest2
-{
-    #pragma clang diagnostic push
-    #pragma clang diagnostic ignored "-Wunused-variable"
-    NSArray* anArray = @[@"one",@"two",@"three"];
-    NSString* myCrashingString = anArray[5];
-    #pragma clang diagnostic pop
-}
-
-- (void)crashTest3
-{
-    int *nullPointer = NULL;
-    *nullPointer = 2015;
-}
-
-- (void)crashTest4
-{
-    CGRect aRect = (CGRect){0.0/0.0, 0.0, 100.0, 100.0};
-    UIView *crashView = UIView.new;
-    crashView.frame = aRect;
 }
 
 void CountlyUncaughtExceptionHandler(NSException *exception)
@@ -1406,7 +1388,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
 	if (error || !recvData)
     {
         COUNTLY_LOG(@"CrashReporting failed, report stored to try again later");
-        [CountlyConnectionQueue.sharedInstance storeCrashReportToTryLater:CountlyURLEscapedString(CountlyJSONFromObject(crashReport))];
+        [CountlyConnectionQueue.sharedInstance sendCrashReportLater:CountlyURLEscapedString(CountlyJSONFromObject(crashReport))];
     }
     
     NSSetUncaughtExceptionHandler(NULL);
@@ -1459,6 +1441,8 @@ void CCL(const char* function, NSUInteger line, NSString* message)
     [CountlyCustomCrashLogs addObject:log];
 }
 
+#pragma mark ---
+
 - (unsigned long long)freeRAM
 {
     vm_statistics_data_t vms;
@@ -1491,7 +1475,7 @@ void CCL(const char* function, NSUInteger line, NSString* message)
     return abs((int)(UIDevice.currentDevice.batteryLevel*100));
 }
 
-- (NSString*)orientation
+- (NSString *)orientation
 {
     NSArray *orientations = @[@"Unknown", @"Portrait", @"PortraitUpsideDown", @"LandscapeLeft", @"LandscapeRight", @"FaceUp", @"FaceDown"];
     return orientations[UIDevice.currentDevice.orientation];
@@ -1570,6 +1554,38 @@ void CCL(const char* function, NSUInteger line, NSString* message)
 - (BOOL)isInBackground
 {
     return UIApplication.sharedApplication.applicationState == UIApplicationStateBackground;
+}
+
+#pragma mark ---
+
+- (void)crashTest
+{
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundeclared-selector"
+    [self performSelector:@selector(thisIsTheUnrecognizedSelectorCausingTheCrash)];
+#pragma clang diagnostic pop
+}
+
+- (void)crashTest2
+{
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-variable"
+    NSArray* anArray = @[@"one",@"two",@"three"];
+    NSString* myCrashingString = anArray[5];
+#pragma clang diagnostic pop
+}
+
+- (void)crashTest3
+{
+    int *nullPointer = NULL;
+    *nullPointer = 2015;
+}
+
+- (void)crashTest4
+{
+    CGRect aRect = (CGRect){0.0/0.0, 0.0, 100.0, 100.0};
+    UIView *crashView = UIView.new;
+    crashView.frame = aRect;
 }
 
 #endif
