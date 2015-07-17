@@ -24,7 +24,7 @@
 #   define COUNTLY_LOG(...)
 #endif
 
-#define COUNTLY_SDK_VERSION "15.06.01"
+#define COUNTLY_SDK_VERSION @"15.06.01"
 
 #ifndef COUNTLY_TARGET_WATCHKIT
 #define COUNTLY_DEFAULT_UPDATE_INTERVAL 60.0
@@ -588,11 +588,8 @@ NSString* const kCLYUserCustom = @"custom";
 
 - (void)beginSession
 {
-	NSString* queryString = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_SDK_VERSION"&begin_session=1&metrics=%@",
-					  self.appKey,
-					  [CountlyDeviceInfo udid],
-					  time(NULL),
-					  [CountlyDeviceInfo metrics]];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&begin_session=1&metrics=%@",
+                             [CountlyDeviceInfo metrics]];
     
     [CountlyDB.sharedInstance addToQueue:queryString];
     
@@ -611,12 +608,9 @@ NSString* const kCLYUserCustom = @"custom";
     
     COUNTLY_LOG(@"Sending APN token in mode %d", testMode);
     
-    NSString* queryString = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_SDK_VERSION"&token_session=1&ios_token=%@&test_mode=%d",
-                      self.appKey,
-                      [CountlyDeviceInfo udid],
-                      time(NULL),
-                      [token length] ? token : @"",
-                      testMode];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&token_session=1&ios_token=%@&test_mode=%d",
+                             [token length] ? token : @"",
+                             testMode];
 
     // Not right now to prevent race with begin_session=1 when adding new user
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
@@ -627,11 +621,7 @@ NSString* const kCLYUserCustom = @"custom";
 
 - (void)updateSessionWithDuration:(int)duration
 {
-	NSString* queryString = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&session_duration=%d",
-					  self.appKey,
-					  [CountlyDeviceInfo udid],
-					  time(NULL),
-					  duration];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&session_duration=%d", duration];
     
     if (self.locationString)
     {
@@ -646,11 +636,7 @@ NSString* const kCLYUserCustom = @"custom";
 
 - (void)endSessionWithDuration:(int)duration
 {
-	NSString* queryString = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&end_session=1&session_duration=%d",
-					  self.appKey,
-					  [CountlyDeviceInfo udid],
-					  time(NULL),
-					  duration];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&end_session=1&session_duration=%d", duration];
     
     [CountlyDB.sharedInstance addToQueue:queryString];
     
@@ -659,11 +645,8 @@ NSString* const kCLYUserCustom = @"custom";
 
 - (void)sendUserDetails
 {
-    NSString* queryString = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_SDK_VERSION"&user_details=%@",
-                      self.appKey,
-                      [CountlyDeviceInfo udid],
-                      time(NULL),
-                      [[CountlyUserDetails sharedUserDetails] serialize]];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&user_details=%@",
+                             [CountlyUserDetails.sharedUserDetails serialize]];
     
     [CountlyDB.sharedInstance addToQueue:queryString];
     
@@ -672,15 +655,11 @@ NSString* const kCLYUserCustom = @"custom";
 
 - (void)storeCrashReportToTryLater:(NSString *)report
 {
-    NSString* queryString = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_SDK_VERSION"&crash=%@",
-                      self.appKey,
-                      [CountlyDeviceInfo udid],
-                      time(NULL),
-                      report];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&crash=%@", report];
     
     [CountlyDB.sharedInstance addToQueue:queryString];
     
-    [self tick];
+    [CountlyDB.sharedInstance saveToFile];
 }
 
 - (void)sendEvents
@@ -695,13 +674,10 @@ NSString* const kCLYUserCustom = @"custom";
         }
     }
     
-    NSString* eventsQueryString = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&events=%@",
-					  self.appKey,
-					  [CountlyDeviceInfo udid],
-					  time(NULL),
-					  CountlyURLEscapedString(CountlyJSONFromObject(eventsArray))];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&events=%@",
+                                   CountlyURLEscapedString(CountlyJSONFromObject(eventsArray))];
     
-    [CountlyDB.sharedInstance addToQueue:eventsQueryString];
+    [CountlyDB.sharedInstance addToQueue:queryString];
     
 	[self tick];
 }
@@ -764,6 +740,15 @@ NSString* const kCLYUserCustom = @"custom";
         self.bgTask = UIBackgroundTaskInvalid;
     }
 #endif
+}
+
+-(NSString*)queryEssentials
+{
+    return [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version=%@",
+                                        self.appKey,
+                                        [CountlyDeviceInfo udid],
+                                        time(NULL),
+                                        COUNTLY_SDK_VERSION];
 }
 
 - (void)dealloc
@@ -1417,11 +1402,8 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
    
     NSString *urlString = [NSString stringWithFormat:@"%@/i", CountlyConnectionQueue.sharedInstance.appHost];
 
-    NSString *queryString = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&crash=%@",
-                           CountlyConnectionQueue.sharedInstance.appKey,
-                           [CountlyDeviceInfo udid],
-                           time(NULL),
-                           CountlyURLEscapedString(CountlyJSONFromObject(crashReport))];
+    NSString *queryString = [[CountlyConnectionQueue.sharedInstance queryEssentials] stringByAppendingFormat:@"&crash=%@",
+                             CountlyURLEscapedString(CountlyJSONFromObject(crashReport))];
     
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
     request.HTTPMethod = @"POST";
