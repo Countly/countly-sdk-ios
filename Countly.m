@@ -77,16 +77,6 @@ NSString* CountlyURLEscapedString(NSString* string)
 	return (NSString*)CFBridgingRelease(escaped);
 }
 
-NSString* CountlyURLUnescapedString(NSString* string)
-{
-	NSMutableString *resultString = [NSMutableString stringWithString:string];
-	[resultString replaceOccurrencesOfString:@"+"
-								  withString:@" "
-									 options:NSLiteralSearch
-									   range:NSMakeRange(0, resultString.length)];
-	return [resultString stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
-}
-
 @interface NSMutableData (AppendStringUTF8)
 - (void)appendStringUTF8:(NSString*)string;
 @end
@@ -310,7 +300,8 @@ NSString* const kCLYUserCustom = @"custom";
 
 - (NSString *)extractPicturePathFromURLString:(NSString*)URLString
 {
-    NSString* unescaped = CountlyURLUnescapedString(URLString);
+    NSString* unescaped = [URLString stringByReplacingOccurrencesOfString:@"+" withString:@" "];
+    unescaped = [unescaped stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
     NSRange rPicturePathKey = [unescaped rangeOfString:kCLYUserPicturePath];
     if (rPicturePathKey.location == NSNotFound)
         return nil;
@@ -325,7 +316,6 @@ NSString* const kCLYUserCustom = @"custom";
         NSRange rEnding = [unescaped rangeOfString:@"\",\"" options:0 range:rSearchForEnding];
         picturePath = [unescaped substringWithRange:(NSRange){rSearchForEnding.location,rEnding.location-rSearchForEnding.location}];
         picturePath = [picturePath stringByReplacingOccurrencesOfString:@"\\/" withString:@"/"];
-    
     }
     @catch (NSException *exception)
     {
