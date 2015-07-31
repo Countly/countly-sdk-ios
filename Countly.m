@@ -70,15 +70,27 @@ NSString* CountlyJSONFromObject(id object)
 	return [NSString.alloc initWithData:data encoding:NSUTF8StringEncoding];
 }
 
-NSString* CountlyURLEscapedString(NSString* string)
+@implementation NSString (URLEscaped)
+- (NSString *)URLEscaped
 {
-	CFStringRef escaped = CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault,(CFStringRef)string, NULL,
+	CFStringRef escaped = CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault,(CFStringRef)self, NULL,
                                                                   (CFStringRef)@"!*'();:@&=+$,/?%#[]", kCFStringEncodingUTF8);
 	return (NSString*)CFBridgingRelease(escaped);
 }
+@end
 
-@interface NSMutableData (AppendStringUTF8)
-- (void)appendStringUTF8:(NSString*)string;
+@implementation NSArray (JSONify)
+- (NSString *)JSONify
+{
+    return [CountlyJSONFromObject(self) URLEscaped];
+}
+@end
+
+@implementation NSDictionary (JSONify)
+- (NSString *)JSONify
+{
+    return [CountlyJSONFromObject(self) URLEscaped];
+}
 @end
 
 @implementation NSMutableData (AppendStringUTF8)
@@ -195,7 +207,7 @@ NSString* CountlyURLEscapedString(NSString* string)
 	metricsDictionary[@"_locale"] = CountlyDeviceInfo.locale;
 	metricsDictionary[@"_app_version"] = CountlyDeviceInfo.appVersion;
 	
-	return CountlyURLEscapedString(CountlyJSONFromObject(metricsDictionary));
+	return [metricsDictionary JSONify];
 }
 
 + (NSString *)bundleId
@@ -295,7 +307,7 @@ NSString* const kCLYUserCustom = @"custom";
     if(self.custom)
         userDictionary[kCLYUserCustom] = self.custom;
     
-    return CountlyURLEscapedString(CountlyJSONFromObject(userDictionary));
+    return [userDictionary JSONify];
 }
 
 - (NSString *)extractPicturePathFromURLString:(NSString*)URLString
@@ -417,7 +429,7 @@ NSString* const kCLYUserCustom = @"custom";
 #ifdef COUNTLY_TARGET_WATCHKIT
     NSDictionary* watchSegmentation = @{@"[CLY]_apple_watch":(WKInterfaceDevice.currentDevice.screenBounds.size.width == 136.0)?@"38mm":@"42mm"};
     
-    queryString = [queryString stringByAppendingFormat:@"&segment=%@", CountlyURLEscapedString(CountlyJSONFromObject(watchSegmentation))];
+    queryString = [queryString stringByAppendingFormat:@"&segment=%@", [watchSegmentation JSONify]];
 #endif
     
     [self.queuedRequests addObject:queryString];
@@ -599,8 +611,7 @@ NSString* const kCLYUserCustom = @"custom";
         }
     }
     
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&events=%@",
-                             CountlyURLEscapedString(CountlyJSONFromObject(eventsArray))];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&events=%@", [eventsArray JSONify]];
     
     [CountlyPersistency.sharedInstance addToQueue:queryString];
     
@@ -1363,8 +1374,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
    
     NSString *urlString = [NSString stringWithFormat:@"%@/i", CountlyConnectionManager.sharedInstance.appHost];
 
-    NSString *queryString = [[CountlyConnectionManager.sharedInstance queryEssentials] stringByAppendingFormat:@"&crash=%@",
-                             CountlyURLEscapedString(CountlyJSONFromObject(crashReport))];
+    NSString *queryString = [[CountlyConnectionManager.sharedInstance queryEssentials] stringByAppendingFormat:@"&crash=%@", [crashReport JSONify]];
     
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
     request.HTTPMethod = @"POST";
@@ -1378,7 +1388,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
 	if (error || !recvData)
     {
         COUNTLY_LOG(@"CrashReporting failed, report stored to try again later");
-        [CountlyConnectionManager.sharedInstance sendCrashReportLater:CountlyURLEscapedString(CountlyJSONFromObject(crashReport))];
+        [CountlyConnectionManager.sharedInstance sendCrashReportLater:[crashReport JSONify]];
     }
     
     NSSetUncaughtExceptionHandler(NULL);
