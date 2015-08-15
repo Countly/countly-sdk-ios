@@ -17,6 +17,7 @@
 #   define COUNTLY_LOG(...)
 #endif
 
+
 //#   define COUNTLY_APP_GROUP_ID @"group.example.myapp"
 #if COUNTLY_TARGET_WATCHKIT
 #   ifndef COUNTLY_APP_GROUP_ID

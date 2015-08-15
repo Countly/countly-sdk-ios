@@ -9,6 +9,9 @@
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
 #import <UIKit/UIKit.h>
 #endif
+
+#import "HelperFunctions.h"
+
 @class CountlyEventQueue;
 
 @interface Countly : NSObject
