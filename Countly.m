@@ -1377,6 +1377,11 @@ NSString* const kCLYUserCustom = @"custom";
     CountlyExceptionHandler(exception, true);
 }
 
+- (void)recordUnhandledException:(NSException *)exception
+{
+    CountlyExceptionHandler(exception, false);
+}
+
 - (void)crashTest
 {
     #pragma clang diagnostic push

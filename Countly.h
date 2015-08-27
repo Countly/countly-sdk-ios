@@ -147,6 +147,7 @@ extern NSString* const kCLYUserCustom;
 - (void)startCrashReporting;
 - (void)startCrashReportingWithSegments:(NSDictionary *)segments;
 - (void)recordHandledException:(NSException *)exception;
+- (void)recordUnhandledException:(NSException *)exception;
 
 - (void)crashTest;
 - (void)crashTest2;
