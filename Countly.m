@@ -59,7 +59,7 @@
 
 
 
-#pragma mark - Helper Functions
+#pragma mark - Helper Functions & Categories
 
 NSString* CountlyJSONFromObject(id object)
 {
@@ -991,65 +991,6 @@ NSString* const kCLYUserCustom = @"custom";
     [CountlyPersistency.sharedInstance saveToFile];
 }
 
-#pragma mark ---
-
-#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
-- (NSMutableSet *) countlyNotificationCategories
-{
-    return [self countlyNotificationCategoriesWithActionTitles:@[@"Cancel", @"Open", @"Update", @"Review"]];
-}
-
-- (NSMutableSet *) countlyNotificationCategoriesWithActionTitles:(NSArray *)actions
-{
-    UIMutableUserNotificationCategory *url = [UIMutableUserNotificationCategory new],
-    *upd = [UIMutableUserNotificationCategory new],
-    *rev = [UIMutableUserNotificationCategory new];
-    
-    url.identifier = @"[CLY]_url";
-    upd.identifier = @"[CLY]_update";
-    rev.identifier = @"[CLY]_review";
-    
-    UIMutableUserNotificationAction *cancel = [UIMutableUserNotificationAction new],
-    *open = [UIMutableUserNotificationAction new],
-    *update = [UIMutableUserNotificationAction new],
-    *review = [UIMutableUserNotificationAction new];
-    
-    cancel.identifier = @"[CLY]_cancel";
-    open.identifier   = @"[CLY]_open";
-    update.identifier = @"[CLY]_update";
-    review.identifier = @"[CLY]_review";
-    
-    cancel.title = actions[0];
-    open.title   = actions[1];
-    update.title = actions[2];
-    review.title = actions[3];
-    
-    cancel.activationMode = UIUserNotificationActivationModeBackground;
-    open.activationMode   = UIUserNotificationActivationModeForeground;
-    update.activationMode = UIUserNotificationActivationModeForeground;
-    review.activationMode = UIUserNotificationActivationModeForeground;
-    
-    cancel.destructive = NO;
-    open.destructive   = NO;
-    update.destructive = NO;
-    review.destructive = NO;
-    
-    
-    [url setActions:@[cancel, open] forContext:UIUserNotificationActionContextMinimal];
-    [url setActions:@[cancel, open] forContext:UIUserNotificationActionContextDefault];
-    
-    [upd setActions:@[cancel, update] forContext:UIUserNotificationActionContextMinimal];
-    [upd setActions:@[cancel, update] forContext:UIUserNotificationActionContextDefault];
-    
-    [rev setActions:@[cancel, review] forContext:UIUserNotificationActionContextMinimal];
-    [rev setActions:@[cancel, review] forContext:UIUserNotificationActionContextDefault];
-    
-    NSMutableSet *set = [NSMutableSet setWithObjects:url, upd, rev, nil];
-    
-    return set;
-}
-#endif
-
 - (void)dealloc
 {
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
@@ -1076,6 +1017,8 @@ NSString* const kCLYUserCustom = @"custom";
 #define kPushEventKeyAction @"[CLY]_push_action"
 #define kAppIdPropertyKey   @"[CLY]_app_id"
 #define kCountlyAppId       @"695261996"
+
+#pragma mark ---
 
 - (BOOL)handleRemoteNotification:(NSDictionary *)info withButtonTitles:(NSArray *)titles
 {
@@ -1148,6 +1091,61 @@ NSString* const kCLYUserCustom = @"custom";
 }
 
 #pragma mark ---
+
+- (NSMutableSet *) countlyNotificationCategories
+{
+    return [self countlyNotificationCategoriesWithActionTitles:@[@"Cancel", @"Open", @"Update", @"Review"]];
+}
+
+- (NSMutableSet *) countlyNotificationCategoriesWithActionTitles:(NSArray *)actions
+{
+    UIMutableUserNotificationCategory *url = [UIMutableUserNotificationCategory new],
+    *upd = [UIMutableUserNotificationCategory new],
+    *rev = [UIMutableUserNotificationCategory new];
+    
+    url.identifier = @"[CLY]_url";
+    upd.identifier = @"[CLY]_update";
+    rev.identifier = @"[CLY]_review";
+    
+    UIMutableUserNotificationAction *cancel = [UIMutableUserNotificationAction new],
+    *open = [UIMutableUserNotificationAction new],
+    *update = [UIMutableUserNotificationAction new],
+    *review = [UIMutableUserNotificationAction new];
+    
+    cancel.identifier = @"[CLY]_cancel";
+    open.identifier   = @"[CLY]_open";
+    update.identifier = @"[CLY]_update";
+    review.identifier = @"[CLY]_review";
+    
+    cancel.title = actions[0];
+    open.title   = actions[1];
+    update.title = actions[2];
+    review.title = actions[3];
+    
+    cancel.activationMode = UIUserNotificationActivationModeBackground;
+    open.activationMode   = UIUserNotificationActivationModeForeground;
+    update.activationMode = UIUserNotificationActivationModeForeground;
+    review.activationMode = UIUserNotificationActivationModeForeground;
+    
+    cancel.destructive = NO;
+    open.destructive   = NO;
+    update.destructive = NO;
+    review.destructive = NO;
+    
+    
+    [url setActions:@[cancel, open] forContext:UIUserNotificationActionContextMinimal];
+    [url setActions:@[cancel, open] forContext:UIUserNotificationActionContextDefault];
+    
+    [upd setActions:@[cancel, update] forContext:UIUserNotificationActionContextMinimal];
+    [upd setActions:@[cancel, update] forContext:UIUserNotificationActionContextDefault];
+    
+    [rev setActions:@[cancel, review] forContext:UIUserNotificationActionContextMinimal];
+    [rev setActions:@[cancel, review] forContext:UIUserNotificationActionContextDefault];
+    
+    NSMutableSet *set = [NSMutableSet setWithObjects:url, upd, rev, nil];
+    
+    return set;
+}
 
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
 {
@@ -1265,6 +1263,8 @@ NSString* const kCLYUserCustom = @"custom";
     [[UIApplication sharedApplication] openURL:url];
 }
 
+#pragma mark ---
+
 - (void)recordPushOpenForCountlyDictionary:(NSDictionary *)c
 {
     [self recordEvent:kPushEventKeyOpen segmentation:@{@"i": c[@"i"]} count:1];
@@ -1274,6 +1274,8 @@ NSString* const kCLYUserCustom = @"custom";
 {
     [self recordEvent:kPushEventKeyAction segmentation:@{@"i": c[@"i"]} count:1];
 }
+
+#pragma mark ---
 
 - (void)didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken
 {
