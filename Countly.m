@@ -860,7 +860,7 @@ NSString* const kCLYUserCustom = @"custom";
             {
                 event.count += count;
                 event.sum += sum;
-                event.timestamp = (event.timestamp + time(NULL)) / 2;
+                event.timestamp = round((event.timestamp + time(NULL)) / 2);
                 return;
             }
         }
@@ -895,7 +895,7 @@ NSString* const kCLYUserCustom = @"custom";
             {
                 event.count += count;
                 event.sum += sum;
-                event.timestamp = (event.timestamp + time(NULL)) / 2;
+                event.timestamp = round((event.timestamp + time(NULL)) / 2);
                 return;
             }
         }
