@@ -351,6 +351,8 @@ NSString* const kCLYUserCustom = @"custom";
 @property (nonatomic, assign) int count;
 @property (nonatomic, assign) double sum;
 @property (nonatomic, assign) NSTimeInterval timestamp;
+@property (nonatomic, assign) NSUInteger hourOfDay;
+@property (nonatomic, assign) NSUInteger dayOfWeek;
 @end
 
 @implementation CountlyEvent
@@ -366,7 +368,9 @@ NSString* const kCLYUserCustom = @"custom";
 	eventData[@"count"] = @(self.count);
 	eventData[@"sum"] = @(self.sum);
 	eventData[@"timestamp"] = @(self.timestamp);
-	return eventData;
+    eventData[@"hour"] = @(self.hourOfDay);
+    eventData[@"dow"] = @(self.dayOfWeek);
+    return eventData;
 }
 @end
 
@@ -479,6 +483,9 @@ NSString* const kCLYUserCustom = @"custom";
 #pragma mark - CountlyConnectionManager
 
 @interface CountlyConnectionManager : NSObject
+{
+    NSCalendar* gregorianCalendar;
+}
 
 @property (nonatomic, strong) NSString* appKey;
 @property (nonatomic, strong) NSString* appHost;
@@ -500,6 +507,16 @@ NSString* const kCLYUserCustom = @"custom";
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedCountlyConnectionManager = self.new;});
 	return s_sharedCountlyConnectionManager;
+}
+
+- (instancetype)init
+{
+    if (self = [super init])
+    {
+        gregorianCalendar = [NSCalendar.alloc initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
+    }
+    
+    return self;
 }
 
 - (void)tick
@@ -726,13 +743,29 @@ NSString* const kCLYUserCustom = @"custom";
 #endif
 }
 
+#pragma mark ---
+
 - (NSString *)queryEssentials
 {
-    return [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version=%@",
+    return [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&hour=%ld&dow=%ld&sdk_version=%@",
                                         self.appKey,
                                         [CountlyDeviceInfo udid],
                                         time(NULL),
+                                        [self hourOfDay],
+                                        [self dayOfWeek],
                                         COUNTLY_SDK_VERSION];
+}
+
+- (NSInteger)hourOfDay
+{
+    NSDateComponents* components = [gregorianCalendar components:NSCalendarUnitHour fromDate:NSDate.date];
+    return components.hour;
+}
+
+- (NSInteger)dayOfWeek
+{
+    NSDateComponents* components = [gregorianCalendar components:NSCalendarUnitWeekday fromDate:NSDate.date];
+    return components.weekday-1;
 }
 @end
 
@@ -870,7 +903,10 @@ NSString* const kCLYUserCustom = @"custom";
         event.count = count;
         event.sum = sum;
         event.timestamp = time(NULL);
-        
+        event.hourOfDay = [CountlyConnectionManager.sharedInstance hourOfDay];
+        event.dayOfWeek = [CountlyConnectionManager.sharedInstance dayOfWeek];
+
+    
         [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
     }
     
