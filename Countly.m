@@ -838,7 +838,7 @@ NSString* const kCLYUserCustom = @"custom";
     }
     
     [self withAppStoreId:^(NSString *appId) {
-        NSLog(@"ID: %@", appId);
+        COUNTLY_LOG(@"ID: %@", appId);
     }];
 }
 #endif
@@ -847,36 +847,12 @@ NSString* const kCLYUserCustom = @"custom";
 
 - (void)recordEvent:(NSString *)key count:(int)count
 {
-    [self recordEvent:key count:count sum:0];
+    [self recordEvent:key segmentation:nil count:count sum:0];
 }
 
 - (void)recordEvent:(NSString *)key count:(int)count sum:(double)sum
 {
-    @synchronized (self)
-    {
-        for (CountlyEvent* event in CountlyPersistency.sharedInstance.recordedEvents)
-        {
-            if ([event.key isEqualToString:key])
-            {
-                event.count += count;
-                event.sum += sum;
-                event.timestamp = round((event.timestamp + time(NULL)) / 2);
-                return;
-            }
-        }
-    
-        CountlyEvent *event = [CountlyEvent new];
-        event.key = key;
-        event.count = count;
-        event.sum = sum;
-        event.timestamp = time(NULL);
-        
-        [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
-    
-    }
-
-    if (CountlyPersistency.sharedInstance.recordedEvents.count >= COUNTLY_EVENT_SEND_THRESHOLD)
-        [CountlyConnectionManager.sharedInstance sendEvents];
+    [self recordEvent:key segmentation:nil count:count sum:sum];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count
@@ -888,18 +864,6 @@ NSString* const kCLYUserCustom = @"custom";
 {
     @synchronized (self)
     {
-        for (CountlyEvent* event in CountlyPersistency.sharedInstance.recordedEvents)
-        {
-            if ([event.key isEqualToString:key] && event.segmentation &&
-            [event.segmentation isEqualToDictionary:segmentation])
-            {
-                event.count += count;
-                event.sum += sum;
-                event.timestamp = round((event.timestamp + time(NULL)) / 2);
-                return;
-            }
-        }
-    
         CountlyEvent *event = [CountlyEvent new];
         event.key = key;
         event.segmentation = segmentation;
@@ -916,7 +880,6 @@ NSString* const kCLYUserCustom = @"custom";
 
 - (void)recordUserDetails:(NSDictionary *)userDetails
 {
-    NSLog(@"%s",__FUNCTION__);
     [CountlyUserDetails.sharedInstance deserialize:userDetails];
     [CountlyConnectionManager.sharedInstance sendUserDetails];
 }
