@@ -130,12 +130,47 @@ NSString* CountlyURLUnescapedString(NSString* string)
 
 @implementation CountlyDeviceInfo
 
+#define kDeviceUDID   @"[CLY]_device_udid"
+
 + (NSString *)udid
 {
 #if COUNTLY_PREFER_IDFA && (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR || COUNTLY_TARGET_WATCHKIT)
     return ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
 #else
-	return [Countly_OpenUDID value];
+    
+    // define device_udid
+    NSString *device_udid = @"";
+    
+    // get device_udid from NSUserDefaults
+    NSString *device_stored_udid = [[NSUserDefaults standardUserDefaults] stringForKey:kDeviceUDID];
+    
+    // START IF - device_udid not true generate and store for future use
+    if (device_stored_udid) {
+        
+        COUNTLY_LOG(@"device_udid stored - no need to generate");
+        
+        // set device_udid as device_stored_udid
+        device_udid = device_stored_udid;
+        
+    }else{
+        
+        COUNTLY_LOG(@"device_udid not stored - generate now");
+        
+        // generate device_udid via [Countly_OpenUDID value]
+        device_udid = [Countly_OpenUDID value];
+        
+        // store device_udid via NSUserDefaults
+        [[NSUserDefaults standardUserDefaults] setObject:device_udid forKey:kDeviceUDID];
+        [[NSUserDefaults standardUserDefaults] synchronize];
+        
+    }
+    // END IF - device_udid not true generate and store for future use
+    
+    COUNTLY_LOG(@"device_udid %@", device_udid);
+    
+    // return device_udid
+    return device_udid;
+    
 #endif
 }
 
