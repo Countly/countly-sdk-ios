@@ -1505,7 +1505,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
     request.HTTPMethod = @"POST";
     request.HTTPBody = [queryString dataUsingEncoding:NSUTF8StringEncoding];
-    COUNTLY_LOG(@"CrashReporting URL: %@", queryString);
+    COUNTLY_LOG(@"CrashReporting URL: %@%@", urlString, queryString);
 
     NSURLResponse* response = nil;
 	NSError* error = nil;
