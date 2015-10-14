@@ -1085,7 +1085,30 @@ NSString* const kCLYUserCustom = @"custom";
 {
     NSLog(@"%s",__FUNCTION__);
     [CountlyUserDetails.sharedUserDetails deserialize:userDetails];
-    [CountlyConnectionQueue.sharedInstance sendUserDetails];
+    
+    NSString *urlString = [NSString stringWithFormat:@"%@/i", CountlyConnectionQueue.sharedInstance.appHost];
+    
+    NSString *queryString = [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&sdk_version="COUNTLY_SDK_VERSION"&user_details=%@",
+                             CountlyConnectionQueue.sharedInstance.appKey,
+                             [CountlyDeviceInfo udid],
+                             time(NULL),
+                             [[CountlyUserDetails sharedUserDetails] serialize]];
+    
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+    request.HTTPMethod = @"POST";
+    request.HTTPBody = [queryString dataUsingEncoding:NSUTF8StringEncoding];
+    COUNTLY_LOG(@"recordUserDetails URL: %@%@", urlString, queryString);
+    
+    NSURLResponse* response = nil;
+    NSError* error = nil;
+    NSData* recvData = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
+    
+    if (error || !recvData)
+    {
+        COUNTLY_LOG(@"recordUserDetails failed, storing to try again later");
+        [CountlyConnectionQueue.sharedInstance sendUserDetails];
+    }
+    
 }
 
 - (void)setLocation:(double)latitude longitude:(double)longitude
