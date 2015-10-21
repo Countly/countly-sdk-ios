@@ -9,7 +9,13 @@ This repository includes the Countly iOS & OS X SDK. See [Countly SDK for iOS an
 
 ### Other Github resources ###
 
-This SDK needs one of Countly mobile analytics & push notifications server editions. For more information about different editions, see [comparison table](https://count.ly/compare/).
+This SDK needs one of the following Countly Editions to work: 
+
+* Countly Community Edition, [downloadable from Github](https://github.com/Countly/countly-server)
+* [Countly Cloud Edition](http://count.ly/cloud-edition)
+* [Countly Enterprise Edition](http://count.ly/enterprise-edition)
+
+For more information about Countly Enterprise Edition, see [comparison of different Countly editions](https://count.ly/compare/)
 
 There are also other Countly SDK repositories (both official and community supported) on [Countly resources](http://resources.count.ly/v1.0/docs/downloading-sdks).
 
