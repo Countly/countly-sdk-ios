@@ -909,6 +909,20 @@ NSString* const kCLYUserCustom = @"custom";
 												 selector:@selector(willTerminateCallBack:)
 													 name:UIApplicationWillTerminateNotification
 												   object:nil];
+#elif TARGET_OS_MAC
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(didEnterBackgroundCallBack:)
+                                                     name:NSApplicationDidResignActiveNotification
+                                                   object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(willEnterForegroundCallBack:)
+                                                     name:NSApplicationWillBecomeActiveNotification
+                                                   object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self
+                                                 selector:@selector(willTerminateCallBack:)
+                                                     name:NSApplicationWillTerminateNotification
+                                                   object:nil];
+
 #endif
 	}
 	return self;
