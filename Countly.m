@@ -47,7 +47,10 @@
 #if COUNTLY_PREFER_IDFA
 #import <AdSupport/ASIdentifierManager.h>
 #endif
+#else
+#import <AppKit/AppKit.h>
 #endif
+
 
 #include <sys/types.h>
 #include <sys/sysctl.h>
