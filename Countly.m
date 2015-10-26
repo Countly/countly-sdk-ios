@@ -595,6 +595,7 @@ NSString* const kCLYUserCustom = @"custom";
 @property (nonatomic, copy) NSString *appHost;
 @property (nonatomic, retain) NSURLConnection *connection;
 @property (nonatomic) BOOL startedWithTest;
+@property (nonatomic) BOOL messagingDeveloperMode;
 @property (nonatomic, strong) NSString *locationString;
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 @property (nonatomic, assign) UIBackgroundTaskIdentifier bgTask;
@@ -708,7 +709,11 @@ NSString* const kCLYUserCustom = @"custom";
 #ifndef __OPTIMIZE__
     testMode = 1;
 #else
-    testMode = self.startedWithTest ? 2 : 0;
+    if (self.messagingDeveloperMode) {
+        testMode = 1;
+    }else{
+        testMode = self.startedWithTest ? 2 : 0;
+    }
 #endif
     
     COUNTLY_LOG(@"Sending APN token in mode %d", testMode);
@@ -912,6 +917,11 @@ NSString* const kCLYUserCustom = @"custom";
 #endif
 	}
 	return self;
+}
+
+- (void)setMessagingDeveloperMode
+{
+    [[CountlyConnectionQueue sharedInstance] setMessagingDeveloperMode:YES];
 }
 
 - (void)start:(NSString *)appKey withHost:(NSString *)appHost
