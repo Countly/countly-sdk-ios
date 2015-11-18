@@ -10,10 +10,6 @@
 #define COUNTLY_DEBUG 1
 #endif
 
-#ifndef COUNTLY_IGNORE_INVALID_CERTIFICATES
-#define COUNTLY_IGNORE_INVALID_CERTIFICATES 0
-#endif
-
 #ifndef COUNTLY_PREFER_IDFA
 #define COUNTLY_PREFER_IDFA 0
 #endif
@@ -489,7 +485,7 @@ NSString* const kCLYUserCustom = @"custom";
 
 @property (nonatomic, strong) NSString* appKey;
 @property (nonatomic, strong) NSString* appHost;
-@property (nonatomic, strong) NSURLConnection* connection;
+@property (nonatomic, strong) NSURLSessionTask* connection;
 @property (nonatomic, assign) BOOL startedWithTest;
 @property (nonatomic, strong) NSString* locationString;
 #if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
@@ -575,9 +571,34 @@ NSString* const kCLYUserCustom = @"custom";
     }
 #endif
 
-    self.connection = [NSURLConnection connectionWithRequest:request delegate:self];
+    self.connection = [NSURLSession.sharedSession dataTaskWithRequest:request
+                                                   completionHandler:^(NSData * _Nullable data,
+                                                                       NSURLResponse * _Nullable response,
+                                                                       NSError * _Nullable error)
+    {
+        self.connection = nil;
 
-    COUNTLY_LOG(@"Request Started \n %@", urlString);
+        if(!error)
+        {
+            COUNTLY_LOG(@"Request succesfully completed\n");
+        
+            [CountlyPersistency.sharedInstance.queuedRequests removeObjectAtIndex:0];
+        
+            [CountlyPersistency.sharedInstance saveToFile];
+        
+            [self tick];
+        }
+        else
+        {
+            COUNTLY_LOG(@"Request failed \n %@: %@", [CountlyPersistency.sharedInstance.queuedRequests.firstObject description], error);
+        }
+    
+        [self finishBackgroundTask];
+    }];
+    
+    [self.connection resume];
+    
+    COUNTLY_LOG(@"Request started \n %@", urlString);
 }
 
 #pragma mark ---
@@ -678,43 +699,6 @@ NSString* const kCLYUserCustom = @"custom";
     
     [CountlyPersistency.sharedInstance saveToFile];
 }
-
-#pragma mark ---
-
-- (void)connectionDidFinishLoading:(NSURLConnection *)connection
-{
-	COUNTLY_LOG(@"Request Completed\n");
-    
-    self.connection = nil;
-    
-    [CountlyPersistency.sharedInstance.queuedRequests removeObjectAtIndex:0];
-    
-    [CountlyPersistency.sharedInstance saveToFile];
-
-    [self finishBackgroundTask];
-
-    [self tick];
-}
-
-
-- (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error
-{
-    COUNTLY_LOG(@"Request Failed \n %@: %@", [CountlyPersistency.sharedInstance.queuedRequests.firstObject description], error);
-
-    [self finishBackgroundTask];
-    
-    self.connection = nil;
-}
-
-#if COUNTLY_IGNORE_INVALID_CERTIFICATES
-- (void)connection:(NSURLConnection *)connection willSendRequestForAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge
-{
-    if ([challenge.protectionSpace.authenticationMethod isEqualToString:NSURLAuthenticationMethodServerTrust])
-        [challenge.sender useCredential:[NSURLCredential credentialForTrust:challenge.protectionSpace.serverTrust] forAuthenticationChallenge:challenge];
-    
-    [[challenge sender] continueWithoutCredentialForAuthenticationChallenge:challenge];
-}
-#endif
 
 #pragma mark ---
 
