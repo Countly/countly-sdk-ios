@@ -584,14 +584,15 @@
     C_method = class_getInstanceMethod(NSURLSession.class, @selector(Countly_dataTaskWithRequest:completionHandler:));
     method_exchangeImplementations(O_method, C_method);
     
-    //TODO: resume method of NSURLSessionTask class does not exist on some versions of iOS
-    //      make sure it works perfectly
     O_method = class_getInstanceMethod(NSClassFromString(@"__NSCFLocalDataTask"), @selector(resume));
     C_method = class_getInstanceMethod(NSClassFromString(@"__NSCFLocalDataTask"), @selector(Countly_resume));
 
-    O_method = class_getInstanceMethod(NSURLSessionTask.class, @selector(resume));
-    C_method = class_getInstanceMethod(NSURLSessionTask.class, @selector(Countly_resume));
-    
+    if(NSFoundationVersionNumber <= NSFoundationVersionNumber_iOS_8_0)
+    {
+        O_method = class_getInstanceMethod(NSURLSessionTask.class, @selector(resume));
+        C_method = class_getInstanceMethod(NSURLSessionTask.class, @selector(Countly_resume));
+    }
+
     method_exchangeImplementations(O_method, C_method);
 }
 
