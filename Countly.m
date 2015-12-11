@@ -551,4 +551,62 @@
 }
 #endif
 
+
+
+#pragma mark - Countly APM
+
+-(void)startAPM
+{
+    Method O_method;
+    Method C_method;
+    
+    O_method = class_getClassMethod(NSURLConnection.class, @selector(sendSynchronousRequest:returningResponse:error:));
+    C_method = class_getClassMethod(NSURLConnection.class, @selector(Countly_sendSynchronousRequest:returningResponse:error:));
+    method_exchangeImplementations(O_method, C_method);
+    
+    O_method = class_getClassMethod(NSURLConnection.class, @selector(sendAsynchronousRequest:queue:completionHandler:));
+    C_method = class_getClassMethod(NSURLConnection.class, @selector(Countly_sendAsynchronousRequest:queue:completionHandler:));
+    method_exchangeImplementations(O_method, C_method);
+    
+    O_method = class_getInstanceMethod(NSURLConnection.class, @selector(initWithRequest:delegate:));
+    C_method = class_getInstanceMethod(NSURLConnection.class, @selector(Countly_initWithRequest:delegate:));
+    method_exchangeImplementations(O_method, C_method);
+    
+    O_method = class_getInstanceMethod(NSURLConnection.class, @selector(initWithRequest:delegate:startImmediately:));
+    C_method = class_getInstanceMethod(NSURLConnection.class, @selector(Countly_initWithRequest:delegate:startImmediately:));
+    method_exchangeImplementations(O_method, C_method);
+    
+    O_method = class_getInstanceMethod(NSURLConnection.class, @selector(start));
+    C_method = class_getInstanceMethod(NSURLConnection.class, @selector(Countly_start));
+    method_exchangeImplementations(O_method, C_method);
+    
+    O_method = class_getInstanceMethod(NSURLSession.class, @selector(dataTaskWithRequest:completionHandler:));
+    C_method = class_getInstanceMethod(NSURLSession.class, @selector(Countly_dataTaskWithRequest:completionHandler:));
+    method_exchangeImplementations(O_method, C_method);
+    
+    //TODO: resume method of NSURLSessionTask class does not exist on some versions of iOS
+    //      make sure it works perfectly
+    O_method = class_getInstanceMethod(NSClassFromString(@"__NSCFLocalDataTask"), @selector(resume));
+    C_method = class_getInstanceMethod(NSClassFromString(@"__NSCFLocalDataTask"), @selector(Countly_resume));
+
+    O_method = class_getInstanceMethod(NSURLSessionTask.class, @selector(resume));
+    C_method = class_getInstanceMethod(NSURLSessionTask.class, @selector(Countly_resume));
+    
+    method_exchangeImplementations(O_method, C_method);
+}
+
+-(void)addExceptionForAPM:(NSString*)string
+{
+    NSURL* url = [NSURL URLWithString:string];
+    NSString* hostAndPath = [url.host stringByAppendingString:url.path];
+    [CountlyAPMDelegateProxy.sharedInstance.exceptionURLs addObject:hostAndPath];
+}
+
+-(void)removeExceptionForAPM:(NSString*)string
+{
+    NSURL * url = [NSURL URLWithString:string];
+    NSString* hostAndPath = [url.host stringByAppendingString:url.path];
+    [CountlyAPMDelegateProxy.sharedInstance.exceptionURLs removeObject:hostAndPath];
+}
+
 @end
