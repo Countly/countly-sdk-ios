@@ -23,6 +23,9 @@
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count sum:(double)sum;
 
+- (void)recordEvent:(NSString *)key duration:(double)duration segmentation:(NSDictionary *)segmentation count:(int)count sum:(double)sum;
+
+
 - (void)recordUserDetails:(NSDictionary *)userDetails;
 extern NSString* const kCLYUserName;
 extern NSString* const kCLYUserUsername;

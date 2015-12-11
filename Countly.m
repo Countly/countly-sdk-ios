@@ -349,6 +349,7 @@ NSString* const kCLYUserCustom = @"custom";
 @property (nonatomic, assign) NSTimeInterval timestamp;
 @property (nonatomic, assign) NSUInteger hourOfDay;
 @property (nonatomic, assign) NSUInteger dayOfWeek;
+@property (nonatomic, assign) double duration;
 @end
 
 @implementation CountlyEvent
@@ -366,6 +367,7 @@ NSString* const kCLYUserCustom = @"custom";
 	eventData[@"timestamp"] = @(self.timestamp);
     eventData[@"hour"] = @(self.hourOfDay);
     eventData[@"dow"] = @(self.dayOfWeek);
+    eventData[@"dur"] = @(self.duration);
     return eventData;
 }
 @end
@@ -735,8 +737,8 @@ NSString* const kCLYUserCustom = @"custom";
                                         self.appKey,
                                         [CountlyDeviceInfo udid],
                                         time(NULL),
-                                        [self hourOfDay],
-                                        [self dayOfWeek],
+                                        (long)[self hourOfDay],
+                                        (long)[self dayOfWeek],
                                         COUNTLY_SDK_VERSION];
 }
 
@@ -864,20 +866,25 @@ NSString* const kCLYUserCustom = @"custom";
 
 - (void)recordEvent:(NSString *)key count:(int)count
 {
-    [self recordEvent:key segmentation:nil count:count sum:0];
+    [self recordEvent:key duration:0 segmentation:nil count:count sum:0];
 }
 
 - (void)recordEvent:(NSString *)key count:(int)count sum:(double)sum
 {
-    [self recordEvent:key segmentation:nil count:count sum:sum];
+    [self recordEvent:key duration:0 segmentation:nil count:count sum:sum];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count
 {
-    [self recordEvent:key segmentation:segmentation count:count sum:0];
+    [self recordEvent:key duration:0 segmentation:segmentation count:count sum:0];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count sum:(double)sum
+{
+    [self recordEvent:key duration:0 segmentation:segmentation count:count sum:sum];
+}
+
+- (void)recordEvent:(NSString *)key duration:(double)duration segmentation:(NSDictionary *)segmentation count:(int)count sum:(double)sum;
 {
     @synchronized (self)
     {
@@ -889,7 +896,7 @@ NSString* const kCLYUserCustom = @"custom";
         event.timestamp = time(NULL);
         event.hourOfDay = [CountlyConnectionManager.sharedInstance hourOfDay];
         event.dayOfWeek = [CountlyConnectionManager.sharedInstance dayOfWeek];
-
+        event.duration = duration;
     
         [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
     }
@@ -941,6 +948,8 @@ NSString* const kCLYUserCustom = @"custom";
 	int duration = unsentSessionLength;
 	[CountlyConnectionManager.sharedInstance endSessionWithDuration:duration];
 	unsentSessionLength -= duration;
+    
+    [CountlyPersistency.sharedInstance saveToFile];
 }
 
 - (void)resume
@@ -958,7 +967,6 @@ NSString* const kCLYUserCustom = @"custom";
 {
 	COUNTLY_LOG(@"App didEnterBackground");
     [self suspend];
-    [CountlyPersistency.sharedInstance saveToFile];
 }
 
 - (void)willEnterForegroundCallBack:(NSNotification *)notification
@@ -971,7 +979,6 @@ NSString* const kCLYUserCustom = @"custom";
 {
 	COUNTLY_LOG(@"App willTerminate");
     [self suspend];
-    [CountlyPersistency.sharedInstance saveToFile];
 }
 
 - (void)dealloc
