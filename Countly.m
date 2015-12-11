@@ -1475,7 +1475,16 @@ void CCL(const char* function, NSUInteger line, NSString* message)
 
 - (NSUInteger)connectionType
 {
-    typedef enum:NSInteger {CLYConnectionNone, CLYConnectionCellNetwork, CLYConnectionWiFi} CLYConnectionType;
+    typedef enum:NSInteger
+    {
+        CLYConnectionNone,
+        CLYConnectionWiFi,
+        CLYConnectionCellNetwork,
+        CLYConnectionCellNetwork2G,
+        CLYConnectionCellNetwork3G,
+        CLYConnectionCellNetworkLTE
+    } CLYConnectionType;
+
     CLYConnectionType connType = CLYConnectionNone;
     
     @try
@@ -1493,6 +1502,56 @@ void CCL(const char* function, NSUInteger line, NSString* message)
                     if([[NSString stringWithUTF8String:i->ifa_name] isEqualToString:@"pdp_ip0"])
                     {
                         connType = CLYConnectionCellNetwork;
+
+                        if (NSFoundationVersionNumber >= NSFoundationVersionNumber_iOS_7_0)
+                        {
+                            CTTelephonyNetworkInfo *tni = CTTelephonyNetworkInfo.new;
+                        
+                            if ([tni.currentRadioAccessTechnology isEqualToString:CTRadioAccessTechnologyGPRS])
+                            {
+                                connType = CLYConnectionCellNetwork2G;
+                            }
+                            else if ([tni.currentRadioAccessTechnology isEqualToString:CTRadioAccessTechnologyEdge])
+                            {
+                                connType = CLYConnectionCellNetwork2G;
+                            }
+                            else if ([tni.currentRadioAccessTechnology isEqualToString:CTRadioAccessTechnologyWCDMA])
+                            {
+                                connType = CLYConnectionCellNetwork3G;
+                            }
+                            else if ([tni.currentRadioAccessTechnology isEqualToString:CTRadioAccessTechnologyHSDPA])
+                            {
+                                connType = CLYConnectionCellNetwork3G;
+                            }
+                            else if ([tni.currentRadioAccessTechnology isEqualToString:CTRadioAccessTechnologyHSUPA])
+                            {
+                                connType = CLYConnectionCellNetwork3G;
+                            }
+                            else if ([tni.currentRadioAccessTechnology isEqualToString:CTRadioAccessTechnologyCDMA1x])
+                            {
+                                connType = CLYConnectionCellNetwork2G;
+                            }
+                            else if ([tni.currentRadioAccessTechnology isEqualToString:CTRadioAccessTechnologyCDMAEVDORev0])
+                            {
+                                connType = CLYConnectionCellNetwork3G;
+                            } 
+                            else if ([tni.currentRadioAccessTechnology isEqualToString:CTRadioAccessTechnologyCDMAEVDORevA])
+                            {
+                                connType = CLYConnectionCellNetwork3G;
+                            } 
+                            else if ([tni.currentRadioAccessTechnology isEqualToString:CTRadioAccessTechnologyCDMAEVDORevB])
+                            {
+                                connType = CLYConnectionCellNetwork3G;
+                            } 
+                            else if ([tni.currentRadioAccessTechnology isEqualToString:CTRadioAccessTechnologyeHRPD])
+                            {
+                                connType = CLYConnectionCellNetwork3G;
+                            } 
+                            else if ([tni.currentRadioAccessTechnology isEqualToString:CTRadioAccessTechnologyLTE])
+                            {
+                                connType = CLYConnectionCellNetworkLTE;
+                            }
+                        }
                     }
                     else if([[NSString stringWithUTF8String:i->ifa_name] isEqualToString:@"en0"])
                     {

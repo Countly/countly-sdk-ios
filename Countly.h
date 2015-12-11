@@ -144,6 +144,8 @@ extern NSString* const kCLYUserCustom;
 - (void)crashTest3;
 - (void)crashTest4;
 
+- (NSUInteger)connectionType;
+
 void CCL(const char* function, NSUInteger line, NSString* message);
 #define CountlyCrashLog(format, ...) CCL(__FUNCTION__,__LINE__, [NSString stringWithFormat:(format), ##__VA_ARGS__])
 #endif
