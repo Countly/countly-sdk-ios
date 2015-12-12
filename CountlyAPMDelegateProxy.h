@@ -5,7 +5,6 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
-#import "Countly.h"
 
 @interface CountlyAPMDelegateProxy : NSObject <NSURLConnectionDelegate,NSURLConnectionDataDelegate>
 +(instancetype)sharedInstance;

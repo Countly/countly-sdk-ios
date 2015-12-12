@@ -587,11 +587,13 @@
     O_method = class_getInstanceMethod(NSClassFromString(@"__NSCFLocalDataTask"), @selector(resume));
     C_method = class_getInstanceMethod(NSClassFromString(@"__NSCFLocalDataTask"), @selector(Countly_resume));
 
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
     if(NSFoundationVersionNumber <= NSFoundationVersionNumber_iOS_8_0)
     {
         O_method = class_getInstanceMethod(NSURLSessionTask.class, @selector(resume));
         C_method = class_getInstanceMethod(NSURLSessionTask.class, @selector(Countly_resume));
     }
+#endif
 
     method_exchangeImplementations(O_method, C_method);
 }

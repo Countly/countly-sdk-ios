@@ -6,6 +6,7 @@
 
 #import <Foundation/Foundation.h>
 #import "CountlyUserDetails.h"
+#import "CountlyCrashReporter.h" 
 
 @interface Countly : NSObject
 
