@@ -18,11 +18,6 @@
 
 @implementation CountlyAPMNetworkLog
 
-+(instancetype)createWithRequest:(NSURLRequest*)request
-{
-    return [self.class createWithRequest:request startImmediately:NO];
-}
-
 +(instancetype)createWithRequest:(NSURLRequest*)request startImmediately:(BOOL)startImmediately
 {
     NSString* hostAndPath = [request.URL.host stringByAppendingString:request.URL.path];

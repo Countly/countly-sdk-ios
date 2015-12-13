@@ -40,7 +40,7 @@ static void *CountlyAPMOriginalDelegateKey = &CountlyAPMOriginalDelegateKey;
 
 - (nullable instancetype)Countly_initWithRequest:(NSURLRequest * _Nonnull)request delegate:(nullable id)delegate
 {
-    [CountlyAPMNetworkLog createWithRequest:request];
+    [CountlyAPMNetworkLog createWithRequest:request startImmediately:NO];
     
     NSURLConnection* c = [self Countly_initWithRequest:request delegate:CountlyAPMDelegateProxy.sharedInstance];
     c.originalDelegate = delegate;
@@ -50,7 +50,7 @@ static void *CountlyAPMOriginalDelegateKey = &CountlyAPMOriginalDelegateKey;
 
 - (nullable instancetype)Countly_initWithRequest:(NSURLRequest * _Nonnull)request delegate:(nullable id)delegate startImmediately:(BOOL)startImmediately
 {
-    [CountlyAPMNetworkLog createWithRequest:request];
+    [CountlyAPMNetworkLog createWithRequest:request startImmediately:startImmediately];
     
     NSURLConnection* c = [self Countly_initWithRequest:request delegate:CountlyAPMDelegateProxy.sharedInstance startImmediately:startImmediately];
     c.originalDelegate = delegate;

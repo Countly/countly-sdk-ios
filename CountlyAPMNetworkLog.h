@@ -9,7 +9,6 @@
 
 @interface CountlyAPMNetworkLog : NSObject
 @property(nonatomic, strong) NSURLRequest* request;
-+(instancetype)createWithRequest:(NSURLRequest*)request;
 +(instancetype)createWithRequest:(NSURLRequest*)request startImmediately:(BOOL)startImmediately;
 -(void)start;
 -(void)updateWithResponse:(NSURLResponse *)response;
