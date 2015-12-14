@@ -14,8 +14,6 @@
     dispatch_once(&onceToken, ^
     {
         s_sharedCountlyAPMDelegateProxy = self.new;
-        s_sharedCountlyAPMDelegateProxy.listOfOngoingConnections = NSMutableArray.new;
-
         NSURL * url = [NSURL URLWithString:CountlyConnectionManager.sharedInstance.appHost];
         NSString* hostAndPath = [url.host stringByAppendingString:url.path];
         s_sharedCountlyAPMDelegateProxy.exceptionURLs = [NSMutableArray arrayWithObject:hostAndPath];
@@ -25,15 +23,7 @@
 
 -(void)connection:(NSURLConnection *)connection didFailWithError:(nonnull NSError *)error
 {    
-    [self.listOfOngoingConnections.copy enumerateObjectsUsingBlock:^(CountlyAPMNetworkLog* nl, NSUInteger idx, BOOL * _Nonnull stop)
-    {
-        if([nl.request isEqual:connection.originalRequest])
-        {
-            [nl finishWithStatusCode:-1 andDataSize:0];
-            *stop = YES;
-        }
-    }];
-
+    [connection.apmNetworkLog finishWithStatusCode:-1 andDataSize:0];
     
     if (connection.originalDelegate &&
         [connection.originalDelegate respondsToSelector:@selector(connection:didFailWithError:)])
@@ -45,14 +35,7 @@
 
 -(void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
 {
-    [self.listOfOngoingConnections.copy enumerateObjectsUsingBlock:^(CountlyAPMNetworkLog* nl, NSUInteger idx, BOOL * _Nonnull stop)
-    {
-        if([nl.request isEqual:connection.originalRequest])
-        {
-            [nl updateWithResponse:response];
-            *stop = YES;
-         }
-     }];
+    [connection.apmNetworkLog updateWithResponse:response];
     
     if (connection.originalDelegate &&
         [connection.originalDelegate respondsToSelector:@selector(connection:didReceiveResponse:)])
@@ -63,14 +46,7 @@
 
 -(void)connectionDidFinishLoading:(NSURLConnection *)connection
 {
-    [self.listOfOngoingConnections.copy enumerateObjectsUsingBlock:^(CountlyAPMNetworkLog* nl, NSUInteger idx, BOOL * _Nonnull stop)
-    {
-        if([nl.request isEqual:connection.originalRequest])
-        {
-            [nl finish];
-            *stop = YES;
-        }
-    }];
+    [connection.apmNetworkLog finish];
     
     if (connection.originalDelegate &&
         [connection.originalDelegate respondsToSelector:@selector(connectionDidFinishLoading:)])

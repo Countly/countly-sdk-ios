@@ -11,7 +11,7 @@
 {
     CountlyAPMNetworkLog* nl = [CountlyAPMNetworkLog createWithRequest:request startImmediately:YES];
     
-    return [self Countly_dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error)
+    NSURLSessionDataTask* dataTask = [self Countly_dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error)
     {
         [nl finishWithStatusCode:((NSHTTPURLResponse*)response).statusCode andDataSize:data.length];
     
@@ -20,25 +20,33 @@
             completionHandler(data, response, error);
         }
     }];
+
+    dataTask.apmNetworkLog = nl;
+    
+    return dataTask;
 }
 
 @end
 
+
+static void *CountlyAPMNetworkLogKey = &CountlyAPMNetworkLogKey;
 @implementation NSURLSessionTask (CountlyAPM)
 
 - (void)Countly_resume
 {
-    [CountlyAPMDelegateProxy.sharedInstance.listOfOngoingConnections.copy enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop)
-    {
-        CountlyAPMNetworkLog* nl = (CountlyAPMNetworkLog*)obj;
-        if([nl.request isEqual:self.originalRequest])
-        {
-            [nl start];
-            *stop = YES;
-         }
-     }];
+    [self.apmNetworkLog start];
 
     [self Countly_resume];
+}
+
+- (CountlyAPMNetworkLog*)apmNetworkLog
+{
+    return objc_getAssociatedObject(self, CountlyAPMNetworkLogKey);
+}
+
+- (void)setApmNetworkLog:(id)apmNetworkLog
+{
+    objc_setAssociatedObject(self, CountlyAPMNetworkLogKey, apmNetworkLog, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
 
 @end

@@ -38,7 +38,6 @@
     CountlyAPMNetworkLog* nl = CountlyAPMNetworkLog.new;
     nl.request = request;
     nl.sentDataSize = [self.class sentDataSizeForRequest:request];
-    [CountlyAPMDelegateProxy.sharedInstance.listOfOngoingConnections addObject:nl];
     
     if(startImmediately)
     {
@@ -76,7 +75,6 @@
 -(void)finish
 {
     self.endTime = CFAbsoluteTimeGetCurrent();
-    [CountlyAPMDelegateProxy.sharedInstance.listOfOngoingConnections removeObject:self];
     
     COUNTLY_LOG(@"%@",[self description]);
 }

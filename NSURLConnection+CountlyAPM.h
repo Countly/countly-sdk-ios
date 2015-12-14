@@ -8,6 +8,7 @@
 
 @interface NSURLConnection (CountlyAPM)
 @property (nonatomic, strong) id <NSURLConnectionDataDelegate,NSURLConnectionDelegate> _Nonnull originalDelegate;
+@property (nonatomic, strong) CountlyAPMNetworkLog* _Nonnull apmNetworkLog;
 
 + (nullable NSData *)Countly_sendSynchronousRequest:(NSURLRequest  * _Nonnull )request returningResponse:(NSURLResponse * __nullable * __nullable)response error:(NSError * __nullable * __nullable)error;
 

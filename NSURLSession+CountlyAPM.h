@@ -11,5 +11,6 @@
 @end
 
 @interface NSURLSessionTask (CountlyAPM)
+@property (nonatomic, strong) CountlyAPMNetworkLog* _Nonnull apmNetworkLog;
 - (void)Countly_resume;
 @end

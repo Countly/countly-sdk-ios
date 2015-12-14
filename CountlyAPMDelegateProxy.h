@@ -8,6 +8,5 @@
 
 @interface CountlyAPMDelegateProxy : NSObject <NSURLConnectionDelegate,NSURLConnectionDataDelegate>
 +(instancetype)sharedInstance;
-@property(nonatomic, strong) NSMutableArray* listOfOngoingConnections;
 @property(nonatomic, strong) NSMutableArray* exceptionURLs;
 @end
