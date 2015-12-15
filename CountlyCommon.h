@@ -12,9 +12,7 @@
 #import "CountlyDeviceInfo.h"
 #import "CountlyCrashReporter.h"
 #import "CountlyAPMNetworkLog.h"
-#import "CountlyAPMDelegateProxy.h"
-#import "NSURLConnection+CountlyAPM.h"
-#import "NSURLSession+CountlyAPM.h"
+#import "CountlyAPM.h"
 
 #ifndef COUNTLY_DEBUG
 #define COUNTLY_DEBUG 1

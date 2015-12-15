@@ -23,7 +23,7 @@
     NSString* hostAndPath = [request.URL.host stringByAppendingString:request.URL.path];
     __block BOOL isException = NO;
         
-    [CountlyAPMDelegateProxy.sharedInstance.exceptionURLs
+    [CountlyAPM.sharedInstance.exceptionURLs
      enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop)
     {
         if([obj isEqual:request.URL.host] || [obj isEqual:hostAndPath])

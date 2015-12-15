@@ -602,14 +602,14 @@
 {
     NSURL* url = [NSURL URLWithString:string];
     NSString* hostAndPath = [url.host stringByAppendingString:url.path];
-    [CountlyAPMDelegateProxy.sharedInstance.exceptionURLs addObject:hostAndPath];
+    [CountlyAPM.sharedInstance.exceptionURLs addObject:hostAndPath];
 }
 
 -(void)removeExceptionForAPM:(NSString*)string
 {
     NSURL * url = [NSURL URLWithString:string];
     NSString* hostAndPath = [url.host stringByAppendingString:url.path];
-    [CountlyAPMDelegateProxy.sharedInstance.exceptionURLs removeObject:hostAndPath];
+    [CountlyAPM.sharedInstance.exceptionURLs removeObject:hostAndPath];
 }
 
 @end
