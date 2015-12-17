@@ -20,9 +20,15 @@
 
 #pragma mark -
 
+- (void)recordEvent:(NSString *)key;
+
 - (void)recordEvent:(NSString *)key count:(int)count;
 
+- (void)recordEvent:(NSString *)key sum:(double)sum;
+
 - (void)recordEvent:(NSString *)key count:(int)count sum:(double)sum;
+
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation;
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count;
 
