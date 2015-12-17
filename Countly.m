@@ -126,14 +126,19 @@
     [self recordEvent:key duration:0 segmentation:nil count:1 sum:sum];
 }
 
-- (void)recordEvent:(NSString *)key count:(int)count sum:(double)sum
+- (void)recordEvent:(NSString *)key duration:(double)duration
 {
-    [self recordEvent:key duration:0 segmentation:nil count:count sum:sum];
+    [self recordEvent:key duration:duration segmentation:nil count:1 sum:0];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation
 {
     [self recordEvent:key duration:0 segmentation:segmentation count:1 sum:0];
+}
+
+- (void)recordEvent:(NSString *)key count:(int)count sum:(double)sum
+{
+    [self recordEvent:key duration:0 segmentation:nil count:count sum:sum];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count
