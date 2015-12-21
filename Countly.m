@@ -10,9 +10,9 @@
 
 @interface Countly ()
 {
-    double unsentSessionLength;
+    NSTimeInterval unsentSessionLength;
     NSTimer *timer;
-    double lastTime;
+    NSTimeInterval lastTime;
     BOOL isSuspended;
 }
 
@@ -69,7 +69,7 @@
 										   selector:@selector(onTimer:)
 										   userInfo:nil
 											repeats:YES];
-	lastTime = CFAbsoluteTimeGetCurrent();
+	lastTime = NSDate.date.timeIntervalSince1970;
 	CountlyConnectionManager.sharedInstance.appKey = appKey;
 	CountlyConnectionManager.sharedInstance.appHost = appHost;
 	[CountlyConnectionManager.sharedInstance beginSession];
@@ -113,45 +113,45 @@
 
 - (void)recordEvent:(NSString *)key
 {
-    [self recordEvent:key duration:0 segmentation:nil count:1 sum:0];
+    [self recordEvent:key segmentation:nil count:1 sum:0 duration:0];
 }
 
-- (void)recordEvent:(NSString *)key count:(int)count
+- (void)recordEvent:(NSString *)key count:(NSUInteger)count
 {
-    [self recordEvent:key duration:0 segmentation:nil count:count sum:0];
+    [self recordEvent:key segmentation:nil count:count sum:0 duration:0];
 }
 
 - (void)recordEvent:(NSString *)key sum:(double)sum
 {
-    [self recordEvent:key duration:0 segmentation:nil count:1 sum:sum];
+    [self recordEvent:key segmentation:nil count:1 sum:sum duration:0];
 }
 
-- (void)recordEvent:(NSString *)key duration:(double)duration
+- (void)recordEvent:(NSString *)key duration:(NSTimeInterval)duration
 {
-    [self recordEvent:key duration:duration segmentation:nil count:1 sum:0];
+    [self recordEvent:key segmentation:nil count:1 sum:0 duration:duration];
+}
+
+- (void)recordEvent:(NSString *)key count:(NSUInteger)count sum:(double)sum
+{
+    [self recordEvent:key segmentation:nil count:count sum:sum duration:0];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation
 {
-    [self recordEvent:key duration:0 segmentation:segmentation count:1 sum:0];
+    [self recordEvent:key segmentation:segmentation count:1 sum:0 duration:0];
 }
 
-- (void)recordEvent:(NSString *)key count:(int)count sum:(double)sum
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count
 {
-    [self recordEvent:key duration:0 segmentation:nil count:count sum:sum];
+    [self recordEvent:key segmentation:segmentation count:count sum:0 duration:0];
 }
 
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum
 {
-    [self recordEvent:key duration:0 segmentation:segmentation count:count sum:0];
+    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:0];
 }
 
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count sum:(double)sum
-{
-    [self recordEvent:key duration:0 segmentation:segmentation count:count sum:sum];
-}
-
-- (void)recordEvent:(NSString *)key duration:(double)duration segmentation:(NSDictionary *)segmentation count:(int)count sum:(double)sum;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
 {
     @synchronized (self)
     {
@@ -160,7 +160,7 @@
         event.segmentation = segmentation;
         event.count = count;
         event.sum = sum;
-        event.timestamp = time(NULL);
+        event.timestamp = NSDate.date.timeIntervalSince1970;
         event.hourOfDay = [CountlyCommon.sharedInstance hourOfDay];
         event.dayOfWeek = [CountlyCommon.sharedInstance dayOfWeek];
         event.duration = duration;
@@ -190,7 +190,7 @@
 	if (isSuspended == YES)
 		return;
     
-	double currTime = CFAbsoluteTimeGetCurrent();
+	NSTimeInterval currTime = NSDate.date.timeIntervalSince1970;
 	unsentSessionLength += currTime - lastTime;
 	lastTime = currTime;
     
@@ -209,7 +209,7 @@
     if (CountlyPersistency.sharedInstance.recordedEvents.count > 0)
         [CountlyConnectionManager.sharedInstance sendEvents];
     
-	double currTime = CFAbsoluteTimeGetCurrent();
+    NSTimeInterval currTime = NSDate.date.timeIntervalSince1970;
 	unsentSessionLength += currTime - lastTime;
     
 	int duration = unsentSessionLength;
@@ -221,7 +221,7 @@
 
 - (void)resume
 {
-	lastTime = CFAbsoluteTimeGetCurrent();
+	lastTime = NSDate.date.timeIntervalSince1970;
     
 	[CountlyConnectionManager.sharedInstance beginSession];
     

@@ -9,7 +9,7 @@
 @interface CountlyCommon ()
 {
     NSCalendar* gregorianCalendar;
-    time_t startTime;
+    NSTimeInterval startTime;
 }
 @end
 
@@ -29,7 +29,7 @@
     if (self = [super init])
     {
         gregorianCalendar = [NSCalendar.alloc initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
-        startTime = time(NULL);
+        startTime = NSDate.date.timeIntervalSince1970;
     }
     
     return self;
@@ -50,7 +50,7 @@
 
 - (long)timeSinceLaunch
 {
-    return time(NULL)-startTime;
+    return (long)NSDate.date.timeIntervalSince1970 - startTime;
 }
 
 @end

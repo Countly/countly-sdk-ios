@@ -18,7 +18,7 @@
 	}
 	eventData[@"count"] = @(self.count);
 	eventData[@"sum"] = @(self.sum);
-	eventData[@"timestamp"] = @(self.timestamp);
+	eventData[@"timestamp"] = @((long)self.timestamp);
     eventData[@"hour"] = @(self.hourOfDay);
     eventData[@"dow"] = @(self.dayOfWeek);
     eventData[@"dur"] = @(self.duration);

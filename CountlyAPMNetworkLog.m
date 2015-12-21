@@ -42,7 +42,7 @@
     if(startImmediately)
     {
         nl.connectionType = CountlyDeviceInfo.connectionType;
-        nl.startTime = CFAbsoluteTimeGetCurrent();
+        nl.startTime = NSDate.date.timeIntervalSince1970;
     }
     
     return nl;
@@ -52,7 +52,7 @@
 {
     self.sentDataSize = [self.class sentDataSizeForRequest:self.request];
     self.connectionType = CountlyDeviceInfo.connectionType;
-    self.startTime = CFAbsoluteTimeGetCurrent();
+    self.startTime = NSDate.date.timeIntervalSince1970;
 }
 
 -(void)updateWithResponse:(NSURLResponse *)response
@@ -74,9 +74,9 @@
 
 -(void)finish
 {
-    self.endTime = CFAbsoluteTimeGetCurrent();
+    self.endTime = NSDate.date.timeIntervalSince1970;
     
-    COUNTLY_LOG(@"%@",[self description]);
+    COUNTLY_LOG(@"%@", [self description]);
 }
 
 +(long long)sentDataSizeForRequest:(NSURLRequest*)request

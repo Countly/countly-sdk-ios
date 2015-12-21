@@ -235,7 +235,7 @@
     return [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&hour=%ld&dow=%ld&sdk_version=%@",
                                         self.appKey,
                                         [CountlyDeviceInfo udid],
-                                        time(NULL),
+                                        (long)NSDate.date.timeIntervalSince1970,
                                         (long)[CountlyCommon.sharedInstance hourOfDay],
                                         (long)[CountlyCommon.sharedInstance dayOfWeek],
                                         COUNTLY_SDK_VERSION];

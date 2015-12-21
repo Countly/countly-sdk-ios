@@ -22,21 +22,21 @@
 
 - (void)recordEvent:(NSString *)key;
 
-- (void)recordEvent:(NSString *)key count:(int)count;
+- (void)recordEvent:(NSString *)key count:(NSUInteger)count;
 
 - (void)recordEvent:(NSString *)key sum:(double)sum;
 
-- (void)recordEvent:(NSString *)key duration:(double)duration;
+- (void)recordEvent:(NSString *)key duration:(NSTimeInterval)duration;
+
+- (void)recordEvent:(NSString *)key count:(NSUInteger)count sum:(double)sum;
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation;
 
-- (void)recordEvent:(NSString *)key count:(int)count sum:(double)sum;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count;
 
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum;
 
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(int)count sum:(double)sum;
-
-- (void)recordEvent:(NSString *)key duration:(double)duration segmentation:(NSDictionary *)segmentation count:(int)count sum:(double)sum;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
 
 - (void)recordUserDetails:(NSDictionary *)userDetails;
 
