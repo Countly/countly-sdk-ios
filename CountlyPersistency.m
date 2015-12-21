@@ -7,6 +7,8 @@
 #import "CountlyCommon.h"
 
 @implementation CountlyPersistency
+NSString* const kCountlyQueuedRequestsPersistencyKey = @"kCountlyQueuedRequestsPersistencyKey";
+NSString* const kCountlyStartedEventsPersistencyKey = @"kCountlyStartedEventsPersistencyKey";
 
 + (instancetype)sharedInstance
 {
@@ -22,16 +24,22 @@
     if (self)
     {
         NSData* readData = [NSData dataWithContentsOfURL:[self storageFileURL]];
-        NSError* error = nil;
     
         if(readData)
-            self.queuedRequests = [[NSJSONSerialization JSONObjectWithData:readData options:0 error:&error] mutableCopy];
-    
-        if(error){ COUNTLY_LOG(@"Cannot restore the data read from disk, error: %@", error); }
+        {
+            NSDictionary* readDict = [NSKeyedUnarchiver unarchiveObjectWithData:readData];
+        
+            self.queuedRequests = [readDict[kCountlyQueuedRequestsPersistencyKey] mutableCopy];
 
+            self.startedEvents = [readDict[kCountlyStartedEventsPersistencyKey] mutableCopy];
+        }
+    
         if(!self.queuedRequests)
             self.queuedRequests = NSMutableArray.new;
 
+        if(!self.startedEvents)
+            self.startedEvents = NSMutableDictionary.new;
+    
         self.recordedEvents = NSMutableArray.new;
     }
     
@@ -51,13 +59,15 @@
 
 - (NSURL *)storageFileURL
 {
+    NSString* const kCountlyPersistencyFileName = @"Countly.dat";
+
     static NSURL *url = nil;
 
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
 #ifdef COUNTLY_APP_GROUP_ID
-        url = [[NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:COUNTLY_APP_GROUP_ID] URLByAppendingPathComponent:@"Countly.dat"];
+        url = [[NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:COUNTLY_APP_GROUP_ID] URLByAppendingPathComponent:kCountlyPersistencyFileName];
 #else
         url = [[NSFileManager.defaultManager URLsForDirectory:NSApplicationSupportDirectory inDomains:NSUserDomainMask] lastObject];
         NSError *error = nil;
@@ -68,7 +78,7 @@
             if(error){ COUNTLY_LOG(@"Cannot create Application Support directory: %@", error); }
         }
 
-        url = [url URLByAppendingPathComponent:@"Countly.dat"];
+        url = [url URLByAppendingPathComponent:kCountlyPersistencyFileName];
 #endif
     });
     
@@ -79,9 +89,12 @@
 {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
     {
-        NSError* error = nil;
-        NSData* saveData = [NSJSONSerialization dataWithJSONObject:self.queuedRequests options:0 error:&error];
-        if(error){ COUNTLY_LOG(@"Cannot convert to JSON data, error: %@", error); }
+        NSDictionary* saveDict = @{
+                                    kCountlyQueuedRequestsPersistencyKey:self.queuedRequests,
+                                    kCountlyStartedEventsPersistencyKey:self.startedEvents
+                                  };
+    
+        NSData* saveData = [NSKeyedArchiver archivedDataWithRootObject:saveDict];
 
         [saveData writeToFile:[self storageFileURL].path atomically:YES];
     });

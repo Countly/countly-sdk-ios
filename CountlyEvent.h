@@ -6,7 +6,7 @@
 
 #import <Foundation/Foundation.h>
 
-@interface CountlyEvent : NSObject
+@interface CountlyEvent : NSObject <NSCoding>
 
 @property (nonatomic, strong) NSString* key;
 @property (nonatomic, strong) NSDictionary* segmentation;

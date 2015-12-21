@@ -38,6 +38,10 @@
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
 
+- (void)startEvent:(NSString *)key;
+
+- (void)endEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum;
+
 - (void)recordUserDetails:(NSDictionary *)userDetails;
 
 #pragma mark - Countly Messaging

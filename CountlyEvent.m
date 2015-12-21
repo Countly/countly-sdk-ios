@@ -24,4 +24,36 @@
     eventData[@"dur"] = @(self.duration);
     return eventData;
 }
+
+- (id)initWithCoder:(NSCoder *)decoder
+{
+    self = [super init];
+    if (!self)
+    {
+        return nil;
+    }
+    
+    self.key = [decoder decodeObjectForKey:@"key"];
+    self.segmentation = [decoder decodeObjectForKey:@"segmentation"];
+    self.count = [decoder decodeIntegerForKey:@"count"];
+    self.sum = [decoder decodeDoubleForKey:@"sum"];
+    self.timestamp = [decoder decodeDoubleForKey:@"timestamp"];
+    self.hourOfDay = [decoder decodeIntegerForKey:@"hourOfDay"];
+    self.dayOfWeek = [decoder decodeIntegerForKey:@"dayOfWeek"];
+    self.duration = [decoder decodeDoubleForKey:@"duration"];
+
+    return self;
+}
+
+- (void)encodeWithCoder:(NSCoder *)encoder
+{
+    [encoder encodeObject:self.key forKey:@"key"];
+    [encoder encodeObject:self.segmentation forKey:@"segmentation"];
+    [encoder encodeInteger:self.count forKey:@"count"];
+    [encoder encodeDouble:self.sum forKey:@"sum"];
+    [encoder encodeDouble:self.timestamp forKey:@"timestamp"];
+    [encoder encodeInteger:self.hourOfDay forKey:@"hourOfDay"];
+    [encoder encodeInteger:self.dayOfWeek forKey:@"dayOfWeek"];
+    [encoder encodeDouble:self.duration forKey:@"duration"];
+}
 @end
