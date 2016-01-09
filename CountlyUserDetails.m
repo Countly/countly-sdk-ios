@@ -82,7 +82,7 @@ NSString* const kCLYUserCustom = @"custom";
 - (NSString *)extractPicturePathFromURLString:(NSString*)URLString
 {
     NSString* unescaped = [URLString stringByReplacingOccurrencesOfString:@"+" withString:@" "];
-    unescaped = [unescaped stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+    unescaped = [unescaped stringByRemovingPercentEncoding];
     NSRange rPicturePathKey = [unescaped rangeOfString:kCLYUserPicturePath];
     if (rPicturePathKey.location == NSNotFound)
         return nil;
