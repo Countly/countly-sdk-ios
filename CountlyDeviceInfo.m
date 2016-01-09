@@ -10,7 +10,49 @@
 
 + (NSString *)udid
 {
-#if COUNTLY_PREFER_IDFA && (TARGET_OS_IOS || TARGET_OS_WATCH)
+#if TARGET_OS_WATCH
+    static NSString* uuid = nil;
+    
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        NSDictionary *keychainDict =
+        @{
+            (__bridge id)kSecClass:             (__bridge id)kSecClassGenericPassword,
+            (__bridge id)kSecAttrAccessible:    (__bridge id)kSecAttrAccessibleAlways,
+            (__bridge id)kSecAttrAccount:       @"CLY_AppleWatchUDIDStoreKey",
+            (__bridge id)kSecAttrService:       @"CLY_AppleWatchUDIDStoreService"
+        };
+    
+        NSMutableDictionary* readDict = keychainDict.mutableCopy;
+        readDict[(__bridge id)kSecReturnData] = (__bridge id)kCFBooleanTrue;
+        readDict[(__bridge id)kSecReturnAttributes] = (__bridge id)kCFBooleanTrue;
+
+        CFDictionaryRef resultDictRef = nil;
+        OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)readDict, (CFTypeRef *)&resultDictRef);
+        if (status == noErr)
+        {
+            NSDictionary *resultDict = (__bridge_transfer NSDictionary *)resultDictRef;
+            NSData *data = resultDict[(__bridge id)kSecValueData];
+        
+            if (data)
+            {
+                uuid = [NSString.alloc initWithData:data encoding:NSUTF8StringEncoding];
+            }
+        }
+
+        if(!uuid)
+        {
+            NSMutableDictionary* writeDict = keychainDict.mutableCopy;
+
+            uuid = NSUUID.UUID.UUIDString;
+            writeDict[(__bridge id)kSecValueData] = [uuid dataUsingEncoding:NSUTF8StringEncoding];
+            SecItemAdd((__bridge CFDictionaryRef)writeDict, NULL);
+        }
+    });
+    
+    return uuid;
+#elif COUNTLY_PREFER_IDFA
     return ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
 #else
 	return [Countly_OpenUDID value];
@@ -20,6 +62,8 @@
 + (NSString *)device
 {
 #if TARGET_OS_IOS
+    char *modelKey = "hw.machine";
+#elif TARGET_OS_WATCH
     char *modelKey = "hw.machine";
 #else
     char *modelKey = "hw.model";
@@ -37,15 +81,19 @@
 {
 #if TARGET_OS_IOS
 	return @"iOS";
+#elif TARGET_OS_WATCH
+    return @"watchOS";
 #else
-	return @"OS X";
+	return @"OSX";
 #endif
 }
 
 + (NSString *)osVersion
 {
 #if TARGET_OS_IOS
-    return [[UIDevice currentDevice] systemVersion];
+	return UIDevice.currentDevice.systemVersion;
+#elif TARGET_OS_WATCH
+    return WKInterfaceDevice.currentDevice.systemVersion;
 #else
     return [NSDictionary dictionaryWithContentsOfFile:@"/System/Library/CoreServices/SystemVersion.plist"][@"ProductVersion"];
 #endif
@@ -67,14 +115,16 @@
 + (NSString *)resolution
 {
 #if TARGET_OS_IOS
-	CGRect bounds = UIScreen.mainScreen.bounds;
-	CGFloat scale = [UIScreen.mainScreen respondsToSelector:@selector(scale)] ? [UIScreen.mainScreen scale] : 1.f;
-    return [NSString stringWithFormat:@"%gx%g", bounds.size.width * scale, bounds.size.height * scale];
+    CGRect bounds = UIScreen.mainScreen.bounds;
+    CGFloat scale = UIScreen.mainScreen.scale;
+#elif TARGET_OS_WATCH
+    CGRect bounds = WKInterfaceDevice.currentDevice.screenBounds;
+    CGFloat scale = WKInterfaceDevice.currentDevice.screenScale;
 #else
-    NSRect screenRect = NSScreen.mainScreen.frame;
-    CGFloat scale = [NSScreen.mainScreen backingScaleFactor];
-    return [NSString stringWithFormat:@"%gx%g", screenRect.size.width * scale, screenRect.size.height * scale];
+    NSRect bounds = NSScreen.mainScreen.frame;
+    CGFloat scale = NSScreen.mainScreen.backingScaleFactor;
 #endif
+    return [NSString stringWithFormat:@"%gx%g", bounds.size.width * scale, bounds.size.height * scale];
 }
 
 + (NSString *)locale

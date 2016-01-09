@@ -61,15 +61,6 @@
 #include <libkern/OSAtomic.h>
 #include <execinfo.h>
 
-
-//#   define COUNTLY_APP_GROUP_ID @"group.example.myapp"
-#if TARGET_OS_WATCH
-#   ifndef COUNTLY_APP_GROUP_ID
-#       error "Application Group Identifier not specified! Please uncomment the line above and specify it."
-#   endif
-#endif
-
-
 @interface CountlyCommon : NSObject
 + (instancetype)sharedInstance;
 - (NSInteger)hourOfDay;

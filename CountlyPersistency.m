@@ -48,12 +48,6 @@ NSString* const kCountlyStartedEventsPersistencyKey = @"kCountlyStartedEventsPer
 
 - (void)addToQueue:(NSString*)queryString
 {
-#if TARGET_OS_WATCH
-    NSDictionary* watchSegmentation = @{@"[CLY]_apple_watch":(WKInterfaceDevice.currentDevice.screenBounds.size.width == 136.0)?@"38mm":@"42mm"};
-    
-    queryString = [queryString stringByAppendingFormat:@"&segment=%@", [watchSegmentation JSONify]];
-#endif
-    
     [self.queuedRequests addObject:queryString];
 }
 
@@ -66,9 +60,6 @@ NSString* const kCountlyStartedEventsPersistencyKey = @"kCountlyStartedEventsPer
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-#ifdef COUNTLY_APP_GROUP_ID
-        url = [[NSFileManager.defaultManager containerURLForSecurityApplicationGroupIdentifier:COUNTLY_APP_GROUP_ID] URLByAppendingPathComponent:kCountlyPersistencyFileName];
-#else
         url = [[NSFileManager.defaultManager URLsForDirectory:NSApplicationSupportDirectory inDomains:NSUserDomainMask] lastObject];
         NSError *error = nil;
 
@@ -79,7 +70,6 @@ NSString* const kCountlyStartedEventsPersistencyKey = @"kCountlyStartedEventsPer
         }
 
         url = [url URLByAppendingPathComponent:kCountlyPersistencyFileName];
-#endif
     });
     
     return url;

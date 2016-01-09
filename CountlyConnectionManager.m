@@ -92,6 +92,9 @@
         else
         {
             COUNTLY_LOG(@"Request failed \n %@: %@", [CountlyPersistency.sharedInstance.queuedRequests.firstObject description], error);
+#if TARGET_OS_WATCH
+            [CountlyPersistency.sharedInstance saveToFile];
+#endif
         }
     
         [self finishBackgroundTask];

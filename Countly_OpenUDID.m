@@ -37,6 +37,7 @@
 */
 
 #import "Countly_OpenUDID.h"
+#if !(TARGET_OS_WATCH)
 #import <CommonCrypto/CommonDigest.h> // Need to import for CC_MD5 access
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
 #import <UIKit/UIPasteboard.h>
@@ -376,3 +377,4 @@ static int const kOpenUDIDRedundancySlots = 100;
 }
 
 @end
+#endif
