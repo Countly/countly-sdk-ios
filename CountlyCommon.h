@@ -30,20 +30,20 @@
 
 #define COUNTLY_SDK_VERSION @"15.06.01"
 
-#ifndef COUNTLY_TARGET_WATCHKIT
-#define COUNTLY_DEFAULT_UPDATE_INTERVAL 60.0
-#define COUNTLY_EVENT_SEND_THRESHOLD 10
-#else
-#define COUNTLY_DEFAULT_UPDATE_INTERVAL 10.0
+#if TARGET_OS_WATCH
+#define COUNTLY_DEFAULT_UPDATE_INTERVAL 20.0
 #define COUNTLY_EVENT_SEND_THRESHOLD 3
 #import <WatchKit/WatchKit.h>
+#else
+#define COUNTLY_DEFAULT_UPDATE_INTERVAL 60.0
+#define COUNTLY_EVENT_SEND_THRESHOLD 10
 #endif
 
 #import "Countly.h"
 #import "Countly_OpenUDID.h"
 #import <objc/runtime.h>
 
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if TARGET_OS_IOS
 #import <UIKit/UIKit.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import <CoreTelephony/CTCarrier.h>
@@ -63,11 +63,10 @@
 
 
 //#   define COUNTLY_APP_GROUP_ID @"group.example.myapp"
-#if COUNTLY_TARGET_WATCHKIT
+#if TARGET_OS_WATCH
 #   ifndef COUNTLY_APP_GROUP_ID
 #       error "Application Group Identifier not specified! Please uncomment the line above and specify it."
 #   endif
-#import <WatchKit/WatchKit.h>
 #endif
 
 

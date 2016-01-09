@@ -45,7 +45,7 @@
 - (void)recordUserDetails:(NSDictionary *)userDetails;
 
 #pragma mark - Countly Messaging
-#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
+#if TARGET_OS_IOS
 /**
  * Countly Messaging support
  */
@@ -110,7 +110,7 @@
 #endif
 
 #pragma mark - Countly CrashReporting
-#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
+#if TARGET_OS_IOS
 - (void)startCrashReporting;
 - (void)startCrashReportingWithSegments:(NSDictionary *)segments;
 - (void)recordHandledException:(NSException *)exception;

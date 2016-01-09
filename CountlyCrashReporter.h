@@ -7,7 +7,7 @@
 #import <Foundation/Foundation.h>
 
 @interface CountlyCrashReporter : NSObject
-#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
+#if TARGET_OS_IOS
 
 + (instancetype)sharedInstance;
 - (void)startCrashReporting;

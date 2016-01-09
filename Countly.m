@@ -41,7 +41,7 @@
         
         self.messageInfos = NSMutableDictionary.new;
 
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if TARGET_OS_IOS
 		[NSNotificationCenter.defaultCenter addObserver:self
 												 selector:@selector(didEnterBackgroundCallBack:)
 													 name:UIApplicationDidEnterBackgroundNotification
@@ -80,7 +80,7 @@
     [self start:appKey withHost:@"https://cloud.count.ly"];
 }
 
-#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
+#if TARGET_OS_IOS
 - (void)startWithMessagingUsing:(NSString *)appKey withHost:(NSString *)appHost andOptions:(NSDictionary *)options
 {
     [self start:appKey withHost:appHost];
@@ -294,7 +294,7 @@
 
 - (void)dealloc
 {
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if TARGET_OS_IOS
     [NSNotificationCenter.defaultCenter removeObserver:self];
 #endif
     
@@ -308,7 +308,7 @@
 
 
 #pragma mark - Countly Messaging
-#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
+#if TARGET_OS_IOS
 
 #define kPushToMessage      1
 #define kPushToOpenLink     2
@@ -530,7 +530,7 @@
     if (!appId) appId = kCountlyAppId;
 
     NSString *urlFormat = nil;
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
     urlFormat = @"itms-apps://itunes.apple.com/app/id%@";
 #else
     urlFormat = @"macappstore://itunes.apple.com/app/id%@";
@@ -547,7 +547,7 @@
     if (!appId) appId = kCountlyAppId;
     
     NSString *urlFormat = nil;
-#if TARGET_OS_IPHONE
+#if TARGET_OS_IOS
     float iOSVersion = [[UIDevice currentDevice].systemVersion floatValue];
     if (iOSVersion >= 7.0f && iOSVersion < 7.1f) {
         urlFormat = @"itms-apps://itunes.apple.com/app/id%@";
@@ -598,7 +598,7 @@
 
 #pragma mark - Countly CrashReporting
 
-#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
+#if TARGET_OS_IOS
 - (void)startCrashReporting
 {
     [CountlyCrashReporter.sharedInstance startCrashReporting];
@@ -651,7 +651,7 @@
     O_method = class_getInstanceMethod(NSClassFromString(@"__NSCFLocalDataTask"), @selector(resume));
     C_method = class_getInstanceMethod(NSClassFromString(@"__NSCFLocalDataTask"), @selector(Countly_resume));
 
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if TARGET_OS_IOS
     if(NSFoundationVersionNumber <= NSFoundationVersionNumber_iOS_8_0)
     {
         O_method = class_getInstanceMethod(NSURLSessionTask.class, @selector(resume));

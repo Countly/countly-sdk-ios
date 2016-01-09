@@ -48,7 +48,7 @@ NSString* const kCountlyStartedEventsPersistencyKey = @"kCountlyStartedEventsPer
 
 - (void)addToQueue:(NSString*)queryString
 {
-#ifdef COUNTLY_TARGET_WATCHKIT
+#if TARGET_OS_WATCH
     NSDictionary* watchSegmentation = @{@"[CLY]_apple_watch":(WKInterfaceDevice.currentDevice.screenBounds.size.width == 136.0)?@"38mm":@"42mm"};
     
     queryString = [queryString stringByAppendingFormat:@"&segment=%@", [watchSegmentation JSONify]];

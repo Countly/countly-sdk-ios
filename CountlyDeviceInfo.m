@@ -10,7 +10,7 @@
 
 + (NSString *)udid
 {
-#if COUNTLY_PREFER_IDFA && (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR || COUNTLY_TARGET_WATCHKIT)
+#if COUNTLY_PREFER_IDFA && (TARGET_OS_IOS || TARGET_OS_WATCH)
     return ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
 #else
 	return [Countly_OpenUDID value];
@@ -19,7 +19,7 @@
 
 + (NSString *)device
 {
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if TARGET_OS_IOS
     char *modelKey = "hw.machine";
 #else
     char *modelKey = "hw.model";
@@ -35,7 +35,7 @@
 
 + (NSString *)osName
 {
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if TARGET_OS_IOS
 	return @"iOS";
 #else
 	return @"OS X";
@@ -44,8 +44,8 @@
 
 + (NSString *)osVersion
 {
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
-	return [[UIDevice currentDevice] systemVersion];
+#if TARGET_OS_IOS
+    return [[UIDevice currentDevice] systemVersion];
 #else
     return [NSDictionary dictionaryWithContentsOfFile:@"/System/Library/CoreServices/SystemVersion.plist"][@"ProductVersion"];
 #endif
@@ -53,7 +53,7 @@
 
 + (NSString *)carrier
 {
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if TARGET_OS_IOS
 	if (NSClassFromString(@"CTTelephonyNetworkInfo"))
 	{
 		CTTelephonyNetworkInfo *netinfo = [CTTelephonyNetworkInfo new];
@@ -66,7 +66,7 @@
 
 + (NSString *)resolution
 {
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if TARGET_OS_IOS
 	CGRect bounds = UIScreen.mainScreen.bounds;
 	CGFloat scale = [UIScreen.mainScreen respondsToSelector:@selector(scale)] ? [UIScreen.mainScreen scale] : 1.f;
     return [NSString stringWithFormat:@"%gx%g", bounds.size.width * scale, bounds.size.height * scale];
@@ -146,7 +146,7 @@
                     {
                         connType = CLYConnectionCellNetwork;
 
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if TARGET_OS_IOS
 
                         if (NSFoundationVersionNumber >= NSFoundationVersionNumber_iOS_7_0)
                         {
@@ -248,7 +248,7 @@
 
 + (NSInteger)batteryLevel
 {
-#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
+#if TARGET_OS_IOS
     UIDevice.currentDevice.batteryMonitoringEnabled = YES;
     return abs((int)(UIDevice.currentDevice.batteryLevel*100));
 #else
@@ -258,7 +258,7 @@
 
 + (NSString *)orientation
 {
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if TARGET_OS_IOS
     NSArray *orientations = @[@"Unknown", @"Portrait", @"PortraitUpsideDown", @"LandscapeLeft", @"LandscapeRight", @"FaceUp", @"FaceDown"];
     return orientations[UIDevice.currentDevice.orientation];
 #else
@@ -270,7 +270,7 @@
 
 + (float)OpenGLESversion
 {
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if TARGET_OS_IOS
     EAGLContext *aContext;
     
     aContext = [EAGLContext.alloc initWithAPI:kEAGLRenderingAPIOpenGLES3];
@@ -298,7 +298,7 @@
 
 + (BOOL)isInBackground
 {
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if TARGET_OS_IOS
     return UIApplication.sharedApplication.applicationState == UIApplicationStateBackground;
 #else
     return NO;

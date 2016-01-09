@@ -34,7 +34,7 @@
         request.HTTPBody = [CountlyPersistency.sharedInstance.queuedRequests.firstObject dataUsingEncoding:NSUTF8StringEncoding];
     }
     
-#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
+#if TARGET_OS_IOS
     NSString* picturePath = [CountlyUserDetails.sharedInstance extractPicturePathFromURLString:urlString];
     if(picturePath && ![picturePath isEqualToString:@""])
     {
@@ -205,7 +205,7 @@
 
 - (void)startBackgroundTask
 {
-#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
+#if TARGET_OS_IOS
     if (self.bgTask != UIBackgroundTaskInvalid)
         return;
     
@@ -219,7 +219,7 @@
 
 - (void)finishBackgroundTask
 {
-#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
+#if TARGET_OS_IOS
     if (self.bgTask != UIBackgroundTaskInvalid)
     {
         [UIApplication.sharedApplication endBackgroundTask:self.bgTask];

@@ -5,7 +5,7 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
+#if TARGET_OS_IOS
 #import <UIKit/UIKit.h>
 #endif
 
@@ -16,7 +16,7 @@
 @property (nonatomic, strong) NSURLSessionTask* connection;
 @property (nonatomic, assign) BOOL startedWithTest;
 @property (nonatomic, strong) NSString* locationString;
-#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
+#if TARGET_OS_IOS
 @property (nonatomic, assign) UIBackgroundTaskIdentifier bgTask;
 #endif
 

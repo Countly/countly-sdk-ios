@@ -29,7 +29,7 @@
     return self;
 }
 
-#if (TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR) && (!COUNTLY_TARGET_WATCHKIT)
+#if TARGET_OS_IOS
 
 #define kCountlyCrashUserInfoKey @"[CLY]_stack_trace"
 
