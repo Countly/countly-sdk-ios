@@ -9,6 +9,7 @@
 @implementation CountlyPersistency
 NSString* const kCountlyQueuedRequestsPersistencyKey = @"kCountlyQueuedRequestsPersistencyKey";
 NSString* const kCountlyStartedEventsPersistencyKey = @"kCountlyStartedEventsPersistencyKey";
+NSString* const kCountlyTVOSNSUDKey = @"kCountlyTVOSNSUDKey";
 
 + (instancetype)sharedInstance
 {
@@ -23,8 +24,11 @@ NSString* const kCountlyStartedEventsPersistencyKey = @"kCountlyStartedEventsPer
     self = [super init];
     if (self)
     {
+#if TARGET_OS_TV
+        NSData* readData = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyTVOSNSUDKey];
+#else
         NSData* readData = [NSData dataWithContentsOfURL:[self storageFileURL]];
-    
+#endif
         if(readData)
         {
             NSDictionary* readDict = [NSKeyedUnarchiver unarchiveObjectWithData:readData];
@@ -85,8 +89,11 @@ NSString* const kCountlyStartedEventsPersistencyKey = @"kCountlyStartedEventsPer
                                   };
     
         NSData* saveData = [NSKeyedArchiver archivedDataWithRootObject:saveDict];
-
+#if TARGET_OS_TV
+        [NSUserDefaults.standardUserDefaults setObject:saveData forKey:kCountlyTVOSNSUDKey];
+#else
         [saveData writeToFile:[self storageFileURL].path atomically:YES];
+#endif
     });
 }
 @end

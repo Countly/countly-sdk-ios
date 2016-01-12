@@ -5,6 +5,8 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
+#import "Countly.h"
+#import "Countly_OpenUDID.h"
 #import "CountlyPersistency.h"
 #import "CountlyConnectionManager.h"
 #import "CountlyEvent.h"
@@ -39,10 +41,6 @@
 #define COUNTLY_EVENT_SEND_THRESHOLD 10
 #endif
 
-#import "Countly.h"
-#import "Countly_OpenUDID.h"
-#import <objc/runtime.h>
-
 #if TARGET_OS_IOS
 #import <UIKit/UIKit.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
@@ -52,14 +50,20 @@
 #endif
 #endif
 
+#if TARGET_OS_TV
+#import <UIKit/UIKit.h>
+#import <AdSupport/ASIdentifierManager.h>
+#endif
+
 #include <sys/types.h>
 #include <sys/sysctl.h>
+#include <libkern/OSAtomic.h>
+#include <execinfo.h>
 #import <mach/mach.h>
 #import <mach/mach_host.h>
 #import <arpa/inet.h>
 #import <ifaddrs.h>
-#include <libkern/OSAtomic.h>
-#include <execinfo.h>
+#import <objc/runtime.h>
 
 @interface CountlyCommon : NSObject
 + (instancetype)sharedInstance;

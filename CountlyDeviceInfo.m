@@ -52,7 +52,7 @@
     });
     
     return uuid;
-#elif COUNTLY_PREFER_IDFA
+#elif (COUNTLY_PREFER_IDFA || TARGET_OS_TV)
     return ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
 #else
 	return [Countly_OpenUDID value];
@@ -64,6 +64,8 @@
 #if TARGET_OS_IOS
     char *modelKey = "hw.machine";
 #elif TARGET_OS_WATCH
+    char *modelKey = "hw.machine";
+#elif TARGET_OS_TV
     char *modelKey = "hw.machine";
 #else
     char *modelKey = "hw.model";
@@ -83,6 +85,8 @@
 	return @"iOS";
 #elif TARGET_OS_WATCH
     return @"watchOS";
+#elif TARGET_OS_TV
+    return @"tvOS";
 #else
 	return @"OSX";
 #endif
@@ -120,6 +124,9 @@
 #elif TARGET_OS_WATCH
     CGRect bounds = WKInterfaceDevice.currentDevice.screenBounds;
     CGFloat scale = WKInterfaceDevice.currentDevice.screenScale;
+#elif TARGET_OS_TV
+    CGRect bounds = (CGRect){0,0,1920,1080};
+    CGFloat scale = 1.0;
 #else
     NSRect bounds = NSScreen.mainScreen.frame;
     CGFloat scale = NSScreen.mainScreen.backingScaleFactor;
