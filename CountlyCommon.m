@@ -69,8 +69,7 @@ NSString* CountlyJSONFromObject(id object)
 @implementation NSString (URLEscaped)
 - (NSString *)URLEscaped
 {
-    //RFC 3986 section 2.2 Reserved Characters
-    NSCharacterSet* charset = [NSCharacterSet characterSetWithCharactersInString:@"!*'();:@&=+$,/?%#[]"];
+    NSCharacterSet* charset = [NSCharacterSet characterSetWithCharactersInString:@"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~"];
     return [self stringByAddingPercentEncodingWithAllowedCharacters:charset];
 }
 @end
