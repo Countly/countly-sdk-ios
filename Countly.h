@@ -18,6 +18,12 @@
 
 - (void)startOnCloudWithAppKey:(NSString *)appKey;
 
+#if TARGET_OS_WATCH
+- (void)suspend;
+- (void)resume;
+#endif
+
+
 #pragma mark -
 
 - (void)recordEvent:(NSString *)key;

@@ -41,7 +41,7 @@
         
         self.messageInfos = NSMutableDictionary.new;
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS  || TARGET_OS_TV)
 		[NSNotificationCenter.defaultCenter addObserver:self
 												 selector:@selector(didEnterBackgroundCallBack:)
 													 name:UIApplicationDidEnterBackgroundNotification
@@ -265,7 +265,18 @@
 
 - (void)resume
 {
-	lastTime = NSDate.date.timeIntervalSince1970;
+#if TARGET_OS_WATCH
+    //NOTE: skip first time to prevent double begin session because of applicationDidBecomeActive call on app lunch
+    static BOOL isFirstCall = YES;
+    
+    if(isFirstCall)
+    {
+        isFirstCall = NO;
+        return;
+    }
+#endif
+    
+    lastTime = NSDate.date.timeIntervalSince1970;
     
 	[CountlyConnectionManager.sharedInstance beginSession];
     
