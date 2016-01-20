@@ -76,7 +76,25 @@
 {
     self.endTime = NSDate.date.timeIntervalSince1970;
     
-    COUNTLY_LOG(@"%@", [self description]);
+    CountlyEvent *event = [CountlyEvent new];
+    event.key = @"[CLY]_apm";
+    event.segmentation = @{
+                                @"n": self.request.URL.absoluteString,
+                                @"e": @(self.HTTPStatusCode),
+                                @"h": self.request.URL.host,
+                                @"p": self.request.URL.path,
+                                @"c": @(self.connectionType),
+                                @"H": @YES,
+                                @"u": @NO
+                          };
+    event.count = 1;
+    event.sum = self.sentDataSize + self.receivedDataSize;
+    event.timestamp = self.startTime;
+    event.hourOfDay = [CountlyCommon.sharedInstance hourOfDay];
+    event.dayOfWeek = [CountlyCommon.sharedInstance dayOfWeek];
+    event.duration = self.endTime - self.startTime;
+    
+    [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
 }
 
 +(long long)sentDataSizeForRequest:(NSURLRequest*)request
