@@ -632,64 +632,17 @@
 
 -(void)startAPM
 {
-    Method O_method;
-    Method C_method;
-    
-    O_method = class_getClassMethod(NSURLConnection.class, @selector(sendSynchronousRequest:returningResponse:error:));
-    C_method = class_getClassMethod(NSURLConnection.class, @selector(Countly_sendSynchronousRequest:returningResponse:error:));
-    method_exchangeImplementations(O_method, C_method);
-    
-    O_method = class_getClassMethod(NSURLConnection.class, @selector(sendAsynchronousRequest:queue:completionHandler:));
-    C_method = class_getClassMethod(NSURLConnection.class, @selector(Countly_sendAsynchronousRequest:queue:completionHandler:));
-    method_exchangeImplementations(O_method, C_method);
-    
-    O_method = class_getInstanceMethod(NSURLConnection.class, @selector(initWithRequest:delegate:));
-    C_method = class_getInstanceMethod(NSURLConnection.class, @selector(Countly_initWithRequest:delegate:));
-    method_exchangeImplementations(O_method, C_method);
-    
-    O_method = class_getInstanceMethod(NSURLConnection.class, @selector(initWithRequest:delegate:startImmediately:));
-    C_method = class_getInstanceMethod(NSURLConnection.class, @selector(Countly_initWithRequest:delegate:startImmediately:));
-    method_exchangeImplementations(O_method, C_method);
-    
-    O_method = class_getInstanceMethod(NSURLConnection.class, @selector(start));
-    C_method = class_getInstanceMethod(NSURLConnection.class, @selector(Countly_start));
-    method_exchangeImplementations(O_method, C_method);
-    
-    O_method = class_getInstanceMethod(NSURLSession.class, @selector(dataTaskWithRequest:completionHandler:));
-    C_method = class_getInstanceMethod(NSURLSession.class, @selector(Countly_dataTaskWithRequest:completionHandler:));
-    method_exchangeImplementations(O_method, C_method);
-
-    O_method = class_getInstanceMethod(NSURLSession.class, @selector(downloadTaskWithRequest:completionHandler:));
-    C_method = class_getInstanceMethod(NSURLSession.class, @selector(Countly_downloadTaskWithRequest:completionHandler:));
-    method_exchangeImplementations(O_method, C_method);
-
-    
-    O_method = class_getInstanceMethod(NSClassFromString(@"__NSCFLocalDataTask"), @selector(resume));
-    C_method = class_getInstanceMethod(NSClassFromString(@"__NSCFLocalDataTask"), @selector(Countly_resume));
-
-#if TARGET_OS_IOS
-    if(NSFoundationVersionNumber <= NSFoundationVersionNumber_iOS_8_0)
-    {
-        O_method = class_getInstanceMethod(NSURLSessionTask.class, @selector(resume));
-        C_method = class_getInstanceMethod(NSURLSessionTask.class, @selector(Countly_resume));
-    }
-#endif
-
-    method_exchangeImplementations(O_method, C_method);
+    [CountlyAPM.sharedInstance swizzleForAPM];
 }
 
--(void)addExceptionForAPM:(NSString*)string
+-(void)addExceptionForAPM:(NSString*)exceptionURL
 {
-    NSURL* url = [NSURL URLWithString:string];
-    NSString* hostAndPath = [url.host stringByAppendingString:url.path];
-    [CountlyAPM.sharedInstance.exceptionURLs addObject:hostAndPath];
+    [CountlyAPM.sharedInstance addExceptionForAPM:exceptionURL];
 }
 
--(void)removeExceptionForAPM:(NSString*)string
+-(void)removeExceptionForAPM:(NSString*)exceptionURL
 {
-    NSURL * url = [NSURL URLWithString:string];
-    NSString* hostAndPath = [url.host stringByAppendingString:url.path];
-    [CountlyAPM.sharedInstance.exceptionURLs removeObject:hostAndPath];
+    [CountlyAPM.sharedInstance removeExceptionForAPM:exceptionURL];
 }
 
 @end

@@ -11,7 +11,9 @@
 @property(nonatomic, strong) NSMutableArray* _Nonnull exceptionURLs;
 
 + (instancetype _Nonnull)sharedInstance;
-
+- (void)swizzleForAPM;
+- (void)addExceptionForAPM:(NSString* _Nonnull)exceptionURL;
+- (void)removeExceptionForAPM:(NSString* _Nonnull)exceptionURL;
 @end
 
 
