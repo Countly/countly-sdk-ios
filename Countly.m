@@ -658,6 +658,11 @@
     O_method = class_getInstanceMethod(NSURLSession.class, @selector(dataTaskWithRequest:completionHandler:));
     C_method = class_getInstanceMethod(NSURLSession.class, @selector(Countly_dataTaskWithRequest:completionHandler:));
     method_exchangeImplementations(O_method, C_method);
+
+    O_method = class_getInstanceMethod(NSURLSession.class, @selector(downloadTaskWithRequest:completionHandler:));
+    C_method = class_getInstanceMethod(NSURLSession.class, @selector(Countly_downloadTaskWithRequest:completionHandler:));
+    method_exchangeImplementations(O_method, C_method);
+
     
     O_method = class_getInstanceMethod(NSClassFromString(@"__NSCFLocalDataTask"), @selector(resume));
     C_method = class_getInstanceMethod(NSClassFromString(@"__NSCFLocalDataTask"), @selector(Countly_resume));

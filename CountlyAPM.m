@@ -169,6 +169,28 @@
     return dataTask;
 }
 
+- (NSURLSessionDownloadTask * __nullable)Countly_downloadTaskWithRequest:(NSURLRequest * _Nonnull)request completionHandler:(void (^ _Nullable)(NSURL * __nullable location, NSURLResponse * __nullable response, NSError * __nullable error))completionHandler
+{
+    CountlyAPMNetworkLog* nl = [CountlyAPMNetworkLog createWithRequest:request startImmediately:YES];
+    
+    NSURLSessionDownloadTask* downloadTask = [self Countly_downloadTaskWithRequest:request completionHandler:^(NSURL * _Nullable location, NSURLResponse * _Nullable response, NSError * _Nullable error)
+    {
+        NSHTTPURLResponse* HTTPresponse = (NSHTTPURLResponse*)response;
+        long long dataSize = [[HTTPresponse allHeaderFields][@"Content-Length"] longLongValue];
+    
+        [nl finishWithStatusCode:((NSHTTPURLResponse*)response).statusCode andDataSize:dataSize];
+    
+        if (completionHandler)
+        {
+            completionHandler(location, response, error);
+        }
+    }];
+
+    downloadTask.APMNetworkLog = nl;
+    
+    return downloadTask;
+}
+
 @end
 
 

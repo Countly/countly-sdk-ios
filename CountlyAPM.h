@@ -44,6 +44,9 @@
 @interface NSURLSession (CountlyAPM)
 - (NSURLSessionDataTask * __nullable)Countly_dataTaskWithRequest:(NSURLRequest * _Nonnull)request
                                                completionHandler:(void (^ _Nullable)(NSData * __nullable data, NSURLResponse * __nullable response, NSError * __nullable error))completionHandler;
+
+- (NSURLSessionDownloadTask * __nullable)Countly_downloadTaskWithRequest:(NSURLRequest * _Nonnull)request completionHandler:(void (^ _Nullable)(NSURL * __nullable location, NSURLResponse * __nullable response, NSError * __nullable error))completionHandler;
+
 @end
 
 
