@@ -57,6 +57,10 @@
 
 #define TARGET_OS_OSX (!(TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_WATCH))
 
+#if TARGET_OS_OSX
+#import <AppKit/AppKit.h>
+#endif
+
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <libkern/OSAtomic.h>
