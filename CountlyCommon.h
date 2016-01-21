@@ -55,6 +55,8 @@
 #import <AdSupport/ASIdentifierManager.h>
 #endif
 
+#define TARGET_OS_OSX (!(TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_WATCH))
+
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <libkern/OSAtomic.h>

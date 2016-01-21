@@ -65,6 +65,9 @@ NSString* const kCountlyTVOSNSUDKey = @"kCountlyTVOSNSUDKey";
     dispatch_once(&onceToken, ^
     {
         url = [[NSFileManager.defaultManager URLsForDirectory:NSApplicationSupportDirectory inDomains:NSUserDomainMask] lastObject];
+#if TARGET_OS_OSX
+        url = [url URLByAppendingPathComponent:NSBundle.mainBundle.bundleIdentifier];
+#endif
         NSError *error = nil;
 
         if (![NSFileManager.defaultManager fileExistsAtPath:url.absoluteString])

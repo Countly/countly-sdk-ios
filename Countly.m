@@ -54,6 +54,11 @@
 												 selector:@selector(willTerminateCallBack:)
 													 name:UIApplicationWillTerminateNotification
 												   object:nil];
+#elif TARGET_OS_OSX
+         [NSNotificationCenter.defaultCenter addObserver:self
+                                                selector:@selector(willTerminateCallBack:)
+                                                    name:NSApplicationWillTerminateNotification
+                                                  object:nil];
 #endif
 	}
 
