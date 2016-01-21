@@ -192,6 +192,10 @@ To use Countly iOS SDK in WatchKit apps:
     NSURL *url = [[fm URLsForDirectory:NSApplicationSupportDirectory inDomains:NSUserDomainMask] lastObject];
     NSError *error = nil;
     
+#if TARGET_OS_MAC
+    url = [url URLByAppendingPathComponent:[[NSBundle mainBundle] bundleIdentifier]];
+#endif
+
     if (![fm fileExistsAtPath:[url absoluteString]])
     {
         [fm createDirectoryAtURL:url withIntermediateDirectories:YES attributes:nil error:&error];
