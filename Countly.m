@@ -67,6 +67,34 @@
 
 #pragma mark ---
 
+- (void)startWithConfig:(CountlyConfig *)config
+{
+    NSAssert(config.appKey && ![config.appKey isEqualToString:@"YOUR_APP_KEY"],@"App key in Countly configuration is not set!");
+    NSAssert(config.host && ![config.host isEqualToString:@"https://YOUR_COUNTLY_SERVER"],@"Host in Countly configuration is not set!");
+    
+    
+#if TARGET_OS_IOS
+    if([config.features containsObject:CLYMessaging])
+    {
+        NSAssert(![config.launchOptions isEqualToDictionary:@{@"CLYAssertion":@"forLaunchOptions"}],@"LaunchOptions in Countly configuration is not set!");
+
+        [self startWithMessagingUsing:config.appKey withHost:config.host andOptions:config.launchOptions];
+    }
+    else
+    {
+        [self start:config.appKey withHost:config.host];
+    }
+    
+    if([config.features containsObject:CLYCrashReporting])
+        [self startCrashReporting];
+#else
+    [self start:config.appKey withHost:config.host];
+
+    if([config.features containsObject:CLYAPM])
+        [self startAPM];
+#endif
+}
+
 - (void)start:(NSString *)appKey withHost:(NSString*)appHost
 {
 	timer = [NSTimer scheduledTimerWithTimeInterval:COUNTLY_DEFAULT_UPDATE_INTERVAL

@@ -7,6 +7,7 @@
 #import <Foundation/Foundation.h>
 #import "CountlyUserDetails.h"
 #import "CountlyCrashReporter.h" 
+#import "CountlyConfig.h"
 
 @interface Countly : NSObject
 
@@ -14,9 +15,7 @@
 
 + (instancetype)sharedInstance;
 
-- (void)start:(NSString *)appKey withHost:(NSString *)appHost;
-
-- (void)startOnCloudWithAppKey:(NSString *)appKey;
+- (void)startWithConfig:(CountlyConfig *)config;
 
 #if TARGET_OS_WATCH
 - (void)suspend;
