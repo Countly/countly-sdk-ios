@@ -11,6 +11,10 @@
 + (instancetype)sharedInstance;
 - (void)addToQueue:(NSString*)queryString;
 - (void)saveToFile;
+
+- (NSString*)retrieveStoredDeviceID;
+- (void)storeDeviceID:(NSString*)deviceID;
+
 @property (nonatomic, strong) NSMutableArray* recordedEvents;
 @property (nonatomic, strong) NSMutableArray* queuedRequests;
 @property (nonatomic, strong) NSMutableDictionary* startedEvents;

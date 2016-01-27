@@ -146,6 +146,9 @@
     NSMutableArray* eventsArray = NSMutableArray.new;
     @synchronized (self)
     {
+        if(CountlyPersistency.sharedInstance.recordedEvents.count == 0)
+            return;
+    
         for (CountlyEvent* event in CountlyPersistency.sharedInstance.recordedEvents.copy)
         {
             [eventsArray addObject:[event dictionaryRepresentation]];
@@ -237,7 +240,7 @@
 {
     return [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&hour=%ld&dow=%ld&sdk_version=%@",
                                         self.appKey,
-                                        [CountlyDeviceInfo udid],
+                                        CountlyDeviceInfo.sharedInstance.deviceID,
                                         (long)NSDate.date.timeIntervalSince1970,
                                         (long)[CountlyCommon.sharedInstance hourOfDay],
                                         (long)[CountlyCommon.sharedInstance dayOfWeek],

@@ -7,7 +7,12 @@
 #import <Foundation/Foundation.h>
 
 @interface CountlyDeviceInfo : NSObject
-+ (NSString *)udid;
+
+@property (nonatomic, strong) NSString *deviceID;
+
++ (instancetype)sharedInstance;
+- (void)initializeDeviceID:(NSString*)deviceID;
+
 + (NSString *)device;
 + (NSString *)osName;
 + (NSString *)osVersion;

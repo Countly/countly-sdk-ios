@@ -10,6 +10,8 @@
 NSString* const kCountlyQueuedRequestsPersistencyKey = @"kCountlyQueuedRequestsPersistencyKey";
 NSString* const kCountlyStartedEventsPersistencyKey = @"kCountlyStartedEventsPersistencyKey";
 NSString* const kCountlyTVOSNSUDKey = @"kCountlyTVOSNSUDKey";
+NSString* const kCountlyStoredDeviceIDKey = @"kCountlyStoredDeviceIDKey";
+
 
 + (instancetype)sharedInstance
 {
@@ -100,4 +102,61 @@ NSString* const kCountlyTVOSNSUDKey = @"kCountlyTVOSNSUDKey";
 #endif
     });
 }
+
+- (NSString* )retrieveStoredDeviceID
+{
+    NSString* retrievedDeviceID = nil;
+    
+    NSDictionary *keychainDict =
+    @{
+        (__bridge id)kSecAttrAccount:       kCountlyStoredDeviceIDKey,
+        (__bridge id)kSecAttrService:       kCountlyStoredDeviceIDKey,
+        (__bridge id)kSecClass:             (__bridge id)kSecClassGenericPassword,
+        (__bridge id)kSecAttrAccessible:    (__bridge id)kSecAttrAccessibleAlways,
+        (__bridge id)kSecReturnData:        (__bridge id)kCFBooleanTrue,
+        (__bridge id)kSecReturnAttributes:  (__bridge id)kCFBooleanTrue
+    };
+
+    CFDictionaryRef resultDictRef = nil;
+    OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)keychainDict, (CFTypeRef *)&resultDictRef);
+    if (status == noErr)
+    {
+        NSDictionary *resultDict = (__bridge_transfer NSDictionary *)resultDictRef;
+        NSData *data = resultDict[(__bridge id)kSecValueData];
+    
+        if (data)
+        {
+            retrievedDeviceID = [NSString.alloc initWithData:data encoding:NSUTF8StringEncoding];
+        }
+    }
+    
+    COUNTLY_LOG(@"Retrieved Device ID: %@", retrievedDeviceID);
+    return retrievedDeviceID;
+}
+
+- (void)storeDeviceID:(NSString*)deviceID
+{
+    NSDictionary *keychainDict =
+    @{
+        (__bridge id)kSecAttrAccount:       kCountlyStoredDeviceIDKey,
+        (__bridge id)kSecAttrService:       kCountlyStoredDeviceIDKey,
+        (__bridge id)kSecClass:             (__bridge id)kSecClassGenericPassword,
+        (__bridge id)kSecAttrAccessible:    (__bridge id)kSecAttrAccessibleAlways,
+        (__bridge id)kSecValueData:         [deviceID dataUsingEncoding:NSUTF8StringEncoding]
+    };
+
+    SecItemDelete((__bridge CFDictionaryRef)keychainDict);
+
+    OSStatus status = SecItemAdd((__bridge CFDictionaryRef)keychainDict, NULL);
+    
+    if(status == noErr)
+    {
+        COUNTLY_LOG(@"Successfully stored Device ID: %@", deviceID);
+    }
+    else
+    {
+        COUNTLY_LOG(@"Failed storing Device ID: %@", deviceID);
+    }
+}
+
 @end

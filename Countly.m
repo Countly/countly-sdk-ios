@@ -72,6 +72,10 @@
     NSAssert(config.appKey && ![config.appKey isEqualToString:@"YOUR_APP_KEY"],@"App key in Countly configuration is not set!");
     NSAssert(config.host && ![config.host isEqualToString:@"https://YOUR_COUNTLY_SERVER"],@"Host in Countly configuration is not set!");
     
+    if(!CountlyDeviceInfo.sharedInstance.deviceID || config.forceDeviceIDInitialization)
+    {
+        [CountlyDeviceInfo.sharedInstance initializeDeviceID:config.deviceID];
+    }
     
 #if TARGET_OS_IOS
     if([config.features containsObject:CLYMessaging])
@@ -108,10 +112,6 @@
 	[CountlyConnectionManager.sharedInstance beginSession];
 }
 
-- (void)startOnCloudWithAppKey:(NSString*)appKey
-{
-    [self start:appKey withHost:@"https://cloud.count.ly"];
-}
 
 #if TARGET_OS_IOS
 - (void)startWithMessagingUsing:(NSString *)appKey withHost:(NSString *)appHost andOptions:(NSDictionary *)options
@@ -275,16 +275,14 @@
 	[CountlyConnectionManager.sharedInstance updateSessionWithDuration:duration];
 	unsentSessionLength -= duration;
     
-    if (CountlyPersistency.sharedInstance.recordedEvents.count > 0)
-        [CountlyConnectionManager.sharedInstance sendEvents];
+    [CountlyConnectionManager.sharedInstance sendEvents];
 }
 
 - (void)suspend
 {
 	isSuspended = YES;
     
-    if (CountlyPersistency.sharedInstance.recordedEvents.count > 0)
-        [CountlyConnectionManager.sharedInstance sendEvents];
+    [CountlyConnectionManager.sharedInstance sendEvents];
     
     NSTimeInterval currTime = NSDate.date.timeIntervalSince1970;
 	unsentSessionLength += currTime - lastTime;

@@ -8,56 +8,65 @@
 
 @implementation CountlyDeviceInfo
 
-+ (NSString *)udid
++ (instancetype)sharedInstance
 {
-#if TARGET_OS_WATCH
-    static NSString* uuid = nil;
-    
+    static CountlyDeviceInfo *s_sharedInstance = nil;
     static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
-    {
-        NSDictionary *keychainDict =
-        @{
-            (__bridge id)kSecClass:             (__bridge id)kSecClassGenericPassword,
-            (__bridge id)kSecAttrAccessible:    (__bridge id)kSecAttrAccessibleAlways,
-            (__bridge id)kSecAttrAccount:       @"CLY_AppleWatchUDIDStoreKey",
-            (__bridge id)kSecAttrService:       @"CLY_AppleWatchUDIDStoreService"
-        };
-    
-        NSMutableDictionary* readDict = keychainDict.mutableCopy;
-        readDict[(__bridge id)kSecReturnData] = (__bridge id)kCFBooleanTrue;
-        readDict[(__bridge id)kSecReturnAttributes] = (__bridge id)kCFBooleanTrue;
-
-        CFDictionaryRef resultDictRef = nil;
-        OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)readDict, (CFTypeRef *)&resultDictRef);
-        if (status == noErr)
-        {
-            NSDictionary *resultDict = (__bridge_transfer NSDictionary *)resultDictRef;
-            NSData *data = resultDict[(__bridge id)kSecValueData];
-        
-            if (data)
-            {
-                uuid = [NSString.alloc initWithData:data encoding:NSUTF8StringEncoding];
-            }
-        }
-
-        if(!uuid)
-        {
-            NSMutableDictionary* writeDict = keychainDict.mutableCopy;
-
-            uuid = NSUUID.UUID.UUIDString;
-            writeDict[(__bridge id)kSecValueData] = [uuid dataUsingEncoding:NSUTF8StringEncoding];
-            SecItemAdd((__bridge CFDictionaryRef)writeDict, NULL);
-        }
-    });
-    
-    return uuid;
-#elif (COUNTLY_PREFER_IDFA || TARGET_OS_TV)
-    return ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
-#else
-	return [Countly_OpenUDID value];
-#endif
+    dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
+    return s_sharedInstance;
 }
+
+- (instancetype)init
+{
+    if (self = [super init])
+    {
+        self.deviceID = [CountlyPersistency.sharedInstance retrieveStoredDeviceID];
+    }
+    
+    return self;
+}
+
+- (void)initializeDeviceID:(NSString*)deviceID
+{
+#if TARGET_OS_IOS
+    if(!deviceID || [deviceID isEqualToString:@""])
+        self.deviceID = ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
+    else if ([deviceID isEqualToString:CLYIDFA])
+        self.deviceID = ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
+    else if([deviceID isEqualToString:CLYIDFV])
+        self.deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
+    else if([deviceID isEqualToString:CLYOpenUDID])
+        self.deviceID = [Countly_OpenUDID value];
+    else
+        self.deviceID = deviceID;
+
+#elif TARGET_OS_WATCH
+    if(!deviceID || [deviceID isEqualToString:@""])
+        self.deviceID = NSUUID.UUID.UUIDString;
+    else
+        self.deviceID = deviceID;
+
+#elif TARGET_OS_TV
+    if(!deviceID || [deviceID isEqualToString:@""])
+        self.deviceID = ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
+    else
+        self.deviceID = deviceID;
+
+#elif TARGET_OS_OSX
+    if(!deviceID || [deviceID isEqualToString:@""])
+        self.deviceID = NSUUID.UUID.UUIDString;
+    else if([deviceID isEqualToString:CLYOpenUDID])
+        self.deviceID = [Countly_OpenUDID value];
+    else
+        self.deviceID = deviceID;
+#else
+    self.deviceID = @"UnsupportedPlaftormDevice";
+#endif
+    
+    [CountlyPersistency.sharedInstance storeDeviceID:self.deviceID];
+}
+
+#pragma mark -
 
 + (NSString *)device
 {

@@ -1,4 +1,4 @@
-// CountlyCommon.h
+// CountlyCommon.m
 //
 // This code is provided under the MIT License.
 //

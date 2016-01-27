@@ -15,13 +15,10 @@
 #import "CountlyCrashReporter.h"
 #import "CountlyAPMNetworkLog.h"
 #import "CountlyAPM.h"
+#import "CountlyConfig.h"
 
 #ifndef COUNTLY_DEBUG
 #define COUNTLY_DEBUG 1
-#endif
-
-#ifndef COUNTLY_PREFER_IDFA
-#define COUNTLY_PREFER_IDFA 0
 #endif
 
 #if COUNTLY_DEBUG
@@ -43,11 +40,9 @@
 
 #if TARGET_OS_IOS
 #import <UIKit/UIKit.h>
+#import <AdSupport/ASIdentifierManager.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import <CoreTelephony/CTCarrier.h>
-#if COUNTLY_PREFER_IDFA
-#import <AdSupport/ASIdentifierManager.h>
-#endif
 #endif
 
 #if TARGET_OS_TV
