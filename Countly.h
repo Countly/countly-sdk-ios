@@ -116,8 +116,6 @@
 
 #pragma mark - Countly CrashReporting
 #if TARGET_OS_IOS
-- (void)startCrashReporting;
-- (void)startCrashReportingWithSegments:(NSDictionary *)segments;
 - (void)recordHandledException:(NSException *)exception;
 #endif
 

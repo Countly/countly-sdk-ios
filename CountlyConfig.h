@@ -33,4 +33,6 @@ extern NSString* const CLYOpenUDID;
 @property (nonatomic, strong) NSDictionary* launchOptions;
 @property (nonatomic, readwrite) NSTimeInterval updateSessionPeriod;
 @property (nonatomic, readwrite) int eventSendThreshold;
+@property (nonatomic, strong) NSDictionary* crashSegmentation;
+
 @end

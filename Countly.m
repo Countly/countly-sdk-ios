@@ -95,7 +95,11 @@
     }
     
     if([config.features containsObject:CLYCrashReporting])
-        [self startCrashReporting];
+    {
+        CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
+        [CountlyCrashReporter.sharedInstance startCrashReporting];
+    }
+
 #else
     [self start:config.appKey withHost:config.host];
 
@@ -646,16 +650,6 @@
 #pragma mark - Countly CrashReporting
 
 #if TARGET_OS_IOS
-- (void)startCrashReporting
-{
-    [CountlyCrashReporter.sharedInstance startCrashReporting];
-}
-
-- (void)startCrashReportingWithSegments:(NSDictionary *)segments
-{
-    [CountlyCrashReporter.sharedInstance startCrashReportingWithSegments:segments];
-}
-
 - (void)recordHandledException:(NSException *)exception
 {
     [CountlyCrashReporter.sharedInstance recordHandledException:exception];

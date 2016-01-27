@@ -7,10 +7,12 @@
 #import "CountlyCommon.h"
 
 @interface CountlyCrashReporter ()
-@property (nonatomic, strong) NSDictionary* crashCustom;
 @end
 
 @implementation CountlyCrashReporter
+
+#if TARGET_OS_IOS
+
 + (instancetype)sharedInstance
 {
     static CountlyCrashReporter *s_sharedInstance = nil;
@@ -23,13 +25,11 @@
 {
     if (self = [super init])
     {
-        self.crashCustom = nil;
+        self.crashSegmentation = nil;
     }
     
     return self;
 }
-
-#if TARGET_OS_IOS
 
 #define kCountlyCrashUserInfoKey @"[CLY]_stack_trace"
 
@@ -42,12 +42,6 @@
 	signal(SIGFPE, CountlySignalHandler);
 	signal(SIGBUS, CountlySignalHandler);
 	signal(SIGPIPE, CountlySignalHandler);
-}
-
-- (void)startCrashReportingWithSegments:(NSDictionary *)segments
-{
-    self.crashCustom = segments;
-    [self startCrashReporting];
 }
 
 - (void)recordHandledException:(NSException *)exception
@@ -87,8 +81,8 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     crashReport[@"_background"] = @(CountlyDeviceInfo.isInBackground);
     crashReport[@"_run"] = @(CountlyCommon.sharedInstance.timeSinceLaunch);
     
-    if(CountlyCrashReporter.sharedInstance.crashCustom)
-        crashReport[@"_custom"] = CountlyCrashReporter.sharedInstance.crashCustom;
+    if(CountlyCrashReporter.sharedInstance.crashSegmentation)
+        crashReport[@"_custom"] = CountlyCrashReporter.sharedInstance.crashSegmentation;
 
     if(CountlyCustomCrashLogs)
         crashReport[@"_logs"] = [CountlyCustomCrashLogs componentsJoinedByString:@"\n"];
