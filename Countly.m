@@ -14,6 +14,8 @@
     NSTimer *timer;
     NSTimeInterval lastTime;
     BOOL isSuspended;
+    NSTimeInterval updateSessionPeriod;
+    int eventSendThreshold;
 }
 
 @property (nonatomic, strong) NSMutableDictionary *messageInfos;
@@ -77,6 +79,9 @@
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:config.deviceID];
     }
     
+    updateSessionPeriod = config.updateSessionPeriod;
+    eventSendThreshold = config.eventSendThreshold;
+    
 #if TARGET_OS_IOS
     if([config.features containsObject:CLYMessaging])
     {
@@ -101,7 +106,7 @@
 
 - (void)start:(NSString *)appKey withHost:(NSString*)appHost
 {
-	timer = [NSTimer scheduledTimerWithTimeInterval:COUNTLY_DEFAULT_UPDATE_INTERVAL
+	timer = [NSTimer scheduledTimerWithTimeInterval:updateSessionPeriod
 											 target:self
 										   selector:@selector(onTimer:)
 										   userInfo:nil
@@ -201,7 +206,7 @@
         [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
     }
     
-    if (CountlyPersistency.sharedInstance.recordedEvents.count >= COUNTLY_EVENT_SEND_THRESHOLD)
+    if (CountlyPersistency.sharedInstance.recordedEvents.count >= eventSendThreshold)
         [CountlyConnectionManager.sharedInstance sendEvents];
 }
 
@@ -245,7 +250,7 @@
         [CountlyPersistency.sharedInstance.startedEvents removeObjectForKey:key];
     }
     
-    if (CountlyPersistency.sharedInstance.recordedEvents.count >= COUNTLY_EVENT_SEND_THRESHOLD)
+    if (CountlyPersistency.sharedInstance.recordedEvents.count >= eventSendThreshold)
         [CountlyConnectionManager.sharedInstance sendEvents];
 }
 

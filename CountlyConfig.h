@@ -31,5 +31,6 @@ extern NSString* const CLYOpenUDID;
 @property (nonatomic, readwrite) BOOL forceDeviceIDInitialization;
 @property (nonatomic, strong) NSArray* features;
 @property (nonatomic, strong) NSDictionary* launchOptions;
-
+@property (nonatomic, readwrite) NSTimeInterval updateSessionPeriod;
+@property (nonatomic, readwrite) int eventSendThreshold;
 @end

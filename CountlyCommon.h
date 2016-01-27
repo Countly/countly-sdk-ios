@@ -29,20 +29,15 @@
 
 #define COUNTLY_SDK_VERSION @"16.01"
 
-#if TARGET_OS_WATCH
-#define COUNTLY_DEFAULT_UPDATE_INTERVAL 20.0
-#define COUNTLY_EVENT_SEND_THRESHOLD 3
-#import <WatchKit/WatchKit.h>
-#else
-#define COUNTLY_DEFAULT_UPDATE_INTERVAL 60.0
-#define COUNTLY_EVENT_SEND_THRESHOLD 10
-#endif
-
 #if TARGET_OS_IOS
 #import <UIKit/UIKit.h>
 #import <AdSupport/ASIdentifierManager.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import <CoreTelephony/CTCarrier.h>
+#endif
+
+#if TARGET_OS_WATCH
+#import <WatchKit/WatchKit.h>
 #endif
 
 #if TARGET_OS_TV
