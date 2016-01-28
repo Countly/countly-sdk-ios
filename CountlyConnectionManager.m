@@ -79,7 +79,9 @@
     {
         self.connection = nil;
 
-        if(!error)
+        NSDictionary* serverReply = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+    
+        if(!error && [serverReply[@"result"] isEqualToString:@"Success"])
         {
             COUNTLY_LOG(@"Request succesfully completed\n");
         
