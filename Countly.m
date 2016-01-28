@@ -283,10 +283,7 @@
         [CountlyConnectionManager.sharedInstance sendEvents];
 }
 
-- (void)recordUserDetails:(NSDictionary *)userDetails
-{
-    [CountlyConnectionManager.sharedInstance sendUserDetails];
-}
+#pragma mark ---
 
 - (void)recordLocation:(CLLocationCoordinate2D)coordinate
 {

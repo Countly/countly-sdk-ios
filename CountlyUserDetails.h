@@ -20,6 +20,7 @@
 @property(nonatomic, strong) NSDictionary* custom;
 
 + (CountlyUserDetails *)sharedInstance;
+- (void)recordUserDetails;
 - (NSString *)serialize;
 - (NSString *)extractPicturePathFromURLString:(NSString*)URLString;
 @end

@@ -28,6 +28,11 @@ NSString* const kCLYUserCustom = @"custom";
     return s_CountlyUserDetails;
 }
 
+- (void)recordUserDetails
+{
+    [CountlyConnectionManager.sharedInstance sendUserDetails];
+}
+
 - (NSString *)serialize
 {
     NSMutableDictionary* userDictionary = NSMutableDictionary.new;

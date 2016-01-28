@@ -50,8 +50,6 @@
 
 - (void)endEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum;
 
-- (void)recordUserDetails:(NSDictionary *)userDetails;
-
 - (void)recordLocation:(CLLocationCoordinate2D)coordinate;
 
 #pragma mark - Countly Messaging
