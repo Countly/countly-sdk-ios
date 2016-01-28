@@ -30,6 +30,7 @@
 - (void)sendUserDetails;
 - (void)sendPushToken:(NSString*)token;
 - (void)sendCrashReportLater:(NSString *)report;
+- (void)sendOldDeviceID:(NSString *)oldDeviceID;
 
 - (NSString *)queryEssentials;
 

@@ -17,6 +17,8 @@
 
 - (void)startWithConfig:(CountlyConfig *)config;
 
+- (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer;
+
 #if TARGET_OS_WATCH
 - (void)suspend;
 - (void)resume;

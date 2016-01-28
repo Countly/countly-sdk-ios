@@ -67,6 +67,31 @@
     return self;
 }
 
+- (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer
+{
+    if([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
+        return;
+    
+    if(onServer)
+    {
+        NSString* oldDeviceID = CountlyDeviceInfo.sharedInstance.deviceID;
+
+        [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
+    
+        [CountlyConnectionManager.sharedInstance sendOldDeviceID:oldDeviceID];
+    }
+    else
+    {
+        [Countly.sharedInstance suspend];
+
+        [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
+
+        [Countly.sharedInstance resume];
+
+        [CountlyPersistency.sharedInstance.startedEvents removeAllObjects];
+    }
+}
+
 #pragma mark ---
 
 - (void)startWithConfig:(CountlyConfig *)config

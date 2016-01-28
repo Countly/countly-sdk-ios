@@ -209,6 +209,15 @@
     [CountlyPersistency.sharedInstance saveToFile];
 }
 
+- (void)sendOldDeviceID:(NSString *)oldDeviceID
+{
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&old_device_id=%@",oldDeviceID];
+    
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
+    
+    [self tick];
+}
+
 #pragma mark ---
 
 - (void)startBackgroundTask
