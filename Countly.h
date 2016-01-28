@@ -119,7 +119,6 @@
 
 #pragma mark - Countly APM
 
--(void)startAPM;
 -(void)addExceptionForAPM:(NSString*)string;
 -(void)removeExceptionForAPM:(NSString*)string;
 

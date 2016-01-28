@@ -127,10 +127,10 @@
 
 #else
     [self start:config.appKey withHost:config.host];
+#endif
 
     if([config.features containsObject:CLYAPM])
-        [self startAPM];
-#endif
+        [CountlyAPM.sharedInstance startAPM];
 }
 
 - (void)start:(NSString *)appKey withHost:(NSString*)appHost
@@ -680,11 +680,6 @@
 
 
 #pragma mark - Countly APM
-
--(void)startAPM
-{
-    [CountlyAPM.sharedInstance swizzleForAPM];
-}
 
 -(void)addExceptionForAPM:(NSString*)exceptionURL
 {

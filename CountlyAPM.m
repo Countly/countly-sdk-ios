@@ -21,7 +21,7 @@
     return s_sharedInstance;
 }
 
-- (void)swizzleForAPM
+- (void)startAPM
 {
     Method O_method;
     Method C_method;
