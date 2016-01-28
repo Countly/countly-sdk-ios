@@ -24,6 +24,12 @@
     return s_sharedInstance;
 }
 
++ (void)load
+{
+    [CountlyCommon.sharedInstance timeSinceLaunch];
+    //NOTE: just to record app start time
+}
+
 - (instancetype)init
 {
     if (self = [super init])

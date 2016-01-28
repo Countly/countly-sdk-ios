@@ -38,7 +38,6 @@
 	{
 		timer = nil;
 		isSuspended = NO;
-        [CountlyCommon.sharedInstance timeSinceLaunch];  //NOTE: just to force loading of CountlyCommon class for recording app start time
 		unsentSessionLength = 0;
         
         self.messageInfos = NSMutableDictionary.new;
