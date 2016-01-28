@@ -289,9 +289,9 @@
     [CountlyConnectionManager.sharedInstance sendUserDetails];
 }
 
-- (void)setLocation:(double)latitude longitude:(double)longitude
+- (void)recordLocation:(CLLocationCoordinate2D)coordinate
 {
-    CountlyConnectionManager.sharedInstance.locationString = [NSString stringWithFormat:@"%f,%f", latitude, longitude];
+    [CountlyConnectionManager.sharedInstance sendLocation:coordinate];
 }
 
 #pragma mark ---

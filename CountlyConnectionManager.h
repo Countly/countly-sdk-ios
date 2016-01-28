@@ -15,7 +15,6 @@
 @property (nonatomic, strong) NSString* appHost;
 @property (nonatomic, strong) NSURLSessionTask* connection;
 @property (nonatomic, assign) BOOL startedWithTest;
-@property (nonatomic, strong) NSString* locationString;
 #if TARGET_OS_IOS
 @property (nonatomic, assign) UIBackgroundTaskIdentifier bgTask;
 #endif
@@ -31,6 +30,7 @@
 - (void)sendPushToken:(NSString*)token;
 - (void)sendCrashReportLater:(NSString *)report;
 - (void)sendOldDeviceID:(NSString *)oldDeviceID;
+- (void)sendLocation:(CLLocationCoordinate2D)coordinate;
 
 - (NSString *)queryEssentials;
 

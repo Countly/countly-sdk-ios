@@ -5,6 +5,7 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
+#import <CoreLocation/CoreLocation.h>
 #import "CountlyUserDetails.h"
 #import "CountlyCrashReporter.h" 
 #import "CountlyConfig.h"
@@ -51,6 +52,8 @@
 
 - (void)recordUserDetails:(NSDictionary *)userDetails;
 
+- (void)recordLocation:(CLLocationCoordinate2D)coordinate;
+
 #pragma mark - Countly Messaging
 #if TARGET_OS_IOS
 /**
@@ -66,11 +69,6 @@
 - (void)didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken;
 
 - (void)didFailToRegisterForRemoteNotifications;
-
-/**
- * Records user's location and sends it to the server with next updateSession. This value will be used instead of geoip lookup on the server when sending geolocation-aware push notifications.
- */
-- (void)setLocation:(double)latitude longitude:(double)longitude;
 
 /**
  * Create a set of UIMutableUserNotificationCategory'ies which you can register in addition to your ones to enable iOS 8 actions.

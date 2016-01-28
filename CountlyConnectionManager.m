@@ -122,13 +122,7 @@
 - (void)updateSessionWithDuration:(int)duration
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&session_duration=%d", duration];
-    
-    if (self.locationString)
-    {
-        queryString = [queryString stringByAppendingFormat:@"&location=%@",self.locationString];
-        self.locationString = nil;
-    }
-    
+        
     [CountlyPersistency.sharedInstance addToQueue:queryString];
     
 	[self tick];
@@ -215,6 +209,17 @@
     
     [CountlyPersistency.sharedInstance addToQueue:queryString];
     
+    [self tick];
+}
+
+- (void)sendLocation:(CLLocationCoordinate2D)coordinate
+{
+    NSString* locationString = [NSString stringWithFormat:@"%f,%f", coordinate.latitude, coordinate.longitude];
+
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&location=%@",locationString];
+    
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
+
     [self tick];
 }
 
