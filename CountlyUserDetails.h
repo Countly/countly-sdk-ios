@@ -14,25 +14,12 @@
 @property(nonatomic, strong) NSString* organization;
 @property(nonatomic, strong) NSString* phone;
 @property(nonatomic, strong) NSString* gender;
-@property(nonatomic, strong) NSString* picture;
-@property(nonatomic, strong) NSString* picturePath;
+@property(nonatomic, strong) NSString* pictureURL;
+@property(nonatomic, strong) NSString* pictureLocalPath;
 @property(nonatomic, assign) NSInteger birthYear;
 @property(nonatomic, strong) NSDictionary* custom;
 
 + (CountlyUserDetails *)sharedInstance;
-- (void)deserialize:(NSDictionary*)userDictionary;
 - (NSString *)serialize;
 - (NSString *)extractPicturePathFromURLString:(NSString*)URLString;
-
-extern NSString* const kCLYUserName;
-extern NSString* const kCLYUserUsername;
-extern NSString* const kCLYUserEmail;
-extern NSString* const kCLYUserOrganization;
-extern NSString* const kCLYUserPhone;
-extern NSString* const kCLYUserGender;
-extern NSString* const kCLYUserPicture;
-extern NSString* const kCLYUserPicturePath;
-extern NSString* const kCLYUserBirthYear;
-extern NSString* const kCLYUserCustom;
-
 @end

@@ -14,8 +14,8 @@ NSString* const kCLYUserEmail = @"email";
 NSString* const kCLYUserOrganization = @"organization";
 NSString* const kCLYUserPhone = @"phone";
 NSString* const kCLYUserGender = @"gender";
-NSString* const kCLYUserPicture = @"picture";
-NSString* const kCLYUserPicturePath = @"picturePath";
+NSString* const kCLYUserPictureURL = @"picture";
+NSString* const kCLYUserPictureLocalPath = @"picturePath";
 NSString* const kCLYUserBirthYear = @"byear";
 NSString* const kCLYUserCustom = @"custom";
 
@@ -26,30 +26,6 @@ NSString* const kCLYUserCustom = @"custom";
     
     dispatch_once(&onceToken, ^{s_CountlyUserDetails = CountlyUserDetails.new;});
     return s_CountlyUserDetails;
-}
-
-- (void)deserialize:(NSDictionary*)userDictionary
-{
-    if(userDictionary[kCLYUserName])
-        self.name = userDictionary[kCLYUserName];
-    if(userDictionary[kCLYUserUsername])
-        self.username = userDictionary[kCLYUserUsername];
-    if(userDictionary[kCLYUserEmail])
-        self.email = userDictionary[kCLYUserEmail];
-    if(userDictionary[kCLYUserOrganization])
-        self.organization = userDictionary[kCLYUserOrganization];
-    if(userDictionary[kCLYUserPhone])
-        self.phone = userDictionary[kCLYUserPhone];
-    if(userDictionary[kCLYUserGender])
-        self.gender = userDictionary[kCLYUserGender];
-    if(userDictionary[kCLYUserPicture])
-        self.picture = userDictionary[kCLYUserPicture];
-    if(userDictionary[kCLYUserPicturePath])
-        self.picturePath = userDictionary[kCLYUserPicturePath];
-    if(userDictionary[kCLYUserBirthYear])
-        self.birthYear = [userDictionary[kCLYUserBirthYear] integerValue];
-    if(userDictionary[kCLYUserCustom])
-        self.custom = userDictionary[kCLYUserCustom];
 }
 
 - (NSString *)serialize
@@ -67,10 +43,10 @@ NSString* const kCLYUserCustom = @"custom";
         userDictionary[kCLYUserPhone] = self.phone;
     if(self.gender)
         userDictionary[kCLYUserGender] = self.gender;
-    if(self.picture)
-        userDictionary[kCLYUserPicture] = self.picture;
-    if(self.picturePath)
-        userDictionary[kCLYUserPicturePath] = self.picturePath;
+    if(self.pictureURL)
+        userDictionary[kCLYUserPictureURL] = self.pictureURL;
+    if(self.pictureLocalPath)
+        userDictionary[kCLYUserPictureLocalPath] = self.pictureLocalPath;
     if(self.birthYear!=0)
         userDictionary[kCLYUserBirthYear] = @(self.birthYear);
     if(self.custom)
@@ -83,7 +59,7 @@ NSString* const kCLYUserCustom = @"custom";
 {
     NSString* unescaped = [URLString stringByReplacingOccurrencesOfString:@"+" withString:@" "];
     unescaped = [unescaped stringByRemovingPercentEncoding];
-    NSRange rPicturePathKey = [unescaped rangeOfString:kCLYUserPicturePath];
+    NSRange rPicturePathKey = [unescaped rangeOfString:kCLYUserPictureLocalPath];
     if (rPicturePathKey.location == NSNotFound)
         return nil;
 

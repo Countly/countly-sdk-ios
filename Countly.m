@@ -285,7 +285,6 @@
 
 - (void)recordUserDetails:(NSDictionary *)userDetails
 {
-    [CountlyUserDetails.sharedInstance deserialize:userDetails];
     [CountlyConnectionManager.sharedInstance sendUserDetails];
 }
 
