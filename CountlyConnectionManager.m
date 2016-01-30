@@ -184,10 +184,10 @@
     });
 }
 
-- (void)sendUserDetails
+- (void)sendUserDetails:(NSString*)userDetails
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&user_details=%@",
-                             [CountlyUserDetails.sharedInstance serialize]];
+                             userDetails];
     
     [CountlyPersistency.sharedInstance addToQueue:queryString];
     

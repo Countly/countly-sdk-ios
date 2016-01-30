@@ -23,4 +23,22 @@
 - (void)recordUserDetails;
 - (NSString *)serialize;
 - (NSString *)extractPicturePathFromURLString:(NSString*)URLString;
+
+#pragma mark -
+
+- (void)set:(NSString*)key value:(NSString*)value;
+- (void)setOnce:(NSString*)key value:(NSString*)value;
+- (void)unSet:(NSString*)key;
+- (void)increment:(NSString*)key;
+- (void)incrementBy:(NSString*)key value:(NSInteger)value;
+- (void)multiply:(NSString*)key value:(NSInteger)value;
+- (void)max:(NSString*)key value:(NSInteger)value;
+- (void)min:(NSString*)key value:(NSInteger)value;
+- (void)push:(NSString*)key value:(NSString*)value;
+- (void)push:(NSString*)key values:(NSArray*)value;
+- (void)pushUnique:(NSString*)key value:(NSString*)value;
+- (void)pushUnique:(NSString*)key values:(NSArray*)value;
+- (void)pull:(NSString*)key value:(NSString*)value;
+- (void)pull:(NSString*)key values:(NSArray*)value;
+- (void)save;
 @end
