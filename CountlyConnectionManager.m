@@ -79,17 +79,20 @@
     {
         self.connection = nil;
 
-        NSDictionary* serverReply = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-    
-        if(!error && [serverReply[@"result"] isEqualToString:@"Success"])
+        if(!error && data)
         {
-            COUNTLY_LOG(@"Request succesfully completed\n");
-        
-            [CountlyPersistency.sharedInstance.queuedRequests removeObjectAtIndex:0];
-        
-            [CountlyPersistency.sharedInstance saveToFile];
-        
-            [self tick];
+            NSDictionary* serverReply = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+
+            if(([serverReply[@"result"] isEqualToString:@"Success"]))
+            {
+                COUNTLY_LOG(@"Request successfully completed");
+
+                [CountlyPersistency.sharedInstance.queuedRequests removeObjectAtIndex:0];
+
+                [CountlyPersistency.sharedInstance saveToFile];
+
+                [self tick];
+            }
         }
         else
         {
