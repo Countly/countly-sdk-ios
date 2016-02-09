@@ -1364,6 +1364,7 @@ NSString* const kCLYUserCustom = @"custom";
 	signal(SIGFPE, CountlySignalHandler);
 	signal(SIGBUS, CountlySignalHandler);
 	signal(SIGPIPE, CountlySignalHandler);
+	signal(SIGTRAP, CountlySignalHandler);
 }
 
 - (void)startCrashReportingWithSegments:(NSDictionary *)segments
@@ -1489,6 +1490,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
 	signal(SIGFPE, SIG_DFL);
 	signal(SIGBUS, SIG_DFL);
 	signal(SIGPIPE, SIG_DFL);
+	signal(SIGTRAP, SIG_DFL);
 }
 
 void CountlySignalHandler(int signalCode)
