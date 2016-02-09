@@ -16,6 +16,7 @@
 #import "CountlyAPMNetworkLog.h"
 #import "CountlyAPM.h"
 #import "CountlyConfig.h"
+#import "CountlyViewTracking.h"
 
 #ifndef COUNTLY_DEBUG
 #define COUNTLY_DEBUG 1
@@ -27,7 +28,7 @@
 #define COUNTLY_LOG(...)
 #endif
 
-#define COUNTLY_SDK_VERSION @"16.01"
+#define COUNTLY_SDK_VERSION @"16.02"
 
 #if TARGET_OS_IOS
 #import <UIKit/UIKit.h>

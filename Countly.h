@@ -119,7 +119,11 @@
 
 #pragma mark - Countly APM
 
--(void)addExceptionForAPM:(NSString*)string;
--(void)removeExceptionForAPM:(NSString*)string;
+-(void)addExceptionForAPM:(NSString*)exceptionURL;
+-(void)removeExceptionForAPM:(NSString*)exceptionURL;
+
+#pragma mark - Countly View Tracking
+
+-(void)reportView:(NSString*)viewName;
 
 @end

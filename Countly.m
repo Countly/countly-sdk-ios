@@ -360,6 +360,9 @@
 - (void)willTerminateCallBack:(NSNotification *)notification
 {
 	COUNTLY_LOG(@"App willTerminate");
+    
+    [CountlyViewTracking.sharedInstance endView];
+
     [self suspend];
 }
 
@@ -688,6 +691,14 @@
 -(void)removeExceptionForAPM:(NSString*)exceptionURL
 {
     [CountlyAPM.sharedInstance removeExceptionForAPM:exceptionURL];
+}
+
+
+#pragma mark - Countly View Tracking
+
+-(void)reportView:(NSString*)viewName
+{
+    [CountlyViewTracking.sharedInstance reportView:viewName];
 }
 
 @end
