@@ -107,6 +107,9 @@
     eventSendThreshold = config.eventSendThreshold;
     
 #if TARGET_OS_IOS
+    
+    [CountlyCommon.sharedInstance transferParentDeviceID];
+
     if([config.features containsObject:CLYMessaging])
     {
         NSAssert(![config.launchOptions isEqualToDictionary:@{@"CLYAssertion":@"forLaunchOptions"}],@"LaunchOptions in Countly configuration is not set!");
@@ -123,8 +126,6 @@
         CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
         [CountlyCrashReporter.sharedInstance startCrashReporting];
     }
-
-    [CountlyCommon.sharedInstance transferParentDeviceID];
 #else
     [self start:config.appKey withHost:config.host];
 #endif

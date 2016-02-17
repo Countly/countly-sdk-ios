@@ -162,6 +162,18 @@
     return NSBundle.mainBundle.bundleIdentifier;
 }
 
+#if TARGET_OS_IOS
++ (NSInteger)hasWatch
+{
+    return (int)WCSession.defaultSession.paired;
+}
+
++ (NSInteger)installedWatchApp
+{
+    return (int)WCSession.defaultSession.watchAppInstalled;
+}
+#endif
+
 + (NSString *)metrics
 {
     NSMutableDictionary* metricsDictionary = NSMutableDictionary.new;
@@ -177,6 +189,11 @@
 	metricsDictionary[@"_locale"] = CountlyDeviceInfo.locale;
 	metricsDictionary[@"_app_version"] = CountlyDeviceInfo.appVersion;
 	
+#if TARGET_OS_IOS
+    metricsDictionary[@"_has_watch"] = @(CountlyDeviceInfo.hasWatch);
+    metricsDictionary[@"_installed_watch_app"] = @(CountlyDeviceInfo.installedWatchApp);
+#endif
+
 	return [metricsDictionary JSONify];
 }
 

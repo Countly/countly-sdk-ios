@@ -21,6 +21,10 @@
 + (NSString *)locale;
 + (NSString *)appVersion;
 + (NSString *)bundleId;
+#if TARGET_OS_IOS
++ (NSInteger)hasWatch;
++ (NSInteger)installedWatchApp;
+#endif
 
 + (NSString *)metrics;
 
