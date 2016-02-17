@@ -124,12 +124,17 @@
         [CountlyCrashReporter.sharedInstance startCrashReporting];
     }
 
+    [CountlyCommon.sharedInstance transferParentDeviceID];
 #else
     [self start:config.appKey withHost:config.host];
 #endif
 
     if([config.features containsObject:CLYAPM])
         [CountlyAPM.sharedInstance startAPM];
+    
+#if (TARGET_OS_WATCH)
+    [CountlyCommon.sharedInstance activateWatchConnectivity];
+#endif
 }
 
 - (void)start:(NSString *)appKey withHost:(NSString*)appHost

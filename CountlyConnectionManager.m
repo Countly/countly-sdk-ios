@@ -215,6 +215,15 @@
     [self tick];
 }
 
+- (void)sendParentDeviceID:(NSString *)parentDeviceID
+{    
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&parent_device_id=%@",parentDeviceID];
+    
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
+    
+    [self tick];
+}
+
 - (void)sendLocation:(CLLocationCoordinate2D)coordinate
 {
     NSString* locationString = [NSString stringWithFormat:@"%f,%f", coordinate.latitude, coordinate.longitude];

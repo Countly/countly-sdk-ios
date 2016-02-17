@@ -15,6 +15,9 @@
 - (NSString*)retrieveStoredDeviceID;
 - (void)storeDeviceID:(NSString*)deviceID;
 
+- (NSString*)retrieveWatchParentDeviceID;
+- (void)storeWatchParentDeviceID:(NSString*)deviceID;
+
 @property (nonatomic, strong) NSMutableArray* recordedEvents;
 @property (nonatomic, strong) NSMutableArray* queuedRequests;
 @property (nonatomic, strong) NSMutableDictionary* startedEvents;

@@ -30,6 +30,7 @@
 - (void)sendPushToken:(NSString*)token;
 - (void)sendCrashReportLater:(NSString *)report;
 - (void)sendOldDeviceID:(NSString *)oldDeviceID;
+- (void)sendParentDeviceID:(NSString *)parentDeviceID;
 - (void)sendLocation:(CLLocationCoordinate2D)coordinate;
 
 - (NSString *)queryEssentials;

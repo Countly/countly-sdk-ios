@@ -11,6 +11,7 @@ NSString* const kCountlyQueuedRequestsPersistencyKey = @"kCountlyQueuedRequestsP
 NSString* const kCountlyStartedEventsPersistencyKey = @"kCountlyStartedEventsPersistencyKey";
 NSString* const kCountlyTVOSNSUDKey = @"kCountlyTVOSNSUDKey";
 NSString* const kCountlyStoredDeviceIDKey = @"kCountlyStoredDeviceIDKey";
+NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKey";
 
 
 + (instancetype)sharedInstance
@@ -157,6 +158,17 @@ NSString* const kCountlyStoredDeviceIDKey = @"kCountlyStoredDeviceIDKey";
     {
         COUNTLY_LOG(@"Failed storing Device ID: %@", deviceID);
     }
+}
+
+- (NSString*)retrieveWatchParentDeviceID
+{
+    return [NSUserDefaults.standardUserDefaults objectForKey:kCountlyWatchParentDeviceIDKey];
+}
+
+- (void)storeWatchParentDeviceID:(NSString*)deviceID
+{
+    [NSUserDefaults.standardUserDefaults setObject:deviceID forKey:kCountlyWatchParentDeviceIDKey];
+    [NSUserDefaults.standardUserDefaults synchronize];
 }
 
 @end

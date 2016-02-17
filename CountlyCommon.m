@@ -13,7 +13,7 @@
 }
 @end
 
-
+NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
 
 @implementation CountlyCommon
 + (instancetype)sharedInstance
@@ -42,6 +42,7 @@
 }
 
 
+#pragma mark - Time/Date related methods
 - (NSInteger)hourOfDay
 {
     NSDateComponents* components = [gregorianCalendar components:NSCalendarUnitHour fromDate:NSDate.date];
@@ -59,10 +60,56 @@
     return (long)NSDate.date.timeIntervalSince1970 - startTime;
 }
 
+#pragma mark - Watch Connectivity
+
+#if (TARGET_OS_IOS || TARGET_OS_WATCH)
+- (void)activateWatchConnectivity
+{
+    if ([WCSession isSupported])
+    {
+        WCSession *session = WCSession.defaultSession;
+        session.delegate = self;
+        [session activateSession];
+    }
+}
+#endif
+
+#if (TARGET_OS_IOS)
+- (void)transferParentDeviceID
+{
+    [self activateWatchConnectivity];
+    
+    if(WCSession.defaultSession.paired && WCSession.defaultSession.watchAppInstalled)
+    {
+        [WCSession.defaultSession transferUserInfo:@{kCountlyParentDeviceIDTransferKey:CountlyDeviceInfo.sharedInstance.deviceID}];
+        COUNTLY_LOG(@"Transferring Parent Device ID %@", CountlyDeviceInfo.sharedInstance.deviceID);
+    }
+}
+#endif
+
+#if (TARGET_OS_WATCH)
+- (void)session:(WCSession *)session didReceiveUserInfo:(NSDictionary<NSString *, id> *)userInfo
+{
+    COUNTLY_LOG(@"didReceiveUserInfo %@", [userInfo description]);
+
+    NSString* parentDeviceID = userInfo[kCountlyParentDeviceIDTransferKey];
+    
+    if(parentDeviceID && ![parentDeviceID isEqualToString:[CountlyPersistency.sharedInstance retrieveWatchParentDeviceID]])
+    {
+        [CountlyConnectionManager.sharedInstance sendParentDeviceID:parentDeviceID];
+    
+        [CountlyPersistency.sharedInstance storeWatchParentDeviceID:parentDeviceID];
+    
+        COUNTLY_LOG(@"Parent Device ID added queue %@", parentDeviceID);
+    }
+}
+#endif
+
 @end
 
 
 
+#pragma mark - Categories
 NSString* CountlyJSONFromObject(id object)
 {
     NSError *error = nil;

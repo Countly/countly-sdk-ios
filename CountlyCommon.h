@@ -35,10 +35,12 @@
 #import <AdSupport/ASIdentifierManager.h>
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import <CoreTelephony/CTCarrier.h>
+#import "WatchConnectivity/WatchConnectivity.h"
 #endif
 
 #if TARGET_OS_WATCH
 #import <WatchKit/WatchKit.h>
+#import "WatchConnectivity/WatchConnectivity.h"
 #endif
 
 #if TARGET_OS_TV
@@ -62,11 +64,22 @@
 #import <ifaddrs.h>
 #import <objc/runtime.h>
 
+#if (TARGET_OS_IOS || TARGET_OS_WATCH)
+@interface CountlyCommon : NSObject <WCSessionDelegate>
+#else
 @interface CountlyCommon : NSObject
+#endif
 + (instancetype)sharedInstance;
 - (NSInteger)hourOfDay;
 - (NSInteger)dayOfWeek;
 - (long)timeSinceLaunch;
+#if (TARGET_OS_IOS || TARGET_OS_WATCH)
+- (void)activateWatchConnectivity;
+#endif
+
+#if (TARGET_OS_IOS)
+- (void)transferParentDeviceID;
+#endif
 @end
 
 @interface NSString (URLEscaped)
