@@ -126,6 +126,11 @@
         CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
         [CountlyCrashReporter.sharedInstance startCrashReporting];
     }
+
+    if([config.features containsObject:CLYViewTracking])
+    {
+        [CountlyViewTracking.sharedInstance startAutoViewTracking];
+    }
 #else
     [self start:config.appKey withHost:config.host];
 #endif
@@ -706,5 +711,17 @@
 {
     [CountlyViewTracking.sharedInstance reportView:viewName];
 }
+
+#if TARGET_OS_IOS
+-(void)setIsAutoViewTrackingEnabled:(BOOL)isAutoViewTrackingEnabled
+{
+    CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled = isAutoViewTrackingEnabled;
+}
+
+-(BOOL)isAutoViewTrackingEnabled
+{
+    return CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled;
+}
+#endif
 
 @end

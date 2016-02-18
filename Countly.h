@@ -125,5 +125,5 @@
 #pragma mark - Countly View Tracking
 
 -(void)reportView:(NSString*)viewName;
-
+@property (nonatomic,readwrite) BOOL isAutoViewTrackingEnabled;
 @end

@@ -12,4 +12,14 @@
 
 - (void)reportView:(NSString* _Nonnull)viewName;
 - (void)endView;
+#if TARGET_OS_IOS
+- (void)startAutoViewTracking;
+@property (nonatomic, readwrite) BOOL isAutoViewTrackingEnabled;
+#endif
 @end
+
+#if TARGET_OS_IOS
+@interface UIViewController (CountlyViewTracking)
+- (void)Countly_viewDidAppear:(BOOL)animated;
+@end
+#endif

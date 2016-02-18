@@ -10,6 +10,7 @@
 #if TARGET_OS_IOS
 extern NSString* const CLYMessaging;
 extern NSString* const CLYCrashReporting;
+extern NSString* const CLYViewTracking;
 #endif
 extern NSString* const CLYAPM;
 
