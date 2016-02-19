@@ -224,13 +224,13 @@
 #pragma mark - Countly ViewTracking
 
 /**
- * Reports a visited view with given name manually. If auto ViewTracking is enabled on start configuration, no need to call this method.
+ * Reports a visited view with given name manually. If auto ViewTracking feature is activated on start configuration, no need to call this method manually.
  * @param viewName Name of the view visited.
  */
 -(void)reportView:(NSString*)viewName;
 
 /**
- * Enables or disables auto ViewTracking, If auto ViewTracking is enabled on start configuration.
+ * Enables or disables auto ViewTracking if auto ViewTracking feature is activated on start configuration. Otherwise has no effect.
  */
 @property (nonatomic,readwrite) BOOL isAutoViewTrackingEnabled;
 @end
