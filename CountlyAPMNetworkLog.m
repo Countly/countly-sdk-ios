@@ -26,7 +26,7 @@
     [CountlyAPM.sharedInstance.exceptionURLs
      enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop)
     {
-        if([obj isEqual:request.URL.host] || [obj isEqual:hostAndPath])
+        if([request.URL.host isEqualToString:obj] || [hostAndPath hasPrefix:obj])
         {
             isException = YES;
             *stop = YES;
@@ -93,6 +93,8 @@
     event.hourOfDay = [CountlyCommon.sharedInstance hourOfDay];
     event.dayOfWeek = [CountlyCommon.sharedInstance dayOfWeek];
     event.duration = self.endTime - self.startTime;
+    
+    COUNTLY_LOG(@"Recorded APM log: %@", [self description]);
     
     [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
 }

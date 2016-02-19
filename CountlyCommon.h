@@ -19,7 +19,7 @@
 #import "CountlyViewTracking.h"
 
 #ifndef COUNTLY_DEBUG
-#define COUNTLY_DEBUG 1
+#define COUNTLY_DEBUG 0
 #endif
 
 #if COUNTLY_DEBUG
