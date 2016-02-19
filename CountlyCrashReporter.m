@@ -113,7 +113,10 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
 
     NSURLResponse* response = nil;
 	NSError* error = nil;
-	NSData* recvData = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
+    NSData* recvData = nil;
+    
+    if(!nonfatal)
+        recvData = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
 	
 	if (error || !recvData)
     {
