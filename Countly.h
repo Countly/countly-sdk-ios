@@ -124,6 +124,12 @@
 - (void)startEvent:(NSString *)key;
 
 /**
+ * Ends a previously started timed event with given key. Trying to end an event with already ended (or not yet started) key will have no effect.
+ * @param key Event key
+ */
+- (void)endEvent:(NSString *)key;
+
+/**
  * Ends a previously started timed event with given key, segmentation, count and sum. Trying to end an event with already ended (or not yet started) key will have no effect.
  * @param key Event key
  * @param segmentation Segmentation key-value pairs of event

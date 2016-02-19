@@ -269,6 +269,11 @@
     }
 }
 
+- (void)endEvent:(NSString *)key
+{
+    [self endEvent:key segmentation:nil count:1 sum:0];
+}
+
 - (void)endEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum
 {
     @synchronized (self)
