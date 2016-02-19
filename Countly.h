@@ -14,42 +14,128 @@
 
 #pragma mark - Countly Core
 
+/**
+ * Returns Countly singleton to be used throughout the app.
+ * @return The shared Countly object
+ */
 + (instancetype)sharedInstance;
 
+/**
+ * Starts Countly with given configuration and begins session.
+ * @param config CountlyConfig object that defines host, app key and optional features
+ */
 - (void)startWithConfig:(CountlyConfig *)config;
 
+/**
+ * Sets new device ID to be persistently stored and used in following requests.
+ * @param deviceID New device ID
+ * @param onServer If YES data on server will be merged automatically, otherwise device will be counted as a new device.
+ */
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer;
 
 #if TARGET_OS_WATCH
+/**
+ * Suspends Countly, add recorded events to request queue and ends current session. Only needs to be called manually on watchOS, on other platforms it will be called automatically.
+ */
 - (void)suspend;
+
+/**
+ * Resumes Countly, begins a new session. Only needs to be called manually on watchOS, on other platforms it will be called automatically.
+ */
 - (void)resume;
 #endif
 
 
-#pragma mark -
+#pragma mark - Countly EventRecording
 
+/**
+ * Records event with given key
+ * @param key Event key
+ */
 - (void)recordEvent:(NSString *)key;
 
+/**
+ * Records event with given key and count
+ * @param key Event key
+ * @param count Count of event occurrences
+ */
 - (void)recordEvent:(NSString *)key count:(NSUInteger)count;
 
+/**
+ * Records event with given key and sum
+ * @param key Event key
+ * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
+ */
 - (void)recordEvent:(NSString *)key sum:(double)sum;
 
+/**
+ * Records event with given key and duration
+ * @param key Event key
+ * @param duration Duration of event in seconds
+ */
 - (void)recordEvent:(NSString *)key duration:(NSTimeInterval)duration;
 
+/**
+ * Records event with given key, count and sum
+ * @param key Event key
+ * @param count Count of event occurrences
+ * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
+ */
 - (void)recordEvent:(NSString *)key count:(NSUInteger)count sum:(double)sum;
 
+/**
+ * Records event with given key and segmentation
+ * @param key Event key
+ * @param segmentation Segmentation key-value pairs of event
+ */
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation;
 
+/**
+ * Records event with given key, segmentation and count
+ * @param key Event key
+ * @param segmentation Segmentation key-value pairs of event
+ * @param count Count of event occurrences
+ */
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count;
 
+/**
+ * Records event with given key, segmentation, count and sum
+ * @param key Event key
+ * @param segmentation Segmentation key-value pairs of event
+ * @param count Count of event occurrences
+ * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
+ */
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum;
 
+/**
+ * Records event with given key, segmentation, count, sum and duration
+ * @param key Event key
+ * @param segmentation Segmentation key-value pairs of event
+ * @param count Count of event occurrences
+ * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
+ * @param duration Duration of event in seconds
+ */
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
 
+/**
+ * Starts a timed event with given key to be ended later. Duration of timed event will be calculated on ending. Trying to start an event with already started key will have no effect.
+ * @param key Event key
+ */
 - (void)startEvent:(NSString *)key;
 
+/**
+ * Ends a previously started timed event with given key, segmentation, count and sum. Trying to end an event with already ended (or not yet started) key will have no effect.
+ * @param key Event key
+ * @param segmentation Segmentation key-value pairs of event
+ * @param count Count of event occurrences
+ * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
+ */
 - (void)endEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum;
 
+/**
+ * Records location with given coordinate to be used for location-aware push notifications
+ * @param coordinate CLLocationCoordinate2D struct with latitude and longitude
+ */
 - (void)recordLocation:(CLLocationCoordinate2D)coordinate;
 
 #pragma mark - Countly Messaging
@@ -114,16 +200,37 @@
 
 #pragma mark - Countly CrashReporting
 #if TARGET_OS_IOS
+/**
+ * Records handled exception manually in addition to automatic reporting of unhandled exceptions and crashes
+ * @param exception Exception to be reported
+ */
 - (void)recordHandledException:(NSException *)exception;
 #endif
 
 #pragma mark - Countly APM
 
+/**
+ * Adds exception URL for APM. Added URLs (with or without specific path) will be ignored by APM. Adding an already added URL again will have no effect.
+ * @param exceptionURL Exception URL to be added.
+ */
 -(void)addExceptionForAPM:(NSString*)exceptionURL;
+
+/**
+ * Removes exception URL for APM. Removing an already removed (or not yet added) URL again will have no effect.
+ * @param exceptionURL Exception URL to be removed.
+ */
 -(void)removeExceptionForAPM:(NSString*)exceptionURL;
 
-#pragma mark - Countly View Tracking
+#pragma mark - Countly ViewTracking
 
+/**
+ * Reports a visited view with given name manually. If auto ViewTracking is enabled on start configuration, no need to call this method.
+ * @param viewName Name of the view visited.
+ */
 -(void)reportView:(NSString*)viewName;
+
+/**
+ * Enables or disables auto ViewTracking, If auto ViewTracking is enabled on start configuration.
+ */
 @property (nonatomic,readwrite) BOOL isAutoViewTrackingEnabled;
 @end
