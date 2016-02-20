@@ -1,13 +1,13 @@
 Pod::Spec.new do |s|
-  s.name     = 'Countly'
-  s.version  = '15.06.01'
-  s.license      = {
+  s.name = 'Countly'
+  s.version = '16.02'
+  s.license = {
     :type => 'COMMUNITY',
     :text => <<-LICENSE
               COUNTLY MOBILE ANALYTICS COMMUNITY EDITION LICENSE
               --------------------------------------------------
 
-              Copyright (c) 2012, 2015 Countly
+              Copyright (c) 2012, 2016 Countly
 
               Permission is hereby granted, free of charge, to any person obtaining a copy
               of this software and associated documentation files (the "Software"), to deal
@@ -30,12 +30,13 @@ Pod::Spec.new do |s|
   }
   s.summary  = 'Countly is an innovative, real-time, open source mobile analytics platform.'
   s.homepage = 'https://github.com/Countly/countly-sdk-ios'
-  s.author  = {'Countly' => 'hello@count.ly'}
-  s.source   = { :git => 'https://github.com/Countly/countly-sdk-ios.git', :tag => s.version.to_s }
+  s.social_media_url = 'https://twitter.com/gocountly'
+  s.author = {'Countly' => 'hello@count.ly'}
+  s.source = { :git => 'https://github.com/Countly/countly-sdk-ios.git', :tag => s.version.to_s }
   s.source_files = '*.{h,m}'
-  s.resources = '*.{xcdatamodeld}'
   s.requires_arc = true
-  s.ios.deployment_target = '5.0'
-  s.osx.deployment_target = '10.8'
-  s.ios.weak_framework = 'CoreTelephony', 'CoreData'
+  s.ios.deployment_target = '7.0'
+  s.osx.deployment_target = '10.9'
+  s.watchos.deployment_target = '2.0'
+  s.tvos.deployment_target = '9.0'
 end
