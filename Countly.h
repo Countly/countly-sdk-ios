@@ -138,12 +138,6 @@
  */
 - (void)endEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum;
 
-/**
- * Records location with given coordinate to be used for location-aware push notifications
- * @param coordinate CLLocationCoordinate2D struct with latitude and longitude
- */
-- (void)recordLocation:(CLLocationCoordinate2D)coordinate;
-
 #pragma mark - Countly Messaging
 #if TARGET_OS_IOS
 /**
@@ -202,6 +196,13 @@
  * @param c NSDictionary of @"c" userInfo key.
  */
 - (void)recordPushActionForCountlyDictionary:(NSDictionary *)c;
+
+
+/**
+ * Records location with given coordinate to be used for location-aware push notifications
+ * @param coordinate CLLocationCoordinate2D struct with latitude and longitude
+ */
+- (void)recordLocation:(CLLocationCoordinate2D)coordinate;
 #endif
 
 #pragma mark - Countly CrashReporting

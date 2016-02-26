@@ -300,13 +300,6 @@
 
 #pragma mark ---
 
-- (void)recordLocation:(CLLocationCoordinate2D)coordinate
-{
-    [CountlyConnectionManager.sharedInstance sendLocation:coordinate];
-}
-
-#pragma mark ---
-
 - (void)onTimer:(NSTimer *)timer
 {
 	if (isSuspended == YES)
@@ -664,6 +657,11 @@
 - (void)recordPushActionForCountlyDictionary:(NSDictionary *)c
 {
     [self recordEvent:kPushEventKeyAction segmentation:@{@"i": c[@"i"]} count:1];
+}
+
+- (void)recordLocation:(CLLocationCoordinate2D)coordinate
+{
+    [CountlyConnectionManager.sharedInstance sendLocation:coordinate];
 }
 
 #pragma mark ---
