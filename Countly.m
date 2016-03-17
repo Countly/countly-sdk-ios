@@ -29,39 +29,39 @@
     static Countly *s_sharedCountly = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedCountly = self.new;});
-	return s_sharedCountly;
+    return s_sharedCountly;
 }
 
 - (instancetype)init
 {
-	if (self = [super init])
-	{
-		timer = nil;
-		isSuspended = NO;
-		unsentSessionLength = 0;
-        
+    if (self = [super init])
+    {
+        timer = nil;
+        isSuspended = NO;
+        unsentSessionLength = 0;
+
         self.messageInfos = NSMutableDictionary.new;
 
 #if (TARGET_OS_IOS  || TARGET_OS_TV)
-		[NSNotificationCenter.defaultCenter addObserver:self
-												 selector:@selector(didEnterBackgroundCallBack:)
-													 name:UIApplicationDidEnterBackgroundNotification
-												   object:nil];
-		[NSNotificationCenter.defaultCenter addObserver:self
-												 selector:@selector(willEnterForegroundCallBack:)
-													 name:UIApplicationWillEnterForegroundNotification
-												   object:nil];
-		[NSNotificationCenter.defaultCenter addObserver:self
-												 selector:@selector(willTerminateCallBack:)
-													 name:UIApplicationWillTerminateNotification
-												   object:nil];
+        [NSNotificationCenter.defaultCenter addObserver:self
+                                               selector:@selector(didEnterBackgroundCallBack:)
+                                                   name:UIApplicationDidEnterBackgroundNotification
+                                                 object:nil];
+        [NSNotificationCenter.defaultCenter addObserver:self
+                                               selector:@selector(willEnterForegroundCallBack:)
+                                                   name:UIApplicationWillEnterForegroundNotification
+                                                 object:nil];
+        [NSNotificationCenter.defaultCenter addObserver:self
+                                               selector:@selector(willTerminateCallBack:)
+                                                   name:UIApplicationWillTerminateNotification
+                                                 object:nil];
 #elif TARGET_OS_OSX
-         [NSNotificationCenter.defaultCenter addObserver:self
-                                                selector:@selector(willTerminateCallBack:)
-                                                    name:NSApplicationWillTerminateNotification
-                                                  object:nil];
+        [NSNotificationCenter.defaultCenter addObserver:self
+                                               selector:@selector(willTerminateCallBack:)
+                                                   name:NSApplicationWillTerminateNotification
+                                                 object:nil];
 #endif
-	}
+    }
 
     return self;
 }
@@ -70,13 +70,13 @@
 {
     if([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
         return;
-    
+
     if(onServer)
     {
         NSString* oldDeviceID = CountlyDeviceInfo.sharedInstance.deviceID;
 
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
-    
+
         [CountlyConnectionManager.sharedInstance sendOldDeviceID:oldDeviceID];
     }
     else
@@ -97,17 +97,17 @@
 {
     NSAssert(config.appKey && ![config.appKey isEqualToString:@"YOUR_APP_KEY"],@"App key in Countly configuration is not set!");
     NSAssert(config.host && ![config.host isEqualToString:@"https://YOUR_COUNTLY_SERVER"],@"Host in Countly configuration is not set!");
-    
+
     if(!CountlyDeviceInfo.sharedInstance.deviceID || config.forceDeviceIDInitialization)
     {
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:config.deviceID];
     }
-    
+
     updateSessionPeriod = config.updateSessionPeriod;
     eventSendThreshold = config.eventSendThreshold;
-    
+
 #if TARGET_OS_IOS
-    
+
     [CountlyCommon.sharedInstance transferParentDeviceID];
 
     if([config.features containsObject:CLYMessaging])
@@ -120,7 +120,7 @@
     {
         [self start:config.appKey withHost:config.host];
     }
-    
+
     if([config.features containsObject:CLYCrashReporting])
     {
         CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
@@ -137,7 +137,7 @@
 
     if([config.features containsObject:CLYAPM])
         [CountlyAPM.sharedInstance startAPM];
-    
+
 #if (TARGET_OS_WATCH)
     [CountlyCommon.sharedInstance activateWatchConnectivity];
 #endif
@@ -145,15 +145,15 @@
 
 - (void)start:(NSString *)appKey withHost:(NSString*)appHost
 {
-	timer = [NSTimer scheduledTimerWithTimeInterval:updateSessionPeriod
-											 target:self
-										   selector:@selector(onTimer:)
-										   userInfo:nil
-											repeats:YES];
-	lastTime = NSDate.date.timeIntervalSince1970;
-	CountlyConnectionManager.sharedInstance.appKey = appKey;
-	CountlyConnectionManager.sharedInstance.appHost = appHost;
-	[CountlyConnectionManager.sharedInstance beginSession];
+    timer = [NSTimer scheduledTimerWithTimeInterval:updateSessionPeriod
+                                             target:self
+                                           selector:@selector(onTimer:)
+                                           userInfo:nil
+                                            repeats:YES];
+    lastTime = NSDate.date.timeIntervalSince1970;
+    CountlyConnectionManager.sharedInstance.appKey = appKey;
+    CountlyConnectionManager.sharedInstance.appHost = appHost;
+    [CountlyConnectionManager.sharedInstance beginSession];
 }
 
 
@@ -161,11 +161,11 @@
 - (void)startWithMessagingUsing:(NSString *)appKey withHost:(NSString *)appHost andOptions:(NSDictionary *)options
 {
     [self start:appKey withHost:appHost];
-    
+
     NSDictionary *notification = [options objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
     if (notification) {
         COUNTLY_LOG(@"Got notification on app launch: %@", notification);
-//        [self handleRemoteNotification:notification displayingMessage:NO];
+        //        [self handleRemoteNotification:notification displayingMessage:NO];
     }
 }
 
@@ -173,13 +173,13 @@
 {
     [self start:appKey withHost:appHost];
     CountlyConnectionManager.sharedInstance.startedWithTest = YES;
-    
+
     NSDictionary *notification = [options objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
     if (notification) {
         COUNTLY_LOG(@"Got notification on app launch: %@", notification);
         [self handleRemoteNotification:notification displayingMessage:NO];
     }
-    
+
     [self withAppStoreId:^(NSString *appId) {
         COUNTLY_LOG(@"ID: %@", appId);
     }];
@@ -241,10 +241,10 @@
         event.hourOfDay = [CountlyCommon.sharedInstance hourOfDay];
         event.dayOfWeek = [CountlyCommon.sharedInstance dayOfWeek];
         event.duration = duration;
-    
+
         [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
     }
-    
+
     if (CountlyPersistency.sharedInstance.recordedEvents.count >= eventSendThreshold)
         [CountlyConnectionManager.sharedInstance sendEvents];
 }
@@ -264,7 +264,7 @@
         event.timestamp = NSDate.date.timeIntervalSince1970;
         event.hourOfDay = [CountlyCommon.sharedInstance hourOfDay];
         event.dayOfWeek = [CountlyCommon.sharedInstance dayOfWeek];
-    
+
         CountlyPersistency.sharedInstance.startedEvents[key] = event;
     }
 }
@@ -289,11 +289,11 @@
         event.count = MAX(count, 1);;
         event.sum = sum;
         event.duration = NSDate.date.timeIntervalSince1970 - event.timestamp;
-    
+
         [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
         [CountlyPersistency.sharedInstance.startedEvents removeObjectForKey:key];
     }
-    
+
     if (CountlyPersistency.sharedInstance.recordedEvents.count >= eventSendThreshold)
         [CountlyConnectionManager.sharedInstance sendEvents];
 }
@@ -309,33 +309,33 @@
 
 - (void)onTimer:(NSTimer *)timer
 {
-	if (isSuspended == YES)
-		return;
-    
-	NSTimeInterval currTime = NSDate.date.timeIntervalSince1970;
-	unsentSessionLength += currTime - lastTime;
-	lastTime = currTime;
-    
-	int duration = unsentSessionLength;
-	[CountlyConnectionManager.sharedInstance updateSessionWithDuration:duration];
-	unsentSessionLength -= duration;
-    
+    if (isSuspended == YES)
+        return;
+
+    NSTimeInterval currTime = NSDate.date.timeIntervalSince1970;
+    unsentSessionLength += currTime - lastTime;
+    lastTime = currTime;
+
+    int duration = unsentSessionLength;
+    [CountlyConnectionManager.sharedInstance updateSessionWithDuration:duration];
+    unsentSessionLength -= duration;
+
     [CountlyConnectionManager.sharedInstance sendEvents];
 }
 
 - (void)suspend
 {
-	isSuspended = YES;
-    
+    isSuspended = YES;
+
     [CountlyConnectionManager.sharedInstance sendEvents];
-    
+
     NSTimeInterval currTime = NSDate.date.timeIntervalSince1970;
-	unsentSessionLength += currTime - lastTime;
-    
-	int duration = unsentSessionLength;
-	[CountlyConnectionManager.sharedInstance endSessionWithDuration:duration];
-	unsentSessionLength -= duration;
-    
+    unsentSessionLength += currTime - lastTime;
+
+    int duration = unsentSessionLength;
+    [CountlyConnectionManager.sharedInstance endSessionWithDuration:duration];
+    unsentSessionLength -= duration;
+
     [CountlyPersistency.sharedInstance saveToFile];
 }
 
@@ -344,39 +344,39 @@
 #if TARGET_OS_WATCH
     //NOTE: skip first time to prevent double begin session because of applicationDidBecomeActive call on app lunch
     static BOOL isFirstCall = YES;
-    
+
     if(isFirstCall)
     {
         isFirstCall = NO;
         return;
     }
 #endif
-    
+
     lastTime = NSDate.date.timeIntervalSince1970;
-    
-	[CountlyConnectionManager.sharedInstance beginSession];
-    
-	isSuspended = NO;
+
+    [CountlyConnectionManager.sharedInstance beginSession];
+
+    isSuspended = NO;
 }
 
 #pragma mark ---
 
 - (void)didEnterBackgroundCallBack:(NSNotification *)notification
 {
-	COUNTLY_LOG(@"App didEnterBackground");
+    COUNTLY_LOG(@"App didEnterBackground");
     [self suspend];
 }
 
 - (void)willEnterForegroundCallBack:(NSNotification *)notification
 {
-	COUNTLY_LOG(@"App willEnterForeground");
-	[self resume];
+    COUNTLY_LOG(@"App willEnterForeground");
+    [self resume];
 }
 
 - (void)willTerminateCallBack:(NSNotification *)notification
 {
-	COUNTLY_LOG(@"App willTerminate");
-    
+    COUNTLY_LOG(@"App willTerminate");
+
     [CountlyViewTracking.sharedInstance endView];
 
     [self suspend];
@@ -387,7 +387,7 @@
 #if TARGET_OS_IOS
     [NSNotificationCenter.defaultCenter removeObserver:self];
 #endif
-    
+
     if (timer)
     {
         [timer invalidate];
@@ -430,20 +430,20 @@
 - (BOOL)handleRemoteNotification:(NSDictionary *)info displayingMessage:(BOOL)displayMessage withButtonTitles:(NSArray *)titles
 {
     COUNTLY_LOG(@"Handling remote notification (display? %d): %@", displayMessage, info);
-    
+
     NSDictionary *aps = info[@"aps"];
     NSDictionary *countly = info[@"c"];
-    
+
     if (countly[@"i"]) {
         COUNTLY_LOG(@"Message id: %@", countly[@"i"]);
 
         [self recordPushOpenForCountlyDictionary:countly];
         NSString *appName = [[NSBundle.mainBundle infoDictionary] objectForKey:(NSString*)kCFBundleNameKey];
         NSString *message = [aps objectForKey:@"alert"];
-        
+
         int type = 0;
         NSString *action = nil;
-        
+
         if ([aps objectForKey:@"content-available"]) {
             return NO;
         } else if (countly[@"l"]) {
@@ -459,8 +459,9 @@
             type = kPushToMessage;
             action = nil;
         }
-        
+
         if (type && [message length]) {
+#if TARGET_OS_IOS && __IPHONE_OS_VERSION_MIN_REQUIRED < 90000
             UIAlertView *alert;
             if (action) {
                 alert = [[UIAlertView alloc] initWithTitle:appName message:message delegate:self
@@ -470,14 +471,29 @@
                                          cancelButtonTitle:titles[0] otherButtonTitles:nil];
             }
             alert.tag = type;
-            
+
             _messageInfos[alert.description] = info;
 
             [alert show];
+#else
+            UIAlertController *alertController = [UIAlertController alertControllerWithTitle:appName message:message preferredStyle:UIAlertControllerStyleAlert];
+            UIAlertAction *cancelAction = [UIAlertAction actionWithTitle:titles[0] style:UIAlertActionStyleCancel handler:^(UIAlertAction * action) {
+                [alertController dismissViewControllerAnimated:YES completion:nil];
+            }];
+            [alertController addAction:cancelAction];
+            if (action) {
+                UIAlertAction *actionAction = [UIAlertAction actionWithTitle:action style:UIAlertActionStyleDefault handler:^(UIAlertAction * action) {
+                    [alertController dismissViewControllerAnimated:YES completion:nil];
+                    [self alertViewWithType:type clickedActionWithDescription:info];
+                }];
+                [alertController addAction:actionAction];
+            }
+            [[UIApplication sharedApplication].keyWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
+#endif
             return YES;
         }
     }
-    
+
     return NO;
 }
 
@@ -493,51 +509,52 @@
     UIMutableUserNotificationCategory *url = [UIMutableUserNotificationCategory new],
     *upd = [UIMutableUserNotificationCategory new],
     *rev = [UIMutableUserNotificationCategory new];
-    
+
     url.identifier = @"[CLY]_url";
     upd.identifier = @"[CLY]_update";
     rev.identifier = @"[CLY]_review";
-    
+
     UIMutableUserNotificationAction *cancel = [UIMutableUserNotificationAction new],
     *open = [UIMutableUserNotificationAction new],
     *update = [UIMutableUserNotificationAction new],
     *review = [UIMutableUserNotificationAction new];
-    
+
     cancel.identifier = @"[CLY]_cancel";
     open.identifier   = @"[CLY]_open";
     update.identifier = @"[CLY]_update";
     review.identifier = @"[CLY]_review";
-    
+
     cancel.title = actions[0];
     open.title   = actions[1];
     update.title = actions[2];
     review.title = actions[3];
-    
+
     cancel.activationMode = UIUserNotificationActivationModeBackground;
     open.activationMode   = UIUserNotificationActivationModeForeground;
     update.activationMode = UIUserNotificationActivationModeForeground;
     review.activationMode = UIUserNotificationActivationModeForeground;
-    
+
     cancel.destructive = NO;
     open.destructive   = NO;
     update.destructive = NO;
     review.destructive = NO;
-    
-    
+
+
     [url setActions:@[cancel, open] forContext:UIUserNotificationActionContextMinimal];
     [url setActions:@[cancel, open] forContext:UIUserNotificationActionContextDefault];
-    
+
     [upd setActions:@[cancel, update] forContext:UIUserNotificationActionContextMinimal];
     [upd setActions:@[cancel, update] forContext:UIUserNotificationActionContextDefault];
-    
+
     [rev setActions:@[cancel, review] forContext:UIUserNotificationActionContextMinimal];
     [rev setActions:@[cancel, review] forContext:UIUserNotificationActionContextDefault];
-    
+
     NSMutableSet *set = [NSMutableSet setWithObjects:url, upd, rev, nil];
-    
+
     return set;
 }
 
+#if TARGET_OS_IOS && __IPHONE_OS_VERSION_MIN_REQUIRED < 90000
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
 {
     NSDictionary *info = [_messageInfos[alertView.description] copy];
@@ -568,6 +585,36 @@
         }
     }
 }
+#else
+- (void)alertViewWithType:(NSInteger)alertType clickedActionWithDescription:(NSDictionary *)description
+{
+    NSDictionary *info = [description copy];
+    [_messageInfos removeObjectForKey:description];
+
+    if (alertType == kPushToMessage) {
+        // do nothing
+    } else if (alertType == kPushToOpenLink) {
+        [self recordPushActionForCountlyDictionary:info[@"c"]];
+        [[UIApplication sharedApplication] openURL:[NSURL URLWithString:info[@"c"][@"l"]]];
+    } else if (alertType == kPushToUpdate) {
+        if ([info[@"c"][@"u"] length]) {
+            [self openUpdate:info[@"c"][@"u"] forInfo:info];
+        } else {
+            [self withAppStoreId:^(NSString *appStoreId) {
+                [self openUpdate:appStoreId forInfo:info];
+            }];
+        }
+    } else if (alertType == kPushToReview) {
+        if ([info[@"c"][@"r"] length]) {
+            [self openReview:info[@"c"][@"r"] forInfo:info];
+        } else {
+            [self withAppStoreId:^(NSString *appStoreId) {
+                [self openReview:appStoreId forInfo:info];
+            }];
+        }
+    }
+}
+#endif
 
 - (void)withAppStoreId:(void (^)(NSString *))block
 {
@@ -584,19 +631,19 @@
             } else if ([[appStoreCountry stringByReplacingOccurrencesOfString:@"[A-Za-z]{2}" withString:@"" options:NSRegularExpressionSearch range:NSMakeRange(0, 2)] length]) {
                 appStoreCountry = @"us";
             }
-            
+
             NSString *iTunesServiceURL = [NSString stringWithFormat:@"http://itunes.apple.com/%@/lookup", appStoreCountry];
             iTunesServiceURL = [iTunesServiceURL stringByAppendingFormat:@"?bundleId=%@", bundle];
-            
+
             NSError *error = nil;
             NSURLResponse *response = nil;
             NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:iTunesServiceURL] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
             NSData *data = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
             NSInteger statusCode = ((NSHTTPURLResponse *)response).statusCode;
             if (data && statusCode == 200) {
-                
+
                 id json = [[NSJSONSerialization JSONObjectWithData:data options:(NSJSONReadingOptions)0 error:&error][@"results"] lastObject];
-                
+
                 if (!error && [json isKindOfClass:[NSDictionary class]]) {
                     NSString *bundleID = json[@"bundleId"];
                     if (bundleID && [bundleID isEqualToString:bundle]) {
@@ -604,7 +651,7 @@
                     }
                 }
             }
-            
+
             dispatch_async(dispatch_get_main_queue(), ^{
                 [[NSUserDefaults standardUserDefaults] setObject:appStoreId forKey:kAppIdPropertyKey];
                 [[NSUserDefaults standardUserDefaults] synchronize];
@@ -627,7 +674,7 @@
 #endif
 
     [self recordPushActionForCountlyDictionary:info[@"c"]];
-    
+
     NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:urlFormat, appId]];
     [[UIApplication sharedApplication] openURL:url];
 }
@@ -635,7 +682,7 @@
 - (void)openReview:(NSString *)appId forInfo:(NSDictionary *)info
 {
     if (!appId) appId = kCountlyAppId;
-    
+
     NSString *urlFormat = nil;
 #if TARGET_OS_IOS
     float iOSVersion = [[UIDevice currentDevice].systemVersion floatValue];
@@ -649,7 +696,7 @@
 #endif
 
     [self recordPushActionForCountlyDictionary:info[@"c"]];
-    
+
     NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:urlFormat, appId]];
     [[UIApplication sharedApplication] openURL:url];
 }
