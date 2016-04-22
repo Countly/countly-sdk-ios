@@ -87,7 +87,10 @@
             {
                 COUNTLY_LOG(@"Request successfully completed");
 
-                [CountlyPersistency.sharedInstance.queuedRequests removeObjectAtIndex:0];
+                @synchronized(self)
+                {
+                    [CountlyPersistency.sharedInstance.queuedRequests removeObjectAtIndex:0];
+                }
 
                 [CountlyPersistency.sharedInstance saveToFile];
 

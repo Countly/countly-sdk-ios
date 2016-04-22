@@ -243,10 +243,10 @@
         event.duration = duration;
     
         [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
-    }
     
-    if (CountlyPersistency.sharedInstance.recordedEvents.count >= eventSendThreshold)
-        [CountlyConnectionManager.sharedInstance sendEvents];
+        if (CountlyPersistency.sharedInstance.recordedEvents.count >= eventSendThreshold)
+            [CountlyConnectionManager.sharedInstance sendEvents];
+    }
 }
 
 - (void)startEvent:(NSString *)key

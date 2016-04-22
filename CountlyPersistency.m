@@ -55,7 +55,10 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
 
 - (void)addToQueue:(NSString*)queryString
 {
-    [self.queuedRequests addObject:queryString];
+    @synchronized (self)
+    {
+        [self.queuedRequests addObject:queryString];
+    }
 }
 
 - (NSURL *)storageFileURL
@@ -93,8 +96,12 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
                                     kCountlyQueuedRequestsPersistencyKey:self.queuedRequests,
                                     kCountlyStartedEventsPersistencyKey:self.startedEvents
                                   };
+        NSData* saveData;
     
-        NSData* saveData = [NSKeyedArchiver archivedDataWithRootObject:saveDict];
+        @synchronized (self)
+        {
+            saveData = [NSKeyedArchiver archivedDataWithRootObject:saveDict];
+        }
 #if TARGET_OS_TV
         [NSUserDefaults.standardUserDefaults setObject:saveData forKey:kCountlyTVOSNSUDKey];
         [NSUserDefaults.standardUserDefaults synchronize];
