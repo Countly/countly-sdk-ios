@@ -48,7 +48,7 @@
 
 #elif TARGET_OS_TV
     if(!deviceID || [deviceID isEqualToString:@""])
-        self.deviceID = ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
+        self.deviceID = NSUUID.UUID.UUIDString;
     else
         self.deviceID = deviceID;
 
