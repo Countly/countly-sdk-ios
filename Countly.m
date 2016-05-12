@@ -127,7 +127,7 @@
         [CountlyCrashReporter.sharedInstance startCrashReporting];
     }
 
-    if([config.features containsObject:CLYViewTracking])
+    if([config.features containsObject:CLYAutoViewTracking])
     {
         [CountlyViewTracking.sharedInstance startAutoViewTracking];
     }

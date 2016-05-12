@@ -12,7 +12,7 @@
 #if TARGET_OS_IOS
     NSString* const CLYMessaging = @"CLYMessaging";
     NSString* const CLYCrashReporting = @"CLYCrashReporting";
-    NSString* const CLYViewTracking = @"CLYViewTracking";
+    NSString* const CLYAutoViewTracking = @"CLYAutoViewTracking";
 #endif
     NSString* const CLYAPM = @"CLYAPM";
 
