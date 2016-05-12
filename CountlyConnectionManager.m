@@ -200,7 +200,7 @@
     
     [CountlyPersistency.sharedInstance addToQueue:queryString];
     
-    [CountlyPersistency.sharedInstance saveToFile];
+    [CountlyPersistency.sharedInstance saveToFileSync];
 }
 
 - (void)sendOldDeviceID:(NSString *)oldDeviceID

@@ -325,7 +325,7 @@
     [CountlyConnectionManager.sharedInstance endSessionWithDuration:duration];
     unsentSessionLength -= duration;
     
-    [CountlyPersistency.sharedInstance saveToFile];
+    [CountlyPersistency.sharedInstance saveToFileSync];
 }
 
 - (void)resume

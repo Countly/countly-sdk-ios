@@ -11,6 +11,7 @@
 + (instancetype)sharedInstance;
 - (void)addToQueue:(NSString*)queryString;
 - (void)saveToFile;
+- (void)saveToFileSync;
 
 - (NSString*)retrieveStoredDeviceID;
 - (void)storeDeviceID:(NSString*)deviceID;

@@ -92,23 +92,28 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
 {
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
     {
-        NSDictionary* saveDict = @{
-                                    kCountlyQueuedRequestsPersistencyKey:self.queuedRequests,
-                                    kCountlyStartedEventsPersistencyKey:self.startedEvents
-                                  };
-        NSData* saveData;
-    
-        @synchronized (self)
-        {
-            saveData = [NSKeyedArchiver archivedDataWithRootObject:saveDict];
-        }
-#if TARGET_OS_TV
-        [NSUserDefaults.standardUserDefaults setObject:saveData forKey:kCountlyTVOSNSUDKey];
-        [NSUserDefaults.standardUserDefaults synchronize];
-#else
-        [saveData writeToFile:[self storageFileURL].path atomically:YES];
-#endif
+        [self saveToFileSync];
     });
+}
+
+- (void)saveToFileSync
+{
+    NSDictionary* saveDict = @{
+                                kCountlyQueuedRequestsPersistencyKey:self.queuedRequests,
+                                kCountlyStartedEventsPersistencyKey:self.startedEvents
+                              };
+    NSData* saveData;
+
+    @synchronized (self)
+    {
+        saveData = [NSKeyedArchiver archivedDataWithRootObject:saveDict];
+    }
+#if TARGET_OS_TV
+    [NSUserDefaults.standardUserDefaults setObject:saveData forKey:kCountlyTVOSNSUDKey];
+    [NSUserDefaults.standardUserDefaults synchronize];
+#else
+    [saveData writeToFile:[self storageFileURL].path atomically:YES];
+#endif
 }
 
 - (NSString* )retrieveStoredDeviceID
