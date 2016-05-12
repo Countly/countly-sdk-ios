@@ -82,10 +82,6 @@
 #endif
 @end
 
-@interface NSString (URLEscaped)
-- (NSString *)URLEscaped;
-@end
-
 @interface NSArray (JSONify)
 - (NSString *)JSONify;
 @end

@@ -23,19 +23,14 @@
 
     [self startBackgroundTask];
     
-    NSString *urlString = [NSString stringWithFormat:@"%@/i?%@", self.appHost, CountlyPersistency.sharedInstance.queuedRequests.firstObject];
-    NSMutableURLRequest * request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
-
-    if([CountlyPersistency.sharedInstance.queuedRequests.firstObject rangeOfString:@"&crash="].location != NSNotFound)
-    {
-        urlString = [NSString stringWithFormat:@"%@/i", self.appHost];
-        request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
-        request.HTTPMethod = @"POST";
-        request.HTTPBody = [CountlyPersistency.sharedInstance.queuedRequests.firstObject dataUsingEncoding:NSUTF8StringEncoding];
-    }
+    NSString* currentRequestData = CountlyPersistency.sharedInstance.queuedRequests.firstObject;
+    NSString* urlString = [NSString stringWithFormat:@"%@/i", self.appHost];
+    NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+    request.HTTPMethod = @"POST";
+    request.HTTPBody = [currentRequestData dataUsingEncoding:NSUTF8StringEncoding];
     
 #if TARGET_OS_IOS
-    NSString* picturePath = [CountlyUserDetails.sharedInstance extractPicturePathFromURLString:urlString];
+    NSString* picturePath = [CountlyUserDetails.sharedInstance extractPicturePathFromURLString:currentRequestData];
     if(picturePath && ![picturePath isEqualToString:@""])
     {
         COUNTLY_LOG(@"picturePath: %@", picturePath);
@@ -56,11 +51,10 @@
                 
                 NSString *boundary = @"c1c673d52fea01a50318d915b6966d5e";
                 
-                request.HTTPMethod = @"POST";
                 NSString *contentType = [@"multipart/form-data; boundary=" stringByAppendingString:boundary];
                 [request addValue:contentType forHTTPHeaderField: @"Content-Type"];
                 
-                NSMutableData *body = NSMutableData.data;
+                NSMutableData *body = request.HTTPBody.mutableCopy;
                 [body appendStringUTF8:[NSString stringWithFormat:@"--%@\r\n", boundary]];
                 [body appendStringUTF8:[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"pictureFile\"; filename=\"%@\"\r\n",picturePath.lastPathComponent]];
                 [body appendStringUTF8:[NSString stringWithFormat:@"Content-Type: image/%@\r\n\r\n", allowedFileTypes[fileExtIndex]]];
@@ -89,7 +83,7 @@
 
                 @synchronized(self)
                 {
-                    [CountlyPersistency.sharedInstance.queuedRequests removeObjectAtIndex:0];
+                    [CountlyPersistency.sharedInstance.queuedRequests removeObject:currentRequestData];
                 }
 
                 [CountlyPersistency.sharedInstance saveToFile];
@@ -99,7 +93,7 @@
         }
         else
         {
-            COUNTLY_LOG(@"Request failed \n %@: %@", [CountlyPersistency.sharedInstance.queuedRequests.firstObject description], error);
+            COUNTLY_LOG(@"Request failed %@ \n %@ \n Error: %@", urlString, [currentRequestData description], error);
 #if TARGET_OS_WATCH
             [CountlyPersistency.sharedInstance saveToFile];
 #endif
@@ -110,7 +104,7 @@
     
     [self.connection resume];
     
-    COUNTLY_LOG(@"Request started \n %@", urlString);
+    COUNTLY_LOG(@"Request started %@ with body:\n%@", urlString, currentRequestData);
 }
 
 #pragma mark ---
