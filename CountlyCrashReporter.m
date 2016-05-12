@@ -37,11 +37,11 @@
 {
     NSSetUncaughtExceptionHandler(&CountlyUncaughtExceptionHandler);
     signal(SIGABRT, CountlySignalHandler);
-	signal(SIGILL, CountlySignalHandler);
-	signal(SIGSEGV, CountlySignalHandler);
-	signal(SIGFPE, CountlySignalHandler);
-	signal(SIGBUS, CountlySignalHandler);
-	signal(SIGPIPE, CountlySignalHandler);
+    signal(SIGILL, CountlySignalHandler);
+    signal(SIGSEGV, CountlySignalHandler);
+    signal(SIGFPE, CountlySignalHandler);
+    signal(SIGBUS, CountlySignalHandler);
+    signal(SIGPIPE, CountlySignalHandler);
     signal(SIGTRAP, CountlySignalHandler);
 }
 
@@ -112,26 +112,26 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     COUNTLY_LOG(@"CrashReporting URL: %@", urlString);
 
     NSURLResponse* response = nil;
-	NSError* error = nil;
+    NSError* error = nil;
     NSData* recvData = nil;
     
     if(!nonfatal)
         recvData = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
-	
-	if (error || !recvData)
+
+    if (error || !recvData)
     {
         COUNTLY_LOG(@"CrashReporting failed, report stored to try again later");
         [CountlyConnectionManager.sharedInstance sendCrashReportLater:[crashReport JSONify]];
     }
     
     NSSetUncaughtExceptionHandler(NULL);
-	signal(SIGABRT, SIG_DFL);
-	signal(SIGILL, SIG_DFL);
-	signal(SIGSEGV, SIG_DFL);
-	signal(SIGFPE, SIG_DFL);
-	signal(SIGBUS, SIG_DFL);
-	signal(SIGPIPE, SIG_DFL);
-	signal(SIGTRAP, SIG_DFL);
+    signal(SIGABRT, SIG_DFL);
+    signal(SIGILL, SIG_DFL);
+    signal(SIGSEGV, SIG_DFL);
+    signal(SIGFPE, SIG_DFL);
+    signal(SIGBUS, SIG_DFL);
+    signal(SIGPIPE, SIG_DFL);
+    signal(SIGTRAP, SIG_DFL);
 }
 
 void CountlySignalHandler(int signalCode)
@@ -141,15 +141,15 @@ void CountlySignalHandler(int signalCode)
     char **lines = backtrace_symbols(callstack, (int)frames);
     
     const NSInteger startOffset = 1;
-	NSMutableArray *backtrace = [NSMutableArray arrayWithCapacity:frames];
+    NSMutableArray *backtrace = [NSMutableArray arrayWithCapacity:frames];
     
     for (NSInteger i = startOffset; i < frames; i++)
         [backtrace addObject:[NSString stringWithUTF8String:lines[i]]];
     
     free(lines);
     
-	NSMutableDictionary *userInfo =[NSMutableDictionary dictionaryWithObject:@(signalCode) forKey:@"signal_code"];
-	[userInfo setObject:backtrace forKey:kCountlyCrashUserInfoKey];
+    NSMutableDictionary *userInfo =[NSMutableDictionary dictionaryWithObject:@(signalCode) forKey:@"signal_code"];
+    [userInfo setObject:backtrace forKey:kCountlyCrashUserInfoKey];
     NSString *reason = [NSString stringWithFormat:@"App terminated by SIG%@",[NSString stringWithUTF8String:sys_signame[signalCode]].uppercaseString];
 
     NSException *e = [NSException exceptionWithName:@"Fatal Signal" reason:reason userInfo:userInfo];

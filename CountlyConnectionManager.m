@@ -13,7 +13,7 @@
     static CountlyConnectionManager *s_sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
-	return s_sharedInstance;
+    return s_sharedInstance;
 }
 
 - (void)tick
@@ -116,7 +116,7 @@
     
     [CountlyPersistency.sharedInstance addToQueue:queryString];
     
-	[self tick];
+    [self tick];
 }
 
 - (void)updateSessionWithDuration:(int)duration
@@ -125,7 +125,7 @@
         
     [CountlyPersistency.sharedInstance addToQueue:queryString];
     
-	[self tick];
+    [self tick];
 }
 
 - (void)endSessionWithDuration:(int)duration
@@ -134,7 +134,7 @@
     
     [CountlyPersistency.sharedInstance addToQueue:queryString];
     
-	[self tick];
+    [self tick];
 }
 
 - (void)sendEvents

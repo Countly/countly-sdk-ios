@@ -91,20 +91,20 @@
 + (NSString *)osName
 {
 #if TARGET_OS_IOS
-	return @"iOS";
+    return @"iOS";
 #elif TARGET_OS_WATCH
     return @"watchOS";
 #elif TARGET_OS_TV
     return @"tvOS";
 #else
-	return @"OSX";
+    return @"OSX";
 #endif
 }
 
 + (NSString *)osVersion
 {
 #if TARGET_OS_IOS
-	return UIDevice.currentDevice.systemVersion;
+    return UIDevice.currentDevice.systemVersion;
 #elif TARGET_OS_WATCH
     return WKInterfaceDevice.currentDevice.systemVersion;
 #else
@@ -115,14 +115,14 @@
 + (NSString *)carrier
 {
 #if TARGET_OS_IOS
-	if (NSClassFromString(@"CTTelephonyNetworkInfo"))
-	{
-		CTTelephonyNetworkInfo *netinfo = [CTTelephonyNetworkInfo new];
-		CTCarrier *carrier = [netinfo subscriberCellularProvider];
-		return [carrier carrierName];
-	}
+    if (NSClassFromString(@"CTTelephonyNetworkInfo"))
+    {
+        CTTelephonyNetworkInfo *netinfo = [CTTelephonyNetworkInfo new];
+        CTCarrier *carrier = [netinfo subscriberCellularProvider];
+        return [carrier carrierName];
+    }
 #endif
-	return nil;
+    return nil;
 }
 
 + (NSString *)resolution
@@ -145,7 +145,7 @@
 
 + (NSString *)locale
 {
-	return NSLocale.currentLocale.localeIdentifier;
+    return NSLocale.currentLocale.localeIdentifier;
 }
 
 + (NSString *)appVersion
@@ -177,24 +177,24 @@
 + (NSString *)metrics
 {
     NSMutableDictionary* metricsDictionary = NSMutableDictionary.new;
-	metricsDictionary[@"_device"] = CountlyDeviceInfo.device;
-	metricsDictionary[@"_os"] = CountlyDeviceInfo.osName;
-	metricsDictionary[@"_os_version"] = CountlyDeviceInfo.osVersion;
+    metricsDictionary[@"_device"] = CountlyDeviceInfo.device;
+    metricsDictionary[@"_os"] = CountlyDeviceInfo.osName;
+    metricsDictionary[@"_os_version"] = CountlyDeviceInfo.osVersion;
     
-	NSString *carrier = CountlyDeviceInfo.carrier;
-	if (carrier)
+    NSString *carrier = CountlyDeviceInfo.carrier;
+    if (carrier)
         metricsDictionary[@"_carrier"] = carrier;
 
-	metricsDictionary[@"_resolution"] = CountlyDeviceInfo.resolution;
-	metricsDictionary[@"_locale"] = CountlyDeviceInfo.locale;
-	metricsDictionary[@"_app_version"] = CountlyDeviceInfo.appVersion;
-	
+    metricsDictionary[@"_resolution"] = CountlyDeviceInfo.resolution;
+    metricsDictionary[@"_locale"] = CountlyDeviceInfo.locale;
+    metricsDictionary[@"_app_version"] = CountlyDeviceInfo.appVersion;
+    
 #if TARGET_OS_IOS
     metricsDictionary[@"_has_watch"] = @(CountlyDeviceInfo.hasWatch);
     metricsDictionary[@"_installed_watch_app"] = @(CountlyDeviceInfo.installedWatchApp);
 #endif
 
-	return [metricsDictionary JSONify];
+    return [metricsDictionary JSONify];
 }
 
 #pragma mark -
