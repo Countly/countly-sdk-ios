@@ -139,16 +139,6 @@
 
 #pragma mark - Countly Messaging
 #if TARGET_OS_IOS
-/**
- * Countly Messaging support
- */
-- (void)startWithMessagingUsing:(NSString *)appKey withHost:(NSString *)appHost andOptions:(NSDictionary *)options;
-
-/**
- * Make this device a test device, so only messages with test checkbox will arrive on it.
- */
-- (void)startWithTestMessagingUsing:(NSString *)appKey withHost:(NSString *)appHost andOptions:(NSDictionary *)options;
-
 - (void)didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken;
 
 - (void)didFailToRegisterForRemoteNotifications;

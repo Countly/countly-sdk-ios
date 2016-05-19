@@ -161,24 +161,8 @@
     NSDictionary *notification = [options objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
     if (notification) {
         COUNTLY_LOG(@"Got notification on app launch: %@", notification);
-//        [self handleRemoteNotification:notification displayingMessage:NO];
-    }
-}
-
-- (void)startWithTestMessagingUsing:(NSString *)appKey withHost:(NSString *)appHost andOptions:(NSDictionary *)options
-{
-    [self start:appKey withHost:appHost];
-    CountlyConnectionManager.sharedInstance.startedWithTest = YES;
-    
-    NSDictionary *notification = [options objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
-    if (notification) {
-        COUNTLY_LOG(@"Got notification on app launch: %@", notification);
         [self handleRemoteNotification:notification displayingMessage:NO];
     }
-    
-    [self withAppStoreId:^(NSString *appId) {
-        COUNTLY_LOG(@"ID: %@", appId);
-    }];
 }
 #endif
 
