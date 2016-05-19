@@ -33,7 +33,6 @@
  */
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer;
 
-#if TARGET_OS_WATCH
 /**
  * Suspends Countly, add recorded events to request queue and ends current session. Only needs to be called manually on watchOS, on other platforms it will be called automatically.
  */
@@ -43,7 +42,7 @@
  * Resumes Countly, begins a new session. Only needs to be called manually on watchOS, on other platforms it will be called automatically.
  */
 - (void)resume;
-#endif
+
 
 
 #pragma mark - Countly EventRecording
@@ -138,24 +137,8 @@
  */
 - (void)endEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum;
 
-/**
- * Records location with given coordinate to be used for location-aware push notifications
- * @param coordinate CLLocationCoordinate2D struct with latitude and longitude
- */
-- (void)recordLocation:(CLLocationCoordinate2D)coordinate;
-
 #pragma mark - Countly Messaging
 #if TARGET_OS_IOS
-/**
- * Countly Messaging support
- */
-- (void)startWithMessagingUsing:(NSString *)appKey withHost:(NSString *)appHost andOptions:(NSDictionary *)options;
-
-/**
- * Make this device a test device, so only messages with test checkbox will arrive on it.
- */
-- (void)startWithTestMessagingUsing:(NSString *)appKey withHost:(NSString *)appHost andOptions:(NSDictionary *)options;
-
 - (void)didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken;
 
 - (void)didFailToRegisterForRemoteNotifications;
@@ -202,6 +185,13 @@
  * @param c NSDictionary of @"c" userInfo key.
  */
 - (void)recordPushActionForCountlyDictionary:(NSDictionary *)c;
+
+
+/**
+ * Records location with given coordinate to be used for location-aware push notifications
+ * @param coordinate CLLocationCoordinate2D struct with latitude and longitude
+ */
+- (void)recordLocation:(CLLocationCoordinate2D)coordinate;
 #endif
 
 #pragma mark - Countly CrashReporting

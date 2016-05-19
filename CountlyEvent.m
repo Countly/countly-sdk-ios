@@ -11,14 +11,14 @@
 - (NSDictionary *)dictionaryRepresentation
 {
     NSMutableDictionary* eventData = NSMutableDictionary.dictionary;
-	eventData[@"key"] = self.key;
-	if (self.segmentation)
+    eventData[@"key"] = self.key;
+    if (self.segmentation)
     {
-		eventData[@"segmentation"] = self.segmentation;
-	}
-	eventData[@"count"] = @(self.count);
-	eventData[@"sum"] = @(self.sum);
-	eventData[@"timestamp"] = @((long)self.timestamp);
+        eventData[@"segmentation"] = self.segmentation;
+    }
+    eventData[@"count"] = @(self.count);
+    eventData[@"sum"] = @(self.sum);
+    eventData[@"timestamp"] = @((long)self.timestamp);
     eventData[@"hour"] = @(self.hourOfDay);
     eventData[@"dow"] = @(self.dayOfWeek);
     eventData[@"dur"] = @(self.duration);

@@ -72,7 +72,7 @@ static int const kOpenUDIDRedundancySlots = 100;
 // Convenience method to support iOS & Mac OS X
 //
 + (void) _setDict:(id)dict forPasteboard:(id)pboard {
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR		
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
     [pboard setData:[NSKeyedArchiver archivedDataWithRootObject:dict] forPasteboardType:kOpenUDIDDomain];
 #else
     [pboard setData:[NSKeyedArchiver archivedDataWithRootObject:dict] forType:kOpenUDIDDomain];
@@ -83,11 +83,11 @@ static int const kOpenUDIDRedundancySlots = 100;
 // Convenience method to support iOS & Mac OS X
 //
 + (NSMutableDictionary*) _getDictFromPasteboard:(id)pboard {
-#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR	
+#if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
     id item = [pboard dataForPasteboardType:kOpenUDIDDomain];
 #else
-	id item = [pboard dataForType:kOpenUDIDDomain];
-#endif	
+    id item = [pboard dataForType:kOpenUDIDDomain];
+#endif
     if (item) {
         @try{
             item = [NSKeyedUnarchiver unarchiveObjectWithData:item];
@@ -111,7 +111,7 @@ static int const kOpenUDIDRedundancySlots = 100;
     
     // August 2011: One day, this may no longer be allowed in iOS. When that is, just comment this line out.
     // March 25th 2012: this day has come, let's remove this "outlawed" call... 
-#if TARGET_OS_IPHONE	
+#if TARGET_OS_IPHONE
 //    if([UIDevice instancesRespondToSelector:@selector(uniqueIdentifier)]){
 //        _openUDID = [[UIDevice currentDevice] uniqueIdentifier];
 //    }
@@ -173,7 +173,7 @@ static int const kOpenUDIDRedundancySlots = 100;
         return kOpenUDIDSessionCache;
     }
     
-  	NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     
     // The AppUID will uniquely identify this app within the pastebins
     //
@@ -366,7 +366,7 @@ static int const kOpenUDIDRedundancySlots = 100;
     else
         [dict removeObjectForKey:kOpenUDIDOOTSKey];
 
-  	// store the dictionary locally
+    // store the dictionary locally
     [defaults setObject:dict forKey:kOpenUDIDKey];
     
     OpenUDIDLog(@"Local dict after opt-out = %@",dict);

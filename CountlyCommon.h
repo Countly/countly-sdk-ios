@@ -28,7 +28,7 @@
 #define COUNTLY_LOG(...)
 #endif
 
-#define COUNTLY_SDK_VERSION @"16.02"
+#define COUNTLY_SDK_VERSION @"16.02.01"
 
 #if TARGET_OS_IOS
 #import <UIKit/UIKit.h>
@@ -80,10 +80,6 @@
 #if (TARGET_OS_IOS)
 - (void)transferParentDeviceID;
 #endif
-@end
-
-@interface NSString (URLEscaped)
-- (NSString *)URLEscaped;
 @end
 
 @interface NSArray (JSONify)

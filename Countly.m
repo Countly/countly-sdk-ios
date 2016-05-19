@@ -29,39 +29,39 @@
     static Countly *s_sharedCountly = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedCountly = self.new;});
-	return s_sharedCountly;
+    return s_sharedCountly;
 }
 
 - (instancetype)init
 {
-	if (self = [super init])
-	{
-		timer = nil;
-		isSuspended = NO;
-		unsentSessionLength = 0;
+    if (self = [super init])
+    {
+        timer = nil;
+        isSuspended = NO;
+        unsentSessionLength = 0;
         
         self.messageInfos = NSMutableDictionary.new;
 
 #if (TARGET_OS_IOS  || TARGET_OS_TV)
-		[NSNotificationCenter.defaultCenter addObserver:self
-												 selector:@selector(didEnterBackgroundCallBack:)
-													 name:UIApplicationDidEnterBackgroundNotification
-												   object:nil];
-		[NSNotificationCenter.defaultCenter addObserver:self
-												 selector:@selector(willEnterForegroundCallBack:)
-													 name:UIApplicationWillEnterForegroundNotification
-												   object:nil];
-		[NSNotificationCenter.defaultCenter addObserver:self
-												 selector:@selector(willTerminateCallBack:)
-													 name:UIApplicationWillTerminateNotification
-												   object:nil];
+        [NSNotificationCenter.defaultCenter addObserver:self
+                                               selector:@selector(didEnterBackgroundCallBack:)
+                                                   name:UIApplicationDidEnterBackgroundNotification
+                                                 object:nil];
+        [NSNotificationCenter.defaultCenter addObserver:self
+                                               selector:@selector(willEnterForegroundCallBack:)
+                                                   name:UIApplicationWillEnterForegroundNotification
+                                                 object:nil];
+        [NSNotificationCenter.defaultCenter addObserver:self
+                                               selector:@selector(willTerminateCallBack:)
+                                                   name:UIApplicationWillTerminateNotification
+                                                 object:nil];
 #elif TARGET_OS_OSX
-         [NSNotificationCenter.defaultCenter addObserver:self
-                                                selector:@selector(willTerminateCallBack:)
-                                                    name:NSApplicationWillTerminateNotification
-                                                  object:nil];
+        [NSNotificationCenter.defaultCenter addObserver:self
+                                               selector:@selector(willTerminateCallBack:)
+                                                   name:NSApplicationWillTerminateNotification
+                                                 object:nil];
 #endif
-	}
+    }
 
     return self;
 }
@@ -127,7 +127,7 @@
         [CountlyCrashReporter.sharedInstance startCrashReporting];
     }
 
-    if([config.features containsObject:CLYViewTracking])
+    if([config.features containsObject:CLYAutoViewTracking])
     {
         [CountlyViewTracking.sharedInstance startAutoViewTracking];
     }
@@ -145,15 +145,11 @@
 
 - (void)start:(NSString *)appKey withHost:(NSString*)appHost
 {
-	timer = [NSTimer scheduledTimerWithTimeInterval:updateSessionPeriod
-											 target:self
-										   selector:@selector(onTimer:)
-										   userInfo:nil
-											repeats:YES];
-	lastTime = NSDate.date.timeIntervalSince1970;
-	CountlyConnectionManager.sharedInstance.appKey = appKey;
-	CountlyConnectionManager.sharedInstance.appHost = appHost;
-	[CountlyConnectionManager.sharedInstance beginSession];
+    timer = [NSTimer scheduledTimerWithTimeInterval:updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
+    lastTime = NSDate.date.timeIntervalSince1970;
+    CountlyConnectionManager.sharedInstance.appKey = appKey;
+    CountlyConnectionManager.sharedInstance.appHost = appHost;
+    [CountlyConnectionManager.sharedInstance beginSession];
 }
 
 
@@ -165,24 +161,8 @@
     NSDictionary *notification = [options objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
     if (notification) {
         COUNTLY_LOG(@"Got notification on app launch: %@", notification);
-//        [self handleRemoteNotification:notification displayingMessage:NO];
-    }
-}
-
-- (void)startWithTestMessagingUsing:(NSString *)appKey withHost:(NSString *)appHost andOptions:(NSDictionary *)options
-{
-    [self start:appKey withHost:appHost];
-    CountlyConnectionManager.sharedInstance.startedWithTest = YES;
-    
-    NSDictionary *notification = [options objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
-    if (notification) {
-        COUNTLY_LOG(@"Got notification on app launch: %@", notification);
         [self handleRemoteNotification:notification displayingMessage:NO];
     }
-    
-    [self withAppStoreId:^(NSString *appId) {
-        COUNTLY_LOG(@"ID: %@", appId);
-    }];
 }
 #endif
 
@@ -243,10 +223,10 @@
         event.duration = duration;
     
         [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
-    }
     
-    if (CountlyPersistency.sharedInstance.recordedEvents.count >= eventSendThreshold)
-        [CountlyConnectionManager.sharedInstance sendEvents];
+        if (CountlyPersistency.sharedInstance.recordedEvents.count >= eventSendThreshold)
+            [CountlyConnectionManager.sharedInstance sendEvents];
+    }
 }
 
 - (void)startEvent:(NSString *)key
@@ -300,43 +280,38 @@
 
 #pragma mark ---
 
-- (void)recordLocation:(CLLocationCoordinate2D)coordinate
-{
-    [CountlyConnectionManager.sharedInstance sendLocation:coordinate];
-}
-
-#pragma mark ---
-
 - (void)onTimer:(NSTimer *)timer
 {
-	if (isSuspended == YES)
-		return;
+    if (isSuspended == YES)
+        return;
     
-	NSTimeInterval currTime = NSDate.date.timeIntervalSince1970;
-	unsentSessionLength += currTime - lastTime;
-	lastTime = currTime;
+    NSTimeInterval currTime = NSDate.date.timeIntervalSince1970;
+    unsentSessionLength += currTime - lastTime;
+    lastTime = currTime;
     
-	int duration = unsentSessionLength;
-	[CountlyConnectionManager.sharedInstance updateSessionWithDuration:duration];
-	unsentSessionLength -= duration;
+    int duration = unsentSessionLength;
+    [CountlyConnectionManager.sharedInstance updateSessionWithDuration:duration];
+    unsentSessionLength -= duration;
     
     [CountlyConnectionManager.sharedInstance sendEvents];
 }
 
 - (void)suspend
 {
-	isSuspended = YES;
+    COUNTLY_LOG(@"Suspending");
+    
+    isSuspended = YES;
     
     [CountlyConnectionManager.sharedInstance sendEvents];
     
     NSTimeInterval currTime = NSDate.date.timeIntervalSince1970;
-	unsentSessionLength += currTime - lastTime;
+    unsentSessionLength += currTime - lastTime;
     
-	int duration = unsentSessionLength;
-	[CountlyConnectionManager.sharedInstance endSessionWithDuration:duration];
-	unsentSessionLength -= duration;
+    int duration = unsentSessionLength;
+    [CountlyConnectionManager.sharedInstance endSessionWithDuration:duration];
+    unsentSessionLength -= duration;
     
-    [CountlyPersistency.sharedInstance saveToFile];
+    [CountlyPersistency.sharedInstance saveToFileSync];
 }
 
 - (void)resume
@@ -354,28 +329,28 @@
     
     lastTime = NSDate.date.timeIntervalSince1970;
     
-	[CountlyConnectionManager.sharedInstance beginSession];
+    [CountlyConnectionManager.sharedInstance beginSession];
     
-	isSuspended = NO;
+    isSuspended = NO;
 }
 
 #pragma mark ---
 
 - (void)didEnterBackgroundCallBack:(NSNotification *)notification
 {
-	COUNTLY_LOG(@"App didEnterBackground");
+    COUNTLY_LOG(@"App didEnterBackground");
     [self suspend];
 }
 
 - (void)willEnterForegroundCallBack:(NSNotification *)notification
 {
-	COUNTLY_LOG(@"App willEnterForeground");
-	[self resume];
+    COUNTLY_LOG(@"App willEnterForeground");
+    [self resume];
 }
 
 - (void)willTerminateCallBack:(NSNotification *)notification
 {
-	COUNTLY_LOG(@"App willTerminate");
+    COUNTLY_LOG(@"App willTerminate");
     
     [CountlyViewTracking.sharedInstance endView];
 
@@ -664,6 +639,11 @@
 - (void)recordPushActionForCountlyDictionary:(NSDictionary *)c
 {
     [self recordEvent:kPushEventKeyAction segmentation:@{@"i": c[@"i"]} count:1];
+}
+
+- (void)recordLocation:(CLLocationCoordinate2D)coordinate
+{
+    [CountlyConnectionManager.sharedInstance sendLocation:coordinate];
 }
 
 #pragma mark ---
