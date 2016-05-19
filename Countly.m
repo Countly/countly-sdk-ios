@@ -314,6 +314,8 @@
 
 - (void)suspend
 {
+    COUNTLY_LOG(@"Suspending");
+    
     isSuspended = YES;
     
     [CountlyConnectionManager.sharedInstance sendEvents];

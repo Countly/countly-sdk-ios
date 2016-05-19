@@ -33,7 +33,6 @@
  */
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer;
 
-#if TARGET_OS_WATCH
 /**
  * Suspends Countly, add recorded events to request queue and ends current session. Only needs to be called manually on watchOS, on other platforms it will be called automatically.
  */
@@ -43,7 +42,7 @@
  * Resumes Countly, begins a new session. Only needs to be called manually on watchOS, on other platforms it will be called automatically.
  */
 - (void)resume;
-#endif
+
 
 
 #pragma mark - Countly EventRecording

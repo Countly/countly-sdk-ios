@@ -31,7 +31,7 @@
     return self;
 }
 
-#define kCountlyCrashUserInfoKey @"[CLY]_stack_trace"
+#define kCountlyCrashUserInfoKey @"kCountlyCrashUserInfoKey"
 
 - (void)startCrashReporting
 {
@@ -94,44 +94,66 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     NSMutableString* stackString = NSMutableString.string;
     for (NSString* line in stackArray)
     {
-        NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"\\s+\\s" options:0 error:nil];
-        NSString *cleanLine = [regex stringByReplacingMatchesInString:line options:0 range:(NSRange){0,line.length} withTemplate:@"  "];
-        [stackString appendString:cleanLine];
+        [stackString appendString:line];
         [stackString appendString:@"\n"];
     }
     
     crashReport[@"_error"] = stackString;
    
-    NSString *urlString = [NSString stringWithFormat:@"%@/i", CountlyConnectionManager.sharedInstance.appHost];
-
-    NSString *queryString = [[CountlyConnectionManager.sharedInstance queryEssentials] stringByAppendingFormat:@"&crash=%@", [crashReport JSONify]];
-    
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
-    request.HTTPMethod = @"POST";
-    request.HTTPBody = [queryString dataUsingEncoding:NSUTF8StringEncoding];
-    COUNTLY_LOG(@"CrashReporting URL: %@", urlString);
-
-    NSURLResponse* response = nil;
-    NSError* error = nil;
-    NSData* recvData = nil;
-    
-    if(!nonfatal)
-        recvData = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
-
-    if (error || !recvData)
+    if(nonfatal)
     {
-        COUNTLY_LOG(@"CrashReporting failed, report stored to try again later");
         [CountlyConnectionManager.sharedInstance sendCrashReportLater:[crashReport JSONify]];
     }
+    else
+    {
+        if(!CountlyConnectionManager.sharedInstance.connection)
+            CountlyConnectionManager.sharedInstance.connection = NSURLSessionDataTask.new;
+        [Countly.sharedInstance suspend];
+        //NOTE: suspend method adds 'event' and 'end_session' requests to queue and starts them.
+        //      a dummy connection object is created to prevent these requests when app is about to terminate due to crash
+
+        NSString *urlString = [NSString stringWithFormat:@"%@/i", CountlyConnectionManager.sharedInstance.appHost];
+        NSString *queryString = [[CountlyConnectionManager.sharedInstance queryEssentials] stringByAppendingFormat:@"&crash=%@", [crashReport JSONify]];
     
-    NSSetUncaughtExceptionHandler(NULL);
-    signal(SIGABRT, SIG_DFL);
-    signal(SIGILL, SIG_DFL);
-    signal(SIGSEGV, SIG_DFL);
-    signal(SIGFPE, SIG_DFL);
-    signal(SIGBUS, SIG_DFL);
-    signal(SIGPIPE, SIG_DFL);
-    signal(SIGTRAP, SIG_DFL);
+        NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+        request.HTTPMethod = @"POST";
+        request.HTTPBody = [queryString dataUsingEncoding:NSUTF8StringEncoding];
+        COUNTLY_LOG(@"Request started %@ with crash report:\n%@", urlString, queryString);
+    
+        dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+
+        [[NSURLSession.sharedSession dataTaskWithRequest:request
+                                  completionHandler:^(NSData * _Nullable data,
+                                                      NSURLResponse * _Nullable response,
+                                                      NSError * _Nullable error)
+        {
+            NSDictionary* serverReply = data?[NSJSONSerialization JSONObjectWithData:data options:0 error:nil]:nil;
+        
+            if(error && ![serverReply[@"result"] isEqualToString:@"Success"])
+            {
+                COUNTLY_LOG(@"CrashReporting failed, report stored to try again later");
+                [CountlyConnectionManager.sharedInstance sendCrashReportLater:[crashReport JSONify]];
+            }
+            else
+            {
+                COUNTLY_LOG(@"Crash report request successfully completed");
+            }
+        
+            dispatch_semaphore_signal(semaphore);
+
+        }] resume];
+         
+        dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+
+        NSSetUncaughtExceptionHandler(NULL);
+        signal(SIGABRT, SIG_DFL);
+        signal(SIGILL, SIG_DFL);
+        signal(SIGSEGV, SIG_DFL);
+        signal(SIGFPE, SIG_DFL);
+        signal(SIGBUS, SIG_DFL);
+        signal(SIGPIPE, SIG_DFL);
+        signal(SIGTRAP, SIG_DFL);
+    }
 }
 
 void CountlySignalHandler(int signalCode)
@@ -159,7 +181,7 @@ void CountlySignalHandler(int signalCode)
 
 static NSMutableArray *CountlyCustomCrashLogs = nil;
 
-void CCL(const char* function, NSUInteger line, NSString* message)
+- (void)log:(NSString *)format, ...
 {
     static NSDateFormatter* df = nil;
     
@@ -170,8 +192,7 @@ void CCL(const char* function, NSUInteger line, NSString* message)
         df.dateFormat = @"yyyy-MM-dd HH:mm:ss.SSS";
     }
 
-    NSString* f = [[NSString.alloc initWithUTF8String:function] stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"-[]"]];
-    NSString* log = [NSString stringWithFormat:@"[%@] <%@ %li> %@",[df stringFromDate:NSDate.date],f,(unsigned long)line,message];
+    NSString* log = [NSString stringWithFormat:@"<%@> %@",[df stringFromDate:NSDate.date], format];
     [CountlyCustomCrashLogs addObject:log];
 }
 
