@@ -22,5 +22,7 @@
 @property (nonatomic, strong) NSMutableArray* recordedEvents;
 @property (nonatomic, strong) NSMutableArray* queuedRequests;
 @property (nonatomic, strong) NSMutableDictionary* startedEvents;
+
+@property (nonatomic, readwrite) NSUInteger storedRequestsLimit;
 @end
 

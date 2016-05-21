@@ -105,6 +105,7 @@
     
     updateSessionPeriod = config.updateSessionPeriod;
     eventSendThreshold = config.eventSendThreshold;
+    CountlyPersistency.sharedInstance.storedRequestsLimit = config.storedRequestsLimit;
     
 #if TARGET_OS_IOS
     

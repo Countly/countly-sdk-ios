@@ -41,6 +41,7 @@
         self.updateSessionPeriod = 60.0;
         self.eventSendThreshold = 10;
 #endif
+        self.storedRequestsLimit = 1000;
     }
 
     return self;

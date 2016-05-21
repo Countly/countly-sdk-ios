@@ -58,6 +58,11 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
     @synchronized (self)
     {
         [self.queuedRequests addObject:queryString];
+    
+        if(self.queuedRequests.count > self.storedRequestsLimit && !CountlyConnectionManager.sharedInstance.connection)
+        {
+            [self.queuedRequests removeObject:self.queuedRequests.firstObject];
+        }
     }
 }
 
