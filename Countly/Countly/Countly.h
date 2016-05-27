@@ -7,8 +7,13 @@
 #import <Foundation/Foundation.h>
 #import <CoreLocation/CoreLocation.h>
 #import "CountlyUserDetails.h"
-#import "CountlyCrashReporter.h" 
+#import "CountlyCrashReporter.h"
 #import "CountlyConfig.h"
+
+FOUNDATION_EXPORT double CountlyVersionNumber;
+
+FOUNDATION_EXPORT const unsigned char CountlyVersionString[];
+
 
 @interface Countly : NSObject
 
