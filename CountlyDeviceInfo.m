@@ -5,6 +5,7 @@
 // Please visit www.count.ly for more information.
 
 #import "CountlyCommon.h"
+#import <mach-o/dyld.h>
 
 @implementation CountlyDeviceInfo
 
@@ -150,11 +151,46 @@
 
 + (NSString *)appVersion
 {
-    NSString *result = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
-    if (result.length == 0)
-        result = [NSBundle.mainBundle objectForInfoDictionaryKey:(NSString*)kCFBundleVersionKey];
+    return [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
+}
+
++ (NSString *)appBuild
+{
+    return [NSBundle.mainBundle objectForInfoDictionaryKey:(NSString*)kCFBundleVersionKey];
+}
+
++ (NSString *)buildUUID
+{
+    const struct mach_header *imageHeader = NULL;
+    for (uint32_t i = 0; i < _dyld_image_count(); i++)
+    {
+        const struct mach_header *anImageHeader = _dyld_get_image_header(i);
+        if (anImageHeader->filetype == MH_EXECUTE)
+        {
+            imageHeader = anImageHeader;
+            break;
+        }
+    }
+  
+    if (!imageHeader)
+        return @"BUILDUUID-IMAGE-HEADER-NOT-FOUND";
+  
+    BOOL is64bit = imageHeader->magic == MH_MAGIC_64 || imageHeader->magic == MH_CIGAM_64;
+    uintptr_t ptr = (uintptr_t)imageHeader + (is64bit ? sizeof(struct mach_header_64) : sizeof(struct mach_header));
+    const struct segment_command *segCmd = NULL;
     
-    return result;
+    for (uint32_t i = 0; i < imageHeader->ncmds; i++, ptr += segCmd->cmdsize)
+    {
+        segCmd = (struct segment_command *)ptr;
+        if (segCmd->cmd == LC_UUID)
+        {
+            const struct uuid_command *uuidCmd = (const struct uuid_command *)segCmd;
+            const uint8_t *uuid = uuidCmd->uuid;
+            return [[NSUUID.alloc initWithUUIDBytes:uuid] UUIDString];
+        }
+    }
+  
+    return @"BUILDUUID-CANNOT-BE-READ";
 }
 
 + (NSString *)bundleId

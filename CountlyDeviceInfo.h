@@ -20,6 +20,8 @@
 + (NSString *)resolution;
 + (NSString *)locale;
 + (NSString *)appVersion;
++ (NSString *)appBuild;
++ (NSString *)buildUUID;
 + (NSString *)bundleId;
 #if TARGET_OS_IOS
 + (NSInteger)hasWatch;

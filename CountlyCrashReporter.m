@@ -64,6 +64,8 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     crashReport[@"_device"] = CountlyDeviceInfo.device;
     crashReport[@"_resolution"] = CountlyDeviceInfo.resolution;
     crashReport[@"_app_version"] = CountlyDeviceInfo.appVersion;
+    crashReport[@"_app_build"] = CountlyDeviceInfo.appBuild;
+    crashReport[@"_build_uuid"] = CountlyDeviceInfo.buildUUID;
     crashReport[@"_name"] = exception.debugDescription;
     crashReport[@"_nonfatal"] = @(nonfatal);
     
