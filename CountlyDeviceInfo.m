@@ -270,51 +270,23 @@
                         if (NSFoundationVersionNumber >= NSFoundationVersionNumber_iOS_7_0)
                         {
                             CTTelephonyNetworkInfo *tni = CTTelephonyNetworkInfo.new;
-                        
-                            if ([tni.currentRadioAccessTechnology isEqualToString:CTRadioAccessTechnologyGPRS])
-                            {
-                                connType = CLYConnectionCellNetwork2G;
-                            }
-                            else if ([tni.currentRadioAccessTechnology isEqualToString:CTRadioAccessTechnologyEdge])
-                            {
-                                connType = CLYConnectionCellNetwork2G;
-                            }
-                            else if ([tni.currentRadioAccessTechnology isEqualToString:CTRadioAccessTechnologyWCDMA])
-                            {
-                                connType = CLYConnectionCellNetwork3G;
-                            }
-                            else if ([tni.currentRadioAccessTechnology isEqualToString:CTRadioAccessTechnologyHSDPA])
-                            {
-                                connType = CLYConnectionCellNetwork3G;
-                            }
-                            else if ([tni.currentRadioAccessTechnology isEqualToString:CTRadioAccessTechnologyHSUPA])
-                            {
-                                connType = CLYConnectionCellNetwork3G;
-                            }
-                            else if ([tni.currentRadioAccessTechnology isEqualToString:CTRadioAccessTechnologyCDMA1x])
-                            {
-                                connType = CLYConnectionCellNetwork2G;
-                            }
-                            else if ([tni.currentRadioAccessTechnology isEqualToString:CTRadioAccessTechnologyCDMAEVDORev0])
-                            {
-                                connType = CLYConnectionCellNetwork3G;
-                            } 
-                            else if ([tni.currentRadioAccessTechnology isEqualToString:CTRadioAccessTechnologyCDMAEVDORevA])
-                            {
-                                connType = CLYConnectionCellNetwork3G;
-                            } 
-                            else if ([tni.currentRadioAccessTechnology isEqualToString:CTRadioAccessTechnologyCDMAEVDORevB])
-                            {
-                                connType = CLYConnectionCellNetwork3G;
-                            } 
-                            else if ([tni.currentRadioAccessTechnology isEqualToString:CTRadioAccessTechnologyeHRPD])
-                            {
-                                connType = CLYConnectionCellNetwork3G;
-                            } 
-                            else if ([tni.currentRadioAccessTechnology isEqualToString:CTRadioAccessTechnologyLTE])
-                            {
-                                connType = CLYConnectionCellNetworkLTE;
-                            }
+                            NSDictionary* connectionTypes =
+                            @{
+                                CTRadioAccessTechnologyGPRS:@(CLYConnectionCellNetwork2G),
+                                CTRadioAccessTechnologyEdge:@(CLYConnectionCellNetwork2G),
+                                CTRadioAccessTechnologyCDMA1x:@(CLYConnectionCellNetwork2G),
+                                CTRadioAccessTechnologyWCDMA:@(CLYConnectionCellNetwork3G),
+                                CTRadioAccessTechnologyHSDPA:@(CLYConnectionCellNetwork3G),
+                                CTRadioAccessTechnologyHSUPA:@(CLYConnectionCellNetwork3G),
+                                CTRadioAccessTechnologyCDMAEVDORev0:@(CLYConnectionCellNetwork3G),
+                                CTRadioAccessTechnologyCDMAEVDORevA:@(CLYConnectionCellNetwork3G),
+                                CTRadioAccessTechnologyCDMAEVDORevB:@(CLYConnectionCellNetwork3G),
+                                CTRadioAccessTechnologyeHRPD:@(CLYConnectionCellNetwork3G),
+                                CTRadioAccessTechnologyLTE:@(CLYConnectionCellNetworkLTE)
+                            };
+
+                            if(connectionTypes[tni.currentRadioAccessTechnology])
+                                connType = [connectionTypes[tni.currentRadioAccessTechnology] integerValue];
                         }
 #endif
                     }
