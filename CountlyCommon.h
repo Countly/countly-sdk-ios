@@ -23,7 +23,7 @@
 #endif
 
 #if COUNTLY_DEBUG
-#define COUNTLY_LOG(fmt, ...) NSLog(fmt, ##__VA_ARGS__)
+#define COUNTLY_LOG(fmt, ...) NSLog([@"%@ " stringByAppendingString:fmt], @"[Countly]", ##__VA_ARGS__)
 #else
 #define COUNTLY_LOG(...)
 #endif
