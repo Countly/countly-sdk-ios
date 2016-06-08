@@ -68,6 +68,26 @@
 
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer
 {
+#if TARGET_OS_IOS
+    BOOL isSameIDFA = [deviceID isEqualToString:CLYIDFA] &&
+                      [CountlyDeviceInfo.sharedInstance.deviceID isEqualToString:ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString];
+
+    BOOL isSameIDFV = [deviceID isEqualToString:CLYIDFV] &&
+                      [CountlyDeviceInfo.sharedInstance.deviceID isEqualToString:UIDevice.currentDevice.identifierForVendor.UUIDString];
+
+    BOOL isSameOpen = [deviceID isEqualToString:CLYOpenUDID] &&
+                      [CountlyDeviceInfo.sharedInstance.deviceID isEqualToString:[Countly_OpenUDID value]];
+
+    if(isSameIDFA || isSameIDFV || isSameOpen)
+        return;
+
+#elif (!(TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_WATCH))
+
+    if([deviceID isEqualToString:CLYOpenUDID] &&
+       [CountlyDeviceInfo.sharedInstance.deviceID isEqualToString:[Countly_OpenUDID value]])
+        return;
+#endif
+    
     if([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
         return;
     
