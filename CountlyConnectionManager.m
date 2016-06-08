@@ -163,22 +163,25 @@
 
 - (void)sendPushToken:(NSString*)token
 {
-    // Test modes: 0 = production mode, 1 = development build, 2 = Ad Hoc build
+    // Test modes: 0 = Production build,
+    //             1 = Development build,
+    //             2 = AdHoc build (when isTestDevice flag on config object is set explicitly)
+
     int testMode;
 #ifndef __OPTIMIZE__
     testMode = 1;
 #else
-    testMode = self.startedWithTest ? 2 : 0;
+    testMode = self.isTestDevice ? 2 : 0;
 #endif
-    
-    COUNTLY_LOG(@"Sending APN token in mode %d", testMode);
     
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&token_session=1&ios_token=%@&test_mode=%d",
                              [token length] ? token : @"",
                              testMode];
 
     // Not right now to prevent race with begin_session=1 when adding new user
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
+    {
+        COUNTLY_LOG(@"Sending APNS token in mode %d", testMode);
         [CountlyPersistency.sharedInstance addToQueue:queryString];
         [self tick];
     });

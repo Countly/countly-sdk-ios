@@ -36,5 +36,6 @@ extern NSString* const CLYOpenUDID;
 @property (nonatomic, readwrite) int eventSendThreshold;
 @property (nonatomic, strong) NSDictionary* crashSegmentation;
 @property (nonatomic, readwrite) NSUInteger storedRequestsLimit;
+@property (nonatomic, readwrite) BOOL isTestDevice;
 
 @end

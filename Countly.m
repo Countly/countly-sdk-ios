@@ -115,6 +115,8 @@
     {
         NSAssert(![config.launchOptions isEqualToDictionary:@{@"CLYAssertion":@"forLaunchOptions"}],@"LaunchOptions in Countly configuration is not set!");
 
+        CountlyConnectionManager.sharedInstance.isTestDevice = config.isTestDevice;
+    
         [self startWithMessagingUsing:config.appKey withHost:config.host andOptions:config.launchOptions];
     }
     else
