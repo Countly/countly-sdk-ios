@@ -20,7 +20,7 @@
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-                  s_sharedInstance = self.new;
+        s_sharedInstance = self.new;
     });
     return s_sharedInstance;
 }
@@ -100,8 +100,45 @@
 @implementation UIViewController (CountlyViewTracking)
 - (void)Countly_viewDidAppear:(BOOL)animated
 {    
-    if(CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled &&
-       ![self isKindOfClass:UINavigationController.class])
+    static NSMutableArray* exceptionClasses;
+    
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        exceptionClasses = NSMutableArray.new;
+        NSArray* exceptions =
+        @[
+            @"UINavigationController",
+            @"UIAlertController",
+            @"UIPageViewController",
+            @"UITabBarController",
+            @"UIReferenceLibraryViewController",
+            @"UISplitViewController",
+            @"UIInputViewController",
+            @"UISearchController",
+            @"UISearchContainerViewController",
+            @"UIApplicationRotationFollowingController"
+         ];
+    
+        [exceptions enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop)
+        {
+            Class c = NSClassFromString(obj);
+            if(c)
+                [exceptionClasses addObject:c];
+        }];
+    });
+    
+    __block BOOL isExceptionClass = NO;
+    [exceptionClasses enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop)
+    {
+        if([self isKindOfClass:obj])
+        {
+            isExceptionClass = YES;
+            *stop = YES;
+        }
+    }];
+    
+    if(CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled && !isExceptionClass)
     {
         NSString* viewTitle = self.title;
         
