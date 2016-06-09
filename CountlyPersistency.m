@@ -38,7 +38,7 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
         
             self.queuedRequests = [readDict[kCountlyQueuedRequestsPersistencyKey] mutableCopy];
 
-            self.startedEvents = [readDict[kCountlyStartedEventsPersistencyKey] mutableCopy];
+//            self.startedEvents = [readDict[kCountlyStartedEventsPersistencyKey] mutableCopy];
         }
     
         if(!self.queuedRequests)
@@ -104,8 +104,7 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
 - (void)saveToFileSync
 {
     NSDictionary* saveDict = @{
-                                kCountlyQueuedRequestsPersistencyKey:self.queuedRequests,
-                                kCountlyStartedEventsPersistencyKey:self.startedEvents
+                                kCountlyQueuedRequestsPersistencyKey:self.queuedRequests
                               };
     NSData* saveData;
 
