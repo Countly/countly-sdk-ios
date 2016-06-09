@@ -28,7 +28,7 @@
 #define COUNTLY_LOG(...)
 #endif
 
-#define COUNTLY_SDK_VERSION @"16.02.01"
+#define COUNTLY_SDK_VERSION @"16.02.02"
 
 #if TARGET_OS_IOS
 #import <UIKit/UIKit.h>
