@@ -126,7 +126,10 @@
     updateSessionPeriod = config.updateSessionPeriod;
     eventSendThreshold = config.eventSendThreshold;
     CountlyPersistency.sharedInstance.storedRequestsLimit = config.storedRequestsLimit;
-    
+    CountlyConnectionManager.sharedInstance.ISOCountryCode = config.ISOCountryCode;
+    CountlyConnectionManager.sharedInstance.city = config.city;
+    CountlyConnectionManager.sharedInstance.location = CLLocationCoordinate2DIsValid(config.location)?[NSString stringWithFormat:@"%f,%f", config.location.latitude, config.location.longitude]:nil;
+
 #if TARGET_OS_IOS
     
     [CountlyCommon.sharedInstance transferParentDeviceID];

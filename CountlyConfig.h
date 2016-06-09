@@ -37,5 +37,7 @@ extern NSString* const CLYOpenUDID;
 @property (nonatomic, strong) NSDictionary* crashSegmentation;
 @property (nonatomic, readwrite) NSUInteger storedRequestsLimit;
 @property (nonatomic, readwrite) BOOL isTestDevice;
-
+@property (nonatomic, strong) NSString* ISOCountryCode;
+@property (nonatomic, strong) NSString* city;
+@property (nonatomic, readwrite) CLLocationCoordinate2D location;
 @end

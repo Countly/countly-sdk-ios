@@ -15,6 +15,9 @@
 @property (nonatomic, strong) NSString* appHost;
 @property (nonatomic, strong) NSURLSessionTask* connection;
 @property (nonatomic, assign) BOOL isTestDevice;
+@property (nonatomic, strong) NSString* ISOCountryCode;
+@property (nonatomic, strong) NSString* city;
+@property (nonatomic, strong) NSString* location;
 #if TARGET_OS_IOS
 @property (nonatomic, assign) UIBackgroundTaskIdentifier bgTask;
 #endif
