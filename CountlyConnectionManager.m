@@ -272,13 +272,14 @@
 
 - (NSString *)queryEssentials
 {
-    return [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&hour=%ld&dow=%ld&sdk_version=%@",
+    return [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&hour=%ld&dow=%ld&sdk_version=%@&sdk_name=%@",
                                         self.appKey,
                                         CountlyDeviceInfo.sharedInstance.deviceID,
                                         (long)NSDate.date.timeIntervalSince1970,
                                         (long)[CountlyCommon.sharedInstance hourOfDay],
                                         (long)[CountlyCommon.sharedInstance dayOfWeek],
-                                        COUNTLY_SDK_VERSION];
+                                        COUNTLY_SDK_VERSION,
+                                        COUNTLY_SDK_NAME];
 }
 
 @end

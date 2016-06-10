@@ -29,6 +29,7 @@
 #endif
 
 #define COUNTLY_SDK_VERSION @"16.02.02"
+#define COUNTLY_SDK_NAME @"objc-native-ios"
 
 #if TARGET_OS_IOS
 #import <UIKit/UIKit.h>
