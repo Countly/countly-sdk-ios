@@ -439,7 +439,7 @@
         COUNTLY_LOG(@"Message id: %@", countly[@"i"]);
 
         [self recordPushOpenForCountlyDictionary:countly];
-        NSString *appName = [[NSBundle.mainBundle infoDictionary] objectForKey:(NSString*)kCFBundleNameKey];
+        NSString *appName = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleDisplayName"];
         NSString *message = [aps objectForKey:@"alert"];
         
         int type = 0;
