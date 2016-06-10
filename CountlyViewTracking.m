@@ -9,6 +9,7 @@
 @interface CountlyViewTracking ()
 @property(nonatomic, strong) NSString* _Nonnull lastView;
 @property(nonatomic, readwrite) NSTimeInterval lastViewStartTime;
+@property(nonatomic, strong) NSMutableArray* exceptionViewControllers;
 @end
 
 
@@ -21,7 +22,30 @@
     dispatch_once(&onceToken, ^
     {
         s_sharedInstance = self.new;
+        s_sharedInstance.exceptionViewControllers = NSMutableArray.new;
+    
+        NSArray* internalExceptionViewControllers =
+        @[
+            @"UINavigationController",
+            @"UIAlertController",
+            @"UIPageViewController",
+            @"UITabBarController",
+            @"UIReferenceLibraryViewController",
+            @"UISplitViewController",
+            @"UIInputViewController",
+            @"UISearchController",
+            @"UISearchContainerViewController",
+            @"UIApplicationRotationFollowingController"
+        ];
+    
+        [internalExceptionViewControllers enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop)
+        {
+            Class c = NSClassFromString(obj);
+            if(c)
+                [s_sharedInstance.exceptionViewControllers addObject:c];
+        }];
     });
+
     return s_sharedInstance;
 }
 
@@ -92,6 +116,17 @@
     C_method = class_getInstanceMethod(UIViewController.class, @selector(Countly_viewDidAppear:));
     method_exchangeImplementations(O_method, C_method);
 }
+
+-(void)addExceptionForAutoViewTracking:(Class _Nullable)exceptionViewControllerSubclass
+{
+    [self.exceptionViewControllers addObject:exceptionViewControllerSubclass];
+}
+
+-(void)removeExceptionForAutoViewTracking:(Class _Nullable)exceptionViewControllerSubclass
+{
+    [self.exceptionViewControllers removeObject:exceptionViewControllerSubclass];
+}
+
 #endif
 @end
 
@@ -99,53 +134,28 @@
 #if TARGET_OS_IOS
 @implementation UIViewController (CountlyViewTracking)
 - (void)Countly_viewDidAppear:(BOOL)animated
-{    
-    static NSMutableArray* exceptionClasses;
-    
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
+{
+    if(CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled)
     {
-        exceptionClasses = NSMutableArray.new;
-        NSArray* exceptions =
-        @[
-            @"UINavigationController",
-            @"UIAlertController",
-            @"UIPageViewController",
-            @"UITabBarController",
-            @"UIReferenceLibraryViewController",
-            @"UISplitViewController",
-            @"UIInputViewController",
-            @"UISearchController",
-            @"UISearchContainerViewController",
-            @"UIApplicationRotationFollowingController"
-         ];
-    
-        [exceptions enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop)
+        __block BOOL isExceptionClass = NO;
+        [CountlyViewTracking.sharedInstance.exceptionViewControllers enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop)
         {
-            Class c = NSClassFromString(obj);
-            if(c)
-                [exceptionClasses addObject:c];
+            if([self isKindOfClass:obj])
+            {
+                isExceptionClass = YES;
+                *stop = YES;
+            }
         }];
-    });
     
-    __block BOOL isExceptionClass = NO;
-    [exceptionClasses enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop)
-    {
-        if([self isKindOfClass:obj])
+        if(!isExceptionClass)
         {
-            isExceptionClass = YES;
-            *stop = YES;
+            NSString* viewTitle = self.title;
+
+            if(!viewTitle)
+                viewTitle = NSStringFromClass([self class]);
+        
+            [CountlyViewTracking.sharedInstance reportView:viewTitle];
         }
-    }];
-    
-    if(CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled && !isExceptionClass)
-    {
-        NSString* viewTitle = self.title;
-        
-        if(!viewTitle)
-            viewTitle = NSStringFromClass([self class]);
-        
-        [CountlyViewTracking.sharedInstance reportView:viewTitle];
     }
     
     [self Countly_viewDidAppear:animated];

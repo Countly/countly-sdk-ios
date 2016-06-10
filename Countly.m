@@ -724,6 +724,16 @@
 }
 
 #if TARGET_OS_IOS
+-(void)addExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass
+{
+    [CountlyViewTracking.sharedInstance addExceptionForAutoViewTracking:exceptionViewControllerSubclass];
+}
+ 
+-(void)removeExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass
+{
+    [CountlyViewTracking.sharedInstance removeExceptionForAutoViewTracking:exceptionViewControllerSubclass];
+}
+
 -(void)setIsAutoViewTrackingEnabled:(BOOL)isAutoViewTrackingEnabled
 {
     CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled = isAutoViewTrackingEnabled;
