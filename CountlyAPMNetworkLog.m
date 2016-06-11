@@ -22,7 +22,7 @@
 {
     NSString* hostAndPath = [request.URL.host stringByAppendingString:request.URL.path];
     __block BOOL isException = NO;
-        
+
     [CountlyAPM.sharedInstance.exceptionURLs
      enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop)
     {
@@ -32,19 +32,19 @@
             *stop = YES;
         }
     }];
-    
+
     if (isException) return nil;
-    
+
     CountlyAPMNetworkLog* nl = CountlyAPMNetworkLog.new;
     nl.request = request;
     nl.sentDataSize = [self.class sentDataSizeForRequest:request];
-    
+
     if(startImmediately)
     {
         nl.connectionType = CountlyDeviceInfo.connectionType;
         nl.startTime = NSDate.date.timeIntervalSince1970;
     }
-    
+
     return nl;
 }
 
@@ -59,7 +59,7 @@
 {
     self.HTTPStatusCode =((NSHTTPURLResponse*)response).statusCode;
     self.receivedDataSize = [response expectedContentLength];
-    
+
     if(self.receivedDataSize == NSURLResponseUnknownLength)
         self.receivedDataSize = 0; //NOTE: sometimes expectedContentLength is not available
 }
@@ -75,7 +75,7 @@
 -(void)finish
 {
     self.endTime = NSDate.date.timeIntervalSince1970;
-    
+
     CountlyEvent *event = [CountlyEvent new];
     event.key = @"[CLY]_apm";
     event.segmentation = @{
@@ -93,9 +93,9 @@
     event.hourOfDay = [CountlyCommon.sharedInstance hourOfDay];
     event.dayOfWeek = [CountlyCommon.sharedInstance dayOfWeek];
     event.duration = self.endTime - self.startTime;
-    
+
     COUNTLY_LOG(@"Recorded APM log: %@", [self description]);
-    
+
     [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
 }
 

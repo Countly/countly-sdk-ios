@@ -35,21 +35,21 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
         if(readData)
         {
             NSDictionary* readDict = [NSKeyedUnarchiver unarchiveObjectWithData:readData];
-        
+
             self.queuedRequests = [readDict[kCountlyQueuedRequestsPersistencyKey] mutableCopy];
 
 //            self.startedEvents = [readDict[kCountlyStartedEventsPersistencyKey] mutableCopy];
         }
-    
+
         if(!self.queuedRequests)
             self.queuedRequests = NSMutableArray.new;
 
         if(!self.startedEvents)
             self.startedEvents = NSMutableDictionary.new;
-    
+
         self.recordedEvents = NSMutableArray.new;
     }
-    
+
     return self;
 }
 
@@ -58,7 +58,7 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
     @synchronized (self)
     {
         [self.queuedRequests addObject:queryString];
-    
+
         if(self.queuedRequests.count > self.storedRequestsLimit && !CountlyConnectionManager.sharedInstance.connection)
         {
             [self.queuedRequests removeObject:self.queuedRequests.firstObject];
@@ -89,7 +89,7 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
 
         url = [url URLByAppendingPathComponent:kCountlyPersistencyFileName];
     });
-    
+
     return url;
 }
 
@@ -123,7 +123,7 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
 - (NSString* )retrieveStoredDeviceID
 {
     NSString* retrievedDeviceID = nil;
-    
+
     NSDictionary *keychainDict =
     @{
         (__bridge id)kSecAttrAccount:       kCountlyStoredDeviceIDKey,
@@ -140,13 +140,13 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
     {
         NSDictionary *resultDict = (__bridge_transfer NSDictionary *)resultDictRef;
         NSData *data = resultDict[(__bridge id)kSecValueData];
-    
+
         if (data)
         {
             retrievedDeviceID = [NSString.alloc initWithData:data encoding:NSUTF8StringEncoding];
         }
     }
-    
+
     COUNTLY_LOG(@"Retrieved Device ID: %@", retrievedDeviceID);
     return retrievedDeviceID;
 }
@@ -165,7 +165,7 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
     SecItemDelete((__bridge CFDictionaryRef)keychainDict);
 
     OSStatus status = SecItemAdd((__bridge CFDictionaryRef)keychainDict, NULL);
-    
+
     if(status == noErr)
     {
         COUNTLY_LOG(@"Successfully stored Device ID: %@", deviceID);

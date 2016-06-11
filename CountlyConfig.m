@@ -33,7 +33,7 @@
     {
         //For checking if launchOptions is set when CLYMessaging feature is used.
         self.launchOptions = @{@"CLYAssertion":@"forLaunchOptions"};
-    
+
 #if TARGET_OS_WATCH
         self.updateSessionPeriod = 20.0;
         self.eventSendThreshold = 3;
@@ -42,7 +42,7 @@
         self.eventSendThreshold = 10;
 #endif
         self.storedRequestsLimit = 1000;
-    
+
         self.location = kCLLocationCoordinate2DInvalid;
     }
 

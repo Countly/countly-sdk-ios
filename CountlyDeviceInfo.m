@@ -23,7 +23,7 @@
     {
         self.deviceID = [CountlyPersistency.sharedInstance retrieveStoredDeviceID];
     }
-    
+
     return self;
 }
 
@@ -63,7 +63,7 @@
 #else
     self.deviceID = @"UnsupportedPlaftormDevice";
 #endif
-    
+
     [CountlyPersistency.sharedInstance storeDeviceID:self.deviceID];
 }
 
@@ -171,14 +171,14 @@
             break;
         }
     }
-  
+
     if (!imageHeader)
         return @"BUILDUUID-IMAGE-HEADER-NOT-FOUND";
-  
+
     BOOL is64bit = imageHeader->magic == MH_MAGIC_64 || imageHeader->magic == MH_CIGAM_64;
     uintptr_t ptr = (uintptr_t)imageHeader + (is64bit ? sizeof(struct mach_header_64) : sizeof(struct mach_header));
     const struct segment_command *segCmd = NULL;
-    
+
     for (uint32_t i = 0; i < imageHeader->ncmds; i++, ptr += segCmd->cmdsize)
     {
         segCmd = (struct segment_command *)ptr;
@@ -189,7 +189,7 @@
             return [[NSUUID.alloc initWithUUIDBytes:uuid] UUIDString];
         }
     }
-  
+
     return @"BUILDUUID-CANNOT-BE-READ";
 }
 
@@ -216,7 +216,7 @@
     metricsDictionary[@"_device"] = CountlyDeviceInfo.device;
     metricsDictionary[@"_os"] = CountlyDeviceInfo.osName;
     metricsDictionary[@"_os_version"] = CountlyDeviceInfo.osVersion;
-    
+
     NSString *carrier = CountlyDeviceInfo.carrier;
     if (carrier)
         metricsDictionary[@"_carrier"] = carrier;
@@ -224,7 +224,7 @@
     metricsDictionary[@"_resolution"] = CountlyDeviceInfo.resolution;
     metricsDictionary[@"_locale"] = CountlyDeviceInfo.locale;
     metricsDictionary[@"_app_version"] = CountlyDeviceInfo.appVersion;
-    
+
 #if TARGET_OS_IOS
     metricsDictionary[@"_has_watch"] = @(CountlyDeviceInfo.hasWatch);
     metricsDictionary[@"_installed_watch_app"] = @(CountlyDeviceInfo.installedWatchApp);
@@ -248,15 +248,15 @@
     } CLYConnectionType;
 
     CLYConnectionType connType = CLYConnectionNone;
-    
+
     @try
     {
         struct ifaddrs *interfaces, *i;
-       
+
         if (!getifaddrs(&interfaces))
         {
             i = interfaces;
-            
+
             while(i != NULL)
             {
                 if(i->ifa_addr->sa_family == AF_INET)
@@ -296,16 +296,16 @@
                         break;
                     }
                 }
-                
+
                 i = i->ifa_next;
             }
         }
-        
+
         freeifaddrs(interfaces);
     }
     @catch (NSException *exception)
     {
-    
+
     }
 
     return connType;
@@ -318,7 +318,7 @@
     kern_return_t kr = host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t)&vms, &ic);
     if(kr != KERN_SUCCESS)
         return -1;
-    
+
     return vm_page_size * (vms.free_count);
 }
 
@@ -363,15 +363,15 @@
 {
 #if TARGET_OS_IOS
     EAGLContext *aContext;
-    
+
     aContext = [EAGLContext.alloc initWithAPI:kEAGLRenderingAPIOpenGLES3];
     if(aContext)
         return 3.0;
-    
+
     aContext = [EAGLContext.alloc initWithAPI:kEAGLRenderingAPIOpenGLES2];
     if(aContext)
         return 2.0;
-    
+
     return 1.0;
 #else
     return 1.0;

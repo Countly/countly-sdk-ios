@@ -27,7 +27,7 @@ NSString* const kCLYUserCustom = @"custom";
 {
     static CountlyUserDetails *s_CountlyUserDetails = nil;
     static dispatch_once_t onceToken;
-    
+
     dispatch_once(&onceToken, ^{s_CountlyUserDetails = CountlyUserDetails.new;});
     return s_CountlyUserDetails;
 }
@@ -38,7 +38,7 @@ NSString* const kCLYUserCustom = @"custom";
     {
         self.modifications = NSMutableDictionary.new;
     }
-    
+
     return self;
 }
 
@@ -70,7 +70,7 @@ NSString* const kCLYUserCustom = @"custom";
         userDictionary[kCLYUserBirthYear] = @(self.birthYear);
     if(self.custom)
         userDictionary[kCLYUserCustom] = self.custom;
-    
+
     return [userDictionary JSONify];
 }
 
@@ -179,9 +179,9 @@ NSString* const kCLYUserCustom = @"custom";
 - (void)save
 {
     NSDictionary* custom = @{@"custom":self.modifications};
-    
+
     [CountlyConnectionManager.sharedInstance sendUserDetails:[custom JSONify]];
-    
+
     [self.modifications removeAllObjects];
 }
 

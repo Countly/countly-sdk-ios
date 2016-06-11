@@ -7,7 +7,7 @@
 #import <Foundation/Foundation.h>
 #import <CoreLocation/CoreLocation.h>
 #import "CountlyUserDetails.h"
-#import "CountlyCrashReporter.h" 
+#import "CountlyCrashReporter.h"
 #import "CountlyConfig.h"
 
 @interface Countly : NSObject

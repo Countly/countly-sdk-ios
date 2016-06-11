@@ -22,13 +22,13 @@
         return;
 
     [self startBackgroundTask];
-    
+
     NSString* currentRequestData = CountlyPersistency.sharedInstance.queuedRequests.firstObject;
     NSString* urlString = [NSString stringWithFormat:@"%@/i", self.appHost];
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
     request.HTTPMethod = @"POST";
     request.HTTPBody = [currentRequestData dataUsingEncoding:NSUTF8StringEncoding];
-    
+
 #if TARGET_OS_IOS
     NSString* picturePath = [CountlyUserDetails.sharedInstance extractPicturePathFromURLString:currentRequestData];
     if(picturePath && ![picturePath isEqualToString:@""])
@@ -38,22 +38,22 @@
         NSArray* allowedFileTypes = @[@"gif",@"png",@"jpg",@"jpeg"];
         NSString* fileExt = picturePath.pathExtension.lowercaseString;
         NSInteger fileExtIndex = [allowedFileTypes indexOfObject:fileExt];
-        
+
         if(fileExtIndex != NSNotFound)
         {
             NSData* imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:picturePath]];
             if (fileExtIndex == 1) imageData = UIImagePNGRepresentation([UIImage imageWithData:imageData]); //NOTE: for png upload fix. (png file data read directly from disk fails on upload)
             if (fileExtIndex == 2) fileExtIndex = 3; //NOTE: for mime type jpg -> jpeg
-            
+
             if (imageData)
             {
                 COUNTLY_LOG(@"local image retrieved from picturePath");
-                
+
                 NSString *boundary = @"c1c673d52fea01a50318d915b6966d5e";
-                
+
                 NSString *contentType = [@"multipart/form-data; boundary=" stringByAppendingString:boundary];
                 [request addValue:contentType forHTTPHeaderField: @"Content-Type"];
-                
+
                 NSMutableData *body = request.HTTPBody.mutableCopy;
                 [body appendStringUTF8:[NSString stringWithFormat:@"--%@\r\n", boundary]];
                 [body appendStringUTF8:[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"pictureFile\"; filename=\"%@\"\r\n",picturePath.lastPathComponent]];
@@ -98,12 +98,12 @@
             [CountlyPersistency.sharedInstance saveToFile];
 #endif
         }
-    
+
         [self finishBackgroundTask];
     }];
-    
+
     [self.connection resume];
-    
+
     COUNTLY_LOG(@"Request started %@ with body:\n%@", urlString, currentRequestData);
 }
 
@@ -119,27 +119,27 @@
         queryString = [queryString stringByAppendingFormat:@"&city=%@", self.city];
     if(self.location)
         queryString = [queryString stringByAppendingFormat:@"&location=%@", self.location];
-    
+
     [CountlyPersistency.sharedInstance addToQueue:queryString];
-    
+
     [self tick];
 }
 
 - (void)updateSessionWithDuration:(int)duration
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&session_duration=%d", duration];
-        
+
     [CountlyPersistency.sharedInstance addToQueue:queryString];
-    
+
     [self tick];
 }
 
 - (void)endSessionWithDuration:(int)duration
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&end_session=1&session_duration=%d", duration];
-    
+
     [CountlyPersistency.sharedInstance addToQueue:queryString];
-    
+
     [self tick];
 }
 
@@ -150,18 +150,18 @@
     {
         if(CountlyPersistency.sharedInstance.recordedEvents.count == 0)
             return;
-    
+
         for (CountlyEvent* event in CountlyPersistency.sharedInstance.recordedEvents.copy)
         {
             [eventsArray addObject:[event dictionaryRepresentation]];
             [CountlyPersistency.sharedInstance.recordedEvents removeObject:event];
         }
     }
-    
+
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&events=%@", [eventsArray JSONify]];
-    
+
     [CountlyPersistency.sharedInstance addToQueue:queryString];
-    
+
     [self tick];
 }
 
@@ -179,7 +179,7 @@
 #else
     testMode = self.isTestDevice ? 2 : 0;
 #endif
-    
+
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&token_session=1&ios_token=%@&test_mode=%d",
                              [token length] ? token : @"",
                              testMode];
@@ -197,36 +197,36 @@
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&user_details=%@",
                              userDetails];
-    
+
     [CountlyPersistency.sharedInstance addToQueue:queryString];
-    
+
     [self tick];
 }
 
 - (void)sendCrashReportLater:(NSString *)report
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&crash=%@", report];
-    
+
     [CountlyPersistency.sharedInstance addToQueue:queryString];
-    
+
     [CountlyPersistency.sharedInstance saveToFileSync];
 }
 
 - (void)sendOldDeviceID:(NSString *)oldDeviceID
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&old_device_id=%@",oldDeviceID];
-    
+
     [CountlyPersistency.sharedInstance addToQueue:queryString];
-    
+
     [self tick];
 }
 
 - (void)sendParentDeviceID:(NSString *)parentDeviceID
-{    
+{
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&parent_device_id=%@",parentDeviceID];
-    
+
     [CountlyPersistency.sharedInstance addToQueue:queryString];
-    
+
     [self tick];
 }
 
@@ -235,7 +235,7 @@
     NSString* locationString = [NSString stringWithFormat:@"%f,%f", coordinate.latitude, coordinate.longitude];
 
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&location=%@",locationString];
-    
+
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
     [self tick];
@@ -248,7 +248,7 @@
 #if TARGET_OS_IOS
     if (self.bgTask != UIBackgroundTaskInvalid)
         return;
-    
+
     self.bgTask = [UIApplication.sharedApplication beginBackgroundTaskWithExpirationHandler:^
     {
         [UIApplication.sharedApplication endBackgroundTask:self.bgTask];

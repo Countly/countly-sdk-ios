@@ -37,7 +37,7 @@ NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTran
         gregorianCalendar = [NSCalendar.alloc initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
         startTime = NSDate.date.timeIntervalSince1970;
     }
-    
+
     return self;
 }
 
@@ -78,7 +78,7 @@ NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTran
 - (void)transferParentDeviceID
 {
     [self activateWatchConnectivity];
-    
+
     if(WCSession.defaultSession.paired && WCSession.defaultSession.watchAppInstalled)
     {
         [WCSession.defaultSession transferUserInfo:@{kCountlyParentDeviceIDTransferKey:CountlyDeviceInfo.sharedInstance.deviceID}];
@@ -93,13 +93,13 @@ NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTran
     COUNTLY_LOG(@"didReceiveUserInfo %@", [userInfo description]);
 
     NSString* parentDeviceID = userInfo[kCountlyParentDeviceIDTransferKey];
-    
+
     if(parentDeviceID && ![parentDeviceID isEqualToString:[CountlyPersistency.sharedInstance retrieveWatchParentDeviceID]])
     {
         [CountlyConnectionManager.sharedInstance sendParentDeviceID:parentDeviceID];
-    
+
         [CountlyPersistency.sharedInstance storeWatchParentDeviceID:parentDeviceID];
-    
+
         COUNTLY_LOG(@"Parent Device ID added queue %@", parentDeviceID);
     }
 }
@@ -115,7 +115,7 @@ NSString* CountlyJSONFromObject(id object)
     NSError *error = nil;
     NSData *data = [NSJSONSerialization dataWithJSONObject:object options:0 error:&error];
     if(error){ COUNTLY_LOG(@"Cannot create JSON from object %@", error); }
-    
+
     return [NSString.alloc initWithData:data encoding:NSUTF8StringEncoding];
 }
 

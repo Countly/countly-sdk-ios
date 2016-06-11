@@ -32,7 +32,7 @@
     {
         return nil;
     }
-    
+
     self.key = [decoder decodeObjectForKey:@"key"];
     self.segmentation = [decoder decodeObjectForKey:@"segmentation"];
     self.count = [decoder decodeIntegerForKey:@"count"];

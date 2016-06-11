@@ -23,7 +23,7 @@
     {
         s_sharedInstance = self.new;
         s_sharedInstance.exceptionViewControllers = NSMutableArray.new;
-    
+
         NSArray* internalExceptionViewControllers =
         @[
             @"UINavigationController",
@@ -37,7 +37,7 @@
             @"UISearchContainerViewController",
             @"UIApplicationRotationFollowingController"
         ];
-    
+
         [internalExceptionViewControllers enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop)
         {
             Class c = NSClassFromString(obj);
@@ -52,12 +52,12 @@
 - (void)reportView:(NSString* _Nonnull)viewName
 {
     COUNTLY_LOG(@"Started tracking view: %@", viewName);
-    
+
     [self endView];
 
     CountlyEvent *event = [CountlyEvent new];
     event.key = @"[CLY]_view";
-    
+
     NSDictionary* segmentation = @{
                                     @"name": viewName,
                                     @"segment": CountlyDeviceInfo.osName,
@@ -69,7 +69,7 @@
         mutableSegmentation[@"start"] = @1;
         segmentation = mutableSegmentation;
     }
-    
+
     event.segmentation = segmentation;
     event.count = 1;
     event.timestamp = NSDate.date.timeIntervalSince1970;
@@ -77,7 +77,7 @@
     event.dayOfWeek = [CountlyCommon.sharedInstance dayOfWeek];
 
     [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
-    
+
     self.lastView = viewName;
     self.lastViewStartTime = NSDate.date.timeIntervalSince1970;
 }
@@ -99,7 +99,7 @@
         event.duration = NSDate.date.timeIntervalSince1970 - self.lastViewStartTime;
 
         [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
-    
+
         COUNTLY_LOG(@"Ended tracking view: %@ with duration %f", self.lastView, event.duration);
     }
 }
@@ -108,10 +108,10 @@
 - (void)startAutoViewTracking
 {
     self.isAutoViewTrackingEnabled = YES;
-    
+
     Method O_method;
     Method C_method;
-    
+
     O_method = class_getInstanceMethod(UIViewController.class, @selector(viewDidAppear:));
     C_method = class_getInstanceMethod(UIViewController.class, @selector(Countly_viewDidAppear:));
     method_exchangeImplementations(O_method, C_method);
@@ -146,18 +146,18 @@
                 *stop = YES;
             }
         }];
-    
+
         if(!isExceptionClass)
         {
             NSString* viewTitle = self.title;
 
             if(!viewTitle)
                 viewTitle = NSStringFromClass([self class]);
-        
+
             [CountlyViewTracking.sharedInstance reportView:viewTitle];
         }
     }
-    
+
     [self Countly_viewDidAppear:animated];
 }
 @end
