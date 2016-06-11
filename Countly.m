@@ -699,6 +699,11 @@
 {
     [CountlyCrashReporter.sharedInstance recordHandledException:exception];
 }
+
+- (void)crashLog:(NSString *)log, ...
+{
+    [CountlyCrashReporter.sharedInstance log:log];
+}
 #endif
 
 

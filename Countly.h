@@ -201,6 +201,12 @@
  * @param exception Exception to be reported
  */
 - (void)recordHandledException:(NSException *)exception;
+
+/**
+ * Records custom logs to be delivered with crash report. Logs recorded by `crashLog:` method are stored in a non-persistent structure, and delivered to server only in case of a crash.
+ * @param log Custom log string or format to be recorded
+ */
+- (void)crashLog:(NSString *)log, ...;
 #endif
 
 #pragma mark - Countly APM
