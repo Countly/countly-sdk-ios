@@ -45,7 +45,7 @@
 
 
 
-#pragma mark - Countly EventRecording
+#pragma mark - Countly CustomEvents
 
 /**
  * Records event with given key
@@ -223,7 +223,7 @@
  */
 -(void)removeExceptionForAPM:(NSString*)exceptionURL;
 
-#pragma mark - Countly ViewTracking
+#pragma mark - Countly AutoViewTracking
 
 /**
  * Reports a visited view with given name manually. If auto ViewTracking feature is activated on start configuration, no need to call this method manually.
