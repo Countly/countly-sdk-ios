@@ -392,10 +392,10 @@
 
         [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
         [CountlyPersistency.sharedInstance.startedEvents removeObjectForKey:key];
-    }
 
-    if (CountlyPersistency.sharedInstance.recordedEvents.count >= eventSendThreshold)
-        [CountlyConnectionManager.sharedInstance sendEvents];
+        if (CountlyPersistency.sharedInstance.recordedEvents.count >= eventSendThreshold)
+            [CountlyConnectionManager.sharedInstance sendEvents];
+    }
 }
 
 
