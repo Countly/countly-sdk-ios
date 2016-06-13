@@ -15,7 +15,7 @@
     NSTimeInterval lastTime;
     BOOL isSuspended;
     NSTimeInterval updateSessionPeriod;
-    int eventSendThreshold;
+    NSUInteger eventSendThreshold;
 }
 
 @property (nonatomic, strong) NSMutableDictionary *messageInfos;
@@ -81,8 +81,7 @@
     if(isSameIDFA || isSameIDFV || isSameOpen)
         return;
 
-#elif (!(TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_WATCH))
-
+#elif TARGET_OS_OSX
     if([deviceID isEqualToString:CLYOpenUDID] &&
        [CountlyDeviceInfo.sharedInstance.deviceID isEqualToString:[Countly_OpenUDID value]])
         return;
