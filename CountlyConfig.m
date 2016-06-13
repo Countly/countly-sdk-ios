@@ -8,7 +8,7 @@
 
 @implementation CountlyConfig
 
-//Countly features
+//NOTE: Countly features
 #if TARGET_OS_IOS
     NSString* const CLYMessaging = @"CLYMessaging";
     NSString* const CLYCrashReporting = @"CLYCrashReporting";
@@ -17,7 +17,7 @@
     NSString* const CLYAPM = @"CLYAPM";
 
 
-//Device ID options
+//NOTE: Device ID options
 #if TARGET_OS_IOS
     NSString* const CLYIDFA = @"CLYIDFA";
     NSString* const CLYIDFV = @"CLYIDFV";
@@ -31,7 +31,7 @@
 {
     if (self = [super init])
     {
-        //For checking if launchOptions is set when CLYMessaging feature is used.
+        //NOTE: For checking if launchOptions is set when CLYMessaging feature is used.
         self.launchOptions = @{@"CLYAssertion":@"forLaunchOptions"};
 
 #if TARGET_OS_WATCH

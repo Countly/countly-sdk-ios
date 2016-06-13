@@ -37,8 +37,6 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
             NSDictionary* readDict = [NSKeyedUnarchiver unarchiveObjectWithData:readData];
 
             self.queuedRequests = [readDict[kCountlyQueuedRequestsPersistencyKey] mutableCopy];
-
-//            self.startedEvents = [readDict[kCountlyStartedEventsPersistencyKey] mutableCopy];
         }
 
         if(!self.queuedRequests)

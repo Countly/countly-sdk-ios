@@ -6,7 +6,7 @@
 
 #import <Foundation/Foundation.h>
 
-//Countly features
+//NOTE: Countly features
 #if TARGET_OS_IOS
 extern NSString* const CLYMessaging;
 extern NSString* const CLYCrashReporting;
@@ -15,7 +15,7 @@ extern NSString* const CLYAutoViewTracking;
 extern NSString* const CLYAPM;
 
 
-//Device ID options
+//NOTE: Device ID options
 #if TARGET_OS_IOS
 extern NSString* const CLYIDFA;
 extern NSString* const CLYIDFV;
