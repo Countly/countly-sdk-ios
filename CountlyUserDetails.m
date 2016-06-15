@@ -12,16 +12,16 @@
 
 @implementation CountlyUserDetails
 
-NSString* const kCLYUserName = @"name";
-NSString* const kCLYUserUsername = @"username";
-NSString* const kCLYUserEmail = @"email";
-NSString* const kCLYUserOrganization = @"organization";
-NSString* const kCLYUserPhone = @"phone";
-NSString* const kCLYUserGender = @"gender";
-NSString* const kCLYUserPictureURL = @"picture";
-NSString* const kCLYUserPictureLocalPath = @"picturePath";
-NSString* const kCLYUserBirthYear = @"byear";
-NSString* const kCLYUserCustom = @"custom";
+NSString* const kCountlyUserName = @"name";
+NSString* const kCountlyUserUsername = @"username";
+NSString* const kCountlyUserEmail = @"email";
+NSString* const kCountlyUserOrganization = @"organization";
+NSString* const kCountlyUserPhone = @"phone";
+NSString* const kCountlyUserGender = @"gender";
+NSString* const kCountlyUserPictureURL = @"picture";
+NSString* const kCountlyUserPictureLocalPath = @"picturePath";
+NSString* const kCountlyUserBirthYear = @"byear";
+NSString* const kCountlyUserCustom = @"custom";
 
 + (CountlyUserDetails *)sharedInstance
 {
@@ -51,25 +51,25 @@ NSString* const kCLYUserCustom = @"custom";
 {
     NSMutableDictionary* userDictionary = NSMutableDictionary.new;
     if(self.name)
-        userDictionary[kCLYUserName] = self.name;
+        userDictionary[kCountlyUserName] = self.name;
     if(self.username)
-        userDictionary[kCLYUserUsername] = self.username;
+        userDictionary[kCountlyUserUsername] = self.username;
     if(self.email)
-        userDictionary[kCLYUserEmail] = self.email;
+        userDictionary[kCountlyUserEmail] = self.email;
     if(self.organization)
-        userDictionary[kCLYUserOrganization] = self.organization;
+        userDictionary[kCountlyUserOrganization] = self.organization;
     if(self.phone)
-        userDictionary[kCLYUserPhone] = self.phone;
+        userDictionary[kCountlyUserPhone] = self.phone;
     if(self.gender)
-        userDictionary[kCLYUserGender] = self.gender;
+        userDictionary[kCountlyUserGender] = self.gender;
     if(self.pictureURL)
-        userDictionary[kCLYUserPictureURL] = self.pictureURL;
+        userDictionary[kCountlyUserPictureURL] = self.pictureURL;
     if(self.pictureLocalPath)
-        userDictionary[kCLYUserPictureLocalPath] = self.pictureLocalPath;
+        userDictionary[kCountlyUserPictureLocalPath] = self.pictureLocalPath;
     if(self.birthYear!=0)
-        userDictionary[kCLYUserBirthYear] = @(self.birthYear);
+        userDictionary[kCountlyUserBirthYear] = @(self.birthYear);
     if(self.custom)
-        userDictionary[kCLYUserCustom] = self.custom;
+        userDictionary[kCountlyUserCustom] = self.custom;
 
     return [userDictionary JSONify];
 }
@@ -78,7 +78,7 @@ NSString* const kCLYUserCustom = @"custom";
 {
     NSString* unescaped = [URLString stringByReplacingOccurrencesOfString:@"+" withString:@" "];
     unescaped = [unescaped stringByRemovingPercentEncoding];
-    NSRange rPicturePathKey = [unescaped rangeOfString:kCLYUserPictureLocalPath];
+    NSRange rPicturePathKey = [unescaped rangeOfString:kCountlyUserPictureLocalPath];
     if (rPicturePathKey.location == NSNotFound)
         return nil;
 

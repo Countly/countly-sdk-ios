@@ -6,6 +6,9 @@
 
 #import "CountlyCommon.h"
 
+NSString* const kCountlySDKVersion = @"16.02.02";
+NSString* const kCountlySDKName = @"objc-native-ios";
+
 @implementation CountlyConnectionManager : NSObject
 
 + (instancetype)sharedInstance
@@ -278,8 +281,8 @@
                                         (long)NSDate.date.timeIntervalSince1970,
                                         (long)[CountlyCommon.sharedInstance hourOfDay],
                                         (long)[CountlyCommon.sharedInstance dayOfWeek],
-                                        COUNTLY_SDK_VERSION,
-                                        COUNTLY_SDK_NAME];
+                                        kCountlySDKVersion,
+                                        kCountlySDKName];
 }
 
 @end

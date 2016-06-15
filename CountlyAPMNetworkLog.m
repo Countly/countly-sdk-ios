@@ -15,6 +15,7 @@
 @property(nonatomic, readwrite) NSInteger connectionType;
 @end
 
+NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
 
 @implementation CountlyAPMNetworkLog
 
@@ -77,7 +78,7 @@
     self.endTime = NSDate.date.timeIntervalSince1970;
 
     CountlyEvent *event = [CountlyEvent new];
-    event.key = @"[CLY]_apm";
+    event.key = kCountlyReservedEventAPM;
     event.segmentation = @{
                                 @"n": self.request.URL.absoluteString,
                                 @"e": @(self.HTTPStatusCode),

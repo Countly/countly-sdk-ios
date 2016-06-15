@@ -12,6 +12,7 @@
 @property(nonatomic, strong) NSMutableArray* exceptionViewControllers;
 @end
 
+NSString* const kCountlyReservedEventView = @"[CLY]_view";
 
 @implementation CountlyViewTracking
 
@@ -56,7 +57,7 @@
     [self endView];
 
     CountlyEvent *event = [CountlyEvent new];
-    event.key = @"[CLY]_view";
+    event.key = kCountlyReservedEventView;
 
     NSDictionary* segmentation = @{
                                     @"name": viewName,
@@ -87,7 +88,7 @@
     if(self.lastView)
     {
         CountlyEvent *event = [CountlyEvent new];
-        event.key = @"[CLY]_view";
+        event.key = kCountlyReservedEventView;
         event.segmentation = @{
                                 @"name": self.lastView,
                                 @"segment": CountlyDeviceInfo.osName,
