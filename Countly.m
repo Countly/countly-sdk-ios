@@ -168,7 +168,7 @@
 #endif
 }
 
-- (void)start:(NSString *)appKey withHost:(NSString*)appHost
+- (void)start:(NSString *)appKey withHost:(NSString *)appHost
 {
     timer = [NSTimer scheduledTimerWithTimeInterval:updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
     lastTime = NSDate.date.timeIntervalSince1970;
@@ -711,12 +711,12 @@
 
 #pragma mark - Countly APM
 
--(void)addExceptionForAPM:(NSString*)exceptionURL
+- (void)addExceptionForAPM:(NSString *)exceptionURL
 {
     [CountlyAPM.sharedInstance addExceptionForAPM:exceptionURL];
 }
 
--(void)removeExceptionForAPM:(NSString*)exceptionURL
+- (void)removeExceptionForAPM:(NSString *)exceptionURL
 {
     [CountlyAPM.sharedInstance removeExceptionForAPM:exceptionURL];
 }
@@ -725,28 +725,28 @@
 
 #pragma mark - Countly AutoViewTracking
 
--(void)reportView:(NSString*)viewName
+- (void)reportView:(NSString *)viewName
 {
     [CountlyViewTracking.sharedInstance reportView:viewName];
 }
 
 #if TARGET_OS_IOS
--(void)addExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass
+- (void)addExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass
 {
     [CountlyViewTracking.sharedInstance addExceptionForAutoViewTracking:exceptionViewControllerSubclass];
 }
 
--(void)removeExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass
+- (void)removeExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass
 {
     [CountlyViewTracking.sharedInstance removeExceptionForAutoViewTracking:exceptionViewControllerSubclass];
 }
 
--(void)setIsAutoViewTrackingEnabled:(BOOL)isAutoViewTrackingEnabled
+- (void)setIsAutoViewTrackingEnabled:(BOOL)isAutoViewTrackingEnabled
 {
     CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled = isAutoViewTrackingEnabled;
 }
 
--(BOOL)isAutoViewTrackingEnabled
+- (BOOL)isAutoViewTrackingEnabled
 {
     return CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled;
 }

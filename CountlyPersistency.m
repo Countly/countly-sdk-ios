@@ -51,7 +51,7 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
     return self;
 }
 
-- (void)addToQueue:(NSString*)queryString
+- (void)addToQueue:(NSString *)queryString
 {
     @synchronized (self)
     {
@@ -149,7 +149,7 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
     return retrievedDeviceID;
 }
 
-- (void)storeDeviceID:(NSString*)deviceID
+- (void)storeDeviceID:(NSString *)deviceID
 {
     NSDictionary *keychainDict =
     @{
@@ -174,12 +174,12 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
     }
 }
 
-- (NSString*)retrieveWatchParentDeviceID
+- (NSString *)retrieveWatchParentDeviceID
 {
     return [NSUserDefaults.standardUserDefaults objectForKey:kCountlyWatchParentDeviceIDKey];
 }
 
-- (void)storeWatchParentDeviceID:(NSString*)deviceID
+- (void)storeWatchParentDeviceID:(NSString *)deviceID
 {
     [NSUserDefaults.standardUserDefaults setObject:deviceID forKey:kCountlyWatchParentDeviceIDKey];
     [NSUserDefaults.standardUserDefaults synchronize];

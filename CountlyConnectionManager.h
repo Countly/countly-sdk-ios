@@ -29,8 +29,8 @@
 - (void)endSessionWithDuration:(int)duration;
 
 - (void)sendEvents;
-- (void)sendUserDetails:(NSString*)userDetails;
-- (void)sendPushToken:(NSString*)token;
+- (void)sendUserDetails:(NSString *)userDetails;
+- (void)sendPushToken:(NSString *)token;
 - (void)sendCrashReportLater:(NSString *)report;
 - (void)sendOldDeviceID:(NSString *)oldDeviceID;
 - (void)sendParentDeviceID:(NSString *)parentDeviceID;

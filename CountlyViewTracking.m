@@ -16,7 +16,7 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
 
 @implementation CountlyViewTracking
 
-+(instancetype)sharedInstance
++ (instancetype)sharedInstance
 {
     static CountlyViewTracking* s_sharedInstance;
     static dispatch_once_t onceToken;
@@ -118,12 +118,12 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
     method_exchangeImplementations(O_method, C_method);
 }
 
--(void)addExceptionForAutoViewTracking:(Class _Nullable)exceptionViewControllerSubclass
+- (void)addExceptionForAutoViewTracking:(Class _Nullable)exceptionViewControllerSubclass
 {
     [self.exceptionViewControllers addObject:exceptionViewControllerSubclass];
 }
 
--(void)removeExceptionForAutoViewTracking:(Class _Nullable)exceptionViewControllerSubclass
+- (void)removeExceptionForAutoViewTracking:(Class _Nullable)exceptionViewControllerSubclass
 {
     [self.exceptionViewControllers removeObject:exceptionViewControllerSubclass];
 }

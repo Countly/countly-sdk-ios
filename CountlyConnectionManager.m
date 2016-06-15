@@ -170,7 +170,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
 #pragma mark ---
 
-- (void)sendPushToken:(NSString*)token
+- (void)sendPushToken:(NSString *)token
 {
     // Test modes: 0 = Production build,
     //             1 = Development build,
@@ -196,7 +196,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
     });
 }
 
-- (void)sendUserDetails:(NSString*)userDetails
+- (void)sendUserDetails:(NSString *)userDetails
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&user_details=%@",
                              userDetails];

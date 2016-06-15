@@ -7,7 +7,7 @@
 #import "CountlyCommon.h"
 
 @implementation CountlyAPM
-+(instancetype)sharedInstance
++ (instancetype)sharedInstance
 {
     static CountlyAPM* s_sharedInstance;
     static dispatch_once_t onceToken;
@@ -70,7 +70,7 @@
 }
 
 
--(void)addExceptionForAPM:(NSString*)string
+- (void)addExceptionForAPM:(NSString *)string
 {
     NSURL* url = [NSURL URLWithString:string];
     NSString* hostAndPath = [url.host stringByAppendingString:url.path];
@@ -81,7 +81,7 @@
     }
 }
 
--(void)removeExceptionForAPM:(NSString*)string
+- (void)removeExceptionForAPM:(NSString *)string
 {
     NSURL * url = [NSURL URLWithString:string];
     NSString* hostAndPath = [url.host stringByAppendingString:url.path];
@@ -91,7 +91,7 @@
 
 #pragma mark -
 
--(void)connection:(NSURLConnection *)connection didFailWithError:(nonnull NSError *)error
+- (void)connection:(NSURLConnection *)connection didFailWithError:(nonnull NSError *)error
 {
     [connection.APMNetworkLog finishWithStatusCode:-1 andDataSize:0];
 
@@ -103,7 +103,7 @@
 }
 
 
--(void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
+- (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
 {
     [connection.APMNetworkLog updateWithResponse:response];
 
@@ -114,7 +114,7 @@
     }
 }
 
--(void)connectionDidFinishLoading:(NSURLConnection *)connection
+- (void)connectionDidFinishLoading:(NSURLConnection *)connection
 {
     [connection.APMNetworkLog finish];
 
@@ -144,8 +144,8 @@
     return data;
 }
 
-+ (void)Countly_sendAsynchronousRequest:(NSURLRequest*) request
-                                  queue:(NSOperationQueue*) queue
++ (void)Countly_sendAsynchronousRequest:(NSURLRequest *) request
+                                  queue:(NSOperationQueue *) queue
                       completionHandler:(void (^)(NSURLResponse* response, NSData* data, NSError* connectionError)) handler
 
 {
@@ -204,12 +204,12 @@
     objc_setAssociatedObject(self, @selector(originalDelegate), originalDelegate, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
 
-- (CountlyAPMNetworkLog*)APMNetworkLog
+- (CountlyAPMNetworkLog *)APMNetworkLog
 {
     return objc_getAssociatedObject(self, @selector(APMNetworkLog));
 }
 
-- (void)setAPMNetworkLog:(CountlyAPMNetworkLog*)APMNetworkLog
+- (void)setAPMNetworkLog:(CountlyAPMNetworkLog *)APMNetworkLog
 {
     objc_setAssociatedObject(self, @selector(APMNetworkLog), APMNetworkLog, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
@@ -275,7 +275,7 @@
     [self Countly_resume];
 }
 
-- (CountlyAPMNetworkLog*)APMNetworkLog
+- (CountlyAPMNetworkLog *)APMNetworkLog
 {
     return objc_getAssociatedObject(self, @selector(APMNetworkLog));
 }

@@ -27,7 +27,7 @@
     return self;
 }
 
-- (void)initializeDeviceID:(NSString*)deviceID
+- (void)initializeDeviceID:(NSString *)deviceID
 {
 #if TARGET_OS_IOS
     if(!deviceID || [deviceID isEqualToString:@""])

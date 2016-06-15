@@ -215,13 +215,13 @@
  * Adds exception URL for APM. Added URLs (with or without specific path) will be ignored by APM. Adding an already added URL again will have no effect.
  * @param exceptionURL Exception URL to be added
  */
--(void)addExceptionForAPM:(NSString*)exceptionURL;
+- (void)addExceptionForAPM:(NSString *)exceptionURL;
 
 /**
  * Removes exception URL for APM. Removing an already removed (or not yet added) URL again will have no effect.
  * @param exceptionURL Exception URL to be removed
  */
--(void)removeExceptionForAPM:(NSString*)exceptionURL;
+- (void)removeExceptionForAPM:(NSString *)exceptionURL;
 
 #pragma mark - Countly AutoViewTracking
 
@@ -229,20 +229,20 @@
  * Reports a visited view with given name manually. If auto ViewTracking feature is activated on start configuration, no need to call this method manually.
  * @param viewName Name of the view visited
  */
--(void)reportView:(NSString*)viewName;
+- (void)reportView:(NSString *)viewName;
 
 #if TARGET_OS_IOS
 /**
  * Adds exception UIViewController subclass for AutoViewTracking. Added UIViewContoller subclasses will be ignored by AutoViewTracking and their appearances and disappearances will not be reported. Adding an already added UIViewController subclass again will have no effect.
  * @param exceptionViewControllerSubclass Exception UIViewController subclass to be added
  */
--(void)addExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass;
+- (void)addExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass;
 
 /**
  * Removes exception UIViewController subclass for AutoViewTracking. Removing an already removed (or not yet added) UIViewController subclass again will have no effect.
  * @param exceptionViewControllerSubclass Exception UIViewController subclass to be removed
  */
--(void)removeExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass;
+- (void)removeExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass;
 
 /**
  * Enables or disables auto ViewTracking if AutoViewTracking feature is activated on start configuration. Otherwise has no effect.

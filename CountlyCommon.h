@@ -89,5 +89,5 @@
 @end
 
 @interface NSMutableData (AppendStringUTF8)
-- (void)appendStringUTF8:(NSString*)string;
+- (void)appendStringUTF8:(NSString *)string;
 @end

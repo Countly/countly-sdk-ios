@@ -74,7 +74,7 @@ NSString* const kCountlyUserCustom = @"custom";
     return [userDictionary JSONify];
 }
 
-- (NSString *)extractPicturePathFromURLString:(NSString*)URLString
+- (NSString *)extractPicturePathFromURLString:(NSString *)URLString
 {
     NSString* unescaped = [URLString stringByReplacingOccurrencesOfString:@"+" withString:@" "];
     unescaped = [unescaped stringByRemovingPercentEncoding];
@@ -106,72 +106,72 @@ NSString* const kCountlyUserCustom = @"custom";
 
 #pragma mark -
 
-- (void)set:(NSString*)key value:(NSString*)value
+- (void)set:(NSString *)key value:(NSString *)value
 {
     self.modifications[key] = value;
 }
 
-- (void)setOnce:(NSString*)key value:(NSString*)value
+- (void)setOnce:(NSString *)key value:(NSString *)value
 {
     self.modifications[key] = @{@"$setOnce":value};
 }
 
-- (void)unSet:(NSString*)key
+- (void)unSet:(NSString *)key
 {
     self.modifications[key] = NSNull.null;
 }
 
-- (void)increment:(NSString*)key
+- (void)increment:(NSString *)key
 {
     [self incrementBy:key value:1];
 }
 
-- (void)incrementBy:(NSString*)key value:(NSInteger)value
+- (void)incrementBy:(NSString *)key value:(NSInteger)value
 {
     self.modifications[key] = @{@"$inc":@(value)};
 }
 
-- (void)multiply:(NSString*)key value:(NSInteger)value
+- (void)multiply:(NSString *)key value:(NSInteger)value
 {
     self.modifications[key] = @{@"$mul":@(value)};
 }
 
-- (void)max:(NSString*)key value:(NSInteger)value
+- (void)max:(NSString *)key value:(NSInteger)value
 {
     self.modifications[key] = @{@"$max":@(value)};
 }
 
-- (void)min:(NSString*)key value:(NSInteger)value
+- (void)min:(NSString *)key value:(NSInteger)value
 {
     self.modifications[key] = @{@"$min":@(value)};
 }
 
-- (void)push:(NSString*)key value:(NSString*)value
+- (void)push:(NSString *)key value:(NSString *)value
 {
     self.modifications[key] = @{@"$push":value};
 }
 
-- (void)push:(NSString*)key values:(NSArray*)value
+- (void)push:(NSString *)key values:(NSArray *)value
 {
     self.modifications[key] = @{@"$push":value};
 }
 
-- (void)pushUnique:(NSString*)key value:(NSString*)value
+- (void)pushUnique:(NSString *)key value:(NSString *)value
 {
     self.modifications[key] = @{@"$addToSet":value};
 }
 
-- (void)pushUnique:(NSString*)key values:(NSArray*)value
+- (void)pushUnique:(NSString *)key values:(NSArray *)value
 {
     self.modifications[key] = @{@"$addToSet":value};
 }
 
-- (void)pull:(NSString*)key value:(NSString*)value
+- (void)pull:(NSString *)key value:(NSString *)value
 {
     self.modifications[key] = @{@"$pull":value};
 }
 
-- (void)pull:(NSString*)key values:(NSArray*)value
+- (void)pull:(NSString *)key values:(NSArray *)value
 {
     self.modifications[key] = @{@"$pull":value};
 }

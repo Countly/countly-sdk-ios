@@ -9,15 +9,15 @@
 @interface CountlyPersistency : NSObject
 
 + (instancetype)sharedInstance;
-- (void)addToQueue:(NSString*)queryString;
+- (void)addToQueue:(NSString *)queryString;
 - (void)saveToFile;
 - (void)saveToFileSync;
 
-- (NSString*)retrieveStoredDeviceID;
-- (void)storeDeviceID:(NSString*)deviceID;
+- (NSString *)retrieveStoredDeviceID;
+- (void)storeDeviceID:(NSString *)deviceID;
 
-- (NSString*)retrieveWatchParentDeviceID;
-- (void)storeWatchParentDeviceID:(NSString*)deviceID;
+- (NSString *)retrieveWatchParentDeviceID;
+- (void)storeWatchParentDeviceID:(NSString *)deviceID;
 
 @property (nonatomic, strong) NSMutableArray* recordedEvents;
 @property (nonatomic, strong) NSMutableArray* queuedRequests;

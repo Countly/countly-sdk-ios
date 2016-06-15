@@ -134,7 +134,7 @@ NSString* CountlyJSONFromObject(id object)
 @end
 
 @implementation NSMutableData (AppendStringUTF8)
-- (void)appendStringUTF8:(NSString*)string
+- (void)appendStringUTF8:(NSString *)string
 {
     [self appendData:[string dataUsingEncoding:NSUTF8StringEncoding]];
 }

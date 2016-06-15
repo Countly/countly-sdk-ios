@@ -11,7 +11,7 @@
 @property (nonatomic, strong) NSString *deviceID;
 
 + (instancetype)sharedInstance;
-- (void)initializeDeviceID:(NSString*)deviceID;
+- (void)initializeDeviceID:(NSString *)deviceID;
 
 + (NSString *)device;
 + (NSString *)osName;

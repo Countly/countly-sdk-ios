@@ -19,7 +19,7 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
 
 @implementation CountlyAPMNetworkLog
 
-+(instancetype)createWithRequest:(NSURLRequest*)request startImmediately:(BOOL)startImmediately
++ (instancetype)createWithRequest:(NSURLRequest *)request startImmediately:(BOOL)startImmediately
 {
     NSString* hostAndPath = [request.URL.host stringByAppendingString:request.URL.path];
     __block BOOL isException = NO;
@@ -49,14 +49,14 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
     return nl;
 }
 
--(void)start
+- (void)start
 {
     self.sentDataSize = [self.class sentDataSizeForRequest:self.request];
     self.connectionType = CountlyDeviceInfo.connectionType;
     self.startTime = NSDate.date.timeIntervalSince1970;
 }
 
--(void)updateWithResponse:(NSURLResponse *)response
+- (void)updateWithResponse:(NSURLResponse *)response
 {
     self.HTTPStatusCode =((NSHTTPURLResponse*)response).statusCode;
     self.receivedDataSize = [response expectedContentLength];
@@ -65,7 +65,7 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
         self.receivedDataSize = 0; //NOTE: sometimes expectedContentLength is not available
 }
 
--(void)finishWithStatusCode:(NSInteger)statusCode andDataSize:(long long)dataSize
+- (void)finishWithStatusCode:(NSInteger)statusCode andDataSize:(long long)dataSize
 {
     self.HTTPStatusCode = statusCode;
     self.receivedDataSize = dataSize;
@@ -73,7 +73,7 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
     [self finish];
 }
 
--(void)finish
+- (void)finish
 {
     self.endTime = NSDate.date.timeIntervalSince1970;
 
@@ -100,7 +100,7 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
     [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
 }
 
-+(long long)sentDataSizeForRequest:(NSURLRequest*)request
++ (long long)sentDataSizeForRequest:(NSURLRequest *)request
 {
     __block long long sentDataSize = 0;
     [request.allHTTPHeaderFields enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, NSString * _Nonnull obj, BOOL * _Nonnull stop)
@@ -113,7 +113,7 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
     return sentDataSize;
 }
 
--(NSString*)description
+- (NSString *)description
 {
     return [NSString stringWithFormat: @"\n"
                                         "Request host: %@ \n"
