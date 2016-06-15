@@ -9,6 +9,8 @@
 @interface CountlyCrashReporter ()
 @end
 
+NSString* const kCountlyExceptionUserInfoBacktraceKey = @"kCountlyExceptionUserInfoBacktraceKey";
+
 @implementation CountlyCrashReporter
 
 #if TARGET_OS_IOS
@@ -30,8 +32,6 @@
 
     return self;
 }
-
-#define kCountlyCrashUserInfoKey @"kCountlyCrashUserInfoKey"
 
 - (void)startCrashReporting
 {
@@ -90,7 +90,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     if(CountlyCustomCrashLogs)
         crashReport[@"_logs"] = [CountlyCustomCrashLogs componentsJoinedByString:@"\n"];
 
-    NSArray* stackArray = exception.userInfo[kCountlyCrashUserInfoKey];
+    NSArray* stackArray = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
     if(!stackArray) stackArray = exception.callStackSymbols;
 
     NSMutableString* stackString = NSMutableString.string;
@@ -172,10 +172,9 @@ void CountlySignalHandler(int signalCode)
 
     free(lines);
 
-    NSMutableDictionary *userInfo =[NSMutableDictionary dictionaryWithObject:@(signalCode) forKey:@"signal_code"];
-    [userInfo setObject:backtrace forKey:kCountlyCrashUserInfoKey];
-    NSString *reason = [NSString stringWithFormat:@"App terminated by SIG%@",[NSString stringWithUTF8String:sys_signame[signalCode]].uppercaseString];
-
+    NSMutableDictionary *userInfo = @{@"signal_code":@(signalCode)}.mutableCopy;
+    userInfo[kCountlyExceptionUserInfoBacktraceKey] = backtrace;
+    NSString *reason = [NSString stringWithFormat:@"App terminated by SIG%@", [NSString stringWithUTF8String:sys_signame[signalCode]].uppercaseString];
     NSException *e = [NSException exceptionWithName:@"Fatal Signal" reason:reason userInfo:userInfo];
 
     CountlyUncaughtExceptionHandler(e);
