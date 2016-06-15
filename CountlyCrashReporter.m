@@ -231,7 +231,14 @@ static NSMutableArray *CountlyCustomCrashLogs = nil;
     crashView.frame = aRect;
 }
 
+- (void)crashTest5
+{
+    kill(getpid(), SIGABRT);
+}
+
+- (void)crashTest6
+{
+    __builtin_trap();
+}
 #endif
-
-
 @end
