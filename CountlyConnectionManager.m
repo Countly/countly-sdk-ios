@@ -6,7 +6,7 @@
 
 #import "CountlyCommon.h"
 
-NSString* const kCountlySDKVersion = @"16.02.02";
+NSString* const kCountlySDKVersion = @"16.06";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 @implementation CountlyConnectionManager : NSObject
