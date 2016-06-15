@@ -284,6 +284,7 @@
 }
 
 
+
 #pragma mark - Countly CustomEvents
 - (void)recordEvent:(NSString *)key
 {
@@ -752,4 +753,12 @@
 }
 #endif
 
+
+
+#pragma mark - Countly UserDetails
+
++ (CountlyUserDetails *)user
+{
+    return CountlyUserDetails.sharedInstance;
+}
 @end

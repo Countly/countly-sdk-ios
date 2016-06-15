@@ -137,6 +137,8 @@
  */
 - (void)endEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum;
 
+
+
 #pragma mark - Countly Messaging
 #if TARGET_OS_IOS
 - (void)didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken;
@@ -194,6 +196,8 @@
 - (void)recordLocation:(CLLocationCoordinate2D)coordinate;
 #endif
 
+
+
 #pragma mark - Countly CrashReporting
 #if TARGET_OS_IOS
 /**
@@ -209,6 +213,8 @@
 - (void)crashLog:(NSString *)log, ...;
 #endif
 
+
+
 #pragma mark - Countly APM
 
 /**
@@ -222,6 +228,8 @@
  * @param exceptionURL Exception URL to be removed
  */
 - (void)removeExceptionForAPM:(NSString *)exceptionURL;
+
+
 
 #pragma mark - Countly AutoViewTracking
 
@@ -249,4 +257,14 @@
  */
 @property (nonatomic,readwrite) BOOL isAutoViewTrackingEnabled;
 #endif
+
+
+
+#pragma mark - Countly UserDetails
+
+/**
+ * Returns CountlyUserDetails singleton to be used throughout the app.
+ * @return The shared CountlyUserDetails object
+ */
++ (CountlyUserDetails *)user;
 @end
