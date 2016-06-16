@@ -98,7 +98,7 @@
 #elif TARGET_OS_TV
     return @"tvOS";
 #else
-    return @"OSX";
+    return @"macOS";
 #endif
 }
 
