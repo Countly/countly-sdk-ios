@@ -120,8 +120,14 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
 
 - (NSString* )retrieveStoredDeviceID
 {
-    NSString* retrievedDeviceID = nil;
+    NSString* retrievedDeviceID = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyStoredDeviceIDKey];
 
+    if(retrievedDeviceID)
+    {
+        COUNTLY_LOG(@"Succesfully retrieved Device ID from UserDefaults: %@", retrievedDeviceID);
+        return retrievedDeviceID;
+    }
+    
     NSDictionary *keychainDict =
     @{
         (__bridge id)kSecAttrAccount:       kCountlyStoredDeviceIDKey,
@@ -142,15 +148,24 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
         if (data)
         {
             retrievedDeviceID = [NSString.alloc initWithData:data encoding:NSUTF8StringEncoding];
+
+            COUNTLY_LOG(@"Succesfully retrieved Device ID from KeyChain: %@", retrievedDeviceID);
+        
+            [NSUserDefaults.standardUserDefaults setObject:retrievedDeviceID forKey:kCountlyStoredDeviceIDKey];
+            [NSUserDefaults.standardUserDefaults synchronize];
         }
     }
 
-    COUNTLY_LOG(@"Retrieved Device ID: %@", retrievedDeviceID);
+    COUNTLY_LOG(@"Can not retrieve Device ID");
+
     return retrievedDeviceID;
 }
 
 - (void)storeDeviceID:(NSString *)deviceID
 {
+    [NSUserDefaults.standardUserDefaults setObject:deviceID forKey:kCountlyStoredDeviceIDKey];
+    [NSUserDefaults.standardUserDefaults synchronize];
+    
     NSDictionary *keychainDict =
     @{
         (__bridge id)kSecAttrAccount:       kCountlyStoredDeviceIDKey,
