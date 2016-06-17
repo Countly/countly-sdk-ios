@@ -35,29 +35,32 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
         if(readData)
         {
             NSDictionary* readDict = [NSKeyedUnarchiver unarchiveObjectWithData:readData];
-        
-            self.queuedRequests = [readDict[kCountlyQueuedRequestsPersistencyKey] mutableCopy];
 
-            self.startedEvents = [readDict[kCountlyStartedEventsPersistencyKey] mutableCopy];
+            self.queuedRequests = [readDict[kCountlyQueuedRequestsPersistencyKey] mutableCopy];
         }
-    
+
         if(!self.queuedRequests)
             self.queuedRequests = NSMutableArray.new;
 
         if(!self.startedEvents)
             self.startedEvents = NSMutableDictionary.new;
-    
+
         self.recordedEvents = NSMutableArray.new;
     }
-    
+
     return self;
 }
 
-- (void)addToQueue:(NSString*)queryString
+- (void)addToQueue:(NSString *)queryString
 {
     @synchronized (self)
     {
         [self.queuedRequests addObject:queryString];
+
+        if(self.queuedRequests.count > self.storedRequestsLimit && !CountlyConnectionManager.sharedInstance.connection)
+        {
+            [self.queuedRequests removeObject:self.queuedRequests.firstObject];
+        }
     }
 }
 
@@ -84,7 +87,7 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
 
         url = [url URLByAppendingPathComponent:kCountlyPersistencyFileName];
     });
-    
+
     return url;
 }
 
@@ -99,8 +102,7 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
 - (void)saveToFileSync
 {
     NSDictionary* saveDict = @{
-                                kCountlyQueuedRequestsPersistencyKey:self.queuedRequests,
-                                kCountlyStartedEventsPersistencyKey:self.startedEvents
+                                kCountlyQueuedRequestsPersistencyKey:self.queuedRequests
                               };
     NSData* saveData;
 
@@ -118,7 +120,13 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
 
 - (NSString* )retrieveStoredDeviceID
 {
-    NSString* retrievedDeviceID = nil;
+    NSString* retrievedDeviceID = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyStoredDeviceIDKey];
+
+    if(retrievedDeviceID)
+    {
+        COUNTLY_LOG(@"Succesfully retrieved Device ID from UserDefaults: %@", retrievedDeviceID);
+        return retrievedDeviceID;
+    }
     
     NSDictionary *keychainDict =
     @{
@@ -136,19 +144,28 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
     {
         NSDictionary *resultDict = (__bridge_transfer NSDictionary *)resultDictRef;
         NSData *data = resultDict[(__bridge id)kSecValueData];
-    
+
         if (data)
         {
             retrievedDeviceID = [NSString.alloc initWithData:data encoding:NSUTF8StringEncoding];
+
+            COUNTLY_LOG(@"Succesfully retrieved Device ID from KeyChain: %@", retrievedDeviceID);
+        
+            [NSUserDefaults.standardUserDefaults setObject:retrievedDeviceID forKey:kCountlyStoredDeviceIDKey];
+            [NSUserDefaults.standardUserDefaults synchronize];
         }
     }
-    
-    COUNTLY_LOG(@"Retrieved Device ID: %@", retrievedDeviceID);
+
+    COUNTLY_LOG(@"Can not retrieve Device ID");
+
     return retrievedDeviceID;
 }
 
-- (void)storeDeviceID:(NSString*)deviceID
+- (void)storeDeviceID:(NSString *)deviceID
 {
+    [NSUserDefaults.standardUserDefaults setObject:deviceID forKey:kCountlyStoredDeviceIDKey];
+    [NSUserDefaults.standardUserDefaults synchronize];
+    
     NSDictionary *keychainDict =
     @{
         (__bridge id)kSecAttrAccount:       kCountlyStoredDeviceIDKey,
@@ -161,7 +178,7 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
     SecItemDelete((__bridge CFDictionaryRef)keychainDict);
 
     OSStatus status = SecItemAdd((__bridge CFDictionaryRef)keychainDict, NULL);
-    
+
     if(status == noErr)
     {
         COUNTLY_LOG(@"Successfully stored Device ID: %@", deviceID);
@@ -172,12 +189,12 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
     }
 }
 
-- (NSString*)retrieveWatchParentDeviceID
+- (NSString *)retrieveWatchParentDeviceID
 {
     return [NSUserDefaults.standardUserDefaults objectForKey:kCountlyWatchParentDeviceIDKey];
 }
 
-- (void)storeWatchParentDeviceID:(NSString*)deviceID
+- (void)storeWatchParentDeviceID:(NSString *)deviceID
 {
     [NSUserDefaults.standardUserDefaults setObject:deviceID forKey:kCountlyWatchParentDeviceIDKey];
     [NSUserDefaults.standardUserDefaults synchronize];

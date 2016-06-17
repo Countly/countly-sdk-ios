@@ -19,5 +19,7 @@
 - (void)crashTest2;
 - (void)crashTest3;
 - (void)crashTest4;
+- (void)crashTest5;
+- (void)crashTest6;
 #endif
 @end

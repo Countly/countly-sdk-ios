@@ -23,12 +23,10 @@
 #endif
 
 #if COUNTLY_DEBUG
-#define COUNTLY_LOG(fmt, ...) NSLog(fmt, ##__VA_ARGS__)
+#define COUNTLY_LOG(fmt, ...) NSLog([@"%@ " stringByAppendingString:fmt], @"[Countly]", ##__VA_ARGS__)
 #else
 #define COUNTLY_LOG(...)
 #endif
-
-#define COUNTLY_SDK_VERSION @"16.02.01"
 
 #if TARGET_OS_IOS
 #import <UIKit/UIKit.h>
@@ -91,5 +89,5 @@
 @end
 
 @interface NSMutableData (AppendStringUTF8)
-- (void)appendStringUTF8:(NSString*)string;
+- (void)appendStringUTF8:(NSString *)string;
 @end

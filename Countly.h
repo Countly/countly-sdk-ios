@@ -7,7 +7,7 @@
 #import <Foundation/Foundation.h>
 #import <CoreLocation/CoreLocation.h>
 #import "CountlyUserDetails.h"
-#import "CountlyCrashReporter.h" 
+#import "CountlyCrashReporter.h"
 #import "CountlyConfig.h"
 
 @interface Countly : NSObject
@@ -29,7 +29,7 @@
 /**
  * Sets new device ID to be persistently stored and used in following requests.
  * @param deviceID New device ID
- * @param onServer If YES data on server will be merged automatically, otherwise device will be counted as a new device.
+ * @param onServer If YES data on server will be merged automatically, otherwise device will be counted as a new device
  */
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer;
 
@@ -45,37 +45,37 @@
 
 
 
-#pragma mark - Countly EventRecording
+#pragma mark - Countly CustomEvents
 
 /**
- * Records event with given key
+ * Records event with given key.
  * @param key Event key
  */
 - (void)recordEvent:(NSString *)key;
 
 /**
- * Records event with given key and count
+ * Records event with given key and count.
  * @param key Event key
  * @param count Count of event occurrences
  */
 - (void)recordEvent:(NSString *)key count:(NSUInteger)count;
 
 /**
- * Records event with given key and sum
+ * Records event with given key and sum.
  * @param key Event key
  * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
  */
 - (void)recordEvent:(NSString *)key sum:(double)sum;
 
 /**
- * Records event with given key and duration
+ * Records event with given key and duration.
  * @param key Event key
  * @param duration Duration of event in seconds
  */
 - (void)recordEvent:(NSString *)key duration:(NSTimeInterval)duration;
 
 /**
- * Records event with given key, count and sum
+ * Records event with given key, count and sum.
  * @param key Event key
  * @param count Count of event occurrences
  * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
@@ -83,14 +83,14 @@
 - (void)recordEvent:(NSString *)key count:(NSUInteger)count sum:(double)sum;
 
 /**
- * Records event with given key and segmentation
+ * Records event with given key and segmentation.
  * @param key Event key
  * @param segmentation Segmentation key-value pairs of event
  */
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation;
 
 /**
- * Records event with given key, segmentation and count
+ * Records event with given key, segmentation and count.
  * @param key Event key
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
@@ -98,7 +98,7 @@
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count;
 
 /**
- * Records event with given key, segmentation, count and sum
+ * Records event with given key, segmentation, count and sum.
  * @param key Event key
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
@@ -107,7 +107,7 @@
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum;
 
 /**
- * Records event with given key, segmentation, count, sum and duration
+ * Records event with given key, segmentation, count, sum and duration.
  * @param key Event key
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
@@ -136,6 +136,8 @@
  * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
  */
 - (void)endEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum;
+
+
 
 #pragma mark - Countly Messaging
 #if TARGET_OS_IOS
@@ -188,45 +190,81 @@
 
 
 /**
- * Records location with given coordinate to be used for location-aware push notifications
+ * Records location with given coordinate to be used for location-aware push notifications.
  * @param coordinate CLLocationCoordinate2D struct with latitude and longitude
  */
 - (void)recordLocation:(CLLocationCoordinate2D)coordinate;
 #endif
 
+
+
 #pragma mark - Countly CrashReporting
 #if TARGET_OS_IOS
 /**
- * Records handled exception manually in addition to automatic reporting of unhandled exceptions and crashes
+ * Records handled exception manually in addition to automatic reporting of unhandled exceptions and crashes.
  * @param exception Exception to be reported
  */
 - (void)recordHandledException:(NSException *)exception;
+
+/**
+ * Records custom logs to be delivered with crash report. Logs recorded by `crashLog:` method are stored in a non-persistent structure, and delivered to server only in case of a crash.
+ * @param log Custom log string or format to be recorded
+ */
+- (void)crashLog:(NSString *)log, ...;
 #endif
+
+
 
 #pragma mark - Countly APM
 
 /**
  * Adds exception URL for APM. Added URLs (with or without specific path) will be ignored by APM. Adding an already added URL again will have no effect.
- * @param exceptionURL Exception URL to be added.
+ * @param exceptionURL Exception URL to be added
  */
--(void)addExceptionForAPM:(NSString*)exceptionURL;
+- (void)addExceptionForAPM:(NSString *)exceptionURL;
 
 /**
  * Removes exception URL for APM. Removing an already removed (or not yet added) URL again will have no effect.
- * @param exceptionURL Exception URL to be removed.
+ * @param exceptionURL Exception URL to be removed
  */
--(void)removeExceptionForAPM:(NSString*)exceptionURL;
+- (void)removeExceptionForAPM:(NSString *)exceptionURL;
 
-#pragma mark - Countly ViewTracking
+
+
+#pragma mark - Countly AutoViewTracking
 
 /**
  * Reports a visited view with given name manually. If auto ViewTracking feature is activated on start configuration, no need to call this method manually.
- * @param viewName Name of the view visited.
+ * @param viewName Name of the view visited
  */
--(void)reportView:(NSString*)viewName;
+- (void)reportView:(NSString *)viewName;
+
+#if TARGET_OS_IOS
+/**
+ * Adds exception UIViewController subclass for AutoViewTracking. Added UIViewContoller subclasses will be ignored by AutoViewTracking and their appearances and disappearances will not be reported. Adding an already added UIViewController subclass again will have no effect.
+ * @param exceptionViewControllerSubclass Exception UIViewController subclass to be added
+ */
+- (void)addExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass;
 
 /**
- * Enables or disables auto ViewTracking if auto ViewTracking feature is activated on start configuration. Otherwise has no effect.
+ * Removes exception UIViewController subclass for AutoViewTracking. Removing an already removed (or not yet added) UIViewController subclass again will have no effect.
+ * @param exceptionViewControllerSubclass Exception UIViewController subclass to be removed
+ */
+- (void)removeExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass;
+
+/**
+ * Enables or disables auto ViewTracking if AutoViewTracking feature is activated on start configuration. Otherwise has no effect.
  */
 @property (nonatomic,readwrite) BOOL isAutoViewTrackingEnabled;
+#endif
+
+
+
+#pragma mark - Countly UserDetails
+
+/**
+ * Returns CountlyUserDetails singleton to be used throughout the app.
+ * @return The shared CountlyUserDetails object
+ */
++ (CountlyUserDetails *)user;
 @end

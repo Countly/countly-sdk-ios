@@ -9,6 +9,8 @@
 @interface CountlyCrashReporter ()
 @end
 
+NSString* const kCountlyExceptionUserInfoBacktraceKey = @"kCountlyExceptionUserInfoBacktraceKey";
+
 @implementation CountlyCrashReporter
 
 #if TARGET_OS_IOS
@@ -27,11 +29,9 @@
     {
         self.crashSegmentation = nil;
     }
-    
+
     return self;
 }
-
-#define kCountlyCrashUserInfoKey @"kCountlyCrashUserInfoKey"
 
 - (void)startCrashReporting
 {
@@ -58,22 +58,24 @@ void CountlyUncaughtExceptionHandler(NSException *exception)
 void CountlyExceptionHandler(NSException *exception, bool nonfatal)
 {
     NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
-    
+
     crashReport[@"_os"] = CountlyDeviceInfo.osName;
     crashReport[@"_os_version"] = CountlyDeviceInfo.osVersion;
     crashReport[@"_device"] = CountlyDeviceInfo.device;
     crashReport[@"_resolution"] = CountlyDeviceInfo.resolution;
     crashReport[@"_app_version"] = CountlyDeviceInfo.appVersion;
+    crashReport[@"_app_build"] = CountlyDeviceInfo.appBuild;
+    crashReport[@"_build_uuid"] = CountlyDeviceInfo.buildUUID;
     crashReport[@"_name"] = exception.debugDescription;
     crashReport[@"_nonfatal"] = @(nonfatal);
-    
+
 
     crashReport[@"_ram_current"] = @((CountlyDeviceInfo.totalRAM-CountlyDeviceInfo.freeRAM)/1048576);
     crashReport[@"_ram_total"] = @(CountlyDeviceInfo.totalRAM/1048576);
     crashReport[@"_disk_current"] = @((CountlyDeviceInfo.totalDisk-CountlyDeviceInfo.freeDisk)/1048576);
     crashReport[@"_disk_total"] = @(CountlyDeviceInfo.totalDisk/1048576);
-    
-    
+
+
     crashReport[@"_bat"] = @(CountlyDeviceInfo.batteryLevel);
     crashReport[@"_orientation"] = CountlyDeviceInfo.orientation;
     crashReport[@"_online"] = @((CountlyDeviceInfo.connectionType)? 1 : 0 );
@@ -81,14 +83,14 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     crashReport[@"_root"] = @(CountlyDeviceInfo.isJailbroken);
     crashReport[@"_background"] = @(CountlyDeviceInfo.isInBackground);
     crashReport[@"_run"] = @(CountlyCommon.sharedInstance.timeSinceLaunch);
-    
+
     if(CountlyCrashReporter.sharedInstance.crashSegmentation)
         crashReport[@"_custom"] = CountlyCrashReporter.sharedInstance.crashSegmentation;
 
     if(CountlyCustomCrashLogs)
         crashReport[@"_logs"] = [CountlyCustomCrashLogs componentsJoinedByString:@"\n"];
 
-    NSArray* stackArray = exception.userInfo[kCountlyCrashUserInfoKey];
+    NSArray* stackArray = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
     if(!stackArray) stackArray = exception.callStackSymbols;
 
     NSMutableString* stackString = NSMutableString.string;
@@ -97,9 +99,9 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
         [stackString appendString:line];
         [stackString appendString:@"\n"];
     }
-    
+
     crashReport[@"_error"] = stackString;
-   
+
     if(nonfatal)
     {
         [CountlyConnectionManager.sharedInstance sendCrashReportLater:[crashReport JSONify]];
@@ -114,12 +116,12 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
 
         NSString *urlString = [NSString stringWithFormat:@"%@/i", CountlyConnectionManager.sharedInstance.appHost];
         NSString *queryString = [[CountlyConnectionManager.sharedInstance queryEssentials] stringByAppendingFormat:@"&crash=%@", [crashReport JSONify]];
-    
+
         NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
         request.HTTPMethod = @"POST";
         request.HTTPBody = [queryString dataUsingEncoding:NSUTF8StringEncoding];
         COUNTLY_LOG(@"Request started %@ with crash report:\n%@", urlString, queryString);
-    
+
         dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 
         [[NSURLSession.sharedSession dataTaskWithRequest:request
@@ -128,7 +130,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
                                                       NSError * _Nullable error)
         {
             NSDictionary* serverReply = data?[NSJSONSerialization JSONObjectWithData:data options:0 error:nil]:nil;
-        
+
             if(error && ![serverReply[@"result"] isEqualToString:@"Success"])
             {
                 COUNTLY_LOG(@"CrashReporting failed, report stored to try again later");
@@ -138,11 +140,11 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
             {
                 COUNTLY_LOG(@"Crash report request successfully completed");
             }
-        
+
             dispatch_semaphore_signal(semaphore);
 
         }] resume];
-         
+
         dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
 
         NSSetUncaughtExceptionHandler(NULL);
@@ -161,19 +163,18 @@ void CountlySignalHandler(int signalCode)
     void* callstack[128];
     NSInteger frames = backtrace(callstack, 128);
     char **lines = backtrace_symbols(callstack, (int)frames);
-    
+
     const NSInteger startOffset = 1;
     NSMutableArray *backtrace = [NSMutableArray arrayWithCapacity:frames];
-    
+
     for (NSInteger i = startOffset; i < frames; i++)
         [backtrace addObject:[NSString stringWithUTF8String:lines[i]]];
-    
-    free(lines);
-    
-    NSMutableDictionary *userInfo =[NSMutableDictionary dictionaryWithObject:@(signalCode) forKey:@"signal_code"];
-    [userInfo setObject:backtrace forKey:kCountlyCrashUserInfoKey];
-    NSString *reason = [NSString stringWithFormat:@"App terminated by SIG%@",[NSString stringWithUTF8String:sys_signame[signalCode]].uppercaseString];
 
+    free(lines);
+
+    NSMutableDictionary *userInfo = @{@"signal_code":@(signalCode)}.mutableCopy;
+    userInfo[kCountlyExceptionUserInfoBacktraceKey] = backtrace;
+    NSString *reason = [NSString stringWithFormat:@"App terminated by SIG%@", [NSString stringWithUTF8String:sys_signame[signalCode]].uppercaseString];
     NSException *e = [NSException exceptionWithName:@"Fatal Signal" reason:reason userInfo:userInfo];
 
     CountlyUncaughtExceptionHandler(e);
@@ -184,7 +185,7 @@ static NSMutableArray *CountlyCustomCrashLogs = nil;
 - (void)log:(NSString *)format, ...
 {
     static NSDateFormatter* df = nil;
-    
+
     if( CountlyCustomCrashLogs == nil )
     {
         CountlyCustomCrashLogs = NSMutableArray.new;
@@ -229,7 +230,14 @@ static NSMutableArray *CountlyCustomCrashLogs = nil;
     crashView.frame = aRect;
 }
 
+- (void)crashTest5
+{
+    kill(getpid(), SIGABRT);
+}
+
+- (void)crashTest6
+{
+    __builtin_trap();
+}
 #endif
-
-
 @end

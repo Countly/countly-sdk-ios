@@ -11,7 +11,7 @@
 @property (nonatomic, strong) NSString *deviceID;
 
 + (instancetype)sharedInstance;
-- (void)initializeDeviceID:(NSString*)deviceID;
+- (void)initializeDeviceID:(NSString *)deviceID;
 
 + (NSString *)device;
 + (NSString *)osName;
@@ -20,6 +20,8 @@
 + (NSString *)resolution;
 + (NSString *)locale;
 + (NSString *)appVersion;
++ (NSString *)appBuild;
++ (NSString *)buildUUID;
 + (NSString *)bundleId;
 #if TARGET_OS_IOS
 + (NSInteger)hasWatch;
