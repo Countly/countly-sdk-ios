@@ -129,9 +129,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
                                                       NSURLResponse * _Nullable response,
                                                       NSError * _Nullable error)
         {
-            NSDictionary* serverReply = data?[NSJSONSerialization JSONObjectWithData:data options:0 error:nil]:nil;
-
-            if(error && ![serverReply[@"result"] isEqualToString:@"Success"])
+            if(error || ![CountlyConnectionManager.sharedInstance isRequestSuccessful:data])
             {
                 COUNTLY_LOG(@"CrashReporting failed, report stored to try again later");
                 [CountlyConnectionManager.sharedInstance sendCrashReportLater:[crashReport JSONify]];

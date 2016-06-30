@@ -22,7 +22,7 @@
 + (CountlyUserDetails *)sharedInstance;
 - (void)recordUserDetails;
 - (NSString *)serialize;
-- (NSString *)extractPicturePathFromURLString:(NSString *)URLString;
+- (NSData *)pictureUploadDataForRequest:(NSString *)requestString;
 
 #pragma mark -
 

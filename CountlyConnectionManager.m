@@ -21,66 +21,48 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
 - (void)tick
 {
-    if (self.connection != nil || CountlyPersistency.sharedInstance.queuedRequests.count == 0)
+    if (self.connection != nil)
         return;
 
+    NSString* currentRequestData;
+    @synchronized(self)
+    {
+        currentRequestData = CountlyPersistency.sharedInstance.queuedRequests.firstObject;
+        if (currentRequestData == nil)
+            return;
+    }
+    
     [self startBackgroundTask];
 
-    NSString* currentRequestData = CountlyPersistency.sharedInstance.queuedRequests.firstObject;
-    NSString* urlString = [NSString stringWithFormat:@"%@/i", self.appHost];
+    NSString* urlString = [self.appHost stringByAppendingFormat:@"/i?%@", currentRequestData];
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
-    request.HTTPMethod = @"POST";
-    request.HTTPBody = [currentRequestData dataUsingEncoding:NSUTF8StringEncoding];
-
-#if TARGET_OS_IOS
-    NSString* picturePath = [CountlyUserDetails.sharedInstance extractPicturePathFromURLString:currentRequestData];
-    if(picturePath && ![picturePath isEqualToString:@""])
+    
+    NSData* pictureUploadData = [CountlyUserDetails.sharedInstance pictureUploadDataForRequest:currentRequestData];
+    if(pictureUploadData)
     {
-        COUNTLY_LOG(@"picturePath: %@", picturePath);
-
-        NSArray* allowedFileTypes = @[@"gif",@"png",@"jpg",@"jpeg"];
-        NSString* fileExt = picturePath.pathExtension.lowercaseString;
-        NSInteger fileExtIndex = [allowedFileTypes indexOfObject:fileExt];
-
-        if(fileExtIndex != NSNotFound)
-        {
-            NSData* imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:picturePath]];
-            if (fileExtIndex == 1) imageData = UIImagePNGRepresentation([UIImage imageWithData:imageData]); //NOTE: for png upload fix. (png file data read directly from disk fails on upload)
-            if (fileExtIndex == 2) fileExtIndex = 3; //NOTE: for mime type jpg -> jpeg
-
-            if (imageData)
-            {
-                COUNTLY_LOG(@"local image retrieved from picturePath");
-
-                NSString *boundary = @"c1c673d52fea01a50318d915b6966d5e";
-
-                NSString *contentType = [@"multipart/form-data; boundary=" stringByAppendingString:boundary];
-                [request addValue:contentType forHTTPHeaderField: @"Content-Type"];
-
-                NSMutableData *body = request.HTTPBody.mutableCopy;
-                [body appendStringUTF8:[NSString stringWithFormat:@"--%@\r\n", boundary]];
-                [body appendStringUTF8:[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"pictureFile\"; filename=\"%@\"\r\n",picturePath.lastPathComponent]];
-                [body appendStringUTF8:[NSString stringWithFormat:@"Content-Type: image/%@\r\n\r\n", allowedFileTypes[fileExtIndex]]];
-                [body appendData:imageData];
-                [body appendStringUTF8:[NSString stringWithFormat:@"\r\n--%@--\r\n", boundary]];
-                request.HTTPBody = body;
-            }
-        }
+        NSString *contentType = [@"multipart/form-data; boundary=" stringByAppendingString:self.boundary];
+        [request addValue:contentType forHTTPHeaderField: @"Content-Type"];
+        request.HTTPMethod = @"POST";
+        request.HTTPBody = pictureUploadData;
     }
-#endif
+
+    NSData* body = [currentRequestData dataUsingEncoding:NSUTF8StringEncoding];
+    if(body.length > 2048 && !pictureUploadData)
+    {
+        NSString* urlString = [self.appHost stringByAppendingString:@"/i"];
+        request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+        request.HTTPMethod = @"POST";
+        request.HTTPBody = body;
+    }
 
     self.connection = [NSURLSession.sharedSession dataTaskWithRequest:request
-                                                   completionHandler:^(NSData * _Nullable data,
-                                                                       NSURLResponse * _Nullable response,
-                                                                       NSError * _Nullable error)
+    completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error)
     {
         self.connection = nil;
 
-        if(!error && data)
+        if(!error)
         {
-            NSDictionary* serverReply = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-
-            if(([serverReply[@"result"] isEqualToString:@"Success"]))
+            if([self isRequestSuccessful:data])
             {
                 COUNTLY_LOG(@"Request successfully completed");
 
@@ -93,10 +75,14 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
                 [self tick];
             }
+            else
+            {
+                COUNTLY_LOG(@"Request failed %@ \n%@ \nServer reply: %@", request.URL.absoluteString, request.HTTPBody?currentRequestData:@"", [NSString.alloc initWithData:data encoding:NSUTF8StringEncoding]);
+            }
         }
         else
         {
-            COUNTLY_LOG(@"Request failed %@ \n %@ \n Error: %@", urlString, [currentRequestData description], error);
+            COUNTLY_LOG(@"Request failed %@ \n%@ \nError: %@", request.URL.absoluteString, request.HTTPBody?currentRequestData:@"", error);
 #if TARGET_OS_WATCH
             [CountlyPersistency.sharedInstance saveToFile];
 #endif
@@ -107,7 +93,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
     [self.connection resume];
 
-    COUNTLY_LOG(@"Request started %@ with body:\n%@", urlString, currentRequestData);
+    COUNTLY_LOG(@"Request started [%@] %@ \n%@", request.HTTPMethod, request.URL.absoluteString, request.HTTPBody?currentRequestData:@"");
 }
 
 #pragma mark ---
@@ -285,4 +271,18 @@ NSString* const kCountlySDKName = @"objc-native-ios";
                                         kCountlySDKName];
 }
 
+- (NSString *)boundary
+{
+    return @"0cae04a8b698d63ff6ea55d168993f21";
+}
+
+- (BOOL)isRequestSuccessful:(NSData *)data
+{
+    if(!data)
+        return NO;
+    
+    NSDictionary* serverReply = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+    
+    return [serverReply[@"result"] isEqualToString:@"Success"];
+}
 @end

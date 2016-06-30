@@ -37,5 +37,6 @@
 - (void)sendLocation:(CLLocationCoordinate2D)coordinate;
 
 - (NSString *)queryEssentials;
-
+- (NSString *)boundary;
+- (BOOL)isRequestSuccessful:(NSData *)data;
 @end
