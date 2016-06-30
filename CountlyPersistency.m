@@ -153,12 +153,14 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
         
             [NSUserDefaults.standardUserDefaults setObject:retrievedDeviceID forKey:kCountlyStoredDeviceIDKey];
             [NSUserDefaults.standardUserDefaults synchronize];
+        
+            return retrievedDeviceID;
         }
     }
 
     COUNTLY_LOG(@"Can not retrieve Device ID");
 
-    return retrievedDeviceID;
+    return nil;
 }
 
 - (void)storeDeviceID:(NSString *)deviceID
