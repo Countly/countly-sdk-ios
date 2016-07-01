@@ -55,7 +55,16 @@ NSString* const kCountlySDKName = @"objc-native-ios";
         request.HTTPBody = body;
     }
 
-    self.connection = [NSURLSession.sharedSession dataTaskWithRequest:request
+    NSURLSession* session = NSURLSession.sharedSession;
+    
+    if(self.pinnedCertificates)
+    {
+        COUNTLY_LOG(@"found %i pinned certificate(s)", self.pinnedCertificates.count);
+        NSURLSessionConfiguration *sc = [NSURLSessionConfiguration defaultSessionConfiguration];
+        session = [NSURLSession sessionWithConfiguration:sc delegate:self delegateQueue:nil];
+    }
+    
+    self.connection = [session dataTaskWithRequest:request
     completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error)
     {
         self.connection = nil;
@@ -285,4 +294,59 @@ NSString* const kCountlySDKName = @"objc-native-ios";
     
     return [serverReply[@"result"] isEqualToString:@"Success"];
 }
+
+#pragma mark ---
+
+-(void)URLSession:(NSURLSession *)session didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential * _Nullable))completionHandler
+{
+    SecTrustRef serverTrust = challenge.protectionSpace.serverTrust;
+    SecKeyRef serverKey = SecTrustCopyPublicKey(serverTrust);
+    SecPolicyRef policy = SecPolicyCreateSSL(true, (__bridge CFStringRef)challenge.protectionSpace.host);
+    
+    __block BOOL isLocalAndServerCertMatch = NO;
+    
+    for (NSString* certificate in self.pinnedCertificates )
+    {
+        NSString* localCertPath = [NSBundle.mainBundle pathForResource:certificate ofType:nil];
+        NSAssert(localCertPath != nil, @"bundled certificate can not be found");
+        NSData* localCertData = [NSData dataWithContentsOfFile:localCertPath];
+        SecCertificateRef localCert = SecCertificateCreateWithData(NULL, (__bridge CFDataRef)localCertData);
+        SecTrustRef localTrust = NULL;
+        SecTrustCreateWithCertificates(localCert, policy, &localTrust);
+        SecKeyRef localKey = SecTrustCopyPublicKey(localTrust);
+
+        CFRelease(localCert);
+        CFRelease(localTrust);
+    
+        if (serverKey != NULL && localKey != NULL && [(__bridge id)serverKey isEqual:(__bridge id)localKey])
+        {
+            COUNTLY_LOG(@"Local and Server Certificates match");
+
+            isLocalAndServerCertMatch = YES;
+            CFRelease(localKey);
+            break;
+        }
+    
+        CFRelease(localKey);
+    }
+
+    SecTrustResultType serverTrustResult;
+    SecTrustEvaluate(serverTrust, &serverTrustResult);
+    BOOL isServerCertValid = (serverTrustResult == kSecTrustResultUnspecified || serverTrustResult == kSecTrustResultProceed);
+
+    if (isLocalAndServerCertMatch && isServerCertValid)
+    {
+        COUNTLY_LOG(@"Pinned certificate check is sucessful. Proceed.");
+        completionHandler(NSURLSessionAuthChallengeUseCredential, [NSURLCredential credentialForTrust:serverTrust]);
+    }
+    else
+    {
+        COUNTLY_LOG(@"Pinned certificate check is failed. Cancel.");
+        completionHandler(NSURLSessionAuthChallengeCancelAuthenticationChallenge, NULL);
+    }
+
+    CFRelease(serverKey);
+    CFRelease(policy);
+}
+
 @end

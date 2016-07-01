@@ -9,7 +9,7 @@
 #import <UIKit/UIKit.h>
 #endif
 
-@interface CountlyConnectionManager : NSObject
+@interface CountlyConnectionManager : NSObject <NSURLSessionDelegate>
 
 @property (nonatomic, strong) NSString* appKey;
 @property (nonatomic, strong) NSString* appHost;
@@ -18,6 +18,7 @@
 @property (nonatomic, strong) NSString* ISOCountryCode;
 @property (nonatomic, strong) NSString* city;
 @property (nonatomic, strong) NSString* location;
+@property (nonatomic, strong) NSArray* pinnedCertificates;
 #if TARGET_OS_IOS
 @property (nonatomic, assign) UIBackgroundTaskIdentifier bgTask;
 #endif

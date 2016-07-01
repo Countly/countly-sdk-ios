@@ -128,6 +128,7 @@
     CountlyConnectionManager.sharedInstance.ISOCountryCode = config.ISOCountryCode;
     CountlyConnectionManager.sharedInstance.city = config.city;
     CountlyConnectionManager.sharedInstance.location = CLLocationCoordinate2DIsValid(config.location)?[NSString stringWithFormat:@"%f,%f", config.location.latitude, config.location.longitude]:nil;
+    CountlyConnectionManager.sharedInstance.pinnedCertificates = config.pinnedCertificates;
 
 #if TARGET_OS_IOS
 
