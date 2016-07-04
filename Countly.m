@@ -703,9 +703,12 @@
     [CountlyCrashReporter.sharedInstance recordHandledException:exception];
 }
 
-- (void)crashLog:(NSString *)log, ...
+- (void)crashLog:(NSString *)format, ...
 {
-    [CountlyCrashReporter.sharedInstance log:log];
+    va_list args;
+    va_start(args, format);
+    [CountlyCrashReporter.sharedInstance logWithFormat:format andArguments:args];
+    va_end(args);
 }
 #endif
 
