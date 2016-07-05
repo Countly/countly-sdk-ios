@@ -5,19 +5,42 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
+@protocol CountlyUserDetailsNullableString <NSObject>
+@end
+@interface NSString (NSStringWithCountlyUserDetailsNullableString) <CountlyUserDetailsNullableString>
+@end
+@interface NSNull (NSNullWithCountlyUserDetailsNullableString) <CountlyUserDetailsNullableString>
+@end
+
+
+@protocol CountlyUserDetailsNullableDictionary <NSObject>
+@end
+@interface NSDictionary (NSDictionaryWithCountlyUserDetailsNullableDictionary) <CountlyUserDetailsNullableDictionary>
+@end
+@interface NSNull (NSNullWithCountlyUserDetailsNullableDictionary) <CountlyUserDetailsNullableDictionary>
+@end
+
+
+@protocol CountlyUserDetailsNullableNumber <NSObject>
+@end
+@interface NSNumber (NSDictionaryWithCountlyUserDetailsNullableNumber) <CountlyUserDetailsNullableNumber>
+@end
+@interface NSNull (NSNullWithCountlyUserDetailsNullableNumber) <CountlyUserDetailsNullableNumber>
+@end
+
 
 @interface CountlyUserDetails : NSObject
 
-@property(nonatomic, strong) NSString* name;
-@property(nonatomic, strong) NSString* username;
-@property(nonatomic, strong) NSString* email;
-@property(nonatomic, strong) NSString* organization;
-@property(nonatomic, strong) NSString* phone;
-@property(nonatomic, strong) NSString* gender;
-@property(nonatomic, strong) NSString* pictureURL;
-@property(nonatomic, strong) NSString* pictureLocalPath;
-@property(nonatomic, assign) NSInteger birthYear;
-@property(nonatomic, strong) NSDictionary* custom;
+@property(nonatomic, strong) id<CountlyUserDetailsNullableString> name;
+@property(nonatomic, strong) id<CountlyUserDetailsNullableString> username;
+@property(nonatomic, strong) id<CountlyUserDetailsNullableString> email;
+@property(nonatomic, strong) id<CountlyUserDetailsNullableString> organization;
+@property(nonatomic, strong) id<CountlyUserDetailsNullableString> phone;
+@property(nonatomic, strong) id<CountlyUserDetailsNullableString> gender;
+@property(nonatomic, strong) id<CountlyUserDetailsNullableString> pictureURL;
+@property(nonatomic, strong) id<CountlyUserDetailsNullableString> pictureLocalPath;
+@property(nonatomic, assign) id<CountlyUserDetailsNullableNumber> birthYear;
+@property(nonatomic, strong) id<CountlyUserDetailsNullableDictionary> custom;
 
 + (CountlyUserDetails *)sharedInstance;
 - (void)recordUserDetails;
@@ -42,3 +65,4 @@
 - (void)pull:(NSString *)key values:(NSArray *)value;
 - (void)save;
 @end
+

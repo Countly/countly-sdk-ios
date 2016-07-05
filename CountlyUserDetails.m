@@ -60,8 +60,8 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
         userDictionary[@"gender"] = self.gender;
     if(self.pictureURL)
         userDictionary[@"picture"] = self.pictureURL;
-    if(self.birthYear!=0)
-        userDictionary[@"byear"] = @(self.birthYear);
+    if(self.birthYear)
+        userDictionary[@"byear"] = self.birthYear;
     if(self.custom)
         userDictionary[@"custom"] = self.custom;
 
