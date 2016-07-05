@@ -105,4 +105,12 @@ extern NSString* const CLYOpenUDID;
  * Location latitude and longitude can be specified as CLLocationCoordinate2D struct to be used for advanced segmentation. It will be sent with begin_session request.
  */
 @property (nonatomic, readwrite) CLLocationCoordinate2D location;
+
+/**
+ * For specifying bundled certificates to be used for public key pinning.
+ * @discussion Certificates have to be DER encoded with one of the following extensions: .der .cer or .crt
+ * @discussion  e.g. myserver.com.cer
+ */
+@property (nonatomic, strong) NSArray* pinnedCertificates;
+
 @end

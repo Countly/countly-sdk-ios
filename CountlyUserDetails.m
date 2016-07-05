@@ -10,18 +10,9 @@
 @property (nonatomic, strong) NSMutableDictionary* modifications;
 @end
 
-@implementation CountlyUserDetails
+NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
 
-NSString* const kCountlyUserName = @"name";
-NSString* const kCountlyUserUsername = @"username";
-NSString* const kCountlyUserEmail = @"email";
-NSString* const kCountlyUserOrganization = @"organization";
-NSString* const kCountlyUserPhone = @"phone";
-NSString* const kCountlyUserGender = @"gender";
-NSString* const kCountlyUserPictureURL = @"picture";
-NSString* const kCountlyUserPictureLocalPath = @"picturePath";
-NSString* const kCountlyUserBirthYear = @"byear";
-NSString* const kCountlyUserCustom = @"custom";
+@implementation CountlyUserDetails
 
 + (CountlyUserDetails *)sharedInstance
 {
@@ -45,62 +36,86 @@ NSString* const kCountlyUserCustom = @"custom";
 - (void)recordUserDetails
 {
     [CountlyConnectionManager.sharedInstance sendUserDetails:[CountlyUserDetails.sharedInstance serialize]];
+    
+    if(self.pictureLocalPath && !self.pictureURL)
+    {
+        [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyLocalPicturePath:self.pictureLocalPath} JSONify]];
+    }
 }
 
 - (NSString *)serialize
 {
     NSMutableDictionary* userDictionary = NSMutableDictionary.new;
     if(self.name)
-        userDictionary[kCountlyUserName] = self.name;
+        userDictionary[@"name"] = self.name;
     if(self.username)
-        userDictionary[kCountlyUserUsername] = self.username;
+        userDictionary[@"username"] = self.username;
     if(self.email)
-        userDictionary[kCountlyUserEmail] = self.email;
+        userDictionary[@"email"] = self.email;
     if(self.organization)
-        userDictionary[kCountlyUserOrganization] = self.organization;
+        userDictionary[@"organization"] = self.organization;
     if(self.phone)
-        userDictionary[kCountlyUserPhone] = self.phone;
+        userDictionary[@"phone"] = self.phone;
     if(self.gender)
-        userDictionary[kCountlyUserGender] = self.gender;
+        userDictionary[@"gender"] = self.gender;
     if(self.pictureURL)
-        userDictionary[kCountlyUserPictureURL] = self.pictureURL;
-    if(self.pictureLocalPath)
-        userDictionary[kCountlyUserPictureLocalPath] = self.pictureLocalPath;
-    if(self.birthYear!=0)
-        userDictionary[kCountlyUserBirthYear] = @(self.birthYear);
+        userDictionary[@"picture"] = self.pictureURL;
+    if(self.birthYear)
+        userDictionary[@"byear"] = self.birthYear;
     if(self.custom)
-        userDictionary[kCountlyUserCustom] = self.custom;
+        userDictionary[@"custom"] = self.custom;
 
     return [userDictionary JSONify];
 }
 
-- (NSString *)extractPicturePathFromURLString:(NSString *)URLString
+- (NSData *)pictureUploadDataForRequest:(NSString *)requestString
 {
-    NSString* unescaped = [URLString stringByReplacingOccurrencesOfString:@"+" withString:@" "];
-    unescaped = [unescaped stringByRemovingPercentEncoding];
-    NSRange rPicturePathKey = [unescaped rangeOfString:kCountlyUserPictureLocalPath];
-    if (rPicturePathKey.location == NSNotFound)
+#if TARGET_OS_IOS
+    NSString* unescaped = [requestString stringByRemovingPercentEncoding];
+    NSRange rLocalPicturePath = [unescaped rangeOfString:kCountlyLocalPicturePath];
+    if (rLocalPicturePath.location == NSNotFound)
         return nil;
 
-    NSString* picturePath = nil;
+    NSString* pathString = [unescaped substringFromIndex:rLocalPicturePath.location-2];
+    NSDictionary* pathDictionary = [NSJSONSerialization JSONObjectWithData:[pathString dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+    NSString* localPicturePath = pathDictionary[kCountlyLocalPicturePath];
+    if(!localPicturePath || [localPicturePath isEqualToString:@""])
+        return nil;
 
-    @try
-    {
-        NSRange rSearchForEnding = (NSRange){0,unescaped.length};
-        rSearchForEnding.location = rPicturePathKey.location+rPicturePathKey.length+3;
-        rSearchForEnding.length = rSearchForEnding.length - rSearchForEnding.location;
-        NSRange rEnding = [unescaped rangeOfString:@"\",\"" options:0 range:rSearchForEnding];
-        picturePath = [unescaped substringWithRange:(NSRange){rSearchForEnding.location,rEnding.location-rSearchForEnding.location}];
-        picturePath = [picturePath stringByReplacingOccurrencesOfString:@"\\/" withString:@"/"];
-    }
-    @catch (NSException *exception)
-    {
-        COUNTLY_LOG(@"Cannot extract picture path!");
-        picturePath = @"";
-    }
+    COUNTLY_LOG(@"Extracted local picture path from query string: %@", localPicturePath);
 
-    COUNTLY_LOG(@"Extracted picturePath: %@", picturePath);
-    return picturePath;
+    NSArray* allowedFileTypes = @[@"gif", @"png", @"jpg", @"jpeg"];
+    NSString* fileExt = localPicturePath.pathExtension.lowercaseString;
+    NSInteger fileExtIndex = [allowedFileTypes indexOfObject:fileExt];
+
+    if(fileExtIndex == NSNotFound)
+        return nil;
+    
+    NSData* imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:localPicturePath]];
+
+    if (!imageData)
+        return nil;
+
+    COUNTLY_LOG(@"Local picture data read successfully");
+
+    //NOTE: png file data read directly from disk somehow fails on upload, this fixes it
+    if (fileExtIndex == 1)
+        imageData = UIImagePNGRepresentation([UIImage imageWithData:imageData]);
+
+    //NOTE: for mime type jpg -> jpeg
+    if (fileExtIndex == 2)
+        fileExtIndex = 3;
+
+    NSMutableData* uploadData = NSMutableData.new;
+    [uploadData appendStringUTF8:[NSString stringWithFormat:@"--%@\r\n", CountlyConnectionManager.sharedInstance.boundary]];
+    [uploadData appendStringUTF8:[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"pictureFile\"; filename=\"%@\"\r\n", localPicturePath.lastPathComponent]];
+    [uploadData appendStringUTF8:[NSString stringWithFormat:@"Content-Type: image/%@\r\n\r\n", allowedFileTypes[fileExtIndex]]];
+    [uploadData appendData:imageData];
+    [uploadData appendStringUTF8:[NSString stringWithFormat:@"\r\n--%@--\r\n", CountlyConnectionManager.sharedInstance.boundary]];
+
+    return uploadData;
+#endif
+    return nil;
 }
 
 

@@ -128,6 +128,7 @@
     CountlyConnectionManager.sharedInstance.ISOCountryCode = config.ISOCountryCode;
     CountlyConnectionManager.sharedInstance.city = config.city;
     CountlyConnectionManager.sharedInstance.location = CLLocationCoordinate2DIsValid(config.location)?[NSString stringWithFormat:@"%f,%f", config.location.latitude, config.location.longitude]:nil;
+    CountlyConnectionManager.sharedInstance.pinnedCertificates = config.pinnedCertificates;
 
 #if TARGET_OS_IOS
 
@@ -702,9 +703,12 @@
     [CountlyCrashReporter.sharedInstance recordHandledException:exception];
 }
 
-- (void)crashLog:(NSString *)log, ...
+- (void)crashLog:(NSString *)format, ...
 {
-    [CountlyCrashReporter.sharedInstance log:log];
+    va_list args;
+    va_start(args, format);
+    [CountlyCrashReporter.sharedInstance logWithFormat:format andArguments:args];
+    va_end(args);
 }
 #endif
 

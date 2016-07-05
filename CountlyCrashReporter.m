@@ -13,6 +13,8 @@ NSString* const kCountlyExceptionUserInfoBacktraceKey = @"kCountlyExceptionUserI
 
 @implementation CountlyCrashReporter
 
+static NSMutableArray *customCrashLogs = nil;
+
 #if TARGET_OS_IOS
 
 + (instancetype)sharedInstance
@@ -87,8 +89,8 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     if(CountlyCrashReporter.sharedInstance.crashSegmentation)
         crashReport[@"_custom"] = CountlyCrashReporter.sharedInstance.crashSegmentation;
 
-    if(CountlyCustomCrashLogs)
-        crashReport[@"_logs"] = [CountlyCustomCrashLogs componentsJoinedByString:@"\n"];
+    if(customCrashLogs)
+        crashReport[@"_logs"] = [customCrashLogs componentsJoinedByString:@"\n"];
 
     NSArray* stackArray = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
     if(!stackArray) stackArray = exception.callStackSymbols;
@@ -129,9 +131,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
                                                       NSURLResponse * _Nullable response,
                                                       NSError * _Nullable error)
         {
-            NSDictionary* serverReply = data?[NSJSONSerialization JSONObjectWithData:data options:0 error:nil]:nil;
-
-            if(error && ![serverReply[@"result"] isEqualToString:@"Success"])
+            if(error || ![CountlyConnectionManager.sharedInstance isRequestSuccessful:data])
             {
                 COUNTLY_LOG(@"CrashReporting failed, report stored to try again later");
                 [CountlyConnectionManager.sharedInstance sendCrashReportLater:[crashReport JSONify]];
@@ -180,21 +180,19 @@ void CountlySignalHandler(int signalCode)
     CountlyUncaughtExceptionHandler(e);
 }
 
-static NSMutableArray *CountlyCustomCrashLogs = nil;
-
-- (void)log:(NSString *)format, ...
+- (void)logWithFormat:(NSString *)format andArguments:(va_list)args
 {
     static NSDateFormatter* df = nil;
 
-    if( CountlyCustomCrashLogs == nil )
+    if( customCrashLogs == nil )
     {
-        CountlyCustomCrashLogs = NSMutableArray.new;
+        customCrashLogs = NSMutableArray.new;
         df = NSDateFormatter.new;
         df.dateFormat = @"yyyy-MM-dd HH:mm:ss.SSS";
     }
 
-    NSString* log = [NSString stringWithFormat:@"<%@> %@",[df stringFromDate:NSDate.date], format];
-    [CountlyCustomCrashLogs addObject:log];
+    NSString* logFormat = [NSString stringWithFormat:@"<%@> %@",[df stringFromDate:NSDate.date], format];
+    [customCrashLogs addObject:[NSString.alloc initWithFormat:logFormat arguments:args]];
 }
 
 

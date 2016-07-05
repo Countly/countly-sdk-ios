@@ -119,17 +119,25 @@ NSString* CountlyJSONFromObject(id object)
     return [NSString.alloc initWithData:data encoding:NSUTF8StringEncoding];
 }
 
+@implementation NSString (URLEscaped)
+- (NSString *)URLEscaped
+{
+    NSCharacterSet* charset = [NSCharacterSet characterSetWithCharactersInString:@"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~"];
+    return [self stringByAddingPercentEncodingWithAllowedCharacters:charset];
+}
+@end
+
 @implementation NSArray (JSONify)
 - (NSString *)JSONify
 {
-    return CountlyJSONFromObject(self);
+    return [CountlyJSONFromObject(self) URLEscaped];
 }
 @end
 
 @implementation NSDictionary (JSONify)
 - (NSString *)JSONify
 {
-    return CountlyJSONFromObject(self);
+    return [CountlyJSONFromObject(self) URLEscaped];
 }
 @end
 

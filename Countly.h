@@ -208,9 +208,9 @@
 
 /**
  * Records custom logs to be delivered with crash report. Logs recorded by `crashLog:` method are stored in a non-persistent structure, and delivered to server only in case of a crash.
- * @param log Custom log string or format to be recorded
+ * @param format Custom log string or format to be recorded
  */
-- (void)crashLog:(NSString *)log, ...;
+- (void)crashLog:(NSString *)format, ... NS_FORMAT_FUNCTION(1,2);
 #endif
 
 
