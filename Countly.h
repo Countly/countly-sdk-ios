@@ -34,6 +34,13 @@
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer;
 
 /**
+ * Sets the value of the custom HTTP header field to be sent with every request if @c customHeaderFieldName is set on initial configuration.
+ * @param customHeaderFieldValue Custom header field value
+ * @discussion If @c customHeaderFieldValue on initial configuration can not be set on app launch, this method can be used to do so later. Requests not started due to missing @c customHeaderFieldValue since app launch will start hereafter.
+ */
+- (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue;
+
+/**
  * Suspends Countly, add recorded events to request queue and ends current session. Only needs to be called manually on watchOS, on other platforms it will be called automatically.
  */
 - (void)suspend;

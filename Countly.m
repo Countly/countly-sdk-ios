@@ -110,6 +110,12 @@
     }
 }
 
+- (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue
+{
+    CountlyConnectionManager.sharedInstance.customHeaderFieldValue = customHeaderFieldValue;
+    [CountlyConnectionManager.sharedInstance tick];
+}
+
 #pragma mark ---
 
 - (void)startWithConfig:(CountlyConfig *)config
@@ -129,6 +135,8 @@
     CountlyConnectionManager.sharedInstance.city = config.city;
     CountlyConnectionManager.sharedInstance.location = CLLocationCoordinate2DIsValid(config.location)?[NSString stringWithFormat:@"%f,%f", config.location.latitude, config.location.longitude]:nil;
     CountlyConnectionManager.sharedInstance.pinnedCertificates = config.pinnedCertificates;
+    CountlyConnectionManager.sharedInstance.customHeaderFieldName = config.customHeaderFieldName;
+    CountlyConnectionManager.sharedInstance.customHeaderFieldValue = config.customHeaderFieldValue;
 
 #if TARGET_OS_IOS
 

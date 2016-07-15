@@ -113,4 +113,16 @@ extern NSString* const CLYOpenUDID;
  */
 @property (nonatomic, strong) NSArray* pinnedCertificates;
 
+/**
+ * Name of the custom HTTP header field to be sent with every request.
+ * @discussion  e.g. X-My-Secret-Server-Token
+ * @discussion If set, every request sent to Countly server will have this custom HTTP header and its value will be @c customHeaderFieldValue property. If @c customHeaderFieldValue is not set when Countly is started, requests will not start until it is set using @c setCustomHeaderFieldValue: method later.
+ */
+@property (nonatomic, strong) NSString* customHeaderFieldName;
+
+/**
+ * Value of the custom HTTP header field to be sent with every request if @c customHeaderFieldName is set.
+ * @discussion If not set while @c customHeaderFieldName is set, requests will not start until it is set using @c setCustomHeaderFieldValue: method later.
+ */
+@property (nonatomic, strong) NSString* customHeaderFieldValue;
 @end

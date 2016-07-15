@@ -23,6 +23,12 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 {
     if (self.connection != nil)
         return;
+    
+    if (self.customHeaderFieldName && !self.customHeaderFieldValue)
+    {
+        COUNTLY_LOG(@"customHeaderFieldValue value is not set, while customHeaderFieldName is specified on config! Not starting request!");
+        return;
+    }
 
     NSString* currentRequestData;
     @synchronized(self)
@@ -55,6 +61,9 @@ NSString* const kCountlySDKName = @"objc-native-ios";
         request.HTTPBody = body;
     }
 
+    if(self.customHeaderFieldName && self.customHeaderFieldValue)
+        [request setValue:self.customHeaderFieldValue forHTTPHeaderField:self.customHeaderFieldName];
+    
     NSURLSession* session = NSURLSession.sharedSession;
     
     if(self.pinnedCertificates)
