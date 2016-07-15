@@ -131,6 +131,8 @@
     CountlyConnectionManager.sharedInstance.pinnedCertificates = config.pinnedCertificates;
 
 #if TARGET_OS_IOS
+    CountlyStarRating.sharedInstance.message = config.starRatingMessage;
+    CountlyStarRating.sharedInstance.dismissButtonTitle = config.starRatingDismissButtonTitle;
 
     [CountlyCommon.sharedInstance transferParentDeviceID];
 
@@ -765,4 +767,16 @@
 {
     return CountlyUserDetails.sharedInstance;
 }
+
+
+
+#pragma mark - Countly StarRating
+#if TARGET_OS_IOS
+
+- (void)showStarRatingDialog:(void(^)(NSInteger rating))completion
+{
+    [CountlyStarRating.sharedInstance showDialog:completion];
+}
+#endif
+
 @end

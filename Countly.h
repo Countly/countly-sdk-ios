@@ -267,4 +267,15 @@
  * @return The shared CountlyUserDetails object
  */
 + (CountlyUserDetails *)user;
+
+
+#pragma mark - Countly StarRating
+#if TARGET_OS_IOS
+/**
+ * Displays star-rating dialog manually.
+ * @param completion A block object to be executed when user gives a star-rating or dismisses dialog without rating.
+  This block takes a single NSInteger argument that indicates 1 to 5 star-rating given by user. If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to server.
+ */
+- (void)showStarRatingDialog:(void(^)(NSInteger rating))completion;
+#endif
 @end

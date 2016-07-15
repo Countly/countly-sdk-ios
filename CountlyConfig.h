@@ -113,4 +113,16 @@ extern NSString* const CLYOpenUDID;
  */
 @property (nonatomic, strong) NSArray* pinnedCertificates;
 
+
+/**
+ * For customizing star-rating dialog message.
+ * @discussion If not set, it will be displayed in English: "How would you rate the app?"
+ */
+@property (nonatomic, strong) NSString* starRatingMessage;
+
+/**
+ * For customizing star-rating dialog dismiss button title.
+ * @discussion If not set, it will be displayed in English: "Dismiss"
+ */
+@property (nonatomic, strong) NSString* starRatingDismissButtonTitle;
 @end
