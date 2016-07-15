@@ -56,28 +56,17 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
 
     [self endView];
 
-    CountlyEvent *event = [CountlyEvent new];
-    event.key = kCountlyReservedEventView;
-
-    NSDictionary* segmentation = @{
-                                    @"name": viewName,
-                                    @"segment": CountlyDeviceInfo.osName,
-                                    @"visit": @1,
-                                  };
+    NSMutableDictionary* segmentation =
+    @{
+        @"name": viewName,
+        @"segment": CountlyDeviceInfo.osName,
+        @"visit": @1
+    }.mutableCopy;
+    
     if(!self.lastView)
-    {
-        NSMutableDictionary* mutableSegmentation = segmentation.mutableCopy;
-        mutableSegmentation[@"start"] = @1;
-        segmentation = mutableSegmentation;
-    }
+        segmentation[@"start"] = @1;
 
-    event.segmentation = segmentation;
-    event.count = 1;
-    event.timestamp = NSDate.date.timeIntervalSince1970;
-    event.hourOfDay = [CountlyCommon.sharedInstance hourOfDay];
-    event.dayOfWeek = [CountlyCommon.sharedInstance dayOfWeek];
-
-    [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
+    [Countly.sharedInstance recordEvent:kCountlyReservedEventView segmentation:segmentation];
 
     self.lastView = viewName;
     self.lastViewStartTime = NSDate.date.timeIntervalSince1970;
@@ -87,21 +76,16 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
 {
     if(self.lastView)
     {
-        CountlyEvent *event = [CountlyEvent new];
-        event.key = kCountlyReservedEventView;
-        event.segmentation = @{
-                                @"name": self.lastView,
-                                @"segment": CountlyDeviceInfo.osName,
-                              };
-        event.count = 1;
-        event.timestamp = self.lastViewStartTime;
-        event.hourOfDay = [CountlyCommon.sharedInstance hourOfDay];
-        event.dayOfWeek = [CountlyCommon.sharedInstance dayOfWeek];
-        event.duration = NSDate.date.timeIntervalSince1970 - self.lastViewStartTime;
+        NSDictionary* segmentation =
+        @{
+            @"name": self.lastView,
+            @"segment": CountlyDeviceInfo.osName,
+        };
 
-        [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
+        NSTimeInterval duration = NSDate.date.timeIntervalSince1970 - self.lastViewStartTime;
+        [Countly.sharedInstance recordEvent:kCountlyReservedEventView segmentation:segmentation count:1 sum:0 duration:duration timestamp:self.lastViewStartTime];
 
-        COUNTLY_LOG(@"Ended tracking view: %@ with duration %f", self.lastView, event.duration);
+        COUNTLY_LOG(@"Ended tracking view: %@ with duration %f", self.lastView, duration);
     }
 }
 

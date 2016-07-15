@@ -77,27 +77,20 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
 {
     self.endTime = NSDate.date.timeIntervalSince1970;
 
-    CountlyEvent *event = [CountlyEvent new];
-    event.key = kCountlyReservedEventAPM;
-    event.segmentation = @{
-                                @"n": self.request.URL.absoluteString,
-                                @"e": @(self.HTTPStatusCode),
-                                @"h": self.request.URL.host,
-                                @"p": self.request.URL.path,
-                                @"c": @(self.connectionType),
-                                @"H": @YES,
-                                @"u": @NO
-                          };
-    event.count = 1;
-    event.sum = self.sentDataSize + self.receivedDataSize;
-    event.timestamp = self.startTime;
-    event.hourOfDay = [CountlyCommon.sharedInstance hourOfDay];
-    event.dayOfWeek = [CountlyCommon.sharedInstance dayOfWeek];
-    event.duration = self.endTime - self.startTime;
+    NSDictionary* segmentation =
+    @{
+        @"n": self.request.URL.absoluteString,
+        @"e": @(self.HTTPStatusCode),
+        @"h": self.request.URL.host,
+        @"p": self.request.URL.path,
+        @"c": @(self.connectionType),
+        @"H": @YES,
+        @"u": @NO
+    };
 
+    [Countly.sharedInstance recordEvent:kCountlyReservedEventAPM segmentation:segmentation count:1 sum:self.sentDataSize + self.receivedDataSize duration:self.endTime - self.startTime timestamp:self.startTime];
+    
     COUNTLY_LOG(@"Recorded APM log: %@", [self description]);
-
-    [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
 }
 
 + (long long)sentDataSizeForRequest:(NSURLRequest *)request
