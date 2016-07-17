@@ -1,3 +1,6 @@
+
+**Slack user?** [Join our Slack community](http://192.241.144.64:3000/)
+
 ##What's Countly?
 [Countly](http://count.ly) is an innovative, real-time, open source mobile analytics and push notifications platform. It collects data from mobile devices, and visualizes this information to analyze mobile application usage and end-user behavior. There are two parts of Countly: [the server that collects and analyzes data](http://github.com/countly/countly-server), and mobile SDK that sends this data. Both parts are open source with different licensing terms.
 
