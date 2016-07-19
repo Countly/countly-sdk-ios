@@ -125,4 +125,16 @@ extern NSString* const CLYOpenUDID;
  * @discussion If not set, it will be displayed in English: "Dismiss"
  */
 @property (nonatomic, strong) NSString* starRatingDismissButtonTitle;
+
+/**
+ * For displaying star-rating dialog depending on session count, once for each new version of the app.
+ * @discussion If set, when total number of sessions reaches @c starRatingSessionCount, an alert view asking for 1 to 5 star-rating will be displayed automatically, once for each new version of the app.
+ */
+@property (nonatomic, readwrite) NSUInteger starRatingSessionCount;
+
+/**
+ * Disables automatically displaying of star-rating dialog for each new version of the app.
+ * @discussion If set, star-rating dialog will be displayed automatically only once for the whole life of the app. It will not be displayed for each new version.
+ */
+@property (nonatomic, readwrite) BOOL starRatingDisableAskingForEachAppVersion;
 @end

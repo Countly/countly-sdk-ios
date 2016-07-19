@@ -14,6 +14,8 @@
 @end
 
 NSString* const kCountlyReservedEventStarRating = @"[CLY]_star_rating";
+NSString* const kCountlyStarRatingStatusSessionCountKey = @"kCountlyStarRatingStatusSessionCountKey";
+NSString* const kCountlyStarRatingStatusHasEverAskedAutomatically = @"kCountlyStarRatingStatusHasEverAskedAutomatically";
 
 @implementation CountlyStarRating
 #if TARGET_OS_IOS
@@ -78,7 +80,6 @@ const float buttonSize = 40;
 {
     self.ratingCompletion = completion;
 
-
     if(UIAlertController.class)
     {
         alertController = [UIAlertController alertControllerWithTitle:@" " message:self.message preferredStyle:UIAlertControllerStyleAlert];
@@ -103,7 +104,18 @@ const float buttonSize = 40;
             COUNTLY_LOG(@"Can not set content view controller of alert controller: %@", exception);
         }
     
-        [UIApplication.sharedApplication.keyWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
+        UIViewController* rvc = UIApplication.sharedApplication.keyWindow.rootViewController;
+        if(rvc)
+        {
+            [rvc presentViewController:alertController animated:YES completion:nil];
+        }
+        else
+        {
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
+            {
+                [UIApplication.sharedApplication.keyWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
+            });
+        }
     }
     else
     {
@@ -118,6 +130,34 @@ const float buttonSize = 40;
     
         [alertView setValue:aligner forKey:@"accessoryView"];
         [alertView show];
+    }
+}
+
+- (void)checkForAutoAsk
+{
+    NSMutableDictionary* status = [CountlyPersistency.sharedInstance retrieveStarRatingStatus].mutableCopy;
+
+    if(self.disableAskingForEachAppVersion && status[kCountlyStarRatingStatusHasEverAskedAutomatically])
+        return;
+    
+    if(self.sessionCount != 0)
+    {
+        NSString* keyForAppVersion = [kCountlyStarRatingStatusSessionCountKey stringByAppendingString:CountlyDeviceInfo.appVersion];
+        NSInteger sessionCountSoFar = [status[keyForAppVersion] integerValue];
+        sessionCountSoFar++;
+
+        if(self.sessionCount == sessionCountSoFar)
+        {
+            COUNTLY_LOG(@"Asking for star-rating as session count reached specified limit %i", self.sessionCount);
+        
+            [self showDialog:^(NSInteger rating){}];
+        
+            status[kCountlyStarRatingStatusHasEverAskedAutomatically] = @YES;
+        }
+    
+        status[keyForAppVersion] = @(sessionCountSoFar);
+    
+        [CountlyPersistency.sharedInstance storeStarRatingStatus:status];
     }
 }
 

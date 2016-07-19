@@ -11,8 +11,11 @@
 + (instancetype)sharedInstance;
 
 - (void)showDialog:(void(^)(NSInteger rating))completion;
+- (void)checkForAutoAsk;
 
 @property (nonatomic, strong) NSString* message;
 @property (nonatomic, strong) NSString* dismissButtonTitle;
+@property (nonatomic, readwrite) NSUInteger sessionCount;
+@property (nonatomic, readwrite) BOOL disableAskingForEachAppVersion;
 #endif
 @end

@@ -12,6 +12,7 @@ NSString* const kCountlyStartedEventsPersistencyKey = @"kCountlyStartedEventsPer
 NSString* const kCountlyTVOSNSUDKey = @"kCountlyTVOSNSUDKey";
 NSString* const kCountlyStoredDeviceIDKey = @"kCountlyStoredDeviceIDKey";
 NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKey";
+NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 
 
 + (instancetype)sharedInstance
@@ -202,4 +203,18 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
     [NSUserDefaults.standardUserDefaults synchronize];
 }
 
+- (NSDictionary *)retrieveStarRatingStatus
+{
+    NSDictionary* status = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyStarRatingStatusKey];
+    if(!status)
+        status = NSDictionary.new;
+        
+    return status;
+}
+
+- (void)storeStarRatingStatus:(NSDictionary *)status
+{
+    [NSUserDefaults.standardUserDefaults setObject:status forKey:kCountlyStarRatingStatusKey];
+    [NSUserDefaults.standardUserDefaults synchronize];
+}
 @end
