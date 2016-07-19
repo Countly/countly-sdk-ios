@@ -104,6 +104,7 @@ const float buttonSize = 40;
             COUNTLY_LOG(@"Can not set content view controller of alert controller: %@", exception);
         }
     
+        //NOTE: if rootViewController is not set at early app launch, try again 1 sec after.
         UIViewController* rvc = UIApplication.sharedApplication.keyWindow.rootViewController;
         if(rvc)
         {

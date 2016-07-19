@@ -52,9 +52,9 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
 
 - (void)reportView:(NSString* _Nonnull)viewName
 {
-    COUNTLY_LOG(@"Started tracking view: %@", viewName);
-
     [self endView];
+
+    COUNTLY_LOG(@"Started tracking view: %@", viewName);
 
     NSMutableDictionary* segmentation =
     @{

@@ -15,21 +15,21 @@
 #pragma mark - Countly Core
 
 /**
- * Returns Countly singleton to be used throughout the app.
- * @return The shared Countly object
+ * Returns @c Countly singleton to be used throughout the app.
+ * @return The shared @c Countly object
  */
 + (instancetype)sharedInstance;
 
 /**
  * Starts Countly with given configuration and begins session.
- * @param config CountlyConfig object that defines host, app key and optional features
+ * @param config @c CountlyConfig object that defines host, app key, optional features and other settings
  */
 - (void)startWithConfig:(CountlyConfig *)config;
 
 /**
  * Sets new device ID to be persistently stored and used in following requests.
  * @param deviceID New device ID
- * @param onServer If YES data on server will be merged automatically, otherwise device will be counted as a new device
+ * @param onServer If set, data on server will be merged automatically, otherwise device will be counted as a new device
  */
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer;
 
@@ -41,12 +41,14 @@
 - (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue;
 
 /**
- * Suspends Countly, add recorded events to request queue and ends current session. Only needs to be called manually on watchOS, on other platforms it will be called automatically.
+ * Suspends Countly, add recorded events to request queue and ends current session.
+ * @discussion This method needs to be called manually only on @c watchOS, on other platforms it will be called automatically.
  */
 - (void)suspend;
 
 /**
- * Resumes Countly, begins a new session. Only needs to be called manually on watchOS, on other platforms it will be called automatically.
+ * Resumes Countly, begins a new session after app comes to foreground.
+ * @discussion This method needs to be called manually only on @c watchOS, on other platforms it will be called automatically.
  */
 - (void)resume;
 
@@ -124,19 +126,22 @@
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
 
 /**
- * Starts a timed event with given key to be ended later. Duration of timed event will be calculated on ending. Trying to start an event with already started key will have no effect.
+ * Starts a timed event with given key to be ended later. Duration of timed event will be calculated on ending. 
+ * @discussion Trying to start an event with already started key will have no effect.
  * @param key Event key
  */
 - (void)startEvent:(NSString *)key;
 
 /**
- * Ends a previously started timed event with given key. Trying to end an event with already ended (or not yet started) key will have no effect.
+ * Ends a previously started timed event with given key.
+ * @discussion Trying to end an event with already ended (or not yet started) key will have no effect.
  * @param key Event key
  */
 - (void)endEvent:(NSString *)key;
 
 /**
- * Ends a previously started timed event with given key, segmentation, count and sum. Trying to end an event with already ended (or not yet started) key will have no effect.
+ * Ends a previously started timed event with given key, segmentation, count and sum. 
+ * @discussion Trying to end an event with already ended (or not yet started) key will have no effect.
  * @param key Event key
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
@@ -208,13 +213,14 @@
 #pragma mark - Countly CrashReporting
 #if TARGET_OS_IOS
 /**
- * Records handled exception manually in addition to automatic reporting of unhandled exceptions and crashes.
+ * Records a handled exception manually, besides automatically reported unhandled exceptions and crashes.
  * @param exception Exception to be reported
  */
 - (void)recordHandledException:(NSException *)exception;
 
 /**
- * Records custom logs to be delivered with crash report. Logs recorded by `crashLog:` method are stored in a non-persistent structure, and delivered to server only in case of a crash.
+ * Records custom logs to be delivered with crash report.
+ * @discussion Logs recorded by `crashLog:` method are stored in a non-persistent structure, and delivered to server only in case of a crash.
  * @param format Custom log string or format to be recorded
  */
 - (void)crashLog:(NSString *)format, ... NS_FORMAT_FUNCTION(1,2);
@@ -241,26 +247,30 @@
 #pragma mark - Countly AutoViewTracking
 
 /**
- * Reports a visited view with given name manually. If auto ViewTracking feature is activated on start configuration, no need to call this method manually.
+ * Reports a visited view with given name manually. 
+ * @discussion If auto ViewTracking feature is activated on start configuration, this method does not need to be called manually.
  * @param viewName Name of the view visited
  */
 - (void)reportView:(NSString *)viewName;
 
 #if TARGET_OS_IOS
 /**
- * Adds exception UIViewController subclass for AutoViewTracking. Added UIViewContoller subclasses will be ignored by AutoViewTracking and their appearances and disappearances will not be reported. Adding an already added UIViewController subclass again will have no effect.
- * @param exceptionViewControllerSubclass Exception UIViewController subclass to be added
+ * Adds exception UIViewController subclass for AutoViewTracking.
+ * @discussion Added @c UIViewContoller subclasses will be ignored by AutoViewTracking and their appearances and disappearances will not be reported. Adding an already added @c UIViewController subclass again will have no effect.
+ * @param exceptionViewControllerSubclass Exception @c UIViewController subclass to be added
  */
 - (void)addExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass;
 
 /**
- * Removes exception UIViewController subclass for AutoViewTracking. Removing an already removed (or not yet added) UIViewController subclass again will have no effect.
- * @param exceptionViewControllerSubclass Exception UIViewController subclass to be removed
+ * Removes exception @c UIViewController subclass for AutoViewTracking.
+ * @discussion Removing an already removed (or not yet added) @c UIViewController subclass again will have no effect.
+ * @param exceptionViewControllerSubclass Exception @c UIViewController subclass to be removed
  */
 - (void)removeExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass;
 
 /**
- * Enables or disables auto ViewTracking if AutoViewTracking feature is activated on start configuration. Otherwise has no effect.
+ * Enables or disables AutoViewTracking, if AutoViewTracking feature is activated on start configuration.
+ * @discussion If AutoViewTracking feature is not activated on start configuration, this property has no effect on enabling or disabling it later.
  */
 @property (nonatomic,readwrite) BOOL isAutoViewTrackingEnabled;
 #endif
@@ -270,8 +280,8 @@
 #pragma mark - Countly UserDetails
 
 /**
- * Returns CountlyUserDetails singleton to be used throughout the app.
- * @return The shared CountlyUserDetails object
+ * Returns @c CountlyUserDetails singleton to be used throughout the app.
+ * @return The shared @c CountlyUserDetails object
  */
 + (CountlyUserDetails *)user;
 
@@ -279,9 +289,9 @@
 #pragma mark - Countly StarRating
 #if TARGET_OS_IOS
 /**
- * Displays star-rating dialog manually.
- * @param completion A block object to be executed when user gives a star-rating or dismisses dialog without rating.
-  This block takes a single NSInteger argument that indicates 1 to 5 star-rating given by user. If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to server.
+ * Displays star-rating dialog manually and executes completion block after user's action.
+ * @discussion Completion block takes a single NSInteger argument that indicates 1 to 5 star-rating given by user. If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to server.
+ * @param completion A block object to be executed when user gives a star-rating or dismisses dialog without rating
  */
 - (void)showStarRatingDialog:(void(^)(NSInteger rating))completion;
 #endif
