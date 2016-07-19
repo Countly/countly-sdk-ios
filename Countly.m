@@ -139,6 +139,12 @@
     CountlyConnectionManager.sharedInstance.customHeaderFieldValue = config.customHeaderFieldValue;
 
 #if TARGET_OS_IOS
+    CountlyStarRating.sharedInstance.message = config.starRatingMessage;
+    CountlyStarRating.sharedInstance.dismissButtonTitle = config.starRatingDismissButtonTitle;
+    CountlyStarRating.sharedInstance.sessionCount = config.starRatingSessionCount;
+    CountlyStarRating.sharedInstance.disableAskingForEachAppVersion = config.starRatingDisableAskingForEachAppVersion;
+    
+    [CountlyStarRating.sharedInstance checkForAutoAsk];
 
     [CountlyCommon.sharedInstance transferParentDeviceID];
 
@@ -778,4 +784,16 @@
 {
     return CountlyUserDetails.sharedInstance;
 }
+
+
+
+#pragma mark - Countly StarRating
+#if TARGET_OS_IOS
+
+- (void)showStarRatingDialog:(void(^)(NSInteger rating))completion
+{
+    [CountlyStarRating.sharedInstance showDialog:completion];
+}
+#endif
+
 @end
