@@ -233,10 +233,11 @@ const float buttonSize = 40;
     NSDictionary* segmentation =
     @{
         @"platform": CountlyDeviceInfo.osName,
-        @"appVersion": CountlyDeviceInfo.appVersion
+        @"appVersion": CountlyDeviceInfo.appVersion,
+        @"rating" : @(rating)
     };
 
-    [Countly.sharedInstance recordEvent:kCountlyReservedEventStarRating segmentation:segmentation count:1 sum:rating];
+    [Countly.sharedInstance recordEvent:kCountlyReservedEventStarRating segmentation:segmentation count:1 sum:0];
     
     self.ratingCompletion = nil;
 }
