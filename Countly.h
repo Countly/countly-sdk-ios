@@ -255,7 +255,7 @@
 
 #if TARGET_OS_IOS
 /**
- * Adds exception UIViewController subclass for AutoViewTracking.
+ * Adds exception @c UIViewController subclass for AutoViewTracking.
  * @discussion Added @c UIViewContoller subclasses will be ignored by AutoViewTracking and their appearances and disappearances will not be reported. Adding an already added @c UIViewController subclass again will have no effect.
  * @param exceptionViewControllerSubclass Exception @c UIViewController subclass to be added
  */
@@ -289,10 +289,10 @@
 #pragma mark - Countly StarRating
 #if TARGET_OS_IOS
 /**
- * Displays star-rating dialog manually and executes completion block after user's action.
+ * Shows star-rating dialog manually and executes completion block after user's action.
  * @discussion Completion block takes a single NSInteger argument that indicates 1 to 5 star-rating given by user. If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to server.
  * @param completion A block object to be executed when user gives a star-rating or dismisses dialog without rating
  */
-- (void)showStarRatingDialog:(void(^)(NSInteger rating))completion;
+- (void)askForStarRating:(void(^)(NSInteger rating))completion;
 #endif
 @end

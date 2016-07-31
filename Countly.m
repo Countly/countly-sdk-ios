@@ -790,7 +790,7 @@
 #pragma mark - Countly StarRating
 #if TARGET_OS_IOS
 
-- (void)showStarRatingDialog:(void(^)(NSInteger rating))completion
+- (void)askForStarRating:(void(^)(NSInteger rating))completion
 {
     [CountlyStarRating.sharedInstance showDialog:completion];
 }
