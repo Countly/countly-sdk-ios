@@ -1,4 +1,4 @@
-//  CountlyStarRating.m
+// CountlyStarRating.m
 //
 // This code is provided under the MIT License.
 //
@@ -101,7 +101,7 @@ const float buttonSize = 40;
         }
         @catch(NSException* exception)
         {
-            COUNTLY_LOG(@"Can not set content view controller of alert controller: %@", exception);
+            COUNTLY_LOG(@"UIAlertController's contentViewController can not be set: \n%@", exception);
         }
     
         //NOTE: if rootViewController is not set at early app launch, try again 1 sec after.
@@ -149,7 +149,7 @@ const float buttonSize = 40;
 
         if(self.sessionCount == sessionCountSoFar)
         {
-            COUNTLY_LOG(@"Asking for star-rating as session count reached specified limit %i", self.sessionCount);
+            COUNTLY_LOG(@"Asking for star-rating as session count reached specified limit %i ...", self.sessionCount);
         
             [self showDialog:^(NSInteger rating){}];
         

@@ -54,7 +54,7 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
 {
     [self endView];
 
-    COUNTLY_LOG(@"Started tracking view: %@", viewName);
+    COUNTLY_LOG(@"View tracking started: %@", viewName);
 
     NSMutableDictionary* segmentation =
     @{
@@ -85,7 +85,7 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
         NSTimeInterval duration = NSDate.date.timeIntervalSince1970 - self.lastViewStartTime;
         [Countly.sharedInstance recordEvent:kCountlyReservedEventView segmentation:segmentation count:1 sum:0 duration:duration timestamp:self.lastViewStartTime];
 
-        COUNTLY_LOG(@"Ended tracking view: %@ with duration %f", self.lastView, duration);
+        COUNTLY_LOG(@"View tracking ended: %@ duration: %f", self.lastView, duration);
     }
 }
 

@@ -120,8 +120,8 @@
 
 - (void)startWithConfig:(CountlyConfig *)config
 {
-    NSAssert(config.appKey && ![config.appKey isEqualToString:@"YOUR_APP_KEY"],@"App key in Countly configuration is not set!");
-    NSAssert(config.host && ![config.host isEqualToString:@"https://YOUR_COUNTLY_SERVER"],@"Host in Countly configuration is not set!");
+    NSAssert(config.appKey && ![config.appKey isEqualToString:@"YOUR_APP_KEY"],@"[CountlyAssert] App key in Countly configuration is not set!");
+    NSAssert(config.host && ![config.host isEqualToString:@"https://YOUR_COUNTLY_SERVER"],@"[CountlyAssert] Host in Countly configuration is not set!");
 
     if(!CountlyDeviceInfo.sharedInstance.deviceID || config.forceDeviceIDInitialization)
     {
@@ -150,7 +150,7 @@
 
     if([config.features containsObject:CLYMessaging])
     {
-        NSAssert(![config.launchOptions isEqualToDictionary:@{@"CLYAssertion":@"forLaunchOptions"}],@"LaunchOptions in Countly configuration is not set!");
+        NSAssert(![config.launchOptions isEqualToDictionary:@{@"CLYAssertion":@"forLaunchOptions"}],@"[CountlyAssert] LaunchOptions in Countly configuration is not set!");
 
         CountlyConnectionManager.sharedInstance.isTestDevice = config.isTestDevice;
 
@@ -226,7 +226,7 @@
 
 - (void)suspend
 {
-    COUNTLY_LOG(@"Suspending");
+    COUNTLY_LOG(@"Suspending...");
 
     isSuspended = YES;
 
@@ -266,19 +266,19 @@
 
 - (void)didEnterBackgroundCallBack:(NSNotification *)notification
 {
-    COUNTLY_LOG(@"App didEnterBackground");
+    COUNTLY_LOG(@"App did enter background.");
     [self suspend];
 }
 
 - (void)willEnterForegroundCallBack:(NSNotification *)notification
 {
-    COUNTLY_LOG(@"App willEnterForeground");
+    COUNTLY_LOG(@"App will enter foreground.");
     [self resume];
 }
 
 - (void)willTerminateCallBack:(NSNotification *)notification
 {
-    COUNTLY_LOG(@"App willTerminate");
+    COUNTLY_LOG(@"App will terminate.");
 
     [CountlyViewTracking.sharedInstance endView];
 
@@ -375,7 +375,7 @@
     {
         if(CountlyPersistency.sharedInstance.startedEvents[key])
         {
-            COUNTLY_LOG(@"event with key '%@' already started", key);
+            COUNTLY_LOG(@"Event with key '%@' already started!", key);
             return;
         }
 
@@ -401,7 +401,7 @@
         CountlyEvent *event = CountlyPersistency.sharedInstance.startedEvents[key];
         if(!event)
         {
-            COUNTLY_LOG(@"event with key '%@' not started before", key);
+            COUNTLY_LOG(@"Event with key '%@' not started before!", key);
             return;
         }
 
