@@ -6,7 +6,7 @@
 
 #import "CountlyCommon.h"
 
-NSString* const kCountlySDKVersion = @"16.06.1";
+NSString* const kCountlySDKVersion = @"16.06.2";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 @implementation CountlyConnectionManager : NSObject
@@ -23,6 +23,12 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 {
     if (self.connection != nil)
         return;
+    
+    if (self.customHeaderFieldName && !self.customHeaderFieldValue)
+    {
+        COUNTLY_LOG(@"customHeaderFieldName specified on config, but customHeaderFieldValue not set! Requests are postponed!");
+        return;
+    }
 
     NSString* currentRequestData;
     @synchronized(self)
@@ -55,11 +61,14 @@ NSString* const kCountlySDKName = @"objc-native-ios";
         request.HTTPBody = body;
     }
 
+    if(self.customHeaderFieldName && self.customHeaderFieldValue)
+        [request setValue:self.customHeaderFieldValue forHTTPHeaderField:self.customHeaderFieldName];
+    
     NSURLSession* session = NSURLSession.sharedSession;
     
     if(self.pinnedCertificates)
     {
-        COUNTLY_LOG(@"found %i pinned certificate(s)", self.pinnedCertificates.count);
+        COUNTLY_LOG(@"%i pinned certificate(s) specified in config.", self.pinnedCertificates.count);
         NSURLSessionConfiguration *sc = [NSURLSessionConfiguration defaultSessionConfiguration];
         session = [NSURLSession sessionWithConfiguration:sc delegate:self delegateQueue:nil];
     }
@@ -73,7 +82,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
         {
             if([self isRequestSuccessful:data])
             {
-                COUNTLY_LOG(@"Request successfully completed");
+                COUNTLY_LOG(@"Request successfully completed.");
 
                 @synchronized(self)
                 {
@@ -86,12 +95,12 @@ NSString* const kCountlySDKName = @"objc-native-ios";
             }
             else
             {
-                COUNTLY_LOG(@"Request failed %@ \n%@ \nServer reply: %@", request.URL.absoluteString, request.HTTPBody?currentRequestData:@"", [NSString.alloc initWithData:data encoding:NSUTF8StringEncoding]);
+                COUNTLY_LOG(@"Request failed! %@ \n%@ \nServer reply: %@", request.URL.absoluteString, request.HTTPBody?currentRequestData:@"", [NSString.alloc initWithData:data encoding:NSUTF8StringEncoding]);
             }
         }
         else
         {
-            COUNTLY_LOG(@"Request failed %@ \n%@ \nError: %@", request.URL.absoluteString, request.HTTPBody?currentRequestData:@"", error);
+            COUNTLY_LOG(@"Request failed! %@ \n%@ \nError: %@", request.URL.absoluteString, request.HTTPBody?currentRequestData:@"", error);
 #if TARGET_OS_WATCH
             [CountlyPersistency.sharedInstance saveToFile];
 #endif
@@ -102,7 +111,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
     [self.connection resume];
 
-    COUNTLY_LOG(@"Request started [%@] %@ \n%@", request.HTTPMethod, request.URL.absoluteString, request.HTTPBody?currentRequestData:@"");
+    COUNTLY_LOG(@"Request started: [%@] %@ \n%@", request.HTTPMethod, request.URL.absoluteString, request.HTTPBody?currentRequestData:@"");
 }
 
 #pragma mark ---
@@ -308,7 +317,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
     for (NSString* certificate in self.pinnedCertificates )
     {
         NSString* localCertPath = [NSBundle.mainBundle pathForResource:certificate ofType:nil];
-        NSAssert(localCertPath != nil, @"bundled certificate can not be found");
+        NSAssert(localCertPath != nil, @"[CountlyAssert] Bundled certificate can not be found");
         NSData* localCertData = [NSData dataWithContentsOfFile:localCertPath];
         SecCertificateRef localCert = SecCertificateCreateWithData(NULL, (__bridge CFDataRef)localCertData);
         SecTrustRef localTrust = NULL;
@@ -320,14 +329,14 @@ NSString* const kCountlySDKName = @"objc-native-ios";
     
         if (serverKey != NULL && localKey != NULL && [(__bridge id)serverKey isEqual:(__bridge id)localKey])
         {
-            COUNTLY_LOG(@"Local and Server Certificates match");
+            COUNTLY_LOG(@"Pinned certificate and server certificate match.");
 
             isLocalAndServerCertMatch = YES;
             CFRelease(localKey);
             break;
         }
     
-        CFRelease(localKey);
+        if(localKey) CFRelease(localKey);
     }
 
     SecTrustResultType serverTrustResult;
@@ -336,16 +345,16 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
     if (isLocalAndServerCertMatch && isServerCertValid)
     {
-        COUNTLY_LOG(@"Pinned certificate check is sucessful. Proceed.");
+        COUNTLY_LOG(@"Pinned certificate check is successful. Proceeding with request.");
         completionHandler(NSURLSessionAuthChallengeUseCredential, [NSURLCredential credentialForTrust:serverTrust]);
     }
     else
     {
-        COUNTLY_LOG(@"Pinned certificate check is failed. Cancel.");
+        COUNTLY_LOG(@"Pinned certificate check is failed! Cancelling request.");
         completionHandler(NSURLSessionAuthChallengeCancelAuthenticationChallenge, NULL);
     }
 
-    CFRelease(serverKey);
+    if (serverKey) CFRelease(serverKey);
     CFRelease(policy);
 }
 

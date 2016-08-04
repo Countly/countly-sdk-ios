@@ -19,6 +19,8 @@
 @property (nonatomic, strong) NSString* city;
 @property (nonatomic, strong) NSString* location;
 @property (nonatomic, strong) NSArray* pinnedCertificates;
+@property (nonatomic, strong) NSString* customHeaderFieldName;
+@property (nonatomic, strong) NSString* customHeaderFieldValue;
 #if TARGET_OS_IOS
 @property (nonatomic, assign) UIBackgroundTaskIdentifier bgTask;
 #endif
@@ -40,4 +42,5 @@
 - (NSString *)queryEssentials;
 - (NSString *)boundary;
 - (BOOL)isRequestSuccessful:(NSData *)data;
+- (void)tick;
 @end

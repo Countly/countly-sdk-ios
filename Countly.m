@@ -110,12 +110,18 @@
     }
 }
 
+- (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue
+{
+    CountlyConnectionManager.sharedInstance.customHeaderFieldValue = customHeaderFieldValue;
+    [CountlyConnectionManager.sharedInstance tick];
+}
+
 #pragma mark ---
 
 - (void)startWithConfig:(CountlyConfig *)config
 {
-    NSAssert(config.appKey && ![config.appKey isEqualToString:@"YOUR_APP_KEY"],@"App key in Countly configuration is not set!");
-    NSAssert(config.host && ![config.host isEqualToString:@"https://YOUR_COUNTLY_SERVER"],@"Host in Countly configuration is not set!");
+    NSAssert(config.appKey && ![config.appKey isEqualToString:@"YOUR_APP_KEY"],@"[CountlyAssert] App key in Countly configuration is not set!");
+    NSAssert(config.host && ![config.host isEqualToString:@"https://YOUR_COUNTLY_SERVER"],@"[CountlyAssert] Host in Countly configuration is not set!");
 
     if(!CountlyDeviceInfo.sharedInstance.deviceID || config.forceDeviceIDInitialization)
     {
@@ -129,14 +135,22 @@
     CountlyConnectionManager.sharedInstance.city = config.city;
     CountlyConnectionManager.sharedInstance.location = CLLocationCoordinate2DIsValid(config.location)?[NSString stringWithFormat:@"%f,%f", config.location.latitude, config.location.longitude]:nil;
     CountlyConnectionManager.sharedInstance.pinnedCertificates = config.pinnedCertificates;
+    CountlyConnectionManager.sharedInstance.customHeaderFieldName = config.customHeaderFieldName;
+    CountlyConnectionManager.sharedInstance.customHeaderFieldValue = config.customHeaderFieldValue;
 
 #if TARGET_OS_IOS
+    CountlyStarRating.sharedInstance.message = config.starRatingMessage;
+    CountlyStarRating.sharedInstance.dismissButtonTitle = config.starRatingDismissButtonTitle;
+    CountlyStarRating.sharedInstance.sessionCount = config.starRatingSessionCount;
+    CountlyStarRating.sharedInstance.disableAskingForEachAppVersion = config.starRatingDisableAskingForEachAppVersion;
+    
+    [CountlyStarRating.sharedInstance checkForAutoAsk];
 
     [CountlyCommon.sharedInstance transferParentDeviceID];
 
     if([config.features containsObject:CLYMessaging])
     {
-        NSAssert(![config.launchOptions isEqualToDictionary:@{@"CLYAssertion":@"forLaunchOptions"}],@"LaunchOptions in Countly configuration is not set!");
+        NSAssert(![config.launchOptions isEqualToDictionary:@{@"CLYAssertion":@"forLaunchOptions"}],@"[CountlyAssert] LaunchOptions in Countly configuration is not set!");
 
         CountlyConnectionManager.sharedInstance.isTestDevice = config.isTestDevice;
 
@@ -212,7 +226,7 @@
 
 - (void)suspend
 {
-    COUNTLY_LOG(@"Suspending");
+    COUNTLY_LOG(@"Suspending...");
 
     isSuspended = YES;
 
@@ -252,19 +266,19 @@
 
 - (void)didEnterBackgroundCallBack:(NSNotification *)notification
 {
-    COUNTLY_LOG(@"App didEnterBackground");
+    COUNTLY_LOG(@"App did enter background.");
     [self suspend];
 }
 
 - (void)willEnterForegroundCallBack:(NSNotification *)notification
 {
-    COUNTLY_LOG(@"App willEnterForeground");
+    COUNTLY_LOG(@"App will enter foreground.");
     [self resume];
 }
 
 - (void)willTerminateCallBack:(NSNotification *)notification
 {
-    COUNTLY_LOG(@"App willTerminate");
+    COUNTLY_LOG(@"App will terminate.");
 
     [CountlyViewTracking.sharedInstance endView];
 
@@ -289,54 +303,59 @@
 #pragma mark - Countly CustomEvents
 - (void)recordEvent:(NSString *)key
 {
-    [self recordEvent:key segmentation:nil count:1 sum:0 duration:0];
+    [self recordEvent:key segmentation:nil count:1 sum:0 duration:0 timestamp:NSDate.date.timeIntervalSince1970];
 }
 
 - (void)recordEvent:(NSString *)key count:(NSUInteger)count
 {
-    [self recordEvent:key segmentation:nil count:count sum:0 duration:0];
+    [self recordEvent:key segmentation:nil count:count sum:0 duration:0 timestamp:NSDate.date.timeIntervalSince1970];
 }
 
 - (void)recordEvent:(NSString *)key sum:(double)sum
 {
-    [self recordEvent:key segmentation:nil count:1 sum:sum duration:0];
+    [self recordEvent:key segmentation:nil count:1 sum:sum duration:0 timestamp:NSDate.date.timeIntervalSince1970];
 }
 
 - (void)recordEvent:(NSString *)key duration:(NSTimeInterval)duration
 {
-    [self recordEvent:key segmentation:nil count:1 sum:0 duration:duration];
+    [self recordEvent:key segmentation:nil count:1 sum:0 duration:duration timestamp:NSDate.date.timeIntervalSince1970];
 }
 
 - (void)recordEvent:(NSString *)key count:(NSUInteger)count sum:(double)sum
 {
-    [self recordEvent:key segmentation:nil count:count sum:sum duration:0];
+    [self recordEvent:key segmentation:nil count:count sum:sum duration:0 timestamp:NSDate.date.timeIntervalSince1970];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation
 {
-    [self recordEvent:key segmentation:segmentation count:1 sum:0 duration:0];
+    [self recordEvent:key segmentation:segmentation count:1 sum:0 duration:0 timestamp:NSDate.date.timeIntervalSince1970];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count
 {
-    [self recordEvent:key segmentation:segmentation count:count sum:0 duration:0];
+    [self recordEvent:key segmentation:segmentation count:count sum:0 duration:0 timestamp:NSDate.date.timeIntervalSince1970];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum
 {
-    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:0];
+    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:0 timestamp:NSDate.date.timeIntervalSince1970];
 }
 
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration
+{
+    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration timestamp:NSDate.date.timeIntervalSince1970];
+}
+
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration timestamp:(NSTimeInterval)timestamp
 {
     @synchronized (self)
     {
-        CountlyEvent *event = [CountlyEvent new];
+        CountlyEvent *event = CountlyEvent.new;
         event.key = key;
         event.segmentation = segmentation;
         event.count = MAX(count, 1);
         event.sum = sum;
-        event.timestamp = NSDate.date.timeIntervalSince1970;
+        event.timestamp = timestamp;
         event.hourOfDay = [CountlyCommon.sharedInstance hourOfDay];
         event.dayOfWeek = [CountlyCommon.sharedInstance dayOfWeek];
         event.duration = duration;
@@ -356,11 +375,11 @@
     {
         if(CountlyPersistency.sharedInstance.startedEvents[key])
         {
-            COUNTLY_LOG(@"event with key '%@' already started", key);
+            COUNTLY_LOG(@"Event with key '%@' already started!", key);
             return;
         }
 
-        CountlyEvent *event = [CountlyEvent new];
+        CountlyEvent *event = CountlyEvent.new;
         event.key = key;
         event.timestamp = NSDate.date.timeIntervalSince1970;
         event.hourOfDay = [CountlyCommon.sharedInstance hourOfDay];
@@ -382,7 +401,7 @@
         CountlyEvent *event = CountlyPersistency.sharedInstance.startedEvents[key];
         if(!event)
         {
-            COUNTLY_LOG(@"event with key '%@' not started before", key);
+            COUNTLY_LOG(@"Event with key '%@' not started before!", key);
             return;
         }
 
@@ -765,4 +784,16 @@
 {
     return CountlyUserDetails.sharedInstance;
 }
+
+
+
+#pragma mark - Countly StarRating
+#if TARGET_OS_IOS
+
+- (void)askForStarRating:(void(^)(NSInteger rating))completion
+{
+    [CountlyStarRating.sharedInstance showDialog:completion];
+}
+#endif
+
 @end

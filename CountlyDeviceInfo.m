@@ -173,7 +173,10 @@
     }
 
     if (!imageHeader)
-        return @"BUILDUUID-IMAGE-HEADER-NOT-FOUND";
+    {
+        COUNTLY_LOG(@"BuildUUID image header can not be found!");
+        return @"0";
+    }
 
     BOOL is64bit = imageHeader->magic == MH_MAGIC_64 || imageHeader->magic == MH_CIGAM_64;
     uintptr_t ptr = (uintptr_t)imageHeader + (is64bit ? sizeof(struct mach_header_64) : sizeof(struct mach_header));
@@ -190,7 +193,8 @@
         }
     }
 
-    return @"BUILDUUID-CANNOT-BE-READ";
+    COUNTLY_LOG(@"BuildUUID can not be read!");
+    return @"0";
 }
 
 + (NSString *)bundleId

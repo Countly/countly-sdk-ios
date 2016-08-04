@@ -82,7 +82,7 @@ NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTran
     if(WCSession.defaultSession.paired && WCSession.defaultSession.watchAppInstalled)
     {
         [WCSession.defaultSession transferUserInfo:@{kCountlyParentDeviceIDTransferKey:CountlyDeviceInfo.sharedInstance.deviceID}];
-        COUNTLY_LOG(@"Transferring Parent Device ID %@", CountlyDeviceInfo.sharedInstance.deviceID);
+        COUNTLY_LOG(@"Transferring parent device ID %@ ...", CountlyDeviceInfo.sharedInstance.deviceID);
     }
 }
 #endif
@@ -90,7 +90,7 @@ NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTran
 #if (TARGET_OS_WATCH)
 - (void)session:(WCSession *)session didReceiveUserInfo:(NSDictionary<NSString *, id> *)userInfo
 {
-    COUNTLY_LOG(@"didReceiveUserInfo %@", [userInfo description]);
+    COUNTLY_LOG(@"Watch received user info: \n%@", [userInfo description]);
 
     NSString* parentDeviceID = userInfo[kCountlyParentDeviceIDTransferKey];
 
@@ -98,9 +98,9 @@ NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTran
     {
         [CountlyConnectionManager.sharedInstance sendParentDeviceID:parentDeviceID];
 
-        [CountlyPersistency.sharedInstance storeWatchParentDeviceID:parentDeviceID];
+        COUNTLY_LOG(@"Parent device ID %@ added to queue.", parentDeviceID);
 
-        COUNTLY_LOG(@"Parent Device ID added queue %@", parentDeviceID);
+        [CountlyPersistency.sharedInstance storeWatchParentDeviceID:parentDeviceID];
     }
 }
 #endif
@@ -114,7 +114,7 @@ NSString* CountlyJSONFromObject(id object)
 {
     NSError *error = nil;
     NSData *data = [NSJSONSerialization dataWithJSONObject:object options:0 error:&error];
-    if(error){ COUNTLY_LOG(@"Cannot create JSON from object %@", error); }
+    if(error){ COUNTLY_LOG(@"JSON can not be created: \n%@", error); }
 
     return [NSString.alloc initWithData:data encoding:NSUTF8StringEncoding];
 }

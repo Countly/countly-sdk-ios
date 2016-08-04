@@ -82,7 +82,7 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
     if(!localPicturePath || [localPicturePath isEqualToString:@""])
         return nil;
 
-    COUNTLY_LOG(@"Extracted local picture path from query string: %@", localPicturePath);
+    COUNTLY_LOG(@"Local picture path successfully extracted from query string: %@", localPicturePath);
 
     NSArray* allowedFileTypes = @[@"gif", @"png", @"jpg", @"jpeg"];
     NSString* fileExt = localPicturePath.pathExtension.lowercaseString;
@@ -94,9 +94,12 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
     NSData* imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:localPicturePath]];
 
     if (!imageData)
+    {
+        COUNTLY_LOG(@"Local picture data can not be read!");
         return nil;
+    }
 
-    COUNTLY_LOG(@"Local picture data read successfully");
+    COUNTLY_LOG(@"Local picture data read successfully.");
 
     //NOTE: png file data read directly from disk somehow fails on upload, this fixes it
     if (fileExtIndex == 1)

@@ -17,6 +17,7 @@
 #import "CountlyAPM.h"
 #import "CountlyConfig.h"
 #import "CountlyViewTracking.h"
+#import "CountlyStarRating.h"
 
 #ifndef COUNTLY_DEBUG
 #define COUNTLY_DEBUG 0
@@ -94,4 +95,8 @@
 
 @interface NSMutableData (AppendStringUTF8)
 - (void)appendStringUTF8:(NSString *)string;
+@end
+
+@interface Countly (RecordEventWithTimeStamp)
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration timestamp:(NSTimeInterval)timestamp;
 @end

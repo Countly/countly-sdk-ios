@@ -122,7 +122,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
         NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
         request.HTTPMethod = @"POST";
         request.HTTPBody = [queryString dataUsingEncoding:NSUTF8StringEncoding];
-        COUNTLY_LOG(@"Request started %@ with crash report:\n%@", urlString, queryString);
+        COUNTLY_LOG(@"Crash report request started: %@ \n%@", urlString, queryString);
 
         dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 
@@ -133,12 +133,12 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
         {
             if(error || ![CountlyConnectionManager.sharedInstance isRequestSuccessful:data])
             {
-                COUNTLY_LOG(@"CrashReporting failed, report stored to try again later");
+                COUNTLY_LOG(@"Crash report request failed! Report stored to try again later. \n%@", error);
                 [CountlyConnectionManager.sharedInstance sendCrashReportLater:[crashReport JSONify]];
             }
             else
             {
-                COUNTLY_LOG(@"Crash report request successfully completed");
+                COUNTLY_LOG(@"Crash report request successfully completed.");
             }
 
             dispatch_semaphore_signal(semaphore);

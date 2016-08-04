@@ -19,6 +19,9 @@
 - (NSString *)retrieveWatchParentDeviceID;
 - (void)storeWatchParentDeviceID:(NSString *)deviceID;
 
+- (NSDictionary *)retrieveStarRatingStatus;
+- (void)storeStarRatingStatus:(NSDictionary *)status;
+
 @property (nonatomic, strong) NSMutableArray* recordedEvents;
 @property (nonatomic, strong) NSMutableArray* queuedRequests;
 @property (nonatomic, strong) NSMutableDictionary* startedEvents;

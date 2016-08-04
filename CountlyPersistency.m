@@ -12,6 +12,7 @@ NSString* const kCountlyStartedEventsPersistencyKey = @"kCountlyStartedEventsPer
 NSString* const kCountlyTVOSNSUDKey = @"kCountlyTVOSNSUDKey";
 NSString* const kCountlyStoredDeviceIDKey = @"kCountlyStoredDeviceIDKey";
 NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKey";
+NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 
 
 + (instancetype)sharedInstance
@@ -82,7 +83,7 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
         if (![NSFileManager.defaultManager fileExistsAtPath:url.absoluteString])
         {
             [NSFileManager.defaultManager createDirectoryAtURL:url withIntermediateDirectories:YES attributes:nil error:&error];
-            if(error){ COUNTLY_LOG(@"Cannot create Application Support directory: %@", error); }
+            if(error){ COUNTLY_LOG(@"Application Support directory can not be created: \n%@", error); }
         }
 
         url = [url URLByAppendingPathComponent:kCountlyPersistencyFileName];
@@ -124,7 +125,7 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
 
     if(retrievedDeviceID)
     {
-        COUNTLY_LOG(@"Succesfully retrieved Device ID from UserDefaults: %@", retrievedDeviceID);
+        COUNTLY_LOG(@"Device ID successfully retrieved from UserDefaults: %@", retrievedDeviceID);
         return retrievedDeviceID;
     }
     
@@ -149,7 +150,7 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
         {
             retrievedDeviceID = [NSString.alloc initWithData:data encoding:NSUTF8StringEncoding];
 
-            COUNTLY_LOG(@"Succesfully retrieved Device ID from KeyChain: %@", retrievedDeviceID);
+            COUNTLY_LOG(@"Device ID successfully retrieved from KeyChain: %@", retrievedDeviceID);
         
             [NSUserDefaults.standardUserDefaults setObject:retrievedDeviceID forKey:kCountlyStoredDeviceIDKey];
             [NSUserDefaults.standardUserDefaults synchronize];
@@ -158,7 +159,7 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
         }
     }
 
-    COUNTLY_LOG(@"Can not retrieve Device ID");
+    COUNTLY_LOG(@"Device ID can not be retrieved!");
 
     return nil;
 }
@@ -183,11 +184,11 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
 
     if(status == noErr)
     {
-        COUNTLY_LOG(@"Successfully stored Device ID: %@", deviceID);
+        COUNTLY_LOG(@"Device ID successfully stored: %@", deviceID);
     }
     else
     {
-        COUNTLY_LOG(@"Failed storing Device ID: %@", deviceID);
+        COUNTLY_LOG(@"Device ID can not be stored! %d", status);
     }
 }
 
@@ -202,4 +203,18 @@ NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKe
     [NSUserDefaults.standardUserDefaults synchronize];
 }
 
+- (NSDictionary *)retrieveStarRatingStatus
+{
+    NSDictionary* status = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyStarRatingStatusKey];
+    if(!status)
+        status = NSDictionary.new;
+        
+    return status;
+}
+
+- (void)storeStarRatingStatus:(NSDictionary *)status
+{
+    [NSUserDefaults.standardUserDefaults setObject:status forKey:kCountlyStarRatingStatusKey];
+    [NSUserDefaults.standardUserDefaults synchronize];
+}
 @end
