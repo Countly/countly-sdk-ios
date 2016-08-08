@@ -15,7 +15,6 @@
     NSTimeInterval lastTime;
     BOOL isSuspended;
     NSTimeInterval updateSessionPeriod;
-    NSUInteger eventSendThreshold;
 }
 
 @property (nonatomic, strong) NSMutableDictionary *messageInfos;
@@ -129,7 +128,7 @@
     }
 
     updateSessionPeriod = config.updateSessionPeriod;
-    eventSendThreshold = config.eventSendThreshold;
+    CountlyPersistency.sharedInstance.eventSendThreshold = config.eventSendThreshold;
     CountlyPersistency.sharedInstance.storedRequestsLimit = config.storedRequestsLimit;
     CountlyConnectionManager.sharedInstance.ISOCountryCode = config.ISOCountryCode;
     CountlyConnectionManager.sharedInstance.city = config.city;
@@ -348,23 +347,17 @@
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration timestamp:(NSTimeInterval)timestamp
 {
-    @synchronized (self)
-    {
-        CountlyEvent *event = CountlyEvent.new;
-        event.key = key;
-        event.segmentation = segmentation;
-        event.count = MAX(count, 1);
-        event.sum = sum;
-        event.timestamp = timestamp;
-        event.hourOfDay = [CountlyCommon.sharedInstance hourOfDay];
-        event.dayOfWeek = [CountlyCommon.sharedInstance dayOfWeek];
-        event.duration = duration;
+    CountlyEvent *event = CountlyEvent.new;
+    event.key = key;
+    event.segmentation = segmentation;
+    event.count = MAX(count, 1);
+    event.sum = sum;
+    event.timestamp = timestamp;
+    event.hourOfDay = [CountlyCommon.sharedInstance hourOfDay];
+    event.dayOfWeek = [CountlyCommon.sharedInstance dayOfWeek];
+    event.duration = duration;
 
-        [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
-
-        if (CountlyPersistency.sharedInstance.recordedEvents.count >= eventSendThreshold)
-            [CountlyConnectionManager.sharedInstance sendEvents];
-    }
+    [CountlyPersistency.sharedInstance recordEvent:event];
 }
 
 #pragma mark ---
@@ -410,11 +403,8 @@
         event.sum = sum;
         event.duration = NSDate.date.timeIntervalSince1970 - event.timestamp;
 
-        [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
+        [CountlyPersistency.sharedInstance recordEvent:event];
         [CountlyPersistency.sharedInstance.startedEvents removeObjectForKey:key];
-
-        if (CountlyPersistency.sharedInstance.recordedEvents.count >= eventSendThreshold)
-            [CountlyConnectionManager.sharedInstance sendEvents];
     }
 }
 

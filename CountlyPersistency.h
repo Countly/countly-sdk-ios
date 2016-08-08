@@ -6,6 +6,8 @@
 
 #import <Foundation/Foundation.h>
 
+@class CountlyEvent;
+
 @interface CountlyPersistency : NSObject
 
 + (instancetype)sharedInstance;
@@ -13,6 +15,9 @@
 - (void)addToQueue:(NSString *)queryString;
 - (void)removeFromQueue:(NSString *)queryString;
 - (NSString *)firstItemInQueue;
+
+- (void)recordEvent:(CountlyEvent *)event;
+- (NSString *)serializedRecordedEvents;
 
 - (void)saveToFile;
 - (void)saveToFileSync;
@@ -26,10 +31,9 @@
 - (NSDictionary *)retrieveStarRatingStatus;
 - (void)storeStarRatingStatus:(NSDictionary *)status;
 
-@property (nonatomic, strong) NSMutableArray* recordedEvents;
-@property (nonatomic, strong) NSMutableArray* queuedRequests;
 @property (nonatomic, strong) NSMutableDictionary* startedEvents;
 
+@property (nonatomic, readwrite) NSUInteger eventSendThreshold;
 @property (nonatomic, readwrite) NSUInteger storedRequestsLimit;
 @end
 

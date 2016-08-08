@@ -6,6 +6,11 @@
 
 #import "CountlyCommon.h"
 
+@interface CountlyPersistency()
+@property (nonatomic, strong) NSMutableArray* queuedRequests;
+@property (nonatomic, strong) NSMutableArray* recordedEvents;
+@end
+
 @implementation CountlyPersistency
 NSString* const kCountlyQueuedRequestsPersistencyKey = @"kCountlyQueuedRequestsPersistencyKey";
 NSString* const kCountlyStartedEventsPersistencyKey = @"kCountlyStartedEventsPersistencyKey";
@@ -79,6 +84,36 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
     {
         return self.queuedRequests.firstObject;
     }
+}
+
+- (void)recordEvent:(CountlyEvent *)event
+{
+    @synchronized (self.recordedEvents)
+    {
+        [self.recordedEvents addObject:event];
+    
+        if (self.recordedEvents.count >= self.eventSendThreshold)
+            [CountlyConnectionManager.sharedInstance sendEvents];
+    }
+}
+
+- (NSString *)serializedRecordedEvents
+{
+    NSMutableArray* tempArray = NSMutableArray.new;
+
+    @synchronized (self.recordedEvents)
+    {
+        if(self.recordedEvents.count == 0)
+            return nil;
+    
+        for (CountlyEvent* event in self.recordedEvents.copy)
+        {
+            [tempArray addObject:[event dictionaryRepresentation]];
+            [self.recordedEvents removeObject:event];
+        }
+    }
+
+    return [tempArray JSONify];
 }
 
 - (NSURL *)storageFileURL

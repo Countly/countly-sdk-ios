@@ -146,20 +146,12 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
 - (void)sendEvents
 {
-    NSMutableArray* eventsArray = NSMutableArray.new;
-    @synchronized (self)
-    {
-        if(CountlyPersistency.sharedInstance.recordedEvents.count == 0)
-            return;
+    NSString* events = [CountlyPersistency.sharedInstance serializedRecordedEvents];
+    
+    if(!events)
+        return;
 
-        for (CountlyEvent* event in CountlyPersistency.sharedInstance.recordedEvents.copy)
-        {
-            [eventsArray addObject:[event dictionaryRepresentation]];
-            [CountlyPersistency.sharedInstance.recordedEvents removeObject:event];
-        }
-    }
-
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&events=%@", [eventsArray JSONify]];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&events=%@", events];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
