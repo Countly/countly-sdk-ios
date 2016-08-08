@@ -104,7 +104,7 @@
 
         [Countly.sharedInstance resume];
 
-        [CountlyPersistency.sharedInstance.startedEvents removeAllObjects];
+        [CountlyPersistency.sharedInstance clearAllTimedEvents];
     }
 }
 
@@ -363,22 +363,13 @@
 
 - (void)startEvent:(NSString *)key
 {
-    @synchronized (self)
-    {
-        if(CountlyPersistency.sharedInstance.startedEvents[key])
-        {
-            COUNTLY_LOG(@"Event with key '%@' already started!", key);
-            return;
-        }
+    CountlyEvent *event = CountlyEvent.new;
+    event.key = key;
+    event.timestamp = NSDate.date.timeIntervalSince1970;
+    event.hourOfDay = [CountlyCommon.sharedInstance hourOfDay];
+    event.dayOfWeek = [CountlyCommon.sharedInstance dayOfWeek];
 
-        CountlyEvent *event = CountlyEvent.new;
-        event.key = key;
-        event.timestamp = NSDate.date.timeIntervalSince1970;
-        event.hourOfDay = [CountlyCommon.sharedInstance hourOfDay];
-        event.dayOfWeek = [CountlyCommon.sharedInstance dayOfWeek];
-
-        CountlyPersistency.sharedInstance.startedEvents[key] = event;
-    }
+    [CountlyPersistency.sharedInstance recordTimedEvent:event];
 }
 
 - (void)endEvent:(NSString *)key
@@ -388,23 +379,20 @@
 
 - (void)endEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum
 {
-    @synchronized (self)
+    CountlyEvent *event = [CountlyPersistency.sharedInstance timedEventForKey:key];
+
+    if(!event)
     {
-        CountlyEvent *event = CountlyPersistency.sharedInstance.startedEvents[key];
-        if(!event)
-        {
-            COUNTLY_LOG(@"Event with key '%@' not started before!", key);
-            return;
-        }
-
-        event.segmentation = segmentation;
-        event.count = MAX(count, 1);;
-        event.sum = sum;
-        event.duration = NSDate.date.timeIntervalSince1970 - event.timestamp;
-
-        [CountlyPersistency.sharedInstance recordEvent:event];
-        [CountlyPersistency.sharedInstance.startedEvents removeObjectForKey:key];
+        COUNTLY_LOG(@"Event with key '%@' not started before!", key);
+        return;
     }
+
+    event.segmentation = segmentation;
+    event.count = MAX(count, 1);;
+    event.sum = sum;
+    event.duration = NSDate.date.timeIntervalSince1970 - event.timestamp;
+
+    [CountlyPersistency.sharedInstance recordEvent:event];
 }
 
 

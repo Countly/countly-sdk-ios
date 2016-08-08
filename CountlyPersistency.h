@@ -19,6 +19,10 @@
 - (void)recordEvent:(CountlyEvent *)event;
 - (NSString *)serializedRecordedEvents;
 
+- (void)recordTimedEvent:(CountlyEvent *)event;
+- (CountlyEvent *)timedEventForKey:(NSString *)key;
+- (void)clearAllTimedEvents;
+
 - (void)saveToFile;
 - (void)saveToFileSync;
 
@@ -30,8 +34,6 @@
 
 - (NSDictionary *)retrieveStarRatingStatus;
 - (void)storeStarRatingStatus:(NSDictionary *)status;
-
-@property (nonatomic, strong) NSMutableDictionary* startedEvents;
 
 @property (nonatomic, readwrite) NSUInteger eventSendThreshold;
 @property (nonatomic, readwrite) NSUInteger storedRequestsLimit;

@@ -9,6 +9,7 @@
 @interface CountlyPersistency()
 @property (nonatomic, strong) NSMutableArray* queuedRequests;
 @property (nonatomic, strong) NSMutableArray* recordedEvents;
+@property (nonatomic, strong) NSMutableDictionary* startedEvents;
 @end
 
 @implementation CountlyPersistency
@@ -57,6 +58,8 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
     return self;
 }
 
+#pragma mark ---
+
 - (void)addToQueue:(NSString *)queryString
 {
     @synchronized (self)
@@ -85,6 +88,8 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
         return self.queuedRequests.firstObject;
     }
 }
+
+#pragma mark ---
 
 - (void)recordEvent:(CountlyEvent *)event
 {
@@ -115,6 +120,43 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 
     return [tempArray JSONify];
 }
+
+#pragma mark ---
+
+- (void)recordTimedEvent:(CountlyEvent *)event
+{
+    @synchronized (self.startedEvents)
+    {
+        if(self.startedEvents[event.key])
+        {
+            COUNTLY_LOG(@"Event with key '%@' already started!", event.key);
+            return;
+        }
+    
+        self.startedEvents[event.key] = event;
+    }
+}
+
+- (CountlyEvent *)timedEventForKey:(NSString *)key
+{
+    @synchronized (self.startedEvents)
+    {
+        CountlyEvent *event = self.startedEvents[key];
+        [self.startedEvents removeObjectForKey:key];
+
+        return event;
+    }
+}
+
+- (void)clearAllTimedEvents
+{
+    @synchronized (self.startedEvents)
+    {
+        [self.startedEvents removeAllObjects];
+    }
+}
+
+#pragma mark ---
 
 - (NSURL *)storageFileURL
 {
@@ -169,6 +211,8 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
     [saveData writeToFile:[self storageFileURL].path atomically:YES];
 #endif
 }
+
+#pragma mark ---
 
 - (NSString* )retrieveStoredDeviceID
 {
