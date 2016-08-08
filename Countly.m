@@ -14,7 +14,6 @@
     NSTimer *timer;
     NSTimeInterval lastTime;
     BOOL isSuspended;
-    NSTimeInterval updateSessionPeriod;
 }
 
 @property (nonatomic, strong) NSMutableDictionary *messageInfos;
@@ -127,9 +126,9 @@
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:config.deviceID];
     }
 
-    updateSessionPeriod = config.updateSessionPeriod;
     CountlyPersistency.sharedInstance.eventSendThreshold = config.eventSendThreshold;
     CountlyPersistency.sharedInstance.storedRequestsLimit = config.storedRequestsLimit;
+    CountlyConnectionManager.sharedInstance.updateSessionPeriod = config.updateSessionPeriod;
     CountlyConnectionManager.sharedInstance.ISOCountryCode = config.ISOCountryCode;
     CountlyConnectionManager.sharedInstance.city = config.city;
     CountlyConnectionManager.sharedInstance.location = CLLocationCoordinate2DIsValid(config.location)?[NSString stringWithFormat:@"%f,%f", config.location.latitude, config.location.longitude]:nil;
@@ -184,7 +183,7 @@
 
 - (void)start:(NSString *)appKey withHost:(NSString *)appHost
 {
-    timer = [NSTimer scheduledTimerWithTimeInterval:updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
+    timer = [NSTimer scheduledTimerWithTimeInterval:CountlyConnectionManager.sharedInstance.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
     lastTime = NSDate.date.timeIntervalSince1970;
     CountlyConnectionManager.sharedInstance.appKey = appKey;
     CountlyConnectionManager.sharedInstance.appHost = appHost;
