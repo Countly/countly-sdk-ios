@@ -6,6 +6,12 @@
 
 #import "CountlyCommon.h"
 
+@interface CountlyPersistency()
+@property (nonatomic, strong) NSMutableArray* queuedRequests;
+@property (nonatomic, strong) NSMutableArray* recordedEvents;
+@property (nonatomic, strong) NSMutableDictionary* startedEvents;
+@end
+
 @implementation CountlyPersistency
 NSString* const kCountlyQueuedRequestsPersistencyKey = @"kCountlyQueuedRequestsPersistencyKey";
 NSString* const kCountlyStartedEventsPersistencyKey = @"kCountlyStartedEventsPersistencyKey";
@@ -14,10 +20,9 @@ NSString* const kCountlyStoredDeviceIDKey = @"kCountlyStoredDeviceIDKey";
 NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKey";
 NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 
-
 + (instancetype)sharedInstance
 {
-    static CountlyPersistency* s_sharedInstance;
+    static CountlyPersistency* s_sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
     return s_sharedInstance;
@@ -52,6 +57,8 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
     return self;
 }
 
+#pragma mark ---
+
 - (void)addToQueue:(NSString *)queryString
 {
     @synchronized (self)
@@ -60,10 +67,95 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 
         if(self.queuedRequests.count > self.storedRequestsLimit && !CountlyConnectionManager.sharedInstance.connection)
         {
-            [self.queuedRequests removeObject:self.queuedRequests.firstObject];
+            [self.queuedRequests removeObjectsInRange:(NSRange){0,1}];
         }
     }
 }
+
+- (void)removeFromQueue:(NSString *)queryString
+{
+    @synchronized (self)
+    {
+        [self.queuedRequests removeObject:queryString];
+    }
+}
+
+- (NSString *)firstItemInQueue
+{
+    @synchronized (self)
+    {
+        return self.queuedRequests.firstObject;
+    }
+}
+
+#pragma mark ---
+
+- (void)recordEvent:(CountlyEvent *)event
+{
+    @synchronized (self.recordedEvents)
+    {
+        [self.recordedEvents addObject:event];
+    
+        if (self.recordedEvents.count >= self.eventSendThreshold)
+            [CountlyConnectionManager.sharedInstance sendEvents];
+    }
+}
+
+- (NSString *)serializedRecordedEvents
+{
+    NSMutableArray* tempArray = NSMutableArray.new;
+
+    @synchronized (self.recordedEvents)
+    {
+        if(self.recordedEvents.count == 0)
+            return nil;
+    
+        for (CountlyEvent* event in self.recordedEvents.copy)
+        {
+            [tempArray addObject:[event dictionaryRepresentation]];
+            [self.recordedEvents removeObject:event];
+        }
+    }
+
+    return [tempArray JSONify];
+}
+
+#pragma mark ---
+
+- (void)recordTimedEvent:(CountlyEvent *)event
+{
+    @synchronized (self.startedEvents)
+    {
+        if(self.startedEvents[event.key])
+        {
+            COUNTLY_LOG(@"Event with key '%@' already started!", event.key);
+            return;
+        }
+    
+        self.startedEvents[event.key] = event;
+    }
+}
+
+- (CountlyEvent *)timedEventForKey:(NSString *)key
+{
+    @synchronized (self.startedEvents)
+    {
+        CountlyEvent *event = self.startedEvents[key];
+        [self.startedEvents removeObjectForKey:key];
+
+        return event;
+    }
+}
+
+- (void)clearAllTimedEvents
+{
+    @synchronized (self.startedEvents)
+    {
+        [self.startedEvents removeAllObjects];
+    }
+}
+
+#pragma mark ---
 
 - (NSURL *)storageFileURL
 {
@@ -118,6 +210,8 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
     [saveData writeToFile:[self storageFileURL].path atomically:YES];
 #endif
 }
+
+#pragma mark ---
 
 - (NSString* )retrieveStoredDeviceID
 {

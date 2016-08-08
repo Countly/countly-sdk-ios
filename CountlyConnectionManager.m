@@ -6,7 +6,7 @@
 
 #import "CountlyCommon.h"
 
-NSString* const kCountlySDKVersion = @"16.06.2";
+NSString* const kCountlySDKVersion = @"16.06.3";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 @implementation CountlyConnectionManager : NSObject
@@ -30,13 +30,10 @@ NSString* const kCountlySDKName = @"objc-native-ios";
         return;
     }
 
-    NSString* currentRequestData;
-    @synchronized(self)
-    {
-        currentRequestData = CountlyPersistency.sharedInstance.queuedRequests.firstObject;
-        if (currentRequestData == nil)
-            return;
-    }
+    NSString* currentRequestData = [CountlyPersistency.sharedInstance firstItemInQueue];
+
+    if (currentRequestData == nil)
+        return;
     
     [self startBackgroundTask];
 
@@ -82,12 +79,9 @@ NSString* const kCountlySDKName = @"objc-native-ios";
         {
             if([self isRequestSuccessful:data])
             {
-                COUNTLY_LOG(@"Request successfully completed.");
+                COUNTLY_LOG(@"Request <%i> successfully completed.", (id)request);
 
-                @synchronized(self)
-                {
-                    [CountlyPersistency.sharedInstance.queuedRequests removeObject:currentRequestData];
-                }
+                [CountlyPersistency.sharedInstance removeFromQueue:currentRequestData];
 
                 [CountlyPersistency.sharedInstance saveToFile];
 
@@ -95,12 +89,12 @@ NSString* const kCountlySDKName = @"objc-native-ios";
             }
             else
             {
-                COUNTLY_LOG(@"Request failed! %@ \n%@ \nServer reply: %@", request.URL.absoluteString, request.HTTPBody?currentRequestData:@"", [NSString.alloc initWithData:data encoding:NSUTF8StringEncoding]);
+                COUNTLY_LOG(@"Request <%i> failed! %@ \n%@ \nServer reply: %@", (id)request, request.URL.absoluteString, request.HTTPBody?currentRequestData:@"", [NSString.alloc initWithData:data encoding:NSUTF8StringEncoding]);
             }
         }
         else
         {
-            COUNTLY_LOG(@"Request failed! %@ \n%@ \nError: %@", request.URL.absoluteString, request.HTTPBody?currentRequestData:@"", error);
+            COUNTLY_LOG(@"Request <%i> failed! %@ \n%@ \nError: %@", (id)request, request.URL.absoluteString, request.HTTPBody?currentRequestData:@"", error);
 #if TARGET_OS_WATCH
             [CountlyPersistency.sharedInstance saveToFile];
 #endif
@@ -111,7 +105,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
     [self.connection resume];
 
-    COUNTLY_LOG(@"Request started: [%@] %@ \n%@", request.HTTPMethod, request.URL.absoluteString, request.HTTPBody?currentRequestData:@"");
+    COUNTLY_LOG(@"Request <%i> started: [%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, request.HTTPBody?currentRequestData:@"");
 }
 
 #pragma mark ---
@@ -152,20 +146,12 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
 - (void)sendEvents
 {
-    NSMutableArray* eventsArray = NSMutableArray.new;
-    @synchronized (self)
-    {
-        if(CountlyPersistency.sharedInstance.recordedEvents.count == 0)
-            return;
+    NSString* events = [CountlyPersistency.sharedInstance serializedRecordedEvents];
+    
+    if(!events)
+        return;
 
-        for (CountlyEvent* event in CountlyPersistency.sharedInstance.recordedEvents.copy)
-        {
-            [eventsArray addObject:[event dictionaryRepresentation]];
-            [CountlyPersistency.sharedInstance.recordedEvents removeObject:event];
-        }
-    }
-
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&events=%@", [eventsArray JSONify]];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&events=%@", events];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 

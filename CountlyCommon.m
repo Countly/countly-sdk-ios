@@ -16,6 +16,7 @@
 NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
 
 @implementation CountlyCommon
+
 + (instancetype)sharedInstance
 {
     static CountlyCommon *s_sharedInstance = nil;

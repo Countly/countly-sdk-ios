@@ -14,8 +14,6 @@
     NSTimer *timer;
     NSTimeInterval lastTime;
     BOOL isSuspended;
-    NSTimeInterval updateSessionPeriod;
-    NSUInteger eventSendThreshold;
 }
 
 @property (nonatomic, strong) NSMutableDictionary *messageInfos;
@@ -106,7 +104,7 @@
 
         [Countly.sharedInstance resume];
 
-        [CountlyPersistency.sharedInstance.startedEvents removeAllObjects];
+        [CountlyPersistency.sharedInstance clearAllTimedEvents];
     }
 }
 
@@ -128,9 +126,9 @@
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:config.deviceID];
     }
 
-    updateSessionPeriod = config.updateSessionPeriod;
-    eventSendThreshold = config.eventSendThreshold;
+    CountlyPersistency.sharedInstance.eventSendThreshold = config.eventSendThreshold;
     CountlyPersistency.sharedInstance.storedRequestsLimit = config.storedRequestsLimit;
+    CountlyConnectionManager.sharedInstance.updateSessionPeriod = config.updateSessionPeriod;
     CountlyConnectionManager.sharedInstance.ISOCountryCode = config.ISOCountryCode;
     CountlyConnectionManager.sharedInstance.city = config.city;
     CountlyConnectionManager.sharedInstance.location = CLLocationCoordinate2DIsValid(config.location)?[NSString stringWithFormat:@"%f,%f", config.location.latitude, config.location.longitude]:nil;
@@ -185,7 +183,7 @@
 
 - (void)start:(NSString *)appKey withHost:(NSString *)appHost
 {
-    timer = [NSTimer scheduledTimerWithTimeInterval:updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
+    timer = [NSTimer scheduledTimerWithTimeInterval:CountlyConnectionManager.sharedInstance.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
     lastTime = NSDate.date.timeIntervalSince1970;
     CountlyConnectionManager.sharedInstance.appKey = appKey;
     CountlyConnectionManager.sharedInstance.appHost = appHost;
@@ -348,45 +346,30 @@
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration timestamp:(NSTimeInterval)timestamp
 {
-    @synchronized (self)
-    {
-        CountlyEvent *event = CountlyEvent.new;
-        event.key = key;
-        event.segmentation = segmentation;
-        event.count = MAX(count, 1);
-        event.sum = sum;
-        event.timestamp = timestamp;
-        event.hourOfDay = [CountlyCommon.sharedInstance hourOfDay];
-        event.dayOfWeek = [CountlyCommon.sharedInstance dayOfWeek];
-        event.duration = duration;
+    CountlyEvent *event = CountlyEvent.new;
+    event.key = key;
+    event.segmentation = segmentation;
+    event.count = MAX(count, 1);
+    event.sum = sum;
+    event.timestamp = timestamp;
+    event.hourOfDay = [CountlyCommon.sharedInstance hourOfDay];
+    event.dayOfWeek = [CountlyCommon.sharedInstance dayOfWeek];
+    event.duration = duration;
 
-        [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
-
-        if (CountlyPersistency.sharedInstance.recordedEvents.count >= eventSendThreshold)
-            [CountlyConnectionManager.sharedInstance sendEvents];
-    }
+    [CountlyPersistency.sharedInstance recordEvent:event];
 }
 
 #pragma mark ---
 
 - (void)startEvent:(NSString *)key
 {
-    @synchronized (self)
-    {
-        if(CountlyPersistency.sharedInstance.startedEvents[key])
-        {
-            COUNTLY_LOG(@"Event with key '%@' already started!", key);
-            return;
-        }
+    CountlyEvent *event = CountlyEvent.new;
+    event.key = key;
+    event.timestamp = NSDate.date.timeIntervalSince1970;
+    event.hourOfDay = [CountlyCommon.sharedInstance hourOfDay];
+    event.dayOfWeek = [CountlyCommon.sharedInstance dayOfWeek];
 
-        CountlyEvent *event = CountlyEvent.new;
-        event.key = key;
-        event.timestamp = NSDate.date.timeIntervalSince1970;
-        event.hourOfDay = [CountlyCommon.sharedInstance hourOfDay];
-        event.dayOfWeek = [CountlyCommon.sharedInstance dayOfWeek];
-
-        CountlyPersistency.sharedInstance.startedEvents[key] = event;
-    }
+    [CountlyPersistency.sharedInstance recordTimedEvent:event];
 }
 
 - (void)endEvent:(NSString *)key
@@ -396,26 +379,20 @@
 
 - (void)endEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum
 {
-    @synchronized (self)
+    CountlyEvent *event = [CountlyPersistency.sharedInstance timedEventForKey:key];
+
+    if(!event)
     {
-        CountlyEvent *event = CountlyPersistency.sharedInstance.startedEvents[key];
-        if(!event)
-        {
-            COUNTLY_LOG(@"Event with key '%@' not started before!", key);
-            return;
-        }
-
-        event.segmentation = segmentation;
-        event.count = MAX(count, 1);;
-        event.sum = sum;
-        event.duration = NSDate.date.timeIntervalSince1970 - event.timestamp;
-
-        [CountlyPersistency.sharedInstance.recordedEvents addObject:event];
-        [CountlyPersistency.sharedInstance.startedEvents removeObjectForKey:key];
-
-        if (CountlyPersistency.sharedInstance.recordedEvents.count >= eventSendThreshold)
-            [CountlyConnectionManager.sharedInstance sendEvents];
+        COUNTLY_LOG(@"Event with key '%@' not started before!", key);
+        return;
     }
+
+    event.segmentation = segmentation;
+    event.count = MAX(count, 1);;
+    event.sum = sum;
+    event.duration = NSDate.date.timeIntervalSince1970 - event.timestamp;
+
+    [CountlyPersistency.sharedInstance recordEvent:event];
 }
 
 

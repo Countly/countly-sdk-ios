@@ -29,7 +29,7 @@ const float buttonSize = 40;
 
 + (instancetype)sharedInstance
 {
-    static CountlyStarRating* s_sharedInstance;
+    static CountlyStarRating* s_sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
     return s_sharedInstance;
