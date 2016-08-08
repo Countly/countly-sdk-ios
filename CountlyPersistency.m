@@ -20,10 +20,9 @@ NSString* const kCountlyStoredDeviceIDKey = @"kCountlyStoredDeviceIDKey";
 NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKey";
 NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 
-
 + (instancetype)sharedInstance
 {
-    static CountlyPersistency* s_sharedInstance;
+    static CountlyPersistency* s_sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
     return s_sharedInstance;

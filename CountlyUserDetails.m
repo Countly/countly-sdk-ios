@@ -16,11 +16,10 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
 
 + (CountlyUserDetails *)sharedInstance
 {
-    static CountlyUserDetails *s_CountlyUserDetails = nil;
+    static CountlyUserDetails *s_sharedInstance = nil;
     static dispatch_once_t onceToken;
-
-    dispatch_once(&onceToken, ^{s_CountlyUserDetails = CountlyUserDetails.new;});
-    return s_CountlyUserDetails;
+    dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
+    return s_sharedInstance;
 }
 
 - (instancetype)init

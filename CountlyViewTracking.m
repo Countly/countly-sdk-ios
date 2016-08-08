@@ -18,12 +18,18 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
 
 + (instancetype)sharedInstance
 {
-    static CountlyViewTracking* s_sharedInstance;
+    static CountlyViewTracking* s_sharedInstance = nil;
     static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
+    dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
+    return s_sharedInstance;
+}
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self)
     {
-        s_sharedInstance = self.new;
-        s_sharedInstance.exceptionViewControllers = NSMutableArray.new;
+        self.exceptionViewControllers = NSMutableArray.new;
 
         NSArray* internalExceptionViewControllers =
         @[
@@ -43,11 +49,11 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
         {
             Class c = NSClassFromString(obj);
             if(c)
-                [s_sharedInstance.exceptionViewControllers addObject:c];
+                [self.exceptionViewControllers addObject:c];
         }];
-    });
+    }
 
-    return s_sharedInstance;
+    return self;
 }
 
 - (void)reportView:(NSString* _Nonnull)viewName

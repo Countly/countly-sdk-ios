@@ -7,18 +7,26 @@
 #import "CountlyCommon.h"
 
 @implementation CountlyAPM
+
 + (instancetype)sharedInstance
 {
-    static CountlyAPM* s_sharedInstance;
+    static CountlyAPM* s_sharedInstance = nil;
     static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^
+    dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
+    return s_sharedInstance;
+}
+
+- (instancetype)init
+{
+    self = [super init];
+    if (self)
     {
-        s_sharedInstance = self.new;
         NSURL * url = [NSURL URLWithString:CountlyConnectionManager.sharedInstance.appHost];
         NSString* hostAndPath = [url.host stringByAppendingString:url.path];
-        s_sharedInstance.exceptionURLs = [NSMutableArray arrayWithObject:hostAndPath];
-    });
-    return s_sharedInstance;
+        self.exceptionURLs = [NSMutableArray arrayWithObject:hostAndPath];
+    }
+    
+    return self;
 }
 
 - (void)startAPM
