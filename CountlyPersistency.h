@@ -9,7 +9,11 @@
 @interface CountlyPersistency : NSObject
 
 + (instancetype)sharedInstance;
+
 - (void)addToQueue:(NSString *)queryString;
+- (void)removeFromQueue:(NSString *)queryString;
+- (NSString *)firstItemInQueue;
+
 - (void)saveToFile;
 - (void)saveToFileSync;
 

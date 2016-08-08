@@ -30,13 +30,10 @@ NSString* const kCountlySDKName = @"objc-native-ios";
         return;
     }
 
-    NSString* currentRequestData;
-    @synchronized(self)
-    {
-        currentRequestData = CountlyPersistency.sharedInstance.queuedRequests.firstObject;
-        if (currentRequestData == nil)
-            return;
-    }
+    NSString* currentRequestData = [CountlyPersistency.sharedInstance firstItemInQueue];
+
+    if (currentRequestData == nil)
+        return;
     
     [self startBackgroundTask];
 
@@ -84,10 +81,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
             {
                 COUNTLY_LOG(@"Request successfully completed.");
 
-                @synchronized(self)
-                {
-                    [CountlyPersistency.sharedInstance.queuedRequests removeObject:currentRequestData];
-                }
+                [CountlyPersistency.sharedInstance removeFromQueue:currentRequestData];
 
                 [CountlyPersistency.sharedInstance saveToFile];
 

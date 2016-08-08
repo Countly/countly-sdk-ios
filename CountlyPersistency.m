@@ -60,8 +60,24 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 
         if(self.queuedRequests.count > self.storedRequestsLimit && !CountlyConnectionManager.sharedInstance.connection)
         {
-            [self.queuedRequests removeObject:self.queuedRequests.firstObject];
+            [self.queuedRequests removeObjectsInRange:(NSRange){0,1}];
         }
+    }
+}
+
+- (void)removeFromQueue:(NSString *)queryString
+{
+    @synchronized (self)
+    {
+        [self.queuedRequests removeObject:queryString];
+    }
+}
+
+- (NSString *)firstItemInQueue
+{
+    @synchronized (self)
+    {
+        return self.queuedRequests.firstObject;
     }
 }
 
