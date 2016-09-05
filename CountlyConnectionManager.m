@@ -268,9 +268,9 @@ NSString* const kCountlySDKName = @"objc-native-ios";
     return [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&hour=%ld&dow=%ld&sdk_version=%@&sdk_name=%@",
                                         self.appKey,
                                         CountlyDeviceInfo.sharedInstance.deviceID,
-                                        (long)NSDate.date.timeIntervalSince1970,
-                                        (long)[CountlyCommon.sharedInstance hourOfDay],
-                                        (long)[CountlyCommon.sharedInstance dayOfWeek],
+                                        (long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000),
+                                        (long)CountlyCommon.sharedInstance.hourOfDay,
+                                        (long)CountlyCommon.sharedInstance.dayOfWeek,
                                         kCountlySDKVersion,
                                         kCountlySDKName];
 }

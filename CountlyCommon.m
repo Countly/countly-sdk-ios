@@ -11,6 +11,7 @@
     NSCalendar* gregorianCalendar;
     NSTimeInterval startTime;
 }
+@property (atomic, readwrite) long lastTimestamp;
 @end
 
 NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
@@ -59,6 +60,18 @@ NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTran
 - (long)timeSinceLaunch
 {
     return (long)NSDate.date.timeIntervalSince1970 - startTime;
+}
+
+- (NSTimeInterval)uniqueTimestamp
+{
+    long now = floor(NSDate.date.timeIntervalSince1970 * 1000);
+    
+    if(now <= self.lastTimestamp)
+        self.lastTimestamp ++;
+    else
+        self.lastTimestamp = now;
+    
+    return (double)(self.lastTimestamp / 1000.0);
 }
 
 #pragma mark - Watch Connectivity

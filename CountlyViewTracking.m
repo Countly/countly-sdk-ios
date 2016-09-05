@@ -75,7 +75,7 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
     [Countly.sharedInstance recordEvent:kCountlyReservedEventView segmentation:segmentation];
 
     self.lastView = viewName;
-    self.lastViewStartTime = NSDate.date.timeIntervalSince1970;
+    self.lastViewStartTime = CountlyCommon.sharedInstance.uniqueTimestamp;
 }
 
 - (void)endView

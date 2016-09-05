@@ -301,47 +301,47 @@
 #pragma mark - Countly CustomEvents
 - (void)recordEvent:(NSString *)key
 {
-    [self recordEvent:key segmentation:nil count:1 sum:0 duration:0 timestamp:NSDate.date.timeIntervalSince1970];
+    [self recordEvent:key segmentation:nil count:1 sum:0 duration:0 timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
 }
 
 - (void)recordEvent:(NSString *)key count:(NSUInteger)count
 {
-    [self recordEvent:key segmentation:nil count:count sum:0 duration:0 timestamp:NSDate.date.timeIntervalSince1970];
+    [self recordEvent:key segmentation:nil count:count sum:0 duration:0 timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
 }
 
 - (void)recordEvent:(NSString *)key sum:(double)sum
 {
-    [self recordEvent:key segmentation:nil count:1 sum:sum duration:0 timestamp:NSDate.date.timeIntervalSince1970];
+    [self recordEvent:key segmentation:nil count:1 sum:sum duration:0 timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
 }
 
 - (void)recordEvent:(NSString *)key duration:(NSTimeInterval)duration
 {
-    [self recordEvent:key segmentation:nil count:1 sum:0 duration:duration timestamp:NSDate.date.timeIntervalSince1970];
+    [self recordEvent:key segmentation:nil count:1 sum:0 duration:duration timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
 }
 
 - (void)recordEvent:(NSString *)key count:(NSUInteger)count sum:(double)sum
 {
-    [self recordEvent:key segmentation:nil count:count sum:sum duration:0 timestamp:NSDate.date.timeIntervalSince1970];
+    [self recordEvent:key segmentation:nil count:count sum:sum duration:0 timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation
 {
-    [self recordEvent:key segmentation:segmentation count:1 sum:0 duration:0 timestamp:NSDate.date.timeIntervalSince1970];
+    [self recordEvent:key segmentation:segmentation count:1 sum:0 duration:0 timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count
 {
-    [self recordEvent:key segmentation:segmentation count:count sum:0 duration:0 timestamp:NSDate.date.timeIntervalSince1970];
+    [self recordEvent:key segmentation:segmentation count:count sum:0 duration:0 timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum
 {
-    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:0 timestamp:NSDate.date.timeIntervalSince1970];
+    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:0 timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration
 {
-    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration timestamp:NSDate.date.timeIntervalSince1970];
+    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration timestamp:(NSTimeInterval)timestamp
@@ -352,8 +352,8 @@
     event.count = MAX(count, 1);
     event.sum = sum;
     event.timestamp = timestamp;
-    event.hourOfDay = [CountlyCommon.sharedInstance hourOfDay];
-    event.dayOfWeek = [CountlyCommon.sharedInstance dayOfWeek];
+    event.hourOfDay = CountlyCommon.sharedInstance.hourOfDay;
+    event.dayOfWeek = CountlyCommon.sharedInstance.dayOfWeek;
     event.duration = duration;
 
     [CountlyPersistency.sharedInstance recordEvent:event];
@@ -365,9 +365,9 @@
 {
     CountlyEvent *event = CountlyEvent.new;
     event.key = key;
-    event.timestamp = NSDate.date.timeIntervalSince1970;
-    event.hourOfDay = [CountlyCommon.sharedInstance hourOfDay];
-    event.dayOfWeek = [CountlyCommon.sharedInstance dayOfWeek];
+    event.timestamp = CountlyCommon.sharedInstance.uniqueTimestamp;
+    event.hourOfDay = CountlyCommon.sharedInstance.hourOfDay;
+    event.dayOfWeek = CountlyCommon.sharedInstance.dayOfWeek;
 
     [CountlyPersistency.sharedInstance recordTimedEvent:event];
 }

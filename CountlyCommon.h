@@ -72,6 +72,7 @@
 - (NSInteger)hourOfDay;
 - (NSInteger)dayOfWeek;
 - (long)timeSinceLaunch;
+- (NSTimeInterval)uniqueTimestamp;
 #if (TARGET_OS_IOS || TARGET_OS_WATCH)
 - (void)activateWatchConnectivity;
 #endif
