@@ -18,6 +18,7 @@
 #import "CountlyConfig.h"
 #import "CountlyViewTracking.h"
 #import "CountlyStarRating.h"
+#import "CountlyPushNotifications.h"
 
 #ifndef COUNTLY_DEBUG
 #define COUNTLY_DEBUG 0

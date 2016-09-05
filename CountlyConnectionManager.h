@@ -14,7 +14,6 @@
 @property (nonatomic, strong) NSString* appKey;
 @property (nonatomic, strong) NSString* appHost;
 @property (nonatomic, strong) NSURLSessionTask* connection;
-@property (nonatomic, assign) BOOL isTestDevice;
 @property (nonatomic, assign) NSTimeInterval updateSessionPeriod;
 @property (nonatomic, strong) NSString* ISOCountryCode;
 @property (nonatomic, strong) NSString* city;
