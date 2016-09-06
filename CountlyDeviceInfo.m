@@ -144,6 +144,20 @@
     return [NSString stringWithFormat:@"%gx%g", bounds.size.width * scale, bounds.size.height * scale];
 }
 
++ (NSString *)density
+{
+#if TARGET_OS_IOS
+    CGFloat scale = UIScreen.mainScreen.scale;
+#elif TARGET_OS_WATCH
+    CGFloat scale = WKInterfaceDevice.currentDevice.screenScale;
+#elif TARGET_OS_TV
+    CGFloat scale = 1.0;
+#else
+    CGFloat scale = NSScreen.mainScreen.backingScaleFactor;
+#endif
+    return [NSString stringWithFormat:@"@%ix", (int)scale];
+}
+
 + (NSString *)locale
 {
     return NSLocale.currentLocale.localeIdentifier;
@@ -226,6 +240,7 @@
         metricsDictionary[@"_carrier"] = carrier;
 
     metricsDictionary[@"_resolution"] = CountlyDeviceInfo.resolution;
+    metricsDictionary[@"_density"] = CountlyDeviceInfo.density;
     metricsDictionary[@"_locale"] = CountlyDeviceInfo.locale;
     metricsDictionary[@"_app_version"] = CountlyDeviceInfo.appVersion;
 
