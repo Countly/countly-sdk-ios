@@ -84,6 +84,8 @@
 
 @interface NSString (URLEscaped)
 - (NSString *)URLEscaped;
+- (NSString *)SHA1;
+- (NSData *)dataUTF8;
 @end
 
 @interface NSArray (JSONify)
@@ -96,6 +98,10 @@
 
 @interface NSMutableData (AppendStringUTF8)
 - (void)appendStringUTF8:(NSString *)string;
+@end
+
+@interface NSData (stringUTF8)
+- (NSString *)stringUTF8;
 @end
 
 @interface Countly (RecordEventWithTimeStamp)

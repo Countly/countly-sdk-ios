@@ -5,6 +5,7 @@
 // Please visit www.count.ly for more information.
 
 #import "CountlyCommon.h"
+#include <CommonCrypto/CommonDigest.h>
 
 @interface CountlyCommon ()
 {
@@ -130,7 +131,7 @@ NSString* CountlyJSONFromObject(id object)
     NSData *data = [NSJSONSerialization dataWithJSONObject:object options:0 error:&error];
     if(error){ COUNTLY_LOG(@"JSON can not be created: \n%@", error); }
 
-    return [NSString.alloc initWithData:data encoding:NSUTF8StringEncoding];
+    return [data stringUTF8];
 }
 
 @implementation NSString (URLEscaped)
@@ -138,6 +139,24 @@ NSString* CountlyJSONFromObject(id object)
 {
     NSCharacterSet* charset = [NSCharacterSet characterSetWithCharactersInString:@"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~"];
     return [self stringByAddingPercentEncodingWithAllowedCharacters:charset];
+}
+
+- (NSString *)SHA1
+{
+    const char* s = [self UTF8String];
+    unsigned char digest[CC_SHA1_DIGEST_LENGTH];
+    CC_SHA1(s, (CC_LONG)strlen(s), digest);
+    
+    NSMutableString* hash = NSMutableString.new;
+    for(int i = 0; i < CC_SHA1_DIGEST_LENGTH; i++)
+        [hash appendFormat:@"%02x", digest[i]];
+    
+    return hash;
+}
+
+- (NSData *)dataUTF8
+{
+    return [self dataUsingEncoding:NSUTF8StringEncoding];
 }
 @end
 
@@ -158,6 +177,13 @@ NSString* CountlyJSONFromObject(id object)
 @implementation NSMutableData (AppendStringUTF8)
 - (void)appendStringUTF8:(NSString *)string
 {
-    [self appendData:[string dataUsingEncoding:NSUTF8StringEncoding]];
+    [self appendData:[string dataUTF8]];
+}
+@end
+
+@implementation NSData (stringUTF8)
+- (NSString *)stringUTF8
+{
+    return [NSString.alloc initWithData:self encoding:NSUTF8StringEncoding];
 }
 @end

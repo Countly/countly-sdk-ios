@@ -22,6 +22,7 @@
 @property (nonatomic, strong) NSArray* pinnedCertificates;
 @property (nonatomic, strong) NSString* customHeaderFieldName;
 @property (nonatomic, strong) NSString* customHeaderFieldValue;
+@property (nonatomic, strong) NSString* secretSalt;
 #if TARGET_OS_IOS
 @property (nonatomic, assign) UIBackgroundTaskIdentifier bgTask;
 #endif

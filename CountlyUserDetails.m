@@ -75,7 +75,14 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
     if (rLocalPicturePath.location == NSNotFound)
         return nil;
 
-    NSString* pathString = [unescaped substringFromIndex:rLocalPicturePath.location-2];
+    NSRange rChecksum = [unescaped rangeOfString:@"&checksum="];
+    NSUInteger startIndex = rLocalPicturePath.location-2;
+    NSString* pathString;
+    if (rChecksum.location == NSNotFound)
+        pathString = [unescaped substringFromIndex:startIndex];
+    else
+        pathString = [unescaped substringWithRange:(NSRange){startIndex, rChecksum.location - startIndex}];
+
     NSDictionary* pathDictionary = [NSJSONSerialization JSONObjectWithData:[pathString dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
     NSString* localPicturePath = pathDictionary[kCountlyLocalPicturePath];
     if(!localPicturePath || [localPicturePath isEqualToString:@""])

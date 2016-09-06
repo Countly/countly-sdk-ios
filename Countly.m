@@ -135,7 +135,7 @@
     CountlyConnectionManager.sharedInstance.pinnedCertificates = config.pinnedCertificates;
     CountlyConnectionManager.sharedInstance.customHeaderFieldName = config.customHeaderFieldName;
     CountlyConnectionManager.sharedInstance.customHeaderFieldValue = config.customHeaderFieldValue;
-
+    CountlyConnectionManager.sharedInstance.secretSalt = config.secretSalt;
 #if TARGET_OS_IOS
     CountlyStarRating.sharedInstance.message = config.starRatingMessage;
     CountlyStarRating.sharedInstance.dismissButtonTitle = config.starRatingDismissButtonTitle;

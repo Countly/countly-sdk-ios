@@ -30,17 +30,25 @@ NSString* const kCountlySDKName = @"objc-native-ios";
         return;
     }
 
-    NSString* currentRequestData = [CountlyPersistency.sharedInstance firstItemInQueue];
-
-    if (currentRequestData == nil)
+    NSString* firstItemInQueue = [CountlyPersistency.sharedInstance firstItemInQueue];
+    if (firstItemInQueue == nil)
         return;
     
     [self startBackgroundTask];
 
-    NSString* urlString = [self.appHost stringByAppendingFormat:@"/i?%@", currentRequestData];
-    NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+    NSString* queryString = firstItemInQueue;
     
-    NSData* pictureUploadData = [CountlyUserDetails.sharedInstance pictureUploadDataForRequest:currentRequestData];
+    if(self.secretSalt)
+    {
+        NSString* checksum = [[queryString stringByAppendingString:self.secretSalt] SHA1];
+        queryString = [queryString stringByAppendingFormat:@"&checksum=%@", checksum];
+    }
+
+    NSString* countlyServerEndpoint = [self.appHost stringByAppendingString:@"/i"];
+    NSString* fullRequestURL = [countlyServerEndpoint stringByAppendingFormat:@"?%@", queryString];
+    NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:fullRequestURL]];
+
+    NSData* pictureUploadData = [CountlyUserDetails.sharedInstance pictureUploadDataForRequest:queryString];
     if(pictureUploadData)
     {
         NSString *contentType = [@"multipart/form-data; boundary=" stringByAppendingString:self.boundary];
@@ -48,14 +56,11 @@ NSString* const kCountlySDKName = @"objc-native-ios";
         request.HTTPMethod = @"POST";
         request.HTTPBody = pictureUploadData;
     }
-
-    NSData* body = [currentRequestData dataUsingEncoding:NSUTF8StringEncoding];
-    if(body.length > 2048 && !pictureUploadData)
+    else if(queryString.length > 2048)
     {
-        NSString* urlString = [self.appHost stringByAppendingString:@"/i"];
-        request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+        request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:countlyServerEndpoint]];
         request.HTTPMethod = @"POST";
-        request.HTTPBody = body;
+        request.HTTPBody = [queryString dataUTF8];
     }
 
     if(self.customHeaderFieldName && self.customHeaderFieldValue)
@@ -79,9 +84,9 @@ NSString* const kCountlySDKName = @"objc-native-ios";
         {
             if([self isRequestSuccessful:data])
             {
-                COUNTLY_LOG(@"Request <%i> successfully completed.", (id)request);
+                COUNTLY_LOG(@"Request <%p> successfully completed.", request);
 
-                [CountlyPersistency.sharedInstance removeFromQueue:currentRequestData];
+                [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
 
                 [CountlyPersistency.sharedInstance saveToFile];
 
@@ -89,12 +94,12 @@ NSString* const kCountlySDKName = @"objc-native-ios";
             }
             else
             {
-                COUNTLY_LOG(@"Request <%i> failed! %@ \n%@ \nServer reply: %@", (id)request, request.URL.absoluteString, request.HTTPBody?currentRequestData:@"", [NSString.alloc initWithData:data encoding:NSUTF8StringEncoding]);
+                COUNTLY_LOG(@"Request <%p> failed!\nServer reply: %@", request, [data stringUTF8]);
             }
         }
         else
         {
-            COUNTLY_LOG(@"Request <%i> failed! %@ \n%@ \nError: %@", (id)request, request.URL.absoluteString, request.HTTPBody?currentRequestData:@"", error);
+            COUNTLY_LOG(@"Request <%p> failed!\nError: %@", request, error);
 #if TARGET_OS_WATCH
             [CountlyPersistency.sharedInstance saveToFile];
 #endif
@@ -105,7 +110,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
     [self.connection resume];
 
-    COUNTLY_LOG(@"Request <%i> started: [%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, request.HTTPBody?currentRequestData:@"");
+    COUNTLY_LOG(@"Request <%p> started:\n[%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, request.HTTPBody?([request.HTTPBody stringUTF8]?[request.HTTPBody stringUTF8]:@"Picture uploading..."):@"");
 }
 
 #pragma mark ---
