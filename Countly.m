@@ -285,9 +285,7 @@
 
 - (void)dealloc
 {
-#if TARGET_OS_IOS
     [NSNotificationCenter.defaultCenter removeObserver:self];
-#endif
 
     if (timer)
     {
