@@ -136,6 +136,7 @@
     CountlyConnectionManager.sharedInstance.customHeaderFieldName = config.customHeaderFieldName;
     CountlyConnectionManager.sharedInstance.customHeaderFieldValue = config.customHeaderFieldValue;
     CountlyConnectionManager.sharedInstance.secretSalt = config.secretSalt;
+    CountlyConnectionManager.sharedInstance.alwaysUsePOST = config.alwaysUsePOST;
 #if TARGET_OS_IOS
     CountlyStarRating.sharedInstance.message = config.starRatingMessage;
     CountlyStarRating.sharedInstance.dismissButtonTitle = config.starRatingDismissButtonTitle;

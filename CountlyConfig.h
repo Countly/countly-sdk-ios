@@ -144,6 +144,12 @@ extern NSString* const CLYOpenUDID;
 @property (nonatomic, strong) NSString* secretSalt;
 
 /**
+ * For sending all requests using HTTP POST method.
+ * @discussion If set, all requests will be sent using HTTP POST method. Otherwise; only the requests with a file upload or data size more than 2048 bytes will be sent using HTTP POST method.
+ */
+@property (nonatomic, readwrite) BOOL alwaysUsePOST;
+
+/**
  * For customizing star-rating dialog message.
  * @discussion If not set, it will be displayed in English: "How would you rate the app?"
  */

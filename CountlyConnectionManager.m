@@ -56,7 +56,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
         request.HTTPMethod = @"POST";
         request.HTTPBody = pictureUploadData;
     }
-    else if(queryString.length > 2048)
+    else if(queryString.length > 2048 || self.alwaysUsePOST)
     {
         request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:countlyServerEndpoint]];
         request.HTTPMethod = @"POST";
