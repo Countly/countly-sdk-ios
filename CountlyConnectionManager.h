@@ -43,6 +43,6 @@
 
 - (NSString *)queryEssentials;
 - (NSString *)boundary;
-- (BOOL)isRequestSuccessful:(NSData *)data;
+- (BOOL)isRequestSuccessful:(NSURLResponse *)response;
 - (void)tick;
 @end

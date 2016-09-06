@@ -82,7 +82,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
         if(!error)
         {
-            if([self isRequestSuccessful:data])
+            if([self isRequestSuccessful:response])
             {
                 COUNTLY_LOG(@"Request <%p> successfully completed.", request);
 
@@ -285,14 +285,14 @@ NSString* const kCountlySDKName = @"objc-native-ios";
     return @"0cae04a8b698d63ff6ea55d168993f21";
 }
 
-- (BOOL)isRequestSuccessful:(NSData *)data
+- (BOOL)isRequestSuccessful:(NSURLResponse *)response
 {
-    if(!data)
+    if(!response)
         return NO;
 
-    NSDictionary* serverReply = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+    NSInteger code = ((NSHTTPURLResponse*)response).statusCode;
 
-    return [serverReply[@"result"] isEqualToString:@"Success"];
+    return (code >= 200 && code < 300);
 }
 
 #pragma mark ---

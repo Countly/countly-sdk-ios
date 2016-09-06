@@ -131,7 +131,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
                                                       NSURLResponse * _Nullable response,
                                                       NSError * _Nullable error)
         {
-            if(error || ![CountlyConnectionManager.sharedInstance isRequestSuccessful:data])
+            if(error || ![CountlyConnectionManager.sharedInstance isRequestSuccessful:response])
             {
                 COUNTLY_LOG(@"Crash report request failed! Report stored to try again later. \n%@", error);
                 [CountlyConnectionManager.sharedInstance sendCrashReportLater:[crashReport JSONify]];
