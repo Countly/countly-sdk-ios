@@ -68,7 +68,7 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
         @"segment": CountlyDeviceInfo.osName,
         @"visit": @1
     }.mutableCopy;
-    
+
     if(!self.lastView)
         segmentation[@"start"] = @1;
 

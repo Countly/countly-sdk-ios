@@ -89,7 +89,7 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
     };
 
     [Countly.sharedInstance recordEvent:kCountlyReservedEventAPM segmentation:segmentation count:1 sum:self.sentDataSize + self.receivedDataSize duration:self.endTime - self.startTime timestamp:self.startTime];
-    
+
     COUNTLY_LOG(@"APM log recorded: \n%@", [self description]);
 }
 

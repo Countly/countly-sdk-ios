@@ -35,7 +35,7 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
 - (void)recordUserDetails
 {
     [CountlyConnectionManager.sharedInstance sendUserDetails:[CountlyUserDetails.sharedInstance serialize]];
-    
+
     if(self.pictureLocalPath && !self.pictureURL)
     {
         [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyLocalPicturePath:self.pictureLocalPath} JSONify]];
@@ -96,7 +96,7 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
 
     if(fileExtIndex == NSNotFound)
         return nil;
-    
+
     NSData* imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:localPicturePath]];
 
     if (!imageData)

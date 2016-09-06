@@ -25,7 +25,7 @@
         NSString* hostAndPath = [url.host stringByAppendingString:url.path];
         self.exceptionURLs = [NSMutableArray arrayWithObject:hostAndPath];
     }
-    
+
     return self;
 }
 

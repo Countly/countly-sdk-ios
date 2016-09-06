@@ -66,12 +66,12 @@ NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTran
 - (NSTimeInterval)uniqueTimestamp
 {
     long now = floor(NSDate.date.timeIntervalSince1970 * 1000);
-    
+
     if(now <= self.lastTimestamp)
         self.lastTimestamp ++;
     else
         self.lastTimestamp = now;
-    
+
     return (double)(self.lastTimestamp / 1000.0);
 }
 
@@ -146,11 +146,11 @@ NSString* CountlyJSONFromObject(id object)
     const char* s = [self UTF8String];
     unsigned char digest[CC_SHA1_DIGEST_LENGTH];
     CC_SHA1(s, (CC_LONG)strlen(s), digest);
-    
+
     NSMutableString* hash = NSMutableString.new;
     for(int i = 0; i < CC_SHA1_DIGEST_LENGTH; i++)
         [hash appendFormat:@"%02x", digest[i]];
-    
+
     return hash;
 }
 

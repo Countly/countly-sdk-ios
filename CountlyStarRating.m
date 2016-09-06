@@ -41,7 +41,7 @@ const float buttonSize = 40;
     if (self)
     {
         NSString* langDesignator = [NSLocale.preferredLanguages.firstObject substringToIndex:2];
-    
+
         NSDictionary* dictDismiss =
         @{
               @"en" : @"Dismiss",
@@ -55,11 +55,11 @@ const float buttonSize = 40;
               @"lv" : @"Aizvērt",
               @"cs" : @"Zavřít"
         };
-    
+
         self.dismissButtonTitle = dictDismiss[langDesignator];
         if(!self.dismissButtonTitle)
             self.dismissButtonTitle = dictDismiss[@"en"];
-    
+
         NSDictionary* dictMessage =
         @{
             @"en" : @"How would you rate the app?",
@@ -88,13 +88,13 @@ const float buttonSize = 40;
         {
             [self finishWithRating:0];
         }];
-        
+
         [alertController addAction:dismiss];
-        
+
         UIViewController* cvc = UIViewController.new;
         [cvc setPreferredContentSize:(CGSize){buttonSize * 5, buttonSize * 1.5}];
         [cvc.view addSubview:[self starView]];
-        
+
         @try
         {
             [alertController setValue:cvc forKey:@"contentViewController"];
@@ -103,7 +103,7 @@ const float buttonSize = 40;
         {
             COUNTLY_LOG(@"UIAlertController's contentViewController can not be set: \n%@", exception);
         }
-    
+
         //NOTE: if rootViewController is not set at early app launch, try again 1 sec after.
         UIViewController* rvc = UIApplication.sharedApplication.keyWindow.rootViewController;
         if(rvc)
@@ -121,14 +121,14 @@ const float buttonSize = 40;
     else
     {
         alertView = [UIAlertView.alloc initWithTitle:@" " message:self.message delegate:self cancelButtonTitle:self.dismissButtonTitle otherButtonTitles:nil];
-        
+
         UIView* vw_star = [self starView];
         CGRect f = vw_star.frame;
         f.size.height *= 1.5;
         UIView* aligner = UIView.new;
         aligner.frame = f;
         [aligner addSubview:vw_star];
-    
+
         [alertView setValue:aligner forKey:@"accessoryView"];
         [alertView show];
     }
@@ -140,7 +140,7 @@ const float buttonSize = 40;
 
     if(self.disableAskingForEachAppVersion && status[kCountlyStarRatingStatusHasEverAskedAutomatically])
         return;
-    
+
     if(self.sessionCount != 0)
     {
         NSString* keyForAppVersion = [kCountlyStarRatingStatusSessionCountKey stringByAppendingString:CountlyDeviceInfo.appVersion];
@@ -150,14 +150,14 @@ const float buttonSize = 40;
         if(self.sessionCount == sessionCountSoFar)
         {
             COUNTLY_LOG(@"Asking for star-rating as session count reached specified limit %i ...", self.sessionCount);
-        
+
             [self showDialog:^(NSInteger rating){}];
-        
+
             status[kCountlyStarRatingStatusHasEverAskedAutomatically] = @YES;
         }
-    
+
         status[keyForAppVersion] = @(sessionCountSoFar);
-    
+
         [CountlyPersistency.sharedInstance storeStarRatingStatus:status];
     }
 }
@@ -174,7 +174,7 @@ const float buttonSize = 40;
         [btn_star[i] setTitle:@"★" forState:UIControlStateNormal];
         [btn_star[i] setTitleColor:[self passiveStarColor] forState:UIControlStateNormal];
         [btn_star[i] addTarget:self action:@selector(onClick_star:) forControlEvents:UIControlEventTouchUpInside];
-    
+
         [vw_star addSubview:btn_star[i]];
     }
 
@@ -185,7 +185,7 @@ const float buttonSize = 40;
 {
     if (message == nil)
         return;
-    
+
     _message = message;
 }
 
@@ -193,7 +193,7 @@ const float buttonSize = 40;
 {
     if (dismissButtonTitle == nil)
         return;
-    
+
     _dismissButtonTitle = dismissButtonTitle;
 }
 
@@ -201,18 +201,18 @@ const float buttonSize = 40;
 {
     UIColor* color = [self activeStarColor];
     NSInteger rating = 0;
-    
+
     for (int i = 0; i < 5; i++)
     {
         [btn_star[i] setTitleColor:color forState:UIControlStateNormal];
-    
+
         if(btn_star[i] == sender)
         {
             color = [self passiveStarColor];
             rating = i+1;
         }
     }
-    
+
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
     {
         if(alertController)
@@ -229,7 +229,7 @@ const float buttonSize = 40;
 
     if(rating==0)
         return;
-    
+
     NSDictionary* segmentation =
     @{
         @"platform": CountlyDeviceInfo.osName,
@@ -238,7 +238,7 @@ const float buttonSize = 40;
     };
 
     [Countly.sharedInstance recordEvent:kCountlyReservedEventStarRating segmentation:segmentation count:1 sum:0];
-    
+
     self.ratingCompletion = nil;
 }
 

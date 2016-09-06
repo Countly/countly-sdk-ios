@@ -23,7 +23,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 {
     if (self.connection != nil)
         return;
-    
+
     if (self.customHeaderFieldName && !self.customHeaderFieldValue)
     {
         COUNTLY_LOG(@"customHeaderFieldName specified on config, but customHeaderFieldValue not set! Requests are postponed!");
@@ -33,11 +33,11 @@ NSString* const kCountlySDKName = @"objc-native-ios";
     NSString* firstItemInQueue = [CountlyPersistency.sharedInstance firstItemInQueue];
     if (firstItemInQueue == nil)
         return;
-    
+
     [self startBackgroundTask];
 
     NSString* queryString = firstItemInQueue;
-    
+
     if(self.secretSalt)
     {
         NSString* checksum = [[queryString stringByAppendingString:self.secretSalt] SHA1];
@@ -65,16 +65,16 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
     if(self.customHeaderFieldName && self.customHeaderFieldValue)
         [request setValue:self.customHeaderFieldValue forHTTPHeaderField:self.customHeaderFieldName];
-    
+
     NSURLSession* session = NSURLSession.sharedSession;
-    
+
     if(self.pinnedCertificates)
     {
         COUNTLY_LOG(@"%i pinned certificate(s) specified in config.", self.pinnedCertificates.count);
         NSURLSessionConfiguration *sc = [NSURLSessionConfiguration defaultSessionConfiguration];
         session = [NSURLSession sessionWithConfiguration:sc delegate:self delegateQueue:nil];
     }
-    
+
     self.connection = [session dataTaskWithRequest:request
     completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error)
     {
@@ -152,7 +152,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 - (void)sendEvents
 {
     NSString* events = [CountlyPersistency.sharedInstance serializedRecordedEvents];
-    
+
     if(!events)
         return;
 
@@ -289,9 +289,9 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 {
     if(!data)
         return NO;
-    
+
     NSDictionary* serverReply = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-    
+
     return [serverReply[@"result"] isEqualToString:@"Success"];
 }
 
@@ -302,9 +302,9 @@ NSString* const kCountlySDKName = @"objc-native-ios";
     SecTrustRef serverTrust = challenge.protectionSpace.serverTrust;
     SecKeyRef serverKey = SecTrustCopyPublicKey(serverTrust);
     SecPolicyRef policy = SecPolicyCreateSSL(true, (__bridge CFStringRef)challenge.protectionSpace.host);
-    
+
     __block BOOL isLocalAndServerCertMatch = NO;
-    
+
     for (NSString* certificate in self.pinnedCertificates )
     {
         NSString* localCertPath = [NSBundle.mainBundle pathForResource:certificate ofType:nil];
@@ -317,7 +317,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
         CFRelease(localCert);
         CFRelease(localTrust);
-    
+
         if (serverKey != NULL && localKey != NULL && [(__bridge id)serverKey isEqual:(__bridge id)localKey])
         {
             COUNTLY_LOG(@"Pinned certificate and server certificate match.");
@@ -326,7 +326,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
             CFRelease(localKey);
             break;
         }
-    
+
         if(localKey) CFRelease(localKey);
     }
 
