@@ -123,8 +123,8 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
 - (void)beginSession
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&begin_session=1&metrics=%@",
-                             [CountlyDeviceInfo metrics]];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&begin_session=1&metrics=%@", [CountlyDeviceInfo metrics]];
+
     if(self.ISOCountryCode)
         queryString = [queryString stringByAppendingFormat:@"&country_code=%@", self.ISOCountryCode];
     if(self.city)
@@ -199,8 +199,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
 - (void)sendUserDetails:(NSString *)userDetails
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&user_details=%@",
-                             userDetails];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&user_details=%@", userDetails];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -218,7 +217,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
 - (void)sendOldDeviceID:(NSString *)oldDeviceID
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&old_device_id=%@",oldDeviceID];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&old_device_id=%@", oldDeviceID];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -227,7 +226,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
 - (void)sendParentDeviceID:(NSString *)parentDeviceID
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&parent_device_id=%@",parentDeviceID];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&parent_device_id=%@", parentDeviceID];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -236,9 +235,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
 - (void)sendLocation:(CLLocationCoordinate2D)coordinate
 {
-    NSString* locationString = [NSString stringWithFormat:@"%f,%f", coordinate.latitude, coordinate.longitude];
-
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&location=%@",locationString];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&location=%f,%f", coordinate.latitude, coordinate.longitude];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
