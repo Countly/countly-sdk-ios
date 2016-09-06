@@ -35,7 +35,7 @@
 - (NSDictionary *)retrieveStarRatingStatus;
 - (void)storeStarRatingStatus:(NSDictionary *)status;
 
-@property (nonatomic, readwrite) NSUInteger eventSendThreshold;
-@property (nonatomic, readwrite) NSUInteger storedRequestsLimit;
+@property (nonatomic) NSUInteger eventSendThreshold;
+@property (nonatomic) NSUInteger storedRequestsLimit;
 @end
 

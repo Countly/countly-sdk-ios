@@ -10,12 +10,12 @@
 
 @property (nonatomic, strong) NSString* key;
 @property (nonatomic, strong) NSDictionary* segmentation;
-@property (nonatomic, assign) NSUInteger count;
-@property (nonatomic, assign) double sum;
-@property (nonatomic, assign) NSTimeInterval timestamp;
-@property (nonatomic, assign) NSUInteger hourOfDay;
-@property (nonatomic, assign) NSUInteger dayOfWeek;
-@property (nonatomic, assign) NSTimeInterval duration;
+@property (nonatomic) NSUInteger count;
+@property (nonatomic) double sum;
+@property (nonatomic) NSTimeInterval timestamp;
+@property (nonatomic) NSUInteger hourOfDay;
+@property (nonatomic) NSUInteger dayOfWeek;
+@property (nonatomic) NSTimeInterval duration;
 - (NSDictionary *)dictionaryRepresentation;
 
 @end

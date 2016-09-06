@@ -14,8 +14,8 @@
 @property (nonatomic, strong) NSString* appKey;
 @property (nonatomic, strong) NSString* appHost;
 @property (nonatomic, strong) NSURLSessionTask* connection;
-@property (nonatomic, assign) BOOL isTestDevice;
-@property (nonatomic, assign) NSTimeInterval updateSessionPeriod;
+@property (nonatomic) BOOL isTestDevice;
+@property (nonatomic) NSTimeInterval updateSessionPeriod;
 @property (nonatomic, strong) NSString* ISOCountryCode;
 @property (nonatomic, strong) NSString* city;
 @property (nonatomic, strong) NSString* location;
@@ -23,10 +23,7 @@
 @property (nonatomic, strong) NSString* customHeaderFieldName;
 @property (nonatomic, strong) NSString* customHeaderFieldValue;
 @property (nonatomic, strong) NSString* secretSalt;
-@property (nonatomic, readwrite) BOOL alwaysUsePOST;
-#if TARGET_OS_IOS
-@property (nonatomic, assign) UIBackgroundTaskIdentifier bgTask;
-#endif
+@property (nonatomic) BOOL alwaysUsePOST;
 
 + (instancetype)sharedInstance;
 

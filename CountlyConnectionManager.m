@@ -9,6 +9,12 @@
 NSString* const kCountlySDKVersion = @"16.06.3";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
+@interface CountlyConnectionManager()
+#if TARGET_OS_IOS
+@property (nonatomic) UIBackgroundTaskIdentifier bgTask;
+#endif
+@end
+
 @implementation CountlyConnectionManager : NSObject
 
 + (instancetype)sharedInstance

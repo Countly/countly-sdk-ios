@@ -272,7 +272,7 @@
  * Enables or disables AutoViewTracking, if AutoViewTracking feature is activated on start configuration.
  * @discussion If AutoViewTracking feature is not activated on start configuration, this property has no effect on enabling or disabling it later.
  */
-@property (nonatomic,readwrite) BOOL isAutoViewTrackingEnabled;
+@property (nonatomic) BOOL isAutoViewTrackingEnabled;
 #endif
 
 

@@ -7,9 +7,9 @@
 #import "CountlyCommon.h"
 
 @interface CountlyViewTracking ()
-@property(nonatomic, strong) NSString* _Nonnull lastView;
-@property(nonatomic, readwrite) NSTimeInterval lastViewStartTime;
-@property(nonatomic, strong) NSMutableArray* exceptionViewControllers;
+@property (nonatomic, strong) NSString* _Nonnull lastView;
+@property (nonatomic) NSTimeInterval lastViewStartTime;
+@property (nonatomic, strong) NSMutableArray* exceptionViewControllers;
 @end
 
 NSString* const kCountlyReservedEventView = @"[CLY]_view";

@@ -8,7 +8,7 @@
 
 @interface CountlyAPM : NSObject <NSURLConnectionDelegate,NSURLConnectionDataDelegate>
 
-@property(nonatomic, strong) NSMutableArray* _Nonnull exceptionURLs;
+@property (nonatomic, strong) NSMutableArray* _Nonnull exceptionURLs;
 
 + (instancetype _Nonnull)sharedInstance;
 - (void)startAPM;

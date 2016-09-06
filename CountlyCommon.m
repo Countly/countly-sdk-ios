@@ -12,7 +12,7 @@
     NSCalendar* gregorianCalendar;
     NSTimeInterval startTime;
 }
-@property (atomic, readwrite) long lastTimestamp;
+@property long lastTimestamp;
 @end
 
 NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";

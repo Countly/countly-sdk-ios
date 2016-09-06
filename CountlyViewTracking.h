@@ -16,7 +16,7 @@
 - (void)startAutoViewTracking;
 - (void)addExceptionForAutoViewTracking:(Class _Nullable)exceptionViewControllerSubclass;
 - (void)removeExceptionForAutoViewTracking:(Class _Nullable)exceptionViewControllerSubclass;
-@property (nonatomic, readwrite) BOOL isAutoViewTrackingEnabled;
+@property (nonatomic) BOOL isAutoViewTrackingEnabled;
 #endif
 @end
 
