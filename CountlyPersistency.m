@@ -242,7 +242,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 
         if (data)
         {
-            retrievedDeviceID = [NSString.alloc initWithData:data encoding:NSUTF8StringEncoding];
+            retrievedDeviceID = [data stringUTF8];
 
             COUNTLY_LOG(@"Device ID successfully retrieved from KeyChain: %@", retrievedDeviceID);
 
@@ -269,7 +269,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
         (__bridge id)kSecAttrService:       kCountlyStoredDeviceIDKey,
         (__bridge id)kSecClass:             (__bridge id)kSecClassGenericPassword,
         (__bridge id)kSecAttrAccessible:    (__bridge id)kSecAttrAccessibleAlways,
-        (__bridge id)kSecValueData:         [deviceID dataUsingEncoding:NSUTF8StringEncoding]
+        (__bridge id)kSecValueData:         [deviceID dataUTF8]
     };
 
     SecItemDelete((__bridge CFDictionaryRef)keychainDict);

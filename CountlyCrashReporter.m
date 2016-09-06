@@ -121,7 +121,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
 
         NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
         request.HTTPMethod = @"POST";
-        request.HTTPBody = [queryString dataUsingEncoding:NSUTF8StringEncoding];
+        request.HTTPBody = [queryString dataUTF8];
         COUNTLY_LOG(@"Crash report request started: %@ \n%@", urlString, queryString);
 
         dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);

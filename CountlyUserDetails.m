@@ -83,7 +83,7 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
     else
         pathString = [unescaped substringWithRange:(NSRange){startIndex, rChecksum.location - startIndex}];
 
-    NSDictionary* pathDictionary = [NSJSONSerialization JSONObjectWithData:[pathString dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+    NSDictionary* pathDictionary = [NSJSONSerialization JSONObjectWithData:[pathString dataUTF8] options:0 error:nil];
     NSString* localPicturePath = pathDictionary[kCountlyLocalPicturePath];
     if(!localPicturePath || [localPicturePath isEqualToString:@""])
         return nil;
