@@ -16,9 +16,6 @@
 @property (nonatomic, strong) NSURLSessionTask* connection;
 @property (nonatomic) BOOL isTestDevice;
 @property (nonatomic) NSTimeInterval updateSessionPeriod;
-@property (nonatomic, strong) NSString* ISOCountryCode;
-@property (nonatomic, strong) NSString* city;
-@property (nonatomic, strong) NSString* location;
 @property (nonatomic, strong) NSArray* pinnedCertificates;
 @property (nonatomic, strong) NSString* customHeaderFieldName;
 @property (nonatomic, strong) NSString* customHeaderFieldValue;

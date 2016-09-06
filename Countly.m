@@ -129,9 +129,9 @@
     CountlyPersistency.sharedInstance.eventSendThreshold = config.eventSendThreshold;
     CountlyPersistency.sharedInstance.storedRequestsLimit = config.storedRequestsLimit;
     CountlyConnectionManager.sharedInstance.updateSessionPeriod = config.updateSessionPeriod;
-    CountlyConnectionManager.sharedInstance.ISOCountryCode = config.ISOCountryCode;
-    CountlyConnectionManager.sharedInstance.city = config.city;
-    CountlyConnectionManager.sharedInstance.location = CLLocationCoordinate2DIsValid(config.location)?[NSString stringWithFormat:@"%f,%f", config.location.latitude, config.location.longitude]:nil;
+    CountlyCommon.sharedInstance.ISOCountryCode = config.ISOCountryCode;
+    CountlyCommon.sharedInstance.city = config.city;
+    CountlyCommon.sharedInstance.location = CLLocationCoordinate2DIsValid(config.location)?[NSString stringWithFormat:@"%f,%f", config.location.latitude, config.location.longitude]:nil;
     CountlyConnectionManager.sharedInstance.pinnedCertificates = config.pinnedCertificates;
     CountlyConnectionManager.sharedInstance.customHeaderFieldName = config.customHeaderFieldName;
     CountlyConnectionManager.sharedInstance.customHeaderFieldValue = config.customHeaderFieldValue;

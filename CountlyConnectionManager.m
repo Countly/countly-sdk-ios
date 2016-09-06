@@ -125,12 +125,9 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&begin_session=1&metrics=%@", [CountlyDeviceInfo metrics]];
 
-    if(self.ISOCountryCode)
-        queryString = [queryString stringByAppendingFormat:@"&country_code=%@", self.ISOCountryCode];
-    if(self.city)
-        queryString = [queryString stringByAppendingFormat:@"&city=%@", self.city];
-    if(self.location)
-        queryString = [queryString stringByAppendingFormat:@"&location=%@", self.location];
+    NSString* optionalParameters = [CountlyCommon.sharedInstance optionalParameters];
+    if(optionalParameters)
+        queryString = [queryString stringByAppendingString:optionalParameters];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 

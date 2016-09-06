@@ -75,6 +75,23 @@ NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTran
     return (double)(self.lastTimestamp / 1000.0);
 }
 
+- (NSString *)optionalParameters
+{
+    NSMutableString *optinonalParameters = @"".mutableCopy;
+    
+    if(self.ISOCountryCode)
+        [optinonalParameters appendFormat:@"&country_code=%@", self.ISOCountryCode];
+    if(self.city)
+        [optinonalParameters appendFormat:@"&city=%@", self.city];
+    if(self.location)
+        [optinonalParameters appendFormat:@"&location=%@", self.location];
+    
+    if(optinonalParameters.length)
+        return optinonalParameters;
+    
+    return nil;
+}
+
 #pragma mark - Watch Connectivity
 
 #if (TARGET_OS_IOS || TARGET_OS_WATCH)

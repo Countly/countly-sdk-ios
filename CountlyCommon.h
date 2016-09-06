@@ -70,11 +70,17 @@
 #else
 @interface CountlyCommon : NSObject
 #endif
+
+@property (nonatomic, strong) NSString* ISOCountryCode;
+@property (nonatomic, strong) NSString* city;
+@property (nonatomic, strong) NSString* location;
+
 + (instancetype)sharedInstance;
 - (NSInteger)hourOfDay;
 - (NSInteger)dayOfWeek;
 - (long)timeSinceLaunch;
 - (NSTimeInterval)uniqueTimestamp;
+- (NSString *)optionalParameters;
 #if (TARGET_OS_IOS || TARGET_OS_WATCH)
 - (void)activateWatchConnectivity;
 #endif
