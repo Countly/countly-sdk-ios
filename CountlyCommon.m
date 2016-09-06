@@ -105,7 +105,7 @@ NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTran
 #if (TARGET_OS_WATCH)
 - (void)session:(WCSession *)session didReceiveUserInfo:(NSDictionary<NSString *, id> *)userInfo
 {
-    COUNTLY_LOG(@"Watch received user info: \n%@", [userInfo description]);
+    COUNTLY_LOG(@"Watch received user info: \n%@", userInfo);
 
     NSString* parentDeviceID = userInfo[kCountlyParentDeviceIDTransferKey];
 

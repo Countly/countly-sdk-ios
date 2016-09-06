@@ -90,7 +90,7 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
 
     [Countly.sharedInstance recordEvent:kCountlyReservedEventAPM segmentation:segmentation count:1 sum:self.sentDataSize + self.receivedDataSize duration:self.endTime - self.startTime timestamp:self.startTime];
 
-    COUNTLY_LOG(@"APM log recorded: \n%@", [self description]);
+    COUNTLY_LOG(@"APM log recorded:\n%@", self);
 }
 
 + (long long)sentDataSizeForRequest:(NSURLRequest *)request
@@ -108,8 +108,7 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
 
 - (NSString *)description
 {
-    return [NSString stringWithFormat: @"\n"
-                                        "Request host: %@ \n"
+    return [NSString stringWithFormat: @"Request host: %@ \n"
                                         "Request path: %@ \n"
                                         "Start Time: %f \n"
                                         "End Time: %f \n"
