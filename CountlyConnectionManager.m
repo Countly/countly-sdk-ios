@@ -258,7 +258,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 - (void)finishBackgroundTask
 {
 #if TARGET_OS_IOS
-    if (self.bgTask != UIBackgroundTaskInvalid)
+    if (self.bgTask != UIBackgroundTaskInvalid && !self.connection)
     {
         [UIApplication.sharedApplication endBackgroundTask:self.bgTask];
         self.bgTask = UIBackgroundTaskInvalid;
