@@ -58,6 +58,11 @@ NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTran
     return components.weekday-1;
 }
 
+- (NSInteger)timeZone
+{
+    return NSTimeZone.systemTimeZone.secondsFromGMT / 60;
+}
+
 - (long)timeSinceLaunch
 {
     return (long)NSDate.date.timeIntervalSince1970 - startTime;

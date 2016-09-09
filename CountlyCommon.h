@@ -78,6 +78,7 @@
 + (instancetype)sharedInstance;
 - (NSInteger)hourOfDay;
 - (NSInteger)dayOfWeek;
+- (NSInteger)timeZone;
 - (long)timeSinceLaunch;
 - (NSTimeInterval)uniqueTimestamp;
 - (NSString *)optionalParameters;

@@ -270,12 +270,13 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
 - (NSString *)queryEssentials
 {
-    return [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&hour=%ld&dow=%ld&sdk_version=%@&sdk_name=%@",
+    return [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&hour=%ld&dow=%ld&tz=%ld&sdk_version=%@&sdk_name=%@",
                                         self.appKey,
                                         CountlyDeviceInfo.sharedInstance.deviceID,
                                         (long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000),
                                         (long)CountlyCommon.sharedInstance.hourOfDay,
                                         (long)CountlyCommon.sharedInstance.dayOfWeek,
+                                        (long)CountlyCommon.sharedInstance.timeZone,
                                         kCountlySDKVersion,
                                         kCountlySDKName];
 }
