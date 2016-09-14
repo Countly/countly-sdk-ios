@@ -7,6 +7,8 @@
 #import "CountlyCommon.h"
 #import <mach-o/dyld.h>
 
+NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000000000";
+
 @implementation CountlyDeviceInfo
 
 + (instancetype)sharedInstance
@@ -22,6 +24,11 @@
     if (self = [super init])
     {
         self.deviceID = [CountlyPersistency.sharedInstance retrieveStoredDeviceID];
+#if TARGET_OS_IOS
+        //NOTE: For Limit Ad Tracking zero-IDFA problem
+        if ([self.deviceID isEqualToString:kCountlyLimitAdTrackingZeroID])
+            [self initializeDeviceID:CLYIDFV];
+#endif
     }
 
     return self;
@@ -29,13 +36,16 @@
 
 - (void)initializeDeviceID:(NSString *)deviceID
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 #if TARGET_OS_IOS
     if(!deviceID || [deviceID isEqualToString:@""])
-        self.deviceID = ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
-    else if ([deviceID isEqualToString:CLYIDFA])
-        self.deviceID = ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
+        self.deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
     else if([deviceID isEqualToString:CLYIDFV])
         self.deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
+    else if ([deviceID isEqualToString:CLYIDFA])
+        self.deviceID = [self zeroSafeIDFA];
     else if([deviceID isEqualToString:CLYOpenUDID])
         self.deviceID = [Countly_OpenUDID value];
     else
@@ -64,7 +74,23 @@
     self.deviceID = @"UnsupportedPlaftormDevice";
 #endif
 
+#pragma GCC diagnostic pop
+
     [CountlyPersistency.sharedInstance storeDeviceID:self.deviceID];
+}
+
+- (NSString *)zeroSafeIDFA
+{
+#if TARGET_OS_IOS
+    NSString* IDFA = ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
+    //NOTE: For Limit Ad Tracking zero-IDFA problem
+    if ([IDFA isEqualToString:kCountlyLimitAdTrackingZeroID])
+        IDFA = UIDevice.currentDevice.identifierForVendor.UUIDString;
+
+    return IDFA;
+#else
+    return nil;
+#endif
 }
 
 #pragma mark -
@@ -142,6 +168,20 @@
     CGFloat scale = NSScreen.mainScreen.backingScaleFactor;
 #endif
     return [NSString stringWithFormat:@"%gx%g", bounds.size.width * scale, bounds.size.height * scale];
+}
+
++ (NSString *)density
+{
+#if TARGET_OS_IOS
+    CGFloat scale = UIScreen.mainScreen.scale;
+#elif TARGET_OS_WATCH
+    CGFloat scale = WKInterfaceDevice.currentDevice.screenScale;
+#elif TARGET_OS_TV
+    CGFloat scale = 1.0;
+#else
+    CGFloat scale = NSScreen.mainScreen.backingScaleFactor;
+#endif
+    return [NSString stringWithFormat:@"@%ix", (int)scale];
 }
 
 + (NSString *)locale
@@ -226,6 +266,7 @@
         metricsDictionary[@"_carrier"] = carrier;
 
     metricsDictionary[@"_resolution"] = CountlyDeviceInfo.resolution;
+    metricsDictionary[@"_density"] = CountlyDeviceInfo.density;
     metricsDictionary[@"_locale"] = CountlyDeviceInfo.locale;
     metricsDictionary[@"_app_version"] = CountlyDeviceInfo.appVersion;
 
@@ -399,6 +440,5 @@
     return NO;
 #endif
 }
-
 
 @end

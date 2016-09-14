@@ -6,8 +6,14 @@
 
 #import "CountlyCommon.h"
 
-NSString* const kCountlySDKVersion = @"16.06.3";
+NSString* const kCountlySDKVersion = @"16.06.4";
 NSString* const kCountlySDKName = @"objc-native-ios";
+
+@interface CountlyConnectionManager()
+#if TARGET_OS_IOS
+@property (nonatomic) UIBackgroundTaskIdentifier bgTask;
+#endif
+@end
 
 @implementation CountlyConnectionManager : NSObject
 
@@ -23,24 +29,48 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 {
     if (self.connection != nil)
         return;
-    
+
     if (self.customHeaderFieldName && !self.customHeaderFieldValue)
     {
         COUNTLY_LOG(@"customHeaderFieldName specified on config, but customHeaderFieldValue not set! Requests are postponed!");
         return;
     }
 
-    NSString* currentRequestData = [CountlyPersistency.sharedInstance firstItemInQueue];
-
-    if (currentRequestData == nil)
+    NSString* firstItemInQueue = [CountlyPersistency.sharedInstance firstItemInQueue];
+    if (firstItemInQueue == nil)
         return;
-    
+
     [self startBackgroundTask];
 
-    NSString* urlString = [self.appHost stringByAppendingFormat:@"/i?%@", currentRequestData];
-    NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
-    
-    NSData* pictureUploadData = [CountlyUserDetails.sharedInstance pictureUploadDataForRequest:currentRequestData];
+    NSString* queryString = firstItemInQueue;
+
+    if(self.secretSalt)
+    {
+        NSString* checksum = [[queryString stringByAppendingString:self.secretSalt] SHA1];
+        queryString = [queryString stringByAppendingFormat:@"&checksum=%@", checksum];
+    }
+
+    //NOTE: For Limit Ad Tracking zero-IDFA problem
+    if([queryString rangeOfString:@"&device_id=00000000-0000-0000-0000-000000000000"].location != NSNotFound)
+    {
+        COUNTLY_LOG(@"Detected a request with device_id=[zero-IDFA] in queue and fixed.");
+
+        queryString = [queryString stringByReplacingOccurrencesOfString:@"&device_id=00000000-0000-0000-0000-000000000000" withString:[@"&device_id=" stringByAppendingString:CountlyDeviceInfo.sharedInstance.deviceID]];
+    }
+
+    if([queryString rangeOfString:@"&old_device_id=00000000-0000-0000-0000-000000000000"].location != NSNotFound)
+    {
+        COUNTLY_LOG(@"Detected a request with old_device_id=[zero-IDFA] in queue and fixed.");
+
+        [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
+        [self tick];
+    }
+
+    NSString* countlyServerEndpoint = [self.appHost stringByAppendingString:@"/i"];
+    NSString* fullRequestURL = [countlyServerEndpoint stringByAppendingFormat:@"?%@", queryString];
+    NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:fullRequestURL]];
+
+    NSData* pictureUploadData = [CountlyUserDetails.sharedInstance pictureUploadDataForRequest:queryString];
     if(pictureUploadData)
     {
         NSString *contentType = [@"multipart/form-data; boundary=" stringByAppendingString:self.boundary];
@@ -48,28 +78,25 @@ NSString* const kCountlySDKName = @"objc-native-ios";
         request.HTTPMethod = @"POST";
         request.HTTPBody = pictureUploadData;
     }
-
-    NSData* body = [currentRequestData dataUsingEncoding:NSUTF8StringEncoding];
-    if(body.length > 2048 && !pictureUploadData)
+    else if(queryString.length > 2048 || self.alwaysUsePOST)
     {
-        NSString* urlString = [self.appHost stringByAppendingString:@"/i"];
-        request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
+        request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:countlyServerEndpoint]];
         request.HTTPMethod = @"POST";
-        request.HTTPBody = body;
+        request.HTTPBody = [queryString dataUTF8];
     }
 
     if(self.customHeaderFieldName && self.customHeaderFieldValue)
         [request setValue:self.customHeaderFieldValue forHTTPHeaderField:self.customHeaderFieldName];
-    
+
     NSURLSession* session = NSURLSession.sharedSession;
-    
+
     if(self.pinnedCertificates)
     {
         COUNTLY_LOG(@"%i pinned certificate(s) specified in config.", self.pinnedCertificates.count);
         NSURLSessionConfiguration *sc = [NSURLSessionConfiguration defaultSessionConfiguration];
         session = [NSURLSession sessionWithConfiguration:sc delegate:self delegateQueue:nil];
     }
-    
+
     self.connection = [session dataTaskWithRequest:request
     completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error)
     {
@@ -77,11 +104,11 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
         if(!error)
         {
-            if([self isRequestSuccessful:data])
+            if([self isRequestSuccessful:response])
             {
-                COUNTLY_LOG(@"Request <%i> successfully completed.", (id)request);
+                COUNTLY_LOG(@"Request <%p> successfully completed.", request);
 
-                [CountlyPersistency.sharedInstance removeFromQueue:currentRequestData];
+                [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
 
                 [CountlyPersistency.sharedInstance saveToFile];
 
@@ -89,12 +116,12 @@ NSString* const kCountlySDKName = @"objc-native-ios";
             }
             else
             {
-                COUNTLY_LOG(@"Request <%i> failed! %@ \n%@ \nServer reply: %@", (id)request, request.URL.absoluteString, request.HTTPBody?currentRequestData:@"", [NSString.alloc initWithData:data encoding:NSUTF8StringEncoding]);
+                COUNTLY_LOG(@"Request <%p> failed!\nServer reply: %@", request, [data stringUTF8]);
             }
         }
         else
         {
-            COUNTLY_LOG(@"Request <%i> failed! %@ \n%@ \nError: %@", (id)request, request.URL.absoluteString, request.HTTPBody?currentRequestData:@"", error);
+            COUNTLY_LOG(@"Request <%p> failed!\nError: %@", request, error);
 #if TARGET_OS_WATCH
             [CountlyPersistency.sharedInstance saveToFile];
 #endif
@@ -105,21 +132,18 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
     [self.connection resume];
 
-    COUNTLY_LOG(@"Request <%i> started: [%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, request.HTTPBody?currentRequestData:@"");
+    COUNTLY_LOG(@"Request <%p> started:\n[%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, request.HTTPBody?([request.HTTPBody stringUTF8]?[request.HTTPBody stringUTF8]:@"Picture uploading..."):@"");
 }
 
 #pragma mark ---
 
 - (void)beginSession
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&begin_session=1&metrics=%@",
-                             [CountlyDeviceInfo metrics]];
-    if(self.ISOCountryCode)
-        queryString = [queryString stringByAppendingFormat:@"&country_code=%@", self.ISOCountryCode];
-    if(self.city)
-        queryString = [queryString stringByAppendingFormat:@"&city=%@", self.city];
-    if(self.location)
-        queryString = [queryString stringByAppendingFormat:@"&location=%@", self.location];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&begin_session=1&metrics=%@", [CountlyDeviceInfo metrics]];
+
+    NSString* optionalParameters = [CountlyCommon.sharedInstance optionalParameters];
+    if(optionalParameters)
+        queryString = [queryString stringByAppendingString:optionalParameters];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -147,7 +171,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 - (void)sendEvents
 {
     NSString* events = [CountlyPersistency.sharedInstance serializedRecordedEvents];
-    
+
     if(!events)
         return;
 
@@ -188,8 +212,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
 - (void)sendUserDetails:(NSString *)userDetails
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&user_details=%@",
-                             userDetails];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&user_details=%@", userDetails];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -207,7 +230,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
 - (void)sendOldDeviceID:(NSString *)oldDeviceID
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&old_device_id=%@",oldDeviceID];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&old_device_id=%@", oldDeviceID];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -216,7 +239,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
 - (void)sendParentDeviceID:(NSString *)parentDeviceID
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&parent_device_id=%@",parentDeviceID];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&parent_device_id=%@", parentDeviceID];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -225,9 +248,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
 - (void)sendLocation:(CLLocationCoordinate2D)coordinate
 {
-    NSString* locationString = [NSString stringWithFormat:@"%f,%f", coordinate.latitude, coordinate.longitude];
-
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&location=%@",locationString];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&location=%f,%f", coordinate.latitude, coordinate.longitude];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -253,7 +274,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 - (void)finishBackgroundTask
 {
 #if TARGET_OS_IOS
-    if (self.bgTask != UIBackgroundTaskInvalid)
+    if (self.bgTask != UIBackgroundTaskInvalid && !self.connection)
     {
         [UIApplication.sharedApplication endBackgroundTask:self.bgTask];
         self.bgTask = UIBackgroundTaskInvalid;
@@ -265,12 +286,13 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
 - (NSString *)queryEssentials
 {
-    return [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&hour=%ld&dow=%ld&sdk_version=%@&sdk_name=%@",
+    return [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&hour=%ld&dow=%ld&tz=%ld&sdk_version=%@&sdk_name=%@",
                                         self.appKey,
                                         CountlyDeviceInfo.sharedInstance.deviceID,
-                                        (long)NSDate.date.timeIntervalSince1970,
-                                        (long)[CountlyCommon.sharedInstance hourOfDay],
-                                        (long)[CountlyCommon.sharedInstance dayOfWeek],
+                                        (long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000),
+                                        (long)CountlyCommon.sharedInstance.hourOfDay,
+                                        (long)CountlyCommon.sharedInstance.dayOfWeek,
+                                        (long)CountlyCommon.sharedInstance.timeZone,
                                         kCountlySDKVersion,
                                         kCountlySDKName];
 }
@@ -280,26 +302,26 @@ NSString* const kCountlySDKName = @"objc-native-ios";
     return @"0cae04a8b698d63ff6ea55d168993f21";
 }
 
-- (BOOL)isRequestSuccessful:(NSData *)data
+- (BOOL)isRequestSuccessful:(NSURLResponse *)response
 {
-    if(!data)
+    if(!response)
         return NO;
-    
-    NSDictionary* serverReply = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-    
-    return [serverReply[@"result"] isEqualToString:@"Success"];
+
+    NSInteger code = ((NSHTTPURLResponse*)response).statusCode;
+
+    return (code >= 200 && code < 300);
 }
 
 #pragma mark ---
 
--(void)URLSession:(NSURLSession *)session didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential * _Nullable))completionHandler
+- (void)URLSession:(NSURLSession *)session didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential * _Nullable))completionHandler
 {
     SecTrustRef serverTrust = challenge.protectionSpace.serverTrust;
     SecKeyRef serverKey = SecTrustCopyPublicKey(serverTrust);
     SecPolicyRef policy = SecPolicyCreateSSL(true, (__bridge CFStringRef)challenge.protectionSpace.host);
-    
+
     __block BOOL isLocalAndServerCertMatch = NO;
-    
+
     for (NSString* certificate in self.pinnedCertificates )
     {
         NSString* localCertPath = [NSBundle.mainBundle pathForResource:certificate ofType:nil];
@@ -312,7 +334,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
         CFRelease(localCert);
         CFRelease(localTrust);
-    
+
         if (serverKey != NULL && localKey != NULL && [(__bridge id)serverKey isEqual:(__bridge id)localKey])
         {
             COUNTLY_LOG(@"Pinned certificate and server certificate match.");
@@ -321,7 +343,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
             CFRelease(localKey);
             break;
         }
-    
+
         if(localKey) CFRelease(localKey);
     }
 

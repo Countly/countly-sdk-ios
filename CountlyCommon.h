@@ -47,7 +47,9 @@
 #import <AdSupport/ASIdentifierManager.h>
 #endif
 
+#ifndef TARGET_OS_OSX
 #define TARGET_OS_OSX (!(TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_WATCH))
+#endif
 
 #if TARGET_OS_OSX
 #import <AppKit/AppKit.h>
@@ -68,10 +70,18 @@
 #else
 @interface CountlyCommon : NSObject
 #endif
+
+@property (nonatomic, strong) NSString* ISOCountryCode;
+@property (nonatomic, strong) NSString* city;
+@property (nonatomic, strong) NSString* location;
+
 + (instancetype)sharedInstance;
 - (NSInteger)hourOfDay;
 - (NSInteger)dayOfWeek;
+- (NSInteger)timeZone;
 - (long)timeSinceLaunch;
+- (NSTimeInterval)uniqueTimestamp;
+- (NSString *)optionalParameters;
 #if (TARGET_OS_IOS || TARGET_OS_WATCH)
 - (void)activateWatchConnectivity;
 #endif
@@ -83,6 +93,8 @@
 
 @interface NSString (URLEscaped)
 - (NSString *)URLEscaped;
+- (NSString *)SHA1;
+- (NSData *)dataUTF8;
 @end
 
 @interface NSArray (JSONify)
@@ -95,6 +107,10 @@
 
 @interface NSMutableData (AppendStringUTF8)
 - (void)appendStringUTF8:(NSString *)string;
+@end
+
+@interface NSData (stringUTF8)
+- (NSString *)stringUTF8;
 @end
 
 @interface Countly (RecordEventWithTimeStamp)

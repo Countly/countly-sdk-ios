@@ -7,9 +7,9 @@
 #import "CountlyCommon.h"
 
 @interface CountlyViewTracking ()
-@property(nonatomic, strong) NSString* _Nonnull lastView;
-@property(nonatomic, readwrite) NSTimeInterval lastViewStartTime;
-@property(nonatomic, strong) NSMutableArray* exceptionViewControllers;
+@property (nonatomic, strong) NSString* _Nonnull lastView;
+@property (nonatomic) NSTimeInterval lastViewStartTime;
+@property (nonatomic, strong) NSMutableArray* exceptionViewControllers;
 @end
 
 NSString* const kCountlyReservedEventView = @"[CLY]_view";
@@ -68,14 +68,14 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
         @"segment": CountlyDeviceInfo.osName,
         @"visit": @1
     }.mutableCopy;
-    
+
     if(!self.lastView)
         segmentation[@"start"] = @1;
 
     [Countly.sharedInstance recordEvent:kCountlyReservedEventView segmentation:segmentation];
 
     self.lastView = viewName;
-    self.lastViewStartTime = NSDate.date.timeIntervalSince1970;
+    self.lastViewStartTime = CountlyCommon.sharedInstance.uniqueTimestamp;
 }
 
 - (void)endView

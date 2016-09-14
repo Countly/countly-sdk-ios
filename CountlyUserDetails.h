@@ -31,16 +31,16 @@
 
 @interface CountlyUserDetails : NSObject
 
-@property(nonatomic, strong) id<CountlyUserDetailsNullableString> name;
-@property(nonatomic, strong) id<CountlyUserDetailsNullableString> username;
-@property(nonatomic, strong) id<CountlyUserDetailsNullableString> email;
-@property(nonatomic, strong) id<CountlyUserDetailsNullableString> organization;
-@property(nonatomic, strong) id<CountlyUserDetailsNullableString> phone;
-@property(nonatomic, strong) id<CountlyUserDetailsNullableString> gender;
-@property(nonatomic, strong) id<CountlyUserDetailsNullableString> pictureURL;
-@property(nonatomic, strong) id<CountlyUserDetailsNullableString> pictureLocalPath;
-@property(nonatomic, assign) id<CountlyUserDetailsNullableNumber> birthYear;
-@property(nonatomic, strong) id<CountlyUserDetailsNullableDictionary> custom;
+@property (nonatomic, strong) id<CountlyUserDetailsNullableString> name;
+@property (nonatomic, strong) id<CountlyUserDetailsNullableString> username;
+@property (nonatomic, strong) id<CountlyUserDetailsNullableString> email;
+@property (nonatomic, strong) id<CountlyUserDetailsNullableString> organization;
+@property (nonatomic, strong) id<CountlyUserDetailsNullableString> phone;
+@property (nonatomic, strong) id<CountlyUserDetailsNullableString> gender;
+@property (nonatomic, strong) id<CountlyUserDetailsNullableString> pictureURL;
+@property (nonatomic, strong) id<CountlyUserDetailsNullableString> pictureLocalPath;
+@property (nonatomic, strong) id<CountlyUserDetailsNullableNumber> birthYear;
+@property (nonatomic, strong) id<CountlyUserDetailsNullableDictionary> custom;
 
 + (CountlyUserDetails *)sharedInstance;
 - (void)recordUserDetails;
@@ -65,4 +65,3 @@
 - (void)pull:(NSString *)key values:(NSArray *)value;
 - (void)save;
 @end
-

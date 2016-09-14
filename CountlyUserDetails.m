@@ -35,7 +35,7 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
 - (void)recordUserDetails
 {
     [CountlyConnectionManager.sharedInstance sendUserDetails:[CountlyUserDetails.sharedInstance serialize]];
-    
+
     if(self.pictureLocalPath && !self.pictureURL)
     {
         [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyLocalPicturePath:self.pictureLocalPath} JSONify]];
@@ -75,8 +75,15 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
     if (rLocalPicturePath.location == NSNotFound)
         return nil;
 
-    NSString* pathString = [unescaped substringFromIndex:rLocalPicturePath.location-2];
-    NSDictionary* pathDictionary = [NSJSONSerialization JSONObjectWithData:[pathString dataUsingEncoding:NSUTF8StringEncoding] options:0 error:nil];
+    NSRange rChecksum = [unescaped rangeOfString:@"&checksum="];
+    NSUInteger startIndex = rLocalPicturePath.location-2;
+    NSString* pathString;
+    if (rChecksum.location == NSNotFound)
+        pathString = [unescaped substringFromIndex:startIndex];
+    else
+        pathString = [unescaped substringWithRange:(NSRange){startIndex, rChecksum.location - startIndex}];
+
+    NSDictionary* pathDictionary = [NSJSONSerialization JSONObjectWithData:[pathString dataUTF8] options:0 error:nil];
     NSString* localPicturePath = pathDictionary[kCountlyLocalPicturePath];
     if(!localPicturePath || [localPicturePath isEqualToString:@""])
         return nil;
@@ -89,7 +96,7 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
 
     if(fileExtIndex == NSNotFound)
         return nil;
-    
+
     NSData* imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:localPicturePath]];
 
     if (!imageData)

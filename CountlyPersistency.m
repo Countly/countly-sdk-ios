@@ -95,7 +95,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
     @synchronized (self.recordedEvents)
     {
         [self.recordedEvents addObject:event];
-    
+
         if (self.recordedEvents.count >= self.eventSendThreshold)
             [CountlyConnectionManager.sharedInstance sendEvents];
     }
@@ -109,7 +109,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
     {
         if(self.recordedEvents.count == 0)
             return nil;
-    
+
         for (CountlyEvent* event in self.recordedEvents.copy)
         {
             [tempArray addObject:[event dictionaryRepresentation]];
@@ -131,7 +131,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
             COUNTLY_LOG(@"Event with key '%@' already started!", event.key);
             return;
         }
-    
+
         self.startedEvents[event.key] = event;
     }
 }
@@ -222,7 +222,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
         COUNTLY_LOG(@"Device ID successfully retrieved from UserDefaults: %@", retrievedDeviceID);
         return retrievedDeviceID;
     }
-    
+
     NSDictionary *keychainDict =
     @{
         (__bridge id)kSecAttrAccount:       kCountlyStoredDeviceIDKey,
@@ -242,13 +242,13 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 
         if (data)
         {
-            retrievedDeviceID = [NSString.alloc initWithData:data encoding:NSUTF8StringEncoding];
+            retrievedDeviceID = [data stringUTF8];
 
             COUNTLY_LOG(@"Device ID successfully retrieved from KeyChain: %@", retrievedDeviceID);
-        
+
             [NSUserDefaults.standardUserDefaults setObject:retrievedDeviceID forKey:kCountlyStoredDeviceIDKey];
             [NSUserDefaults.standardUserDefaults synchronize];
-        
+
             return retrievedDeviceID;
         }
     }
@@ -262,14 +262,14 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 {
     [NSUserDefaults.standardUserDefaults setObject:deviceID forKey:kCountlyStoredDeviceIDKey];
     [NSUserDefaults.standardUserDefaults synchronize];
-    
+
     NSDictionary *keychainDict =
     @{
         (__bridge id)kSecAttrAccount:       kCountlyStoredDeviceIDKey,
         (__bridge id)kSecAttrService:       kCountlyStoredDeviceIDKey,
         (__bridge id)kSecClass:             (__bridge id)kSecClassGenericPassword,
         (__bridge id)kSecAttrAccessible:    (__bridge id)kSecAttrAccessibleAlways,
-        (__bridge id)kSecValueData:         [deviceID dataUsingEncoding:NSUTF8StringEncoding]
+        (__bridge id)kSecValueData:         [deviceID dataUTF8]
     };
 
     SecItemDelete((__bridge CFDictionaryRef)keychainDict);
@@ -302,7 +302,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
     NSDictionary* status = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyStarRatingStatusKey];
     if(!status)
         status = NSDictionary.new;
-        
+
     return status;
 }
 

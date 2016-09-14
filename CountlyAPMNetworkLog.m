@@ -7,12 +7,12 @@
 #import "CountlyCommon.h"
 
 @interface CountlyAPMNetworkLog ()
-@property(nonatomic, readwrite) NSTimeInterval startTime;
-@property(nonatomic, readwrite) NSTimeInterval endTime;
-@property(nonatomic, readwrite) NSInteger HTTPStatusCode;
-@property(nonatomic, readwrite) long long sentDataSize;
-@property(nonatomic, readwrite) long long receivedDataSize;
-@property(nonatomic, readwrite) NSInteger connectionType;
+@property (nonatomic) NSTimeInterval startTime;
+@property (nonatomic) NSTimeInterval endTime;
+@property (nonatomic) NSInteger HTTPStatusCode;
+@property (nonatomic) long long sentDataSize;
+@property (nonatomic) long long receivedDataSize;
+@property (nonatomic) NSInteger connectionType;
 @end
 
 NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
@@ -89,8 +89,8 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
     };
 
     [Countly.sharedInstance recordEvent:kCountlyReservedEventAPM segmentation:segmentation count:1 sum:self.sentDataSize + self.receivedDataSize duration:self.endTime - self.startTime timestamp:self.startTime];
-    
-    COUNTLY_LOG(@"APM log recorded: \n%@", [self description]);
+
+    COUNTLY_LOG(@"APM log recorded:\n%@", self);
 }
 
 + (long long)sentDataSizeForRequest:(NSURLRequest *)request
@@ -108,8 +108,7 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
 
 - (NSString *)description
 {
-    return [NSString stringWithFormat: @"\n"
-                                        "Request host: %@ \n"
+    return [NSString stringWithFormat: @"Request host: %@ \n"
                                         "Request path: %@ \n"
                                         "Start Time: %f \n"
                                         "End Time: %f \n"
