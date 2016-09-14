@@ -65,4 +65,3 @@
 - (void)pull:(NSString *)key values:(NSArray *)value;
 - (void)save;
 @end
-

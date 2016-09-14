@@ -314,7 +314,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
 #pragma mark ---
 
--(void)URLSession:(NSURLSession *)session didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential * _Nullable))completionHandler
+- (void)URLSession:(NSURLSession *)session didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential * _Nullable))completionHandler
 {
     SecTrustRef serverTrust = challenge.protectionSpace.serverTrust;
     SecKeyRef serverKey = SecTrustCopyPublicKey(serverTrust);

@@ -38,4 +38,3 @@
 @property (nonatomic) NSUInteger eventSendThreshold;
 @property (nonatomic) NSUInteger storedRequestsLimit;
 @end
-
