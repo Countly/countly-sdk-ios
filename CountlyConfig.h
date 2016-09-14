@@ -17,11 +17,11 @@ extern NSString* const CLYAPM;
 
 //NOTE: Device ID options
 #if TARGET_OS_IOS
-extern NSString* const CLYIDFA;
 extern NSString* const CLYIDFV;
-extern NSString* const CLYOpenUDID;
+extern NSString* const CLYIDFA DEPRECATED_MSG_ATTRIBUTE("Use CLYIDFV instead!");
+extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use CLYIDFV instead!");
 #elif (!(TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_WATCH))
-extern NSString* const CLYOpenUDID;
+extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device ID instead!");
 #endif
 
 @interface CountlyConfig : NSObject

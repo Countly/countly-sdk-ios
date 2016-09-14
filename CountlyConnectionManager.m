@@ -50,6 +50,22 @@ NSString* const kCountlySDKName = @"objc-native-ios";
         queryString = [queryString stringByAppendingFormat:@"&checksum=%@", checksum];
     }
 
+    //NOTE: For Limit Ad Tracking zero-IDFA problem
+    if([queryString rangeOfString:@"&device_id=00000000-0000-0000-0000-000000000000"].location != NSNotFound)
+    {
+        COUNTLY_LOG(@"Detected a request with device_id=[zero-IDFA] in queue and fixed.");
+
+        queryString = [queryString stringByReplacingOccurrencesOfString:@"&device_id=00000000-0000-0000-0000-000000000000" withString:[@"&device_id=" stringByAppendingString:CountlyDeviceInfo.sharedInstance.deviceID]];
+    }
+
+    if([queryString rangeOfString:@"&old_device_id=00000000-0000-0000-0000-000000000000"].location != NSNotFound)
+    {
+        COUNTLY_LOG(@"Detected a request with old_device_id=[zero-IDFA] in queue and fixed.");
+
+        [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
+        [self tick];
+    }
+
     NSString* countlyServerEndpoint = [self.appHost stringByAppendingString:@"/i"];
     NSString* fullRequestURL = [countlyServerEndpoint stringByAppendingFormat:@"?%@", queryString];
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:fullRequestURL]];

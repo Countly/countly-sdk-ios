@@ -66,24 +66,22 @@
 
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 #if TARGET_OS_IOS
-    BOOL isSameIDFA = [deviceID isEqualToString:CLYIDFA] &&
-                      [CountlyDeviceInfo.sharedInstance.deviceID isEqualToString:ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString];
-
-    BOOL isSameIDFV = [deviceID isEqualToString:CLYIDFV] &&
-                      [CountlyDeviceInfo.sharedInstance.deviceID isEqualToString:UIDevice.currentDevice.identifierForVendor.UUIDString];
-
-    BOOL isSameOpen = [deviceID isEqualToString:CLYOpenUDID] &&
-                      [CountlyDeviceInfo.sharedInstance.deviceID isEqualToString:[Countly_OpenUDID value]];
-
-    if(isSameIDFA || isSameIDFV || isSameOpen)
-        return;
-
+    if([deviceID isEqualToString:CLYIDFA])
+        deviceID = [CountlyDeviceInfo.sharedInstance zeroSafeIDFA];
+    else if([deviceID isEqualToString:CLYIDFV])
+        deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
+    else if([deviceID isEqualToString:CLYOpenUDID])
+        deviceID = [Countly_OpenUDID value];
 #elif TARGET_OS_OSX
-    if([deviceID isEqualToString:CLYOpenUDID] &&
-       [CountlyDeviceInfo.sharedInstance.deviceID isEqualToString:[Countly_OpenUDID value]])
-        return;
+    if([deviceID isEqualToString:CLYOpenUDID])
+        deviceID = [Countly_OpenUDID value];
 #endif
+
+#pragma GCC diagnostic pop
 
     if([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
         return;

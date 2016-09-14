@@ -12,6 +12,7 @@
 
 + (instancetype)sharedInstance;
 - (void)initializeDeviceID:(NSString *)deviceID;
+- (NSString *)zeroSafeIDFA;
 
 + (NSString *)device;
 + (NSString *)osName;
