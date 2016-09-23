@@ -13,6 +13,8 @@
     NSString* const CLYMessaging = @"CLYMessaging";
     NSString* const CLYCrashReporting = @"CLYCrashReporting";
     NSString* const CLYAutoViewTracking = @"CLYAutoViewTracking";
+#elif TARGET_OS_TV
+    NSString* const CLYAutoViewTracking = @"CLYAutoViewTracking";
 #endif
     NSString* const CLYAPM = @"CLYAPM";
 

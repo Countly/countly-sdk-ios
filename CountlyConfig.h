@@ -11,6 +11,8 @@
 extern NSString* const CLYMessaging;
 extern NSString* const CLYCrashReporting;
 extern NSString* const CLYAutoViewTracking;
+#elif TARGET_OS_TV
+extern NSString* const CLYAutoViewTracking;
 #endif
 extern NSString* const CLYAPM;
 

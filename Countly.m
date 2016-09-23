@@ -168,6 +168,11 @@
     {
         [CountlyViewTracking.sharedInstance startAutoViewTracking];
     }
+#elif TARGET_OS_TV
+    if([config.features containsObject:CLYAutoViewTracking])
+    {
+        [CountlyViewTracking.sharedInstance startAutoViewTracking];
+    }
 #else
     [self start:config.appKey withHost:config.host];
 #endif

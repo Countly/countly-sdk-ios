@@ -6,13 +6,17 @@
 
 #import <Foundation/Foundation.h>
 
+#if TARGET_OS_TV
+#import <UIKit/UIKit.h>
+#endif
+
 @interface CountlyViewTracking : NSObject
 
 + (instancetype _Nonnull)sharedInstance;
 
 - (void)reportView:(NSString* _Nonnull)viewName;
 - (void)endView;
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_TV)
 - (void)startAutoViewTracking;
 - (void)addExceptionForAutoViewTracking:(Class _Nullable)exceptionViewControllerSubclass;
 - (void)removeExceptionForAutoViewTracking:(Class _Nullable)exceptionViewControllerSubclass;
@@ -20,7 +24,7 @@
 #endif
 @end
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_TV)
 @interface UIViewController (CountlyViewTracking)
 - (void)Countly_viewDidAppear:(BOOL)animated;
 @end
