@@ -233,7 +233,7 @@ const float buttonSize = 40;
     NSDictionary* segmentation =
     @{
         @"platform": CountlyDeviceInfo.osName,
-        @"appVersion": CountlyDeviceInfo.appVersion,
+        @"app_version": CountlyDeviceInfo.appVersion,
         @"rating" : @(rating)
     };
 
