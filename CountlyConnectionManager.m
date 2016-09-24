@@ -194,20 +194,16 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 #ifndef __OPTIMIZE__
     testMode = 1;
 #else
-    testMode = self.isTestDevice ? 2 : 0;
+    testMode = CountlyPushNotifications.sharedInstance.isTestDevice ? 2 : 0;
 #endif
 
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&token_session=1&ios_token=%@&test_mode=%d",
-                             [token length] ? token : @"",
+                             token.length ? token : @"",
                              testMode];
 
-    // Not right now to prevent race with begin_session=1 when adding new user
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
-    {
-        COUNTLY_LOG(@"Sending APNS token in mode %d", testMode);
-        [CountlyPersistency.sharedInstance addToQueue:queryString];
-        [self tick];
-    });
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
+
+    [self tick];
 }
 
 - (void)sendUserDetails:(NSString *)userDetails

@@ -10,7 +10,7 @@
 
 //NOTE: Countly features
 #if TARGET_OS_IOS
-    NSString* const CLYMessaging = @"CLYMessaging";
+    NSString* const CLYPushNotifications = @"CLYPushNotifications";
     NSString* const CLYCrashReporting = @"CLYCrashReporting";
     NSString* const CLYAutoViewTracking = @"CLYAutoViewTracking";
 #elif TARGET_OS_TV
@@ -33,9 +33,6 @@
 {
     if (self = [super init])
     {
-        //NOTE: For checking if launchOptions is set when CLYMessaging feature is used.
-        self.launchOptions = @{@"CLYAssertion":@"forLaunchOptions"};
-
 #if TARGET_OS_WATCH
         self.updateSessionPeriod = 20.0;
         self.eventSendThreshold = 3;

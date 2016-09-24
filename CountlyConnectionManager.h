@@ -14,7 +14,6 @@
 @property (nonatomic, strong) NSString* appKey;
 @property (nonatomic, strong) NSString* appHost;
 @property (nonatomic, strong) NSURLSessionTask* connection;
-@property (nonatomic) BOOL isTestDevice;
 @property (nonatomic) NSTimeInterval updateSessionPeriod;
 @property (nonatomic, strong) NSArray* pinnedCertificates;
 @property (nonatomic, strong) NSString* customHeaderFieldName;
