@@ -145,6 +145,7 @@
     if([config.features containsObject:CLYPushNotifications])
     {
         CountlyPushNotifications.sharedInstance.isTestDevice = config.isTestDevice;
+        CountlyPushNotifications.sharedInstance.shouldSendTokenAlways = config.shouldSendTokenAlways;
         CountlyPushNotifications.sharedInstance.shouldNotShowAlert = config.shouldNotShowAlert;
         [CountlyPushNotifications.sharedInstance startPushNotifications];
     }

@@ -8,8 +8,9 @@
 
 @interface CountlyPushNotifications : NSObject
 
-@property (nonatomic, readwrite) BOOL isTestDevice;
-@property (nonatomic, readwrite) BOOL shouldNotShowAlert;
+@property (nonatomic) BOOL isTestDevice;
+@property (nonatomic) BOOL shouldSendTokenAlways;
+@property (nonatomic) BOOL shouldNotShowAlert;
 
 + (instancetype)sharedInstance;
 
@@ -23,6 +24,7 @@
 @interface UIResponder (CountlyPushNotifications)
 - (void)Countly_application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken;
 - (void)Countly_application:(UIApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error;
+- (void)Countly_application:(UIApplication *)application didRegisterUserNotificationSettings:(UIUserNotificationSettings *)notificationSettings;
 - (void)Countly_application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler;
 @end
 #endif

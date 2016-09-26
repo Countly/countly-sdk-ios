@@ -8,7 +8,12 @@
 
 NSString* const kCountlyReservedEventPushOpen = @"[CLY]_push_open";
 NSString* const kCountlyReservedEventPushAction = @"[CLY]_push_action";
+NSString* const kCountlyTokenError = @"kCountlyTokenError";
 static char kUIAlertViewAssociatedObjectKey;
+
+@interface CountlyPushNotifications ()
+@property (strong) NSString* token;
+@end
 
 @implementation CountlyPushNotifications
 
@@ -27,7 +32,7 @@ static char kUIAlertViewAssociatedObjectKey;
     {
 
     }
-    
+
     return self;
 }
 
@@ -38,68 +43,60 @@ static char kUIAlertViewAssociatedObjectKey;
 - (void)startPushNotifications
 {
     Class appDelegateClass = UIApplication.sharedApplication.delegate.class;
-    Method O_method;
-    Method C_method;
-    SEL selector;
-    
-    
-    selector = @selector(application:didRegisterForRemoteNotificationsWithDeviceToken:);
-    O_method = class_getInstanceMethod(appDelegateClass, selector);
-    if(O_method == NULL)
-    {
-        Method method = class_getInstanceMethod(self.class, selector);
-        IMP imp = method_getImplementation(method);
-        const char *methodTypeEncoding = method_getTypeEncoding(method);
-        class_addMethod(appDelegateClass, selector, imp, methodTypeEncoding);
-        O_method = class_getInstanceMethod(appDelegateClass, selector);
-    }
-    
-    C_method = class_getInstanceMethod(appDelegateClass, @selector(Countly_application:didRegisterForRemoteNotificationsWithDeviceToken:));
-    method_exchangeImplementations(O_method, C_method);
+    NSArray* selectors = @[@"application:didRegisterForRemoteNotificationsWithDeviceToken:",
+                           @"application:didFailToRegisterForRemoteNotificationsWithError:",
+                           @"application:didRegisterUserNotificationSettings:",
+                           @"application:didReceiveRemoteNotification:fetchCompletionHandler:"];
 
-    
-    selector = @selector(application:didFailToRegisterForRemoteNotificationsWithError:);
-    O_method = class_getInstanceMethod(appDelegateClass, selector);
-    if(O_method == NULL)
+    for (NSString* selectorString in selectors)
     {
-        Method method = class_getInstanceMethod(self.class, selector);
-        IMP imp = method_getImplementation(method);
-        const char *methodTypeEncoding = method_getTypeEncoding(method);
-        class_addMethod(appDelegateClass, selector, imp, methodTypeEncoding);
-        O_method = class_getInstanceMethod(appDelegateClass, selector);
+        SEL originalSelector = NSSelectorFromString(selectorString);
+        Method originalMethod = class_getInstanceMethod(appDelegateClass, originalSelector);
+
+        if(originalMethod == NULL)
+        {
+            Method method = class_getInstanceMethod(self.class, originalSelector);
+            IMP imp = method_getImplementation(method);
+            const char *methodTypeEncoding = method_getTypeEncoding(method);
+            class_addMethod(appDelegateClass, originalSelector, imp, methodTypeEncoding);
+            originalMethod = class_getInstanceMethod(appDelegateClass, originalSelector);
+        }
+
+        SEL countlySelector = NSSelectorFromString([@"Countly_" stringByAppendingString:selectorString]);
+        Method countlyMethod = class_getInstanceMethod(appDelegateClass, countlySelector);
+        method_exchangeImplementations(originalMethod, countlyMethod);
     }
-    
-    C_method = class_getInstanceMethod(appDelegateClass, @selector(Countly_application:didFailToRegisterForRemoteNotificationsWithError:));
-    method_exchangeImplementations(O_method, C_method);
-    
-    
-    selector = @selector(application:didReceiveRemoteNotification:fetchCompletionHandler:);
-    O_method = class_getInstanceMethod(appDelegateClass, selector);
-    if(O_method == NULL)
-    {
-        Method method = class_getInstanceMethod(self.class, selector);
-        IMP imp = method_getImplementation(method);
-        const char *methodTypeEncoding = method_getTypeEncoding(method);
-        class_addMethod(appDelegateClass, selector, imp, methodTypeEncoding);
-        O_method = class_getInstanceMethod(appDelegateClass, selector);
-    }
-    
-    C_method = class_getInstanceMethod(appDelegateClass, @selector(Countly_application:didReceiveRemoteNotification:fetchCompletionHandler:));
-    method_exchangeImplementations(O_method, C_method);
+}
+
+- (void)sendToken
+{
+    if(!self.token)
+        return;
+
+#if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_8_0
+    BOOL userPermission = UIApplication.sharedApplication.enabledRemoteNotificationTypes != UIRemoteNotificationTypeNone;
+#else
+    BOOL userPermission= UIApplication.sharedApplication.currentUserNotificationSettings.types != UIUserNotificationTypeNone;
+#endif
+
+    if([self.token isEqualToString:kCountlyTokenError])
+        [CountlyConnectionManager.sharedInstance sendPushToken:@""];
+    else if(userPermission || self.shouldSendTokenAlways)
+        [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
 }
 
 - (void)handleNotification:(NSDictionary *)notification
 {
-    COUNTLY_LOG(@"Handling remote notification %@", notification.description);
+    COUNTLY_LOG(@"Handling remote notification %@", notification);
 
     NSDictionary* countlyPayload = notification[@"c"];
     NSString* countlyPushNotificationID = countlyPayload[@"i"];
     if (countlyPushNotificationID)
     {
         COUNTLY_LOG(@"Countly Push Notification ID: %@", countlyPushNotificationID);
-    
+
         [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{@"i":countlyPushNotificationID}];
-    
+
         NSString* message = notification[@"aps"][@"alert"];
         if(!message || self.shouldNotShowAlert)
             return;
@@ -107,17 +104,17 @@ static char kUIAlertViewAssociatedObjectKey;
         NSString* title = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleDisplayName"];
         NSString* cancelButtonTitle = countlyPayload[@"c"];
         NSString* actionButtonTitle = nil;
-    
+
         if (countlyPayload[@"l"])
         {
             if (!cancelButtonTitle) cancelButtonTitle = NSLocalizedString(@"Cancel", nil);;
-        
+
             actionButtonTitle = countlyPayload[@"a"];
             if (!actionButtonTitle) actionButtonTitle = NSLocalizedString(@"Open", nil);
         }
         else
         {
-            if (!cancelButtonTitle) cancelButtonTitle = NSLocalizedString(@"Cancel", nil);;
+            if (!cancelButtonTitle) cancelButtonTitle = NSLocalizedString(@"Dismiss", nil);;
         }
 
         if(UIAlertController.class)
@@ -135,7 +132,7 @@ static char kUIAlertViewAssociatedObjectKey;
 
                 [alertController addAction:other];
             }
-        
+
             UIViewController* rvc = UIApplication.sharedApplication.keyWindow.rootViewController;
             [rvc presentViewController:alertController animated:YES completion:nil];
         }
@@ -166,12 +163,13 @@ static char kUIAlertViewAssociatedObjectKey;
 }
 #pragma mark ---
 
-- (void)application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken{};
-- (void)application:(UIApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error{};
+- (void)application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken{}
+- (void)application:(UIApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error{}
+- (void)application:(UIApplication *)application didRegisterUserNotificationSettings:(UIUserNotificationSettings *)notificationSettings{}
 - (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler
 {
     completionHandler(UIBackgroundFetchResultNewData);
-};
+}
 #endif
 @end
 
@@ -180,26 +178,37 @@ static char kUIAlertViewAssociatedObjectKey;
 @implementation UIResponder (CountlyPushNotifications)
 - (void)Countly_application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken
 {
-    COUNTLY_LOG(@"App didRegisterForRemoteNotificationsWithDeviceToken: %@", deviceToken.description);
-    
+    COUNTLY_LOG(@"App didRegisterForRemoteNotificationsWithDeviceToken: %@", deviceToken);
     const char *bytes = [deviceToken bytes];
     NSMutableString *token = NSMutableString.new;
     for (NSUInteger i = 0; i < deviceToken.length; i++)
         [token appendFormat:@"%02hhx", bytes[i]];
-    
-    [CountlyConnectionManager.sharedInstance sendPushToken:token];
-    
+
+    CountlyPushNotifications.sharedInstance.token = token;
+
+    [CountlyPushNotifications.sharedInstance sendToken];
+
     [self Countly_application:application didRegisterForRemoteNotificationsWithDeviceToken:deviceToken];
 }
 
-
 - (void)Countly_application:(UIApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error
 {
-    COUNTLY_LOG(@"App didFailToRegisterForRemoteNotificationsWithError");
-    
-    [CountlyConnectionManager.sharedInstance sendPushToken:nil];
+    COUNTLY_LOG(@"App didFailToRegisterForRemoteNotificationsWithError: %@", error);
+
+    CountlyPushNotifications.sharedInstance.token = kCountlyTokenError;
+
+    [CountlyPushNotifications.sharedInstance sendToken];
 
     [self Countly_application:application didFailToRegisterForRemoteNotificationsWithError:error];
+}
+
+- (void)Countly_application:(UIApplication *)application didRegisterUserNotificationSettings:(UIUserNotificationSettings *)notificationSettings
+{
+    COUNTLY_LOG(@"App didRegisterUserNotificationSettings: %@", notificationSettings);
+
+    [CountlyPushNotifications.sharedInstance sendToken];
+
+    [self Countly_application:application didRegisterUserNotificationSettings:notificationSettings];
 }
 
 - (void)Countly_application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler;
@@ -207,7 +216,7 @@ static char kUIAlertViewAssociatedObjectKey;
     COUNTLY_LOG(@"App didReceiveRemoteNotification:fetchCompletionHandler");
 
     [CountlyPushNotifications.sharedInstance handleNotification:userInfo];
-    
+
     [self Countly_application:application didReceiveRemoteNotification:userInfo fetchCompletionHandler:completionHandler];
 }
 @end

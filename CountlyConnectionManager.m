@@ -197,9 +197,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
     testMode = CountlyPushNotifications.sharedInstance.isTestDevice ? 2 : 0;
 #endif
 
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&token_session=1&ios_token=%@&test_mode=%d",
-                             token.length ? token : @"",
-                             testMode];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&token_session=1&ios_token=%@&test_mode=%d", token, testMode];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
