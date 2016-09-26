@@ -108,7 +108,8 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
 
 - (NSString *)description
 {
-    return [NSString stringWithFormat: @"Request host: %@ \n"
+    return [NSString stringWithFormat: @"Request <%p> \n"
+                                        "Request host: %@ \n"
                                         "Request path: %@ \n"
                                         "Start Time: %f \n"
                                         "End Time: %f \n"
@@ -119,6 +120,7 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
                                         "Connection Type: %i \n"
                                         "Request Successfull: %i \n"
                                         "\n\n",
+                                        self.request,
                                         self.request.URL.host,
                                         self.request.URL.path,
                                         self.startTime,

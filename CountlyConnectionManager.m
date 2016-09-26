@@ -66,7 +66,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
         [self tick];
     }
 
-    NSString* countlyServerEndpoint = [self.appHost stringByAppendingString:@"/i"];
+    NSString* countlyServerEndpoint = [self.host stringByAppendingString:@"/i"];
     NSString* fullRequestURL = [countlyServerEndpoint stringByAppendingFormat:@"?%@", queryString];
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:fullRequestURL]];
 

@@ -21,7 +21,7 @@
     self = [super init];
     if (self)
     {
-        NSURL * url = [NSURL URLWithString:CountlyConnectionManager.sharedInstance.appHost];
+        NSURL * url = [NSURL URLWithString:CountlyConnectionManager.sharedInstance.host];
         NSString* hostAndPath = [url.host stringByAppendingString:url.path];
         self.exceptionURLs = [NSMutableArray arrayWithObject:hostAndPath];
     }

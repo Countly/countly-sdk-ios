@@ -12,7 +12,7 @@
 @interface CountlyConnectionManager : NSObject <NSURLSessionDelegate>
 
 @property (nonatomic, strong) NSString* appKey;
-@property (nonatomic, strong) NSString* appHost;
+@property (nonatomic, strong) NSString* host;
 @property (nonatomic, strong) NSURLSessionTask* connection;
 @property (nonatomic) NSTimeInterval updateSessionPeriod;
 @property (nonatomic, strong) NSArray* pinnedCertificates;

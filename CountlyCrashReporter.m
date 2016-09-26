@@ -116,7 +116,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
         //NOTE: suspend method adds 'event' and 'end_session' requests to queue and starts them.
         //      a dummy connection object is created to prevent these requests when app is about to terminate due to crash
 
-        NSString *urlString = [NSString stringWithFormat:@"%@/i", CountlyConnectionManager.sharedInstance.appHost];
+        NSString *urlString = [NSString stringWithFormat:@"%@/i", CountlyConnectionManager.sharedInstance.host];
         NSString *queryString = [[CountlyConnectionManager.sharedInstance queryEssentials] stringByAppendingFormat:@"&crash=%@", [crashReport JSONify]];
 
         NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];

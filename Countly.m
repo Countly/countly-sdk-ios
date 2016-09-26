@@ -59,6 +59,79 @@
     return self;
 }
 
+#pragma mark ---
+
+- (void)startWithConfig:(CountlyConfig *)config
+{
+    NSAssert(config.appKey && ![config.appKey isEqualToString:@"YOUR_APP_KEY"], @"[CountlyAssert] App key in Countly configuration is not set!");
+    NSAssert(config.host && ![config.host isEqualToString:@"https://YOUR_COUNTLY_SERVER"], @"[CountlyAssert] Host in Countly configuration is not set!");
+
+    if(!CountlyDeviceInfo.sharedInstance.deviceID || config.forceDeviceIDInitialization)
+    {
+        [CountlyDeviceInfo.sharedInstance initializeDeviceID:config.deviceID];
+    }
+
+    CountlyConnectionManager.sharedInstance.appKey = config.appKey;
+    CountlyConnectionManager.sharedInstance.host = config.host;
+    CountlyConnectionManager.sharedInstance.updateSessionPeriod = config.updateSessionPeriod;
+    CountlyConnectionManager.sharedInstance.alwaysUsePOST = config.alwaysUsePOST;
+    CountlyConnectionManager.sharedInstance.pinnedCertificates = config.pinnedCertificates;
+    CountlyConnectionManager.sharedInstance.customHeaderFieldName = config.customHeaderFieldName;
+    CountlyConnectionManager.sharedInstance.customHeaderFieldValue = config.customHeaderFieldValue;
+    CountlyConnectionManager.sharedInstance.secretSalt = config.secretSalt;
+
+    CountlyPersistency.sharedInstance.eventSendThreshold = config.eventSendThreshold;
+    CountlyPersistency.sharedInstance.storedRequestsLimit = config.storedRequestsLimit;
+
+    CountlyCommon.sharedInstance.ISOCountryCode = config.ISOCountryCode;
+    CountlyCommon.sharedInstance.city = config.city;
+    CountlyCommon.sharedInstance.location = CLLocationCoordinate2DIsValid(config.location)?[NSString stringWithFormat:@"%f,%f", config.location.latitude, config.location.longitude]:nil;
+
+#if TARGET_OS_IOS
+    CountlyStarRating.sharedInstance.message = config.starRatingMessage;
+    CountlyStarRating.sharedInstance.dismissButtonTitle = config.starRatingDismissButtonTitle;
+    CountlyStarRating.sharedInstance.sessionCount = config.starRatingSessionCount;
+    CountlyStarRating.sharedInstance.disableAskingForEachAppVersion = config.starRatingDisableAskingForEachAppVersion;
+
+    [CountlyStarRating.sharedInstance checkForAutoAsk];
+
+    [CountlyCommon.sharedInstance transferParentDeviceID];
+
+    if([config.features containsObject:CLYPushNotifications])
+    {
+        CountlyPushNotifications.sharedInstance.isTestDevice = config.isTestDevice;
+        CountlyPushNotifications.sharedInstance.shouldSendTokenAlways = config.shouldSendTokenAlways;
+        CountlyPushNotifications.sharedInstance.shouldNotShowAlert = config.shouldNotShowAlert;
+        [CountlyPushNotifications.sharedInstance startPushNotifications];
+    }
+
+    if([config.features containsObject:CLYCrashReporting])
+    {
+        CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
+        [CountlyCrashReporter.sharedInstance startCrashReporting];
+    }
+#endif
+
+#if (TARGET_OS_IOS || TARGET_OS_TV)
+    if([config.features containsObject:CLYAutoViewTracking])
+    {
+        [CountlyViewTracking.sharedInstance startAutoViewTracking];
+    }
+#endif
+
+    if([config.features containsObject:CLYAPM])
+        [CountlyAPM.sharedInstance startAPM];
+
+    timer = [NSTimer scheduledTimerWithTimeInterval:CountlyConnectionManager.sharedInstance.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
+    lastTime = NSDate.date.timeIntervalSince1970;
+    
+    [CountlyConnectionManager.sharedInstance beginSession];
+
+#if (TARGET_OS_WATCH)
+    [CountlyCommon.sharedInstance activateWatchConnectivity];
+#endif
+}
+
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer
 {
 #pragma GCC diagnostic push
@@ -105,85 +178,6 @@
 {
     CountlyConnectionManager.sharedInstance.customHeaderFieldValue = customHeaderFieldValue;
     [CountlyConnectionManager.sharedInstance tick];
-}
-
-#pragma mark ---
-
-- (void)startWithConfig:(CountlyConfig *)config
-{
-    NSAssert(config.appKey && ![config.appKey isEqualToString:@"YOUR_APP_KEY"],@"[CountlyAssert] App key in Countly configuration is not set!");
-    NSAssert(config.host && ![config.host isEqualToString:@"https://YOUR_COUNTLY_SERVER"],@"[CountlyAssert] Host in Countly configuration is not set!");
-
-    if(!CountlyDeviceInfo.sharedInstance.deviceID || config.forceDeviceIDInitialization)
-    {
-        [CountlyDeviceInfo.sharedInstance initializeDeviceID:config.deviceID];
-    }
-
-    CountlyPersistency.sharedInstance.eventSendThreshold = config.eventSendThreshold;
-    CountlyPersistency.sharedInstance.storedRequestsLimit = config.storedRequestsLimit;
-    CountlyConnectionManager.sharedInstance.updateSessionPeriod = config.updateSessionPeriod;
-    CountlyCommon.sharedInstance.ISOCountryCode = config.ISOCountryCode;
-    CountlyCommon.sharedInstance.city = config.city;
-    CountlyCommon.sharedInstance.location = CLLocationCoordinate2DIsValid(config.location)?[NSString stringWithFormat:@"%f,%f", config.location.latitude, config.location.longitude]:nil;
-    CountlyConnectionManager.sharedInstance.pinnedCertificates = config.pinnedCertificates;
-    CountlyConnectionManager.sharedInstance.customHeaderFieldName = config.customHeaderFieldName;
-    CountlyConnectionManager.sharedInstance.customHeaderFieldValue = config.customHeaderFieldValue;
-    CountlyConnectionManager.sharedInstance.secretSalt = config.secretSalt;
-    CountlyConnectionManager.sharedInstance.alwaysUsePOST = config.alwaysUsePOST;
-#if TARGET_OS_IOS
-    CountlyStarRating.sharedInstance.message = config.starRatingMessage;
-    CountlyStarRating.sharedInstance.dismissButtonTitle = config.starRatingDismissButtonTitle;
-    CountlyStarRating.sharedInstance.sessionCount = config.starRatingSessionCount;
-    CountlyStarRating.sharedInstance.disableAskingForEachAppVersion = config.starRatingDisableAskingForEachAppVersion;
-
-    [CountlyStarRating.sharedInstance checkForAutoAsk];
-
-    [CountlyCommon.sharedInstance transferParentDeviceID];
-
-    [self start:config.appKey withHost:config.host];
-
-    if([config.features containsObject:CLYPushNotifications])
-    {
-        CountlyPushNotifications.sharedInstance.isTestDevice = config.isTestDevice;
-        CountlyPushNotifications.sharedInstance.shouldSendTokenAlways = config.shouldSendTokenAlways;
-        CountlyPushNotifications.sharedInstance.shouldNotShowAlert = config.shouldNotShowAlert;
-        [CountlyPushNotifications.sharedInstance startPushNotifications];
-    }
-
-    if([config.features containsObject:CLYCrashReporting])
-    {
-        CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
-        [CountlyCrashReporter.sharedInstance startCrashReporting];
-    }
-
-    if([config.features containsObject:CLYAutoViewTracking])
-    {
-        [CountlyViewTracking.sharedInstance startAutoViewTracking];
-    }
-#elif TARGET_OS_TV
-    if([config.features containsObject:CLYAutoViewTracking])
-    {
-        [CountlyViewTracking.sharedInstance startAutoViewTracking];
-    }
-#else
-    [self start:config.appKey withHost:config.host];
-#endif
-
-    if([config.features containsObject:CLYAPM])
-        [CountlyAPM.sharedInstance startAPM];
-
-#if (TARGET_OS_WATCH)
-    [CountlyCommon.sharedInstance activateWatchConnectivity];
-#endif
-}
-
-- (void)start:(NSString *)appKey withHost:(NSString *)appHost
-{
-    timer = [NSTimer scheduledTimerWithTimeInterval:CountlyConnectionManager.sharedInstance.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
-    lastTime = NSDate.date.timeIntervalSince1970;
-    CountlyConnectionManager.sharedInstance.appKey = appKey;
-    CountlyConnectionManager.sharedInstance.appHost = appHost;
-    [CountlyConnectionManager.sharedInstance beginSession];
 }
 
 #pragma mark ---
