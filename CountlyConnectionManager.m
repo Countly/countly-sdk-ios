@@ -6,9 +6,6 @@
 
 #import "CountlyCommon.h"
 
-NSString* const kCountlySDKVersion = @"16.06.4";
-NSString* const kCountlySDKName = @"objc-native-ios";
-
 @interface CountlyConnectionManager()
 #if TARGET_OS_IOS
 @property (nonatomic) UIBackgroundTaskIdentifier bgTask;

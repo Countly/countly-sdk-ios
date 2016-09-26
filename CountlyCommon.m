@@ -16,6 +16,8 @@
 @end
 
 NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
+NSString* const kCountlySDKVersion = @"16.06.4";
+NSString* const kCountlySDKName = @"objc-native-ios";
 
 @implementation CountlyCommon
 

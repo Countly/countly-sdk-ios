@@ -9,7 +9,10 @@
 NSString* const kCountlyReservedEventPushOpen = @"[CLY]_push_open";
 NSString* const kCountlyReservedEventPushAction = @"[CLY]_push_action";
 NSString* const kCountlyTokenError = @"kCountlyTokenError";
+
+#if TARGET_OS_IOS
 static char kUIAlertViewAssociatedObjectKey;
+#endif
 
 @interface CountlyPushNotifications ()
 @property (strong) NSString* token;
