@@ -84,7 +84,7 @@ static char kUIAlertViewAssociatedObjectKey;
 
     if([self.token isEqualToString:kCountlyTokenError])
         [CountlyConnectionManager.sharedInstance sendPushToken:@""];
-    else if(userPermission || self.shouldSendTokenAlways)
+    else if(userPermission || self.sendPushTokenAlways)
         [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
 }
 
@@ -101,7 +101,7 @@ static char kUIAlertViewAssociatedObjectKey;
         [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{@"i":countlyPushNotificationID}];
 
         NSString* message = notification[@"aps"][@"alert"];
-        if(!message || self.shouldNotShowAlert)
+        if(!message || self.doNotShowAlertForNotifications)
             return;
 
         NSString* title = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleDisplayName"];

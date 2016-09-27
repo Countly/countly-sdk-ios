@@ -9,8 +9,8 @@
 @interface CountlyPushNotifications : NSObject
 
 @property (nonatomic) BOOL isTestDevice;
-@property (nonatomic) BOOL shouldSendTokenAlways;
-@property (nonatomic) BOOL shouldNotShowAlert;
+@property (nonatomic) BOOL sendPushTokenAlways;
+@property (nonatomic) BOOL doNotShowAlertForNotifications;
 
 + (instancetype)sharedInstance;
 
