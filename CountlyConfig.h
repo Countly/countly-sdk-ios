@@ -121,6 +121,12 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 @property (nonatomic) BOOL alwaysUsePOST;
 
 /**
+ * Enables automatic handling of Apple Watch related features.
+ * @discussion If set, Apple Watch related features like parent device matching, pairing status, and watch app installing status will be handled automatically. Required for using Countly on Apple Watch apps.
+ */
+@property (nonatomic) BOOL enableAppleWatch;
+
+/**
  * ISO Country Code can be specified in ISO 3166-1 alpha-2 format to be used for advanced segmentation. 
  * @discussion It will be sent with @c begin_session request only.
  */

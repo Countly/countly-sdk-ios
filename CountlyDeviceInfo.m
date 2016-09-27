@@ -271,8 +271,11 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
     metricsDictionary[@"_app_version"] = CountlyDeviceInfo.appVersion;
 
 #if TARGET_OS_IOS
-    metricsDictionary[@"_has_watch"] = @(CountlyDeviceInfo.hasWatch);
-    metricsDictionary[@"_installed_watch_app"] = @(CountlyDeviceInfo.installedWatchApp);
+    if(CountlyCommon.sharedInstance.enableAppleWatch)
+    {
+        metricsDictionary[@"_has_watch"] = @(CountlyDeviceInfo.hasWatch);
+        metricsDictionary[@"_installed_watch_app"] = @(CountlyDeviceInfo.installedWatchApp);
+    }
 #endif
 
     return [metricsDictionary JSONify];

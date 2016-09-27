@@ -104,6 +104,9 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 #if (TARGET_OS_IOS || TARGET_OS_WATCH)
 - (void)activateWatchConnectivity
 {
+    if(!self.enableAppleWatch)
+        return;
+
     if ([WCSession isSupported])
     {
         WCSession *session = WCSession.defaultSession;
@@ -116,6 +119,9 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 #if (TARGET_OS_IOS)
 - (void)transferParentDeviceID
 {
+    if(!self.enableAppleWatch)
+        return;
+
     [self activateWatchConnectivity];
 
     if(WCSession.defaultSession.paired && WCSession.defaultSession.watchAppInstalled)

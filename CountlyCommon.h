@@ -75,6 +75,7 @@ extern NSString* const kCountlySDKName;
 @interface CountlyCommon : NSObject
 #endif
 
+@property (nonatomic) BOOL enableAppleWatch;
 @property (nonatomic, strong) NSString* ISOCountryCode;
 @property (nonatomic, strong) NSString* city;
 @property (nonatomic, strong) NSString* location;

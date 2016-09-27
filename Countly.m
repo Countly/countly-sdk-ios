@@ -85,6 +85,7 @@
     CountlyPersistency.sharedInstance.eventSendThreshold = config.eventSendThreshold;
     CountlyPersistency.sharedInstance.storedRequestsLimit = config.storedRequestsLimit;
 
+    CountlyCommon.sharedInstance.enableAppleWatch = config.enableAppleWatch;
     CountlyCommon.sharedInstance.ISOCountryCode = config.ISOCountryCode;
     CountlyCommon.sharedInstance.city = config.city;
     CountlyCommon.sharedInstance.location = CLLocationCoordinate2DIsValid(config.location)?[NSString stringWithFormat:@"%f,%f", config.location.latitude, config.location.longitude]:nil;
