@@ -85,17 +85,17 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 - (NSString *)optionalParameters
 {
     NSMutableString *optinonalParameters = @"".mutableCopy;
-    
+
     if(self.ISOCountryCode)
         [optinonalParameters appendFormat:@"&country_code=%@", self.ISOCountryCode];
     if(self.city)
         [optinonalParameters appendFormat:@"&city=%@", self.city];
     if(self.location)
         [optinonalParameters appendFormat:@"&location=%@", self.location];
-    
+
     if(optinonalParameters.length)
         return optinonalParameters;
-    
+
     return nil;
 }
 

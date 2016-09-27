@@ -127,7 +127,7 @@
 
     timer = [NSTimer scheduledTimerWithTimeInterval:CountlyConnectionManager.sharedInstance.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
     lastTime = NSDate.date.timeIntervalSince1970;
-    
+
     [CountlyConnectionManager.sharedInstance beginSession];
 
 #if (TARGET_OS_WATCH)
