@@ -195,7 +195,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 - (void)saveToFileSync
 {
     NSDictionary* saveDict = @{
-                                kCountlyQueuedRequestsPersistencyKey:self.queuedRequests
+                                kCountlyQueuedRequestsPersistencyKey:self.queuedRequests.copy
                               };
     NSData* saveData;
 
