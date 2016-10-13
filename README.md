@@ -30,4 +30,4 @@ If you liked Countly (just like we do!), [why not use one of our badges](https:/
 
 ###  Support
 
-For community support page, see [http://support.count.ly](http://support.count.ly "Countly Support").
+Have any questions? Visit [http://community.count.ly](http://community.count.ly "Countly Community Forum").
