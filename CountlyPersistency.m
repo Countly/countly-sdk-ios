@@ -194,14 +194,11 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 
 - (void)saveToFileSync
 {
-    NSDictionary* saveDict = @{
-                                kCountlyQueuedRequestsPersistencyKey:self.queuedRequests
-                              };
     NSData* saveData;
 
     @synchronized (self)
     {
-        saveData = [NSKeyedArchiver archivedDataWithRootObject:saveDict];
+        saveData = [NSKeyedArchiver archivedDataWithRootObject:@{kCountlyQueuedRequestsPersistencyKey:self.queuedRequests}];
     }
 #if TARGET_OS_TV
     [NSUserDefaults.standardUserDefaults setObject:saveData forKey:kCountlyTVOSNSUDKey];
