@@ -10,7 +10,7 @@
 #pragma clang diagnostic ignored "-Wdeprecated"
 
 @interface CountlyStarRating ()
-@property (nonatomic, copy, nullable) void (^ratingCompletion)(NSInteger);
+@property (nonatomic, copy) void (^ratingCompletion)(NSInteger);
 @end
 
 NSString* const kCountlyReservedEventStarRating = @"[CLY]_star_rating";
@@ -51,7 +51,7 @@ const float buttonSize = 40;
               @"de" : @"Schließen",
               @"fr" : @"Fermer",
               @"es" : @"Cerrar",
-              @"ru" : @"закрыть",
+              @"ru" : @"Закрыть",
               @"lv" : @"Aizvērt",
               @"cs" : @"Zavřít"
         };
@@ -65,7 +65,8 @@ const float buttonSize = 40;
             @"en" : @"How would you rate the app?",
             @"tr" : @"Uygulamayı nasıl değerlendirirsiniz?",
             @"jp" : @"あなたの評価を教えてください。",
-            @"zh" : @"请告诉我你的评价。"
+            @"zh" : @"请告诉我你的评价。",
+            @"ru" : @"Как бы вы оценили приложение?"
         };
 
         self.message = dictMessage[langDesignator];
@@ -84,7 +85,7 @@ const float buttonSize = 40;
     {
         alertController = [UIAlertController alertControllerWithTitle:@" " message:self.message preferredStyle:UIAlertControllerStyleAlert];
 
-        UIAlertAction* dismiss = [UIAlertAction actionWithTitle:self.dismissButtonTitle style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action)
+        UIAlertAction* dismiss = [UIAlertAction actionWithTitle:self.dismissButtonTitle style:UIAlertActionStyleCancel handler:^(UIAlertAction * action)
         {
             [self finishWithRating:0];
         }];

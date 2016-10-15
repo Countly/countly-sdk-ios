@@ -42,7 +42,7 @@
 @property (nonatomic, strong) id<CountlyUserDetailsNullableNumber> birthYear;
 @property (nonatomic, strong) id<CountlyUserDetailsNullableDictionary> custom;
 
-+ (CountlyUserDetails *)sharedInstance;
++ (instancetype)sharedInstance;
 - (void)recordUserDetails;
 - (NSString *)serialize;
 - (NSData *)pictureUploadDataForRequest:(NSString *)requestString;

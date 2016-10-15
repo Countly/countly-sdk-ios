@@ -12,14 +12,14 @@
 
 @interface CountlyViewTracking : NSObject
 
-+ (instancetype _Nonnull)sharedInstance;
++ (instancetype)sharedInstance;
 
-- (void)reportView:(NSString* _Nonnull)viewName;
+- (void)reportView:(NSString *)viewName;
 - (void)endView;
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 - (void)startAutoViewTracking;
-- (void)addExceptionForAutoViewTracking:(Class _Nullable)exceptionViewControllerSubclass;
-- (void)removeExceptionForAutoViewTracking:(Class _Nullable)exceptionViewControllerSubclass;
+- (void)addExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass;
+- (void)removeExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass;
 @property (nonatomic) BOOL isAutoViewTrackingEnabled;
 #endif
 @end

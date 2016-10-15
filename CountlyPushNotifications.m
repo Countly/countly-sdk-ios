@@ -128,7 +128,7 @@ static char kUIAlertViewAssociatedObjectKey;
 
             if(actionButtonTitle)
             {
-                UIAlertAction* other = [UIAlertAction actionWithTitle:actionButtonTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action)
+                UIAlertAction* other = [UIAlertAction actionWithTitle:actionButtonTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction * action)
                 {
                     [self takeActionWithCountlyPayload:countlyPayload];
                 }];
