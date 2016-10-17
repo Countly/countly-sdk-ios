@@ -63,8 +63,8 @@
         [self tick];
     }
 
-    NSString* countlyServerEndpoint = [self.host stringByAppendingString:@"/i"];
-    NSString* fullRequestURL = [countlyServerEndpoint stringByAppendingFormat:@"?%@", queryString];
+    NSString* serverInputEndpoint = [self.host stringByAppendingString:@"/i"];
+    NSString* fullRequestURL = [serverInputEndpoint stringByAppendingFormat:@"?%@", queryString];
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:fullRequestURL]];
 
     NSData* pictureUploadData = [CountlyUserDetails.sharedInstance pictureUploadDataForRequest:queryString];
@@ -77,7 +77,7 @@
     }
     else if(queryString.length > 2048 || self.alwaysUsePOST)
     {
-        request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:countlyServerEndpoint]];
+        request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverInputEndpoint]];
         request.HTTPMethod = @"POST";
         request.HTTPBody = [queryString dataUTF8];
     }
