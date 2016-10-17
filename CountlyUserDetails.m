@@ -71,6 +71,9 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
 {
 #if TARGET_OS_IOS
     NSString* unescaped = [requestString stringByRemovingPercentEncoding];
+    if (!unescaped) {
+        return nil;
+    }
     NSRange rLocalPicturePath = [unescaped rangeOfString:kCountlyLocalPicturePath];
     if (rLocalPicturePath.location == NSNotFound)
         return nil;
