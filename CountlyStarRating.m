@@ -25,7 +25,7 @@ NSString* const kCountlyStarRatingStatusHasEverAskedAutomatically = @"kCountlySt
     UIAlertView* alertView;
 }
 
-const float buttonSize = 40;
+const float kCountlyStarRatingButtonSize = 40;
 
 + (instancetype)sharedInstance
 {
@@ -93,7 +93,7 @@ const float buttonSize = 40;
         [alertController addAction:dismiss];
 
         UIViewController* cvc = UIViewController.new;
-        [cvc setPreferredContentSize:(CGSize){buttonSize * 5, buttonSize * 1.5}];
+        [cvc setPreferredContentSize:(CGSize){kCountlyStarRatingButtonSize * 5, kCountlyStarRatingButtonSize * 1.5}];
         [cvc.view addSubview:[self starView]];
 
         @try
@@ -165,12 +165,12 @@ const float buttonSize = 40;
 
 - (UIView *)starView
 {
-    UIView* vw_star = [UIView.alloc initWithFrame:(CGRect){0, 0, buttonSize * 5, buttonSize}];
+    UIView* vw_star = [UIView.alloc initWithFrame:(CGRect){0, 0, kCountlyStarRatingButtonSize * 5, kCountlyStarRatingButtonSize}];
     vw_star.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleBottomMargin;
 
     for (int i = 0; i < 5; i++)
     {
-        btn_star[i] = [UIButton.alloc initWithFrame:(CGRect){i * buttonSize, 0, buttonSize, buttonSize}];
+        btn_star[i] = [UIButton.alloc initWithFrame:(CGRect){i * kCountlyStarRatingButtonSize, 0, kCountlyStarRatingButtonSize, kCountlyStarRatingButtonSize}];
         btn_star[i].titleLabel.font = [UIFont fontWithName:@"Helvetica" size:28];
         [btn_star[i] setTitle:@"★" forState:UIControlStateNormal];
         [btn_star[i] setTitleColor:[self passiveStarColor] forState:UIControlStateNormal];
