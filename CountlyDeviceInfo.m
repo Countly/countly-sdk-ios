@@ -7,8 +7,6 @@
 #import "CountlyCommon.h"
 #import <mach-o/dyld.h>
 
-NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000000000";
-
 @implementation CountlyDeviceInfo
 
 + (instancetype)sharedInstance
@@ -24,45 +22,37 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
     if (self = [super init])
     {
         self.deviceID = [CountlyPersistency.sharedInstance retrieveStoredDeviceID];
-#if TARGET_OS_IOS
-        //NOTE: For Limit Ad Tracking zero-IDFA problem
-        if ([self.deviceID isEqualToString:kCountlyLimitAdTrackingZeroID])
-            [self initializeDeviceID:CLYIDFV];
-#endif
     }
-
+    
     return self;
 }
 
 - (void)initializeDeviceID:(NSString *)deviceID
 {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
 #if TARGET_OS_IOS
     if(!deviceID || [deviceID isEqualToString:@""])
-        self.deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
+        self.deviceID = ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
+    else if ([deviceID isEqualToString:CLYIDFA])
+        self.deviceID = ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
     else if([deviceID isEqualToString:CLYIDFV])
         self.deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
-    else if ([deviceID isEqualToString:CLYIDFA])
-        self.deviceID = [self zeroSafeIDFA];
     else if([deviceID isEqualToString:CLYOpenUDID])
         self.deviceID = [Countly_OpenUDID value];
     else
         self.deviceID = deviceID;
-
+    
 #elif TARGET_OS_WATCH
     if(!deviceID || [deviceID isEqualToString:@""])
         self.deviceID = NSUUID.UUID.UUIDString;
     else
         self.deviceID = deviceID;
-
+    
 #elif TARGET_OS_TV
     if(!deviceID || [deviceID isEqualToString:@""])
         self.deviceID = NSUUID.UUID.UUIDString;
     else
         self.deviceID = deviceID;
-
+    
 #elif TARGET_OS_OSX
     if(!deviceID || [deviceID isEqualToString:@""])
         self.deviceID = NSUUID.UUID.UUIDString;
@@ -73,24 +63,8 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
 #else
     self.deviceID = @"UnsupportedPlaftormDevice";
 #endif
-
-#pragma GCC diagnostic pop
-
+    
     [CountlyPersistency.sharedInstance storeDeviceID:self.deviceID];
-}
-
-- (NSString *)zeroSafeIDFA
-{
-#if TARGET_OS_IOS
-    NSString* IDFA = ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
-    //NOTE: For Limit Ad Tracking zero-IDFA problem
-    if ([IDFA isEqualToString:kCountlyLimitAdTrackingZeroID])
-        IDFA = UIDevice.currentDevice.identifierForVendor.UUIDString;
-
-    return IDFA;
-#else
-    return nil;
-#endif
 }
 
 #pragma mark -
@@ -170,20 +144,6 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
     return [NSString stringWithFormat:@"%gx%g", bounds.size.width * scale, bounds.size.height * scale];
 }
 
-+ (NSString *)density
-{
-#if TARGET_OS_IOS
-    CGFloat scale = UIScreen.mainScreen.scale;
-#elif TARGET_OS_WATCH
-    CGFloat scale = WKInterfaceDevice.currentDevice.screenScale;
-#elif TARGET_OS_TV
-    CGFloat scale = 1.0;
-#else
-    CGFloat scale = NSScreen.mainScreen.backingScaleFactor;
-#endif
-    return [NSString stringWithFormat:@"@%ix", (int)scale];
-}
-
 + (NSString *)locale
 {
     return NSLocale.currentLocale.localeIdentifier;
@@ -211,17 +171,14 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
             break;
         }
     }
-
+    
     if (!imageHeader)
-    {
-        COUNTLY_LOG(@"BuildUUID image header can not be found!");
-        return @"0";
-    }
-
+        return @"BUILDUUID-IMAGE-HEADER-NOT-FOUND";
+    
     BOOL is64bit = imageHeader->magic == MH_MAGIC_64 || imageHeader->magic == MH_CIGAM_64;
     uintptr_t ptr = (uintptr_t)imageHeader + (is64bit ? sizeof(struct mach_header_64) : sizeof(struct mach_header));
     const struct segment_command *segCmd = NULL;
-
+    
     for (uint32_t i = 0; i < imageHeader->ncmds; i++, ptr += segCmd->cmdsize)
     {
         segCmd = (struct segment_command *)ptr;
@@ -232,9 +189,8 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
             return [[NSUUID.alloc initWithUUIDBytes:uuid] UUIDString];
         }
     }
-
-    COUNTLY_LOG(@"BuildUUID can not be read!");
-    return @"0";
+    
+    return @"BUILDUUID-CANNOT-BE-READ";
 }
 
 + (NSString *)bundleId
@@ -260,21 +216,20 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
     metricsDictionary[@"_device"] = CountlyDeviceInfo.device;
     metricsDictionary[@"_os"] = CountlyDeviceInfo.osName;
     metricsDictionary[@"_os_version"] = CountlyDeviceInfo.osVersion;
-
+    
     NSString *carrier = CountlyDeviceInfo.carrier;
     if (carrier)
         metricsDictionary[@"_carrier"] = carrier;
-
+    
     metricsDictionary[@"_resolution"] = CountlyDeviceInfo.resolution;
-    metricsDictionary[@"_density"] = CountlyDeviceInfo.density;
     metricsDictionary[@"_locale"] = CountlyDeviceInfo.locale;
     metricsDictionary[@"_app_version"] = CountlyDeviceInfo.appVersion;
-
+    
 #if TARGET_OS_IOS
     metricsDictionary[@"_has_watch"] = @(CountlyDeviceInfo.hasWatch);
     metricsDictionary[@"_installed_watch_app"] = @(CountlyDeviceInfo.installedWatchApp);
 #endif
-
+    
     return [metricsDictionary JSONify];
 }
 
@@ -291,17 +246,17 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
         CLYConnectionCellNetwork3G,
         CLYConnectionCellNetworkLTE
     } CLYConnectionType;
-
+    
     CLYConnectionType connType = CLYConnectionNone;
-
+    
     @try
     {
         struct ifaddrs *interfaces, *i;
-
+        
         if (!getifaddrs(&interfaces))
         {
             i = interfaces;
-
+            
             while(i != NULL)
             {
                 if(i->ifa_addr->sa_family == AF_INET)
@@ -309,27 +264,27 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
                     if([[NSString stringWithUTF8String:i->ifa_name] isEqualToString:@"pdp_ip0"])
                     {
                         connType = CLYConnectionCellNetwork;
-
+                        
 #if TARGET_OS_IOS
-
+                        
                         if (NSFoundationVersionNumber >= NSFoundationVersionNumber_iOS_7_0)
                         {
                             CTTelephonyNetworkInfo *tni = CTTelephonyNetworkInfo.new;
                             NSDictionary* connectionTypes =
                             @{
-                                CTRadioAccessTechnologyGPRS:@(CLYConnectionCellNetwork2G),
-                                CTRadioAccessTechnologyEdge:@(CLYConnectionCellNetwork2G),
-                                CTRadioAccessTechnologyCDMA1x:@(CLYConnectionCellNetwork2G),
-                                CTRadioAccessTechnologyWCDMA:@(CLYConnectionCellNetwork3G),
-                                CTRadioAccessTechnologyHSDPA:@(CLYConnectionCellNetwork3G),
-                                CTRadioAccessTechnologyHSUPA:@(CLYConnectionCellNetwork3G),
-                                CTRadioAccessTechnologyCDMAEVDORev0:@(CLYConnectionCellNetwork3G),
-                                CTRadioAccessTechnologyCDMAEVDORevA:@(CLYConnectionCellNetwork3G),
-                                CTRadioAccessTechnologyCDMAEVDORevB:@(CLYConnectionCellNetwork3G),
-                                CTRadioAccessTechnologyeHRPD:@(CLYConnectionCellNetwork3G),
-                                CTRadioAccessTechnologyLTE:@(CLYConnectionCellNetworkLTE)
-                            };
-
+                              CTRadioAccessTechnologyGPRS:@(CLYConnectionCellNetwork2G),
+                              CTRadioAccessTechnologyEdge:@(CLYConnectionCellNetwork2G),
+                              CTRadioAccessTechnologyCDMA1x:@(CLYConnectionCellNetwork2G),
+                              CTRadioAccessTechnologyWCDMA:@(CLYConnectionCellNetwork3G),
+                              CTRadioAccessTechnologyHSDPA:@(CLYConnectionCellNetwork3G),
+                              CTRadioAccessTechnologyHSUPA:@(CLYConnectionCellNetwork3G),
+                              CTRadioAccessTechnologyCDMAEVDORev0:@(CLYConnectionCellNetwork3G),
+                              CTRadioAccessTechnologyCDMAEVDORevA:@(CLYConnectionCellNetwork3G),
+                              CTRadioAccessTechnologyCDMAEVDORevB:@(CLYConnectionCellNetwork3G),
+                              CTRadioAccessTechnologyeHRPD:@(CLYConnectionCellNetwork3G),
+                              CTRadioAccessTechnologyLTE:@(CLYConnectionCellNetworkLTE)
+                              };
+                            
                             if(connectionTypes[tni.currentRadioAccessTechnology])
                                 connType = [connectionTypes[tni.currentRadioAccessTechnology] integerValue];
                         }
@@ -341,18 +296,18 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
                         break;
                     }
                 }
-
+                
                 i = i->ifa_next;
             }
         }
-
+        
         freeifaddrs(interfaces);
     }
     @catch (NSException *exception)
     {
-
+        
     }
-
+    
     return connType;
 }
 
@@ -363,7 +318,7 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
     kern_return_t kr = host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t)&vms, &ic);
     if(kr != KERN_SUCCESS)
         return -1;
-
+    
     return vm_page_size * (vms.free_count);
 }
 
@@ -400,7 +355,7 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
 #else
     return @"Unknown";
 #endif
-
+    
 }
 
 
@@ -408,15 +363,15 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
 {
 #if TARGET_OS_IOS
     EAGLContext *aContext;
-
+    
     aContext = [EAGLContext.alloc initWithAPI:kEAGLRenderingAPIOpenGLES3];
     if(aContext)
         return 3.0;
-
+    
     aContext = [EAGLContext.alloc initWithAPI:kEAGLRenderingAPIOpenGLES2];
     if(aContext)
         return 2.0;
-
+    
     return 1.0;
 #else
     return 1.0;
@@ -434,11 +389,18 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
 
 + (BOOL)isInBackground
 {
+/*
+#ifndef APP_EXTENSION
 #if TARGET_OS_IOS
     return UIApplication.sharedApplication.applicationState == UIApplicationStateBackground;
 #else
     return NO;
 #endif
+#else
+    return NO;
+#endif //APP_EXTENSION
+*/
 }
+
 
 @end
