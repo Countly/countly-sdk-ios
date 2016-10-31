@@ -12,7 +12,7 @@
     NSCalendar* gregorianCalendar;
     NSTimeInterval startTime;
 }
-@property long lastTimestamp;
+@property long long lastTimestamp;
 @end
 
 NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
@@ -70,7 +70,7 @@ NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTran
 
 - (NSTimeInterval)uniqueTimestamp
 {
-    long now = floor(NSDate.date.timeIntervalSince1970 * 1000);
+    long long now = floor(NSDate.date.timeIntervalSince1970 * 1000);
 
     if(now <= self.lastTimestamp)
         self.lastTimestamp ++;
@@ -83,17 +83,17 @@ NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTran
 - (NSString *)optionalParameters
 {
     NSMutableString *optinonalParameters = @"".mutableCopy;
-    
+
     if(self.ISOCountryCode)
         [optinonalParameters appendFormat:@"&country_code=%@", self.ISOCountryCode];
     if(self.city)
         [optinonalParameters appendFormat:@"&city=%@", self.city];
     if(self.location)
         [optinonalParameters appendFormat:@"&location=%@", self.location];
-    
+
     if(optinonalParameters.length)
         return optinonalParameters;
-    
+
     return nil;
 }
 
