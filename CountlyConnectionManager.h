@@ -24,8 +24,8 @@
 + (instancetype)sharedInstance;
 
 - (void)beginSession;
-- (void)updateSessionWithDuration:(int)duration;
-- (void)endSessionWithDuration:(int)duration;
+- (void)updateSession;
+- (void)endSession;
 
 - (void)sendEvents;
 - (void)sendUserDetails:(NSString *)userDetails;

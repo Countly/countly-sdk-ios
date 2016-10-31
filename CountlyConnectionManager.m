@@ -7,6 +7,9 @@
 #import "CountlyCommon.h"
 
 @interface CountlyConnectionManager()
+{
+    NSTimeInterval lastSessionStartTime;
+}
 #if TARGET_OS_IOS
 @property (nonatomic) UIBackgroundTaskIdentifier bgTask;
 #endif
@@ -61,6 +64,7 @@
 
         [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
         [self tick];
+        return;
     }
 
     NSString* serverInputEndpoint = [self.host stringByAppendingString:@"/i"];
@@ -136,6 +140,8 @@
 
 - (void)beginSession
 {
+    lastSessionStartTime = NSDate.date.timeIntervalSince1970;
+
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&begin_session=1&metrics=%@", [CountlyDeviceInfo metrics]];
 
     NSString* optionalParameters = [CountlyCommon.sharedInstance optionalParameters];
@@ -147,18 +153,18 @@
     [self tick];
 }
 
-- (void)updateSessionWithDuration:(int)duration
+- (void)updateSession
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&session_duration=%d", duration];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&session_duration=%d", [self sessionLengthInSeconds]];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
     [self tick];
 }
 
-- (void)endSessionWithDuration:(int)duration
+- (void)endSession
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&end_session=1&session_duration=%d", duration];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&end_session=1&session_duration=%d", [self sessionLengthInSeconds]];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -301,6 +307,18 @@
     NSInteger code = ((NSHTTPURLResponse*)response).statusCode;
 
     return (code >= 200 && code < 300);
+}
+
+- (int)sessionLengthInSeconds
+{
+    static double unsentSessionLength = 0.0;
+
+    NSTimeInterval currentTime = NSDate.date.timeIntervalSince1970;
+    unsentSessionLength += (currentTime - lastSessionStartTime);
+    lastSessionStartTime = currentTime;
+    int sessionLengthInSeconds = (int)unsentSessionLength;
+    unsentSessionLength -= sessionLengthInSeconds;
+    return sessionLengthInSeconds;
 }
 
 #pragma mark ---

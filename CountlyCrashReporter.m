@@ -112,9 +112,12 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     {
         if(!CountlyConnectionManager.sharedInstance.connection)
             CountlyConnectionManager.sharedInstance.connection = NSURLSessionDataTask.new;
-        [Countly.sharedInstance suspend];
-        //NOTE: suspend method adds 'event' and 'end_session' requests to queue and starts them.
+        //NOTE: `sendEvents` and `endSession` calls adds `event` and `end_session` requests to queue and starts them.
         //      a dummy connection object is created to prevent these requests when app is about to terminate due to crash
+
+        [CountlyConnectionManager.sharedInstance sendEvents];
+        [CountlyConnectionManager.sharedInstance endSession];
+        [CountlyPersistency.sharedInstance saveToFileSync];
 
         NSString *urlString = [NSString stringWithFormat:@"%@/i", CountlyConnectionManager.sharedInstance.host];
         NSString *queryString = [[CountlyConnectionManager.sharedInstance queryEssentials] stringByAppendingFormat:@"&crash=%@", [crashReport JSONify]];
@@ -126,10 +129,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
 
         dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 
-        [[NSURLSession.sharedSession dataTaskWithRequest:request
-                                  completionHandler:^(NSData * _Nullable data,
-                                                      NSURLResponse * _Nullable response,
-                                                      NSError * _Nullable error)
+        [[NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError*  error)
         {
             if(error || ![CountlyConnectionManager.sharedInstance isRequestSuccessful:response])
             {

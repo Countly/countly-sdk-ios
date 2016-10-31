@@ -10,9 +10,7 @@
 
 @interface Countly ()
 {
-    NSTimeInterval unsentSessionLength;
-    NSTimer *timer;
-    NSTimeInterval lastTime;
+    NSTimer* timer;
     BOOL isSuspended;
 }
 @end
@@ -31,10 +29,6 @@
 {
     if (self = [super init])
     {
-        timer = nil;
-        isSuspended = NO;
-        unsentSessionLength = 0;
-
 #if (TARGET_OS_IOS  || TARGET_OS_TV)
         [NSNotificationCenter.defaultCenter addObserver:self
                                                selector:@selector(didEnterBackgroundCallBack:)
@@ -126,7 +120,6 @@
         [CountlyAPM.sharedInstance startAPM];
 
     timer = [NSTimer scheduledTimerWithTimeInterval:CountlyConnectionManager.sharedInstance.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
-    lastTime = NSDate.date.timeIntervalSince1970;
 
     [CountlyConnectionManager.sharedInstance beginSession];
 
@@ -188,16 +181,10 @@
 
 - (void)onTimer:(NSTimer *)timer
 {
-    if (isSuspended == YES)
+    if (isSuspended)
         return;
 
-    NSTimeInterval currTime = NSDate.date.timeIntervalSince1970;
-    unsentSessionLength += currTime - lastTime;
-    lastTime = currTime;
-
-    int duration = unsentSessionLength;
-    [CountlyConnectionManager.sharedInstance updateSessionWithDuration:duration];
-    unsentSessionLength -= duration;
+    [CountlyConnectionManager.sharedInstance updateSession];
 
     [CountlyConnectionManager.sharedInstance sendEvents];
 }
@@ -210,14 +197,9 @@
 
     [CountlyConnectionManager.sharedInstance sendEvents];
 
-    NSTimeInterval currTime = NSDate.date.timeIntervalSince1970;
-    unsentSessionLength += currTime - lastTime;
+    [CountlyConnectionManager.sharedInstance endSession];
 
-    int duration = unsentSessionLength;
-    [CountlyConnectionManager.sharedInstance endSessionWithDuration:duration];
-    unsentSessionLength -= duration;
-
-    [CountlyPersistency.sharedInstance saveToFileSync];
+    [CountlyPersistency.sharedInstance saveToFile];
 }
 
 - (void)resume
@@ -232,8 +214,6 @@
         return;
     }
 #endif
-
-    lastTime = NSDate.date.timeIntervalSince1970;
 
     [CountlyConnectionManager.sharedInstance beginSession];
 
