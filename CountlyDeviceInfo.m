@@ -353,7 +353,7 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
     }
     @catch (NSException *exception)
     {
-
+        COUNTLY_LOG(@"Connection type can not be retrieved: \n%@", exception);
     }
 
     return connType;
