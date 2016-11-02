@@ -233,6 +233,18 @@
  */
 + (CountlyUserDetails *)user;
 
+/**
+ * Handles switching from device ID to custom user ID for logged in users
+ * @discussion When a user logs in, this user can be tracked with custom user ID instead of device ID. This is just a convenience method that handles setting user ID as new device ID and merging existing data on server.
+ * @param userID Custom user ID uniquely defining the logged in user
+ */
+- (void)userLoggedIn:(NSString *)userID;
+
+/**
+ * Handles switching from custom user ID to device ID for logged out users
+ * @discussion When a user logs out, all the data can be tracked with default device ID henceforth. This is just a convenience method that handles resetting device ID to default one and starting a new session.
+ */
+- (void)userLoggedOut;
 
 #pragma mark - Countly StarRating
 #if TARGET_OS_IOS

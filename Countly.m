@@ -436,6 +436,16 @@
     return CountlyUserDetails.sharedInstance;
 }
 
+- (void)userLoggedIn:(NSString *)userID
+{
+    [self setNewDeviceID:userID onServer:YES];
+}
+
+- (void)userLoggedOut
+{
+    [self setNewDeviceID:nil onServer:NO];
+}
+
 
 
 #pragma mark - Countly StarRating
