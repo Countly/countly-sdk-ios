@@ -6,7 +6,11 @@
 
 #import <Foundation/Foundation.h>
 
+#if TARGET_OS_IOS
+@interface CountlyPushNotifications : NSObject <UNUserNotificationCenterDelegate>
+#else
 @interface CountlyPushNotifications : NSObject
+#endif
 
 @property (nonatomic) BOOL isTestDevice;
 @property (nonatomic) BOOL sendPushTokenAlways;
@@ -16,6 +20,7 @@
 
 #if TARGET_OS_IOS
 - (void)startPushNotifications;
+- (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler;
 #endif
 @end
 

@@ -9,6 +9,9 @@
 #import "CountlyUserDetails.h"
 #import "CountlyCrashReporter.h"
 #import "CountlyConfig.h"
+#if TARGET_OS_IOS
+#import <UserNotifications/UserNotifications.h>
+#endif
 
 @interface Countly : NSObject
 
@@ -153,6 +156,25 @@
 
 #pragma mark - Countly PushNotifications
 #if TARGET_OS_IOS
+/**
+ * Shows default system dialog that asks for user's permission to display notifications.
+ * @discussion A unified convenience method that handles asking for notification permisson on both iOS10 and older iOS versions with badge, sound and alert notification types.
+ */
+- (void)askForNotificationPermission;
+
+/**
+ * Shows default system dialog that asks for user's permission to display notifications with given options and completion handler.
+ * @discussion A more customizable version of unified convenience method that handles asking for notification permisson on both iOS10 and older iOS versions where notification types app wants to display can be specified using @c options parameter. Completion block has a @c BOOL parameter called @c granted which is @c YES if user gave permission, and an @c NSError parameter called @c error which indicates if there is an error.
+ * @param options Bitwise combination of notification types (like badge, sound or alert) app wants to display
+ * @param completionHandler A completion handler block to be executed when user answers notification permission dialog
+ */
+- (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler;
+
+/**
+ * Records user's location to be used for geo-location based push notifications and advanced segmentation.
+ * @discussion By default, geoip database is used for acquiring user's location. If the app uses Core Location services, location with better accuracy can be provided using this method. Calling this method once or twice per app launch is enough, instead of each location update.
+ * @param coordinate User's location with latitude and longitude
+ */
 - (void)recordLocation:(CLLocationCoordinate2D)coordinate;
 #endif
 

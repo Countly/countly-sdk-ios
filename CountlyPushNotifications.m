@@ -15,7 +15,8 @@ static char kUIAlertViewAssociatedObjectKey;
 #endif
 
 @interface CountlyPushNotifications ()
-@property (strong) NSString* token;
+@property (nonatomic, strong) NSString* token;
+@property (nonatomic, copy) void (^permissionCompletion)(BOOL granted, NSError * error);
 @end
 
 @implementation CountlyPushNotifications
@@ -45,6 +46,8 @@ static char kUIAlertViewAssociatedObjectKey;
 
 - (void)startPushNotifications
 {
+    UNUserNotificationCenter.currentNotificationCenter.delegate = self;
+
     Class appDelegateClass = UIApplication.sharedApplication.delegate.class;
     NSArray* selectors = @[@"application:didRegisterForRemoteNotificationsWithDeviceToken:",
                            @"application:didFailToRegisterForRemoteNotificationsWithError:",
@@ -71,21 +74,58 @@ static char kUIAlertViewAssociatedObjectKey;
     }
 }
 
+- (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler
+{
+    if(NSFoundationVersionNumber > NSFoundationVersionNumber_iOS_9_x_Max)
+    {
+        [UNUserNotificationCenter.currentNotificationCenter requestAuthorizationWithOptions:options completionHandler:^(BOOL granted, NSError* error)
+        {
+            [CountlyPushNotifications.sharedInstance sendToken];
+            if(completionHandler)
+                completionHandler(granted, error);
+        }];
+    }
+    else
+    {
+        self.permissionCompletion = completionHandler;
+        UIUserNotificationType userNotificationTypes = (UIUserNotificationType)options;
+        UIUserNotificationSettings* settings = [UIUserNotificationSettings settingsForTypes:userNotificationTypes categories:nil];
+        [UIApplication.sharedApplication registerUserNotificationSettings:settings];
+    }
+
+    [UIApplication.sharedApplication registerForRemoteNotifications];
+}
+
 - (void)sendToken
 {
     if(!self.token)
         return;
 
-#if __IPHONE_OS_VERSION_MIN_REQUIRED < __IPHONE_8_0
-    BOOL userPermission = UIApplication.sharedApplication.enabledRemoteNotificationTypes != UIRemoteNotificationTypeNone;
-#else
-    BOOL userPermission= UIApplication.sharedApplication.currentUserNotificationSettings.types != UIUserNotificationTypeNone;
-#endif
-
     if([self.token isEqualToString:kCountlyTokenError])
+    {
         [CountlyConnectionManager.sharedInstance sendPushToken:@""];
-    else if(userPermission || self.sendPushTokenAlways)
+        return;
+    }
+
+    if(self.sendPushTokenAlways)
+    {
         [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
+        return;
+    }
+
+    if(NSFoundationVersionNumber > NSFoundationVersionNumber_iOS_9_x_Max)
+    {
+        [UNUserNotificationCenter.currentNotificationCenter getNotificationSettingsWithCompletionHandler:^(UNNotificationSettings* settings)
+        {
+            if (settings.authorizationStatus == UNAuthorizationStatusAuthorized)
+                [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
+        }];
+    }
+    else
+    {
+        if(UIApplication.sharedApplication.currentUserNotificationSettings.types != UIUserNotificationTypeNone)
+            [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
+    }
 }
 
 - (void)handleNotification:(NSDictionary *)notification
@@ -164,6 +204,45 @@ static char kUIAlertViewAssociatedObjectKey;
         [self takeActionWithCountlyPayload:countlyPayload];
     }
 }
+
+#pragma mark ---
+
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler
+{
+    COUNTLY_LOG(@"userNotificationCenter:willPresentNotification:withCompletionHandler:");
+
+    NSDictionary* userInfo = notification.request.content.userInfo;
+
+    [CountlyPushNotifications.sharedInstance handleNotification:userInfo];
+
+    id<UNUserNotificationCenterDelegate> appDelegate = (id<UNUserNotificationCenterDelegate>)UIApplication.sharedApplication.delegate;
+
+    if ([appDelegate respondsToSelector:@selector(userNotificationCenter:willPresentNotification:withCompletionHandler:)])
+        [appDelegate userNotificationCenter:center willPresentNotification:notification withCompletionHandler:completionHandler];
+    else
+        completionHandler(UNNotificationPresentationOptionNone);
+}
+
+
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void (^)())completionHandler
+{
+    COUNTLY_LOG(@"userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:");
+
+    if([response.actionIdentifier isEqualToString:UNNotificationDefaultActionIdentifier])
+    {
+        NSDictionary* userInfo = response.notification.request.content.userInfo;
+
+        [CountlyPushNotifications.sharedInstance handleNotification:userInfo];
+
+        id<UNUserNotificationCenterDelegate> appDelegate = (id<UNUserNotificationCenterDelegate>)UIApplication.sharedApplication.delegate;
+
+        if ([appDelegate respondsToSelector:@selector(userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:)])
+            [appDelegate userNotificationCenter:center didReceiveNotificationResponse:response withCompletionHandler:completionHandler];
+        else
+            completionHandler();
+    }
+}
+
 #pragma mark ---
 
 - (void)application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken{}
@@ -210,6 +289,11 @@ static char kUIAlertViewAssociatedObjectKey;
     COUNTLY_LOG(@"App didRegisterUserNotificationSettings: %@", notificationSettings);
 
     [CountlyPushNotifications.sharedInstance sendToken];
+    
+    BOOL granted = UIApplication.sharedApplication.currentUserNotificationSettings.types != UIUserNotificationTypeNone;
+
+    if(CountlyPushNotifications.sharedInstance.permissionCompletion)
+        CountlyPushNotifications.sharedInstance.permissionCompletion(granted, nil);
 
     [self Countly_application:application didRegisterUserNotificationSettings:notificationSettings];
 }

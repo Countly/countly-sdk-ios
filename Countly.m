@@ -359,6 +359,20 @@
 
 #pragma mark - Countly PushNotifications
 #if TARGET_OS_IOS
+
+- (void)askForNotificationPermission
+{
+    UNAuthorizationOptions authorizationOptions = UNAuthorizationOptionBadge | UNAuthorizationOptionSound | UNAuthorizationOptionAlert;
+    
+    [CountlyPushNotifications.sharedInstance askForNotificationPermissionWithOptions:authorizationOptions completionHandler:nil];
+}
+
+- (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler;
+{
+    [CountlyPushNotifications.sharedInstance askForNotificationPermissionWithOptions:options completionHandler:completionHandler];
+
+}
+
 - (void)recordLocation:(CLLocationCoordinate2D)coordinate
 {
     [CountlyConnectionManager.sharedInstance sendLocation:coordinate];

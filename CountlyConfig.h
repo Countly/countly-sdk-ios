@@ -145,7 +145,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 @property (nonatomic, strong) NSString* city;
 
 /**
- * Location latitude and longitude can be specified as CLLocationCoordinate2D struct to be used for advanced segmentation.
+ * Location latitude and longitude can be specified as CLLocationCoordinate2D struct to be used for advanced segmentation and geo-location based push notifications.
  * @discussion It will be sent with @c begin_session request only.
  */
 @property (nonatomic) CLLocationCoordinate2D location;
