@@ -52,6 +52,12 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 @property (nonatomic, strong) NSArray* features;
 
 /**
+ * For enabling SDK debug mode which prints internal logs.
+ * @discussion If set, SDK will print internal logs to console for debugging. Internal logging works only for Development environment where DEBUG flag is set in Build Settings.
+ */
+@property (nonatomic) BOOL enableDebug;
+
+/**
  * For specifiying application's launch options dictionary.
  * @discussion Previously it was required for @c CLYPushNotifications feature, but not needed anymore. It is just kept for future use.
  */

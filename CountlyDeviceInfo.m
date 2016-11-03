@@ -181,7 +181,7 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
 #else
     CGFloat scale = NSScreen.mainScreen.backingScaleFactor;
 #endif
-    return [NSString stringWithFormat:@"@%ix", (int)scale];
+    return [NSString stringWithFormat:@"@%dx", (int)scale];
 }
 
 + (NSString *)locale

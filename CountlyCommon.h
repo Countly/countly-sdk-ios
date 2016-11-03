@@ -20,12 +20,8 @@
 #import "CountlyStarRating.h"
 #import "CountlyPushNotifications.h"
 
-#ifndef COUNTLY_DEBUG
-#define COUNTLY_DEBUG 0
-#endif
-
-#if COUNTLY_DEBUG
-#define COUNTLY_LOG(fmt, ...) NSLog([@"%@ " stringByAppendingString:fmt], @"[Countly]", ##__VA_ARGS__)
+#if DEBUG
+#define COUNTLY_LOG(fmt, ...) CountlyInternalLog(fmt, ##__VA_ARGS__)
 #else
 #define COUNTLY_LOG(...)
 #endif
@@ -75,10 +71,13 @@ extern NSString* const kCountlySDKName;
 @interface CountlyCommon : NSObject
 #endif
 
+@property (nonatomic) BOOL enableDebug;
 @property (nonatomic) BOOL enableAppleWatch;
 @property (nonatomic, strong) NSString* ISOCountryCode;
 @property (nonatomic, strong) NSString* city;
 @property (nonatomic, strong) NSString* location;
+
+void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
 
 + (instancetype)sharedInstance;
 - (NSInteger)hourOfDay;

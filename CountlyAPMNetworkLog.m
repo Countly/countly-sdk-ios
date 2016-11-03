@@ -117,8 +117,8 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
                                         "HTTP Status Code: %lu \n"
                                         "Sent Data Size: %lu \n"
                                         "Received Data Size: %lu \n"
-                                        "Connection Type: %i \n"
-                                        "Request Successfull: %i \n"
+                                        "Connection Type: %d \n"
+                                        "Request Successful: %d \n"
                                         "\n\n",
                                         self.request,
                                         self.request.URL.host,

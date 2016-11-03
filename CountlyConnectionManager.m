@@ -93,7 +93,7 @@
 
     if(self.pinnedCertificates)
     {
-        COUNTLY_LOG(@"%i pinned certificate(s) specified in config.", self.pinnedCertificates.count);
+        COUNTLY_LOG(@"%d pinned certificate(s) specified in config.", (int)self.pinnedCertificates.count);
         NSURLSessionConfiguration *sc = [NSURLSessionConfiguration defaultSessionConfiguration];
         session = [NSURLSession sessionWithConfiguration:sc delegate:self delegateQueue:nil];
     }

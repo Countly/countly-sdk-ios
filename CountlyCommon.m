@@ -29,12 +29,6 @@ NSString* const kCountlySDKName = @"objc-native-ios";
     return s_sharedInstance;
 }
 
-+ (void)load
-{
-    [CountlyCommon.sharedInstance timeSinceLaunch];
-    //NOTE: just to record app start time
-}
-
 - (instancetype)init
 {
     if (self = [super init])
@@ -44,6 +38,21 @@ NSString* const kCountlySDKName = @"objc-native-ios";
     }
 
     return self;
+}
+
+void CountlyInternalLog(NSString *format, ...)
+{
+    if(!CountlyCommon.sharedInstance.enableDebug)
+        return;
+
+    va_list args;
+    va_start(args, format);
+
+    NSString* logFormat = [NSString stringWithFormat:@"[Countly] %@", format];
+    NSString* logString = [NSString.alloc initWithFormat:logFormat arguments:args];
+    NSLog(@"%@", logString);
+
+    va_end(args);
 }
 
 

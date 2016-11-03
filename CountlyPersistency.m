@@ -279,7 +279,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
     }
     else
     {
-        COUNTLY_LOG(@"Device ID can not be stored! %d", status);
+        COUNTLY_LOG(@"Device ID can not be stored! %d", (int)status);
     }
 }
 
