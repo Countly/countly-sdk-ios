@@ -46,7 +46,7 @@
 
     if(self.secretSalt)
     {
-        NSString* checksum = [[queryString stringByAppendingString:self.secretSalt] SHA1];
+        NSString* checksum = [[queryString stringByAppendingString:self.secretSalt] cly_SHA1];
         queryString = [queryString stringByAppendingFormat:@"&checksum=%@", checksum];
     }
 
@@ -83,7 +83,7 @@
     {
         request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverInputEndpoint]];
         request.HTTPMethod = @"POST";
-        request.HTTPBody = [queryString dataUTF8];
+        request.HTTPBody = [queryString cly_dataUTF8];
     }
 
     if(self.customHeaderFieldName && self.customHeaderFieldValue)
@@ -117,7 +117,7 @@
             }
             else
             {
-                COUNTLY_LOG(@"Request <%p> failed!\nServer reply: %@", request, [data stringUTF8]);
+                COUNTLY_LOG(@"Request <%p> failed!\nServer reply: %@", request, [data cly_stringUTF8]);
             }
         }
         else
@@ -133,7 +133,7 @@
 
     [self.connection resume];
 
-    COUNTLY_LOG(@"Request <%p> started:\n[%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, request.HTTPBody?([request.HTTPBody stringUTF8]?[request.HTTPBody stringUTF8]:@"Picture uploading..."):@"");
+    COUNTLY_LOG(@"Request <%p> started:\n[%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, request.HTTPBody?([request.HTTPBody cly_stringUTF8]?[request.HTTPBody cly_stringUTF8]:@"Picture uploading..."):@"");
 }
 
 #pragma mark ---

@@ -278,7 +278,7 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
     }
 #endif
 
-    return [metricsDictionary JSONify];
+    return [metricsDictionary cly_JSONify];
 }
 
 #pragma mark -

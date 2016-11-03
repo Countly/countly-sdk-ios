@@ -106,7 +106,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
 
     if(nonfatal)
     {
-        [CountlyConnectionManager.sharedInstance sendCrashReportLater:[crashReport JSONify]];
+        [CountlyConnectionManager.sharedInstance sendCrashReportLater:[crashReport cly_JSONify]];
     }
     else
     {
@@ -120,11 +120,11 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
         [CountlyPersistency.sharedInstance saveToFileSync];
 
         NSString *urlString = [NSString stringWithFormat:@"%@/i", CountlyConnectionManager.sharedInstance.host];
-        NSString *queryString = [[CountlyConnectionManager.sharedInstance queryEssentials] stringByAppendingFormat:@"&crash=%@", [crashReport JSONify]];
+        NSString *queryString = [[CountlyConnectionManager.sharedInstance queryEssentials] stringByAppendingFormat:@"&crash=%@", [crashReport cly_JSONify]];
 
         NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
         request.HTTPMethod = @"POST";
-        request.HTTPBody = [queryString dataUTF8];
+        request.HTTPBody = [queryString cly_dataUTF8];
         COUNTLY_LOG(@"Crash report request started: %@ \n%@", urlString, queryString);
 
         dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
@@ -134,7 +134,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
             if(error || ![CountlyConnectionManager.sharedInstance isRequestSuccessful:response])
             {
                 COUNTLY_LOG(@"Crash report request failed! Report stored to try again later. \n%@", error);
-                [CountlyConnectionManager.sharedInstance sendCrashReportLater:[crashReport JSONify]];
+                [CountlyConnectionManager.sharedInstance sendCrashReportLater:[crashReport cly_JSONify]];
             }
             else
             {

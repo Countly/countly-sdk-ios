@@ -170,17 +170,17 @@ NSString* CountlyJSONFromObject(id object)
     NSData *data = [NSJSONSerialization dataWithJSONObject:object options:0 error:&error];
     if(error){ COUNTLY_LOG(@"JSON can not be created: \n%@", error); }
 
-    return [data stringUTF8];
+    return [data cly_stringUTF8];
 }
 
-@implementation NSString (URLEscaped)
-- (NSString *)URLEscaped
+@implementation NSString (Countly)
+- (NSString *)cly_URLEscaped
 {
     NSCharacterSet* charset = [NSCharacterSet characterSetWithCharactersInString:@"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~"];
     return [self stringByAddingPercentEncodingWithAllowedCharacters:charset];
 }
 
-- (NSString *)SHA1
+- (NSString *)cly_SHA1
 {
     const char* s = [self UTF8String];
     unsigned char digest[CC_SHA1_DIGEST_LENGTH];
@@ -193,35 +193,28 @@ NSString* CountlyJSONFromObject(id object)
     return hash;
 }
 
-- (NSData *)dataUTF8
+- (NSData *)cly_dataUTF8
 {
     return [self dataUsingEncoding:NSUTF8StringEncoding];
 }
 @end
 
-@implementation NSArray (JSONify)
-- (NSString *)JSONify
+@implementation NSArray (Countly)
+- (NSString *)cly_JSONify
 {
-    return [CountlyJSONFromObject(self) URLEscaped];
+    return [CountlyJSONFromObject(self) cly_URLEscaped];
 }
 @end
 
-@implementation NSDictionary (JSONify)
-- (NSString *)JSONify
+@implementation NSDictionary (Countly)
+- (NSString *)cly_JSONify
 {
-    return [CountlyJSONFromObject(self) URLEscaped];
+    return [CountlyJSONFromObject(self) cly_URLEscaped];
 }
 @end
 
-@implementation NSMutableData (AppendStringUTF8)
-- (void)appendStringUTF8:(NSString *)string
-{
-    [self appendData:[string dataUTF8]];
-}
-@end
-
-@implementation NSData (stringUTF8)
-- (NSString *)stringUTF8
+@implementation NSData (Countly)
+- (NSString *)cly_stringUTF8
 {
     return [NSString.alloc initWithData:self encoding:NSUTF8StringEncoding];
 }

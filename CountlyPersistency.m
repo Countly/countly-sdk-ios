@@ -117,7 +117,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
         }
     }
 
-    return [tempArray JSONify];
+    return [tempArray cly_JSONify];
 }
 
 #pragma mark ---
@@ -239,7 +239,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 
         if (data)
         {
-            retrievedDeviceID = [data stringUTF8];
+            retrievedDeviceID = [data cly_stringUTF8];
 
             COUNTLY_LOG(@"Device ID successfully retrieved from KeyChain: %@", retrievedDeviceID);
 
@@ -266,7 +266,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
         (__bridge id)kSecAttrService:       kCountlyStoredDeviceIDKey,
         (__bridge id)kSecClass:             (__bridge id)kSecClassGenericPassword,
         (__bridge id)kSecAttrAccessible:    (__bridge id)kSecAttrAccessibleAlways,
-        (__bridge id)kSecValueData:         [deviceID dataUTF8]
+        (__bridge id)kSecValueData:         [deviceID cly_dataUTF8]
     };
 
     SecItemDelete((__bridge CFDictionaryRef)keychainDict);

@@ -95,26 +95,22 @@ void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
 #endif
 @end
 
-@interface NSString (URLEscaped)
-- (NSString *)URLEscaped;
-- (NSString *)SHA1;
-- (NSData *)dataUTF8;
+@interface NSString (Countly)
+- (NSString *)cly_URLEscaped;
+- (NSString *)cly_SHA1;
+- (NSData *)cly_dataUTF8;
 @end
 
-@interface NSArray (JSONify)
-- (NSString *)JSONify;
+@interface NSArray (Countly)
+- (NSString *)cly_JSONify;
 @end
 
-@interface NSDictionary (JSONify)
-- (NSString *)JSONify;
+@interface NSDictionary (Countly)
+- (NSString *)cly_JSONify;
 @end
 
-@interface NSMutableData (AppendStringUTF8)
-- (void)appendStringUTF8:(NSString *)string;
-@end
-
-@interface NSData (stringUTF8)
-- (NSString *)stringUTF8;
+@interface NSData (Countly)
+- (NSString *)cly_stringUTF8;
 @end
 
 @interface Countly (RecordEventWithTimeStamp)
