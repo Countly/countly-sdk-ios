@@ -10,10 +10,6 @@ NSString* const kCountlyReservedEventPushOpen = @"[CLY]_push_open";
 NSString* const kCountlyReservedEventPushAction = @"[CLY]_push_action";
 NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
-#if TARGET_OS_IOS
-static char kUIAlertViewAssociatedObjectKey;
-#endif
-
 @interface CountlyPushNotifications ()
 @property (nonatomic, strong) NSString* token;
 @property (nonatomic, copy) void (^permissionCompletion)(BOOL granted, NSError * error);
@@ -133,76 +129,47 @@ static char kUIAlertViewAssociatedObjectKey;
     COUNTLY_LOG(@"Handling remote notification %@", notification);
 
     NSDictionary* countlyPayload = notification[@"c"];
-    NSString* countlyPushNotificationID = countlyPayload[@"i"];
-    if (countlyPushNotificationID)
+    NSString* notificationID = countlyPayload[@"i"];
+
+    if (!notificationID)
+        return;
+    
+    COUNTLY_LOG(@"Countly Push Notification ID: %@", notificationID);
+
+    [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{@"i":notificationID}];
+
+    NSString* message = notification[@"aps"][@"alert"];
+    if(!message || self.doNotShowAlertForNotifications)
+        return;
+
+    NSString* title = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleDisplayName"];
+
+    UIAlertController* alertController = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
+
+    NSString* dismissButtonTitle = countlyPayload[@"c"];
+    if (!dismissButtonTitle) dismissButtonTitle = NSLocalizedString(@"Dismiss", nil);
+
+    UIAlertAction* dismiss = [UIAlertAction actionWithTitle:dismissButtonTitle style:UIAlertActionStyleCancel handler:nil];
+    [alertController addAction:dismiss];
+
+    NSString* URL = countlyPayload[@"l"];
+    if(URL)
     {
-        COUNTLY_LOG(@"Countly Push Notification ID: %@", countlyPushNotificationID);
-
-        [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{@"i":countlyPushNotificationID}];
-
-        NSString* message = notification[@"aps"][@"alert"];
-        if(!message || self.doNotShowAlertForNotifications)
-            return;
-
-        NSString* title = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleDisplayName"];
-        NSString* cancelButtonTitle = countlyPayload[@"c"];
-        NSString* actionButtonTitle = nil;
-
-        if (countlyPayload[@"l"])
+        NSString* visitButtonTitle = countlyPayload[@"a"];
+        if (!visitButtonTitle) visitButtonTitle = NSLocalizedString(@"Visit", nil);
+    
+        UIAlertAction* visit = [UIAlertAction actionWithTitle:visitButtonTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction * action)
         {
-            if (!cancelButtonTitle) cancelButtonTitle = NSLocalizedString(@"Cancel", nil);;
+            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{@"i": notificationID}];
 
-            actionButtonTitle = countlyPayload[@"a"];
-            if (!actionButtonTitle) actionButtonTitle = NSLocalizedString(@"Open", nil);
-        }
-        else
-        {
-            if (!cancelButtonTitle) cancelButtonTitle = NSLocalizedString(@"Dismiss", nil);;
-        }
+            [UIApplication.sharedApplication openURL:[NSURL URLWithString:URL]];
+        }];
 
-        if(UIAlertController.class)
-        {
-            UIAlertController* alertController = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
-            UIAlertAction* cancel = [UIAlertAction actionWithTitle:cancelButtonTitle style:UIAlertActionStyleCancel handler:nil];
-            [alertController addAction:cancel];
-
-            if(actionButtonTitle)
-            {
-                UIAlertAction* other = [UIAlertAction actionWithTitle:actionButtonTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction * action)
-                {
-                    [self takeActionWithCountlyPayload:countlyPayload];
-                }];
-
-                [alertController addAction:other];
-            }
-
-            UIViewController* rvc = UIApplication.sharedApplication.keyWindow.rootViewController;
-            [rvc presentViewController:alertController animated:YES completion:nil];
-        }
-        else
-        {
-            UIAlertView* alertView = [UIAlertView.alloc initWithTitle:title message:message delegate:self cancelButtonTitle:cancelButtonTitle otherButtonTitles:actionButtonTitle, nil];
-            objc_setAssociatedObject(self, &kUIAlertViewAssociatedObjectKey, countlyPayload, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-
-            [alertView show];
-        }
+        [alertController addAction:visit];
     }
-}
 
-- (void)takeActionWithCountlyPayload:(NSDictionary *)countlyPayload
-{
-    [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{@"i": countlyPayload[@"i"]}];
-
-    [UIApplication.sharedApplication openURL:[NSURL URLWithString:countlyPayload[@"l"]]];
-}
-
-- (void)alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex
-{
-    if (buttonIndex != alertView.cancelButtonIndex)
-    {
-        NSDictionary* countlyPayload = objc_getAssociatedObject(alertView, &kUIAlertViewAssociatedObjectKey);
-        [self takeActionWithCountlyPayload:countlyPayload];
-    }
+    UIViewController* rvc = UIApplication.sharedApplication.keyWindow.rootViewController;
+    [rvc presentViewController:alertController animated:YES completion:nil];
 }
 
 #pragma mark ---
