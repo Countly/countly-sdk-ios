@@ -122,6 +122,7 @@
         [CountlyAPM.sharedInstance startAPM];
 
     timer = [NSTimer scheduledTimerWithTimeInterval:CountlyConnectionManager.sharedInstance.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
+    [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
 
     [CountlyConnectionManager.sharedInstance beginSession];
 
