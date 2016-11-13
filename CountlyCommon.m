@@ -12,7 +12,7 @@
     NSCalendar* gregorianCalendar;
     NSTimeInterval startTime;
 }
-@property long lastTimestamp;
+@property long long lastTimestamp;
 @end
 
 NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
@@ -81,7 +81,7 @@ void CountlyInternalLog(NSString *format, ...)
 
 - (NSTimeInterval)uniqueTimestamp
 {
-    long now = floor(NSDate.date.timeIntervalSince1970 * 1000);
+    long long now = floor(NSDate.date.timeIntervalSince1970 * 1000);
 
     if(now <= self.lastTimestamp)
         self.lastTimestamp ++;
