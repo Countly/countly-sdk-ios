@@ -142,7 +142,8 @@
 {
     lastSessionStartTime = NSDate.date.timeIntervalSince1970;
 
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&begin_session=1&metrics=%@", [CountlyDeviceInfo metrics]];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&begin_session=1&sdk_version=%@&sdk_name=%@&metrics=%@", kCountlySDKVersion,
+                             kCountlySDKName, [CountlyDeviceInfo metrics]];
 
     NSString* optionalParameters = [CountlyCommon.sharedInstance optionalParameters];
     if(optionalParameters)
@@ -283,15 +284,13 @@
 
 - (NSString *)queryEssentials
 {
-    return [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%lld&hour=%ld&dow=%ld&tz=%ld&sdk_version=%@&sdk_name=%@",
+    return [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%lld&hour=%ld&dow=%ld&tz=%ld",
                                         self.appKey,
                                         CountlyDeviceInfo.sharedInstance.deviceID,
                                         (long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000),
                                         (long)CountlyCommon.sharedInstance.hourOfDay,
                                         (long)CountlyCommon.sharedInstance.dayOfWeek,
-                                        (long)CountlyCommon.sharedInstance.timeZone,
-                                        kCountlySDKVersion,
-                                        kCountlySDKName];
+                                        (long)CountlyCommon.sharedInstance.timeZone];
 }
 
 - (NSString *)boundary
