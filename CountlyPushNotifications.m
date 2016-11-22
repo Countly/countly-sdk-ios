@@ -11,8 +11,11 @@ NSString* const kCountlyReservedEventPushAction = @"[CLY]_push_action";
 NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 @interface CountlyPushNotifications ()
+#if TARGET_OS_IOS
+@property (nonatomic, strong) UIWindow* alertWindow;
 @property (nonatomic, strong) NSString* token;
 @property (nonatomic, copy) void (^permissionCompletion)(BOOL granted, NSError * error);
+#endif
 @end
 
 @implementation CountlyPushNotifications
@@ -149,7 +152,12 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     NSString* dismissButtonTitle = countlyPayload[@"c"];
     if (!dismissButtonTitle) dismissButtonTitle = NSLocalizedString(@"Dismiss", nil);
 
-    UIAlertAction* dismiss = [UIAlertAction actionWithTitle:dismissButtonTitle style:UIAlertActionStyleCancel handler:nil];
+    UIAlertAction* dismiss = [UIAlertAction actionWithTitle:dismissButtonTitle style:UIAlertActionStyleCancel handler:^(UIAlertAction * action)
+    {
+        self.alertWindow.hidden = YES;
+        self.alertWindow = nil;
+    }];
+
     [alertController addAction:dismiss];
 
     NSString* URL = countlyPayload[@"l"];
@@ -163,13 +171,19 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
             [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{@"i": notificationID}];
 
             [UIApplication.sharedApplication openURL:[NSURL URLWithString:URL]];
+
+            self.alertWindow.hidden = YES;
+            self.alertWindow = nil;
         }];
 
         [alertController addAction:visit];
     }
 
-    UIViewController* rvc = UIApplication.sharedApplication.keyWindow.rootViewController;
-    [rvc presentViewController:alertController animated:YES completion:nil];
+    self.alertWindow = [UIWindow.alloc initWithFrame:UIScreen.mainScreen.bounds];
+    self.alertWindow.rootViewController = UIViewController.new;
+    self.alertWindow.windowLevel = UIApplication.sharedApplication.windows.lastObject.windowLevel + 1;
+    [self.alertWindow makeKeyAndVisible];
+    [self.alertWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
 }
 
 #pragma mark ---

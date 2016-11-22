@@ -7,7 +7,10 @@
 #import "CountlyCommon.h"
 
 @interface CountlyStarRating ()
+#if TARGET_OS_IOS
+@property (nonatomic, strong) UIWindow* alertWindow;
 @property (nonatomic, copy) void (^ratingCompletion)(NSInteger);
+#endif
 @end
 
 NSString* const kCountlyReservedEventStarRating = @"[CLY]_star_rating";
@@ -99,19 +102,11 @@ const float kCountlyStarRatingButtonSize = 40;
         COUNTLY_LOG(@"UIAlertController's contentViewController can not be set: \n%@", exception);
     }
 
-    //NOTE: if rootViewController is not set at early app launch, try again 1 sec after.
-    UIViewController* rvc = UIApplication.sharedApplication.keyWindow.rootViewController;
-    if(rvc)
-    {
-        [rvc presentViewController:alertController animated:YES completion:nil];
-    }
-    else
-    {
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
-        {
-            [UIApplication.sharedApplication.keyWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
-        });
-    }
+    self.alertWindow = [UIWindow.alloc initWithFrame:UIScreen.mainScreen.bounds];
+    self.alertWindow.rootViewController = UIViewController.new;
+    self.alertWindow.windowLevel = UIApplication.sharedApplication.windows.lastObject.windowLevel + 1;
+    [self.alertWindow makeKeyAndVisible];
+    [self.alertWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
 }
 
 - (void)checkForAutoAsk
@@ -215,6 +210,9 @@ const float kCountlyStarRatingButtonSize = 40;
     };
 
     [Countly.sharedInstance recordEvent:kCountlyReservedEventStarRating segmentation:segmentation count:1 sum:0];
+
+    self.alertWindow.hidden = YES;
+    self.alertWindow = nil;
 
     self.ratingCompletion = nil;
 }
