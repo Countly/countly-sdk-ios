@@ -85,7 +85,7 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
 
     NSDictionary* pathDictionary = [NSJSONSerialization JSONObjectWithData:[pathString cly_dataUTF8] options:0 error:nil];
     NSString* localPicturePath = pathDictionary[kCountlyLocalPicturePath];
-    if(!localPicturePath || [localPicturePath isEqualToString:@""])
+    if(!localPicturePath || !localPicturePath.length)
         return nil;
 
     COUNTLY_LOG(@"Local picture path successfully extracted from query string: %@", localPicturePath);

@@ -40,7 +40,7 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 #if TARGET_OS_IOS
-    if(!deviceID || [deviceID isEqualToString:@""])
+    if(!deviceID || !deviceID.length)
         self.deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
     else if([deviceID isEqualToString:CLYIDFV])
         self.deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
@@ -52,19 +52,19 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
         self.deviceID = deviceID;
 
 #elif TARGET_OS_WATCH
-    if(!deviceID || [deviceID isEqualToString:@""])
+    if(!deviceID || !deviceID.length)
         self.deviceID = NSUUID.UUID.UUIDString;
     else
         self.deviceID = deviceID;
 
 #elif TARGET_OS_TV
-    if(!deviceID || [deviceID isEqualToString:@""])
+    if(!deviceID || !deviceID.length)
         self.deviceID = NSUUID.UUID.UUIDString;
     else
         self.deviceID = deviceID;
 
 #elif TARGET_OS_OSX
-    if(!deviceID || [deviceID isEqualToString:@""])
+    if(!deviceID || !deviceID.length)
         self.deviceID = NSUUID.UUID.UUIDString;
     else if([deviceID isEqualToString:CLYOpenUDID])
         self.deviceID = [Countly_OpenUDID value];
