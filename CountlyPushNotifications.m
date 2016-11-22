@@ -68,6 +68,8 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         Method countlyMethod = class_getInstanceMethod(appDelegateClass, countlySelector);
         method_exchangeImplementations(originalMethod, countlyMethod);
     }
+    
+    [UIApplication.sharedApplication registerForRemoteNotifications];
 }
 
 - (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler
@@ -88,8 +90,6 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         UIUserNotificationSettings* settings = [UIUserNotificationSettings settingsForTypes:userNotificationTypes categories:nil];
         [UIApplication.sharedApplication registerUserNotificationSettings:settings];
     }
-
-    [UIApplication.sharedApplication registerForRemoteNotifications];
 }
 
 - (void)sendToken
