@@ -7,7 +7,7 @@
 
 ##About
 
-This repository includes the Countly iOS SDK which supports watchOS, tvOS & OSX also. See [Countly iOS SDK](http://resources.count.ly/v1.0/docs/countly-sdk-for-ios-and-os-x) documentation at [Countly Resources](http://resources.count.ly) for installation. 
+This repository includes the Countly iOS SDK which supports watchOS, tvOS & Mac OS also. See [Countly iOS SDK](http://resources.count.ly/v1.0/docs/countly-sdk-for-ios-and-os-x) documentation at [Countly Resources](http://resources.count.ly) for installation. 
 
 
 ### Other Github resources ###
