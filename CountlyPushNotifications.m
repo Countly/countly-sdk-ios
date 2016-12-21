@@ -18,6 +18,9 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 #endif
 @end
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 @implementation CountlyPushNotifications
 
 + (instancetype)sharedInstance
@@ -289,3 +292,5 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 }
 @end
 #endif
+#pragma GCC diagnostic pop
+

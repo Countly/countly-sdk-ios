@@ -65,11 +65,7 @@
 extern NSString* const kCountlySDKVersion;
 extern NSString* const kCountlySDKName;
 
-#if (TARGET_OS_IOS || TARGET_OS_WATCH)
-@interface CountlyCommon : NSObject <WCSessionDelegate>
-#else
 @interface CountlyCommon : NSObject
-#endif
 
 @property (nonatomic) BOOL enableDebug;
 @property (nonatomic) BOOL enableAppleWatch;

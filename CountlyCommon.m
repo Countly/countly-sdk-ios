@@ -119,7 +119,7 @@ void CountlyInternalLog(NSString *format, ...)
     if ([WCSession isSupported])
     {
         WCSession *session = WCSession.defaultSession;
-        session.delegate = self;
+        session.delegate = (id<WCSessionDelegate>)self;
         [session activateSession];
     }
 }
