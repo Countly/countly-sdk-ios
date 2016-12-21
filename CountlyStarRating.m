@@ -126,7 +126,7 @@ const float kCountlyStarRatingButtonSize = 40;
         {
             COUNTLY_LOG(@"Asking for star-rating as session count reached specified limit %d ...", (int)self.sessionCount);
 
-            [self showDialog:^(NSInteger rating){}];
+            [self showDialog:self.ratingCompletionForAutoAsk];
 
             status[kCountlyStarRatingStatusHasEverAskedAutomatically] = @YES;
         }

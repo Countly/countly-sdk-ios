@@ -91,7 +91,7 @@
     CountlyStarRating.sharedInstance.dismissButtonTitle = config.starRatingDismissButtonTitle;
     CountlyStarRating.sharedInstance.sessionCount = config.starRatingSessionCount;
     CountlyStarRating.sharedInstance.disableAskingForEachAppVersion = config.starRatingDisableAskingForEachAppVersion;
-
+    CountlyStarRating.sharedInstance.ratingCompletionForAutoAsk = config.starRatingCompletion;
     [CountlyStarRating.sharedInstance checkForAutoAsk];
 
     [CountlyCommon.sharedInstance transferParentDeviceID];

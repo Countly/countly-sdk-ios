@@ -17,5 +17,6 @@
 @property (nonatomic, strong) NSString* dismissButtonTitle;
 @property (nonatomic) NSUInteger sessionCount;
 @property (nonatomic) BOOL disableAskingForEachAppVersion;
+@property (nonatomic, copy) void (^ratingCompletionForAutoAsk)(NSInteger);
 #endif
 @end

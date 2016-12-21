@@ -199,4 +199,10 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  * @discussion If set, star-rating dialog will be displayed automatically only once for the whole life of the app. It will not be displayed for each new version.
  */
 @property (nonatomic) BOOL starRatingDisableAskingForEachAppVersion;
+
+/**
+ * Completion block to be executed after star-rating dialog is shown automatically.
+ * @discussion Completion block has a single NSInteger parameter that indicates 1 to 5 star-rating given by user. If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to server.
+ */
+@property (nonatomic, copy) void (^starRatingCompletion)(NSInteger rating);
 @end
