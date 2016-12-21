@@ -22,6 +22,7 @@
 - (void)removeExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass;
 @property (nonatomic) BOOL isAutoViewTrackingEnabled;
 #endif
+@property (nonatomic, strong) NSString* lastView;
 @end
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
