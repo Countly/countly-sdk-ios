@@ -98,8 +98,7 @@
         session = [NSURLSession sessionWithConfiguration:sc delegate:self delegateQueue:nil];
     }
 
-    self.connection = [session dataTaskWithRequest:request
-    completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error)
+    self.connection = [session dataTaskWithRequest:request completionHandler:^(NSData * data, NSURLResponse * response, NSError * error)
     {
         self.connection = nil;
 
@@ -322,7 +321,7 @@
 
 #pragma mark ---
 
-- (void)URLSession:(NSURLSession *)session didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential * _Nullable))completionHandler
+- (void)URLSession:(NSURLSession *)session didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential *))completionHandler
 {
     SecTrustRef serverTrust = challenge.protectionSpace.serverTrust;
     SecKeyRef serverKey = SecTrustCopyPublicKey(serverTrust);

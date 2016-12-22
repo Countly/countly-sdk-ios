@@ -89,7 +89,7 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
 + (long long)sentDataSizeForRequest:(NSURLRequest *)request
 {
     __block long long sentDataSize = 0;
-    [request.allHTTPHeaderFields enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, NSString * _Nonnull obj, BOOL * _Nonnull stop)
+    [request.allHTTPHeaderFields enumerateKeysAndObjectsUsingBlock:^(NSString * key, NSString * obj, BOOL * stop)
     {
         sentDataSize += [key lengthOfBytesUsingEncoding:NSUTF8StringEncoding] + [obj lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
     }];
@@ -150,7 +150,7 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
 
 #pragma mark - Connection Delegate
 
-- (void)connection:(NSURLConnection *)connection didFailWithError:(nonnull NSError *)error
+- (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error
 {
     [self finishWithStatusCode:-1 andDataSize:0];
 
