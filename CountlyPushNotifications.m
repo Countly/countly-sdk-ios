@@ -84,7 +84,6 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     {
         [UNUserNotificationCenter.currentNotificationCenter requestAuthorizationWithOptions:options completionHandler:^(BOOL granted, NSError* error)
         {
-            [CountlyPushNotifications.sharedInstance sendToken];
             if(completionHandler)
                 completionHandler(granted, error);
         }];
