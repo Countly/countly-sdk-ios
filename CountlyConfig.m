@@ -17,7 +17,8 @@
 #elif TARGET_OS_TV
     NSString* const CLYAutoViewTracking = @"CLYAutoViewTracking";
 #endif
-    NSString* const CLYAPM = @"CLYAPM";
+//NOTE: Disable APM feature until server completely supports it
+// NSString* const CLYAPM = @"CLYAPM";
 
 
 //NOTE: Device ID options

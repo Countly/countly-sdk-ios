@@ -118,8 +118,9 @@
     }
 #endif
 
-    if([config.features containsObject:CLYAPM])
-        [CountlyAPM.sharedInstance startAPM];
+//NOTE: Disable APM feature until server completely supports it
+//    if([config.features containsObject:CLYAPM])
+//        [CountlyAPM.sharedInstance startAPM];
 
     timer = [NSTimer scheduledTimerWithTimeInterval:CountlyConnectionManager.sharedInstance.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
     [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];

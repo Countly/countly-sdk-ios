@@ -189,9 +189,10 @@
 
 - (void)sendPushToken:(NSString *)token
 {
-    // Test modes: 0 = Production build,
-    //             1 = Development build,
-    //             2 = AdHoc build (when isTestDevice flag on config object is set explicitly)
+    //NOTE: Push notifications test modes:
+    //  0 = Production build,
+    //  1 = Development build,
+    //  2 = AdHoc build (when isTestDevice flag on config object is set explicitly)
 
     int testMode;
 #ifndef __OPTIMIZE__
