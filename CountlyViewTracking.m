@@ -7,7 +7,6 @@
 #import "CountlyCommon.h"
 
 @interface CountlyViewTracking ()
-@property (nonatomic, strong) NSString* _Nonnull lastView;
 @property (nonatomic) NSTimeInterval lastViewStartTime;
 @property (nonatomic, strong) NSMutableArray* exceptionViewControllers;
 @end
@@ -45,18 +44,19 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
             @"UIApplicationRotationFollowingController"
         ];
 
-        [internalExceptionViewControllers enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop)
+        for (NSString* className in internalExceptionViewControllers)
         {
-            Class c = NSClassFromString(obj);
+            Class c = NSClassFromString(className);
             if(c)
                 [self.exceptionViewControllers addObject:c];
-        }];
+        
+        }
     }
 
     return self;
 }
 
-- (void)reportView:(NSString* _Nonnull)viewName
+- (void)reportView:(NSString *)viewName
 {
     [self endView];
 
@@ -95,7 +95,7 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
     }
 }
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_TV)
 - (void)startAutoViewTracking
 {
     self.isAutoViewTrackingEnabled = YES;
@@ -108,12 +108,12 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
     method_exchangeImplementations(O_method, C_method);
 }
 
-- (void)addExceptionForAutoViewTracking:(Class _Nullable)exceptionViewControllerSubclass
+- (void)addExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass
 {
     [self.exceptionViewControllers addObject:exceptionViewControllerSubclass];
 }
 
-- (void)removeExceptionForAutoViewTracking:(Class _Nullable)exceptionViewControllerSubclass
+- (void)removeExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass
 {
     [self.exceptionViewControllers removeObject:exceptionViewControllerSubclass];
 }
@@ -122,16 +122,20 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
 @end
 
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_TV)
 @implementation UIViewController (CountlyViewTracking)
 - (void)Countly_viewDidAppear:(BOOL)animated
 {
-    if(CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled)
+    NSString* viewTitle = self.title;
+    if(!viewTitle)
+        viewTitle = NSStringFromClass(self.class);
+
+    if(CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled && ![CountlyViewTracking.sharedInstance.lastView isEqualToString:viewTitle])
     {
         __block BOOL isExceptionClass = NO;
-        [CountlyViewTracking.sharedInstance.exceptionViewControllers enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop)
+        [CountlyViewTracking.sharedInstance.exceptionViewControllers enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL * stop)
         {
-            if([self isKindOfClass:obj])
+            if([self isKindOfClass:obj] || [NSStringFromClass(self.class) isEqualToString:NSStringFromClass(obj)])
             {
                 isExceptionClass = YES;
                 *stop = YES;
@@ -139,14 +143,7 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
         }];
 
         if(!isExceptionClass)
-        {
-            NSString* viewTitle = self.title;
-
-            if(!viewTitle)
-                viewTitle = NSStringFromClass([self class]);
-
             [CountlyViewTracking.sharedInstance reportView:viewTitle];
-        }
     }
 
     [self Countly_viewDidAppear:animated];

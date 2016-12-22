@@ -12,10 +12,12 @@
     NSCalendar* gregorianCalendar;
     NSTimeInterval startTime;
 }
-@property long lastTimestamp;
+@property long long lastTimestamp;
 @end
 
 NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
+NSString* const kCountlySDKVersion = @"16.12";
+NSString* const kCountlySDKName = @"objc-native-ios";
 
 @implementation CountlyCommon
 
@@ -27,12 +29,6 @@ NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTran
     return s_sharedInstance;
 }
 
-+ (void)load
-{
-    [CountlyCommon.sharedInstance timeSinceLaunch];
-    //NOTE: just to record app start time
-}
-
 - (instancetype)init
 {
     if (self = [super init])
@@ -42,6 +38,21 @@ NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTran
     }
 
     return self;
+}
+
+void CountlyInternalLog(NSString *format, ...)
+{
+    if(!CountlyCommon.sharedInstance.enableDebug)
+        return;
+
+    va_list args;
+    va_start(args, format);
+
+    NSString* logFormat = [NSString stringWithFormat:@"[Countly] %@", format];
+    NSString* logString = [NSString.alloc initWithFormat:logFormat arguments:args];
+    NSLog(@"%@", logString);
+
+    va_end(args);
 }
 
 
@@ -70,7 +81,7 @@ NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTran
 
 - (NSTimeInterval)uniqueTimestamp
 {
-    long now = floor(NSDate.date.timeIntervalSince1970 * 1000);
+    long long now = floor(NSDate.date.timeIntervalSince1970 * 1000);
 
     if(now <= self.lastTimestamp)
         self.lastTimestamp ++;
@@ -83,17 +94,17 @@ NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTran
 - (NSString *)optionalParameters
 {
     NSMutableString *optinonalParameters = @"".mutableCopy;
-    
+
     if(self.ISOCountryCode)
         [optinonalParameters appendFormat:@"&country_code=%@", self.ISOCountryCode];
     if(self.city)
         [optinonalParameters appendFormat:@"&city=%@", self.city];
     if(self.location)
         [optinonalParameters appendFormat:@"&location=%@", self.location];
-    
+
     if(optinonalParameters.length)
         return optinonalParameters;
-    
+
     return nil;
 }
 
@@ -102,10 +113,13 @@ NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTran
 #if (TARGET_OS_IOS || TARGET_OS_WATCH)
 - (void)activateWatchConnectivity
 {
+    if(!self.enableAppleWatch)
+        return;
+
     if ([WCSession isSupported])
     {
         WCSession *session = WCSession.defaultSession;
-        session.delegate = self;
+        session.delegate = (id<WCSessionDelegate>)self;
         [session activateSession];
     }
 }
@@ -114,6 +128,9 @@ NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTran
 #if (TARGET_OS_IOS)
 - (void)transferParentDeviceID
 {
+    if(!self.enableAppleWatch)
+        return;
+
     [self activateWatchConnectivity];
 
     if(WCSession.defaultSession.paired && WCSession.defaultSession.watchAppInstalled)
@@ -153,17 +170,17 @@ NSString* CountlyJSONFromObject(id object)
     NSData *data = [NSJSONSerialization dataWithJSONObject:object options:0 error:&error];
     if(error){ COUNTLY_LOG(@"JSON can not be created: \n%@", error); }
 
-    return [data stringUTF8];
+    return [data cly_stringUTF8];
 }
 
-@implementation NSString (URLEscaped)
-- (NSString *)URLEscaped
+@implementation NSString (Countly)
+- (NSString *)cly_URLEscaped
 {
     NSCharacterSet* charset = [NSCharacterSet characterSetWithCharactersInString:@"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~"];
     return [self stringByAddingPercentEncodingWithAllowedCharacters:charset];
 }
 
-- (NSString *)SHA1
+- (NSString *)cly_SHA1
 {
     const char* s = [self UTF8String];
     unsigned char digest[CC_SHA1_DIGEST_LENGTH];
@@ -176,35 +193,28 @@ NSString* CountlyJSONFromObject(id object)
     return hash;
 }
 
-- (NSData *)dataUTF8
+- (NSData *)cly_dataUTF8
 {
     return [self dataUsingEncoding:NSUTF8StringEncoding];
 }
 @end
 
-@implementation NSArray (JSONify)
-- (NSString *)JSONify
+@implementation NSArray (Countly)
+- (NSString *)cly_JSONify
 {
-    return [CountlyJSONFromObject(self) URLEscaped];
+    return [CountlyJSONFromObject(self) cly_URLEscaped];
 }
 @end
 
-@implementation NSDictionary (JSONify)
-- (NSString *)JSONify
+@implementation NSDictionary (Countly)
+- (NSString *)cly_JSONify
 {
-    return [CountlyJSONFromObject(self) URLEscaped];
+    return [CountlyJSONFromObject(self) cly_URLEscaped];
 }
 @end
 
-@implementation NSMutableData (AppendStringUTF8)
-- (void)appendStringUTF8:(NSString *)string
-{
-    [self appendData:[string dataUTF8]];
-}
-@end
-
-@implementation NSData (stringUTF8)
-- (NSString *)stringUTF8
+@implementation NSData (Countly)
+- (NSString *)cly_stringUTF8
 {
     return [NSString.alloc initWithData:self encoding:NSUTF8StringEncoding];
 }

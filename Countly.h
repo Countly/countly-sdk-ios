@@ -9,6 +9,9 @@
 #import "CountlyUserDetails.h"
 #import "CountlyCrashReporter.h"
 #import "CountlyConfig.h"
+#if TARGET_OS_IOS
+#import <UserNotifications/UserNotifications.h>
+#endif
 
 @interface Countly : NSObject
 
@@ -151,59 +154,26 @@
 
 
 
-#pragma mark - Countly Messaging
+#pragma mark - Countly PushNotifications
 #if TARGET_OS_IOS
-- (void)didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken;
-
-- (void)didFailToRegisterForRemoteNotifications;
-
 /**
- * Create a set of UIMutableUserNotificationCategory'ies which you can register in addition to your ones to enable iOS 8 actions.
+ * Shows default system dialog that asks for user's permission to display notifications.
+ * @discussion A unified convenience method that handles asking for notification permisson on both iOS10 and older iOS versions with badge, sound and alert notification types.
  */
-- (NSMutableSet *) countlyNotificationCategories;
+- (void)askForNotificationPermission;
 
 /**
- * Create a set of UIMutableUserNotificationCategory'ies which you can register in addition to your ones to enable iOS 8 actions. This method gives you ability to provide localized or just different versions of your action titles.
- * @param titles Array of NSString objects in following order: Cancel, Open, Update, Review
+ * Shows default system dialog that asks for user's permission to display notifications with given options and completion handler.
+ * @discussion A more customizable version of unified convenience method that handles asking for notification permisson on both iOS10 and older iOS versions where notification types app wants to display can be specified using @c options parameter. Completion block has a @c BOOL parameter called @c granted which is @c YES if user gave permission, and an @c NSError parameter called @c error which indicates if there is an error.
+ * @param options Bitwise combination of notification types (like badge, sound or alert) app wants to display
+ * @param completionHandler A completion handler block to be executed when user answers notification permission dialog
  */
-- (NSMutableSet *) countlyNotificationCategoriesWithActionTitles:(NSArray *)actions;
+- (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler;
 
 /**
- * Method that does automatic processing for Countly Messaging:
- * - It records that the message has been received.
- * - In case of standard Countly messages (Message, URL, Update, Review) it displays alert with app name as a title:
- * --- for Message - just alert with message text and button OK;
- * --- for URL - Cancel & Open buttons;
- * --- for Update - Cancel & Update buttons;
- * --- for Review - Cancel & Review buttons.
- * Whenever user presses one of (Open, Update, Review) buttons Countly performs corresponding action (opens up a Safari for URL type, opens your app page in App Store for Update and review section of your app in App Store for Review) and records Action event so you could then see conversion rates in Countly Dashboard.
- * @param info Dictionary you got from application:didReceiveRemoteNotification:
- * @param titles Array of NSString objects in following order: Cancel, Open, Update, Review
- * @return TRUE When Countly has successfully handled notification and presented alert, FALSE otherwise.
- */
-- (BOOL)handleRemoteNotification:(NSDictionary *)info withButtonTitles:(NSArray *)titles;
-
-/**
- * Same as previous method, but with default button titles Cancel, OK, URL, Update, Review.
- */
-- (BOOL)handleRemoteNotification:(NSDictionary *)info;
-
-/**
- * Method records push opened event. Quite handy if you do not call handleRemoteNotification: method, but still want to see conversions in Countly Dashboard.
- * @param c NSDictionary of @"c" userInfo key.
- */
-- (void)recordPushOpenForCountlyDictionary:(NSDictionary *)c;
-
-/**
- * Method records push action event. Quite handy if you do not call handleRemoteNotification: method, but still want to see conversions in Countly Dashboard.
- * @param c NSDictionary of @"c" userInfo key.
- */
-- (void)recordPushActionForCountlyDictionary:(NSDictionary *)c;
-
-
-/**
- * Records location with given coordinate to be used for location-aware push notifications.
- * @param coordinate CLLocationCoordinate2D struct with latitude and longitude
+ * Records user's location to be used for geo-location based push notifications and advanced segmentation.
+ * @discussion By default, geoip database is used for acquiring user's location. If the app uses Core Location services, location with better accuracy can be provided using this method. Calling this method once or twice per app launch is enough, instead of each location update.
+ * @param coordinate User's location with latitude and longitude
  */
 - (void)recordLocation:(CLLocationCoordinate2D)coordinate;
 #endif
@@ -285,12 +255,24 @@
  */
 + (CountlyUserDetails *)user;
 
+/**
+ * Handles switching from device ID to custom user ID for logged in users
+ * @discussion When a user logs in, this user can be tracked with custom user ID instead of device ID. This is just a convenience method that handles setting user ID as new device ID and merging existing data on server.
+ * @param userID Custom user ID uniquely defining the logged in user
+ */
+- (void)userLoggedIn:(NSString *)userID;
+
+/**
+ * Handles switching from custom user ID to device ID for logged out users
+ * @discussion When a user logs out, all the data can be tracked with default device ID henceforth. This is just a convenience method that handles resetting device ID to default one and starting a new session.
+ */
+- (void)userLoggedOut;
 
 #pragma mark - Countly StarRating
 #if TARGET_OS_IOS
 /**
  * Shows star-rating dialog manually and executes completion block after user's action.
- * @discussion Completion block takes a single NSInteger argument that indicates 1 to 5 star-rating given by user. If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to server.
+ * @discussion Completion block has a single NSInteger parameter that indicates 1 to 5 star-rating given by user. If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to server.
  * @param completion A block object to be executed when user gives a star-rating or dismisses dialog without rating
  */
 - (void)askForStarRating:(void(^)(NSInteger rating))completion;

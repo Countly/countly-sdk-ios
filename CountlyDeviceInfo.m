@@ -40,7 +40,7 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 #if TARGET_OS_IOS
-    if(!deviceID || [deviceID isEqualToString:@""])
+    if(!deviceID || !deviceID.length)
         self.deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
     else if([deviceID isEqualToString:CLYIDFV])
         self.deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
@@ -52,19 +52,19 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
         self.deviceID = deviceID;
 
 #elif TARGET_OS_WATCH
-    if(!deviceID || [deviceID isEqualToString:@""])
+    if(!deviceID || !deviceID.length)
         self.deviceID = NSUUID.UUID.UUIDString;
     else
         self.deviceID = deviceID;
 
 #elif TARGET_OS_TV
-    if(!deviceID || [deviceID isEqualToString:@""])
+    if(!deviceID || !deviceID.length)
         self.deviceID = NSUUID.UUID.UUIDString;
     else
         self.deviceID = deviceID;
 
 #elif TARGET_OS_OSX
-    if(!deviceID || [deviceID isEqualToString:@""])
+    if(!deviceID || !deviceID.length)
         self.deviceID = NSUUID.UUID.UUIDString;
     else if([deviceID isEqualToString:CLYOpenUDID])
         self.deviceID = [Countly_OpenUDID value];
@@ -181,7 +181,7 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
 #else
     CGFloat scale = NSScreen.mainScreen.backingScaleFactor;
 #endif
-    return [NSString stringWithFormat:@"@%ix", (int)scale];
+    return [NSString stringWithFormat:@"@%dx", (int)scale];
 }
 
 + (NSString *)locale
@@ -271,11 +271,14 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
     metricsDictionary[@"_app_version"] = CountlyDeviceInfo.appVersion;
 
 #if TARGET_OS_IOS
-    metricsDictionary[@"_has_watch"] = @(CountlyDeviceInfo.hasWatch);
-    metricsDictionary[@"_installed_watch_app"] = @(CountlyDeviceInfo.installedWatchApp);
+    if(CountlyCommon.sharedInstance.enableAppleWatch)
+    {
+        metricsDictionary[@"_has_watch"] = @(CountlyDeviceInfo.hasWatch);
+        metricsDictionary[@"_installed_watch_app"] = @(CountlyDeviceInfo.installedWatchApp);
+    }
 #endif
 
-    return [metricsDictionary JSONify];
+    return [metricsDictionary cly_JSONify];
 }
 
 #pragma mark -
@@ -350,7 +353,7 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
     }
     @catch (NSException *exception)
     {
-
+        COUNTLY_LOG(@"Connection type can not be retrieved: \n%@", exception);
     }
 
     return connType;

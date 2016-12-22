@@ -6,6 +6,10 @@
 
 #import "CountlyCommon.h"
 
+@interface CountlyAPM ()
+@property (nonatomic, strong) NSMutableArray* exceptionURLs;
+@end
+
 @implementation CountlyAPM
 
 + (instancetype)sharedInstance
@@ -21,7 +25,7 @@
     self = [super init];
     if (self)
     {
-        NSURL * url = [NSURL URLWithString:CountlyConnectionManager.sharedInstance.appHost];
+        NSURL * url = [NSURL URLWithString:CountlyConnectionManager.sharedInstance.host];
         NSString* hostAndPath = [url.host stringByAppendingString:url.path];
         self.exceptionURLs = [NSMutableArray arrayWithObject:hostAndPath];
     }
@@ -31,52 +35,31 @@
 
 - (void)startAPM
 {
-    Method O_method;
-    Method C_method;
-
-    O_method = class_getClassMethod(NSURLConnection.class, @selector(sendSynchronousRequest:returningResponse:error:));
-    C_method = class_getClassMethod(NSURLConnection.class, @selector(Countly_sendSynchronousRequest:returningResponse:error:));
-    method_exchangeImplementations(O_method, C_method);
-
-    O_method = class_getClassMethod(NSURLConnection.class, @selector(sendAsynchronousRequest:queue:completionHandler:));
-    C_method = class_getClassMethod(NSURLConnection.class, @selector(Countly_sendAsynchronousRequest:queue:completionHandler:));
-    method_exchangeImplementations(O_method, C_method);
-
-    O_method = class_getInstanceMethod(NSURLConnection.class, @selector(initWithRequest:delegate:));
-    C_method = class_getInstanceMethod(NSURLConnection.class, @selector(Countly_initWithRequest:delegate:));
-    method_exchangeImplementations(O_method, C_method);
-
-    O_method = class_getInstanceMethod(NSURLConnection.class, @selector(initWithRequest:delegate:startImmediately:));
-    C_method = class_getInstanceMethod(NSURLConnection.class, @selector(Countly_initWithRequest:delegate:startImmediately:));
-    method_exchangeImplementations(O_method, C_method);
-
-    O_method = class_getInstanceMethod(NSURLConnection.class, @selector(start));
-    C_method = class_getInstanceMethod(NSURLConnection.class, @selector(Countly_start));
-    method_exchangeImplementations(O_method, C_method);
-
-    O_method = class_getInstanceMethod(NSURLSession.class, @selector(dataTaskWithRequest:completionHandler:));
-    C_method = class_getInstanceMethod(NSURLSession.class, @selector(Countly_dataTaskWithRequest:completionHandler:));
-    method_exchangeImplementations(O_method, C_method);
-
-    O_method = class_getInstanceMethod(NSURLSession.class, @selector(downloadTaskWithRequest:completionHandler:));
-    C_method = class_getInstanceMethod(NSURLSession.class, @selector(Countly_downloadTaskWithRequest:completionHandler:));
-    method_exchangeImplementations(O_method, C_method);
+    NSArray* swizzling =
+    @[
+        @{@"c":NSURLConnection.class, @"f":@YES, @"s":[NSValue valueWithPointer:@selector(sendSynchronousRequest:returningResponse:error:)]},
+        @{@"c":NSURLConnection.class, @"f":@YES, @"s":[NSValue valueWithPointer:@selector(sendAsynchronousRequest:queue:completionHandler:)]},
+        @{@"c":NSURLConnection.class, @"f":@NO,  @"s":[NSValue valueWithPointer:@selector(initWithRequest:delegate:)]},
+        @{@"c":NSURLConnection.class, @"f":@NO,  @"s":[NSValue valueWithPointer:@selector(initWithRequest:delegate:startImmediately:)]},
+        @{@"c":NSURLConnection.class, @"f":@NO,  @"s":[NSValue valueWithPointer:@selector(start)]},
+        @{@"c":NSURLSession.class,    @"f":@NO,  @"s":[NSValue valueWithPointer:@selector(dataTaskWithRequest:completionHandler:)]},
+        @{@"c":NSURLSession.class,    @"f":@NO,  @"s":[NSValue valueWithPointer:@selector(downloadTaskWithRequest:completionHandler:)]},
+        @{@"c":NSURLSessionTask.class,     @"f":@NO,  @"s":[NSValue valueWithPointer:@selector(resume)]}
+    ];
 
 
-    O_method = class_getInstanceMethod(NSClassFromString(@"__NSCFLocalDataTask"), @selector(resume));
-    C_method = class_getInstanceMethod(NSClassFromString(@"__NSCFLocalDataTask"), @selector(Countly_resume));
-
-#if TARGET_OS_IOS
-    if(NSFoundationVersionNumber <= NSFoundationVersionNumber_iOS_8_0)
+    for (NSDictionary* dict in swizzling)
     {
-        O_method = class_getInstanceMethod(NSURLSessionTask.class, @selector(resume));
-        C_method = class_getInstanceMethod(NSURLSessionTask.class, @selector(Countly_resume));
+        Class c = dict[@"c"];
+        BOOL isClassMethod = [dict[@"f"] boolValue];
+        SEL originalSelector = [dict[@"s"] pointerValue];
+        SEL countlySelector = NSSelectorFromString([@"Countly_" stringByAppendingString:NSStringFromSelector(originalSelector)]);
+
+        Method O_method = isClassMethod ? class_getClassMethod(c, originalSelector) : class_getInstanceMethod(c, originalSelector);
+        Method C_method = isClassMethod ? class_getClassMethod(c, countlySelector) : class_getInstanceMethod(c, countlySelector);
+        method_exchangeImplementations(O_method, C_method);
     }
-#endif
-
-    method_exchangeImplementations(O_method, C_method);
 }
-
 
 - (void)addExceptionForAPM:(NSString *)string
 {
@@ -96,121 +79,29 @@
     [CountlyAPM.sharedInstance.exceptionURLs removeObject:hostAndPath];
 }
 
-
-#pragma mark -
-
-- (void)connection:(NSURLConnection *)connection didFailWithError:(nonnull NSError *)error
+- (BOOL)isException:(NSURLRequest *)request
 {
-    [connection.APMNetworkLog finishWithStatusCode:-1 andDataSize:0];
+    NSString* hostAndPath = [request.URL.host stringByAppendingString:request.URL.path];
+    __block BOOL isException = NO;
 
-    if (connection.originalDelegate &&
-        [connection.originalDelegate respondsToSelector:@selector(connection:didFailWithError:)])
+    [CountlyAPM.sharedInstance.exceptionURLs enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL* stop)
     {
-        [connection.originalDelegate connection:connection didFailWithError:error];
-    }
+        if([request.URL.host isEqualToString:obj] || [hostAndPath hasPrefix:obj])
+        {
+            isException = YES;
+            *stop = YES;
+        }
+    }];
+
+    return isException;
 }
-
-
-- (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
-{
-    [connection.APMNetworkLog updateWithResponse:response];
-
-    if (connection.originalDelegate &&
-        [connection.originalDelegate respondsToSelector:@selector(connection:didReceiveResponse:)])
-    {
-        [connection.originalDelegate connection:connection didReceiveResponse:response];
-    }
-}
-
-- (void)connectionDidFinishLoading:(NSURLConnection *)connection
-{
-    [connection.APMNetworkLog finish];
-
-    if (connection.originalDelegate &&
-        [connection.originalDelegate respondsToSelector:@selector(connectionDidFinishLoading:)])
-    {
-        [connection.originalDelegate connectionDidFinishLoading:connection];
-    }
-}
-
 @end
 
 
-
 #pragma mark -
+
+
 @implementation NSURLConnection (CountlyAPM)
-@dynamic originalDelegate, APMNetworkLog;
-
-+ (nullable NSData *)Countly_sendSynchronousRequest:(NSURLRequest *)request returningResponse:(NSURLResponse **)response error:(NSError **)error
-{
-    CountlyAPMNetworkLog* nl = [CountlyAPMNetworkLog createWithRequest:request startImmediately:YES];
-
-    NSData *data = [self Countly_sendSynchronousRequest:request returningResponse:response error:error];
-
-    [nl finishWithStatusCode:((NSHTTPURLResponse*)*response).statusCode andDataSize:data.length];
-
-    return data;
-}
-
-+ (void)Countly_sendAsynchronousRequest:(NSURLRequest *) request
-                                  queue:(NSOperationQueue *) queue
-                      completionHandler:(void (^)(NSURLResponse* response, NSData* data, NSError* connectionError)) handler
-
-{
-    CountlyAPMNetworkLog* nl = [CountlyAPMNetworkLog createWithRequest:request startImmediately:YES];
-
-    [self Countly_sendAsynchronousRequest:request queue:queue completionHandler:^(NSURLResponse * _Nullable response, NSData * _Nullable data, NSError * _Nullable connectionError)
-    {
-        [nl finishWithStatusCode:((NSHTTPURLResponse*)response).statusCode andDataSize:data.length];
-
-        if (handler)
-        {
-            handler(response, data, connectionError);
-        }
-    }];
-};
-
-- (nullable instancetype)Countly_initWithRequest:(NSURLRequest * _Nonnull)request delegate:(nullable id)delegate
-{
-    CountlyAPMNetworkLog* nl = [CountlyAPMNetworkLog createWithRequest:request startImmediately:NO];
-
-    NSURLConnection* c = [self Countly_initWithRequest:request delegate:CountlyAPM.sharedInstance startImmediately:NO];
-    c.originalDelegate = delegate;
-    c.APMNetworkLog = nl;
-    [c start];
-
-    return c;
-}
-
-- (nullable instancetype)Countly_initWithRequest:(NSURLRequest * _Nonnull)request delegate:(nullable id)delegate startImmediately:(BOOL)startImmediately
-{
-    CountlyAPMNetworkLog* nl = [CountlyAPMNetworkLog createWithRequest:request startImmediately:startImmediately];
-
-    NSURLConnection* c = [self Countly_initWithRequest:request delegate:CountlyAPM.sharedInstance startImmediately:NO];
-    c.originalDelegate = delegate;
-    c.APMNetworkLog = nl;
-    if(startImmediately)
-        [c start];
-
-    return c;
-}
-
-- (void)Countly_start
-{
-    [self.APMNetworkLog start];
-
-    [self Countly_start];
-}
-
-- (id)originalDelegate
-{
-    return objc_getAssociatedObject(self, @selector(originalDelegate));
-}
-
-- (void)setOriginalDelegate:(id)originalDelegate
-{
-    objc_setAssociatedObject(self, @selector(originalDelegate), originalDelegate, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-}
 
 - (CountlyAPMNetworkLog *)APMNetworkLog
 {
@@ -222,66 +113,63 @@
     objc_setAssociatedObject(self, @selector(APMNetworkLog), APMNetworkLog, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
 
-@end
-
-
-
-#pragma mark -
-@implementation NSURLSession (CountlyAPM)
-- (NSURLSessionDataTask *)Countly_dataTaskWithRequest:(NSURLRequest *)request completionHandler:(void (^)(NSData * __nullable data, NSURLResponse * __nullable response, NSError * __nullable error))completionHandler
++ (NSData *)Countly_sendSynchronousRequest:(NSURLRequest *)request returningResponse:(NSURLResponse **)response error:(NSError **)error
 {
-    CountlyAPMNetworkLog* nl = [CountlyAPMNetworkLog createWithRequest:request startImmediately:YES];
+    CountlyAPMNetworkLog* nl = [CountlyAPMNetworkLog logWithRequest:request andOriginalDelegate:nil startNow:YES];
 
-    NSURLSessionDataTask* dataTask = [self Countly_dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error)
+    NSData *data = [self Countly_sendSynchronousRequest:request returningResponse:response error:error];
+
+    [nl finishWithStatusCode:((NSHTTPURLResponse*)*response).statusCode andDataSize:data.length];
+
+    return data;
+}
+
++ (void)Countly_sendAsynchronousRequest:(NSURLRequest *) request queue:(NSOperationQueue *) queue completionHandler:(void (^)(NSURLResponse* response, NSData* data, NSError* connectionError)) handler
+
+{
+    CountlyAPMNetworkLog* nl = [CountlyAPMNetworkLog logWithRequest:request andOriginalDelegate:nil startNow:YES];
+
+    [self Countly_sendAsynchronousRequest:request queue:queue completionHandler:^(NSURLResponse * response, NSData * data, NSError * connectionError)
     {
         [nl finishWithStatusCode:((NSHTTPURLResponse*)response).statusCode andDataSize:data.length];
 
-        if (completionHandler)
-        {
-            completionHandler(data, response, error);
-        }
+        if (handler)
+            handler(response, data, connectionError);
     }];
+};
 
-    dataTask.APMNetworkLog = nl;
+- (instancetype)Countly_initWithRequest:(NSURLRequest *)request delegate:(id)delegate
+{
+    CountlyAPMNetworkLog* nl = [CountlyAPMNetworkLog logWithRequest:request andOriginalDelegate:delegate startNow:YES];
+    NSURLConnection* conn = [self Countly_initWithRequest:request delegate:(nl ? nl : delegate) startImmediately:YES];
+    conn.APMNetworkLog = nl;
 
-    return dataTask;
+    return conn;
 }
 
-- (NSURLSessionDownloadTask * __nullable)Countly_downloadTaskWithRequest:(NSURLRequest * _Nonnull)request completionHandler:(void (^ _Nullable)(NSURL * __nullable location, NSURLResponse * __nullable response, NSError * __nullable error))completionHandler
+- (instancetype)Countly_initWithRequest:(NSURLRequest *)request delegate:(id)delegate startImmediately:(BOOL)startImmediately
 {
-    CountlyAPMNetworkLog* nl = [CountlyAPMNetworkLog createWithRequest:request startImmediately:YES];
+    CountlyAPMNetworkLog* nl = [CountlyAPMNetworkLog logWithRequest:request andOriginalDelegate:delegate startNow:startImmediately];
+    NSURLConnection* conn = [self Countly_initWithRequest:request delegate:(nl ? nl : delegate) startImmediately:startImmediately];
+    conn.APMNetworkLog = nl;
 
-    NSURLSessionDownloadTask* downloadTask = [self Countly_downloadTaskWithRequest:request completionHandler:^(NSURL * _Nullable location, NSURLResponse * _Nullable response, NSError * _Nullable error)
-    {
-        NSHTTPURLResponse* HTTPresponse = (NSHTTPURLResponse*)response;
-        long long dataSize = [[HTTPresponse allHeaderFields][@"Content-Length"] longLongValue];
+    return conn;
+}
 
-        [nl finishWithStatusCode:((NSHTTPURLResponse*)response).statusCode andDataSize:dataSize];
+- (void)Countly_start
+{
+    [self.APMNetworkLog start];
 
-        if (completionHandler)
-        {
-            completionHandler(location, response, error);
-        }
-    }];
-
-    downloadTask.APMNetworkLog = nl;
-
-    return downloadTask;
+    [self Countly_start];
 }
 
 @end
 
 
+#pragma mark -
+
 
 @implementation NSURLSessionTask (CountlyAPM)
-@dynamic APMNetworkLog;
-
-- (void)Countly_resume
-{
-    [self.APMNetworkLog start];
-
-    [self Countly_resume];
-}
 
 - (CountlyAPMNetworkLog *)APMNetworkLog
 {
@@ -293,4 +181,54 @@
     objc_setAssociatedObject(self, @selector(APMNetworkLog), APMNetworkLog, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 }
 
+- (void)Countly_resume
+{
+    [self.APMNetworkLog start];
+
+    [self Countly_resume];
+}
+
 @end
+
+
+@implementation NSURLSession (CountlyAPM)
+- (NSURLSessionDataTask *)Countly_dataTaskWithRequest:(NSURLRequest *)request completionHandler:(void (^)(NSData * data, NSURLResponse * response, NSError * error))completionHandler
+{
+    CountlyAPMNetworkLog* nl = [CountlyAPMNetworkLog logWithRequest:request andOriginalDelegate:nil startNow:YES];
+
+    NSURLSessionDataTask* dataTask = [self Countly_dataTaskWithRequest:request completionHandler:^(NSData * data, NSURLResponse * response, NSError * error)
+    {
+        [nl finishWithStatusCode:((NSHTTPURLResponse*)response).statusCode andDataSize:data.length];
+
+        if (completionHandler)
+            completionHandler(data, response, error);
+    }];
+
+    dataTask.APMNetworkLog = nl;
+
+    return dataTask;
+}
+
+- (NSURLSessionDownloadTask *)Countly_downloadTaskWithRequest:(NSURLRequest *)request completionHandler:(void (^)(NSURL * location, NSURLResponse * response, NSError * error))completionHandler
+{
+    CountlyAPMNetworkLog* nl = [CountlyAPMNetworkLog logWithRequest:request andOriginalDelegate:nil startNow:YES];
+
+    NSURLSessionDownloadTask* downloadTask = [self Countly_downloadTaskWithRequest:request completionHandler:^(NSURL * location, NSURLResponse * response, NSError * error)
+    {
+        NSHTTPURLResponse* HTTPresponse = (NSHTTPURLResponse*)response;
+        long long dataSize = [[HTTPresponse allHeaderFields][@"Content-Length"] longLongValue];
+
+        [nl finishWithStatusCode:((NSHTTPURLResponse*)response).statusCode andDataSize:dataSize];
+
+        if (completionHandler)
+            completionHandler(location, response, error);
+    }];
+
+    downloadTask.APMNetworkLog = nl;
+
+    return downloadTask;
+}
+
+@end
+
+

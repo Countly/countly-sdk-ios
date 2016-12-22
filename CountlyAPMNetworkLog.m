@@ -13,34 +13,25 @@
 @property (nonatomic) long long sentDataSize;
 @property (nonatomic) long long receivedDataSize;
 @property (nonatomic) NSInteger connectionType;
+@property (nonatomic, strong) NSURLRequest* request;
+@property (nonatomic, weak) id <NSURLConnectionDataDelegate, NSURLConnectionDelegate> originalDelegate;
 @end
 
 NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
 
 @implementation CountlyAPMNetworkLog
 
-+ (instancetype)createWithRequest:(NSURLRequest *)request startImmediately:(BOOL)startImmediately
++ (instancetype)logWithRequest:(NSURLRequest *)request andOriginalDelegate:(id)originalDelegate startNow:(BOOL)startNow
 {
-    NSString* hostAndPath = [request.URL.host stringByAppendingString:request.URL.path];
-    __block BOOL isException = NO;
-
-    [CountlyAPM.sharedInstance.exceptionURLs
-     enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop)
-    {
-        if([request.URL.host isEqualToString:obj] || [hostAndPath hasPrefix:obj])
-        {
-            isException = YES;
-            *stop = YES;
-        }
-    }];
-
-    if (isException) return nil;
+    if ([CountlyAPM.sharedInstance isException:request])
+        return nil;
 
     CountlyAPMNetworkLog* nl = CountlyAPMNetworkLog.new;
     nl.request = request;
+    nl.originalDelegate = originalDelegate;
     nl.sentDataSize = [self.class sentDataSizeForRequest:request];
 
-    if(startImmediately)
+    if(startNow)
     {
         nl.connectionType = CountlyDeviceInfo.connectionType;
         nl.startTime = NSDate.date.timeIntervalSince1970;
@@ -93,10 +84,12 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
     COUNTLY_LOG(@"APM log recorded:\n%@", self);
 }
 
+#pragma mark -
+
 + (long long)sentDataSizeForRequest:(NSURLRequest *)request
 {
     __block long long sentDataSize = 0;
-    [request.allHTTPHeaderFields enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, NSString * _Nonnull obj, BOOL * _Nonnull stop)
+    [request.allHTTPHeaderFields enumerateKeysAndObjectsUsingBlock:^(NSString * key, NSString * obj, BOOL * stop)
     {
         sentDataSize += [key lengthOfBytesUsingEncoding:NSUTF8StringEncoding] + [obj lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
     }];
@@ -108,7 +101,8 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
 
 - (NSString *)description
 {
-    return [NSString stringWithFormat: @"Request host: %@ \n"
+    return [NSString stringWithFormat: @"Request <%p> \n"
+                                        "Request host: %@ \n"
                                         "Request path: %@ \n"
                                         "Start Time: %f \n"
                                         "End Time: %f \n"
@@ -116,9 +110,10 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
                                         "HTTP Status Code: %lu \n"
                                         "Sent Data Size: %lu \n"
                                         "Received Data Size: %lu \n"
-                                        "Connection Type: %i \n"
-                                        "Request Successfull: %i \n"
+                                        "Connection Type: %d \n"
+                                        "Request Successful: %d \n"
                                         "\n\n",
+                                        self.request,
                                         self.request.URL.host,
                                         self.request.URL.path,
                                         self.startTime,
@@ -129,6 +124,54 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
                                         (long)self.receivedDataSize,
                                         (int)self.connectionType,
                                         self.connectionType!=0 && self.HTTPStatusCode/100 == 2] ;
+}
+
+#pragma mark - Delegate Forwarding
+
+
+- (BOOL)respondsToSelector:(SEL)aSelector
+{
+    if([super respondsToSelector:aSelector])
+        return YES;
+    
+    if ([self.originalDelegate respondsToSelector:aSelector])
+        return YES;
+    
+    return NO;
+}
+
+- (id)forwardingTargetForSelector:(SEL)aSelector
+{    
+    if ([self.originalDelegate respondsToSelector:aSelector])
+        return self.originalDelegate;
+    
+    return [super forwardingTargetForSelector:aSelector];
+}
+
+#pragma mark - Connection Delegate
+
+- (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error
+{
+    [self finishWithStatusCode:-1 andDataSize:0];
+
+    if ([self.originalDelegate respondsToSelector:@selector(connection:didFailWithError:)])
+        [self.originalDelegate connection:connection didFailWithError:error];
+}
+
+- (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
+{
+    [self updateWithResponse:response];
+
+    if ([self.originalDelegate respondsToSelector:@selector(connection:didReceiveResponse:)])
+        [self.originalDelegate connection:connection didReceiveResponse:response];
+}
+
+- (void)connectionDidFinishLoading:(NSURLConnection *)connection
+{
+    [self finish];
+
+    if ([self.originalDelegate respondsToSelector:@selector(connectionDidFinishLoading:)])
+        [self.originalDelegate connectionDidFinishLoading:connection];
 }
 
 @end

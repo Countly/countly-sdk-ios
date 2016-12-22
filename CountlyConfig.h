@@ -8,11 +8,15 @@
 
 //NOTE: Countly features
 #if TARGET_OS_IOS
-extern NSString* const CLYMessaging;
+extern NSString* const CLYPushNotifications;
+    extern NSString* const CLYMessaging DEPRECATED_MSG_ATTRIBUTE("Use CLYPushNotifications instead!");
 extern NSString* const CLYCrashReporting;
 extern NSString* const CLYAutoViewTracking;
+#elif TARGET_OS_TV
+extern NSString* const CLYAutoViewTracking;
 #endif
-extern NSString* const CLYAPM;
+//NOTE: Disable APM feature until server completely supports it
+// extern NSString* const CLYAPM;
 
 
 //NOTE: Device ID options
@@ -41,7 +45,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 /**
  * For specifiying which features Countly will start with.
  * @discussion Available features:
- * @discussion @c CLYMessaging for push notifications,
+ * @discussion @c CLYPushNotifications for push notifications,
  * @discussion @c CLYCrashReporting for crash reporting,
  * @discussion @c CLYAutoViewTracking for auto view tracking and
  * @discussion @c CLYAPM for application performance management.
@@ -49,16 +53,34 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 @property (nonatomic, strong) NSArray* features;
 
 /**
- * Required for @c CLYMessaging (push notifications) feature. 
- * @discussion It must be set to launchOptions parameter of application:didFinishLaunchingWithOptions: method. If not set, an NSAssertion will fail.
+ * For enabling SDK debug mode which prints internal logs.
+ * @discussion If set, SDK will print internal logs to console for debugging. Internal logging works only for Development environment where DEBUG flag is set in Build Settings.
+ */
+@property (nonatomic) BOOL enableDebug;
+
+/**
+ * For specifiying application's launch options dictionary.
+ * @discussion Previously it was required for @c CLYPushNotifications feature, but not needed anymore. It is just kept for future use.
  */
 @property (nonatomic, strong) NSDictionary* launchOptions;
 
 /**
- * For manually marking a device as test device for @c CLYMessaging (push notifications) feature. 
- * @discussion Test push notifications can be to test devices by checking "Send to test device" checkbox on "Create Message" section on Countly Server.
+ * For manually marking a device as test device for @c CLYPushNotifications feature. 
+ * @discussion Test push notifications can be sent to test devices by checking "Send to test device" checkbox on "Create Message" section on Countly Server.
  */
 @property (nonatomic) BOOL isTestDevice;
+
+/**
+ * For sending push tokens to Countly server even for users who have not granted permission to display notifications.
+ * @discussion Push tokens from users who have not granted permission to display notifications can be used to send silent notifications.
+ */
+@property (nonatomic) BOOL sendPushTokenAlways;
+
+/**
+ * For disabling automatically showing of message alerts by @c CLYPushNotifications feature.
+ * @discussion If set, push notifications that contain a message or a URL visit request will not show alerts automatically. Push Open event will be recorded, but Push Action event needs to be recorded manually, as well as displaying the message manually.
+ */
+@property (nonatomic) BOOL doNotShowAlertForNotifications;
 
 /**
  * For using custom crash segmentation with @c CLYCrashReporting feature.
@@ -100,6 +122,18 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 @property (nonatomic) NSUInteger storedRequestsLimit;
 
 /**
+ * For sending all requests using HTTP POST method.
+ * @discussion If set, all requests will be sent using HTTP POST method. Otherwise; only the requests with a file upload or data size more than 2048 bytes will be sent using HTTP POST method.
+ */
+@property (nonatomic) BOOL alwaysUsePOST;
+
+/**
+ * Enables automatic handling of Apple Watch related features.
+ * @discussion If set, Apple Watch related features like parent device matching, pairing status, and watch app installing status will be handled automatically. Required for using Countly on Apple Watch apps.
+ */
+@property (nonatomic) BOOL enableAppleWatch;
+
+/**
  * ISO Country Code can be specified in ISO 3166-1 alpha-2 format to be used for advanced segmentation. 
  * @discussion It will be sent with @c begin_session request only.
  */
@@ -112,7 +146,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 @property (nonatomic, strong) NSString* city;
 
 /**
- * Location latitude and longitude can be specified as CLLocationCoordinate2D struct to be used for advanced segmentation.
+ * Location latitude and longitude can be specified as CLLocationCoordinate2D struct to be used for advanced segmentation and geo-location based push notifications.
  * @discussion It will be sent with @c begin_session request only.
  */
 @property (nonatomic) CLLocationCoordinate2D location;
@@ -144,12 +178,6 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 @property (nonatomic, strong) NSString* secretSalt;
 
 /**
- * For sending all requests using HTTP POST method.
- * @discussion If set, all requests will be sent using HTTP POST method. Otherwise; only the requests with a file upload or data size more than 2048 bytes will be sent using HTTP POST method.
- */
-@property (nonatomic) BOOL alwaysUsePOST;
-
-/**
  * For customizing star-rating dialog message.
  * @discussion If not set, it will be displayed in English: "How would you rate the app?"
  */
@@ -172,4 +200,10 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  * @discussion If set, star-rating dialog will be displayed automatically only once for the whole life of the app. It will not be displayed for each new version.
  */
 @property (nonatomic) BOOL starRatingDisableAskingForEachAppVersion;
+
+/**
+ * Completion block to be executed after star-rating dialog is shown automatically.
+ * @discussion Completion block has a single NSInteger parameter that indicates 1 to 5 star-rating given by user. If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to server.
+ */
+@property (nonatomic, copy) void (^starRatingCompletion)(NSInteger rating);
 @end

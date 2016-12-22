@@ -14,7 +14,7 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
 
 @implementation CountlyUserDetails
 
-+ (CountlyUserDetails *)sharedInstance
++ (instancetype)sharedInstance
 {
     static CountlyUserDetails *s_sharedInstance = nil;
     static dispatch_once_t onceToken;
@@ -38,7 +38,7 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
 
     if(self.pictureLocalPath && !self.pictureURL)
     {
-        [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyLocalPicturePath:self.pictureLocalPath} JSONify]];
+        [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyLocalPicturePath:self.pictureLocalPath} cly_JSONify]];
     }
 }
 
@@ -64,7 +64,7 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
     if(self.custom)
         userDictionary[@"custom"] = self.custom;
 
-    return [userDictionary JSONify];
+    return [userDictionary cly_JSONify];
 }
 
 - (NSData *)pictureUploadDataForRequest:(NSString *)requestString
@@ -83,9 +83,9 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
     else
         pathString = [unescaped substringWithRange:(NSRange){startIndex, rChecksum.location - startIndex}];
 
-    NSDictionary* pathDictionary = [NSJSONSerialization JSONObjectWithData:[pathString dataUTF8] options:0 error:nil];
+    NSDictionary* pathDictionary = [NSJSONSerialization JSONObjectWithData:[pathString cly_dataUTF8] options:0 error:nil];
     NSString* localPicturePath = pathDictionary[kCountlyLocalPicturePath];
-    if(!localPicturePath || [localPicturePath isEqualToString:@""])
+    if(!localPicturePath || !localPicturePath.length)
         return nil;
 
     COUNTLY_LOG(@"Local picture path successfully extracted from query string: %@", localPicturePath);
@@ -115,13 +115,17 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
     if (fileExtIndex == 2)
         fileExtIndex = 3;
 
-    NSMutableData* uploadData = NSMutableData.new;
-    [uploadData appendStringUTF8:[NSString stringWithFormat:@"--%@\r\n", CountlyConnectionManager.sharedInstance.boundary]];
-    [uploadData appendStringUTF8:[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"pictureFile\"; filename=\"%@\"\r\n", localPicturePath.lastPathComponent]];
-    [uploadData appendStringUTF8:[NSString stringWithFormat:@"Content-Type: image/%@\r\n\r\n", allowedFileTypes[fileExtIndex]]];
-    [uploadData appendData:imageData];
-    [uploadData appendStringUTF8:[NSString stringWithFormat:@"\r\n--%@--\r\n", CountlyConnectionManager.sharedInstance.boundary]];
+    NSString* boundaryStart = [NSString stringWithFormat:@"--%@\r\n", CountlyConnectionManager.sharedInstance.boundary];
+    NSString* contentDisposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"pictureFile\"; filename=\"%@\"\r\n", localPicturePath.lastPathComponent];
+    NSString* contentType = [NSString stringWithFormat:@"Content-Type: image/%@\r\n\r\n", allowedFileTypes[fileExtIndex]];
+    NSString* boundaryEnd = [NSString stringWithFormat:@"\r\n--%@--\r\n", CountlyConnectionManager.sharedInstance.boundary];
 
+    NSMutableData* uploadData = NSMutableData.new;
+    [uploadData appendData:[boundaryStart cly_dataUTF8]];
+    [uploadData appendData:[contentDisposition cly_dataUTF8]];
+    [uploadData appendData:[contentType cly_dataUTF8]];
+    [uploadData appendData:imageData];
+    [uploadData appendData:[boundaryEnd cly_dataUTF8]];
     return uploadData;
 #endif
     return nil;
@@ -204,7 +208,7 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
 {
     NSDictionary* custom = @{@"custom":self.modifications};
 
-    [CountlyConnectionManager.sharedInstance sendUserDetails:[custom JSONify]];
+    [CountlyConnectionManager.sharedInstance sendUserDetails:[custom cly_JSONify]];
 
     [self.modifications removeAllObjects];
 }

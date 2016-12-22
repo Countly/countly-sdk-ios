@@ -18,13 +18,10 @@
 #import "CountlyConfig.h"
 #import "CountlyViewTracking.h"
 #import "CountlyStarRating.h"
+#import "CountlyPushNotifications.h"
 
-#ifndef COUNTLY_DEBUG
-#define COUNTLY_DEBUG 0
-#endif
-
-#if COUNTLY_DEBUG
-#define COUNTLY_LOG(fmt, ...) NSLog([@"%@ " stringByAppendingString:fmt], @"[Countly]", ##__VA_ARGS__)
+#if DEBUG
+#define COUNTLY_LOG(fmt, ...) CountlyInternalLog(fmt, ##__VA_ARGS__)
 #else
 #define COUNTLY_LOG(...)
 #endif
@@ -65,15 +62,18 @@
 #import <ifaddrs.h>
 #import <objc/runtime.h>
 
-#if (TARGET_OS_IOS || TARGET_OS_WATCH)
-@interface CountlyCommon : NSObject <WCSessionDelegate>
-#else
-@interface CountlyCommon : NSObject
-#endif
+extern NSString* const kCountlySDKVersion;
+extern NSString* const kCountlySDKName;
 
+@interface CountlyCommon : NSObject
+
+@property (nonatomic) BOOL enableDebug;
+@property (nonatomic) BOOL enableAppleWatch;
 @property (nonatomic, strong) NSString* ISOCountryCode;
 @property (nonatomic, strong) NSString* city;
 @property (nonatomic, strong) NSString* location;
+
+void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
 
 + (instancetype)sharedInstance;
 - (NSInteger)hourOfDay;
@@ -91,26 +91,22 @@
 #endif
 @end
 
-@interface NSString (URLEscaped)
-- (NSString *)URLEscaped;
-- (NSString *)SHA1;
-- (NSData *)dataUTF8;
+@interface NSString (Countly)
+- (NSString *)cly_URLEscaped;
+- (NSString *)cly_SHA1;
+- (NSData *)cly_dataUTF8;
 @end
 
-@interface NSArray (JSONify)
-- (NSString *)JSONify;
+@interface NSArray (Countly)
+- (NSString *)cly_JSONify;
 @end
 
-@interface NSDictionary (JSONify)
-- (NSString *)JSONify;
+@interface NSDictionary (Countly)
+- (NSString *)cly_JSONify;
 @end
 
-@interface NSMutableData (AppendStringUTF8)
-- (void)appendStringUTF8:(NSString *)string;
-@end
-
-@interface NSData (stringUTF8)
-- (NSString *)stringUTF8;
+@interface NSData (Countly)
+- (NSString *)cly_stringUTF8;
 @end
 
 @interface Countly (RecordEventWithTimeStamp)

@@ -6,10 +6,10 @@
 
 #import "CountlyCommon.h"
 
-NSString* const kCountlySDKVersion = @"16.06.4";
-NSString* const kCountlySDKName = @"objc-native-ios";
-
 @interface CountlyConnectionManager()
+{
+    NSTimeInterval lastSessionStartTime;
+}
 #if TARGET_OS_IOS
 @property (nonatomic) UIBackgroundTaskIdentifier bgTask;
 #endif
@@ -46,7 +46,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
     if(self.secretSalt)
     {
-        NSString* checksum = [[queryString stringByAppendingString:self.secretSalt] SHA1];
+        NSString* checksum = [[queryString stringByAppendingString:self.secretSalt] cly_SHA1];
         queryString = [queryString stringByAppendingFormat:@"&checksum=%@", checksum];
     }
 
@@ -64,10 +64,11 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
         [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
         [self tick];
+        return;
     }
 
-    NSString* countlyServerEndpoint = [self.appHost stringByAppendingString:@"/i"];
-    NSString* fullRequestURL = [countlyServerEndpoint stringByAppendingFormat:@"?%@", queryString];
+    NSString* serverInputEndpoint = [self.host stringByAppendingString:@"/i"];
+    NSString* fullRequestURL = [serverInputEndpoint stringByAppendingFormat:@"?%@", queryString];
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:fullRequestURL]];
 
     NSData* pictureUploadData = [CountlyUserDetails.sharedInstance pictureUploadDataForRequest:queryString];
@@ -80,9 +81,9 @@ NSString* const kCountlySDKName = @"objc-native-ios";
     }
     else if(queryString.length > 2048 || self.alwaysUsePOST)
     {
-        request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:countlyServerEndpoint]];
+        request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverInputEndpoint]];
         request.HTTPMethod = @"POST";
-        request.HTTPBody = [queryString dataUTF8];
+        request.HTTPBody = [queryString cly_dataUTF8];
     }
 
     if(self.customHeaderFieldName && self.customHeaderFieldValue)
@@ -92,13 +93,12 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
     if(self.pinnedCertificates)
     {
-        COUNTLY_LOG(@"%i pinned certificate(s) specified in config.", self.pinnedCertificates.count);
+        COUNTLY_LOG(@"%d pinned certificate(s) specified in config.", (int)self.pinnedCertificates.count);
         NSURLSessionConfiguration *sc = [NSURLSessionConfiguration defaultSessionConfiguration];
         session = [NSURLSession sessionWithConfiguration:sc delegate:self delegateQueue:nil];
     }
 
-    self.connection = [session dataTaskWithRequest:request
-    completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error)
+    self.connection = [session dataTaskWithRequest:request completionHandler:^(NSData * data, NSURLResponse * response, NSError * error)
     {
         self.connection = nil;
 
@@ -116,7 +116,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
             }
             else
             {
-                COUNTLY_LOG(@"Request <%p> failed!\nServer reply: %@", request, [data stringUTF8]);
+                COUNTLY_LOG(@"Request <%p> failed!\nServer reply: %@", request, [data cly_stringUTF8]);
             }
         }
         else
@@ -132,14 +132,17 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
     [self.connection resume];
 
-    COUNTLY_LOG(@"Request <%p> started:\n[%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, request.HTTPBody?([request.HTTPBody stringUTF8]?[request.HTTPBody stringUTF8]:@"Picture uploading..."):@"");
+    COUNTLY_LOG(@"Request <%p> started:\n[%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, request.HTTPBody?([request.HTTPBody cly_stringUTF8]?[request.HTTPBody cly_stringUTF8]:@"Picture uploading..."):@"");
 }
 
 #pragma mark ---
 
 - (void)beginSession
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&begin_session=1&metrics=%@", [CountlyDeviceInfo metrics]];
+    lastSessionStartTime = NSDate.date.timeIntervalSince1970;
+
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&begin_session=1&sdk_version=%@&sdk_name=%@&metrics=%@", kCountlySDKVersion,
+                             kCountlySDKName, [CountlyDeviceInfo metrics]];
 
     NSString* optionalParameters = [CountlyCommon.sharedInstance optionalParameters];
     if(optionalParameters)
@@ -150,18 +153,18 @@ NSString* const kCountlySDKName = @"objc-native-ios";
     [self tick];
 }
 
-- (void)updateSessionWithDuration:(int)duration
+- (void)updateSession
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&session_duration=%d", duration];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&session_duration=%d", [self sessionLengthInSeconds]];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
     [self tick];
 }
 
-- (void)endSessionWithDuration:(int)duration
+- (void)endSession
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&end_session=1&session_duration=%d", duration];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&end_session=1&session_duration=%d", [self sessionLengthInSeconds]];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -186,28 +189,23 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
 - (void)sendPushToken:(NSString *)token
 {
-    // Test modes: 0 = Production build,
-    //             1 = Development build,
-    //             2 = AdHoc build (when isTestDevice flag on config object is set explicitly)
+    //NOTE: Push notifications test modes:
+    //  0 = Production build,
+    //  1 = Development build,
+    //  2 = AdHoc build (when isTestDevice flag on config object is set explicitly)
 
     int testMode;
 #ifndef __OPTIMIZE__
     testMode = 1;
 #else
-    testMode = self.isTestDevice ? 2 : 0;
+    testMode = CountlyPushNotifications.sharedInstance.isTestDevice ? 2 : 0;
 #endif
 
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&token_session=1&ios_token=%@&test_mode=%d",
-                             [token length] ? token : @"",
-                             testMode];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&token_session=1&ios_token=%@&test_mode=%d", token, testMode];
 
-    // Not right now to prevent race with begin_session=1 when adding new user
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
-    {
-        COUNTLY_LOG(@"Sending APNS token in mode %d", testMode);
-        [CountlyPersistency.sharedInstance addToQueue:queryString];
-        [self tick];
-    });
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
+
+    [self tick];
 }
 
 - (void)sendUserDetails:(NSString *)userDetails
@@ -286,15 +284,13 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
 - (NSString *)queryEssentials
 {
-    return [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%ld&hour=%ld&dow=%ld&tz=%ld&sdk_version=%@&sdk_name=%@",
+    return [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%lld&hour=%ld&dow=%ld&tz=%ld",
                                         self.appKey,
                                         CountlyDeviceInfo.sharedInstance.deviceID,
-                                        (long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000),
+                                        (long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000),
                                         (long)CountlyCommon.sharedInstance.hourOfDay,
                                         (long)CountlyCommon.sharedInstance.dayOfWeek,
-                                        (long)CountlyCommon.sharedInstance.timeZone,
-                                        kCountlySDKVersion,
-                                        kCountlySDKName];
+                                        (long)CountlyCommon.sharedInstance.timeZone];
 }
 
 - (NSString *)boundary
@@ -312,9 +308,21 @@ NSString* const kCountlySDKName = @"objc-native-ios";
     return (code >= 200 && code < 300);
 }
 
+- (int)sessionLengthInSeconds
+{
+    static double unsentSessionLength = 0.0;
+
+    NSTimeInterval currentTime = NSDate.date.timeIntervalSince1970;
+    unsentSessionLength += (currentTime - lastSessionStartTime);
+    lastSessionStartTime = currentTime;
+    int sessionLengthInSeconds = (int)unsentSessionLength;
+    unsentSessionLength -= sessionLengthInSeconds;
+    return sessionLengthInSeconds;
+}
+
 #pragma mark ---
 
-- (void)URLSession:(NSURLSession *)session didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential * _Nullable))completionHandler
+- (void)URLSession:(NSURLSession *)session didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential *))completionHandler
 {
     SecTrustRef serverTrust = challenge.protectionSpace.serverTrust;
     SecKeyRef serverKey = SecTrustCopyPublicKey(serverTrust);
