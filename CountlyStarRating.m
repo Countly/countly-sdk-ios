@@ -199,17 +199,17 @@ const float kCountlyStarRatingButtonSize = 40;
     if(self.ratingCompletion)
         self.ratingCompletion(rating);
 
-    if(rating==0)
-        return;
+    if(rating != 0)
+    {
+        NSDictionary* segmentation =
+        @{
+            @"platform": CountlyDeviceInfo.osName,
+            @"app_version": CountlyDeviceInfo.appVersion,
+            @"rating" : @(rating)
+        };
 
-    NSDictionary* segmentation =
-    @{
-        @"platform": CountlyDeviceInfo.osName,
-        @"app_version": CountlyDeviceInfo.appVersion,
-        @"rating" : @(rating)
-    };
-
-    [Countly.sharedInstance recordEvent:kCountlyReservedEventStarRating segmentation:segmentation count:1 sum:0];
+        [Countly.sharedInstance recordEvent:kCountlyReservedEventStarRating segmentation:segmentation count:1];
+    }
 
     self.alertWindow.hidden = YES;
     self.alertWindow = nil;
