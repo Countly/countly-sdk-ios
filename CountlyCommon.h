@@ -91,6 +91,13 @@ void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
 #endif
 @end
 
+
+#if (TARGET_OS_IOS)
+@interface CLYInternalViewController : UIViewController
+@end
+#endif
+
+
 @interface NSString (Countly)
 - (NSString *)cly_URLEscaped;
 - (NSString *)cly_SHA1;

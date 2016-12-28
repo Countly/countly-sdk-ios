@@ -162,6 +162,29 @@ void CountlyInternalLog(NSString *format, ...)
 @end
 
 
+#pragma mark - Internal ViewController
+#if (TARGET_OS_IOS)
+@implementation CLYInternalViewController : UIViewController
+
+//NOTE: For using the same status bar preferences as the currently displayed view controller when a Countly triggered alert is displayed using a separate window
+- (UIStatusBarStyle)preferredStatusBarStyle
+{
+    if (UIApplication.sharedApplication.windows.firstObject.rootViewController == self)
+        return UIStatusBarStyleDefault;
+
+    return [UIApplication.sharedApplication.windows.firstObject.rootViewController preferredStatusBarStyle];
+}
+
+- (BOOL)prefersStatusBarHidden
+{
+    if (UIApplication.sharedApplication.windows.firstObject.rootViewController == self)
+        return NO;
+
+    return [UIApplication.sharedApplication.windows.firstObject.rootViewController prefersStatusBarHidden];
+}
+
+@end
+#endif
 
 #pragma mark - Categories
 NSString* CountlyJSONFromObject(id object)

@@ -225,18 +225,18 @@
 
 #if TARGET_OS_IOS
 /**
- * Adds exception @c UIViewController subclass for AutoViewTracking.
- * @discussion Added @c UIViewContoller subclasses will be ignored by AutoViewTracking and their appearances and disappearances will not be reported. Adding an already added @c UIViewController subclass again will have no effect.
- * @param exceptionViewControllerSubclass Exception @c UIViewController subclass to be added
+ * Adds exception for AutoViewTracking.
+ * @discussion @c UIViewContollers with specified title or class name will be ignored by AutoViewTracking and their appearances and disappearances will not be reported. Adding an already added @c UIViewController title or subclass name again will have no effect.
+ * @param exception @c UIViewContoller title or subclass name to be added as exception
  */
-- (void)addExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass;
+- (void)addExceptionForAutoViewTracking:(NSString *)exception;
 
 /**
- * Removes exception @c UIViewController subclass for AutoViewTracking.
- * @discussion Removing an already removed (or not yet added) @c UIViewController subclass again will have no effect.
- * @param exceptionViewControllerSubclass Exception @c UIViewController subclass to be removed
+ * Removes exception for AutoViewTracking.
+ * @discussion Removing an already removed (or not yet added) @c UIViewController title or subclass name will have no effect.
+ * @param exception @c UIViewContoller title or subclass name to be removed
  */
-- (void)removeExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass;
+- (void)removeExceptionForAutoViewTracking:(NSString *)exception;
 
 /**
  * Enables or disables AutoViewTracking, if AutoViewTracking feature is activated on start configuration.
