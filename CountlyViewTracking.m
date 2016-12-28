@@ -30,6 +30,7 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
     {
         self.exceptionViewControllers =
         @[
+            @"CLYInternalViewController",
             @"UINavigationController",
             @"UIAlertController",
             @"UIPageViewController",

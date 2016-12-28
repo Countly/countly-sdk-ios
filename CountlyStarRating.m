@@ -89,7 +89,7 @@ const float kCountlyStarRatingButtonSize = 40;
 
     [alertController addAction:dismiss];
 
-    UIViewController* cvc = UIViewController.new;
+    CLYInternalViewController* cvc = CLYInternalViewController.new;
     [cvc setPreferredContentSize:(CGSize){kCountlyStarRatingButtonSize * 5, kCountlyStarRatingButtonSize * 1.5}];
     [cvc.view addSubview:[self starView]];
 
@@ -103,8 +103,8 @@ const float kCountlyStarRatingButtonSize = 40;
     }
 
     self.alertWindow = [UIWindow.alloc initWithFrame:UIScreen.mainScreen.bounds];
-    self.alertWindow.rootViewController = UIViewController.new;
-    self.alertWindow.windowLevel = UIApplication.sharedApplication.windows.lastObject.windowLevel + 1;
+    self.alertWindow.rootViewController = CLYInternalViewController.new;
+    self.alertWindow.windowLevel = UIWindowLevelAlert;
     [self.alertWindow makeKeyAndVisible];
     [self.alertWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
 }
