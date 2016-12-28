@@ -424,14 +424,14 @@
 }
 
 #if TARGET_OS_IOS
-- (void)addExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass
+- (void)addExceptionForAutoViewTracking:(NSString *)exception
 {
-    [CountlyViewTracking.sharedInstance addExceptionForAutoViewTracking:exceptionViewControllerSubclass];
+    [CountlyViewTracking.sharedInstance addExceptionForAutoViewTracking:exception];
 }
 
-- (void)removeExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass
+- (void)removeExceptionForAutoViewTracking:(NSString *)exception
 {
-    [CountlyViewTracking.sharedInstance removeExceptionForAutoViewTracking:exceptionViewControllerSubclass];
+    [CountlyViewTracking.sharedInstance removeExceptionForAutoViewTracking:exception];
 }
 
 - (void)setIsAutoViewTrackingEnabled:(BOOL)isAutoViewTrackingEnabled
