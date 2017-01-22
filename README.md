@@ -5,9 +5,15 @@
 * **Slack user?** [Join our Slack community](http://slack.count.ly:3000/)
 * **Questions?** [Ask in our Community forum](http://community.count.ly)
 
-##About
+##About this SDK
 
 This repository includes the Countly iOS SDK which supports watchOS, tvOS & Mac OS also. See [Countly iOS SDK](http://resources.count.ly/v1.0/docs/countly-sdk-for-ios-and-os-x) documentation at [Countly Resources](http://resources.count.ly) for installation. 
+
+##Sample iOS application
+
+We have a beautiful [sample iOS application](https://github.com/Countly/countly-sdk-samples) which includes this SDK. Feel free to use this for testing purposes as you develop your application.
+
+![iOS-sample-app](http://count.ly/wp-content/uploads/2017/01/ios-sample-app.png)
 
 
 ### Other Github resources ###
