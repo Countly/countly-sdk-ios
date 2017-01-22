@@ -21,7 +21,7 @@ We have a beautiful [sample iOS application](https://github.com/Countly/countly-
 This SDK needs one of the following Countly Editions to work: 
 
 * Countly Community Edition, [downloadable from Github](https://github.com/Countly/countly-server)
-* [Countly Enterprise Edition](http://count.ly/enterprise-edition)
+* [Countly Enterprise Edition](http://count.ly/features)
 
 For more information about Countly Enterprise Edition, see [comparison of different Countly editions](https://count.ly/compare/)
 
