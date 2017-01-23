@@ -5,6 +5,10 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
+
+/**
+ * A placeholder type specifier which accepts only @c NSString or @c NSNull for @c CountlyUserDetails default properties.
+ */
 @protocol CountlyUserDetailsNullableString <NSObject>
 @end
 @interface NSString (NSStringWithCountlyUserDetailsNullableString) <CountlyUserDetailsNullableString>
@@ -13,6 +17,9 @@
 @end
 
 
+/**
+ * A placeholder type specifier which accepts only @c NSDictionary or @c NSNull for @c CountlyUserDetails default properties.
+ */
 @protocol CountlyUserDetailsNullableDictionary <NSObject>
 @end
 @interface NSDictionary (NSDictionaryWithCountlyUserDetailsNullableDictionary) <CountlyUserDetailsNullableDictionary>
@@ -21,6 +28,9 @@
 @end
 
 
+/**
+ * A placeholder type specifier which accepts only @c NSNumber or @c NSNull for @c CountlyUserDetails default properties.
+ */
 @protocol CountlyUserDetailsNullableNumber <NSObject>
 @end
 @interface NSNumber (NSDictionaryWithCountlyUserDetailsNullableNumber) <CountlyUserDetailsNullableNumber>
