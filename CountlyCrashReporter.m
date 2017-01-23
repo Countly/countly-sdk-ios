@@ -195,48 +195,5 @@ void CountlySignalHandler(int signalCode)
     NSString* logFormat = [NSString stringWithFormat:@"<%@> %@",[df stringFromDate:NSDate.date], format];
     [customCrashLogs addObject:[NSString.alloc initWithFormat:logFormat arguments:args]];
 }
-
-
-#pragma mark ---
-
-- (void)crashTest
-{
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wundeclared-selector"
-    [self performSelector:@selector(thisIsTheUnrecognizedSelectorCausingTheCrash)];
-#pragma clang diagnostic pop
-}
-
-- (void)crashTest2
-{
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-variable"
-    NSArray* anArray = @[@"one",@"two",@"three"];
-    NSString* myCrashingString = anArray[5];
-#pragma clang diagnostic pop
-}
-
-- (void)crashTest3
-{
-    int *nullPointer = NULL;
-    *nullPointer = 2015;
-}
-
-- (void)crashTest4
-{
-    CGRect aRect = (CGRect){0.0/0.0, 0.0, 100.0, 100.0};
-    UIView *crashView = UIView.new;
-    crashView.frame = aRect;
-}
-
-- (void)crashTest5
-{
-    kill(getpid(), SIGABRT);
-}
-
-- (void)crashTest6
-{
-    __builtin_trap();
-}
 #endif
 @end

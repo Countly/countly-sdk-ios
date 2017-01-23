@@ -7,7 +7,6 @@
 #import <Foundation/Foundation.h>
 #import <CoreLocation/CoreLocation.h>
 #import "CountlyUserDetails.h"
-#import "CountlyCrashReporter.h"
 #import "CountlyConfig.h"
 #if TARGET_OS_IOS
 #import <UserNotifications/UserNotifications.h>
