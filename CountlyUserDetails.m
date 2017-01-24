@@ -86,27 +86,27 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
 
 - (void)increment:(NSString *)key
 {
-    [self incrementBy:key value:1];
+    [self incrementBy:key value:@1];
 }
 
-- (void)incrementBy:(NSString *)key value:(NSInteger)value
+- (void)incrementBy:(NSString *)key value:(NSNumber *)value
 {
-    self.modifications[key] = @{@"$inc":@(value)};
+    self.modifications[key] = @{@"$inc":value};
 }
 
-- (void)multiply:(NSString *)key value:(NSInteger)value
+- (void)multiply:(NSString *)key value:(NSNumber *)value
 {
-    self.modifications[key] = @{@"$mul":@(value)};
+    self.modifications[key] = @{@"$mul":value};
 }
 
-- (void)max:(NSString *)key value:(NSInteger)value
+- (void)max:(NSString *)key value:(NSNumber *)value
 {
-    self.modifications[key] = @{@"$max":@(value)};
+    self.modifications[key] = @{@"$max":value};
 }
 
-- (void)min:(NSString *)key value:(NSInteger)value
+- (void)min:(NSString *)key value:(NSNumber *)value
 {
-    self.modifications[key] = @{@"$min":@(value)};
+    self.modifications[key] = @{@"$min":value};
 }
 
 - (void)push:(NSString *)key value:(NSString *)value
