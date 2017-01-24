@@ -71,7 +71,7 @@
     NSString* fullRequestURL = [serverInputEndpoint stringByAppendingFormat:@"?%@", queryString];
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:fullRequestURL]];
 
-    NSData* pictureUploadData = [CountlyUserDetails.sharedInstance pictureUploadDataForRequest:queryString];
+    NSData* pictureUploadData = [self pictureUploadDataForRequest:queryString];
     if(pictureUploadData)
     {
         NSString *contentType = [@"multipart/form-data; boundary=" stringByAppendingString:self.boundary];
@@ -318,6 +318,70 @@
     int sessionLengthInSeconds = (int)unsentSessionLength;
     unsentSessionLength -= sessionLengthInSeconds;
     return sessionLengthInSeconds;
+}
+
+- (NSData *)pictureUploadDataForRequest:(NSString *)requestString
+{
+#if TARGET_OS_IOS
+    NSString* unescaped = [requestString stringByRemovingPercentEncoding];
+    NSRange rLocalPicturePath = [unescaped rangeOfString:kCountlyLocalPicturePath];
+    if (rLocalPicturePath.location == NSNotFound)
+        return nil;
+
+    NSRange rChecksum = [unescaped rangeOfString:@"&checksum="];
+    NSUInteger startIndex = rLocalPicturePath.location-2;
+    NSString* pathString;
+    if (rChecksum.location == NSNotFound)
+        pathString = [unescaped substringFromIndex:startIndex];
+    else
+        pathString = [unescaped substringWithRange:(NSRange){startIndex, rChecksum.location - startIndex}];
+
+    NSDictionary* pathDictionary = [NSJSONSerialization JSONObjectWithData:[pathString cly_dataUTF8] options:0 error:nil];
+    NSString* localPicturePath = pathDictionary[kCountlyLocalPicturePath];
+    if(!localPicturePath || !localPicturePath.length)
+        return nil;
+
+    COUNTLY_LOG(@"Local picture path successfully extracted from query string: %@", localPicturePath);
+
+    NSArray* allowedFileTypes = @[@"gif", @"png", @"jpg", @"jpeg"];
+    NSString* fileExt = localPicturePath.pathExtension.lowercaseString;
+    NSInteger fileExtIndex = [allowedFileTypes indexOfObject:fileExt];
+
+    if(fileExtIndex == NSNotFound)
+        return nil;
+
+    NSData* imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:localPicturePath]];
+
+    if (!imageData)
+    {
+        COUNTLY_LOG(@"Local picture data can not be read!");
+        return nil;
+    }
+
+    COUNTLY_LOG(@"Local picture data read successfully.");
+
+    //NOTE: png file data read directly from disk somehow fails on upload, this fixes it
+    if (fileExtIndex == 1)
+        imageData = UIImagePNGRepresentation([UIImage imageWithData:imageData]);
+
+    //NOTE: for mime type jpg -> jpeg
+    if (fileExtIndex == 2)
+        fileExtIndex = 3;
+
+    NSString* boundaryStart = [NSString stringWithFormat:@"--%@\r\n", CountlyConnectionManager.sharedInstance.boundary];
+    NSString* contentDisposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"pictureFile\"; filename=\"%@\"\r\n", localPicturePath.lastPathComponent];
+    NSString* contentType = [NSString stringWithFormat:@"Content-Type: image/%@\r\n\r\n", allowedFileTypes[fileExtIndex]];
+    NSString* boundaryEnd = [NSString stringWithFormat:@"\r\n--%@--\r\n", CountlyConnectionManager.sharedInstance.boundary];
+
+    NSMutableData* uploadData = NSMutableData.new;
+    [uploadData appendData:[boundaryStart cly_dataUTF8]];
+    [uploadData appendData:[contentDisposition cly_dataUTF8]];
+    [uploadData appendData:[contentType cly_dataUTF8]];
+    [uploadData appendData:imageData];
+    [uploadData appendData:[boundaryEnd cly_dataUTF8]];
+    return uploadData;
+#endif
+    return nil;
 }
 
 #pragma mark ---

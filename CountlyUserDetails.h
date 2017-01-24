@@ -38,6 +38,7 @@
 @interface NSNull (NSNullWithCountlyUserDetailsNullableNumber) <CountlyUserDetailsNullableNumber>
 @end
 
+extern NSString* const kCountlyLocalPicturePath;
 
 @interface CountlyUserDetails : NSObject
 
@@ -54,8 +55,6 @@
 
 + (instancetype)sharedInstance;
 - (void)recordUserDetails;
-- (NSString *)serialize;
-- (NSData *)pictureUploadDataForRequest:(NSString *)requestString;
 
 #pragma mark -
 
