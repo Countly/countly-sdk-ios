@@ -70,7 +70,6 @@
     CountlyConnectionManager.sharedInstance.appKey = config.appKey;
     CountlyConnectionManager.sharedInstance.host = config.host;
     CountlyCommon.sharedInstance.manualSessionHandling = config.manualSessionHandling;
-    CountlyConnectionManager.sharedInstance.updateSessionPeriod = config.updateSessionPeriod;
     CountlyConnectionManager.sharedInstance.alwaysUsePOST = config.alwaysUsePOST;
     CountlyConnectionManager.sharedInstance.pinnedCertificates = config.pinnedCertificates;
     CountlyConnectionManager.sharedInstance.customHeaderFieldName = config.customHeaderFieldName;
@@ -119,7 +118,7 @@
 //    if([config.features containsObject:CLYAPM])
 //        [CountlyAPM.sharedInstance startAPM];
 
-    timer = [NSTimer scheduledTimerWithTimeInterval:CountlyConnectionManager.sharedInstance.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
+    timer = [NSTimer scheduledTimerWithTimeInterval:config.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
     [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
 
     if(!CountlyCommon.sharedInstance.manualSessionHandling)

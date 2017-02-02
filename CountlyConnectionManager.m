@@ -171,6 +171,8 @@
     [self tick];
 }
 
+#pragma mark ---
+
 - (void)sendEvents
 {
     NSString* events = [CountlyPersistency.sharedInstance serializedRecordedEvents];
