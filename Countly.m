@@ -71,6 +71,7 @@
 
     CountlyConnectionManager.sharedInstance.appKey = config.appKey;
     CountlyConnectionManager.sharedInstance.host = config.host;
+    CountlyCommon.sharedInstance.manualSessionHandling = config.manualSessionHandling;
     CountlyConnectionManager.sharedInstance.updateSessionPeriod = config.updateSessionPeriod;
     CountlyConnectionManager.sharedInstance.alwaysUsePOST = config.alwaysUsePOST;
     CountlyConnectionManager.sharedInstance.pinnedCertificates = config.pinnedCertificates;
@@ -125,7 +126,8 @@
     timer = [NSTimer scheduledTimerWithTimeInterval:CountlyConnectionManager.sharedInstance.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
     [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
 
-    [CountlyConnectionManager.sharedInstance beginSession];
+    if(!CountlyCommon.sharedInstance.manualSessionHandling)
+        [CountlyConnectionManager.sharedInstance beginSession];
 
 #if (TARGET_OS_WATCH)
     CountlyCommon.sharedInstance.enableAppleWatch = YES;
@@ -183,12 +185,33 @@
 
 #pragma mark ---
 
+- (void)beginSession
+{
+    if(CountlyCommon.sharedInstance.manualSessionHandling)
+        [CountlyConnectionManager.sharedInstance beginSession];
+}
+
+- (void)updateSession
+{
+    if(CountlyCommon.sharedInstance.manualSessionHandling)
+        [CountlyConnectionManager.sharedInstance updateSession];
+}
+
+- (void)endSession
+{
+    if(CountlyCommon.sharedInstance.manualSessionHandling)
+        [CountlyConnectionManager.sharedInstance endSession];
+}
+
+#pragma mark ---
+
 - (void)onTimer:(NSTimer *)timer
 {
     if (isSuspended)
         return;
 
-    [CountlyConnectionManager.sharedInstance updateSession];
+    if(!CountlyCommon.sharedInstance.manualSessionHandling)
+        [CountlyConnectionManager.sharedInstance updateSession];
 
     [CountlyConnectionManager.sharedInstance sendEvents];
 }
@@ -201,7 +224,8 @@
 
     [CountlyConnectionManager.sharedInstance sendEvents];
 
-    [CountlyConnectionManager.sharedInstance endSession];
+    if(!CountlyCommon.sharedInstance.manualSessionHandling)
+        [CountlyConnectionManager.sharedInstance endSession];
 
     [CountlyPersistency.sharedInstance saveToFile];
 }
@@ -219,7 +243,8 @@
     }
 #endif
 
-    [CountlyConnectionManager.sharedInstance beginSession];
+    if(!CountlyCommon.sharedInstance.manualSessionHandling)
+        [CountlyConnectionManager.sharedInstance beginSession];
 
     isSuspended = NO;
 }

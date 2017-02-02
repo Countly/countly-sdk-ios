@@ -103,6 +103,12 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 @property (nonatomic) BOOL forceDeviceIDInitialization;
 
 /**
+ * For handling sessions manually.
+ * @discussion If set, SDK does not send @c begin_sesssion, @c update_session and @c end_session requests automatically. Methods for beginning, updating and ending sessions needs to be called manually.
+ */
+@property (nonatomic) BOOL manualSessionHandling;
+
+/**
  * Update session period is used to send @c events and @c update_session requests to server periodically. 
  * @discussion If not set, it will be 60 seconds for @c iOS, @c tvOS & @c OSX, and 20 seconds for @c watchOS by default.
  */

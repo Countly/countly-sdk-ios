@@ -117,7 +117,10 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
         //      a dummy connection object is created to prevent these requests when app is about to terminate due to crash
 
         [CountlyConnectionManager.sharedInstance sendEvents];
-        [CountlyConnectionManager.sharedInstance endSession];
+
+        if(!CountlyCommon.sharedInstance.manualSessionHandling)
+            [CountlyConnectionManager.sharedInstance endSession];
+
         [CountlyPersistency.sharedInstance saveToFileSync];
 
         NSString *urlString = [NSString stringWithFormat:@"%@/i", CountlyConnectionManager.sharedInstance.host];
