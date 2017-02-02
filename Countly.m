@@ -65,9 +65,7 @@
     COUNTLY_LOG(@"Initializing with %@ SDK v%@", kCountlySDKName, kCountlySDKVersion);
 
     if(!CountlyDeviceInfo.sharedInstance.deviceID || config.forceDeviceIDInitialization)
-    {
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:config.deviceID];
-    }
 
     CountlyConnectionManager.sharedInstance.appKey = config.appKey;
     CountlyConnectionManager.sharedInstance.host = config.host;
@@ -114,9 +112,7 @@
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if([config.features containsObject:CLYAutoViewTracking])
-    {
         [CountlyViewTracking.sharedInstance startAutoViewTracking];
-    }
 #endif
 
 //NOTE: Disable APM feature until server completely supports it
@@ -233,7 +229,7 @@
 - (void)resume
 {
 #if TARGET_OS_WATCH
-    //NOTE: skip first time to prevent double begin session because of applicationDidBecomeActive call on app lunch
+    //NOTE: skip first time to prevent double begin session because of applicationDidBecomeActive call on launch of watchOS apps
     static BOOL isFirstCall = YES;
 
     if(isFirstCall)
