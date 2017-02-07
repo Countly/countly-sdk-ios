@@ -68,8 +68,8 @@
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:config.deviceID];
 
     CountlyConnectionManager.sharedInstance.appKey = config.appKey;
-    CountlyConnectionManager.sharedInstance.host = config.host;
-    CountlyCommon.sharedInstance.manualSessionHandling = config.manualSessionHandling;
+    BOOL hostHasExtraSlash = [[config.host substringFromIndex:config.host.length-1] isEqualToString:@"/"];
+    CountlyConnectionManager.sharedInstance.host = hostHasExtraSlash ? [config.host substringToIndex:config.host.length-1] : config.host;
     CountlyConnectionManager.sharedInstance.alwaysUsePOST = config.alwaysUsePOST;
     CountlyConnectionManager.sharedInstance.pinnedCertificates = config.pinnedCertificates;
     CountlyConnectionManager.sharedInstance.customHeaderFieldName = config.customHeaderFieldName;
@@ -79,6 +79,7 @@
     CountlyPersistency.sharedInstance.eventSendThreshold = config.eventSendThreshold;
     CountlyPersistency.sharedInstance.storedRequestsLimit = config.storedRequestsLimit;
 
+    CountlyCommon.sharedInstance.manualSessionHandling = config.manualSessionHandling;
     CountlyCommon.sharedInstance.enableAppleWatch = config.enableAppleWatch;
     CountlyCommon.sharedInstance.ISOCountryCode = config.ISOCountryCode;
     CountlyCommon.sharedInstance.city = config.city;
