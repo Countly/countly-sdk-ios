@@ -242,6 +242,11 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
     return NSBundle.mainBundle.bundleIdentifier;
 }
 
++ (NSString *)executableName
+{
+    return [NSString stringWithUTF8String:getprogname()];
+}
+
 #if TARGET_OS_IOS
 + (NSInteger)hasWatch
 {

@@ -68,6 +68,8 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     crashReport[@"_app_version"] = CountlyDeviceInfo.appVersion;
     crashReport[@"_app_build"] = CountlyDeviceInfo.appBuild;
     crashReport[@"_build_uuid"] = CountlyDeviceInfo.buildUUID;
+    crashReport[@"_executable_name"] = CountlyDeviceInfo.executableName;
+    
     crashReport[@"_name"] = exception.description;
     crashReport[@"_type"] = exception.name;
     crashReport[@"_nonfatal"] = @(nonfatal);
@@ -96,13 +98,31 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     NSArray* stackArray = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
     if(!stackArray) stackArray = exception.callStackSymbols;
 
+    UInt64 loadAddress = 0;
+
     NSMutableString* stackString = NSMutableString.string;
     for (NSString* line in stackArray)
     {
         [stackString appendString:line];
         [stackString appendString:@"\n"];
+
+        if(loadAddress == 0)
+        {
+            NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"\\s+\\s" options:0 error:nil];
+            NSString *trimmedLine = [regex stringByReplacingMatchesInString:line options:0 range:(NSRange){0,line.length} withTemplate:@" "];
+            NSArray* lineComponents = [trimmedLine componentsSeparatedByString:@" "];
+
+            if (lineComponents.count >= 3 && [lineComponents[1] isEqualToString:CountlyDeviceInfo.executableName])
+            {
+                NSString* address = lineComponents[2];
+                NSString* offset = lineComponents.lastObject;
+                UInt64 length = strtoull(address.UTF8String, NULL, 16);
+                loadAddress = length - offset.integerValue;
+            }
+        }
     }
 
+    crashReport[@"_load_address"] = [NSString stringWithFormat:@"0x%llx", loadAddress];
     crashReport[@"_error"] = stackString;
 
     if(nonfatal)
