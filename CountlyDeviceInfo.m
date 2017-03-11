@@ -97,14 +97,10 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
 
 + (NSString *)device
 {
-#if TARGET_OS_IOS
-    char *modelKey = "hw.machine";
-#elif TARGET_OS_WATCH
-    char *modelKey = "hw.machine";
-#elif TARGET_OS_TV
-    char *modelKey = "hw.machine";
-#else
+#if TARGET_OS_OSX
     char *modelKey = "hw.model";
+#else
+    char *modelKey = "hw.machine";
 #endif
     size_t size;
     sysctlbyname(modelKey, NULL, &size, NULL, 0);
