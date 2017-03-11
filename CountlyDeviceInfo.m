@@ -111,6 +111,33 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
     return modelString;
 }
 
++ (NSString *)architecture
+{
+    NSString* architecture = nil;
+
+#if TARGET_OS_IOS
+    size_t size;
+    cpu_type_t type;
+
+    size = sizeof(type);
+    sysctlbyname("hw.cputype", &type, &size, NULL, 0);
+
+    if (type == CPU_TYPE_ARM64)
+        architecture = @"arm64";
+    else if (type == CPU_TYPE_ARM)
+    {
+        NSString* device = CountlyDeviceInfo.device;
+        NSInteger modelNo = [[device substringFromIndex:device.length - 1] integerValue];
+        if(([device hasPrefix:@"iPhone5,"] && modelNo >= 1 && modelNo <= 4)  ||
+           ([device hasPrefix:@"iPad3,"]   && modelNo >= 4 && modelNo <= 6))
+            architecture = @"armv7s";
+        else
+            architecture = @"armv7";
+    }
+#endif
+    return architecture;
+}
+
 + (NSString *)osName
 {
 #if TARGET_OS_IOS

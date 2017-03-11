@@ -15,6 +15,7 @@
 - (NSString *)zeroSafeIDFA;
 
 + (NSString *)device;
++ (NSString *)architecture;
 + (NSString *)osName;
 + (NSString *)osVersion;
 + (NSString *)carrier;
