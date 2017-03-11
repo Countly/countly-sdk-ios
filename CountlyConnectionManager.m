@@ -197,7 +197,7 @@
     //  2 = AdHoc build (when isTestDevice flag on config object is set explicitly)
 
     int testMode;
-#ifndef __OPTIMIZE__
+#ifdef DEBUG
     testMode = 1;
 #else
     testMode = CountlyPushNotifications.sharedInstance.isTestDevice ? 2 : 0;
