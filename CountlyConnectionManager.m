@@ -15,6 +15,8 @@
 #endif
 @end
 
+const NSInteger kCountlyGETRequestMaxLength = 2048;
+
 @implementation CountlyConnectionManager : NSObject
 
 + (instancetype)sharedInstance
@@ -79,7 +81,7 @@
         request.HTTPMethod = @"POST";
         request.HTTPBody = pictureUploadData;
     }
-    else if(queryString.length > 2048 || self.alwaysUsePOST)
+    else if(queryString.length > kCountlyGETRequestMaxLength || self.alwaysUsePOST)
     {
         request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverInputEndpoint]];
         request.HTTPMethod = @"POST";
@@ -191,16 +193,18 @@
 
 - (void)sendPushToken:(NSString *)token
 {
-    //NOTE: Push notifications test modes:
-    //  0 = Production build,
-    //  1 = Development build,
-    //  2 = AdHoc build (when isTestDevice flag on config object is set explicitly)
+    typedef enum : NSInteger
+    {
+        CLYPushTokenModeProduction,
+        CLYPushTokenModeDevelopment,
+        CLYPushTokenModeAdHoc,
+    } CLYPushTokenMode;
 
     int testMode;
 #ifdef DEBUG
-    testMode = 1;
+    testMode = CLYPushTokenModeDevelopment;
 #else
-    testMode = CountlyPushNotifications.sharedInstance.isTestDevice ? 2 : 0;
+    testMode = CountlyPushNotifications.sharedInstance.isTestDevice ? CLYPushTokenModeAdHoc : CLYPushTokenModeProduction;
 #endif
 
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&token_session=1&ios_token=%@&test_mode=%d", token, testMode];
