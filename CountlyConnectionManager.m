@@ -46,12 +46,6 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     NSString* queryString = firstItemInQueue;
 
-    if(self.secretSalt)
-    {
-        NSString* checksum = [[queryString stringByAppendingString:self.secretSalt] cly_SHA1];
-        queryString = [queryString stringByAppendingFormat:@"&checksum=%@", checksum];
-    }
-
     //NOTE: For Limit Ad Tracking zero-IDFA problem
     if([queryString rangeOfString:@"&device_id=00000000-0000-0000-0000-000000000000"].location != NSNotFound)
     {
@@ -67,6 +61,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
         [self tick];
         return;
+    }
+
+    if(self.secretSalt)
+    {
+        NSString* checksum = [[queryString stringByAppendingString:self.secretSalt] cly_SHA1];
+        queryString = [queryString stringByAppendingFormat:@"&checksum=%@", checksum];
     }
 
     NSString* serverInputEndpoint = [self.host stringByAppendingString:@"/i"];
