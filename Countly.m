@@ -214,6 +214,9 @@
 
 - (void)suspend
 {
+    if(isSuspended)
+        return;
+
     COUNTLY_LOG(@"Suspending...");
 
     isSuspended = YES;
