@@ -57,7 +57,7 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
     if([queryString rangeOfString:@"&old_device_id=00000000-0000-0000-0000-000000000000"].location != NSNotFound)
     {
-        COUNTLY_LOG(@"Detected a request with old_device_id=[zero-IDFA] in queue and fixed.");
+        COUNTLY_LOG(@"Detected a request with old_device_id=[zero-IDFA] in queue and removed.");
 
         [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
         [self tick];
