@@ -101,7 +101,7 @@ void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
 
 @interface NSString (Countly)
 - (NSString *)cly_URLEscaped;
-- (NSString *)cly_SHA1;
+- (NSString *)cly_SHA256;
 - (NSData *)cly_dataUTF8;
 @end
 

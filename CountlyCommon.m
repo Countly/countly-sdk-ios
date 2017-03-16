@@ -203,14 +203,14 @@ NSString* CountlyJSONFromObject(id object)
     return [self stringByAddingPercentEncodingWithAllowedCharacters:charset];
 }
 
-- (NSString *)cly_SHA1
+- (NSString *)cly_SHA256
 {
     const char* s = [self UTF8String];
-    unsigned char digest[CC_SHA1_DIGEST_LENGTH];
-    CC_SHA1(s, (CC_LONG)strlen(s), digest);
+    unsigned char digest[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256(s, (CC_LONG)strlen(s), digest);
 
     NSMutableString* hash = NSMutableString.new;
-    for(int i = 0; i < CC_SHA1_DIGEST_LENGTH; i++)
+    for(int i = 0; i < CC_SHA256_DIGEST_LENGTH; i++)
         [hash appendFormat:@"%02x", digest[i]];
 
     return hash;

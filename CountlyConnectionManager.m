@@ -65,8 +65,8 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     if(self.secretSalt)
     {
-        NSString* checksum = [[queryString stringByAppendingString:self.secretSalt] cly_SHA1];
-        queryString = [queryString stringByAppendingFormat:@"&checksum=%@", checksum];
+        NSString* checksum = [[queryString stringByAppendingString:self.secretSalt] cly_SHA256];
+        queryString = [queryString stringByAppendingFormat:@"&checksum256=%@", checksum];
     }
 
     NSString* serverInputEndpoint = [self.host stringByAppendingString:@"/i"];
