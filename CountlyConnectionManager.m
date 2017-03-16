@@ -329,21 +329,20 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 - (NSData *)pictureUploadDataForRequest:(NSString *)requestString
 {
 #if TARGET_OS_IOS
-    NSString* unescaped = [requestString stringByRemovingPercentEncoding];
-    NSRange rLocalPicturePath = [unescaped rangeOfString:kCountlyLocalPicturePath];
-    if (rLocalPicturePath.location == NSNotFound)
-        return nil;
+    NSString* localPicturePath = nil;
+    NSString* tempURLString = [@"http://example.com/i?" stringByAppendingString:requestString];
+    NSURLComponents* URLComponents = [NSURLComponents componentsWithString:tempURLString];
+    for (NSURLQueryItem* queryItem in URLComponents.queryItems)
+    {
+        if ([queryItem.name isEqualToString:@"user_details"])
+        {
+            NSString* unescapedValue = [queryItem.value stringByRemovingPercentEncoding];
+            NSDictionary* pathDictionary = [NSJSONSerialization JSONObjectWithData:[unescapedValue cly_dataUTF8] options:0 error:nil];
+            localPicturePath = pathDictionary[kCountlyLocalPicturePath];
+            break;
+        }
+    }
 
-    NSRange rChecksum = [unescaped rangeOfString:@"&checksum="];
-    NSUInteger startIndex = rLocalPicturePath.location-2;
-    NSString* pathString;
-    if (rChecksum.location == NSNotFound)
-        pathString = [unescaped substringFromIndex:startIndex];
-    else
-        pathString = [unescaped substringWithRange:(NSRange){startIndex, rChecksum.location - startIndex}];
-
-    NSDictionary* pathDictionary = [NSJSONSerialization JSONObjectWithData:[pathString cly_dataUTF8] options:0 error:nil];
-    NSString* localPicturePath = pathDictionary[kCountlyLocalPicturePath];
     if(!localPicturePath || !localPicturePath.length)
         return nil;
 
