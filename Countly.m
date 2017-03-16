@@ -374,7 +374,7 @@
     }
 
     event.segmentation = segmentation;
-    event.count = MAX(count, 1);;
+    event.count = MAX(count, 1);
     event.sum = sum;
     event.duration = NSDate.date.timeIntervalSince1970 - event.timestamp;
 
