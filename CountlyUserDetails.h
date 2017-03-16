@@ -125,11 +125,11 @@ extern NSString* const kCountlyLocalPicturePath;
 + (instancetype)sharedInstance;
 
 /**
- * Records default user details properties and sends them to server.
- * @discussion It also uploads profile picture if @c pictureLocalPath is set.
- * @discussion Default user details properties are kept until application is terminated once they are set, even after using @c recordUserDetails method and sending them to server.
+ * @c recordUserDetails method is deprecated. Please use @c save method instead.
+ * @discussion Currently all calls to @c recordUserDetails method is redirected to @c save method automatically.
+ * @discussion But it is strongly recommended to replace it with @c save method.
  */
-- (void)recordUserDetails;
+- (void)recordUserDetails DEPRECATED_MSG_ATTRIBUTE("Use 'save' method instead!");
 
 #pragma mark -
 
@@ -244,8 +244,8 @@ extern NSString* const kCountlyLocalPicturePath;
 - (void)pull:(NSString *)key values:(NSArray *)value;
 
 /**
- * Sends queued custom user details property modifiers to server.
- * @discussion Once called, custom user details property modifiers queue is reset. And if sending them to server fails, they are stored peristenly in request queue, to be tried again later.
+ * Records user details and sends them to server.
+ * @discussion Once called, default user details properties and custom user details property modifiers are reset. If sending them to server fails, they are stored peristenly in request queue, to be tried again later.
  */
 - (void)save;
 @end

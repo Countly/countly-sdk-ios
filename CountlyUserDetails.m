@@ -34,15 +34,10 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
 
 - (void)recordUserDetails
 {
-    [CountlyConnectionManager.sharedInstance sendUserDetails:[CountlyUserDetails.sharedInstance serialize]];
-
-    if(self.pictureLocalPath && !self.pictureURL)
-    {
-        [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyLocalPicturePath:self.pictureLocalPath} cly_JSONify]];
-    }
+    [self save];
 }
 
-- (NSString *)serialize
+- (NSString *)serializedUserDetails
 {
     NSMutableDictionary* userDictionary = NSMutableDictionary.new;
     if(self.name)
@@ -64,7 +59,26 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
     if(self.custom)
         userDictionary[@"custom"] = self.custom;
 
-    return [userDictionary cly_JSONify];
+    if(userDictionary.allKeys.count)
+        return [userDictionary cly_JSONify];
+    
+    return nil;
+}
+
+- (void)clearUserDetails
+{
+    self.name = nil;
+    self.username = nil;
+    self.email = nil;
+    self.organization = nil;
+    self.phone = nil;
+    self.gender = nil;
+    self.pictureURL = nil;
+    self.pictureLocalPath = nil;
+    self.birthYear = nil;
+    self.custom = nil;
+    
+    [self.modifications removeAllObjects];
 }
 
 #pragma mark -
@@ -141,11 +155,17 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
 
 - (void)save
 {
-    NSDictionary* custom = @{@"custom":self.modifications};
+    NSString* userDetails = [CountlyUserDetails.sharedInstance serializedUserDetails];
+    if(userDetails)
+        [CountlyConnectionManager.sharedInstance sendUserDetails:userDetails];
 
-    [CountlyConnectionManager.sharedInstance sendUserDetails:[custom cly_JSONify]];
+    if(self.pictureLocalPath && !self.pictureURL)
+        [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyLocalPicturePath:self.pictureLocalPath} cly_JSONify]];
 
-    [self.modifications removeAllObjects];
+    if(self.modifications.count)
+        [CountlyConnectionManager.sharedInstance sendUserDetails:[@{@"custom":self.modifications} cly_JSONify]];
+
+    [self clearUserDetails];
 }
 
 @end
