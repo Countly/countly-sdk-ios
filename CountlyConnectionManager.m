@@ -16,6 +16,7 @@
 @end
 
 const NSInteger kCountlyGETRequestMaxLength = 2048;
+NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
 @implementation CountlyConnectionManager : NSObject
 
@@ -76,7 +77,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     NSData* pictureUploadData = [self pictureUploadDataForRequest:queryString];
     if(pictureUploadData)
     {
-        NSString *contentType = [@"multipart/form-data; boundary=" stringByAppendingString:self.boundary];
+        NSString *contentType = [@"multipart/form-data; boundary=" stringByAppendingString:kCountlyUploadBoundary];
         [request addValue:contentType forHTTPHeaderField: @"Content-Type"];
         request.HTTPMethod = @"POST";
         request.HTTPBody = pictureUploadData;
@@ -299,11 +300,6 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
                                         (long)CountlyCommon.sharedInstance.timeZone];
 }
 
-- (NSString *)boundary
-{
-    return @"0cae04a8b698d63ff6ea55d168993f21";
-}
-
 - (BOOL)isRequestSuccessful:(NSURLResponse *)response
 {
     if(!response)
@@ -373,10 +369,10 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     if (fileExtIndex == 2)
         fileExtIndex = 3;
 
-    NSString* boundaryStart = [NSString stringWithFormat:@"--%@\r\n", CountlyConnectionManager.sharedInstance.boundary];
+    NSString* boundaryStart = [NSString stringWithFormat:@"--%@\r\n", kCountlyUploadBoundary];
     NSString* contentDisposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"pictureFile\"; filename=\"%@\"\r\n", localPicturePath.lastPathComponent];
     NSString* contentType = [NSString stringWithFormat:@"Content-Type: image/%@\r\n\r\n", allowedFileTypes[fileExtIndex]];
-    NSString* boundaryEnd = [NSString stringWithFormat:@"\r\n--%@--\r\n", CountlyConnectionManager.sharedInstance.boundary];
+    NSString* boundaryEnd = [NSString stringWithFormat:@"\r\n--%@--\r\n", kCountlyUploadBoundary];
 
     NSMutableData* uploadData = NSMutableData.new;
     [uploadData appendData:[boundaryStart cly_dataUTF8]];

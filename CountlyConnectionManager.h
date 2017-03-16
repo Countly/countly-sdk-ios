@@ -35,7 +35,6 @@
 - (void)sendLocation:(CLLocationCoordinate2D)coordinate;
 
 - (NSString *)queryEssentials;
-- (NSString *)boundary;
 - (BOOL)isRequestSuccessful:(NSURLResponse *)response;
 - (void)tick;
 @end
