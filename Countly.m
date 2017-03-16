@@ -163,11 +163,11 @@
     }
     else
     {
-        [Countly.sharedInstance suspend];
+        [self suspend];
 
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
 
-        [Countly.sharedInstance resume];
+        [self resume];
 
         [CountlyPersistency.sharedInstance clearAllTimedEvents];
     }
