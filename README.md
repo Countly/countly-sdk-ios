@@ -1,11 +1,12 @@
 
-##What's Countly?
+## What's Countly?
+
 [Countly](http://count.ly) is an innovative, real-time, open source mobile analytics and push notifications platform. It collects data from mobile devices, and visualizes this information to analyze mobile application usage and end-user behavior. There are two parts of Countly: [the server that collects and analyzes data](http://github.com/countly/countly-server), and mobile SDK that sends this data. Both parts are open source with different licensing terms.
 
 * **Slack user?** [Join our Slack community](http://slack.count.ly:3000/)
 * **Questions?** [Ask in our Community forum](http://community.count.ly)
 
-##About this SDK
+## About this SDK
 
 This repository includes the Countly iOS SDK which supports watchOS, tvOS & macOS also. See [Countly iOS SDK](http://resources.count.ly/v1.0/docs/countly-sdk-for-ios-and-os-x) documentation for installation. 
 
