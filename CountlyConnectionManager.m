@@ -235,7 +235,7 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
 - (void)sendOldDeviceID:(NSString *)oldDeviceID
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&old_device_id=%@", oldDeviceID];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&old_device_id=%@", oldDeviceID.cly_URLEscaped];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -244,7 +244,7 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
 - (void)sendParentDeviceID:(NSString *)parentDeviceID
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&parent_device_id=%@", parentDeviceID];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&parent_device_id=%@", parentDeviceID.cly_URLEscaped];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -293,7 +293,7 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 {
     return [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%lld&hour=%ld&dow=%ld&tz=%ld",
                                         self.appKey,
-                                        CountlyDeviceInfo.sharedInstance.deviceID,
+                                        CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped,
                                         (long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000),
                                         (long)CountlyCommon.sharedInstance.hourOfDay,
                                         (long)CountlyCommon.sharedInstance.dayOfWeek,

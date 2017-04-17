@@ -96,11 +96,11 @@ void CountlyInternalLog(NSString *format, ...)
     NSMutableString *optinonalParameters = @"".mutableCopy;
 
     if(self.ISOCountryCode)
-        [optinonalParameters appendFormat:@"&country_code=%@", self.ISOCountryCode];
+        [optinonalParameters appendFormat:@"&country_code=%@", self.ISOCountryCode.cly_URLEscaped ];
     if(self.city)
-        [optinonalParameters appendFormat:@"&city=%@", self.city];
+        [optinonalParameters appendFormat:@"&city=%@", self.city.cly_URLEscaped];
     if(self.location)
-        [optinonalParameters appendFormat:@"&location=%@", self.location];
+        [optinonalParameters appendFormat:@"&location=%@", self.location.cly_URLEscaped];
 
     if(optinonalParameters.length)
         return optinonalParameters;
