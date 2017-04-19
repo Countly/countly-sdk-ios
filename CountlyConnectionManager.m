@@ -28,7 +28,7 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
     return s_sharedInstance;
 }
 
-- (void)tick
+- (void)proceedOnQueue
 {
     if (self.connection != nil)
         return;
@@ -60,7 +60,7 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
         COUNTLY_LOG(@"Detected a request with old_device_id=[zero-IDFA] in queue and removed.");
 
         [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
-        [self tick];
+        [self proceedOnQueue];
         return;
     }
 
@@ -115,7 +115,7 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
                 [CountlyPersistency.sharedInstance saveToFile];
 
-                [self tick];
+                [self proceedOnQueue];
             }
             else
             {
@@ -153,7 +153,7 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
-    [self tick];
+    [self proceedOnQueue];
 }
 
 - (void)updateSession
@@ -162,7 +162,7 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
-    [self tick];
+    [self proceedOnQueue];
 }
 
 - (void)endSession
@@ -171,7 +171,7 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
-    [self tick];
+    [self proceedOnQueue];
 }
 
 #pragma mark ---
@@ -187,7 +187,7 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
-    [self tick];
+    [self proceedOnQueue];
 }
 
 #pragma mark ---
@@ -212,7 +212,7 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
-    [self tick];
+    [self proceedOnQueue];
 }
 
 - (void)sendUserDetails:(NSString *)userDetails
@@ -221,7 +221,7 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
-    [self tick];
+    [self proceedOnQueue];
 }
 
 - (void)sendCrashReportLater:(NSString *)report
@@ -239,7 +239,7 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
-    [self tick];
+    [self proceedOnQueue];
 }
 
 - (void)sendParentDeviceID:(NSString *)parentDeviceID
@@ -248,7 +248,7 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
-    [self tick];
+    [self proceedOnQueue];
 }
 
 - (void)sendLocation:(CLLocationCoordinate2D)coordinate
@@ -257,7 +257,7 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
-    [self tick];
+    [self proceedOnQueue];
 }
 
 #pragma mark ---
@@ -388,7 +388,7 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 - (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue
 {
     _customHeaderFieldValue = customHeaderFieldValue;
-    [self tick];
+    [self proceedOnQueue];
 }
 
 #pragma mark ---
