@@ -385,6 +385,12 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
     return nil;
 }
 
+- (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue
+{
+    _customHeaderFieldValue = customHeaderFieldValue;
+    [self tick];
+}
+
 #pragma mark ---
 
 - (void)URLSession:(NSURLSession *)session didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential *))completionHandler
