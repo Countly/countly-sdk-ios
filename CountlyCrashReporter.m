@@ -109,8 +109,8 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
 
         if(loadAddress == 0)
         {
-            NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"\\s+\\s" options:0 error:nil];
-            NSString *trimmedLine = [regex stringByReplacingMatchesInString:line options:0 range:(NSRange){0,line.length} withTemplate:@" "];
+            NSRegularExpression* regex = [NSRegularExpression regularExpressionWithPattern:@"\\s+\\s" options:0 error:nil];
+            NSString* trimmedLine = [regex stringByReplacingMatchesInString:line options:0 range:(NSRange){0,line.length} withTemplate:@" "];
             NSArray* lineComponents = [trimmedLine componentsSeparatedByString:@" "];
 
             if (lineComponents.count >= 3 && [lineComponents[1] isEqualToString:CountlyDeviceInfo.executableName])
@@ -128,49 +128,11 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
 
     if(nonfatal)
     {
-        [CountlyConnectionManager.sharedInstance sendCrashReportLater:[crashReport cly_JSONify]];
+        [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:NO];
         return;
     }
 
-    if(!CountlyConnectionManager.sharedInstance.connection)
-        CountlyConnectionManager.sharedInstance.connection = NSURLSessionDataTask.new;
-    //NOTE: `sendEvents` and `endSession` calls adds `event` and `end_session` requests to queue and starts them.
-    //      a dummy connection object is created to prevent these requests when app is about to terminate due to crash
-
-    [CountlyConnectionManager.sharedInstance sendEvents];
-
-    if(!CountlyCommon.sharedInstance.manualSessionHandling)
-        [CountlyConnectionManager.sharedInstance endSession];
-
-    [CountlyPersistency.sharedInstance saveToFileSync];
-
-    NSString *urlString = [NSString stringWithFormat:@"%@/i", CountlyConnectionManager.sharedInstance.host];
-    NSString *queryString = [[CountlyConnectionManager.sharedInstance queryEssentials] stringByAppendingFormat:@"&crash=%@", [crashReport cly_JSONify]];
-
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
-    request.HTTPMethod = @"POST";
-    request.HTTPBody = [queryString cly_dataUTF8];
-    COUNTLY_LOG(@"Crash report request started: %@ \n%@", urlString, queryString);
-
-    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-
-    [[NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError*  error)
-    {
-        if(error || ![CountlyConnectionManager.sharedInstance isRequestSuccessful:response])
-        {
-            COUNTLY_LOG(@"Crash report request failed! Report stored to try again later. \n%@", error);
-            [CountlyConnectionManager.sharedInstance sendCrashReportLater:[crashReport cly_JSONify]];
-        }
-        else
-        {
-            COUNTLY_LOG(@"Crash report request successfully completed.");
-        }
-
-        dispatch_semaphore_signal(semaphore);
-
-    }] resume];
-
-    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+    [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:YES];
 
     NSSetUncaughtExceptionHandler(NULL);
     signal(SIGABRT, SIG_DFL);

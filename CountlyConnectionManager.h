@@ -29,12 +29,10 @@
 - (void)sendEvents;
 - (void)sendUserDetails:(NSString *)userDetails;
 - (void)sendPushToken:(NSString *)token;
-- (void)sendCrashReportLater:(NSString *)report;
+- (void)sendCrashReport:(NSString *)report immediately:(BOOL)immediately;
 - (void)sendOldDeviceID:(NSString *)oldDeviceID;
 - (void)sendParentDeviceID:(NSString *)parentDeviceID;
 - (void)sendLocation:(CLLocationCoordinate2D)coordinate;
 
-- (NSString *)queryEssentials;
-- (BOOL)isRequestSuccessful:(NSURLResponse *)response;
 - (void)proceedOnQueue;
 @end

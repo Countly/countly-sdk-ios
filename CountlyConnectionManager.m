@@ -9,6 +9,7 @@
 @interface CountlyConnectionManager()
 {
     NSTimeInterval lastSessionStartTime;
+    BOOL isCrashing;
 }
 #if TARGET_OS_IOS
 @property (nonatomic) UIBackgroundTaskIdentifier bgTask;
@@ -30,7 +31,7 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
 - (void)proceedOnQueue
 {
-    if (self.connection != nil)
+    if (self.connection != nil || isCrashing)
         return;
 
     if (self.customHeaderFieldName && !self.customHeaderFieldValue)
@@ -211,13 +212,69 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
     [self proceedOnQueue];
 }
 
-- (void)sendCrashReportLater:(NSString *)report
+- (void)sendCrashReport:(NSString *)report immediately:(BOOL)immediately;
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&crash=%@", report];
+    NSString* crashQueryString = [[self queryEssentials] stringByAppendingFormat:@"&crash=%@", report];
+    NSString* queryString = crashQueryString;
 
-    [CountlyPersistency.sharedInstance addToQueue:queryString];
+    if (!immediately)
+    {
+        [CountlyPersistency.sharedInstance addToQueue:crashQueryString];
+        [self proceedOnQueue];
+        return;
+    }
+
+    //NOTE: to prevent `event` and `end_session` requests from being added to queue and started, after `sendEvents` and `endSession` calls below.
+    isCrashing = YES;
+
+    [self sendEvents];
+
+    if(!CountlyCommon.sharedInstance.manualSessionHandling)
+        [self endSession];
+
+    if (self.customHeaderFieldName && !self.customHeaderFieldValue)
+    {
+        COUNTLY_LOG(@"customHeaderFieldName specified on config, but customHeaderFieldValue not set! Crash report stored to be sent later!");
+
+        [CountlyPersistency.sharedInstance addToQueue:crashQueryString];
+        [CountlyPersistency.sharedInstance saveToFileSync];
+        return;
+    }
 
     [CountlyPersistency.sharedInstance saveToFileSync];
+
+    queryString = [self appendChecksum:queryString];
+
+    NSString* serverInputEndpoint = [self.host stringByAppendingString:@"/i"];
+    NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverInputEndpoint]];
+    request.HTTPMethod = @"POST";
+    request.HTTPBody = [queryString cly_dataUTF8];
+
+    if(self.customHeaderFieldName && self.customHeaderFieldValue)
+        [request setValue:self.customHeaderFieldValue forHTTPHeaderField:self.customHeaderFieldName];
+
+    dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
+
+    [[[self URLSession] dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError*  error)
+    {
+        if(error || ![self isRequestSuccessful:response])
+        {
+            COUNTLY_LOG(@"Crash Report Request <%p> failed!\n%@: %@", request, error ? @"Error":@"Server reply", error ? error:[data cly_stringUTF8]);
+            [CountlyPersistency.sharedInstance addToQueue:crashQueryString];
+            [CountlyPersistency.sharedInstance saveToFileSync];
+        }
+        else
+        {
+            COUNTLY_LOG(@"Crash Report Request <%p> successfully completed.", request);
+        }
+
+        dispatch_semaphore_signal(semaphore);
+
+    }] resume];
+
+    COUNTLY_LOG(@"Crash Report Request <%p> started:\n[%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, [request.HTTPBody cly_stringUTF8]);
+
+    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
 }
 
 - (void)sendOldDeviceID:(NSString *)oldDeviceID
