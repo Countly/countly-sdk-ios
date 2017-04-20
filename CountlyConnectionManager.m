@@ -64,11 +64,7 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
         return;
     }
 
-    if(self.secretSalt)
-    {
-        NSString* checksum = [[queryString stringByAppendingString:self.secretSalt] cly_SHA256];
-        queryString = [queryString stringByAppendingFormat:@"&checksum256=%@", checksum];
-    }
+    queryString = [self appendChecksum:queryString];
 
     NSString* serverInputEndpoint = [self.host stringByAppendingString:@"/i"];
     NSString* fullRequestURL = [serverInputEndpoint stringByAppendingFormat:@"?%@", queryString];
@@ -92,16 +88,7 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
     if(self.customHeaderFieldName && self.customHeaderFieldValue)
         [request setValue:self.customHeaderFieldValue forHTTPHeaderField:self.customHeaderFieldName];
 
-    NSURLSession* session = NSURLSession.sharedSession;
-
-    if(self.pinnedCertificates)
-    {
-        COUNTLY_LOG(@"%d pinned certificate(s) specified in config.", (int)self.pinnedCertificates.count);
-        NSURLSessionConfiguration *sc = [NSURLSessionConfiguration defaultSessionConfiguration];
-        session = [NSURLSession sessionWithConfiguration:sc delegate:self delegateQueue:nil];
-    }
-
-    self.connection = [session dataTaskWithRequest:request completionHandler:^(NSData * data, NSURLResponse * response, NSError * error)
+    self.connection = [[self URLSession] dataTaskWithRequest:request completionHandler:^(NSData * data, NSURLResponse * response, NSError * error)
     {
         self.connection = nil;
 
@@ -383,6 +370,29 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
     return uploadData;
 #endif
     return nil;
+}
+
+- (NSString *)appendChecksum:(NSString *)queryString
+{
+    if(self.secretSalt)
+    {
+        NSString* checksum = [[queryString stringByAppendingString:self.secretSalt] cly_SHA256];
+        return [queryString stringByAppendingFormat:@"&checksum256=%@", checksum];
+    }
+    
+    return queryString;
+}
+
+- (NSURLSession *)URLSession
+{
+    if(self.pinnedCertificates)
+    {
+        COUNTLY_LOG(@"%d pinned certificate(s) specified in config.", (int)self.pinnedCertificates.count);
+        NSURLSessionConfiguration *sc = [NSURLSessionConfiguration defaultSessionConfiguration];
+        return [NSURLSession sessionWithConfiguration:sc delegate:self delegateQueue:nil];
+    }
+    
+    return NSURLSession.sharedSession;
 }
 
 #pragma mark ---
