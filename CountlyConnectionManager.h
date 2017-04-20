@@ -36,4 +36,5 @@
 
 - (NSString *)queryEssentials;
 - (BOOL)isRequestSuccessful:(NSURLResponse *)response;
+- (void)proceedOnQueue;
 @end

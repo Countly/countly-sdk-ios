@@ -176,6 +176,7 @@
 - (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue
 {
     CountlyConnectionManager.sharedInstance.customHeaderFieldValue = customHeaderFieldValue;
+    [CountlyConnectionManager.sharedInstance proceedOnQueue];
 }
 
 #pragma mark ---
