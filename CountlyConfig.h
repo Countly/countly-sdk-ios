@@ -104,18 +104,18 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 
 /**
  * For handling sessions manually.
- * @discussion If set, SDK does not send @c begin_sesssion, @c update_session and @c end_session requests automatically. Methods for beginning, updating and ending sessions needs to be called manually.
+ * @discussion If set, SDK does not handle beginning, updating and ending sessions automatically. Methods @c beginSession, @c updateSession and @c endSession need to be called manually.
  */
 @property (nonatomic) BOOL manualSessionHandling;
 
 /**
- * Update session period is used to send @c events and @c update_session requests to server periodically. 
+ * Update session period is used for updating sessions and sending queued events to server periodically.
  * @discussion If not set, it will be 60 seconds for @c iOS, @c tvOS & @c OSX, and 20 seconds for @c watchOS by default.
  */
 @property (nonatomic) NSTimeInterval updateSessionPeriod;
 
 /**
- * Event send threshold is used to send @c events requests to server when number of recorded custom events reaches, without waiting for next @c update_session tick defined by @c updateSessionPeriod. 
+ * Event send threshold is used for sending queued events to server when number of recorded events reaches to it, without waiting for next update session defined by @c updateSessionPeriod. 
  * @discussion If not set, it will be 10 for @c iOS, @c tvOS & @c OSX, and 3 for @c watchOS by default.
  */
 @property (nonatomic) NSUInteger eventSendThreshold;

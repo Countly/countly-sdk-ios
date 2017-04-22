@@ -49,14 +49,14 @@
 - (void)beginSession;
 
 /**
- * Updates session and sends @c update_session request with unsent session duration for manual session handling.
- * @discussion This method needs to be called for starting a session only if @c manualSessionHandling flag is set on initial configuration. Otherwise; sessions will be handled automatically by default, and calling this method will have no effect.
+ * Updates session and sends unsent session duration for manual session handling.
+ * @discussion This method needs to be called for updating a session only if @c manualSessionHandling flag is set on initial configuration. Otherwise; sessions will be handled automatically by default, and calling this method will have no effect.
  */
 - (void)updateSession;
 
 /**
  * Ends session and sends @c end_session request for manual session handling.
- * @discussion This method needs to be called for starting a session only if @c manualSessionHandling flag is set on initial configuration. Otherwise; sessions will be handled automatically by default, and calling this method will have no effect.
+ * @discussion This method needs to be called for ending a session only if @c manualSessionHandling flag is set on initial configuration. Otherwise; sessions will be handled automatically by default, and calling this method will have no effect.
  */
 - (void)endSession;
 
