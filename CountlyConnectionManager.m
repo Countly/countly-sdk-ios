@@ -49,6 +49,7 @@ NSString* const kCountlyQSKeyChecksum256 =          @"checksum256";
 
 const NSInteger kCountlyGETRequestMaxLength = 2048;
 NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
+NSString* const kCountlyZeroIDFA = @"00000000-0000-0000-0000-000000000000";
 
 @implementation CountlyConnectionManager : NSObject
 
@@ -80,16 +81,21 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
     NSString* queryString = firstItemInQueue;
 
     //NOTE: For Limit Ad Tracking zero-IDFA problem
-    if([queryString rangeOfString:@"&device_id=00000000-0000-0000-0000-000000000000"].location != NSNotFound)
+    NSString* deviceIDQueryString = [NSString stringWithFormat:@"&%@=", kCountlyQSKeyDeviceID];
+    NSString* deviceIDZeroIDFA = [deviceIDQueryString stringByAppendingString:kCountlyZeroIDFA];
+    NSString* deviceIDZeroIDFAOld = [deviceIDZeroIDFA stringByReplacingOccurrencesOfString:kCountlyQSKeyDeviceID withString:kCountlyQSKeyDeviceIDOld];
+    NSString* deviceIDFixed = [deviceIDQueryString stringByAppendingString:CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped];
+    
+    if([queryString rangeOfString:deviceIDZeroIDFA].location != NSNotFound)
     {
-        COUNTLY_LOG(@"Detected a request with device_id=[zero-IDFA] in queue and fixed.");
+        COUNTLY_LOG(@"Detected a request with zero-IDFA in queue and fixed.");
 
-        queryString = [queryString stringByReplacingOccurrencesOfString:@"&device_id=00000000-0000-0000-0000-000000000000" withString:[@"&device_id=" stringByAppendingString:CountlyDeviceInfo.sharedInstance.deviceID]];
+        queryString = [queryString stringByReplacingOccurrencesOfString:deviceIDZeroIDFA withString:deviceIDFixed];
     }
 
-    if([queryString rangeOfString:@"&old_device_id=00000000-0000-0000-0000-000000000000"].location != NSNotFound)
+    if([queryString rangeOfString:deviceIDZeroIDFAOld].location != NSNotFound)
     {
-        COUNTLY_LOG(@"Detected a request with old_device_id=[zero-IDFA] in queue and removed.");
+        COUNTLY_LOG(@"Detected a request with zero-IDFA in queue and removed.");
 
         [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
         [self proceedOnQueue];
