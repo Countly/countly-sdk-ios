@@ -51,6 +51,7 @@ NSString* const kCountlyQSKeyChecksum256 =          @"checksum256";
 const NSInteger kCountlyGETRequestMaxLength = 2048;
 NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 NSString* const kCountlyZeroIDFA = @"00000000-0000-0000-0000-000000000000";
+NSString* const kCountlyInputEndpoint = @"/i";
 
 @implementation CountlyConnectionManager : NSObject
 
@@ -105,7 +106,7 @@ NSString* const kCountlyZeroIDFA = @"00000000-0000-0000-0000-000000000000";
 
     queryString = [self appendChecksum:queryString];
 
-    NSString* serverInputEndpoint = [self.host stringByAppendingString:@"/i"];
+    NSString* serverInputEndpoint = [self.host stringByAppendingString:kCountlyInputEndpoint];
     NSString* fullRequestURL = [serverInputEndpoint stringByAppendingFormat:@"?%@", queryString];
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:fullRequestURL]];
 
@@ -261,14 +262,12 @@ NSString* const kCountlyZeroIDFA = @"00000000-0000-0000-0000-000000000000";
 
 - (void)sendCrashReport:(NSString *)report immediately:(BOOL)immediately;
 {
-    NSString* crashQueryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
-                                  kCountlyQSKeyCrash, report];
-
-    NSString* queryString = crashQueryString;
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
+                             kCountlyQSKeyCrash, report];
 
     if (!immediately)
     {
-        [CountlyPersistency.sharedInstance addToQueue:crashQueryString];
+        [CountlyPersistency.sharedInstance addToQueue:queryString];
         [self proceedOnQueue];
         return;
     }
@@ -285,19 +284,17 @@ NSString* const kCountlyZeroIDFA = @"00000000-0000-0000-0000-000000000000";
     {
         COUNTLY_LOG(@"customHeaderFieldName specified on config, but customHeaderFieldValue not set! Crash report stored to be sent later!");
 
-        [CountlyPersistency.sharedInstance addToQueue:crashQueryString];
+        [CountlyPersistency.sharedInstance addToQueue:queryString];
         [CountlyPersistency.sharedInstance saveToFileSync];
         return;
     }
 
     [CountlyPersistency.sharedInstance saveToFileSync];
 
-    queryString = [self appendChecksum:queryString];
-
-    NSString* serverInputEndpoint = [self.host stringByAppendingString:@"/i"];
+    NSString* serverInputEndpoint = [self.host stringByAppendingString:kCountlyInputEndpoint];
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverInputEndpoint]];
     request.HTTPMethod = @"POST";
-    request.HTTPBody = [queryString cly_dataUTF8];
+    request.HTTPBody = [[self appendChecksum:queryString] cly_dataUTF8];
 
     if(self.customHeaderFieldName && self.customHeaderFieldValue)
         [request setValue:self.customHeaderFieldValue forHTTPHeaderField:self.customHeaderFieldName];
@@ -309,7 +306,7 @@ NSString* const kCountlyZeroIDFA = @"00000000-0000-0000-0000-000000000000";
         if(error || ![self isRequestSuccessful:response])
         {
             COUNTLY_LOG(@"Crash Report Request <%p> failed!\n%@: %@", request, error ? @"Error":@"Server reply", error ? error:[data cly_stringUTF8]);
-            [CountlyPersistency.sharedInstance addToQueue:crashQueryString];
+            [CountlyPersistency.sharedInstance addToQueue:queryString];
             [CountlyPersistency.sharedInstance saveToFileSync];
         }
         else
