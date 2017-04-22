@@ -16,12 +16,12 @@
 
 - (void)reportView:(NSString *)viewName;
 - (void)endView;
+- (void)pauseView;
+- (void)resumeView;
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 - (void)startAutoViewTracking;
 - (void)addExceptionForAutoViewTracking:(NSString *)exception;
 - (void)removeExceptionForAutoViewTracking:(NSString *)exception;
-- (void)pauseView;
-- (void)resumeView;
 @property (nonatomic) BOOL isAutoViewTrackingEnabled;
 #endif
 @property (nonatomic, strong) NSString* lastView;
