@@ -8,6 +8,7 @@
 
 @interface CountlyViewTracking ()
 @property (nonatomic) NSTimeInterval lastViewStartTime;
+@property (nonatomic) NSTimeInterval accumulatedTime;
 @property (nonatomic, strong) NSMutableArray* exceptionViewControllers;
 @end
 
@@ -79,7 +80,8 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
             @"segment": CountlyDeviceInfo.osName,
         };
 
-        NSTimeInterval duration = NSDate.date.timeIntervalSince1970 - self.lastViewStartTime;
+        NSTimeInterval duration = NSDate.date.timeIntervalSince1970 - self.lastViewStartTime + self.accumulatedTime;
+        self.accumulatedTime = 0;
         [Countly.sharedInstance recordEvent:kCountlyReservedEventView segmentation:segmentation count:1 sum:0 duration:duration timestamp:self.lastViewStartTime];
 
         COUNTLY_LOG(@"View tracking ended: %@ duration: %f", self.lastView, duration);
@@ -110,9 +112,20 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
     [self.exceptionViewControllers removeObject:exception];
 }
 
+- (void)pauseView
+{
+    self.accumulatedTime = NSDate.date.timeIntervalSince1970 - self.lastViewStartTime;
+}
+
+- (void)resumeView
+{
+    self.lastViewStartTime = CountlyCommon.sharedInstance.uniqueTimestamp;
+}
+
 #endif
 @end
 
+#pragma mark -
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 @implementation UIViewController (CountlyViewTracking)

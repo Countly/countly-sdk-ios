@@ -20,6 +20,8 @@
 - (void)startAutoViewTracking;
 - (void)addExceptionForAutoViewTracking:(NSString *)exception;
 - (void)removeExceptionForAutoViewTracking:(NSString *)exception;
+- (void)pauseView;
+- (void)resumeView;
 @property (nonatomic) BOOL isAutoViewTrackingEnabled;
 #endif
 @property (nonatomic, strong) NSString* lastView;

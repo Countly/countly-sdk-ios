@@ -226,6 +226,8 @@
 
     if(!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance endSession];
+    
+    [CountlyViewTracking.sharedInstance pauseView];
 
     [CountlyPersistency.sharedInstance saveToFile];
 }
@@ -245,6 +247,8 @@
 
     if(!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
+
+    [CountlyViewTracking.sharedInstance resumeView];
 
     isSuspended = NO;
 }
