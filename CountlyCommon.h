@@ -82,7 +82,6 @@ void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
 - (NSInteger)timeZone;
 - (long)timeSinceLaunch;
 - (NSTimeInterval)uniqueTimestamp;
-- (NSString *)optionalParameters;
 #if (TARGET_OS_IOS || TARGET_OS_WATCH)
 - (void)activateWatchConnectivity;
 #endif

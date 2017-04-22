@@ -135,9 +135,7 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&begin_session=1&sdk_version=%@&sdk_name=%@&metrics=%@", kCountlySDKVersion,
                              kCountlySDKName, [CountlyDeviceInfo metrics]];
 
-    NSString* optionalParameters = [CountlyCommon.sharedInstance optionalParameters];
-    if(optionalParameters)
-        queryString = [queryString stringByAppendingString:optionalParameters];
+    queryString = [queryString stringByAppendingString:[self additionalInfo]];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -342,6 +340,20 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
                                         (long)CountlyCommon.sharedInstance.hourOfDay,
                                         (long)CountlyCommon.sharedInstance.dayOfWeek,
                                         (long)CountlyCommon.sharedInstance.timeZone];
+}
+
+- (NSString *)additionalInfo
+{
+    NSMutableString *additionalInfo = @"".mutableCopy;
+
+    if(CountlyCommon.sharedInstance.ISOCountryCode)
+        [additionalInfo appendFormat:@"&country_code=%@", CountlyCommon.sharedInstance.ISOCountryCode.cly_URLEscaped ];
+    if(CountlyCommon.sharedInstance.city)
+        [additionalInfo appendFormat:@"&city=%@", CountlyCommon.sharedInstance.city.cly_URLEscaped];
+    if(CountlyCommon.sharedInstance.location)
+        [additionalInfo appendFormat:@"&location=%@", CountlyCommon.sharedInstance.location.cly_URLEscaped];
+
+    return additionalInfo;
 }
 
 - (BOOL)isRequestSuccessful:(NSURLResponse *)response
