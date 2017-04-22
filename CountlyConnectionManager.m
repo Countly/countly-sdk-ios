@@ -409,16 +409,6 @@ NSString* const kCountlyZeroIDFA = @"00000000-0000-0000-0000-000000000000";
     return additionalInfo;
 }
 
-- (BOOL)isRequestSuccessful:(NSURLResponse *)response
-{
-    if(!response)
-        return NO;
-
-    NSInteger code = ((NSHTTPURLResponse*)response).statusCode;
-
-    return (code >= 200 && code < 300);
-}
-
 - (int)sessionLengthInSeconds
 {
     static double unsentSessionLength = 0.0;
@@ -505,6 +495,18 @@ NSString* const kCountlyZeroIDFA = @"00000000-0000-0000-0000-000000000000";
     return queryString;
 }
 
+- (BOOL)isRequestSuccessful:(NSURLResponse *)response
+{
+    if(!response)
+        return NO;
+
+    NSInteger code = ((NSHTTPURLResponse*)response).statusCode;
+
+    return (code >= 200 && code < 300);
+}
+
+#pragma mark ---
+
 - (NSURLSession *)URLSession
 {
     if(self.pinnedCertificates)
@@ -516,8 +518,6 @@ NSString* const kCountlyZeroIDFA = @"00000000-0000-0000-0000-000000000000";
     
     return NSURLSession.sharedSession;
 }
-
-#pragma mark ---
 
 - (void)URLSession:(NSURLSession *)session didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential *))completionHandler
 {
