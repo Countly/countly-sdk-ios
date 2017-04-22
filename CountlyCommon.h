@@ -73,6 +73,7 @@ extern NSString* const kCountlySDKName;
 @property (nonatomic, strong) NSString* ISOCountryCode;
 @property (nonatomic, strong) NSString* city;
 @property (nonatomic, strong) NSString* location;
+@property (nonatomic, strong) NSString* IP;
 
 void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
 

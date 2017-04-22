@@ -45,6 +45,7 @@ NSString* const kCountlyQSKeyCrash =                @"crash";
 NSString* const kCountlyQSKeyLocation =             @"location";
 NSString* const kCountlyQSKeyCountryCode =          @"country_code";
 NSString* const kCountlyQSKeyCity =                 @"city";
+NSString* const kCountlyQSKeyIP =                   @"ip";
 NSString* const kCountlyQSKeyChecksum256 =          @"checksum256";
 
 const NSInteger kCountlyGETRequestMaxLength = 2048;
@@ -405,6 +406,8 @@ NSString* const kCountlyZeroIDFA = @"00000000-0000-0000-0000-000000000000";
         [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyCity, CountlyCommon.sharedInstance.city.cly_URLEscaped];
     if(CountlyCommon.sharedInstance.location)
         [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyLocation, CountlyCommon.sharedInstance.location.cly_URLEscaped];
+    if(CountlyCommon.sharedInstance.IP)
+        [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyIP, CountlyCommon.sharedInstance.IP.cly_URLEscaped];
 
     return additionalInfo;
 }

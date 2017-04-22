@@ -158,6 +158,12 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 @property (nonatomic) CLLocationCoordinate2D location;
 
 /**
+ * IP address can be specified as string to be used for advanced segmentation and geo-ip based push notifications.
+ * @discussion It will be sent with @c begin_session request only.
+ */
+@property (nonatomic) NSString* IP;
+
+/**
  * For specifying bundled certificates to be used for public key pinning.
  * @discussion Certificates have to be DER encoded with one of the following extensions: .der .cer or .crt
  * @discussion e.g. myserver.com.cer
