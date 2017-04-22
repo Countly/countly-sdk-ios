@@ -16,6 +16,37 @@
 #endif
 @end
 
+NSString* const kCountlyQSKeyAppKey =               @"app_key";
+
+NSString* const kCountlyQSKeyDeviceID =             @"device_id";
+NSString* const kCountlyQSKeyDeviceIDOld =          @"old_device_id";
+NSString* const kCountlyQSKeyDeviceIDParent =       @"parent_device_id";
+
+NSString* const kCountlyQSKeyTimestamp =            @"timestamp";
+NSString* const kCountlyQSKeyTimeZone =             @"tz";
+NSString* const kCountlyQSKeyTimeHourOfDay =        @"hour";
+NSString* const kCountlyQSKeyTimeDayOfWeek =        @"dow";
+
+NSString* const kCountlyQSKeySessionBegin =         @"begin_session";
+NSString* const kCountlyQSKeySessionDuration =      @"session_duration";
+NSString* const kCountlyQSKeySessionEnd =           @"end_session";
+
+NSString* const kCountlyQSKeyTokenSession =         @"token_session";
+NSString* const kCountlyQSKeyTokeniOS =             @"ios_token";
+NSString* const kCountlyQSKeyTokenMode =            @"test_mode";
+
+NSString* const kCountlyQSKeySDKVersion =           @"sdk_version";
+NSString* const kCountlyQSKeySDKName =              @"sdk_name";
+
+NSString* const kCountlyQSKeyMetrics =              @"metrics";
+NSString* const kCountlyQSKeyEvents =               @"events";
+NSString* const kCountlyQSKeyUserDetails =          @"user_details";
+NSString* const kCountlyQSKeyCrash =                @"crash";
+NSString* const kCountlyQSKeyLocation =             @"location";
+NSString* const kCountlyQSKeyCountryCode =          @"country_code";
+NSString* const kCountlyQSKeyCity =                 @"city";
+NSString* const kCountlyQSKeyChecksum256 =          @"checksum256";
+
 const NSInteger kCountlyGETRequestMaxLength = 2048;
 NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
@@ -132,8 +163,11 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 {
     lastSessionStartTime = NSDate.date.timeIntervalSince1970;
 
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&begin_session=1&sdk_version=%@&sdk_name=%@&metrics=%@", kCountlySDKVersion,
-                             kCountlySDKName, [CountlyDeviceInfo metrics]];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%@&%@=%@&%@=%@",
+                             kCountlyQSKeySessionBegin, @"1",
+                             kCountlyQSKeySDKVersion, kCountlySDKVersion,
+                             kCountlyQSKeySDKName, kCountlySDKName,
+                             kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
 
     queryString = [queryString stringByAppendingString:[self additionalInfo]];
 
@@ -144,7 +178,8 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
 - (void)updateSession
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&session_duration=%d", [self sessionLengthInSeconds]];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%d",
+                             kCountlyQSKeySessionDuration, [self sessionLengthInSeconds]];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -153,7 +188,9 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
 - (void)endSession
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&end_session=1&session_duration=%d", [self sessionLengthInSeconds]];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%d",
+                             kCountlyQSKeySessionEnd, @"1",
+                             kCountlyQSKeySessionDuration, [self sessionLengthInSeconds]];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -169,7 +206,8 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
     if(!events)
         return;
 
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&events=%@", events];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
+                             kCountlyQSKeyEvents, events];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -194,7 +232,10 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
     testMode = CountlyPushNotifications.sharedInstance.isTestDevice ? CLYPushTokenModeAdHoc : CLYPushTokenModeProduction;
 #endif
 
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&token_session=1&ios_token=%@&test_mode=%d", token, testMode];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%@&%@=%d",
+                             kCountlyQSKeyTokenSession, @"1",
+                             kCountlyQSKeyTokeniOS, token,
+                             kCountlyQSKeyTokenMode, testMode];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -203,7 +244,8 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
 - (void)sendUserDetails:(NSString *)userDetails
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&user_details=%@", userDetails];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
+                             kCountlyQSKeyUserDetails, userDetails];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -212,7 +254,9 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
 - (void)sendCrashReport:(NSString *)report immediately:(BOOL)immediately;
 {
-    NSString* crashQueryString = [[self queryEssentials] stringByAppendingFormat:@"&crash=%@", report];
+    NSString* crashQueryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
+                                  kCountlyQSKeyCrash, report];
+
     NSString* queryString = crashQueryString;
 
     if (!immediately)
@@ -277,7 +321,8 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
 - (void)sendOldDeviceID:(NSString *)oldDeviceID
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&old_device_id=%@", oldDeviceID.cly_URLEscaped];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
+                             kCountlyQSKeyDeviceIDOld, oldDeviceID.cly_URLEscaped];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -286,7 +331,8 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
 - (void)sendParentDeviceID:(NSString *)parentDeviceID
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&parent_device_id=%@", parentDeviceID.cly_URLEscaped];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
+                             kCountlyQSKeyDeviceIDParent, parentDeviceID.cly_URLEscaped];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -295,7 +341,8 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
 - (void)sendLocation:(CLLocationCoordinate2D)coordinate
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&location=%f,%f", coordinate.latitude, coordinate.longitude];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%f,%f",
+                             kCountlyQSKeyLocation, coordinate.latitude, coordinate.longitude];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -333,13 +380,13 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
 - (NSString *)queryEssentials
 {
-    return [NSString stringWithFormat:@"app_key=%@&device_id=%@&timestamp=%lld&hour=%ld&dow=%ld&tz=%ld",
-                                        self.appKey,
-                                        CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped,
-                                        (long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000),
-                                        (long)CountlyCommon.sharedInstance.hourOfDay,
-                                        (long)CountlyCommon.sharedInstance.dayOfWeek,
-                                        (long)CountlyCommon.sharedInstance.timeZone];
+    return [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%lld&%@=%ld&%@=%ld&%@=%ld",
+                                        kCountlyQSKeyAppKey, self.appKey,
+                                        kCountlyQSKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped,
+                                        kCountlyQSKeyTimestamp, (long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000),
+                                        kCountlyQSKeyTimeHourOfDay, (long)CountlyCommon.sharedInstance.hourOfDay,
+                                        kCountlyQSKeyTimeDayOfWeek, (long)CountlyCommon.sharedInstance.dayOfWeek,
+                                        kCountlyQSKeyTimeZone, (long)CountlyCommon.sharedInstance.timeZone];
 }
 
 - (NSString *)additionalInfo
@@ -347,11 +394,11 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
     NSMutableString *additionalInfo = @"".mutableCopy;
 
     if(CountlyCommon.sharedInstance.ISOCountryCode)
-        [additionalInfo appendFormat:@"&country_code=%@", CountlyCommon.sharedInstance.ISOCountryCode.cly_URLEscaped ];
+        [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyCountryCode, CountlyCommon.sharedInstance.ISOCountryCode.cly_URLEscaped];
     if(CountlyCommon.sharedInstance.city)
-        [additionalInfo appendFormat:@"&city=%@", CountlyCommon.sharedInstance.city.cly_URLEscaped];
+        [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyCity, CountlyCommon.sharedInstance.city.cly_URLEscaped];
     if(CountlyCommon.sharedInstance.location)
-        [additionalInfo appendFormat:@"&location=%@", CountlyCommon.sharedInstance.location.cly_URLEscaped];
+        [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyLocation, CountlyCommon.sharedInstance.location.cly_URLEscaped];
 
     return additionalInfo;
 }
@@ -382,11 +429,11 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 {
 #if TARGET_OS_IOS
     NSString* localPicturePath = nil;
-    NSString* tempURLString = [@"http://example.com/i?" stringByAppendingString:requestString];
+    NSString* tempURLString = [@"http://example.com/path?" stringByAppendingString:requestString];
     NSURLComponents* URLComponents = [NSURLComponents componentsWithString:tempURLString];
     for (NSURLQueryItem* queryItem in URLComponents.queryItems)
     {
-        if ([queryItem.name isEqualToString:@"user_details"])
+        if ([queryItem.name isEqualToString:kCountlyQSKeyUserDetails])
         {
             NSString* unescapedValue = [queryItem.value stringByRemovingPercentEncoding];
             NSDictionary* pathDictionary = [NSJSONSerialization JSONObjectWithData:[unescapedValue cly_dataUTF8] options:0 error:nil];
@@ -446,7 +493,7 @@ NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
     if(self.secretSalt)
     {
         NSString* checksum = [[queryString stringByAppendingString:self.secretSalt] cly_SHA256];
-        return [queryString stringByAppendingFormat:@"&checksum256=%@", checksum];
+        return [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyChecksum256, checksum];
     }
     
     return queryString;
