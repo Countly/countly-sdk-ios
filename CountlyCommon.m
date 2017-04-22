@@ -74,9 +74,9 @@ void CountlyInternalLog(NSString *format, ...)
     return NSTimeZone.systemTimeZone.secondsFromGMT / 60;
 }
 
-- (long)timeSinceLaunch
+- (NSInteger)timeSinceLaunch
 {
-    return (long)NSDate.date.timeIntervalSince1970 - startTime;
+    return (int)NSDate.date.timeIntervalSince1970 - startTime;
 }
 
 - (NSTimeInterval)uniqueTimestamp

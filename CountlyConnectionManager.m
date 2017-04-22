@@ -186,7 +186,7 @@ NSString* const kCountlyZeroIDFA = @"00000000-0000-0000-0000-000000000000";
 - (void)updateSession
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%d",
-                             kCountlyQSKeySessionDuration, [self sessionLengthInSeconds]];
+                             kCountlyQSKeySessionDuration, (int)[self sessionLengthInSeconds]];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -197,7 +197,7 @@ NSString* const kCountlyZeroIDFA = @"00000000-0000-0000-0000-000000000000";
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%d",
                              kCountlyQSKeySessionEnd, @"1",
-                             kCountlyQSKeySessionDuration, [self sessionLengthInSeconds]];
+                             kCountlyQSKeySessionDuration, (int)[self sessionLengthInSeconds]];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -387,13 +387,13 @@ NSString* const kCountlyZeroIDFA = @"00000000-0000-0000-0000-000000000000";
 
 - (NSString *)queryEssentials
 {
-    return [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%lld&%@=%ld&%@=%ld&%@=%ld",
+    return [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%lld&%@=%d&%@=%d&%@=%d",
                                         kCountlyQSKeyAppKey, self.appKey,
                                         kCountlyQSKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped,
                                         kCountlyQSKeyTimestamp, (long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000),
-                                        kCountlyQSKeyTimeHourOfDay, (long)CountlyCommon.sharedInstance.hourOfDay,
-                                        kCountlyQSKeyTimeDayOfWeek, (long)CountlyCommon.sharedInstance.dayOfWeek,
-                                        kCountlyQSKeyTimeZone, (long)CountlyCommon.sharedInstance.timeZone];
+                                        kCountlyQSKeyTimeHourOfDay, (int)CountlyCommon.sharedInstance.hourOfDay,
+                                        kCountlyQSKeyTimeDayOfWeek, (int)CountlyCommon.sharedInstance.dayOfWeek,
+                                        kCountlyQSKeyTimeZone, (int)CountlyCommon.sharedInstance.timeZone];
 }
 
 - (NSString *)additionalInfo
@@ -412,7 +412,7 @@ NSString* const kCountlyZeroIDFA = @"00000000-0000-0000-0000-000000000000";
     return additionalInfo;
 }
 
-- (int)sessionLengthInSeconds
+- (NSInteger)sessionLengthInSeconds
 {
     static double unsentSessionLength = 0.0;
 
