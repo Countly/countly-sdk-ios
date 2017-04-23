@@ -171,10 +171,8 @@ NSString* const kCountlyInputEndpoint = @"/i";
 {
     lastSessionStartTime = NSDate.date.timeIntervalSince1970;
 
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%@&%@=%@&%@=%@",
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%@",
                              kCountlyQSKeySessionBegin, @"1",
-                             kCountlyQSKeySDKVersion, kCountlySDKVersion,
-                             kCountlyQSKeySDKName, kCountlySDKName,
                              kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
 
     queryString = [queryString stringByAppendingString:[self additionalInfo]];
@@ -384,13 +382,15 @@ NSString* const kCountlyInputEndpoint = @"/i";
 
 - (NSString *)queryEssentials
 {
-    return [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%lld&%@=%d&%@=%d&%@=%d",
+    return [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%lld&%@=%d&%@=%d&%@=%d&%@=%@&%@=%@",
                                         kCountlyQSKeyAppKey, self.appKey,
                                         kCountlyQSKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped,
                                         kCountlyQSKeyTimestamp, (long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000),
                                         kCountlyQSKeyTimeHourOfDay, (int)CountlyCommon.sharedInstance.hourOfDay,
                                         kCountlyQSKeyTimeDayOfWeek, (int)CountlyCommon.sharedInstance.dayOfWeek,
-                                        kCountlyQSKeyTimeZone, (int)CountlyCommon.sharedInstance.timeZone];
+                                        kCountlyQSKeyTimeZone, (int)CountlyCommon.sharedInstance.timeZone,
+                                        kCountlyQSKeySDKVersion, kCountlySDKVersion,
+                                        kCountlyQSKeySDKName, kCountlySDKName];
 }
 
 - (NSString *)additionalInfo
