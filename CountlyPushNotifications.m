@@ -12,6 +12,9 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 @interface CountlyPushNotifications ()
 #if TARGET_OS_IOS
+{
+    UIAlertController* alertController;
+}
 @property (nonatomic, strong) UIWindow* alertWindow;
 @property (nonatomic, strong) NSString* token;
 @property (nonatomic, copy) void (^permissionCompletion)(BOOL granted, NSError * error);
@@ -149,28 +152,28 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
     NSString* title = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleDisplayName"];
 
-    UIAlertController* alertController = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
+    alertController = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
 
-    NSString* dismissButtonTitle = countlyPayload[@"c"];
-    if (!dismissButtonTitle) dismissButtonTitle = NSLocalizedString(@"Dismiss", nil);
+    const float kCountlyDismissButtonSize = 30.0;
+    const float kCountlyDismissButtonMargin = 10.0;
+    UIButton* dismissButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    dismissButton.frame = (CGRect){alertController.view.bounds.size.width - kCountlyDismissButtonSize - kCountlyDismissButtonMargin, kCountlyDismissButtonMargin, kCountlyDismissButtonSize, kCountlyDismissButtonSize};
+    [dismissButton setTitle:@"✕" forState:UIControlStateNormal];
+    [dismissButton setTitleColor:UIColor.grayColor forState:UIControlStateNormal];
+    dismissButton.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleBottomMargin;
+    [dismissButton addTarget:self action:@selector(onClick_dismiss:) forControlEvents:UIControlEventTouchUpInside ];
+    [alertController.view addSubview:dismissButton];
 
-    UIAlertAction* dismiss = [UIAlertAction actionWithTitle:dismissButtonTitle style:UIAlertActionStyleCancel handler:^(UIAlertAction * action)
+    NSArray* buttons = countlyPayload[@"b"];
+    [buttons enumerateObjectsUsingBlock:^(NSDictionary* button, NSUInteger idx, BOOL * stop)
     {
-        self.alertWindow.hidden = YES;
-        self.alertWindow = nil;
-    }];
-
-    [alertController addAction:dismiss];
-
-    NSString* URL = countlyPayload[@"l"];
-    if(URL)
-    {
-        NSString* visitButtonTitle = countlyPayload[@"a"];
-        if (!visitButtonTitle) visitButtonTitle = NSLocalizedString(@"Visit", nil);
+        //NOTE: space is added to force buttons to be laid out vertically
+        NSString* title = [button[@"t"] stringByAppendingString:@"                       "];
+        NSString* URL = button[@"l"];
     
-        UIAlertAction* visit = [UIAlertAction actionWithTitle:visitButtonTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction * action)
+        UIAlertAction* visit = [UIAlertAction actionWithTitle:title style:UIAlertActionStyleDefault handler:^(UIAlertAction * action)
         {
-            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{@"i": notificationID}];
+            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{@"i": notificationID, @"b": @(idx+1)}];
 
             [UIApplication.sharedApplication openURL:[NSURL URLWithString:URL]];
 
@@ -179,13 +182,22 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         }];
 
         [alertController addAction:visit];
-    }
+    }];
 
     self.alertWindow = [UIWindow.alloc initWithFrame:UIScreen.mainScreen.bounds];
     self.alertWindow.rootViewController = CLYInternalViewController.new;
     self.alertWindow.windowLevel = UIWindowLevelAlert;
     [self.alertWindow makeKeyAndVisible];
     [self.alertWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
+}
+
+- (void)onClick_dismiss:(id)sender
+{
+    [alertController dismissViewControllerAnimated:YES completion:^
+    {
+        self.alertWindow.hidden = YES;
+        self.alertWindow = nil;
+    }];
 }
 
 #pragma mark ---
