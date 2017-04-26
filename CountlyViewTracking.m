@@ -88,6 +88,16 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
     }
 }
 
+- (void)pauseView
+{
+    self.accumulatedTime = NSDate.date.timeIntervalSince1970 - self.lastViewStartTime;
+}
+
+- (void)resumeView
+{
+    self.lastViewStartTime = CountlyCommon.sharedInstance.uniqueTimestamp;
+}
+
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 - (void)startAutoViewTracking
 {
@@ -110,16 +120,6 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
 - (void)removeExceptionForAutoViewTracking:(NSString *)exception
 {
     [self.exceptionViewControllers removeObject:exception];
-}
-
-- (void)pauseView
-{
-    self.accumulatedTime = NSDate.date.timeIntervalSince1970 - self.lastViewStartTime;
-}
-
-- (void)resumeView
-{
-    self.lastViewStartTime = CountlyCommon.sharedInstance.uniqueTimestamp;
 }
 
 #endif
