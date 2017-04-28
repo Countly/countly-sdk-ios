@@ -19,6 +19,7 @@
 #import "CountlyViewTracking.h"
 #import "CountlyStarRating.h"
 #import "CountlyPushNotifications.h"
+#import "CountlyNotificationService.h"
 
 #if DEBUG
 #define COUNTLY_LOG(fmt, ...) CountlyInternalLog(fmt, ##__VA_ARGS__)

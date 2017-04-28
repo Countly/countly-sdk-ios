@@ -9,7 +9,6 @@
 NSString* const kCountlyReservedEventPushOpen = @"[CLY]_push_open";
 NSString* const kCountlyReservedEventPushAction = @"[CLY]_push_action";
 NSString* const kCountlyTokenError = @"kCountlyTokenError";
-NSString* const kCountlyActionIdentifier = @"CountlyActionIdentifier";
 
 @interface CountlyPushNotifications ()
 #if TARGET_OS_IOS
