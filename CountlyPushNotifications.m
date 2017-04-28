@@ -146,11 +146,23 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
     [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{@"i":notificationID}];
 
-    NSString* message = notification[@"aps"][@"alert"];
+    id alert = notification[@"aps"][@"alert"];
+    NSString* message = nil;
+    NSString* title = nil;
+
+    if([alert isKindOfClass:NSDictionary.class])
+    {
+        message = alert[@"body"];
+        title = alert[@"title"];
+    }
+    else
+    {
+        message = (NSString*)alert;
+        title = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleDisplayName"];
+    }
+
     if(!message || self.doNotShowAlertForNotifications)
         return;
-
-    NSString* title = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleDisplayName"];
 
     alertController = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
 
