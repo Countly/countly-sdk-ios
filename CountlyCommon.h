@@ -88,13 +88,13 @@ void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
 - (void)activateWatchConnectivity;
 #endif
 
-#if (TARGET_OS_IOS)
+#if TARGET_OS_IOS
 - (void)transferParentDeviceID;
 #endif
 @end
 
 
-#if (TARGET_OS_IOS)
+#if TARGET_OS_IOS
 @interface CLYInternalViewController : UIViewController
 @end
 #endif

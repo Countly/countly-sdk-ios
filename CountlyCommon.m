@@ -108,7 +108,7 @@ void CountlyInternalLog(NSString *format, ...)
 }
 #endif
 
-#if (TARGET_OS_IOS)
+#if TARGET_OS_IOS
 - (void)transferParentDeviceID
 {
     if(!self.enableAppleWatch)
@@ -146,7 +146,7 @@ void CountlyInternalLog(NSString *format, ...)
 
 
 #pragma mark - Internal ViewController
-#if (TARGET_OS_IOS)
+#if TARGET_OS_IOS
 @implementation CLYInternalViewController : UIViewController
 
 //NOTE: For using the same status bar preferences as the currently displayed view controller when a Countly triggered alert is displayed using a separate window
