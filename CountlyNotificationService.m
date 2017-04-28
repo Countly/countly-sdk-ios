@@ -59,25 +59,38 @@ NSString* const kCountlyCategoryIdentifier = @"CountlyCategoryIdentifier";
         [[NSURLSession.sharedSession downloadTaskWithURL:[NSURL URLWithString:attachment] completionHandler:^(NSURL * location, NSURLResponse * response, NSError * error)
         {
             if(error)
+            {
                 NSLog(@"[NSE] attachment download error: %@", error);
-
-            NSString* attachmentFileName = [NSString stringWithFormat:@"%@-%@", timestamp, response.suggestedFilename? response.suggestedFilename:response.URL.absoluteString.lastPathComponent];
-
-            NSString* tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:attachmentFileName];
-
-            [NSFileManager.defaultManager moveItemAtPath:location.path toPath:tempPath error:&error];
-
-            NSError* attachmentError = nil;
-            UNNotificationAttachment* attachment = [UNNotificationAttachment attachmentWithIdentifier:attachmentFileName URL:[NSURL fileURLWithPath:tempPath] options:nil error:&attachmentError];
-
-            if(attachment && !attachmentError)
-                bestAttemptContent.attachments = @[attachment];
+            }
             else
-                NSLog(@"[NSE] attachment creation error: %@", attachmentError);
+            {
+                NSLog(@"[NSE] attachment download completed!");
+
+                NSString* attachmentFileName = [NSString stringWithFormat:@"%@-%@", timestamp, response.suggestedFilename? response.suggestedFilename:response.URL.absoluteString.lastPathComponent];
+
+                NSString* tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:attachmentFileName];
+
+                if(location && tempPath)
+                    [NSFileManager.defaultManager moveItemAtPath:location.path toPath:tempPath error:&error];
+
+                NSError* attachmentError = nil;
+                UNNotificationAttachment* attachment = [UNNotificationAttachment attachmentWithIdentifier:attachmentFileName URL:[NSURL fileURLWithPath:tempPath] options:nil error:&attachmentError];
+
+                if(attachment && !attachmentError)
+                {
+                    bestAttemptContent.attachments = @[attachment];
+
+                    NSLog(@"[NSE] attachment added to notification!");
+                }
+                else
+                {
+                    NSLog(@"[NSE] attachment creation error: %@", attachmentError);
+                }
+            }
 
             contentHandler(bestAttemptContent);
 
-            NSLog(@"[NSE] notification modification completed with attachment.");
+            NSLog(@"[NSE] notification modification completed.");
 
         }] resume];
     }
@@ -85,7 +98,7 @@ NSString* const kCountlyCategoryIdentifier = @"CountlyCategoryIdentifier";
     {
         contentHandler(bestAttemptContent);
 
-        NSLog(@"[NSE] notification modification completed without attachment.");
+        NSLog(@"[NSE] notification modification completed.");
     }
 }
 #endif
