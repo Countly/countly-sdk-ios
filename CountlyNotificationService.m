@@ -6,6 +6,12 @@
 
 #import "CountlyCommon.h"
 
+#if DEBUG
+#define COUNTLY_EXT_LOG(fmt, ...) NSLog([@"%@ " stringByAppendingString:fmt], @"[CountlyNSE]", ##__VA_ARGS__)
+#else
+#define COUNTLY_EXT_LOG(...)
+#endif
+
 NSString* const kCountlyActionIdentifier = @"CountlyActionIdentifier";
 NSString* const kCountlyCategoryIdentifier = @"CountlyCategoryIdentifier";
 
@@ -20,7 +26,7 @@ NSString* const kCountlyCategoryIdentifier = @"CountlyCategoryIdentifier";
 #if TARGET_OS_IOS
 + (void)didReceiveNotificationRequest:(UNNotificationRequest *)request withContentHandler:(void (^)(UNNotificationContent *))contentHandler
 {
-    NSLog(@"[NSE] notification modification in progress...");
+    COUNTLY_EXT_LOG(@"notification modification in progress...");
 
     UNMutableNotificationContent* bestAttemptContent = request.content.mutableCopy;
 
@@ -31,7 +37,7 @@ NSString* const kCountlyCategoryIdentifier = @"CountlyCategoryIdentifier";
     NSArray* buttons = countlyPayload[@"b"];
     if(buttons && buttons.count)
     {
-        NSLog(@"[NSE] custom action buttons found: %d", (int)buttons.count);
+        COUNTLY_EXT_LOG(@"custom action buttons found: %d", (int)buttons.count);
 
         NSMutableArray * actions = @[].mutableCopy;
 
@@ -54,17 +60,17 @@ NSString* const kCountlyCategoryIdentifier = @"CountlyCategoryIdentifier";
     NSString* attachment = countlyPayload[@"a"];
     if(attachment && attachment.length)
     {
-        NSLog(@"[NSE] attachment found: %@", attachment);
+        COUNTLY_EXT_LOG(@"attachment found: %@", attachment);
 
         [[NSURLSession.sharedSession downloadTaskWithURL:[NSURL URLWithString:attachment] completionHandler:^(NSURL * location, NSURLResponse * response, NSError * error)
         {
             if(error)
             {
-                NSLog(@"[NSE] attachment download error: %@", error);
+                COUNTLY_EXT_LOG(@"attachment download error: %@", error);
             }
             else
             {
-                NSLog(@"[NSE] attachment download completed!");
+                COUNTLY_EXT_LOG(@"attachment download completed!");
 
                 NSString* attachmentFileName = [NSString stringWithFormat:@"%@-%@", timestamp, response.suggestedFilename? response.suggestedFilename:response.URL.absoluteString.lastPathComponent];
 
@@ -80,17 +86,17 @@ NSString* const kCountlyCategoryIdentifier = @"CountlyCategoryIdentifier";
                 {
                     bestAttemptContent.attachments = @[attachment];
 
-                    NSLog(@"[NSE] attachment added to notification!");
+                    COUNTLY_EXT_LOG(@"attachment added to notification!");
                 }
                 else
                 {
-                    NSLog(@"[NSE] attachment creation error: %@", attachmentError);
+                    COUNTLY_EXT_LOG(@"attachment creation error: %@", attachmentError);
                 }
             }
 
             contentHandler(bestAttemptContent);
 
-            NSLog(@"[NSE] notification modification completed.");
+            COUNTLY_EXT_LOG(@"notification modification completed.");
 
         }] resume];
     }
@@ -98,7 +104,7 @@ NSString* const kCountlyCategoryIdentifier = @"CountlyCategoryIdentifier";
     {
         contentHandler(bestAttemptContent);
 
-        NSLog(@"[NSE] notification modification completed.");
+        COUNTLY_EXT_LOG(@"notification modification completed.");
     }
 }
 #endif
