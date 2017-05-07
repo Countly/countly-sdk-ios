@@ -34,17 +34,6 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     return s_sharedInstance;
 }
 
-- (instancetype)init
-{
-    self = [super init];
-    if (self)
-    {
-
-    }
-
-    return self;
-}
-
 #pragma mark ---
 
 #if TARGET_OS_IOS
