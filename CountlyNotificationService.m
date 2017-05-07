@@ -43,8 +43,6 @@ NSString* const kCountlyCategoryIdentifier = @"CountlyCategoryIdentifier";
 
     UNMutableNotificationContent* bestAttemptContent = request.content.mutableCopy;
 
-    NSString* timestamp = [NSString stringWithFormat:@"%llu", (long long)floor(NSDate.date.timeIntervalSince1970 * 1000)];
-
     NSArray* buttons = countlyPayload[@"b"];
     if(buttons && buttons.count)
     {
@@ -59,7 +57,7 @@ NSString* const kCountlyCategoryIdentifier = @"CountlyCategoryIdentifier";
             [actions addObject:action];
         }];
 
-        NSString* categoryIdentifier = [kCountlyCategoryIdentifier stringByAppendingString:timestamp];
+        NSString* categoryIdentifier = [kCountlyCategoryIdentifier stringByAppendingString:notificationID];
 
         UNNotificationCategory* category = [UNNotificationCategory categoryWithIdentifier:categoryIdentifier actions:actions intentIdentifiers:@[] options:UNNotificationCategoryOptionNone];
 
@@ -83,7 +81,7 @@ NSString* const kCountlyCategoryIdentifier = @"CountlyCategoryIdentifier";
             {
                 COUNTLY_EXT_LOG(@"attachment download completed!");
 
-                NSString* attachmentFileName = [NSString stringWithFormat:@"%@-%@", timestamp, response.suggestedFilename? response.suggestedFilename:response.URL.absoluteString.lastPathComponent];
+                NSString* attachmentFileName = [NSString stringWithFormat:@"%@-%@", notificationID, response.suggestedFilename? response.suggestedFilename:response.URL.absoluteString.lastPathComponent];
 
                 NSString* tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:attachmentFileName];
 
