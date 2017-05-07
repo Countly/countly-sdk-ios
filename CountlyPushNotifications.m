@@ -218,10 +218,10 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 {
     COUNTLY_LOG(@"userNotificationCenter:willPresentNotification:withCompletionHandler:");
 
-    NSDictionary* userInfo = notification.request.content.userInfo;
-    NSDictionary* countlyPayload = userInfo[@"c"];
+    NSDictionary* countlyPayload = notification.request.content.userInfo[@"c"];
+    NSString* notificationID = countlyPayload[@"i"];
 
-    if(countlyPayload)
+    if(notificationID)
         completionHandler(UNNotificationPresentationOptionAlert);
 
     id<UNUserNotificationCenterDelegate> appDelegate = (id<UNUserNotificationCenterDelegate>)UIApplication.sharedApplication.delegate;
@@ -238,8 +238,9 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     
     NSDictionary* userInfo = response.notification.request.content.userInfo;
     NSDictionary* countlyPayload = userInfo[@"c"];
+    NSString* notificationID = countlyPayload[@"i"];
 
-    if(countlyPayload)
+    if(notificationID)
     {
         if([response.actionIdentifier isEqualToString:UNNotificationDefaultActionIdentifier])
         {
@@ -251,9 +252,9 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         
             NSInteger buttonIndex = [[response.actionIdentifier stringByReplacingOccurrencesOfString:kCountlyActionIdentifier withString:@""] integerValue];
 
-            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{@"i":countlyPayload[@"i"]}];
+            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{@"i":notificationID}];
 
-            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{@"i":countlyPayload[@"i"], @"b":@(buttonIndex)}];
+            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{@"i":notificationID, @"b":@(buttonIndex)}];
 
             NSString* URL = countlyPayload[@"b"][buttonIndex-1][@"l"];
             dispatch_async(dispatch_get_main_queue(), ^{ [UIApplication.sharedApplication openURL:[NSURL URLWithString:URL]]; });

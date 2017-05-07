@@ -26,12 +26,23 @@ NSString* const kCountlyCategoryIdentifier = @"CountlyCategoryIdentifier";
 #if TARGET_OS_IOS
 + (void)didReceiveNotificationRequest:(UNNotificationRequest *)request withContentHandler:(void (^)(UNNotificationContent *))contentHandler
 {
+    COUNTLY_EXT_LOG(@"didReceiveNotificationRequest:withContentHandler:");
+
+    NSDictionary* countlyPayload = request.content.userInfo[@"c"];
+    NSString* notificationID = countlyPayload[@"i"];
+
+    if(!notificationID)
+    {
+        COUNTLY_EXT_LOG(@"Countly payload not found in notification dictionary!");
+    
+        contentHandler(request.content);
+        return;
+    }
+
     COUNTLY_EXT_LOG(@"notification modification in progress...");
 
     UNMutableNotificationContent* bestAttemptContent = request.content.mutableCopy;
 
-    NSDictionary* userInfo = request.content.userInfo;
-    NSDictionary* countlyPayload = userInfo[@"c"];
     NSString* timestamp = [NSString stringWithFormat:@"%llu", (long long)floor(NSDate.date.timeIntervalSince1970 * 1000)];
 
     NSArray* buttons = countlyPayload[@"b"];
