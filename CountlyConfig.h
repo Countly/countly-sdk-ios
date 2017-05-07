@@ -32,7 +32,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 
 /**
  * County Server's URL without the slash at the end.
- * @discussion e.g. https://mycountlyserver.com
+ * @discussion e.g. https://example.com
  */
 @property (nonatomic, strong) NSString* host;
 
