@@ -225,27 +225,39 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 {
     COUNTLY_LOG(@"userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:");
     
-    NSDictionary* userInfo = response.notification.request.content.userInfo;
-    NSDictionary* countlyPayload = userInfo[@"c"];
+    NSDictionary* countlyPayload = response.notification.request.content.userInfo[@"c"];
     NSString* notificationID = countlyPayload[@"i"];
 
     if(notificationID)
     {
+        [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{@"i":notificationID}];
+
+        NSInteger buttonIndex = -1;
+        NSString* URL = nil;
+
+        COUNTLY_LOG(@"Action Identifier: %@", response.actionIdentifier);
+
         if([response.actionIdentifier isEqualToString:UNNotificationDefaultActionIdentifier])
         {
-            [CountlyPushNotifications.sharedInstance handleNotification:userInfo];
+            if(countlyPayload[@"l"])
+            {
+                buttonIndex = 0;
+                URL = countlyPayload[@"l"];
+            }
         }
-        else if ([response.actionIdentifier hasPrefix:kCountlyActionIdentifier])
+        else if([response.actionIdentifier hasPrefix:kCountlyActionIdentifier])
         {
-            COUNTLY_LOG(@"Action Identifier: %@", response.actionIdentifier);
-        
-            NSInteger buttonIndex = [[response.actionIdentifier stringByReplacingOccurrencesOfString:kCountlyActionIdentifier withString:@""] integerValue];
+            buttonIndex = [[response.actionIdentifier stringByReplacingOccurrencesOfString:kCountlyActionIdentifier withString:@""] integerValue];
+            URL = countlyPayload[@"b"][buttonIndex - 1][@"l"];
+        }
 
-            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{@"i":notificationID}];
-
+        if(buttonIndex >= 0)
+        {
             [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{@"i":notificationID, @"b":@(buttonIndex)}];
+        }
 
-            NSString* URL = countlyPayload[@"b"][buttonIndex-1][@"l"];
+        if(URL)
+        {
             dispatch_async(dispatch_get_main_queue(), ^{ [UIApplication.sharedApplication openURL:[NSURL URLWithString:URL]]; });
         }
     }
