@@ -42,7 +42,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
 void CountlyInternalLog(NSString *format, ...)
 {
-    if(!CountlyCommon.sharedInstance.enableDebug)
+    if (!CountlyCommon.sharedInstance.enableDebug)
         return;
 
     va_list args;
@@ -83,7 +83,7 @@ void CountlyInternalLog(NSString *format, ...)
 {
     long long now = floor(NSDate.date.timeIntervalSince1970 * 1000);
 
-    if(now <= self.lastTimestamp)
+    if (now <= self.lastTimestamp)
         self.lastTimestamp ++;
     else
         self.lastTimestamp = now;
@@ -96,7 +96,7 @@ void CountlyInternalLog(NSString *format, ...)
 #if (TARGET_OS_IOS || TARGET_OS_WATCH)
 - (void)activateWatchConnectivity
 {
-    if(!self.enableAppleWatch)
+    if (!self.enableAppleWatch)
         return;
 
     if ([WCSession isSupported])
@@ -111,12 +111,12 @@ void CountlyInternalLog(NSString *format, ...)
 #if TARGET_OS_IOS
 - (void)transferParentDeviceID
 {
-    if(!self.enableAppleWatch)
+    if (!self.enableAppleWatch)
         return;
 
     [self activateWatchConnectivity];
 
-    if(WCSession.defaultSession.paired && WCSession.defaultSession.watchAppInstalled)
+    if (WCSession.defaultSession.paired && WCSession.defaultSession.watchAppInstalled)
     {
         [WCSession.defaultSession transferUserInfo:@{kCountlyParentDeviceIDTransferKey:CountlyDeviceInfo.sharedInstance.deviceID}];
         COUNTLY_LOG(@"Transferring parent device ID %@ ...", CountlyDeviceInfo.sharedInstance.deviceID);
@@ -131,7 +131,7 @@ void CountlyInternalLog(NSString *format, ...)
 
     NSString* parentDeviceID = userInfo[kCountlyParentDeviceIDTransferKey];
 
-    if(parentDeviceID && ![parentDeviceID isEqualToString:[CountlyPersistency.sharedInstance retrieveWatchParentDeviceID]])
+    if (parentDeviceID && ![parentDeviceID isEqualToString:[CountlyPersistency.sharedInstance retrieveWatchParentDeviceID]])
     {
         [CountlyConnectionManager.sharedInstance sendParentDeviceID:parentDeviceID];
 
@@ -149,7 +149,7 @@ void CountlyInternalLog(NSString *format, ...)
 #if TARGET_OS_IOS
 @implementation CLYInternalViewController : UIViewController
 
-//NOTE: For using the same status bar preferences as the currently displayed view controller when a Countly triggered alert is displayed using a separate window
+//NOTE: For using the same status bar preferences as the view controller currently being  displayed, when a Countly triggered alert is displayed using a separate window
 - (UIStatusBarStyle)preferredStatusBarStyle
 {
     if (UIApplication.sharedApplication.windows.firstObject.rootViewController == self)
@@ -174,7 +174,7 @@ NSString* CountlyJSONFromObject(id object)
 {
     NSError *error = nil;
     NSData *data = [NSJSONSerialization dataWithJSONObject:object options:0 error:&error];
-    if(error){ COUNTLY_LOG(@"JSON can not be created: \n%@", error); }
+    if (error){ COUNTLY_LOG(@"JSON can not be created: \n%@", error); }
 
     return [data cly_stringUTF8];
 }
@@ -193,7 +193,7 @@ NSString* CountlyJSONFromObject(id object)
     CC_SHA256(s, (CC_LONG)strlen(s), digest);
 
     NSMutableString* hash = NSMutableString.new;
-    for(int i = 0; i < CC_SHA256_DIGEST_LENGTH; i++)
+    for (int i = 0; i < CC_SHA256_DIGEST_LENGTH; i++)
         [hash appendFormat:@"%02x", digest[i]];
 
     return hash;

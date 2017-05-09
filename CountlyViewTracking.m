@@ -61,7 +61,7 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
         @"visit": @1
     }.mutableCopy;
 
-    if(!self.lastView)
+    if (!self.lastView)
         segmentation[@"start"] = @1;
 
     [Countly.sharedInstance recordEvent:kCountlyReservedEventView segmentation:segmentation];
@@ -72,7 +72,7 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
 
 - (void)endView
 {
-    if(self.lastView)
+    if (self.lastView)
     {
         NSDictionary* segmentation =
         @{
@@ -113,7 +113,7 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
 
 - (void)addExceptionForAutoViewTracking:(NSString *)exception
 {
-    if(![self.exceptionViewControllers containsObject:exception])
+    if (![self.exceptionViewControllers containsObject:exception])
         [self.exceptionViewControllers addObject:exception];
 }
 
@@ -132,14 +132,14 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
 - (void)Countly_viewDidAppear:(BOOL)animated
 {
     NSString* viewTitle = self.title;
-    
-    if(!viewTitle)
+
+    if (!viewTitle)
         viewTitle = [self.navigationItem.titleView isKindOfClass:UILabel.class] ? ((UILabel*)self.navigationItem.titleView).text : nil;
 
-    if(!viewTitle)
+    if (!viewTitle)
         viewTitle = NSStringFromClass(self.class);
 
-    if(CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled && ![CountlyViewTracking.sharedInstance.lastView isEqualToString:viewTitle])
+    if (CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled && ![CountlyViewTracking.sharedInstance.lastView isEqualToString:viewTitle])
     {
         BOOL isException = NO;
 
@@ -148,15 +148,15 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
             BOOL isExceptionClass = [self isKindOfClass:NSClassFromString(exception)] || [NSStringFromClass(self.class) isEqualToString:exception];
             BOOL isExceptionTitle = [self.title isEqualToString:exception];
             BOOL isExceptionCustomTitle = [self.navigationItem.titleView isKindOfClass:UILabel.class] && [((UILabel*)self.navigationItem.titleView).text isEqualToString:exception];
-        
-            if(isExceptionClass || isExceptionTitle || isExceptionCustomTitle)
+
+            if (isExceptionClass || isExceptionTitle || isExceptionCustomTitle)
             {
                 isException = YES;
                 break;
             }
         }
 
-        if(!isException)
+        if (!isException)
             [CountlyViewTracking.sharedInstance reportView:viewTitle];
     }
 

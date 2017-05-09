@@ -31,7 +31,7 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
     nl.originalDelegate = originalDelegate;
     nl.sentDataSize = [self.class sentDataSizeForRequest:request];
 
-    if(startNow)
+    if (startNow)
     {
         nl.connectionType = CountlyDeviceInfo.connectionType;
         nl.startTime = NSDate.date.timeIntervalSince1970;
@@ -52,7 +52,7 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
     self.HTTPStatusCode =((NSHTTPURLResponse*)response).statusCode;
     self.receivedDataSize = [response expectedContentLength];
 
-    if(self.receivedDataSize == NSURLResponseUnknownLength)
+    if (self.receivedDataSize == NSURLResponseUnknownLength)
         self.receivedDataSize = 0; //NOTE: sometimes expectedContentLength is not available
 }
 
@@ -131,20 +131,20 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
 
 - (BOOL)respondsToSelector:(SEL)aSelector
 {
-    if([super respondsToSelector:aSelector])
+    if ([super respondsToSelector:aSelector])
         return YES;
-    
+
     if ([self.originalDelegate respondsToSelector:aSelector])
         return YES;
-    
+
     return NO;
 }
 
 - (id)forwardingTargetForSelector:(SEL)aSelector
-{    
+{
     if ([self.originalDelegate respondsToSelector:aSelector])
         return self.originalDelegate;
-    
+
     return [super forwardingTargetForSelector:aSelector];
 }
 

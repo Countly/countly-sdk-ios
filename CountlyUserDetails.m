@@ -40,28 +40,28 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
 - (NSString *)serializedUserDetails
 {
     NSMutableDictionary* userDictionary = NSMutableDictionary.new;
-    if(self.name)
+    if (self.name)
         userDictionary[@"name"] = self.name;
-    if(self.username)
+    if (self.username)
         userDictionary[@"username"] = self.username;
-    if(self.email)
+    if (self.email)
         userDictionary[@"email"] = self.email;
-    if(self.organization)
+    if (self.organization)
         userDictionary[@"organization"] = self.organization;
-    if(self.phone)
+    if (self.phone)
         userDictionary[@"phone"] = self.phone;
-    if(self.gender)
+    if (self.gender)
         userDictionary[@"gender"] = self.gender;
-    if(self.pictureURL)
+    if (self.pictureURL)
         userDictionary[@"picture"] = self.pictureURL;
-    if(self.birthYear)
+    if (self.birthYear)
         userDictionary[@"byear"] = self.birthYear;
-    if(self.custom)
+    if (self.custom)
         userDictionary[@"custom"] = self.custom;
 
-    if(userDictionary.allKeys.count)
+    if (userDictionary.allKeys.count)
         return [userDictionary cly_JSONify];
-    
+
     return nil;
 }
 
@@ -77,7 +77,7 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
     self.pictureLocalPath = nil;
     self.birthYear = nil;
     self.custom = nil;
-    
+
     [self.modifications removeAllObjects];
 }
 
@@ -156,13 +156,13 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
 - (void)save
 {
     NSString* userDetails = [CountlyUserDetails.sharedInstance serializedUserDetails];
-    if(userDetails)
+    if (userDetails)
         [CountlyConnectionManager.sharedInstance sendUserDetails:userDetails];
 
-    if(self.pictureLocalPath && !self.pictureURL)
+    if (self.pictureLocalPath && !self.pictureURL)
         [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyLocalPicturePath:self.pictureLocalPath} cly_JSONify]];
 
-    if(self.modifications.count)
+    if (self.modifications.count)
         [CountlyConnectionManager.sharedInstance sendUserDetails:[@{@"custom":self.modifications} cly_JSONify]];
 
     [self clearUserDetails];

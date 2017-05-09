@@ -56,7 +56,7 @@ const float kCountlyStarRatingButtonSize = 40;
         };
 
         self.dismissButtonTitle = dictDismiss[langDesignator];
-        if(!self.dismissButtonTitle)
+        if (!self.dismissButtonTitle)
             self.dismissButtonTitle = dictDismiss[@"en"];
 
         NSDictionary* dictMessage =
@@ -69,7 +69,7 @@ const float kCountlyStarRatingButtonSize = 40;
         };
 
         self.message = dictMessage[langDesignator];
-        if(!self.message)
+        if (!self.message)
             self.message = dictMessage[@"en"];
     }
 
@@ -113,16 +113,16 @@ const float kCountlyStarRatingButtonSize = 40;
 {
     NSMutableDictionary* status = [CountlyPersistency.sharedInstance retrieveStarRatingStatus].mutableCopy;
 
-    if(self.disableAskingForEachAppVersion && status[kCountlyStarRatingStatusHasEverAskedAutomatically])
+    if (self.disableAskingForEachAppVersion && status[kCountlyStarRatingStatusHasEverAskedAutomatically])
         return;
 
-    if(self.sessionCount != 0)
+    if (self.sessionCount != 0)
     {
         NSString* keyForAppVersion = [kCountlyStarRatingStatusSessionCountKey stringByAppendingString:CountlyDeviceInfo.appVersion];
         NSInteger sessionCountSoFar = [status[keyForAppVersion] integerValue];
         sessionCountSoFar++;
 
-        if(self.sessionCount == sessionCountSoFar)
+        if (self.sessionCount == sessionCountSoFar)
         {
             COUNTLY_LOG(@"Asking for star-rating as session count reached specified limit %d ...", (int)self.sessionCount);
 
@@ -181,7 +181,7 @@ const float kCountlyStarRatingButtonSize = 40;
     {
         [btn_star[i] setTitleColor:color forState:UIControlStateNormal];
 
-        if(btn_star[i] == sender)
+        if (btn_star[i] == sender)
         {
             color = [self passiveStarColor];
             rating = i+1;
@@ -196,10 +196,10 @@ const float kCountlyStarRatingButtonSize = 40;
 
 - (void)finishWithRating:(NSInteger)rating
 {
-    if(self.ratingCompletion)
+    if (self.ratingCompletion)
         self.ratingCompletion(rating);
 
-    if(rating != 0)
+    if (rating != 0)
     {
         NSDictionary* segmentation =
         @{

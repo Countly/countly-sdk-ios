@@ -87,15 +87,15 @@ NSString* const kCountlyInputEndpoint = @"/i";
     NSString* deviceIDZeroIDFA = [deviceIDQueryString stringByAppendingString:kCountlyZeroIDFA];
     NSString* deviceIDZeroIDFAOld = [deviceIDZeroIDFA stringByReplacingOccurrencesOfString:kCountlyQSKeyDeviceID withString:kCountlyQSKeyDeviceIDOld];
     NSString* deviceIDFixed = [deviceIDQueryString stringByAppendingString:CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped];
-    
-    if([queryString rangeOfString:deviceIDZeroIDFA].location != NSNotFound)
+
+    if ([queryString rangeOfString:deviceIDZeroIDFA].location != NSNotFound)
     {
         COUNTLY_LOG(@"Detected a request with zero-IDFA in queue and fixed.");
 
         queryString = [queryString stringByReplacingOccurrencesOfString:deviceIDZeroIDFA withString:deviceIDFixed];
     }
 
-    if([queryString rangeOfString:deviceIDZeroIDFAOld].location != NSNotFound)
+    if ([queryString rangeOfString:deviceIDZeroIDFAOld].location != NSNotFound)
     {
         COUNTLY_LOG(@"Detected a request with zero-IDFA in queue and removed.");
 
@@ -111,30 +111,30 @@ NSString* const kCountlyInputEndpoint = @"/i";
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:fullRequestURL]];
 
     NSData* pictureUploadData = [self pictureUploadDataForRequest:queryString];
-    if(pictureUploadData)
+    if (pictureUploadData)
     {
         NSString *contentType = [@"multipart/form-data; boundary=" stringByAppendingString:kCountlyUploadBoundary];
         [request addValue:contentType forHTTPHeaderField: @"Content-Type"];
         request.HTTPMethod = @"POST";
         request.HTTPBody = pictureUploadData;
     }
-    else if(queryString.length > kCountlyGETRequestMaxLength || self.alwaysUsePOST)
+    else if (queryString.length > kCountlyGETRequestMaxLength || self.alwaysUsePOST)
     {
         request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverInputEndpoint]];
         request.HTTPMethod = @"POST";
         request.HTTPBody = [queryString cly_dataUTF8];
     }
 
-    if(self.customHeaderFieldName && self.customHeaderFieldValue)
+    if (self.customHeaderFieldName && self.customHeaderFieldValue)
         [request setValue:self.customHeaderFieldValue forHTTPHeaderField:self.customHeaderFieldName];
 
     self.connection = [[self URLSession] dataTaskWithRequest:request completionHandler:^(NSData * data, NSURLResponse * response, NSError * error)
     {
         self.connection = nil;
 
-        if(!error)
+        if (!error)
         {
-            if([self isRequestSuccessful:response])
+            if ([self isRequestSuccessful:response])
             {
                 COUNTLY_LOG(@"Request <%p> successfully completed.", request);
 
@@ -209,7 +209,7 @@ NSString* const kCountlyInputEndpoint = @"/i";
 {
     NSString* events = [CountlyPersistency.sharedInstance serializedRecordedEvents];
 
-    if(!events)
+    if (!events)
         return;
 
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
@@ -275,7 +275,7 @@ NSString* const kCountlyInputEndpoint = @"/i";
 
     [self sendEvents];
 
-    if(!CountlyCommon.sharedInstance.manualSessionHandling)
+    if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [self endSession];
 
     if (self.customHeaderFieldName && !self.customHeaderFieldValue)
@@ -294,14 +294,14 @@ NSString* const kCountlyInputEndpoint = @"/i";
     request.HTTPMethod = @"POST";
     request.HTTPBody = [[self appendChecksum:queryString] cly_dataUTF8];
 
-    if(self.customHeaderFieldName && self.customHeaderFieldValue)
+    if (self.customHeaderFieldName && self.customHeaderFieldValue)
         [request setValue:self.customHeaderFieldValue forHTTPHeaderField:self.customHeaderFieldName];
 
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 
     [[[self URLSession] dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError*  error)
     {
-        if(error || ![self isRequestSuccessful:response])
+        if (error || ![self isRequestSuccessful:response])
         {
             COUNTLY_LOG(@"Crash Report Request <%p> failed!\n%@: %@", request, error ? @"Error":@"Server reply", error ? error:[data cly_stringUTF8]);
             [CountlyPersistency.sharedInstance addToQueue:queryString];
@@ -397,13 +397,13 @@ NSString* const kCountlyInputEndpoint = @"/i";
 {
     NSMutableString *additionalInfo = @"".mutableCopy;
 
-    if(CountlyCommon.sharedInstance.ISOCountryCode)
+    if (CountlyCommon.sharedInstance.ISOCountryCode)
         [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyCountryCode, CountlyCommon.sharedInstance.ISOCountryCode.cly_URLEscaped];
-    if(CountlyCommon.sharedInstance.city)
+    if (CountlyCommon.sharedInstance.city)
         [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyCity, CountlyCommon.sharedInstance.city.cly_URLEscaped];
-    if(CountlyCommon.sharedInstance.location)
+    if (CountlyCommon.sharedInstance.location)
         [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyLocation, CountlyCommon.sharedInstance.location.cly_URLEscaped];
-    if(CountlyCommon.sharedInstance.IP)
+    if (CountlyCommon.sharedInstance.IP)
         [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyIP, CountlyCommon.sharedInstance.IP.cly_URLEscaped];
 
     return additionalInfo;
@@ -438,7 +438,7 @@ NSString* const kCountlyInputEndpoint = @"/i";
         }
     }
 
-    if(!localPicturePath || !localPicturePath.length)
+    if (!localPicturePath || !localPicturePath.length)
         return nil;
 
     COUNTLY_LOG(@"Local picture path successfully extracted from query string: %@", localPicturePath);
@@ -447,7 +447,7 @@ NSString* const kCountlyInputEndpoint = @"/i";
     NSString* fileExt = localPicturePath.pathExtension.lowercaseString;
     NSInteger fileExtIndex = [allowedFileTypes indexOfObject:fileExt];
 
-    if(fileExtIndex == NSNotFound)
+    if (fileExtIndex == NSNotFound)
         return nil;
 
     NSData* imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:localPicturePath]];
@@ -486,18 +486,18 @@ NSString* const kCountlyInputEndpoint = @"/i";
 
 - (NSString *)appendChecksum:(NSString *)queryString
 {
-    if(self.secretSalt)
+    if (self.secretSalt)
     {
         NSString* checksum = [[queryString stringByAppendingString:self.secretSalt] cly_SHA256];
         return [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyChecksum256, checksum];
     }
-    
+
     return queryString;
 }
 
 - (BOOL)isRequestSuccessful:(NSURLResponse *)response
 {
-    if(!response)
+    if (!response)
         return NO;
 
     NSInteger code = ((NSHTTPURLResponse*)response).statusCode;
@@ -509,13 +509,13 @@ NSString* const kCountlyInputEndpoint = @"/i";
 
 - (NSURLSession *)URLSession
 {
-    if(self.pinnedCertificates)
+    if (self.pinnedCertificates)
     {
         COUNTLY_LOG(@"%d pinned certificate(s) specified in config.", (int)self.pinnedCertificates.count);
         NSURLSessionConfiguration *sc = [NSURLSessionConfiguration defaultSessionConfiguration];
         return [NSURLSession sessionWithConfiguration:sc delegate:self delegateQueue:nil];
     }
-    
+
     return NSURLSession.sharedSession;
 }
 
@@ -549,7 +549,7 @@ NSString* const kCountlyInputEndpoint = @"/i";
             break;
         }
 
-        if(localKey) CFRelease(localKey);
+        if (localKey) CFRelease(localKey);
     }
 
     SecTrustResultType serverTrustResult;

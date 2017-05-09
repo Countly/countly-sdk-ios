@@ -64,7 +64,7 @@
 
     COUNTLY_LOG(@"Initializing with %@ SDK v%@", kCountlySDKName, kCountlySDKVersion);
 
-    if(!CountlyDeviceInfo.sharedInstance.deviceID || config.forceDeviceIDInitialization)
+    if (!CountlyDeviceInfo.sharedInstance.deviceID || config.forceDeviceIDInitialization)
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:config.deviceID];
 
     CountlyConnectionManager.sharedInstance.appKey = config.appKey;
@@ -96,7 +96,7 @@
 
     [CountlyCommon.sharedInstance transferParentDeviceID];
 
-    if([config.features containsObject:CLYPushNotifications])
+    if ([config.features containsObject:CLYPushNotifications])
     {
         CountlyPushNotifications.sharedInstance.isTestDevice = config.isTestDevice;
         CountlyPushNotifications.sharedInstance.sendPushTokenAlways = config.sendPushTokenAlways;
@@ -104,7 +104,7 @@
         [CountlyPushNotifications.sharedInstance startPushNotifications];
     }
 
-    if([config.features containsObject:CLYCrashReporting])
+    if ([config.features containsObject:CLYCrashReporting])
     {
         CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
         [CountlyCrashReporter.sharedInstance startCrashReporting];
@@ -112,18 +112,18 @@
 #endif
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
-    if([config.features containsObject:CLYAutoViewTracking])
+    if ([config.features containsObject:CLYAutoViewTracking])
         [CountlyViewTracking.sharedInstance startAutoViewTracking];
 #endif
 
 //NOTE: Disable APM feature until server completely supports it
-//    if([config.features containsObject:CLYAPM])
+//    if ([config.features containsObject:CLYAPM])
 //        [CountlyAPM.sharedInstance startAPM];
 
     timer = [NSTimer scheduledTimerWithTimeInterval:config.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
     [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
 
-    if(!CountlyCommon.sharedInstance.manualSessionHandling)
+    if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
 
 #if (TARGET_OS_WATCH)
@@ -138,23 +138,23 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 #if TARGET_OS_IOS
-    if([deviceID isEqualToString:CLYIDFA])
+    if ([deviceID isEqualToString:CLYIDFA])
         deviceID = [CountlyDeviceInfo.sharedInstance zeroSafeIDFA];
-    else if([deviceID isEqualToString:CLYIDFV])
+    else if ([deviceID isEqualToString:CLYIDFV])
         deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
-    else if([deviceID isEqualToString:CLYOpenUDID])
+    else if ([deviceID isEqualToString:CLYOpenUDID])
         deviceID = [Countly_OpenUDID value];
 #elif TARGET_OS_OSX
-    if([deviceID isEqualToString:CLYOpenUDID])
+    if ([deviceID isEqualToString:CLYOpenUDID])
         deviceID = [Countly_OpenUDID value];
 #endif
 
 #pragma GCC diagnostic pop
 
-    if([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
+    if ([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
         return;
 
-    if(onServer)
+    if (onServer)
     {
         NSString* oldDeviceID = CountlyDeviceInfo.sharedInstance.deviceID;
 
@@ -184,19 +184,19 @@
 
 - (void)beginSession
 {
-    if(CountlyCommon.sharedInstance.manualSessionHandling)
+    if (CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
 }
 
 - (void)updateSession
 {
-    if(CountlyCommon.sharedInstance.manualSessionHandling)
+    if (CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance updateSession];
 }
 
 - (void)endSession
 {
-    if(CountlyCommon.sharedInstance.manualSessionHandling)
+    if (CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance endSession];
 }
 
@@ -207,7 +207,7 @@
     if (isSuspended)
         return;
 
-    if(!CountlyCommon.sharedInstance.manualSessionHandling)
+    if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance updateSession];
 
     [CountlyConnectionManager.sharedInstance sendEvents];
@@ -215,7 +215,7 @@
 
 - (void)suspend
 {
-    if(isSuspended)
+    if (isSuspended)
         return;
 
     COUNTLY_LOG(@"Suspending...");
@@ -224,9 +224,9 @@
 
     [CountlyConnectionManager.sharedInstance sendEvents];
 
-    if(!CountlyCommon.sharedInstance.manualSessionHandling)
+    if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance endSession];
-    
+
     [CountlyViewTracking.sharedInstance pauseView];
 
     [CountlyPersistency.sharedInstance saveToFile];
@@ -238,14 +238,14 @@
     //NOTE: skip first time to prevent double begin session because of applicationDidBecomeActive call on launch of watchOS apps
     static BOOL isFirstCall = YES;
 
-    if(isFirstCall)
+    if (isFirstCall)
     {
         isFirstCall = NO;
         return;
     }
 #endif
 
-    if(!CountlyCommon.sharedInstance.manualSessionHandling)
+    if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
 
     [CountlyViewTracking.sharedInstance resumeView];
@@ -372,7 +372,7 @@
 {
     CountlyEvent *event = [CountlyPersistency.sharedInstance timedEventForKey:key];
 
-    if(!event)
+    if (!event)
     {
         COUNTLY_LOG(@"Event with key '%@' not started before!", key);
         return;
@@ -394,7 +394,7 @@
 - (void)askForNotificationPermission
 {
     UNAuthorizationOptions authorizationOptions = UNAuthorizationOptionBadge | UNAuthorizationOptionSound | UNAuthorizationOptionAlert;
-    
+
     [CountlyPushNotifications.sharedInstance askForNotificationPermissionWithOptions:authorizationOptions completionHandler:nil];
 }
 

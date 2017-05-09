@@ -31,10 +31,10 @@ NSString* const kCountlyCategoryIdentifier = @"CountlyCategoryIdentifier";
     NSDictionary* countlyPayload = request.content.userInfo[@"c"];
     NSString* notificationID = countlyPayload[@"i"];
 
-    if(!notificationID)
+    if (!notificationID)
     {
         COUNTLY_EXT_LOG(@"Countly payload not found in notification dictionary!");
-    
+
         contentHandler(request.content);
         return;
     }
@@ -44,7 +44,7 @@ NSString* const kCountlyCategoryIdentifier = @"CountlyCategoryIdentifier";
     UNMutableNotificationContent* bestAttemptContent = request.content.mutableCopy;
 
     NSArray* buttons = countlyPayload[@"b"];
-    if(buttons && buttons.count)
+    if (buttons && buttons.count)
     {
         COUNTLY_EXT_LOG(@"custom action buttons found: %d", (int)buttons.count);
 
@@ -67,13 +67,13 @@ NSString* const kCountlyCategoryIdentifier = @"CountlyCategoryIdentifier";
     }
 
     NSString* attachment = countlyPayload[@"a"];
-    if(attachment && attachment.length)
+    if (attachment && attachment.length)
     {
         COUNTLY_EXT_LOG(@"attachment found: %@", attachment);
 
         [[NSURLSession.sharedSession downloadTaskWithURL:[NSURL URLWithString:attachment] completionHandler:^(NSURL * location, NSURLResponse * response, NSError * error)
         {
-            if(error)
+            if (error)
             {
                 COUNTLY_EXT_LOG(@"attachment download error: %@", error);
             }
@@ -85,13 +85,13 @@ NSString* const kCountlyCategoryIdentifier = @"CountlyCategoryIdentifier";
 
                 NSString* tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:attachmentFileName];
 
-                if(location && tempPath)
+                if (location && tempPath)
                     [NSFileManager.defaultManager moveItemAtPath:location.path toPath:tempPath error:&error];
 
                 NSError* attachmentError = nil;
                 UNNotificationAttachment* attachment = [UNNotificationAttachment attachmentWithIdentifier:attachmentFileName URL:[NSURL fileURLWithPath:tempPath] options:nil error:&attachmentError];
 
-                if(attachment && !attachmentError)
+                if (attachment && !attachmentError)
                 {
                     bestAttemptContent.attachments = @[attachment];
 

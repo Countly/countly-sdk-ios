@@ -38,17 +38,17 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 #else
         NSData* readData = [NSData dataWithContentsOfURL:[self storageFileURL]];
 #endif
-        if(readData)
+        if (readData)
         {
             NSDictionary* readDict = [NSKeyedUnarchiver unarchiveObjectWithData:readData];
 
             self.queuedRequests = [readDict[kCountlyQueuedRequestsPersistencyKey] mutableCopy];
         }
 
-        if(!self.queuedRequests)
+        if (!self.queuedRequests)
             self.queuedRequests = NSMutableArray.new;
 
-        if(!self.startedEvents)
+        if (!self.startedEvents)
             self.startedEvents = NSMutableDictionary.new;
 
         self.recordedEvents = NSMutableArray.new;
@@ -65,7 +65,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
     {
         [self.queuedRequests addObject:queryString];
 
-        if(self.queuedRequests.count > self.storedRequestsLimit && !CountlyConnectionManager.sharedInstance.connection)
+        if (self.queuedRequests.count > self.storedRequestsLimit && !CountlyConnectionManager.sharedInstance.connection)
         {
             [self.queuedRequests removeObjectsInRange:(NSRange){0,1}];
         }
@@ -107,7 +107,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 
     @synchronized (self.recordedEvents)
     {
-        if(self.recordedEvents.count == 0)
+        if (self.recordedEvents.count == 0)
             return nil;
 
         for (CountlyEvent* event in self.recordedEvents.copy)
@@ -126,7 +126,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 {
     @synchronized (self.startedEvents)
     {
-        if(self.startedEvents[event.key])
+        if (self.startedEvents[event.key])
         {
             COUNTLY_LOG(@"Event with key '%@' already started!", event.key);
             return;
@@ -175,7 +175,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
         if (![NSFileManager.defaultManager fileExistsAtPath:url.absoluteString])
         {
             [NSFileManager.defaultManager createDirectoryAtURL:url withIntermediateDirectories:YES attributes:nil error:&error];
-            if(error){ COUNTLY_LOG(@"Application Support directory can not be created: \n%@", error); }
+            if (error){ COUNTLY_LOG(@"Application Support directory can not be created: \n%@", error); }
         }
 
         url = [url URLByAppendingPathComponent:kCountlyPersistencyFileName];
@@ -214,7 +214,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 {
     NSString* retrievedDeviceID = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyStoredDeviceIDKey];
 
-    if(retrievedDeviceID)
+    if (retrievedDeviceID)
     {
         COUNTLY_LOG(@"Device ID successfully retrieved from UserDefaults: %@", retrievedDeviceID);
         return retrievedDeviceID;
@@ -273,7 +273,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 
     OSStatus status = SecItemAdd((__bridge CFDictionaryRef)keychainDict, NULL);
 
-    if(status == noErr)
+    if (status == noErr)
     {
         COUNTLY_LOG(@"Device ID successfully stored: %@", deviceID);
     }
@@ -297,7 +297,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 - (NSDictionary *)retrieveStarRatingStatus
 {
     NSDictionary* status = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyStarRatingStatusKey];
-    if(!status)
+    if (!status)
         status = NSDictionary.new;
 
     return status;

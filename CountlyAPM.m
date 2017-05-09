@@ -86,7 +86,7 @@
 
     [CountlyAPM.sharedInstance.exceptionURLs enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL* stop)
     {
-        if([request.URL.host isEqualToString:obj] || [hostAndPath hasPrefix:obj])
+        if ([request.URL.host isEqualToString:obj] || [hostAndPath hasPrefix:obj])
         {
             isException = YES;
             *stop = YES;

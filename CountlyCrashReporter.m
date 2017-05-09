@@ -70,7 +70,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     crashReport[@"_app_build"] = CountlyDeviceInfo.appBuild;
     crashReport[@"_build_uuid"] = CountlyDeviceInfo.buildUUID;
     crashReport[@"_executable_name"] = CountlyDeviceInfo.executableName;
-    
+
     crashReport[@"_name"] = exception.description;
     crashReport[@"_type"] = exception.name;
     crashReport[@"_nonfatal"] = @(nonfatal);
@@ -90,14 +90,14 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     crashReport[@"_background"] = @(CountlyDeviceInfo.isInBackground);
     crashReport[@"_run"] = @(CountlyCommon.sharedInstance.timeSinceLaunch);
 
-    if(CountlyCrashReporter.sharedInstance.crashSegmentation)
+    if (CountlyCrashReporter.sharedInstance.crashSegmentation)
         crashReport[@"_custom"] = CountlyCrashReporter.sharedInstance.crashSegmentation;
 
-    if(customCrashLogs)
+    if (customCrashLogs)
         crashReport[@"_logs"] = [customCrashLogs componentsJoinedByString:@"\n"];
 
     NSArray* stackArray = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
-    if(!stackArray) stackArray = exception.callStackSymbols;
+    if (!stackArray) stackArray = exception.callStackSymbols;
 
     UInt64 loadAddress = 0;
 
@@ -107,7 +107,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
         [stackString appendString:line];
         [stackString appendString:@"\n"];
 
-        if(loadAddress == 0)
+        if (loadAddress == 0)
         {
             NSRegularExpression* regex = [NSRegularExpression regularExpressionWithPattern:@"\\s+\\s" options:0 error:nil];
             NSString* trimmedLine = [regex stringByReplacingMatchesInString:line options:0 range:(NSRange){0,line.length} withTemplate:@" "];
@@ -126,7 +126,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     crashReport[@"_load_address"] = [NSString stringWithFormat:@"0x%llx", loadAddress];
     crashReport[@"_error"] = stackString;
 
-    if(nonfatal)
+    if (nonfatal)
     {
         [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:NO];
         return;
@@ -170,7 +170,7 @@ void CountlySignalHandler(int signalCode)
 {
     static NSDateFormatter* df = nil;
 
-    if( customCrashLogs == nil )
+    if ( customCrashLogs == nil )
     {
         customCrashLogs = NSMutableArray.new;
         df = NSDateFormatter.new;
