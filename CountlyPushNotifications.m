@@ -134,6 +134,28 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     COUNTLY_LOG(@"Countly Push Notification ID: %@", notificationID);
 
     [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{@"i":notificationID}];
+    
+    NSArray* buttons = countlyPayload[@"b"];
+
+    if(!buttons && UIApplication.sharedApplication.applicationState != UIApplicationStateActive)
+    {
+        NSString* URL = countlyPayload[@"l"];
+    
+        if(URL)
+        {
+            COUNTLY_LOG(@"Redirecting to default URL: %@", notificationID);
+
+            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{@"i":notificationID, @"b":@(0)}];
+
+            dispatch_async(dispatch_get_main_queue(), ^{ [UIApplication.sharedApplication openURL:[NSURL URLWithString:URL]]; });        
+
+            return;
+        }
+    }
+
+
+    if(self.doNotShowAlertForNotifications)
+        return;
 
     id alert = notification[@"aps"][@"alert"];
     NSString* message = nil;
@@ -150,7 +172,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         title = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleDisplayName"];
     }
 
-    if(!message || self.doNotShowAlertForNotifications)
+    if(!message)
         return;
 
     alertController = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
@@ -165,7 +187,6 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     [dismissButton addTarget:self action:@selector(onClick_dismiss:) forControlEvents:UIControlEventTouchUpInside ];
     [alertController.view addSubview:dismissButton];
 
-    NSArray* buttons = countlyPayload[@"b"];
     [buttons enumerateObjectsUsingBlock:^(NSDictionary* button, NSUInteger idx, BOOL * stop)
     {
         //NOTE: space is added to force buttons to be laid out vertically
