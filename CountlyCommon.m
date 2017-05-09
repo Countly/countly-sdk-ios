@@ -167,6 +167,40 @@ void CountlyInternalLog(NSString *format, ...)
 }
 
 @end
+
+
+@implementation CLYButton : UIButton
+
+- (instancetype)initWithFrame:(CGRect)frame
+{
+    if (self = [super initWithFrame:frame])
+    {
+        [self addTarget:self action:@selector(touchUpInside:) forControlEvents:UIControlEventTouchUpInside];
+    }
+
+    return self;
+}
+
+- (void)touchUpInside:(id)sender
+{
+    if (self.onClick)
+        self.onClick(self);
+}
+
++ (CLYButton *)dismissAlertButton
+{
+    const float kCountlyDismissButtonSize = 30.0;
+    const float kCountlyDismissButtonMargin = 10.0;
+    CLYButton* dismissButton = [CLYButton buttonWithType:UIButtonTypeCustom];
+    dismissButton.frame = (CGRect){UIScreen.mainScreen.bounds.size.width - kCountlyDismissButtonSize - kCountlyDismissButtonMargin, kCountlyDismissButtonMargin, kCountlyDismissButtonSize, kCountlyDismissButtonSize};
+    [dismissButton setTitle:@"✕" forState:UIControlStateNormal];
+    [dismissButton setTitleColor:UIColor.grayColor forState:UIControlStateNormal];
+    dismissButton.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleBottomMargin;
+
+    return dismissButton;
+}
+
+@end
 #endif
 
 #pragma mark - Categories

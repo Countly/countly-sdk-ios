@@ -97,6 +97,11 @@ void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
 #if TARGET_OS_IOS
 @interface CLYInternalViewController : UIViewController
 @end
+
+@interface CLYButton : UIButton
+@property (nonatomic, copy) void (^onClick)(id sender);
++ (CLYButton *)dismissAlertButton;
+@end
 #endif
 
 

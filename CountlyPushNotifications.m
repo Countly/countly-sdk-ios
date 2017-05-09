@@ -177,14 +177,15 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
     alertController = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
 
-    const float kCountlyDismissButtonSize = 30.0;
-    const float kCountlyDismissButtonMargin = 10.0;
-    UIButton* dismissButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    dismissButton.frame = (CGRect){alertController.view.bounds.size.width - kCountlyDismissButtonSize - kCountlyDismissButtonMargin, kCountlyDismissButtonMargin, kCountlyDismissButtonSize, kCountlyDismissButtonSize};
-    [dismissButton setTitle:@"✕" forState:UIControlStateNormal];
-    [dismissButton setTitleColor:UIColor.grayColor forState:UIControlStateNormal];
-    dismissButton.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleBottomMargin;
-    [dismissButton addTarget:self action:@selector(onClick_dismiss:) forControlEvents:UIControlEventTouchUpInside ];
+    CLYButton* dismissButton = [CLYButton dismissAlertButton];
+    dismissButton.onClick = ^(id sender)
+    {
+        [alertController dismissViewControllerAnimated:YES completion:^
+        {
+            self.alertWindow.hidden = YES;
+            self.alertWindow = nil;
+        }];
+    };
     [alertController.view addSubview:dismissButton];
 
     [buttons enumerateObjectsUsingBlock:^(NSDictionary* button, NSUInteger idx, BOOL * stop)
@@ -211,15 +212,6 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     self.alertWindow.windowLevel = UIWindowLevelAlert;
     [self.alertWindow makeKeyAndVisible];
     [self.alertWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
-}
-
-- (void)onClick_dismiss:(id)sender
-{
-    [alertController dismissViewControllerAnimated:YES completion:^
-    {
-        self.alertWindow.hidden = YES;
-        self.alertWindow = nil;
-    }];
 }
 
 #pragma mark ---
