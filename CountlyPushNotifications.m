@@ -15,7 +15,6 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 {
     UIAlertController* alertController;
 }
-@property (nonatomic, strong) UIWindow* alertWindow;
 @property (nonatomic, strong) NSString* token;
 @property (nonatomic, copy) void (^permissionCompletion)(BOOL granted, NSError * error);
 #endif
@@ -129,33 +128,21 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     NSString* notificationID = countlyPayload[@"i"];
 
     if (!notificationID)
+    {
+        COUNTLY_LOG(@"Countly payload not found in notification dictionary!");
         return;
+    }
 
     COUNTLY_LOG(@"Countly Push Notification ID: %@", notificationID);
 
     [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{@"i":notificationID}];
 
-    NSArray* buttons = countlyPayload[@"b"];
-
-    if (!buttons && UIApplication.sharedApplication.applicationState != UIApplicationStateActive)
+    if (self.doNotShowAlertForNotifications)
     {
-        NSString* URL = countlyPayload[@"l"];
-
-        if (URL)
-        {
-            COUNTLY_LOG(@"Redirecting to default URL: %@", notificationID);
-
-            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{@"i":notificationID, @"b":@(0)}];
-
-            dispatch_async(dispatch_get_main_queue(), ^{ [UIApplication.sharedApplication openURL:[NSURL URLWithString:URL]]; });
-
-            return;
-        }
+        COUNTLY_LOG(@"doNotShowAlertForNotifications flag is set!");
+        return;
     }
 
-
-    if (self.doNotShowAlertForNotifications)
-        return;
 
     id alert = notification[@"aps"][@"alert"];
     NSString* message = nil;
@@ -173,21 +160,55 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     }
 
     if (!message)
+    {
+        COUNTLY_LOG(@"Message not found in notification dictionary!");
         return;
+    }
+
+
+    __block UIWindow* alertWindow = [UIWindow.alloc initWithFrame:UIScreen.mainScreen.bounds];
+    alertWindow.rootViewController = CLYInternalViewController.new;
+    alertWindow.windowLevel = UIWindowLevelAlert;
 
     alertController = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
+
+
+    CLYButton* defaultButton = nil;
+    NSString* defaultURL = countlyPayload[@"l"];
+    if (defaultURL)
+    {
+        defaultButton = [CLYButton buttonWithType:UIButtonTypeCustom];
+        defaultButton.frame = alertController.view.bounds;
+        defaultButton.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        defaultButton.onClick = ^(id sender)
+        {
+            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{@"i":notificationID, @"b":@(0)}];
+
+            dispatch_async(dispatch_get_main_queue(), ^{ [UIApplication.sharedApplication openURL:[NSURL URLWithString:defaultURL]]; });
+        
+            [alertController dismissViewControllerAnimated:YES completion:^
+            {
+                alertWindow.hidden = YES;
+                alertWindow = nil;
+            }];
+        };
+        [alertController.view addSubview:defaultButton];
+    }
+
 
     CLYButton* dismissButton = [CLYButton dismissAlertButton];
     dismissButton.onClick = ^(id sender)
     {
         [alertController dismissViewControllerAnimated:YES completion:^
         {
-            self.alertWindow.hidden = YES;
-            self.alertWindow = nil;
+            alertWindow.hidden = YES;
+            alertWindow = nil;
         }];
     };
     [alertController.view addSubview:dismissButton];
 
+
+    NSArray* buttons = countlyPayload[@"b"];
     [buttons enumerateObjectsUsingBlock:^(NSDictionary* button, NSUInteger idx, BOOL * stop)
     {
         //NOTE: space is added to force buttons to be laid out vertically
@@ -200,18 +221,20 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
             dispatch_async(dispatch_get_main_queue(), ^{ [UIApplication.sharedApplication openURL:[NSURL URLWithString:URL]]; });
 
-            self.alertWindow.hidden = YES;
-            self.alertWindow = nil;
+            alertWindow.hidden = YES;
+            alertWindow = nil;
         }];
 
         [alertController addAction:visit];
     }];
 
-    self.alertWindow = [UIWindow.alloc initWithFrame:UIScreen.mainScreen.bounds];
-    self.alertWindow.rootViewController = CLYInternalViewController.new;
-    self.alertWindow.windowLevel = UIWindowLevelAlert;
-    [self.alertWindow makeKeyAndVisible];
-    [self.alertWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
+    [alertWindow makeKeyAndVisible];
+    [alertWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
+
+    const float kCountlyActionButtonHeight = 44.0;
+    CGRect tempFrame = defaultButton.frame;
+    tempFrame.size.height -= buttons.count * kCountlyActionButtonHeight;
+    defaultButton.frame = tempFrame;
 }
 
 #pragma mark ---
