@@ -184,8 +184,8 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         {
             [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{@"i":notificationID, @"b":@(0)}];
 
-            dispatch_async(dispatch_get_main_queue(), ^{ [UIApplication.sharedApplication openURL:[NSURL URLWithString:defaultURL]]; });
-        
+            [self openURL:defaultURL];
+
             [alertController dismissViewControllerAnimated:YES completion:^
             {
                 alertWindow.hidden = YES;
@@ -219,7 +219,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         {
             [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{@"i": notificationID, @"b": @(idx+1)}];
 
-            dispatch_async(dispatch_get_main_queue(), ^{ [UIApplication.sharedApplication openURL:[NSURL URLWithString:URL]]; });
+            [self openURL:URL];
 
             alertWindow.hidden = YES;
             alertWindow = nil;
@@ -235,6 +235,17 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     CGRect tempFrame = defaultButton.frame;
     tempFrame.size.height -= buttons.count * kCountlyActionButtonHeight;
     defaultButton.frame = tempFrame;
+}
+
+- (void)openURL:(NSString *)URLString
+{
+    if(!URLString)
+        return;
+
+    dispatch_async(dispatch_get_main_queue(), ^
+    {
+        [UIApplication.sharedApplication openURL:[NSURL URLWithString:URLString]];
+    });
 }
 
 #pragma mark ---
@@ -292,10 +303,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
             [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{@"i":notificationID, @"b":@(buttonIndex)}];
         }
 
-        if (URL)
-        {
-            dispatch_async(dispatch_get_main_queue(), ^{ [UIApplication.sharedApplication openURL:[NSURL URLWithString:URL]]; });
-        }
+        [self openURL:URL];
     }
 
     id<UNUserNotificationCenterDelegate> appDelegate = (id<UNUserNotificationCenterDelegate>)UIApplication.sharedApplication.delegate;
