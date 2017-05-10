@@ -41,24 +41,6 @@ const float kCountlyStarRatingButtonSize = 40;
     {
         NSString* langDesignator = [NSLocale.preferredLanguages.firstObject substringToIndex:2];
 
-        NSDictionary* dictDismiss =
-        @{
-              @"en" : @"Dismiss",
-              @"tr" : @"Kapat",
-              @"jp" : @"閉じる",
-              @"zh" : @"关闭",
-              @"de" : @"Schließen",
-              @"fr" : @"Fermer",
-              @"es" : @"Cerrar",
-              @"ru" : @"Закрыть",
-              @"lv" : @"Aizvērt",
-              @"cs" : @"Zavřít"
-        };
-
-        self.dismissButtonTitle = dictDismiss[langDesignator];
-        if (!self.dismissButtonTitle)
-            self.dismissButtonTitle = dictDismiss[@"en"];
-
         NSDictionary* dictMessage =
         @{
             @"en" : @"How would you rate the app?",
@@ -82,12 +64,15 @@ const float kCountlyStarRatingButtonSize = 40;
 
     alertController = [UIAlertController alertControllerWithTitle:@" " message:self.message preferredStyle:UIAlertControllerStyleAlert];
 
-    UIAlertAction* dismiss = [UIAlertAction actionWithTitle:self.dismissButtonTitle style:UIAlertActionStyleCancel handler:^(UIAlertAction * action)
+    CLYButton* dismissButton = [CLYButton dismissAlertButton];
+    dismissButton.onClick = ^(id sender)
     {
-        [self finishWithRating:0];
-    }];
-
-    [alertController addAction:dismiss];
+        [alertController dismissViewControllerAnimated:YES completion:^
+        {
+            [self finishWithRating:0];
+        }];
+    };
+    [alertController.view addSubview:dismissButton];
 
     CLYInternalViewController* cvc = CLYInternalViewController.new;
     [cvc setPreferredContentSize:(CGSize){kCountlyStarRatingButtonSize * 5, kCountlyStarRatingButtonSize * 1.5}];
