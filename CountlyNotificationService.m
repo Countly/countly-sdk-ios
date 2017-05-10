@@ -15,6 +15,15 @@
 NSString* const kCountlyActionIdentifier = @"CountlyActionIdentifier";
 NSString* const kCountlyCategoryIdentifier = @"CountlyCategoryIdentifier";
 
+NSString* const kCountlyPNKeyCountlyPayload =        @"c";
+NSString* const kCountlyPNKeyNotificationID =        @"i";
+NSString* const kCountlyPNKeyButtons =               @"b";
+NSString* const kCountlyPNKeyDefaultURL =            @"l";
+NSString* const kCountlyPNKeyAttachment =            @"a";
+NSString* const kCountlyPNKeyActionButtonIndex =     @"b";
+NSString* const kCountlyPNKeyActionButtonTitle =     @"t";
+NSString* const kCountlyPNKeyActionButtonURL =       @"l";
+
 @interface CountlyNotificationService ()
 #if TARGET_OS_IOS
 @property (nonatomic, strong) void (^contentHandler)(UNNotificationContent *contentToDeliver);
@@ -28,8 +37,8 @@ NSString* const kCountlyCategoryIdentifier = @"CountlyCategoryIdentifier";
 {
     COUNTLY_EXT_LOG(@"didReceiveNotificationRequest:withContentHandler:");
 
-    NSDictionary* countlyPayload = request.content.userInfo[@"c"];
-    NSString* notificationID = countlyPayload[@"i"];
+    NSDictionary* countlyPayload = request.content.userInfo[kCountlyPNKeyCountlyPayload];
+    NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
 
     if (!notificationID)
     {
@@ -43,7 +52,7 @@ NSString* const kCountlyCategoryIdentifier = @"CountlyCategoryIdentifier";
 
     UNMutableNotificationContent* bestAttemptContent = request.content.mutableCopy;
 
-    NSArray* buttons = countlyPayload[@"b"];
+    NSArray* buttons = countlyPayload[kCountlyPNKeyButtons];
     if (buttons && buttons.count)
     {
         COUNTLY_EXT_LOG(@"custom action buttons found: %d", (int)buttons.count);
@@ -53,7 +62,7 @@ NSString* const kCountlyCategoryIdentifier = @"CountlyCategoryIdentifier";
         [buttons enumerateObjectsUsingBlock:^(NSDictionary* button, NSUInteger idx, BOOL * stop)
         {
             NSString* actionIdentifier = [NSString stringWithFormat:@"%@%lu", kCountlyActionIdentifier, (unsigned long)idx + 1];
-            UNNotificationAction* action = [UNNotificationAction actionWithIdentifier:actionIdentifier title:button[@"t"] options:UNNotificationActionOptionForeground];
+            UNNotificationAction* action = [UNNotificationAction actionWithIdentifier:actionIdentifier title:button[kCountlyPNKeyActionButtonTitle] options:UNNotificationActionOptionForeground];
             [actions addObject:action];
         }];
 
@@ -66,7 +75,7 @@ NSString* const kCountlyCategoryIdentifier = @"CountlyCategoryIdentifier";
         bestAttemptContent.categoryIdentifier = categoryIdentifier;
     }
 
-    NSString* attachment = countlyPayload[@"a"];
+    NSString* attachment = countlyPayload[kCountlyPNKeyAttachment];
     if (attachment && attachment.length)
     {
         COUNTLY_EXT_LOG(@"attachment found: %@", attachment);

@@ -11,6 +11,15 @@
 #endif
 extern NSString* const kCountlyActionIdentifier;
 
+extern NSString* const kCountlyPNKeyCountlyPayload;
+extern NSString* const kCountlyPNKeyNotificationID;
+extern NSString* const kCountlyPNKeyButtons;
+extern NSString* const kCountlyPNKeyDefaultURL;
+extern NSString* const kCountlyPNKeyAttachment;
+extern NSString* const kCountlyPNKeyActionButtonIndex;
+extern NSString* const kCountlyPNKeyActionButtonTitle;
+extern NSString* const kCountlyPNKeyActionButtonURL;
+
 @interface CountlyNotificationService : NSObject
 #if TARGET_OS_IOS
 + (void)didReceiveNotificationRequest:(UNNotificationRequest *)request withContentHandler:(void (^)(UNNotificationContent *))contentHandler;

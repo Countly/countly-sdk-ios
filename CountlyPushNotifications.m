@@ -124,8 +124,8 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 {
     COUNTLY_LOG(@"Handling remote notification %@", notification);
 
-    NSDictionary* countlyPayload = notification[@"c"];
-    NSString* notificationID = countlyPayload[@"i"];
+    NSDictionary* countlyPayload = notification[kCountlyPNKeyCountlyPayload];
+    NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
 
     if (!notificationID)
     {
@@ -135,7 +135,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
     COUNTLY_LOG(@"Countly Push Notification ID: %@", notificationID);
 
-    [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{@"i":notificationID}];
+    [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{kCountlyPNKeyNotificationID : notificationID}];
 
     if (self.doNotShowAlertForNotifications)
     {
@@ -174,7 +174,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 
     CLYButton* defaultButton = nil;
-    NSString* defaultURL = countlyPayload[@"l"];
+    NSString* defaultURL = countlyPayload[kCountlyPNKeyDefaultURL];
     if (defaultURL)
     {
         defaultButton = [CLYButton buttonWithType:UIButtonTypeCustom];
@@ -182,7 +182,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         defaultButton.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         defaultButton.onClick = ^(id sender)
         {
-            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{@"i":notificationID, @"b":@(0)}];
+            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID : notificationID, kCountlyPNKeyActionButtonIndex : @(0)}];
 
             [self openURL:defaultURL];
 
@@ -208,16 +208,16 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     [alertController.view addSubview:dismissButton];
 
 
-    NSArray* buttons = countlyPayload[@"b"];
+    NSArray* buttons = countlyPayload[kCountlyPNKeyButtons];
     [buttons enumerateObjectsUsingBlock:^(NSDictionary* button, NSUInteger idx, BOOL * stop)
     {
         //NOTE: space is added to force buttons to be laid out vertically
-        NSString* title = [button[@"t"] stringByAppendingString:@"                       "];
-        NSString* URL = button[@"l"];
+        NSString* title = [button[kCountlyPNKeyActionButtonTitle] stringByAppendingString:@"                       "];
+        NSString* URL = button[kCountlyPNKeyActionButtonURL];
 
         UIAlertAction* visit = [UIAlertAction actionWithTitle:title style:UIAlertActionStyleDefault handler:^(UIAlertAction * action)
         {
-            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{@"i": notificationID, @"b": @(idx+1)}];
+            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID : notificationID, kCountlyPNKeyActionButtonIndex : @(idx+1)}];
 
             [self openURL:URL];
 
@@ -254,8 +254,8 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 {
     COUNTLY_LOG(@"userNotificationCenter:willPresentNotification:withCompletionHandler:");
 
-    NSDictionary* countlyPayload = notification.request.content.userInfo[@"c"];
-    NSString* notificationID = countlyPayload[@"i"];
+    NSDictionary* countlyPayload = notification.request.content.userInfo[kCountlyPNKeyCountlyPayload];
+    NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
 
     if (notificationID)
         completionHandler(UNNotificationPresentationOptionAlert);
@@ -272,12 +272,12 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 {
     COUNTLY_LOG(@"userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:");
 
-    NSDictionary* countlyPayload = response.notification.request.content.userInfo[@"c"];
-    NSString* notificationID = countlyPayload[@"i"];
+    NSDictionary* countlyPayload = response.notification.request.content.userInfo[kCountlyPNKeyCountlyPayload];
+    NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
 
     if (notificationID)
     {
-        [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{@"i":notificationID}];
+        [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{kCountlyPNKeyNotificationID : notificationID}];
 
         NSInteger buttonIndex = -1;
         NSString* URL = nil;
@@ -286,21 +286,21 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
         if ([response.actionIdentifier isEqualToString:UNNotificationDefaultActionIdentifier])
         {
-            if (countlyPayload[@"l"])
+            if (countlyPayload[kCountlyPNKeyDefaultURL])
             {
                 buttonIndex = 0;
-                URL = countlyPayload[@"l"];
+                URL = countlyPayload[kCountlyPNKeyDefaultURL];
             }
         }
         else if ([response.actionIdentifier hasPrefix:kCountlyActionIdentifier])
         {
             buttonIndex = [[response.actionIdentifier stringByReplacingOccurrencesOfString:kCountlyActionIdentifier withString:@""] integerValue];
-            URL = countlyPayload[@"b"][buttonIndex - 1][@"l"];
+            URL = countlyPayload[kCountlyPNKeyButtons][buttonIndex - 1][kCountlyPNKeyActionButtonURL];
         }
 
         if (buttonIndex >= 0)
         {
-            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{@"i":notificationID, @"b":@(buttonIndex)}];
+            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID : notificationID, kCountlyPNKeyActionButtonIndex : @(buttonIndex)}];
         }
 
         [self openURL:URL];
