@@ -108,12 +108,16 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         {
             if (settings.authorizationStatus == UNAuthorizationStatusAuthorized)
                 [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
+            else
+                [CountlyConnectionManager.sharedInstance sendPushToken:@""];
         }];
     }
     else
     {
         if (UIApplication.sharedApplication.currentUserNotificationSettings.types != UIUserNotificationTypeNone)
             [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
+        else
+            [CountlyConnectionManager.sharedInstance sendPushToken:@""];    
     }
 }
 
