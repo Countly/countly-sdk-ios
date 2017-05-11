@@ -12,9 +12,6 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 @interface CountlyPushNotifications ()
 #if TARGET_OS_IOS
-{
-    UIAlertController* alertController;
-}
 @property (nonatomic, strong) NSString* token;
 @property (nonatomic, copy) void (^permissionCompletion)(BOOL granted, NSError * error);
 #endif
@@ -170,7 +167,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     alertWindow.rootViewController = CLYInternalViewController.new;
     alertWindow.windowLevel = UIWindowLevelAlert;
 
-    alertController = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertController* alertController = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
 
 
     CLYButton* defaultButton = nil;
