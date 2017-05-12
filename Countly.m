@@ -88,7 +88,6 @@
 
 #if TARGET_OS_IOS
     CountlyStarRating.sharedInstance.message = config.starRatingMessage;
-    CountlyStarRating.sharedInstance.dismissButtonTitle = config.starRatingDismissButtonTitle;
     CountlyStarRating.sharedInstance.sessionCount = config.starRatingSessionCount;
     CountlyStarRating.sharedInstance.disableAskingForEachAppVersion = config.starRatingDisableAskingForEachAppVersion;
     CountlyStarRating.sharedInstance.ratingCompletionForAutoAsk = config.starRatingCompletion;

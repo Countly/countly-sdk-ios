@@ -72,7 +72,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 
 /**
  * For sending push tokens to Countly server even for users who have not granted permission to display notifications.
- * @discussion Push tokens from users who have not granted permission to display notifications can be used to send silent notifications.
+ * @discussion Push tokens from users who have not granted permission to display notifications, can be used to send silent notifications. But there will be no notification UI for users to interact. This may cause incorrect push notification interaction stats.
  */
 @property (nonatomic) BOOL sendPushTokenAlways;
 
@@ -93,7 +93,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  * @discussion @c CLYIDFA (Identifier For Advertising)
  * @discussion @c CLYIDFV (Identifier For Vendor)
  * @discussion @c CLYOpenUDID (OpenUDID)
- * @discussion Once set, device ID will be stored persistently (even after app delete and re-install) and will not be changed even if you set another device ID on start, unless you set @c forceDeviceIDInitialization flag
+ * @discussion Once set, device ID will be stored persistently (even after app delete and re-install) and will not be changed even if set another device ID is set on start, unless @c forceDeviceIDInitialization flag is set.
  */
 @property (nonatomic, strong) NSString* deviceID;
 
@@ -191,15 +191,9 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 
 /**
  * For customizing star-rating dialog message.
- * @discussion If not set, it will be displayed in English: "How would you rate the app?"
+ * @discussion If not set, it will be displayed in English: "How would you rate the app?" or corresponding supported (EN, TR, JP, ZH, RU) localized version.
  */
 @property (nonatomic, strong) NSString* starRatingMessage;
-
-/**
- * For customizing star-rating dialog dismiss button title.
- * @discussion If not set, it will be displayed in English: "Dismiss"
- */
-@property (nonatomic, strong) NSString* starRatingDismissButtonTitle;
 
 /**
  * For displaying star-rating dialog depending on session count, once for each new version of the app.

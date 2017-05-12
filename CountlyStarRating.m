@@ -149,14 +149,6 @@ const float kCountlyStarRatingButtonSize = 40;
     _message = message;
 }
 
-- (void)setDismissButtonTitle:(NSString *)dismissButtonTitle
-{
-    if (dismissButtonTitle == nil)
-        return;
-
-    _dismissButtonTitle = dismissButtonTitle;
-}
-
 - (void)onClick_star:(id)sender
 {
     UIColor* color = [self activeStarColor];
