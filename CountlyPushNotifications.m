@@ -102,22 +102,36 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         return;
     }
 
+    BOOL hasNotificationPermissionBefore = [CountlyPersistency.sharedInstance retrieveNotificationPermission];
+
     if (NSFoundationVersionNumber > NSFoundationVersionNumber_iOS_9_x_Max)
     {
         [UNUserNotificationCenter.currentNotificationCenter getNotificationSettingsWithCompletionHandler:^(UNNotificationSettings* settings)
         {
             if (settings.authorizationStatus == UNAuthorizationStatusAuthorized)
+            {
                 [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
-            else
+                [CountlyPersistency.sharedInstance storeNotificationPermission:YES];
+            }
+            else if (hasNotificationPermissionBefore)
+            {
                 [CountlyConnectionManager.sharedInstance sendPushToken:@""];
+                [CountlyPersistency.sharedInstance storeNotificationPermission:NO];
+            }
         }];
     }
     else
     {
         if (UIApplication.sharedApplication.currentUserNotificationSettings.types != UIUserNotificationTypeNone)
+        {
             [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
-        else
-            [CountlyConnectionManager.sharedInstance sendPushToken:@""];    
+            [CountlyPersistency.sharedInstance storeNotificationPermission:YES];
+        }
+        else if (hasNotificationPermissionBefore)
+        {
+            [CountlyConnectionManager.sharedInstance sendPushToken:@""];
+            [CountlyPersistency.sharedInstance storeNotificationPermission:NO];
+        }
     }
 }
 

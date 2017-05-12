@@ -19,6 +19,7 @@ NSString* const kCountlyTVOSNSUDKey = @"kCountlyTVOSNSUDKey";
 NSString* const kCountlyStoredDeviceIDKey = @"kCountlyStoredDeviceIDKey";
 NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKey";
 NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
+NSString* const kCountlyNotificationPermissionKey = @"kCountlyNotificationPermissionKey";
 
 + (instancetype)sharedInstance
 {
@@ -308,4 +309,16 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
     [NSUserDefaults.standardUserDefaults setObject:status forKey:kCountlyStarRatingStatusKey];
     [NSUserDefaults.standardUserDefaults synchronize];
 }
+
+- (BOOL)retrieveNotificationPermission
+{
+    return [NSUserDefaults.standardUserDefaults boolForKey:kCountlyNotificationPermissionKey];
+}
+
+- (void)storeNotificationPermission:(BOOL)allowed
+{
+    [NSUserDefaults.standardUserDefaults setBool:allowed forKey:kCountlyNotificationPermissionKey];
+    [NSUserDefaults.standardUserDefaults synchronize];
+}
+
 @end
