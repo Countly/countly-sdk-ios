@@ -268,6 +268,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler
 {
     COUNTLY_LOG(@"userNotificationCenter:willPresentNotification:withCompletionHandler:");
+        COUNTLY_LOG(@"%@", notification.request.content.userInfo.description);
 
     NSDictionary* countlyPayload = notification.request.content.userInfo[kCountlyPNKeyCountlyPayload];
     NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
@@ -286,6 +287,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void (^)())completionHandler
 {
     COUNTLY_LOG(@"userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:");
+        COUNTLY_LOG(@"%@", response.notification.request.content.userInfo.description);
 
     NSDictionary* countlyPayload = response.notification.request.content.userInfo[kCountlyPNKeyCountlyPayload];
     NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];

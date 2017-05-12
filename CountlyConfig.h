@@ -66,7 +66,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 
 /**
  * For manually marking a device as test device for @c CLYPushNotifications feature. 
- * @discussion Test push notifications can be sent to test devices by checking "Send to test device" checkbox on "Create Message" section on Countly Server.
+ * @discussion Test push notifications can be sent to test devices by selecting "Development & test users only" on "Create Push Notification" section on Countly Server.
  */
 @property (nonatomic) BOOL isTestDevice;
 
