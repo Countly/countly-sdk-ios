@@ -16,6 +16,8 @@
 
 - (void)reportView:(NSString *)viewName;
 - (void)endView;
+- (void)pauseView;
+- (void)resumeView;
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 - (void)startAutoViewTracking;
 - (void)addExceptionForAutoViewTracking:(NSString *)exception;

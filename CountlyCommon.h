@@ -19,6 +19,7 @@
 #import "CountlyViewTracking.h"
 #import "CountlyStarRating.h"
 #import "CountlyPushNotifications.h"
+#import "CountlyNotificationService.h"
 
 #if DEBUG
 #define COUNTLY_LOG(fmt, ...) CountlyInternalLog(fmt, ##__VA_ARGS__)
@@ -69,9 +70,11 @@ extern NSString* const kCountlySDKName;
 
 @property (nonatomic) BOOL enableDebug;
 @property (nonatomic) BOOL enableAppleWatch;
+@property (nonatomic) BOOL manualSessionHandling;
 @property (nonatomic, strong) NSString* ISOCountryCode;
 @property (nonatomic, strong) NSString* city;
 @property (nonatomic, strong) NSString* location;
+@property (nonatomic, strong) NSString* IP;
 
 void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
 
@@ -79,28 +82,32 @@ void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
 - (NSInteger)hourOfDay;
 - (NSInteger)dayOfWeek;
 - (NSInteger)timeZone;
-- (long)timeSinceLaunch;
+- (NSInteger)timeSinceLaunch;
 - (NSTimeInterval)uniqueTimestamp;
-- (NSString *)optionalParameters;
 #if (TARGET_OS_IOS || TARGET_OS_WATCH)
 - (void)activateWatchConnectivity;
 #endif
 
-#if (TARGET_OS_IOS)
+#if TARGET_OS_IOS
 - (void)transferParentDeviceID;
 #endif
 @end
 
 
-#if (TARGET_OS_IOS)
+#if TARGET_OS_IOS
 @interface CLYInternalViewController : UIViewController
+@end
+
+@interface CLYButton : UIButton
+@property (nonatomic, copy) void (^onClick)(id sender);
++ (CLYButton *)dismissAlertButton;
 @end
 #endif
 
 
 @interface NSString (Countly)
 - (NSString *)cly_URLEscaped;
-- (NSString *)cly_SHA1;
+- (NSString *)cly_SHA256;
 - (NSData *)cly_dataUTF8;
 @end
 

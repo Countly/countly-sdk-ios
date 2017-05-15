@@ -8,6 +8,7 @@
 
 @interface CountlyViewTracking ()
 @property (nonatomic) NSTimeInterval lastViewStartTime;
+@property (nonatomic) NSTimeInterval accumulatedTime;
 @property (nonatomic, strong) NSMutableArray* exceptionViewControllers;
 @end
 
@@ -60,7 +61,7 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
         @"visit": @1
     }.mutableCopy;
 
-    if(!self.lastView)
+    if (!self.lastView)
         segmentation[@"start"] = @1;
 
     [Countly.sharedInstance recordEvent:kCountlyReservedEventView segmentation:segmentation];
@@ -71,7 +72,7 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
 
 - (void)endView
 {
-    if(self.lastView)
+    if (self.lastView)
     {
         NSDictionary* segmentation =
         @{
@@ -79,11 +80,22 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
             @"segment": CountlyDeviceInfo.osName,
         };
 
-        NSTimeInterval duration = NSDate.date.timeIntervalSince1970 - self.lastViewStartTime;
+        NSTimeInterval duration = NSDate.date.timeIntervalSince1970 - self.lastViewStartTime + self.accumulatedTime;
+        self.accumulatedTime = 0;
         [Countly.sharedInstance recordEvent:kCountlyReservedEventView segmentation:segmentation count:1 sum:0 duration:duration timestamp:self.lastViewStartTime];
 
         COUNTLY_LOG(@"View tracking ended: %@ duration: %f", self.lastView, duration);
     }
+}
+
+- (void)pauseView
+{
+    self.accumulatedTime = NSDate.date.timeIntervalSince1970 - self.lastViewStartTime;
+}
+
+- (void)resumeView
+{
+    self.lastViewStartTime = CountlyCommon.sharedInstance.uniqueTimestamp;
 }
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
@@ -101,7 +113,7 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
 
 - (void)addExceptionForAutoViewTracking:(NSString *)exception
 {
-    if(![self.exceptionViewControllers containsObject:exception])
+    if (![self.exceptionViewControllers containsObject:exception])
         [self.exceptionViewControllers addObject:exception];
 }
 
@@ -113,20 +125,21 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
 #endif
 @end
 
+#pragma mark -
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 @implementation UIViewController (CountlyViewTracking)
 - (void)Countly_viewDidAppear:(BOOL)animated
 {
     NSString* viewTitle = self.title;
-    
-    if(!viewTitle)
+
+    if (!viewTitle)
         viewTitle = [self.navigationItem.titleView isKindOfClass:UILabel.class] ? ((UILabel*)self.navigationItem.titleView).text : nil;
 
-    if(!viewTitle)
+    if (!viewTitle)
         viewTitle = NSStringFromClass(self.class);
 
-    if(CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled && ![CountlyViewTracking.sharedInstance.lastView isEqualToString:viewTitle])
+    if (CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled && ![CountlyViewTracking.sharedInstance.lastView isEqualToString:viewTitle])
     {
         BOOL isException = NO;
 
@@ -135,15 +148,15 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
             BOOL isExceptionClass = [self isKindOfClass:NSClassFromString(exception)] || [NSStringFromClass(self.class) isEqualToString:exception];
             BOOL isExceptionTitle = [self.title isEqualToString:exception];
             BOOL isExceptionCustomTitle = [self.navigationItem.titleView isKindOfClass:UILabel.class] && [((UILabel*)self.navigationItem.titleView).text isEqualToString:exception];
-        
-            if(isExceptionClass || isExceptionTitle || isExceptionCustomTitle)
+
+            if (isExceptionClass || isExceptionTitle || isExceptionCustomTitle)
             {
                 isException = YES;
                 break;
             }
         }
 
-        if(!isException)
+        if (!isException)
             [CountlyViewTracking.sharedInstance reportView:viewTitle];
     }
 

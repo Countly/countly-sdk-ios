@@ -15,6 +15,7 @@
 - (NSString *)zeroSafeIDFA;
 
 + (NSString *)device;
++ (NSString *)architecture;
 + (NSString *)osName;
 + (NSString *)osVersion;
 + (NSString *)carrier;
@@ -25,6 +26,7 @@
 + (NSString *)appBuild;
 + (NSString *)buildUUID;
 + (NSString *)bundleId;
++ (NSString *)executableName;
 #if TARGET_OS_IOS
 + (NSInteger)hasWatch;
 + (NSInteger)installedWatchApp;

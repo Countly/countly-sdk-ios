@@ -7,7 +7,6 @@
 #import <Foundation/Foundation.h>
 #import <CoreLocation/CoreLocation.h>
 #import "CountlyUserDetails.h"
-#import "CountlyCrashReporter.h"
 #import "CountlyConfig.h"
 #if TARGET_OS_IOS
 #import <UserNotifications/UserNotifications.h>
@@ -44,7 +43,27 @@
 - (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue;
 
 /**
- * Suspends Countly, add recorded events to request queue and ends current session.
+ * Starts session and sends @c begin_session request with default metrics for manual session handling.
+ * @discussion This method needs to be called for starting a session only if @c manualSessionHandling flag is set on initial configuration. Otherwise; sessions will be handled automatically by default, and calling this method will have no effect.
+ */
+- (void)beginSession;
+
+/**
+ * Updates session and sends unsent session duration for manual session handling.
+ * @discussion This method needs to be called for updating a session only if @c manualSessionHandling flag is set on initial configuration. Otherwise; sessions will be handled automatically by default, and calling this method will have no effect.
+ */
+- (void)updateSession;
+
+/**
+ * Ends session and sends @c end_session request for manual session handling.
+ * @discussion This method needs to be called for ending a session only if @c manualSessionHandling flag is set on initial configuration. Otherwise; sessions will be handled automatically by default, and calling this method will have no effect.
+ */
+- (void)endSession;
+
+
+#if TARGET_OS_WATCH
+/**
+ * Suspends Countly, adds recorded events to request queue and ends current session.
  * @discussion This method needs to be called manually only on @c watchOS, on other platforms it will be called automatically.
  */
 - (void)suspend;
@@ -54,6 +73,7 @@
  * @discussion This method needs to be called manually only on @c watchOS, on other platforms it will be called automatically.
  */
 - (void)resume;
+#endif
 
 
 
@@ -218,7 +238,7 @@
 
 /**
  * Reports a visited view with given name manually. 
- * @discussion If auto ViewTracking feature is activated on start configuration, this method does not need to be called manually.
+ * @discussion If auto ViewTracking feature is activated on initial configuration, this method does not need to be called manually.
  * @param viewName Name of the view visited
  */
 - (void)reportView:(NSString *)viewName;

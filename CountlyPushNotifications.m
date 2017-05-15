@@ -12,7 +12,6 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 @interface CountlyPushNotifications ()
 #if TARGET_OS_IOS
-@property (nonatomic, strong) UIWindow* alertWindow;
 @property (nonatomic, strong) NSString* token;
 @property (nonatomic, copy) void (^permissionCompletion)(BOOL granted, NSError * error);
 #endif
@@ -29,17 +28,6 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
     return s_sharedInstance;
-}
-
-- (instancetype)init
-{
-    self = [super init];
-    if (self)
-    {
-
-    }
-
-    return self;
 }
 
 #pragma mark ---
@@ -61,7 +49,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         SEL originalSelector = NSSelectorFromString(selectorString);
         Method originalMethod = class_getInstanceMethod(appDelegateClass, originalSelector);
 
-        if(originalMethod == NULL)
+        if (originalMethod == NULL)
         {
             Method method = class_getInstanceMethod(self.class, originalSelector);
             IMP imp = method_getImplementation(method);
@@ -74,17 +62,17 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         Method countlyMethod = class_getInstanceMethod(appDelegateClass, countlySelector);
         method_exchangeImplementations(originalMethod, countlyMethod);
     }
-    
+
     [UIApplication.sharedApplication registerForRemoteNotifications];
 }
 
 - (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler
 {
-    if(NSFoundationVersionNumber > NSFoundationVersionNumber_iOS_9_x_Max)
+    if (NSFoundationVersionNumber > NSFoundationVersionNumber_iOS_9_x_Max)
     {
         [UNUserNotificationCenter.currentNotificationCenter requestAuthorizationWithOptions:options completionHandler:^(BOOL granted, NSError* error)
         {
-            if(completionHandler)
+            if (completionHandler)
                 completionHandler(granted, error);
         }];
     }
@@ -99,33 +87,51 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 - (void)sendToken
 {
-    if(!self.token)
+    if (!self.token)
         return;
 
-    if([self.token isEqualToString:kCountlyTokenError])
+    if ([self.token isEqualToString:kCountlyTokenError])
     {
         [CountlyConnectionManager.sharedInstance sendPushToken:@""];
         return;
     }
 
-    if(self.sendPushTokenAlways)
+    if (self.sendPushTokenAlways)
     {
         [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
         return;
     }
 
-    if(NSFoundationVersionNumber > NSFoundationVersionNumber_iOS_9_x_Max)
+    BOOL hasNotificationPermissionBefore = [CountlyPersistency.sharedInstance retrieveNotificationPermission];
+
+    if (NSFoundationVersionNumber > NSFoundationVersionNumber_iOS_9_x_Max)
     {
         [UNUserNotificationCenter.currentNotificationCenter getNotificationSettingsWithCompletionHandler:^(UNNotificationSettings* settings)
         {
             if (settings.authorizationStatus == UNAuthorizationStatusAuthorized)
+            {
                 [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
+                [CountlyPersistency.sharedInstance storeNotificationPermission:YES];
+            }
+            else if (hasNotificationPermissionBefore)
+            {
+                [CountlyConnectionManager.sharedInstance sendPushToken:@""];
+                [CountlyPersistency.sharedInstance storeNotificationPermission:NO];
+            }
         }];
     }
     else
     {
-        if(UIApplication.sharedApplication.currentUserNotificationSettings.types != UIUserNotificationTypeNone)
+        if (UIApplication.sharedApplication.currentUserNotificationSettings.types != UIUserNotificationTypeNone)
+        {
             [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
+            [CountlyPersistency.sharedInstance storeNotificationPermission:YES];
+        }
+        else if (hasNotificationPermissionBefore)
+        {
+            [CountlyConnectionManager.sharedInstance sendPushToken:@""];
+            [CountlyPersistency.sharedInstance storeNotificationPermission:NO];
+        }
     }
 }
 
@@ -133,59 +139,128 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 {
     COUNTLY_LOG(@"Handling remote notification %@", notification);
 
-    NSDictionary* countlyPayload = notification[@"c"];
-    NSString* notificationID = countlyPayload[@"i"];
+    NSDictionary* countlyPayload = notification[kCountlyPNKeyCountlyPayload];
+    NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
 
     if (!notificationID)
+    {
+        COUNTLY_LOG(@"Countly payload not found in notification dictionary!");
         return;
-    
+    }
+
     COUNTLY_LOG(@"Countly Push Notification ID: %@", notificationID);
 
-    [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{@"i":notificationID}];
+    [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{kCountlyPNKeyNotificationID : notificationID}];
 
-    NSString* message = notification[@"aps"][@"alert"];
-    if(!message || self.doNotShowAlertForNotifications)
+    if (self.doNotShowAlertForNotifications)
+    {
+        COUNTLY_LOG(@"doNotShowAlertForNotifications flag is set!");
         return;
+    }
 
-    NSString* title = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleDisplayName"];
+
+    id alert = notification[@"aps"][@"alert"];
+    NSString* message = nil;
+    NSString* title = nil;
+
+    if ([alert isKindOfClass:NSDictionary.class])
+    {
+        message = alert[@"body"];
+        title = alert[@"title"];
+    }
+    else
+    {
+        message = (NSString*)alert;
+        title = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleDisplayName"];
+    }
+
+    if (!message)
+    {
+        COUNTLY_LOG(@"Message not found in notification dictionary!");
+        return;
+    }
+
+
+    __block UIWindow* alertWindow = [UIWindow.alloc initWithFrame:UIScreen.mainScreen.bounds];
+    alertWindow.rootViewController = CLYInternalViewController.new;
+    alertWindow.windowLevel = UIWindowLevelAlert;
 
     UIAlertController* alertController = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
 
-    NSString* dismissButtonTitle = countlyPayload[@"c"];
-    if (!dismissButtonTitle) dismissButtonTitle = NSLocalizedString(@"Dismiss", nil);
 
-    UIAlertAction* dismiss = [UIAlertAction actionWithTitle:dismissButtonTitle style:UIAlertActionStyleCancel handler:^(UIAlertAction * action)
+    CLYButton* defaultButton = nil;
+    NSString* defaultURL = countlyPayload[kCountlyPNKeyDefaultURL];
+    if (defaultURL)
     {
-        self.alertWindow.hidden = YES;
-        self.alertWindow = nil;
-    }];
-
-    [alertController addAction:dismiss];
-
-    NSString* URL = countlyPayload[@"l"];
-    if(URL)
-    {
-        NSString* visitButtonTitle = countlyPayload[@"a"];
-        if (!visitButtonTitle) visitButtonTitle = NSLocalizedString(@"Visit", nil);
-    
-        UIAlertAction* visit = [UIAlertAction actionWithTitle:visitButtonTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction * action)
+        defaultButton = [CLYButton buttonWithType:UIButtonTypeCustom];
+        defaultButton.frame = alertController.view.bounds;
+        defaultButton.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        defaultButton.onClick = ^(id sender)
         {
-            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{@"i": notificationID}];
+            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID : notificationID, kCountlyPNKeyActionButtonIndex : @(0)}];
 
-            [UIApplication.sharedApplication openURL:[NSURL URLWithString:URL]];
+            [self openURL:defaultURL];
 
-            self.alertWindow.hidden = YES;
-            self.alertWindow = nil;
+            [alertController dismissViewControllerAnimated:YES completion:^
+            {
+                alertWindow.hidden = YES;
+                alertWindow = nil;
+            }];
+        };
+        [alertController.view addSubview:defaultButton];
+    }
+
+
+    CLYButton* dismissButton = [CLYButton dismissAlertButton];
+    dismissButton.onClick = ^(id sender)
+    {
+        [alertController dismissViewControllerAnimated:YES completion:^
+        {
+            alertWindow.hidden = YES;
+            alertWindow = nil;
+        }];
+    };
+    [alertController.view addSubview:dismissButton];
+
+
+    NSArray* buttons = countlyPayload[kCountlyPNKeyButtons];
+    [buttons enumerateObjectsUsingBlock:^(NSDictionary* button, NSUInteger idx, BOOL * stop)
+    {
+        //NOTE: space is added to force buttons to be laid out vertically
+        NSString* title = [button[kCountlyPNKeyActionButtonTitle] stringByAppendingString:@"                       "];
+        NSString* URL = button[kCountlyPNKeyActionButtonURL];
+
+        UIAlertAction* visit = [UIAlertAction actionWithTitle:title style:UIAlertActionStyleDefault handler:^(UIAlertAction * action)
+        {
+            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID : notificationID, kCountlyPNKeyActionButtonIndex : @(idx+1)}];
+
+            [self openURL:URL];
+
+            alertWindow.hidden = YES;
+            alertWindow = nil;
         }];
 
         [alertController addAction:visit];
-    }
+    }];
 
-    self.alertWindow = [UIWindow.alloc initWithFrame:UIScreen.mainScreen.bounds];
-    self.alertWindow.rootViewController = CLYInternalViewController.new;
-    self.alertWindow.windowLevel = UIWindowLevelAlert;
-    [self.alertWindow makeKeyAndVisible];
-    [self.alertWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
+    [alertWindow makeKeyAndVisible];
+    [alertWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
+
+    const float kCountlyActionButtonHeight = 44.0;
+    CGRect tempFrame = defaultButton.frame;
+    tempFrame.size.height -= buttons.count * kCountlyActionButtonHeight;
+    defaultButton.frame = tempFrame;
+}
+
+- (void)openURL:(NSString *)URLString
+{
+    if(!URLString)
+        return;
+
+    dispatch_async(dispatch_get_main_queue(), ^
+    {
+        [UIApplication.sharedApplication openURL:[NSURL URLWithString:URLString]];
+    });
 }
 
 #pragma mark ---
@@ -193,10 +268,13 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler
 {
     COUNTLY_LOG(@"userNotificationCenter:willPresentNotification:withCompletionHandler:");
+    COUNTLY_LOG(@"%@", notification.request.content.userInfo.description);
 
-    NSDictionary* userInfo = notification.request.content.userInfo;
+    NSDictionary* countlyPayload = notification.request.content.userInfo[kCountlyPNKeyCountlyPayload];
+    NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
 
-    [CountlyPushNotifications.sharedInstance handleNotification:userInfo];
+    if (notificationID)
+        completionHandler(UNNotificationPresentationOptionAlert);
 
     id<UNUserNotificationCenterDelegate> appDelegate = (id<UNUserNotificationCenterDelegate>)UIApplication.sharedApplication.delegate;
 
@@ -206,24 +284,51 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         completionHandler(UNNotificationPresentationOptionNone);
 }
 
-
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void (^)())completionHandler
 {
     COUNTLY_LOG(@"userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:");
+    COUNTLY_LOG(@"%@", response.notification.request.content.userInfo.description);
 
-    if([response.actionIdentifier isEqualToString:UNNotificationDefaultActionIdentifier])
+    NSDictionary* countlyPayload = response.notification.request.content.userInfo[kCountlyPNKeyCountlyPayload];
+    NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
+
+    if (notificationID)
     {
-        NSDictionary* userInfo = response.notification.request.content.userInfo;
+        [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{kCountlyPNKeyNotificationID : notificationID}];
 
-        [CountlyPushNotifications.sharedInstance handleNotification:userInfo];
+        NSInteger buttonIndex = -1;
+        NSString* URL = nil;
 
-        id<UNUserNotificationCenterDelegate> appDelegate = (id<UNUserNotificationCenterDelegate>)UIApplication.sharedApplication.delegate;
+        COUNTLY_LOG(@"Action Identifier: %@", response.actionIdentifier);
 
-        if ([appDelegate respondsToSelector:@selector(userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:)])
-            [appDelegate userNotificationCenter:center didReceiveNotificationResponse:response withCompletionHandler:completionHandler];
-        else
-            completionHandler();
+        if ([response.actionIdentifier isEqualToString:UNNotificationDefaultActionIdentifier])
+        {
+            if (countlyPayload[kCountlyPNKeyDefaultURL])
+            {
+                buttonIndex = 0;
+                URL = countlyPayload[kCountlyPNKeyDefaultURL];
+            }
+        }
+        else if ([response.actionIdentifier hasPrefix:kCountlyActionIdentifier])
+        {
+            buttonIndex = [[response.actionIdentifier stringByReplacingOccurrencesOfString:kCountlyActionIdentifier withString:@""] integerValue];
+            URL = countlyPayload[kCountlyPNKeyButtons][buttonIndex - 1][kCountlyPNKeyActionButtonURL];
+        }
+
+        if (buttonIndex >= 0)
+        {
+            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID : notificationID, kCountlyPNKeyActionButtonIndex : @(buttonIndex)}];
+        }
+
+        [self openURL:URL];
     }
+
+    id<UNUserNotificationCenterDelegate> appDelegate = (id<UNUserNotificationCenterDelegate>)UIApplication.sharedApplication.delegate;
+
+    if ([appDelegate respondsToSelector:@selector(userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:)])
+        [appDelegate userNotificationCenter:center didReceiveNotificationResponse:response withCompletionHandler:completionHandler];
+    else
+        completionHandler();
 }
 
 #pragma mark ---
@@ -272,10 +377,10 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     COUNTLY_LOG(@"App didRegisterUserNotificationSettings: %@", notificationSettings);
 
     [CountlyPushNotifications.sharedInstance sendToken];
-    
+
     BOOL granted = UIApplication.sharedApplication.currentUserNotificationSettings.types != UIUserNotificationTypeNone;
 
-    if(CountlyPushNotifications.sharedInstance.permissionCompletion)
+    if (CountlyPushNotifications.sharedInstance.permissionCompletion)
         CountlyPushNotifications.sharedInstance.permissionCompletion(granted, nil);
 
     [self Countly_application:application didRegisterUserNotificationSettings:notificationSettings];
@@ -292,4 +397,3 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 @end
 #endif
 #pragma GCC diagnostic pop
-

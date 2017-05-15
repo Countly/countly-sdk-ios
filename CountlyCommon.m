@@ -16,7 +16,7 @@
 @end
 
 NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
-NSString* const kCountlySDKVersion = @"16.12";
+NSString* const kCountlySDKVersion = @"17.05";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 @implementation CountlyCommon
@@ -42,7 +42,7 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 
 void CountlyInternalLog(NSString *format, ...)
 {
-    if(!CountlyCommon.sharedInstance.enableDebug)
+    if (!CountlyCommon.sharedInstance.enableDebug)
         return;
 
     va_list args;
@@ -74,16 +74,16 @@ void CountlyInternalLog(NSString *format, ...)
     return NSTimeZone.systemTimeZone.secondsFromGMT / 60;
 }
 
-- (long)timeSinceLaunch
+- (NSInteger)timeSinceLaunch
 {
-    return (long)NSDate.date.timeIntervalSince1970 - startTime;
+    return (int)NSDate.date.timeIntervalSince1970 - startTime;
 }
 
 - (NSTimeInterval)uniqueTimestamp
 {
     long long now = floor(NSDate.date.timeIntervalSince1970 * 1000);
 
-    if(now <= self.lastTimestamp)
+    if (now <= self.lastTimestamp)
         self.lastTimestamp ++;
     else
         self.lastTimestamp = now;
@@ -91,29 +91,12 @@ void CountlyInternalLog(NSString *format, ...)
     return (double)(self.lastTimestamp / 1000.0);
 }
 
-- (NSString *)optionalParameters
-{
-    NSMutableString *optinonalParameters = @"".mutableCopy;
-
-    if(self.ISOCountryCode)
-        [optinonalParameters appendFormat:@"&country_code=%@", self.ISOCountryCode];
-    if(self.city)
-        [optinonalParameters appendFormat:@"&city=%@", self.city];
-    if(self.location)
-        [optinonalParameters appendFormat:@"&location=%@", self.location];
-
-    if(optinonalParameters.length)
-        return optinonalParameters;
-
-    return nil;
-}
-
 #pragma mark - Watch Connectivity
 
 #if (TARGET_OS_IOS || TARGET_OS_WATCH)
 - (void)activateWatchConnectivity
 {
-    if(!self.enableAppleWatch)
+    if (!self.enableAppleWatch)
         return;
 
     if ([WCSession isSupported])
@@ -125,15 +108,15 @@ void CountlyInternalLog(NSString *format, ...)
 }
 #endif
 
-#if (TARGET_OS_IOS)
+#if TARGET_OS_IOS
 - (void)transferParentDeviceID
 {
-    if(!self.enableAppleWatch)
+    if (!self.enableAppleWatch)
         return;
 
     [self activateWatchConnectivity];
 
-    if(WCSession.defaultSession.paired && WCSession.defaultSession.watchAppInstalled)
+    if (WCSession.defaultSession.paired && WCSession.defaultSession.watchAppInstalled)
     {
         [WCSession.defaultSession transferUserInfo:@{kCountlyParentDeviceIDTransferKey:CountlyDeviceInfo.sharedInstance.deviceID}];
         COUNTLY_LOG(@"Transferring parent device ID %@ ...", CountlyDeviceInfo.sharedInstance.deviceID);
@@ -148,7 +131,7 @@ void CountlyInternalLog(NSString *format, ...)
 
     NSString* parentDeviceID = userInfo[kCountlyParentDeviceIDTransferKey];
 
-    if(parentDeviceID && ![parentDeviceID isEqualToString:[CountlyPersistency.sharedInstance retrieveWatchParentDeviceID]])
+    if (parentDeviceID && ![parentDeviceID isEqualToString:[CountlyPersistency.sharedInstance retrieveWatchParentDeviceID]])
     {
         [CountlyConnectionManager.sharedInstance sendParentDeviceID:parentDeviceID];
 
@@ -163,10 +146,10 @@ void CountlyInternalLog(NSString *format, ...)
 
 
 #pragma mark - Internal ViewController
-#if (TARGET_OS_IOS)
+#if TARGET_OS_IOS
 @implementation CLYInternalViewController : UIViewController
 
-//NOTE: For using the same status bar preferences as the currently displayed view controller when a Countly triggered alert is displayed using a separate window
+//NOTE: For using the same status bar preferences as the view controller currently being  displayed, when a Countly triggered alert is displayed using a separate window
 - (UIStatusBarStyle)preferredStatusBarStyle
 {
     if (UIApplication.sharedApplication.windows.firstObject.rootViewController == self)
@@ -184,6 +167,40 @@ void CountlyInternalLog(NSString *format, ...)
 }
 
 @end
+
+
+@implementation CLYButton : UIButton
+
+- (instancetype)initWithFrame:(CGRect)frame
+{
+    if (self = [super initWithFrame:frame])
+    {
+        [self addTarget:self action:@selector(touchUpInside:) forControlEvents:UIControlEventTouchUpInside];
+    }
+
+    return self;
+}
+
+- (void)touchUpInside:(id)sender
+{
+    if (self.onClick)
+        self.onClick(self);
+}
+
++ (CLYButton *)dismissAlertButton
+{
+    const float kCountlyDismissButtonSize = 30.0;
+    const float kCountlyDismissButtonMargin = 10.0;
+    CLYButton* dismissButton = [CLYButton buttonWithType:UIButtonTypeCustom];
+    dismissButton.frame = (CGRect){UIScreen.mainScreen.bounds.size.width - kCountlyDismissButtonSize - kCountlyDismissButtonMargin, kCountlyDismissButtonMargin, kCountlyDismissButtonSize, kCountlyDismissButtonSize};
+    [dismissButton setTitle:@"✕" forState:UIControlStateNormal];
+    [dismissButton setTitleColor:UIColor.grayColor forState:UIControlStateNormal];
+    dismissButton.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleBottomMargin;
+
+    return dismissButton;
+}
+
+@end
 #endif
 
 #pragma mark - Categories
@@ -191,7 +208,7 @@ NSString* CountlyJSONFromObject(id object)
 {
     NSError *error = nil;
     NSData *data = [NSJSONSerialization dataWithJSONObject:object options:0 error:&error];
-    if(error){ COUNTLY_LOG(@"JSON can not be created: \n%@", error); }
+    if (error){ COUNTLY_LOG(@"JSON can not be created: \n%@", error); }
 
     return [data cly_stringUTF8];
 }
@@ -203,14 +220,14 @@ NSString* CountlyJSONFromObject(id object)
     return [self stringByAddingPercentEncodingWithAllowedCharacters:charset];
 }
 
-- (NSString *)cly_SHA1
+- (NSString *)cly_SHA256
 {
     const char* s = [self UTF8String];
-    unsigned char digest[CC_SHA1_DIGEST_LENGTH];
-    CC_SHA1(s, (CC_LONG)strlen(s), digest);
+    unsigned char digest[CC_SHA256_DIGEST_LENGTH];
+    CC_SHA256(s, (CC_LONG)strlen(s), digest);
 
     NSMutableString* hash = NSMutableString.new;
-    for(int i = 0; i < CC_SHA1_DIGEST_LENGTH; i++)
+    for (int i = 0; i < CC_SHA256_DIGEST_LENGTH; i++)
         [hash appendFormat:@"%02x", digest[i]];
 
     return hash;

@@ -32,7 +32,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 
 /**
  * County Server's URL without the slash at the end.
- * @discussion e.g. https://mycountlyserver.com
+ * @discussion e.g. https://example.com
  */
 @property (nonatomic, strong) NSString* host;
 
@@ -66,13 +66,13 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 
 /**
  * For manually marking a device as test device for @c CLYPushNotifications feature. 
- * @discussion Test push notifications can be sent to test devices by checking "Send to test device" checkbox on "Create Message" section on Countly Server.
+ * @discussion Test push notifications can be sent to test devices by selecting "Development & test users only" on "Create Push Notification" section on Countly Server.
  */
 @property (nonatomic) BOOL isTestDevice;
 
 /**
  * For sending push tokens to Countly server even for users who have not granted permission to display notifications.
- * @discussion Push tokens from users who have not granted permission to display notifications can be used to send silent notifications.
+ * @discussion Push tokens from users who have not granted permission to display notifications, can be used to send silent notifications. But there will be no notification UI for users to interact. This may cause incorrect push notification interaction stats.
  */
 @property (nonatomic) BOOL sendPushTokenAlways;
 
@@ -93,7 +93,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  * @discussion @c CLYIDFA (Identifier For Advertising)
  * @discussion @c CLYIDFV (Identifier For Vendor)
  * @discussion @c CLYOpenUDID (OpenUDID)
- * @discussion Once set, device ID will be stored persistently (even after app delete and re-install) and will not be changed even if you set another device ID on start, unless you set @c forceDeviceIDInitialization flag
+ * @discussion Once set, device ID will be stored persistently (even after app delete and re-install) and will not be changed even if set another device ID is set on start, unless @c forceDeviceIDInitialization flag is set.
  */
 @property (nonatomic, strong) NSString* deviceID;
 
@@ -103,13 +103,19 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 @property (nonatomic) BOOL forceDeviceIDInitialization;
 
 /**
- * Update session period is used to send @c events and @c update_session requests to server periodically. 
+ * For handling sessions manually.
+ * @discussion If set, SDK does not handle beginning, updating and ending sessions automatically. Methods @c beginSession, @c updateSession and @c endSession need to be called manually.
+ */
+@property (nonatomic) BOOL manualSessionHandling;
+
+/**
+ * Update session period is used for updating sessions and sending queued events to server periodically.
  * @discussion If not set, it will be 60 seconds for @c iOS, @c tvOS & @c OSX, and 20 seconds for @c watchOS by default.
  */
 @property (nonatomic) NSTimeInterval updateSessionPeriod;
 
 /**
- * Event send threshold is used to send @c events requests to server when number of recorded custom events reaches, without waiting for next @c update_session tick defined by @c updateSessionPeriod. 
+ * Event send threshold is used for sending queued events to server when number of recorded events reaches to it, without waiting for next update session defined by @c updateSessionPeriod. 
  * @discussion If not set, it will be 10 for @c iOS, @c tvOS & @c OSX, and 3 for @c watchOS by default.
  */
 @property (nonatomic) NSUInteger eventSendThreshold;
@@ -152,6 +158,12 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 @property (nonatomic) CLLocationCoordinate2D location;
 
 /**
+ * IP address can be specified as string to be used for advanced segmentation and geo-ip based push notifications.
+ * @discussion It will be sent with @c begin_session request only.
+ */
+@property (nonatomic) NSString* IP;
+
+/**
  * For specifying bundled certificates to be used for public key pinning.
  * @discussion Certificates have to be DER encoded with one of the following extensions: .der .cer or .crt
  * @discussion e.g. myserver.com.cer
@@ -179,15 +191,9 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 
 /**
  * For customizing star-rating dialog message.
- * @discussion If not set, it will be displayed in English: "How would you rate the app?"
+ * @discussion If not set, it will be displayed in English: "How would you rate the app?" or corresponding supported (EN, TR, JP, ZH, RU) localized version.
  */
 @property (nonatomic, strong) NSString* starRatingMessage;
-
-/**
- * For customizing star-rating dialog dismiss button title.
- * @discussion If not set, it will be displayed in English: "Dismiss"
- */
-@property (nonatomic, strong) NSString* starRatingDismissButtonTitle;
 
 /**
  * For displaying star-rating dialog depending on session count, once for each new version of the app.

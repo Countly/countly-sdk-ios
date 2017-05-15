@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name = 'Countly'
-  s.version = '16.12'
+  s.version = '17.05'
   s.license = {
     :type => 'COMMUNITY',
     :text => <<-LICENSE
@@ -34,7 +34,7 @@ Pod::Spec.new do |s|
   s.author = {'Countly' => 'hello@count.ly'}
   s.source = { :git => 'https://github.com/Countly/countly-sdk-ios.git', :tag => s.version.to_s }
   s.source_files = '*.{h,m}'
-  s.public_header_files = 'Countly.h', 'CountlyUserDetails.h', 'CountlyConfig.h', 'CountlyCrashReporter.h'
+  s.public_header_files = 'Countly.h', 'CountlyUserDetails.h', 'CountlyConfig.h'
   s.requires_arc = true
   s.ios.deployment_target = '8.0'
   s.osx.deployment_target = '10.9'

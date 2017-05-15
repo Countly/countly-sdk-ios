@@ -64,10 +64,13 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     crashReport[@"_os"] = CountlyDeviceInfo.osName;
     crashReport[@"_os_version"] = CountlyDeviceInfo.osVersion;
     crashReport[@"_device"] = CountlyDeviceInfo.device;
+    crashReport[@"_architecture"] = CountlyDeviceInfo.architecture;
     crashReport[@"_resolution"] = CountlyDeviceInfo.resolution;
     crashReport[@"_app_version"] = CountlyDeviceInfo.appVersion;
     crashReport[@"_app_build"] = CountlyDeviceInfo.appBuild;
     crashReport[@"_build_uuid"] = CountlyDeviceInfo.buildUUID;
+    crashReport[@"_executable_name"] = CountlyDeviceInfo.executableName;
+
     crashReport[@"_name"] = exception.description;
     crashReport[@"_type"] = exception.name;
     crashReport[@"_nonfatal"] = @(nonfatal);
@@ -87,76 +90,58 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     crashReport[@"_background"] = @(CountlyDeviceInfo.isInBackground);
     crashReport[@"_run"] = @(CountlyCommon.sharedInstance.timeSinceLaunch);
 
-    if(CountlyCrashReporter.sharedInstance.crashSegmentation)
+    if (CountlyCrashReporter.sharedInstance.crashSegmentation)
         crashReport[@"_custom"] = CountlyCrashReporter.sharedInstance.crashSegmentation;
 
-    if(customCrashLogs)
+    if (customCrashLogs)
         crashReport[@"_logs"] = [customCrashLogs componentsJoinedByString:@"\n"];
 
     NSArray* stackArray = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
-    if(!stackArray) stackArray = exception.callStackSymbols;
+    if (!stackArray) stackArray = exception.callStackSymbols;
+
+    UInt64 loadAddress = 0;
 
     NSMutableString* stackString = NSMutableString.string;
     for (NSString* line in stackArray)
     {
         [stackString appendString:line];
         [stackString appendString:@"\n"];
+
+        if (loadAddress == 0)
+        {
+            NSRegularExpression* regex = [NSRegularExpression regularExpressionWithPattern:@"\\s+\\s" options:0 error:nil];
+            NSString* trimmedLine = [regex stringByReplacingMatchesInString:line options:0 range:(NSRange){0,line.length} withTemplate:@" "];
+            NSArray* lineComponents = [trimmedLine componentsSeparatedByString:@" "];
+
+            if (lineComponents.count >= 3 && [lineComponents[1] isEqualToString:CountlyDeviceInfo.executableName])
+            {
+                NSString* address = lineComponents[2];
+                NSString* offset = lineComponents.lastObject;
+                UInt64 length = strtoull(address.UTF8String, NULL, 16);
+                loadAddress = length - offset.integerValue;
+            }
+        }
     }
 
+    crashReport[@"_load_address"] = [NSString stringWithFormat:@"0x%llx", loadAddress];
     crashReport[@"_error"] = stackString;
 
-    if(nonfatal)
+    if (nonfatal)
     {
-        [CountlyConnectionManager.sharedInstance sendCrashReportLater:[crashReport cly_JSONify]];
+        [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:NO];
+        return;
     }
-    else
-    {
-        if(!CountlyConnectionManager.sharedInstance.connection)
-            CountlyConnectionManager.sharedInstance.connection = NSURLSessionDataTask.new;
-        //NOTE: `sendEvents` and `endSession` calls adds `event` and `end_session` requests to queue and starts them.
-        //      a dummy connection object is created to prevent these requests when app is about to terminate due to crash
 
-        [CountlyConnectionManager.sharedInstance sendEvents];
-        [CountlyConnectionManager.sharedInstance endSession];
-        [CountlyPersistency.sharedInstance saveToFileSync];
+    [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:YES];
 
-        NSString *urlString = [NSString stringWithFormat:@"%@/i", CountlyConnectionManager.sharedInstance.host];
-        NSString *queryString = [[CountlyConnectionManager.sharedInstance queryEssentials] stringByAppendingFormat:@"&crash=%@", [crashReport cly_JSONify]];
-
-        NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString]];
-        request.HTTPMethod = @"POST";
-        request.HTTPBody = [queryString cly_dataUTF8];
-        COUNTLY_LOG(@"Crash report request started: %@ \n%@", urlString, queryString);
-
-        dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
-
-        [[NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError*  error)
-        {
-            if(error || ![CountlyConnectionManager.sharedInstance isRequestSuccessful:response])
-            {
-                COUNTLY_LOG(@"Crash report request failed! Report stored to try again later. \n%@", error);
-                [CountlyConnectionManager.sharedInstance sendCrashReportLater:[crashReport cly_JSONify]];
-            }
-            else
-            {
-                COUNTLY_LOG(@"Crash report request successfully completed.");
-            }
-
-            dispatch_semaphore_signal(semaphore);
-
-        }] resume];
-
-        dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
-
-        NSSetUncaughtExceptionHandler(NULL);
-        signal(SIGABRT, SIG_DFL);
-        signal(SIGILL, SIG_DFL);
-        signal(SIGSEGV, SIG_DFL);
-        signal(SIGFPE, SIG_DFL);
-        signal(SIGBUS, SIG_DFL);
-        signal(SIGPIPE, SIG_DFL);
-        signal(SIGTRAP, SIG_DFL);
-    }
+    NSSetUncaughtExceptionHandler(NULL);
+    signal(SIGABRT, SIG_DFL);
+    signal(SIGILL, SIG_DFL);
+    signal(SIGSEGV, SIG_DFL);
+    signal(SIGFPE, SIG_DFL);
+    signal(SIGBUS, SIG_DFL);
+    signal(SIGPIPE, SIG_DFL);
+    signal(SIGTRAP, SIG_DFL);
 }
 
 void CountlySignalHandler(int signalCode)
@@ -185,7 +170,7 @@ void CountlySignalHandler(int signalCode)
 {
     static NSDateFormatter* df = nil;
 
-    if( customCrashLogs == nil )
+    if ( customCrashLogs == nil )
     {
         customCrashLogs = NSMutableArray.new;
         df = NSDateFormatter.new;
@@ -194,49 +179,6 @@ void CountlySignalHandler(int signalCode)
 
     NSString* logFormat = [NSString stringWithFormat:@"<%@> %@",[df stringFromDate:NSDate.date], format];
     [customCrashLogs addObject:[NSString.alloc initWithFormat:logFormat arguments:args]];
-}
-
-
-#pragma mark ---
-
-- (void)crashTest
-{
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wundeclared-selector"
-    [self performSelector:@selector(thisIsTheUnrecognizedSelectorCausingTheCrash)];
-#pragma clang diagnostic pop
-}
-
-- (void)crashTest2
-{
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-variable"
-    NSArray* anArray = @[@"one",@"two",@"three"];
-    NSString* myCrashingString = anArray[5];
-#pragma clang diagnostic pop
-}
-
-- (void)crashTest3
-{
-    int *nullPointer = NULL;
-    *nullPointer = 2015;
-}
-
-- (void)crashTest4
-{
-    CGRect aRect = (CGRect){0.0/0.0, 0.0, 100.0, 100.0};
-    UIView *crashView = UIView.new;
-    crashView.frame = aRect;
-}
-
-- (void)crashTest5
-{
-    kill(getpid(), SIGABRT);
-}
-
-- (void)crashTest6
-{
-    __builtin_trap();
 }
 #endif
 @end
