@@ -47,7 +47,9 @@ const float kCountlyStarRatingButtonSize = 40;
             @"tr" : @"Uygulamayı nasıl değerlendirirsiniz?",
             @"jp" : @"あなたの評価を教えてください。",
             @"zh" : @"请告诉我你的评价。",
-            @"ru" : @"Как бы вы оценили приложение?"
+            @"ru" : @"Как бы вы оценили приложение?",
+            @"cz" : @"Jak hodnotíte aplikaci?",
+            @"lv" : @"Kā Jūs novērtētu šo lietotni?"            
         };
 
         self.message = dictMessage[langDesignator];
