@@ -12,6 +12,8 @@
 #import <UserNotifications/UserNotifications.h>
 #endif
 
+NS_ASSUME_NONNULL_BEGIN
+
 @interface Countly : NSObject
 
 #pragma mark - Countly Core
@@ -33,7 +35,7 @@
  * @param deviceID New device ID
  * @param onServer If set, data on server will be merged automatically, otherwise device will be counted as a new device
  */
-- (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer;
+- (void)setNewDeviceID:(NSString * _Nullable)deviceID onServer:(BOOL)onServer;
 
 /**
  * Sets the value of the custom HTTP header field to be sent with every request if @c customHeaderFieldName is set on initial configuration.
@@ -119,7 +121,7 @@
  * @param key Event key
  * @param segmentation Segmentation key-value pairs of event
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation;
 
 /**
  * Records event with given key, segmentation and count.
@@ -127,7 +129,7 @@
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count;
 
 /**
  * Records event with given key, segmentation, count and sum.
@@ -136,7 +138,7 @@
  * @param count Count of event occurrences
  * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
 
 /**
  * Records event with given key, segmentation, count, sum and duration.
@@ -146,7 +148,7 @@
  * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
  * @param duration Duration of event in seconds
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
 
 /**
  * Starts a timed event with given key to be ended later. Duration of timed event will be calculated on ending. 
@@ -170,7 +172,7 @@
  * @param count Count of event occurrences
  * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
  */
-- (void)endEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum;
+- (void)endEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
 
 
 
@@ -297,4 +299,7 @@
  */
 - (void)askForStarRating:(void(^)(NSInteger rating))completion;
 #endif
+
+NS_ASSUME_NONNULL_END
+
 @end

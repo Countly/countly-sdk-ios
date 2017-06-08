@@ -6,6 +6,8 @@
 
 #import <Foundation/Foundation.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 //NOTE: Countly features
 #if TARGET_OS_IOS
 extern NSString* const CLYPushNotifications;
@@ -212,4 +214,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  * @discussion Completion block has a single NSInteger parameter that indicates 1 to 5 star-rating given by user. If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to server.
  */
 @property (nonatomic, copy) void (^starRatingCompletion)(NSInteger rating);
+
+NS_ASSUME_NONNULL_END
+
 @end

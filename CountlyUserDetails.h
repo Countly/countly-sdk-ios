@@ -6,6 +6,8 @@
 
 #import <Foundation/Foundation.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 /**
  * A placeholder type specifier which accepts only @c NSString or @c NSNull for @c CountlyUserDetails default properties.
  */
@@ -47,35 +49,35 @@ extern NSString* const kCountlyLocalPicturePath;
  * @discussion It can be set to an @c NSString, or @c NSNull for clearing it on server.
  * It will be sent to server when @c recordUserDetails method is called.
  */
-@property (nonatomic, strong) id<CountlyUserDetailsNullableString> name;
+@property (nonatomic, strong) id<CountlyUserDetailsNullableString> _Nullable name;
 
 /**
  * Default @c username property for user's username in User Profiles.
  * @discussion It can be set to an @c NSString, or @c NSNull for clearing it on server.
  * It will be sent to server when @c recordUserDetails method is called.
  */
-@property (nonatomic, strong) id<CountlyUserDetailsNullableString> username;
+@property (nonatomic, strong) id<CountlyUserDetailsNullableString> _Nullable username;
 
 /**
  * Default @c email property for user's e-mail in User Profiles.
  * @discussion It can be set to an @c NSString, or @c NSNull for clearing it on server.
  * It will be sent to server when @c recordUserDetails method is called.
  */
-@property (nonatomic, strong) id<CountlyUserDetailsNullableString> email;
+@property (nonatomic, strong) id<CountlyUserDetailsNullableString> _Nullable email;
 
 /**
  * Default @c organization property for user's organization/company in User Profiles.
  * @discussion It can be set to an @c NSString, or @c NSNull for clearing it on server.
  * It will be sent to server when @c recordUserDetails method is called.
  */
-@property (nonatomic, strong) id<CountlyUserDetailsNullableString> organization;
+@property (nonatomic, strong) id<CountlyUserDetailsNullableString> _Nullable organization;
 
 /**
  * Default @c phone property for user's phone number in User Profiles.
  * @discussion It can be set to an @c NSString, or @c NSNull for clearing it on server.
  * It will be sent to server when @c recordUserDetails method is called.
  */
-@property (nonatomic, strong) id<CountlyUserDetailsNullableString> phone;
+@property (nonatomic, strong) id<CountlyUserDetailsNullableString> _Nullable phone;
 
 /**
  * Default @c gender property for user's gender in User Profiles.
@@ -83,7 +85,7 @@ extern NSString* const kCountlyLocalPicturePath;
  * It will be sent to server when @c recordUserDetails method is called.
  * @discussion If it is set to case-insensitive @c m or @c f, it is displayed as @c Male or @c Female. Otherwise it will displayed as @c Unknown.
  */
-@property (nonatomic, strong) id<CountlyUserDetailsNullableString> gender;
+@property (nonatomic, strong) id<CountlyUserDetailsNullableString> _Nullable gender;
 
 /**
  * Default @c pictureURL property for user's profile photo in User Profiles.
@@ -91,7 +93,7 @@ extern NSString* const kCountlyLocalPicturePath;
  * It will be sent to server when @c recordUserDetails method is called.
  * @discussion It should be a publicly accessible URL string to user's profile photo, so server can download it.
  */
-@property (nonatomic, strong) id<CountlyUserDetailsNullableString> pictureURL;
+@property (nonatomic, strong) id<CountlyUserDetailsNullableString> _Nullable pictureURL;
 
 /**
  * Default @c pictureLocalPath property for user's profile photo in User Profiles.
@@ -100,14 +102,14 @@ extern NSString* const kCountlyLocalPicturePath;
  * @discussion It should be a valid local path string to user's profile photo on the device, so it can be uploaded to server.
  * If @c pictureURL is also set at the same time, @c pictureLocalPath will be ignored and @c pictureURL will be used.
  */
-@property (nonatomic, strong) id<CountlyUserDetailsNullableString> pictureLocalPath;
+@property (nonatomic, strong) id<CountlyUserDetailsNullableString> _Nullable pictureLocalPath;
 
 /**
  * Default @c birthYear property for user's birth year in User Profiles.
  * @discussion It can be set to an @c NSNumber, or @c NSNull for clearing it on server.
  * It will be sent to server when @c recordUserDetails method is called.
  */
-@property (nonatomic, strong) id<CountlyUserDetailsNullableNumber> birthYear;
+@property (nonatomic, strong) id<CountlyUserDetailsNullableNumber> _Nullable birthYear;
 
 /**
  * @c custom property for user's custom information as key-value pairs in User Profiles.
@@ -115,7 +117,7 @@ extern NSString* const kCountlyLocalPicturePath;
  * It will be sent to server when @c recordUserDetails method is called.
  * @discussion Key-value pairs in @c custom property can also be modified using custom property modifier methods.
  */
-@property (nonatomic, strong) id<CountlyUserDetailsNullableDictionary> custom;
+@property (nonatomic, strong) id<CountlyUserDetailsNullableDictionary> _Nullable custom;
 
 /**
  * Returns @c CountlyUserDetails singleton to be used throughout the app.
@@ -248,4 +250,7 @@ extern NSString* const kCountlyLocalPicturePath;
  * @discussion Once called, default user details properties and custom user details property modifiers are reset. If sending them to server fails, they are stored peristenly in request queue, to be tried again later.
  */
 - (void)save;
+
+NS_ASSUME_NONNULL_END
+
 @end
