@@ -416,7 +416,12 @@
 #if TARGET_OS_IOS
 - (void)recordHandledException:(NSException *)exception
 {
-    [CountlyCrashReporter.sharedInstance recordHandledException:exception];
+    [CountlyCrashReporter.sharedInstance recordHandledException:exception withStackTrace:nil];
+}
+
+- (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray *)stackTrace
+{
+    [CountlyCrashReporter.sharedInstance recordHandledException:exception withStackTrace:stackTrace];
 }
 
 - (void)crashLog:(NSString *)format, ...

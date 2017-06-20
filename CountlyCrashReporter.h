@@ -12,7 +12,7 @@
 
 + (instancetype)sharedInstance;
 - (void)startCrashReporting;
-- (void)recordHandledException:(NSException *)exception;
+- (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray *)stackTrace;
 - (void)logWithFormat:(NSString *)format andArguments:(va_list)args;
 #endif
 @end

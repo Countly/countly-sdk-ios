@@ -205,10 +205,17 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - Countly CrashReporting
 #if TARGET_OS_IOS
 /**
- * Records a handled exception manually, besides automatically reported unhandled exceptions and crashes.
+ * Records a handled exception manually.
  * @param exception Exception to be reported
  */
 - (void)recordHandledException:(NSException *)exception;
+
+/**
+ * Records a handled exception and given stack trace manually.
+ * @param exception Exception to be reported
+ * @param stackTrace Stack trace to be reported
+ */
+- (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace;
 
 /**
  * Records custom logs to be delivered with crash report.

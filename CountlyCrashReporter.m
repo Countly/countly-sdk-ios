@@ -47,8 +47,15 @@ static NSMutableArray *customCrashLogs = nil;
     signal(SIGTRAP, CountlySignalHandler);
 }
 
-- (void)recordHandledException:(NSException *)exception
+- (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray *)stackTrace
 {
+    if (stackTrace)
+    {
+        NSMutableDictionary* userInfo = [NSMutableDictionary dictionaryWithDictionary:exception.userInfo];
+        userInfo[kCountlyExceptionUserInfoBacktraceKey] = stackTrace;
+        exception = [NSException exceptionWithName:exception.name reason:exception.reason userInfo:userInfo];
+    }
+
     CountlyExceptionHandler(exception, true);
 }
 
