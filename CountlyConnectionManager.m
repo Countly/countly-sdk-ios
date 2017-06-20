@@ -78,6 +78,15 @@ NSString* const kCountlyInputEndpoint = @"/i";
     if (firstItemInQueue == nil)
         return;
 
+    if ([firstItemInQueue isEqual:NSNull.null])
+    {
+        COUNTLY_LOG(@"Detected an NSNull in queue and removed.");
+
+        [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
+        [self proceedOnQueue];
+        return;
+    }
+
     [self startBackgroundTask];
 
     NSString* queryString = firstItemInQueue;
@@ -432,6 +441,9 @@ NSString* const kCountlyInputEndpoint = @"/i";
         if ([queryItem.name isEqualToString:kCountlyQSKeyUserDetails])
         {
             NSString* unescapedValue = [queryItem.value stringByRemovingPercentEncoding];
+            if (!unescapedValue)
+                return nil;
+
             NSDictionary* pathDictionary = [NSJSONSerialization JSONObjectWithData:[unescapedValue cly_dataUTF8] options:0 error:nil];
             localPicturePath = pathDictionary[kCountlyLocalPicturePath];
             break;
