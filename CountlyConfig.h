@@ -138,6 +138,12 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  */
 @property (nonatomic) BOOL enableAppleWatch;
 
+/**
+ * For applying zero-IDFA fix on queued requests.
+ * @discussion If set, all requests in persistently stored request queue will be checked against zero-IDFA issue. If found, they will be fixed by either replacing with IDFV or removing from queue.
+ */
+@property (nonatomic) BOOL applyZeroIDFAFix;
+
 #pragma mark -
 
 /**

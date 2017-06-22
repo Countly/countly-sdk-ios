@@ -19,6 +19,7 @@
 @property (nonatomic, strong) NSString* customHeaderFieldValue;
 @property (nonatomic, strong) NSString* secretSalt;
 @property (nonatomic) BOOL alwaysUsePOST;
+@property (nonatomic) BOOL applyZeroIDFAFix;
 
 + (instancetype)sharedInstance;
 
