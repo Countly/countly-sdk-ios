@@ -164,7 +164,7 @@
 
 /**
  * Create a set of UIMutableUserNotificationCategory'ies which you can register in addition to your ones to enable iOS 8 actions. This method gives you ability to provide localized or just different versions of your action titles.
- * @param titles Array of NSString objects in following order: Cancel, Open, Update, Review
+ * @param actions Array of NSString objects in following order: Cancel, Open, Update, Review
  */
 - (NSMutableSet *) countlyNotificationCategoriesWithActionTitles:(NSArray *)actions;
 
