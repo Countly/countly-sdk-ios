@@ -90,7 +90,8 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
 
 - (void)pauseView
 {
-    self.accumulatedTime = NSDate.date.timeIntervalSince1970 - self.lastViewStartTime;
+    if (self.lastViewStartTime)
+        self.accumulatedTime = NSDate.date.timeIntervalSince1970 - self.lastViewStartTime;
 }
 
 - (void)resumeView
