@@ -408,6 +408,11 @@
 {
     [CountlyConnectionManager.sharedInstance sendLocation:coordinate];
 }
+
+- (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
+{
+    [CountlyPushNotifications.sharedInstance recordActionForNotification:userInfo clickedButtonIndex:buttonIndex];
+}
 #endif
 
 

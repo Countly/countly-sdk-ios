@@ -198,6 +198,14 @@ NS_ASSUME_NONNULL_BEGIN
  * @param coordinate User's location with latitude and longitude
  */
 - (void)recordLocation:(CLLocationCoordinate2D)coordinate;
+
+/**
+ * Records action event for a manually presented push notification with custom action buttons.
+ * @discussion If a push notification with custom action buttons is handled and presented manually using custom UI, user's action needs to be reported manually. With this convenience method user's action can be reported passing push notification dictionary and clicked button index. Button index should be 0 for default action, 1 for the first action button and 2 for the second action button.
+ * @param userInfo Manually presented push notification dictionary
+ * @param buttonIndex Clicked custom action button index
+ */
+- (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
 #endif
 
 
