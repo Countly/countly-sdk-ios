@@ -268,6 +268,9 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     NSDictionary* countlyPayload = userInfo[kCountlyPNKeyCountlyPayload];
     NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
 
+    if(!notificationID)
+        return;
+
     [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID : notificationID, kCountlyPNKeyActionButtonIndex : @(buttonIndex)}];
 }
 
