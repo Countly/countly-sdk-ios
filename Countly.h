@@ -228,9 +228,9 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Records custom logs to be delivered with crash report.
  * @discussion Logs recorded by `crashLog:` method are stored in a non-persistent structure, and delivered to server only in case of a crash.
- * @param format Custom log string or format to be recorded
+ * @param log Custom log string to be recorded
  */
-- (void)crashLog:(NSString *)format, ... NS_FORMAT_FUNCTION(1,2);
+- (void)crashLog:(NSString *)log;
 #endif
 
 

@@ -430,12 +430,9 @@
     [CountlyCrashReporter.sharedInstance recordHandledException:exception withStackTrace:stackTrace];
 }
 
-- (void)crashLog:(NSString *)format, ...
+- (void)crashLog:(NSString *)log
 {
-    va_list args;
-    va_start(args, format);
-    [CountlyCrashReporter.sharedInstance logWithFormat:format andArguments:args];
-    va_end(args);
+    [CountlyCrashReporter.sharedInstance log:log];
 }
 #endif
 

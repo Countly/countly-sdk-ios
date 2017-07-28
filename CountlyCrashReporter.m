@@ -173,7 +173,7 @@ void CountlySignalHandler(int signalCode)
     CountlyUncaughtExceptionHandler(e);
 }
 
-- (void)logWithFormat:(NSString *)format andArguments:(va_list)args
+- (void)log:(NSString *)log
 {
     static NSDateFormatter* df = nil;
 
@@ -184,8 +184,8 @@ void CountlySignalHandler(int signalCode)
         df.dateFormat = @"yyyy-MM-dd HH:mm:ss.SSS";
     }
 
-    NSString* logFormat = [NSString stringWithFormat:@"<%@> %@",[df stringFromDate:NSDate.date], format];
-    [customCrashLogs addObject:[NSString.alloc initWithFormat:logFormat arguments:args]];
+    NSString* logWithDateTime = [NSString stringWithFormat:@"<%@> %@",[df stringFromDate:NSDate.date], log];
+    [customCrashLogs addObject:logWithDateTime];
 }
 #endif
 @end
