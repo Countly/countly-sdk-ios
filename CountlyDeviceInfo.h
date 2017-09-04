@@ -24,9 +24,6 @@
 + (NSString *)locale;
 + (NSString *)appVersion;
 + (NSString *)appBuild;
-+ (NSString *)buildUUID;
-+ (NSString *)bundleId;
-+ (NSString *)executableName;
 #if TARGET_OS_IOS
 + (NSInteger)hasWatch;
 + (NSInteger)installedWatchApp;

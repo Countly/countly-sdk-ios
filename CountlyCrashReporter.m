@@ -5,6 +5,7 @@
 // Please visit www.count.ly for more information.
 
 #import "CountlyCommon.h"
+#import <mach-o/dyld.h>
 
 @interface CountlyCrashReporter ()
 @end
@@ -14,6 +15,7 @@ NSString* const kCountlyExceptionUserInfoBacktraceKey = @"kCountlyExceptionUserI
 @implementation CountlyCrashReporter
 
 static NSMutableArray *customCrashLogs = nil;
+static NSString *buildUUID;
 
 #if TARGET_OS_IOS
 
@@ -68,6 +70,8 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
 {
     NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
 
+    crashReport[@"_binary_images"] = [CountlyCrashReporter.sharedInstance binaryImages];
+
     crashReport[@"_os"] = CountlyDeviceInfo.osName;
     crashReport[@"_os_version"] = CountlyDeviceInfo.osVersion;
     crashReport[@"_device"] = CountlyDeviceInfo.device;
@@ -75,8 +79,8 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     crashReport[@"_resolution"] = CountlyDeviceInfo.resolution;
     crashReport[@"_app_version"] = CountlyDeviceInfo.appVersion;
     crashReport[@"_app_build"] = CountlyDeviceInfo.appBuild;
-    crashReport[@"_build_uuid"] = CountlyDeviceInfo.buildUUID;
-    crashReport[@"_executable_name"] = CountlyDeviceInfo.executableName;
+    crashReport[@"_build_uuid"] = buildUUID?:@"";
+    crashReport[@"_executable_name"] = [NSString stringWithUTF8String:getprogname()];
 
     crashReport[@"_name"] = exception.description;
     crashReport[@"_type"] = exception.name;
@@ -120,7 +124,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
             NSString* trimmedLine = [regex stringByReplacingMatchesInString:line options:0 range:(NSRange){0,line.length} withTemplate:@" "];
             NSArray* lineComponents = [trimmedLine componentsSeparatedByString:@" "];
 
-            if (lineComponents.count >= 3 && [lineComponents[1] isEqualToString:CountlyDeviceInfo.executableName])
+            if (lineComponents.count >= 3 && [lineComponents[1] isEqualToString:[NSString stringWithUTF8String:getprogname()]])
             {
                 NSString* address = lineComponents[2];
                 NSString* offset = lineComponents.lastObject;
@@ -186,6 +190,66 @@ void CountlySignalHandler(int signalCode)
 
     NSString* logWithDateTime = [NSString stringWithFormat:@"<%@> %@",[df stringFromDate:NSDate.date], log];
     [customCrashLogs addObject:logWithDateTime];
+}
+
+- (NSDictionary *)binaryImages
+{
+    NSMutableDictionary* binaryImages = NSMutableDictionary.new;
+
+    uint32_t imageCount = _dyld_image_count();
+    for (uint32_t i = 0; i < imageCount; i++)
+    {
+        const struct mach_header *imageHeader = _dyld_get_image_header(i);
+        if (imageHeader == NULL)
+        {
+            COUNTLY_LOG(@"Image Header can not be retrieved!");
+            continue;
+        }
+
+        BOOL is64bit = imageHeader->magic == MH_MAGIC_64 || imageHeader->magic == MH_CIGAM_64;
+        uintptr_t ptr = (uintptr_t)imageHeader + (is64bit ? sizeof(struct mach_header_64) : sizeof(struct mach_header));
+        NSString* imageUUID = nil;
+
+        for (uint32_t j = 0; j < imageHeader->ncmds; j++)
+        {
+            const struct segment_command_64 *segCmd = (struct segment_command_64 *)ptr;
+
+            if (segCmd->cmd == LC_UUID)
+            {
+                const uint8_t *uuid = ((const struct uuid_command *)segCmd)->uuid;
+                imageUUID = [NSUUID.alloc initWithUUIDBytes:uuid].UUIDString;
+                break;
+            }
+            ptr += segCmd->cmdsize;
+        }
+
+        if (!imageUUID)
+        {
+            COUNTLY_LOG(@"Image UUID can not be retrieved!");
+            continue;
+        }
+
+        const char *imageNameChar = _dyld_get_image_name(i);
+        if (imageNameChar == NULL)
+        {
+            COUNTLY_LOG(@"Image Name can not be retrieved!");
+            continue;
+        }
+
+        NSString *imageName = [NSString stringWithUTF8String:imageNameChar].lastPathComponent;
+        NSString *imageLoadAddress = [NSString stringWithFormat:@"0x%llX", (uint64_t)imageHeader];
+
+        //NOTE: For first version symbolication support where server needs only main app's build uuid in crash dictionary.
+        //      Make sure this method (`binaryImages`) is called before setting build uuid in crash dictionary.
+        if (imageHeader->filetype == MH_EXECUTE)
+        {
+            buildUUID = imageUUID;
+        }
+
+        binaryImages[imageName] = @{@"load_address": imageLoadAddress, @"uuid": imageUUID};
+    }
+
+    return [NSDictionary dictionaryWithDictionary:binaryImages];
 }
 #endif
 @end

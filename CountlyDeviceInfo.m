@@ -224,54 +224,6 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
     return [NSBundle.mainBundle objectForInfoDictionaryKey:(NSString*)kCFBundleVersionKey];
 }
 
-+ (NSString *)buildUUID
-{
-    const struct mach_header *imageHeader = NULL;
-    for (uint32_t i = 0; i < _dyld_image_count(); i++)
-    {
-        const struct mach_header *anImageHeader = _dyld_get_image_header(i);
-        if (anImageHeader->filetype == MH_EXECUTE)
-        {
-            imageHeader = anImageHeader;
-            break;
-        }
-    }
-
-    if (!imageHeader)
-    {
-        COUNTLY_LOG(@"BuildUUID image header can not be found!");
-        return @"0";
-    }
-
-    BOOL is64bit = imageHeader->magic == MH_MAGIC_64 || imageHeader->magic == MH_CIGAM_64;
-    uintptr_t ptr = (uintptr_t)imageHeader + (is64bit ? sizeof(struct mach_header_64) : sizeof(struct mach_header));
-    const struct segment_command *segCmd = NULL;
-
-    for (uint32_t i = 0; i < imageHeader->ncmds; i++, ptr += segCmd->cmdsize)
-    {
-        segCmd = (struct segment_command *)ptr;
-        if (segCmd->cmd == LC_UUID)
-        {
-            const struct uuid_command *uuidCmd = (const struct uuid_command *)segCmd;
-            const uint8_t *uuid = uuidCmd->uuid;
-            return [[NSUUID.alloc initWithUUIDBytes:uuid] UUIDString];
-        }
-    }
-
-    COUNTLY_LOG(@"BuildUUID can not be read!");
-    return @"0";
-}
-
-+ (NSString *)bundleId
-{
-    return NSBundle.mainBundle.bundleIdentifier;
-}
-
-+ (NSString *)executableName
-{
-    return [NSString stringWithUTF8String:getprogname()];
-}
-
 #if TARGET_OS_IOS
 + (NSInteger)hasWatch
 {
