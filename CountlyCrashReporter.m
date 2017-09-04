@@ -16,6 +16,7 @@ NSString* const kCountlyExceptionUserInfoBacktraceKey = @"kCountlyExceptionUserI
 
 static NSMutableArray *customCrashLogs = nil;
 static NSString *buildUUID;
+static NSString *loadAddress;
 
 #if TARGET_OS_IOS
 
@@ -80,6 +81,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     crashReport[@"_app_version"] = CountlyDeviceInfo.appVersion;
     crashReport[@"_app_build"] = CountlyDeviceInfo.appBuild;
     crashReport[@"_build_uuid"] = buildUUID?:@"";
+    crashReport[@"_load_address"] = loadAddress?:@"";
     crashReport[@"_executable_name"] = [NSString stringWithUTF8String:getprogname()];
 
     crashReport[@"_name"] = exception.description;
@@ -110,32 +112,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     NSArray* stackArray = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
     if (!stackArray) stackArray = exception.callStackSymbols;
 
-    UInt64 loadAddress = 0;
-
-    NSMutableString* stackString = NSMutableString.string;
-    for (NSString* line in stackArray)
-    {
-        [stackString appendString:line];
-        [stackString appendString:@"\n"];
-
-        if (loadAddress == 0)
-        {
-            NSRegularExpression* regex = [NSRegularExpression regularExpressionWithPattern:@"\\s+\\s" options:0 error:nil];
-            NSString* trimmedLine = [regex stringByReplacingMatchesInString:line options:0 range:(NSRange){0,line.length} withTemplate:@" "];
-            NSArray* lineComponents = [trimmedLine componentsSeparatedByString:@" "];
-
-            if (lineComponents.count >= 3 && [lineComponents[1] isEqualToString:[NSString stringWithUTF8String:getprogname()]])
-            {
-                NSString* address = lineComponents[2];
-                NSString* offset = lineComponents.lastObject;
-                UInt64 length = strtoull(address.UTF8String, NULL, 16);
-                loadAddress = length - offset.integerValue;
-            }
-        }
-    }
-
-    crashReport[@"_load_address"] = [NSString stringWithFormat:@"0x%llx", loadAddress];
-    crashReport[@"_error"] = stackString;
+    crashReport[@"_error"] = [stackArray componentsJoinedByString:@"\n"];
 
     if (nonfatal)
     {
@@ -239,14 +216,16 @@ void CountlySignalHandler(int signalCode)
         NSString *imageName = [NSString stringWithUTF8String:imageNameChar].lastPathComponent;
         NSString *imageLoadAddress = [NSString stringWithFormat:@"0x%llX", (uint64_t)imageHeader];
 
-        //NOTE: For first version symbolication support where server needs only main app's build uuid in crash dictionary.
-        //      Make sure this method (`binaryImages`) is called before setting build uuid in crash dictionary.
+        //NOTE: For first version symbolication support where server needs only main app's build uuid and load address in crash dictionary.
+        //      Make sure this method (`binaryImages`) is called before setting build uuid and load address in crash dictionary.
+        //      It will be unnecessary when server supports symbolication for all binary images
         if (imageHeader->filetype == MH_EXECUTE)
         {
             buildUUID = imageUUID;
+            loadAddress = imageLoadAddress;
         }
 
-        binaryImages[imageName] = @{@"load_address": imageLoadAddress, @"uuid": imageUUID};
+        binaryImages[imageName] = @{@"la": imageLoadAddress, @"id": imageUUID};
     }
 
     return [NSDictionary dictionaryWithDictionary:binaryImages];
