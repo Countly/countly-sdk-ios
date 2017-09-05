@@ -6,6 +6,7 @@
 
 #import "CountlyCommon.h"
 #import <mach-o/dyld.h>
+#include <execinfo.h>
 
 @interface CountlyCrashReporter ()
 @end

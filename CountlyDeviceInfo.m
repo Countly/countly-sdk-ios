@@ -6,6 +6,16 @@
 
 #import "CountlyCommon.h"
 #import <mach-o/dyld.h>
+#import <mach/mach_host.h>
+#import <arpa/inet.h>
+#import <ifaddrs.h>
+#include <sys/types.h>
+#include <sys/sysctl.h>
+
+#if TARGET_OS_IOS
+#import <CoreTelephony/CTTelephonyNetworkInfo.h>
+#import <CoreTelephony/CTCarrier.h>
+#endif
 
 NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000000000";
 
@@ -167,12 +177,7 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
 + (NSString *)carrier
 {
 #if TARGET_OS_IOS
-    if (NSClassFromString(@"CTTelephonyNetworkInfo"))
-    {
-        CTTelephonyNetworkInfo *netinfo = [CTTelephonyNetworkInfo new];
-        CTCarrier *carrier = [netinfo subscriberCellularProvider];
-        return [carrier carrierName];
-    }
+    return CTTelephonyNetworkInfo.new.subscriberCellularProvider.carrierName;
 #endif
     return nil;
 }
