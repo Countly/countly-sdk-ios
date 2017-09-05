@@ -430,10 +430,16 @@
     [CountlyCrashReporter.sharedInstance recordHandledException:exception withStackTrace:stackTrace];
 }
 
-- (void)crashLog:(NSString *)log
+- (void)recordCrashLog:(NSString *)log
 {
     [CountlyCrashReporter.sharedInstance log:log];
 }
+
+- (void)crashLog:(NSString *)format, ...
+{
+    
+}
+
 #endif
 
 

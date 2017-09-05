@@ -227,10 +227,18 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Records custom logs to be delivered with crash report.
- * @discussion Logs recorded by `crashLog:` method are stored in a non-persistent structure, and delivered to server only in case of a crash.
+ * @discussion Logs recorded by this method are stored in a non-persistent structure, and delivered to server only in case of a crash.
  * @param log Custom log string to be recorded
  */
-- (void)crashLog:(NSString *)log;
+- (void)recordCrashLog:(NSString *)log;
+
+/**
+ * @c crashLog: method is deprecated. Please use @c recordCrashLog: method instead.
+ * @discussion While @c crashLog: method's parameter type is string format, new @c recordCrashLog: method's parameter type is plain NSString for better Swift compatibility. Please update your code accordingly.
+ * @discussion Calls to @c crashLog: method will have no effect.
+ */
+- (void)crashLog:(NSString *)format, ... NS_FORMAT_FUNCTION(1,2) DEPRECATED_MSG_ATTRIBUTE("Use 'recordCrashLog:' method instead!");
+
 #endif
 
 
