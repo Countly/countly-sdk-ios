@@ -17,7 +17,19 @@
 #import <CoreTelephony/CTCarrier.h>
 #endif
 
+NSString* const kCountlyMetricKeyDevice =            @"_device";
+NSString* const kCountlyMetricKeyOS =                @"_os";
+NSString* const kCountlyMetricKeyOSVersion =         @"_os_version";
+NSString* const kCountlyMetricKeyAppVersion =        @"_app_version";
+NSString* const kCountlyMetricKeyCarrier =           @"_carrier";
+NSString* const kCountlyMetricKeyResolution =        @"_resolution";
+NSString* const kCountlyMetricKeyDensity =           @"_density";
+NSString* const kCountlyMetricKeyLocale =            @"_locale";
+NSString* const kCountlyMetricKeyHasWatch =          @"_has_watch";
+NSString* const kCountlyMetricKeyInstalledWatchApp = @"_installed_watch_app";
+
 NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000000000";
+
 
 @implementation CountlyDeviceInfo
 
@@ -244,24 +256,24 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
 + (NSString *)metrics
 {
     NSMutableDictionary* metricsDictionary = NSMutableDictionary.new;
-    metricsDictionary[@"_device"] = CountlyDeviceInfo.device;
-    metricsDictionary[@"_os"] = CountlyDeviceInfo.osName;
-    metricsDictionary[@"_os_version"] = CountlyDeviceInfo.osVersion;
+    metricsDictionary[kCountlyMetricKeyDevice] = CountlyDeviceInfo.device;
+    metricsDictionary[kCountlyMetricKeyOS] = CountlyDeviceInfo.osName;
+    metricsDictionary[kCountlyMetricKeyOSVersion] = CountlyDeviceInfo.osVersion;
+    metricsDictionary[kCountlyMetricKeyAppVersion] = CountlyDeviceInfo.appVersion;
 
     NSString *carrier = CountlyDeviceInfo.carrier;
     if (carrier)
-        metricsDictionary[@"_carrier"] = carrier;
+        metricsDictionary[kCountlyMetricKeyCarrier] = carrier;
 
-    metricsDictionary[@"_resolution"] = CountlyDeviceInfo.resolution;
-    metricsDictionary[@"_density"] = CountlyDeviceInfo.density;
-    metricsDictionary[@"_locale"] = CountlyDeviceInfo.locale;
-    metricsDictionary[@"_app_version"] = CountlyDeviceInfo.appVersion;
+    metricsDictionary[kCountlyMetricKeyResolution] = CountlyDeviceInfo.resolution;
+    metricsDictionary[kCountlyMetricKeyDensity] = CountlyDeviceInfo.density;
+    metricsDictionary[kCountlyMetricKeyLocale] = CountlyDeviceInfo.locale;
 
 #if TARGET_OS_IOS
     if (CountlyCommon.sharedInstance.enableAppleWatch)
     {
-        metricsDictionary[@"_has_watch"] = @(CountlyDeviceInfo.hasWatch);
-        metricsDictionary[@"_installed_watch_app"] = @(CountlyDeviceInfo.installedWatchApp);
+        metricsDictionary[kCountlyMetricKeyHasWatch] = @(CountlyDeviceInfo.hasWatch);
+        metricsDictionary[kCountlyMetricKeyInstalledWatchApp] = @(CountlyDeviceInfo.installedWatchApp);
     }
 #endif
 
@@ -301,28 +313,24 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
                         connType = CLYConnectionCellNetwork;
 
 #if TARGET_OS_IOS
+                        CTTelephonyNetworkInfo *tni = CTTelephonyNetworkInfo.new;
+                        NSDictionary* connectionTypes =
+                        @{
+                            CTRadioAccessTechnologyGPRS:@(CLYConnectionCellNetwork2G),
+                            CTRadioAccessTechnologyEdge:@(CLYConnectionCellNetwork2G),
+                            CTRadioAccessTechnologyCDMA1x:@(CLYConnectionCellNetwork2G),
+                            CTRadioAccessTechnologyWCDMA:@(CLYConnectionCellNetwork3G),
+                            CTRadioAccessTechnologyHSDPA:@(CLYConnectionCellNetwork3G),
+                            CTRadioAccessTechnologyHSUPA:@(CLYConnectionCellNetwork3G),
+                            CTRadioAccessTechnologyCDMAEVDORev0:@(CLYConnectionCellNetwork3G),
+                            CTRadioAccessTechnologyCDMAEVDORevA:@(CLYConnectionCellNetwork3G),
+                            CTRadioAccessTechnologyCDMAEVDORevB:@(CLYConnectionCellNetwork3G),
+                            CTRadioAccessTechnologyeHRPD:@(CLYConnectionCellNetwork3G),
+                            CTRadioAccessTechnologyLTE:@(CLYConnectionCellNetworkLTE)
+                        };
 
-                        if (NSFoundationVersionNumber >= NSFoundationVersionNumber_iOS_7_0)
-                        {
-                            CTTelephonyNetworkInfo *tni = CTTelephonyNetworkInfo.new;
-                            NSDictionary* connectionTypes =
-                            @{
-                                CTRadioAccessTechnologyGPRS:@(CLYConnectionCellNetwork2G),
-                                CTRadioAccessTechnologyEdge:@(CLYConnectionCellNetwork2G),
-                                CTRadioAccessTechnologyCDMA1x:@(CLYConnectionCellNetwork2G),
-                                CTRadioAccessTechnologyWCDMA:@(CLYConnectionCellNetwork3G),
-                                CTRadioAccessTechnologyHSDPA:@(CLYConnectionCellNetwork3G),
-                                CTRadioAccessTechnologyHSUPA:@(CLYConnectionCellNetwork3G),
-                                CTRadioAccessTechnologyCDMAEVDORev0:@(CLYConnectionCellNetwork3G),
-                                CTRadioAccessTechnologyCDMAEVDORevA:@(CLYConnectionCellNetwork3G),
-                                CTRadioAccessTechnologyCDMAEVDORevB:@(CLYConnectionCellNetwork3G),
-                                CTRadioAccessTechnologyeHRPD:@(CLYConnectionCellNetwork3G),
-                                CTRadioAccessTechnologyLTE:@(CLYConnectionCellNetworkLTE)
-                            };
-
-                            if (connectionTypes[tni.currentRadioAccessTechnology])
-                                connType = [connectionTypes[tni.currentRadioAccessTechnology] integerValue];
-                        }
+                        if (connectionTypes[tni.currentRadioAccessTechnology])
+                            connType = [connectionTypes[tni.currentRadioAccessTechnology] integerValue];
 #endif
                     }
                     else if ([[NSString stringWithUTF8String:i->ifa_name] isEqualToString:@"en0"])
