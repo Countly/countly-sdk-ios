@@ -126,13 +126,6 @@ extern NSString* const kCountlyLocalPicturePath;
  */
 + (instancetype)sharedInstance;
 
-/**
- * @c recordUserDetails method is deprecated. Please use @c save method instead.
- * @discussion Currently all calls to @c recordUserDetails method is redirected to @c save method automatically.
- * @discussion But it is strongly recommended to replace it with @c save method.
- */
-- (void)recordUserDetails DEPRECATED_MSG_ATTRIBUTE("Use 'save' method instead!");
-
 #pragma mark -
 
 /**

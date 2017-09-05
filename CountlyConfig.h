@@ -11,7 +11,6 @@ NS_ASSUME_NONNULL_BEGIN
 //NOTE: Countly features
 #if TARGET_OS_IOS
 extern NSString* const CLYPushNotifications;
-    extern NSString* const CLYMessaging DEPRECATED_MSG_ATTRIBUTE("Use CLYPushNotifications instead!");
 extern NSString* const CLYCrashReporting;
 extern NSString* const CLYAutoViewTracking;
 #elif TARGET_OS_TV
@@ -26,7 +25,7 @@ extern NSString* const CLYAutoViewTracking;
 extern NSString* const CLYIDFV;
 extern NSString* const CLYIDFA DEPRECATED_MSG_ATTRIBUTE("Use CLYIDFV instead!");
 extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use CLYIDFV instead!");
-#elif (!(TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_WATCH))
+#elif TARGET_OS_OSX
 extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device ID instead!");
 #endif
 

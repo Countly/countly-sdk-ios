@@ -32,11 +32,6 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
     return self;
 }
 
-- (void)recordUserDetails
-{
-    [self save];
-}
-
 - (NSString *)serializedUserDetails
 {
     NSMutableDictionary* userDictionary = NSMutableDictionary.new;
