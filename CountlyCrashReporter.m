@@ -12,6 +12,38 @@
 
 NSString* const kCountlyExceptionUserInfoBacktraceKey = @"kCountlyExceptionUserInfoBacktraceKey";
 
+NSString* const kCountlyCRKeyBinaryImages =     @"_binary_images";
+NSString* const kCountlyCRKeyOS =               @"_os";
+NSString* const kCountlyCRKeyOSVersion =        @"_os_version";
+NSString* const kCountlyCRKeyDevice =           @"_device";
+NSString* const kCountlyCRKeyArchitecture =     @"_architecture";
+NSString* const kCountlyCRKeyResolution =       @"_resolution";
+NSString* const kCountlyCRKeyAppVersion =       @"_app_version";
+NSString* const kCountlyCRKeyAppBuild =         @"_app_build";
+NSString* const kCountlyCRKeyBuildUUID =        @"_build_uuid";
+NSString* const kCountlyCRKeyLoadAddress =      @"_load_address";
+NSString* const kCountlyCRKeyExecutableName =   @"_executable_name";
+NSString* const kCountlyCRKeyName =             @"_name";
+NSString* const kCountlyCRKeyType =             @"_type";
+NSString* const kCountlyCRKeyError =            @"_error";
+NSString* const kCountlyCRKeyNonfatal =         @"_nonfatal";
+NSString* const kCountlyCRKeyRAMCurrent =       @"_ram_current";
+NSString* const kCountlyCRKeyRAMTotal =         @"_ram_total";
+NSString* const kCountlyCRKeyDiskCurrent =      @"_disk_current";
+NSString* const kCountlyCRKeyDiskTotal =        @"_disk_total";
+NSString* const kCountlyCRKeyBattery =          @"_bat";
+NSString* const kCountlyCRKeyOrientation =      @"_orientation";
+NSString* const kCountlyCRKeyOnline =           @"_online";
+NSString* const kCountlyCRKeyOpenGL =           @"_opengl";
+NSString* const kCountlyCRKeyRoot =             @"_root";
+NSString* const kCountlyCRKeyBackground =       @"_background";
+NSString* const kCountlyCRKeyRun =              @"_run";
+NSString* const kCountlyCRKeyCustom =           @"_custom";
+NSString* const kCountlyCRKeyLogs =             @"_logs";
+NSString* const kCountlyCRKeySignalCode =       @"signal_code";
+NSString* const kCountlyCRKeyImageLoadAddress = @"la";
+NSString* const kCountlyCRKeyImageBuildUUID =   @"id";
+
 @implementation CountlyCrashReporter
 
 static NSMutableArray *customCrashLogs = nil;
@@ -71,48 +103,42 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
 {
     NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
 
-    crashReport[@"_binary_images"] = [CountlyCrashReporter.sharedInstance binaryImages];
-
-    crashReport[@"_os"] = CountlyDeviceInfo.osName;
-    crashReport[@"_os_version"] = CountlyDeviceInfo.osVersion;
-    crashReport[@"_device"] = CountlyDeviceInfo.device;
-    crashReport[@"_architecture"] = CountlyDeviceInfo.architecture;
-    crashReport[@"_resolution"] = CountlyDeviceInfo.resolution;
-    crashReport[@"_app_version"] = CountlyDeviceInfo.appVersion;
-    crashReport[@"_app_build"] = CountlyDeviceInfo.appBuild;
-    crashReport[@"_build_uuid"] = buildUUID?:@"";
-    crashReport[@"_load_address"] = loadAddress?:@"";
-    crashReport[@"_executable_name"] = [NSString stringWithUTF8String:getprogname()];
-
-    crashReport[@"_name"] = exception.description;
-    crashReport[@"_type"] = exception.name;
-    crashReport[@"_nonfatal"] = @(nonfatal);
-
-
-    crashReport[@"_ram_current"] = @((CountlyDeviceInfo.totalRAM-CountlyDeviceInfo.freeRAM)/1048576);
-    crashReport[@"_ram_total"] = @(CountlyDeviceInfo.totalRAM/1048576);
-    crashReport[@"_disk_current"] = @((CountlyDeviceInfo.totalDisk-CountlyDeviceInfo.freeDisk)/1048576);
-    crashReport[@"_disk_total"] = @(CountlyDeviceInfo.totalDisk/1048576);
-
-
-    crashReport[@"_bat"] = @(CountlyDeviceInfo.batteryLevel);
-    crashReport[@"_orientation"] = CountlyDeviceInfo.orientation;
-    crashReport[@"_online"] = @((CountlyDeviceInfo.connectionType)? 1 : 0 );
-    crashReport[@"_opengl"] = @(CountlyDeviceInfo.OpenGLESversion);
-    crashReport[@"_root"] = @(CountlyDeviceInfo.isJailbroken);
-    crashReport[@"_background"] = @(CountlyDeviceInfo.isInBackground);
-    crashReport[@"_run"] = @(CountlyCommon.sharedInstance.timeSinceLaunch);
+    crashReport[kCountlyCRKeyBinaryImages] = [CountlyCrashReporter.sharedInstance binaryImages];
+    crashReport[kCountlyCRKeyOS] = CountlyDeviceInfo.osName;
+    crashReport[kCountlyCRKeyOSVersion] = CountlyDeviceInfo.osVersion;
+    crashReport[kCountlyCRKeyDevice] = CountlyDeviceInfo.device;
+    crashReport[kCountlyCRKeyArchitecture] = CountlyDeviceInfo.architecture;
+    crashReport[kCountlyCRKeyResolution] = CountlyDeviceInfo.resolution;
+    crashReport[kCountlyCRKeyAppVersion] = CountlyDeviceInfo.appVersion;
+    crashReport[kCountlyCRKeyAppBuild] = CountlyDeviceInfo.appBuild;
+    crashReport[kCountlyCRKeyBuildUUID] = buildUUID?:@"";
+    crashReport[kCountlyCRKeyLoadAddress] = loadAddress?:@"";
+    crashReport[kCountlyCRKeyExecutableName] = [NSString stringWithUTF8String:getprogname()];
+    crashReport[kCountlyCRKeyName] = exception.description;
+    crashReport[kCountlyCRKeyType] = exception.name;
+    crashReport[kCountlyCRKeyNonfatal] = @(nonfatal);
+    crashReport[kCountlyCRKeyRAMCurrent] = @((CountlyDeviceInfo.totalRAM-CountlyDeviceInfo.freeRAM)/1048576);
+    crashReport[kCountlyCRKeyRAMTotal] = @(CountlyDeviceInfo.totalRAM/1048576);
+    crashReport[kCountlyCRKeyDiskCurrent] = @((CountlyDeviceInfo.totalDisk-CountlyDeviceInfo.freeDisk)/1048576);
+    crashReport[kCountlyCRKeyDiskTotal] = @(CountlyDeviceInfo.totalDisk/1048576);
+    crashReport[kCountlyCRKeyBattery] = @(CountlyDeviceInfo.batteryLevel);
+    crashReport[kCountlyCRKeyOrientation] = CountlyDeviceInfo.orientation;
+    crashReport[kCountlyCRKeyOnline] = @((CountlyDeviceInfo.connectionType)? 1 : 0 );
+    crashReport[kCountlyCRKeyOpenGL] = @(CountlyDeviceInfo.OpenGLESversion);
+    crashReport[kCountlyCRKeyRoot] = @(CountlyDeviceInfo.isJailbroken);
+    crashReport[kCountlyCRKeyBackground] = @(CountlyDeviceInfo.isInBackground);
+    crashReport[kCountlyCRKeyRun] = @(CountlyCommon.sharedInstance.timeSinceLaunch);
 
     if (CountlyCrashReporter.sharedInstance.crashSegmentation)
-        crashReport[@"_custom"] = CountlyCrashReporter.sharedInstance.crashSegmentation;
+        crashReport[kCountlyCRKeyCustom] = CountlyCrashReporter.sharedInstance.crashSegmentation;
 
     if (customCrashLogs)
-        crashReport[@"_logs"] = [customCrashLogs componentsJoinedByString:@"\n"];
+        crashReport[kCountlyCRKeyLogs] = [customCrashLogs componentsJoinedByString:@"\n"];
 
     NSArray* stackArray = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
     if (!stackArray) stackArray = exception.callStackSymbols;
 
-    crashReport[@"_error"] = [stackArray componentsJoinedByString:@"\n"];
+    crashReport[kCountlyCRKeyError] = [stackArray componentsJoinedByString:@"\n"];
 
     if (nonfatal)
     {
@@ -146,7 +172,7 @@ void CountlySignalHandler(int signalCode)
 
     free(lines);
 
-    NSMutableDictionary *userInfo = @{@"signal_code":@(signalCode)}.mutableCopy;
+    NSMutableDictionary *userInfo = @{kCountlyCRKeySignalCode:@(signalCode)}.mutableCopy;
     userInfo[kCountlyExceptionUserInfoBacktraceKey] = backtrace;
     NSString *reason = [NSString stringWithFormat:@"App terminated by SIG%@", [NSString stringWithUTF8String:sys_signame[signalCode]].uppercaseString];
     NSException *e = [NSException exceptionWithName:@"Fatal Signal" reason:reason userInfo:userInfo];
@@ -216,7 +242,7 @@ void CountlySignalHandler(int signalCode)
         NSString *imageName = [NSString stringWithUTF8String:imageNameChar].lastPathComponent;
         NSString *imageLoadAddress = [NSString stringWithFormat:@"0x%llX", (uint64_t)imageHeader];
 
-        //NOTE: For first version symbolication support where server needs only main app's build uuid and load address in crash dictionary.
+        //NOTE: For first version symbolication support, server needs main app's build uuid and load address in crash dictionary.
         //      Make sure this method (`binaryImages`) is called before setting build uuid and load address in crash dictionary.
         //      It will be unnecessary when server supports symbolication for all binary images
         if (imageHeader->filetype == MH_EXECUTE)
@@ -225,7 +251,7 @@ void CountlySignalHandler(int signalCode)
             loadAddress = imageLoadAddress;
         }
 
-        binaryImages[imageName] = @{@"la": imageLoadAddress, @"id": imageUUID};
+        binaryImages[imageName] = @{kCountlyCRKeyImageLoadAddress: imageLoadAddress, kCountlyCRKeyImageBuildUUID: imageUUID};
     }
 
     return [NSDictionary dictionaryWithDictionary:binaryImages];
