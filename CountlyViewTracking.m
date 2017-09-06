@@ -14,6 +14,11 @@
 
 NSString* const kCountlyReservedEventView = @"[CLY]_view";
 
+NSString* const kCountlyVTKeyName =     @"name";
+NSString* const kCountlyVTKeySegment =  @"segment";
+NSString* const kCountlyVTKeyVisit =    @"visit";
+NSString* const kCountlyVTKeyStart =    @"start";
+
 @implementation CountlyViewTracking
 
 + (instancetype)sharedInstance
@@ -84,13 +89,13 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
 
     NSMutableDictionary* segmentation =
     @{
-        @"name": viewName,
-        @"segment": CountlyDeviceInfo.osName,
-        @"visit": @1
+        kCountlyVTKeyName: viewName,
+        kCountlyVTKeySegment: CountlyDeviceInfo.osName,
+        kCountlyVTKeyVisit: @1
     }.mutableCopy;
 
     if (!self.lastView)
-        segmentation[@"start"] = @1;
+        segmentation[kCountlyVTKeyStart] = @1;
 
     [Countly.sharedInstance recordEvent:kCountlyReservedEventView segmentation:segmentation];
 
@@ -104,8 +109,8 @@ NSString* const kCountlyReservedEventView = @"[CLY]_view";
     {
         NSDictionary* segmentation =
         @{
-            @"name": self.lastView,
-            @"segment": CountlyDeviceInfo.osName,
+            kCountlyVTKeyName: self.lastView,
+            kCountlyVTKeySegment: CountlyDeviceInfo.osName,
         };
 
         NSTimeInterval duration = NSDate.date.timeIntervalSince1970 - self.lastViewStartTime + self.accumulatedTime;
