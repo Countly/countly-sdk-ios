@@ -90,7 +90,7 @@ NSString* const kCountlyPNKeyActionButtonURL =       @"l";
             {
                 COUNTLY_EXT_LOG(@"attachment download completed!");
 
-                NSString* attachmentFileName = [NSString stringWithFormat:@"%@-%@", notificationID, response.suggestedFilename? response.suggestedFilename:response.URL.absoluteString.lastPathComponent];
+                NSString* attachmentFileName = [NSString stringWithFormat:@"%@-%@", notificationID, response.suggestedFilename ?: response.URL.absoluteString.lastPathComponent];
 
                 NSString* tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:attachmentFileName];
 

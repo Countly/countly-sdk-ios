@@ -112,8 +112,8 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     crashReport[kCountlyCRKeyResolution] = CountlyDeviceInfo.resolution;
     crashReport[kCountlyCRKeyAppVersion] = CountlyDeviceInfo.appVersion;
     crashReport[kCountlyCRKeyAppBuild] = CountlyDeviceInfo.appBuild;
-    crashReport[kCountlyCRKeyBuildUUID] = buildUUID?:@"";
-    crashReport[kCountlyCRKeyLoadAddress] = loadAddress?:@"";
+    crashReport[kCountlyCRKeyBuildUUID] = buildUUID ?: @"";
+    crashReport[kCountlyCRKeyLoadAddress] = loadAddress ?: @"";
     crashReport[kCountlyCRKeyExecutableName] = [NSString stringWithUTF8String:getprogname()];
     crashReport[kCountlyCRKeyName] = exception.description;
     crashReport[kCountlyCRKeyType] = exception.name;
@@ -124,7 +124,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     crashReport[kCountlyCRKeyDiskTotal] = @(CountlyDeviceInfo.totalDisk/1048576);
     crashReport[kCountlyCRKeyBattery] = @(CountlyDeviceInfo.batteryLevel);
     crashReport[kCountlyCRKeyOrientation] = CountlyDeviceInfo.orientation;
-    crashReport[kCountlyCRKeyOnline] = @((CountlyDeviceInfo.connectionType)? 1 : 0 );
+    crashReport[kCountlyCRKeyOnline] = @((CountlyDeviceInfo.connectionType) ? 1 : 0 );
     crashReport[kCountlyCRKeyOpenGL] = @(CountlyDeviceInfo.OpenGLESversion);
     crashReport[kCountlyCRKeyRoot] = @(CountlyDeviceInfo.isJailbroken);
     crashReport[kCountlyCRKeyBackground] = @(CountlyDeviceInfo.isInBackground);

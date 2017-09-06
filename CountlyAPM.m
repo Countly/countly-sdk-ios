@@ -141,7 +141,7 @@
 - (instancetype)Countly_initWithRequest:(NSURLRequest *)request delegate:(id)delegate
 {
     CountlyAPMNetworkLog* nl = [CountlyAPMNetworkLog logWithRequest:request andOriginalDelegate:delegate startNow:YES];
-    NSURLConnection* conn = [self Countly_initWithRequest:request delegate:(nl ? nl : delegate) startImmediately:YES];
+    NSURLConnection* conn = [self Countly_initWithRequest:request delegate:(nl ?: delegate) startImmediately:YES];
     conn.APMNetworkLog = nl;
 
     return conn;
@@ -150,7 +150,7 @@
 - (instancetype)Countly_initWithRequest:(NSURLRequest *)request delegate:(id)delegate startImmediately:(BOOL)startImmediately
 {
     CountlyAPMNetworkLog* nl = [CountlyAPMNetworkLog logWithRequest:request andOriginalDelegate:delegate startNow:startImmediately];
-    NSURLConnection* conn = [self Countly_initWithRequest:request delegate:(nl ? nl : delegate) startImmediately:startImmediately];
+    NSURLConnection* conn = [self Countly_initWithRequest:request delegate:(nl ?: delegate) startImmediately:startImmediately];
     conn.APMNetworkLog = nl;
 
     return conn;
