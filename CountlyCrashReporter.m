@@ -8,9 +8,6 @@
 #import <mach-o/dyld.h>
 #include <execinfo.h>
 
-@interface CountlyCrashReporter ()
-@end
-
 NSString* const kCountlyExceptionUserInfoBacktraceKey = @"kCountlyExceptionUserInfoBacktraceKey";
 
 NSString* const kCountlyCRKeyBinaryImages =     @"_binary_images";
@@ -161,14 +158,13 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
 
 void CountlySignalHandler(int signalCode)
 {
-    void* callstack[128];
-    NSInteger frames = backtrace(callstack, 128);
-    char **lines = backtrace_symbols(callstack, (int)frames);
+    const NSInteger kCountlyStackFramesMax = 128;
+    void *stack[kCountlyStackFramesMax];
+    NSInteger frameCount = backtrace(stack, kCountlyStackFramesMax);
+    char **lines = backtrace_symbols(stack, (int)frameCount);
 
-    const NSInteger startOffset = 1;
-    NSMutableArray *backtrace = [NSMutableArray arrayWithCapacity:frames];
-
-    for (NSInteger i = startOffset; i < frames; i++)
+    NSMutableArray *backtrace = [NSMutableArray arrayWithCapacity:frameCount];
+    for (NSInteger i = 1; i < frameCount; i++)
         [backtrace addObject:[NSString stringWithUTF8String:lines[i]]];
 
     free(lines);
