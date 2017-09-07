@@ -93,10 +93,9 @@ NSString* const kCountlyInputEndpoint = @"/i";
 
     if (self.applyZeroIDFAFix)
     {
-        NSString* deviceIDQueryString = [NSString stringWithFormat:@"&%@=", kCountlyQSKeyDeviceID];
-        NSString* deviceIDZeroIDFA = [deviceIDQueryString stringByAppendingString:kCountlyZeroIDFA];
-        NSString* deviceIDZeroIDFAOld = [deviceIDZeroIDFA stringByReplacingOccurrencesOfString:kCountlyQSKeyDeviceID withString:kCountlyQSKeyDeviceIDOld];
-        NSString* deviceIDFixed = [deviceIDQueryString stringByAppendingString:CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped];
+        NSString* deviceIDZeroIDFA = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, kCountlyZeroIDFA];
+        NSString* oldDeviceIDZeroIDFA = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceIDOld, kCountlyZeroIDFA];
+        NSString* deviceIDFixed = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped];
 
         if ([queryString containsString:deviceIDZeroIDFA])
         {
@@ -105,7 +104,7 @@ NSString* const kCountlyInputEndpoint = @"/i";
             queryString = [queryString stringByReplacingOccurrencesOfString:deviceIDZeroIDFA withString:deviceIDFixed];
         }
 
-        if ([queryString containsString:deviceIDZeroIDFAOld])
+        if ([queryString containsString:oldDeviceIDZeroIDFA])
         {
             COUNTLY_LOG(@"Detected a request with zero-IDFA in queue and removed.");
 
