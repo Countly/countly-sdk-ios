@@ -6,6 +6,8 @@
 
 #import <Foundation/Foundation.h>
 
+extern NSString* const kCountlyZeroIDFA;
+
 @interface CountlyDeviceInfo : NSObject
 
 @property (nonatomic, strong) NSString *deviceID;

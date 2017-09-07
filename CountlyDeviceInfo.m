@@ -17,6 +17,8 @@
 #import <CoreTelephony/CTCarrier.h>
 #endif
 
+NSString* const kCountlyZeroIDFA = @"00000000-0000-0000-0000-000000000000";
+
 NSString* const kCountlyMetricKeyDevice =            @"_device";
 NSString* const kCountlyMetricKeyOS =                @"_os";
 NSString* const kCountlyMetricKeyOSVersion =         @"_os_version";
@@ -27,9 +29,6 @@ NSString* const kCountlyMetricKeyDensity =           @"_density";
 NSString* const kCountlyMetricKeyLocale =            @"_locale";
 NSString* const kCountlyMetricKeyHasWatch =          @"_has_watch";
 NSString* const kCountlyMetricKeyInstalledWatchApp = @"_installed_watch_app";
-
-NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000000000";
-
 
 @implementation CountlyDeviceInfo
 
@@ -48,7 +47,7 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
         self.deviceID = [CountlyPersistency.sharedInstance retrieveStoredDeviceID];
 #if TARGET_OS_IOS
         //NOTE: For Limit Ad Tracking zero-IDFA problem
-        if ([self.deviceID isEqualToString:kCountlyLimitAdTrackingZeroID])
+        if ([self.deviceID isEqualToString:kCountlyZeroIDFA])
             [self initializeDeviceID:CLYIDFV];
 #endif
     }
@@ -106,7 +105,7 @@ NSString* const kCountlyLimitAdTrackingZeroID = @"00000000-0000-0000-0000-000000
 #if TARGET_OS_IOS
     NSString* IDFA = ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
     //NOTE: For Limit Ad Tracking zero-IDFA problem
-    if ([IDFA isEqualToString:kCountlyLimitAdTrackingZeroID])
+    if ([IDFA isEqualToString:kCountlyZeroIDFA])
         IDFA = UIDevice.currentDevice.identifierForVendor.UUIDString;
 
     return IDFA;
