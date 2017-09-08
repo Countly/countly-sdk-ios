@@ -164,7 +164,7 @@ const float kCountlyStarRatingButtonSize = 40;
         if (btn_star[i] == sender)
         {
             color = [self passiveStarColor];
-            rating = i+1;
+            rating = i + 1;
         }
     }
 

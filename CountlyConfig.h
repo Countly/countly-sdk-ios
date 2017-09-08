@@ -56,7 +56,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 #pragma mark -
 
 /**
- * For manually marking a device as test device for @c CLYPushNotifications feature. 
+ * For manually marking a device as test device for @c CLYPushNotifications feature.
  * @discussion Test push notifications can be sent to test devices by selecting "Development & test users only" on "Create Push Notification" section on Countly Server.
  */
 @property (nonatomic) BOOL isTestDevice;
@@ -99,7 +99,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 @property (nonatomic) NSTimeInterval updateSessionPeriod;
 
 /**
- * Event send threshold is used for sending queued events to server when number of recorded events reaches to it, without waiting for next update session defined by @c updateSessionPeriod. 
+ * Event send threshold is used for sending queued events to server when number of recorded events reaches to it, without waiting for next update session defined by @c updateSessionPeriod.
  * @discussion If not set, it will be 10 for @c iOS, @c tvOS & @c OSX, and 3 for @c watchOS by default.
  */
 @property (nonatomic) NSUInteger eventSendThreshold;
@@ -151,7 +151,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 @property (nonatomic, strong) NSDictionary* crashSegmentation;
 
 /**
- * ISO Country Code can be specified in ISO 3166-1 alpha-2 format to be used for advanced segmentation. 
+ * ISO Country Code can be specified in ISO 3166-1 alpha-2 format to be used for advanced segmentation.
  * @discussion It will be sent with @c begin_session request only.
  */
 @property (nonatomic, strong) NSString* ISOCountryCode;

@@ -151,7 +151,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
 
 /**
- * Starts a timed event with given key to be ended later. Duration of timed event will be calculated on ending. 
+ * Starts a timed event with given key to be ended later. Duration of timed event will be calculated on ending.
  * @discussion Trying to start an event with already started key will have no effect.
  * @param key Event key
  */
@@ -165,7 +165,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)endEvent:(NSString *)key;
 
 /**
- * Ends a previously started timed event with given key, segmentation, count and sum. 
+ * Ends a previously started timed event with given key, segmentation, count and sum.
  * @discussion Trying to end an event with already ended (or not yet started) key will have no effect.
  * @param key Event key
  * @param segmentation Segmentation key-value pairs of event
@@ -262,7 +262,7 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - Countly AutoViewTracking
 
 /**
- * Reports a visited view with given name manually. 
+ * Reports a visited view with given name manually.
  * @discussion If auto ViewTracking feature is activated on initial configuration, this method does not need to be called manually.
  * @param viewName Name of the view visited
  */

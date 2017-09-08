@@ -66,7 +66,7 @@ void CountlyInternalLog(NSString *format, ...)
 - (NSInteger)dayOfWeek
 {
     NSDateComponents* components = [gregorianCalendar components:NSCalendarUnitWeekday fromDate:NSDate.date];
-    return components.weekday-1;
+    return components.weekday - 1;
 }
 
 - (NSInteger)timeZone
@@ -84,7 +84,7 @@ void CountlyInternalLog(NSString *format, ...)
     long long now = floor(NSDate.date.timeIntervalSince1970 * 1000);
 
     if (now <= self.lastTimestamp)
-        self.lastTimestamp ++;
+        self.lastTimestamp++;
     else
         self.lastTimestamp = now;
 
