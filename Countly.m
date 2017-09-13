@@ -337,6 +337,9 @@
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration timestamp:(NSTimeInterval)timestamp
 {
+    if (key.length == 0)
+        return;
+
     CountlyEvent *event = CountlyEvent.new;
     event.key = key;
     event.segmentation = segmentation;
