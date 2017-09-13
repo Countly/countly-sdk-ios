@@ -20,7 +20,7 @@ countly_fail () { countly_log "$1"; exit 0; }
 
 # Pre-checks
 if [ "$#" -ne 2 ]; then
-    countly_fail "Provide host and app key for automatic DSYM upload!"
+    countly_fail "Provide host and app key for automatic dSYM upload!"
 fi
 
 if [ ! "$DWARF_DSYM_FOLDER_PATH" ] || [ ! "$DWARF_DSYM_FILE_NAME" ]; then
@@ -62,11 +62,11 @@ countly_log "Uploading to $URL"
 
 
 # Uploading to server using curl
-UPLOAD_RESULT=$(curl -v -F "symbols=@$DSYM_ZIP_PATH" $URL)
+UPLOAD_RESULT=$(curl -F "symbols=@$DSYM_ZIP_PATH" $URL)
 if [ $? -eq 0 ] && [ "$UPLOAD_RESULT" == "{\"result\":\"Success\"}" ]; then
-    countly_log "DSYM upload succesfully completed."
+    countly_log "dSYM upload succesfully completed."
 else
-    countly_fail "DSYM upload failed!"
+    countly_fail "dSYM upload failed!"
 fi
 
 
