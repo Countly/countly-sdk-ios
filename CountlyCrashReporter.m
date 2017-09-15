@@ -46,7 +46,7 @@ NSString* const kCountlyCRKeyImageBuildUUID =   @"id";
 
 static NSMutableArray *customCrashLogs = nil;
 static NSString *buildUUID;
-static NSString *loadAddress;
+static NSString *executableName;
 
 #if TARGET_OS_IOS
 
@@ -101,7 +101,10 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
 {
     NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
 
-    crashReport[kCountlyCRKeyBinaryImages] = [CountlyCrashReporter.sharedInstance binaryImages];
+    NSArray* stackTrace = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
+    if (!stackTrace) stackTrace = exception.callStackSymbols;
+
+    crashReport[kCountlyCRKeyBinaryImages] = [CountlyCrashReporter.sharedInstance binaryImagesForStackTrace:stackTrace];
     crashReport[kCountlyCRKeyOS] = CountlyDeviceInfo.osName;
     crashReport[kCountlyCRKeyOSVersion] = CountlyDeviceInfo.osVersion;
     crashReport[kCountlyCRKeyDevice] = CountlyDeviceInfo.device;
@@ -110,8 +113,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     crashReport[kCountlyCRKeyAppVersion] = CountlyDeviceInfo.appVersion;
     crashReport[kCountlyCRKeyAppBuild] = CountlyDeviceInfo.appBuild;
     crashReport[kCountlyCRKeyBuildUUID] = buildUUID ?: @"";
-    crashReport[kCountlyCRKeyLoadAddress] = loadAddress ?: @"";
-    crashReport[kCountlyCRKeyExecutableName] = [NSString stringWithUTF8String:getprogname()];
+    crashReport[kCountlyCRKeyExecutableName] = executableName ?: @"";
     crashReport[kCountlyCRKeyName] = exception.description;
     crashReport[kCountlyCRKeyType] = exception.name;
     crashReport[kCountlyCRKeyNonfatal] = @(nonfatal);
@@ -133,10 +135,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     if (customCrashLogs)
         crashReport[kCountlyCRKeyLogs] = [customCrashLogs componentsJoinedByString:@"\n"];
 
-    NSArray* stackArray = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
-    if (!stackArray) stackArray = exception.callStackSymbols;
-
-    crashReport[kCountlyCRKeyError] = [stackArray componentsJoinedByString:@"\n"];
+    crashReport[kCountlyCRKeyError] = [stackTrace componentsJoinedByString:@"\n"];
 
     if (nonfatal)
     {
@@ -192,13 +191,39 @@ void CountlySignalHandler(int signalCode)
     [customCrashLogs addObject:logWithDateTime];
 }
 
-- (NSDictionary *)binaryImages
+- (NSDictionary *)binaryImagesForStackTrace:(NSArray *)stackTrace
 {
+    NSMutableSet* binaryImagesInStack = NSMutableSet.new;
+    for (NSString* line in stackTrace)
+    {
+        NSRegularExpression* regex = [NSRegularExpression regularExpressionWithPattern:@"\\s+\\s" options:0 error:nil];
+        NSString* trimmedLine = [regex stringByReplacingMatchesInString:line options:0 range:(NSRange){0,line.length} withTemplate:@" "];
+        NSArray* lineComponents = [trimmedLine componentsSeparatedByString:@" "];
+        if (lineComponents.count > 1)
+            [binaryImagesInStack addObject:lineComponents[1]];
+    }
+
     NSMutableDictionary* binaryImages = NSMutableDictionary.new;
 
     uint32_t imageCount = _dyld_image_count();
     for (uint32_t i = 0; i < imageCount; i++)
     {
+        const char *imageNameChar = _dyld_get_image_name(i);
+        if (imageNameChar == NULL)
+        {
+            COUNTLY_LOG(@"Image Name can not be retrieved!");
+            continue;
+        }
+
+        NSString *imageName = [NSString stringWithUTF8String:imageNameChar].lastPathComponent;
+
+        if (![binaryImagesInStack containsObject:imageName])
+        {
+            COUNTLY_LOG(@"Image Name is not in stack trace, so it is not needed!");
+            continue;
+        }
+
+
         const struct mach_header *imageHeader = _dyld_get_image_header(i);
         if (imageHeader == NULL)
         {
@@ -229,24 +254,14 @@ void CountlySignalHandler(int signalCode)
             continue;
         }
 
-        const char *imageNameChar = _dyld_get_image_name(i);
-        if (imageNameChar == NULL)
-        {
-            COUNTLY_LOG(@"Image Name can not be retrieved!");
-            continue;
-        }
-
-        NSString *imageName = [NSString stringWithUTF8String:imageNameChar].lastPathComponent;
-        NSString *imageLoadAddress = [NSString stringWithFormat:@"0x%llX", (uint64_t)imageHeader];
-
-        //NOTE: For first version symbolication support, server needs main app's build uuid and load address in crash dictionary.
-        //      Make sure this method (`binaryImages`) is called before setting build uuid and load address in crash dictionary.
-        //      It will be unnecessary when server supports symbolication for all binary images
+        //NOTE: Server needs app's own build uuid directly in crash report object, for fast lookup
         if (imageHeader->filetype == MH_EXECUTE)
         {
             buildUUID = imageUUID;
-            loadAddress = imageLoadAddress;
+            executableName = imageName;
         }
+
+        NSString *imageLoadAddress = [NSString stringWithFormat:@"0x%llX", (uint64_t)imageHeader];
 
         binaryImages[imageName] = @{kCountlyCRKeyImageLoadAddress: imageLoadAddress, kCountlyCRKeyImageBuildUUID: imageUUID};
     }
