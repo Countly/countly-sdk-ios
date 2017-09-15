@@ -4,7 +4,7 @@
 //
 // Please visit www.count.ly for more information.
 
-#import "CountlyCommon.h"
+#import "CountlyNotificationService.h"
 
 #if DEBUG
 #define COUNTLY_EXT_LOG(fmt, ...) NSLog([@"%@ " stringByAppendingString:fmt], @"[CountlyNSE]", ##__VA_ARGS__)
@@ -57,7 +57,7 @@ NSString* const kCountlyPNKeyActionButtonURL =       @"l";
     {
         COUNTLY_EXT_LOG(@"custom action buttons found: %d", (int)buttons.count);
 
-        NSMutableArray * actions = @[].mutableCopy;
+        NSMutableArray* actions = NSMutableArray.new;
 
         [buttons enumerateObjectsUsingBlock:^(NSDictionary* button, NSUInteger idx, BOOL * stop)
         {
