@@ -292,7 +292,7 @@ static int const kOpenUDIDRedundancySlots = 100;
     if (availableSlotPBid!=nil && (myRedundancySlotPBid==nil || [availableSlotPBid isEqualToString:myRedundancySlotPBid])) {
 #if TARGET_OS_IPHONE || TARGET_IPHONE_SIMULATOR
         UIPasteboard* slotPB = [UIPasteboard pasteboardWithName:availableSlotPBid create:YES];
-        [slotPB setPersistent:YES];
+//        [slotPB setPersistent:YES];
 #else
         NSPasteboard* slotPB = [NSPasteboard pasteboardWithName:availableSlotPBid];
 #endif
