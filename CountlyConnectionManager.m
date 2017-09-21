@@ -279,7 +279,7 @@ NSString* const kCountlyInputEndpoint = @"/i";
         return;
     }
 
-    //NOTE: to prevent `event` and `end_session` requests from being added to queue and started, after `sendEvents` and `endSession` calls below.
+    //NOTE: to prevent `event` and `end_session` requests from being started, after `sendEvents` and `endSession` calls below.
     isCrashing = YES;
 
     [self sendEvents];
@@ -404,7 +404,7 @@ NSString* const kCountlyInputEndpoint = @"/i";
 
 - (NSString *)additionalInfo
 {
-    NSMutableString *additionalInfo = @"".mutableCopy;
+    NSMutableString *additionalInfo = NSMutableString.new;
 
     if (CountlyCommon.sharedInstance.ISOCountryCode)
         [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyCountryCode, CountlyCommon.sharedInstance.ISOCountryCode.cly_URLEscaped];

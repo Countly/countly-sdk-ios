@@ -168,8 +168,7 @@ void CountlySignalHandler(int signalCode)
 
     free(lines);
 
-    NSMutableDictionary *userInfo = @{kCountlyCRKeySignalCode:@(signalCode)}.mutableCopy;
-    userInfo[kCountlyExceptionUserInfoBacktraceKey] = backtrace;
+    NSDictionary *userInfo = @{kCountlyCRKeySignalCode: @(signalCode), kCountlyExceptionUserInfoBacktraceKey: backtrace};
     NSString *reason = [NSString stringWithFormat:@"App terminated by SIG%@", [NSString stringWithUTF8String:sys_signame[signalCode]].uppercaseString];
     NSException *e = [NSException exceptionWithName:@"Fatal Signal" reason:reason userInfo:userInfo];
 
