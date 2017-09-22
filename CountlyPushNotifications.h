@@ -21,6 +21,7 @@
 #if TARGET_OS_IOS
 - (void)startPushNotifications;
 - (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler;
+- (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
 #endif
 @end
 

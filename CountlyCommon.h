@@ -30,8 +30,6 @@
 #if TARGET_OS_IOS
 #import <UIKit/UIKit.h>
 #import <AdSupport/ASIdentifierManager.h>
-#import <CoreTelephony/CTTelephonyNetworkInfo.h>
-#import <CoreTelephony/CTCarrier.h>
 #import "WatchConnectivity/WatchConnectivity.h"
 #endif
 
@@ -53,14 +51,6 @@
 #import <AppKit/AppKit.h>
 #endif
 
-#include <sys/types.h>
-#include <sys/sysctl.h>
-#include <libkern/OSAtomic.h>
-#include <execinfo.h>
-#import <mach/mach.h>
-#import <mach/mach_host.h>
-#import <arpa/inet.h>
-#import <ifaddrs.h>
 #import <objc/runtime.h>
 
 extern NSString* const kCountlySDKVersion;

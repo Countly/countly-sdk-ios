@@ -4,7 +4,7 @@
 //
 // Please visit www.count.ly for more information.
 
-#import "CountlyCommon.h"
+#import "CountlyNotificationService.h"
 
 #if DEBUG
 #define COUNTLY_EXT_LOG(fmt, ...) NSLog([@"%@ " stringByAppendingString:fmt], @"[CountlyNSE]", ##__VA_ARGS__)
@@ -24,13 +24,6 @@ NSString* const kCountlyPNKeyActionButtonIndex =     @"b";
 NSString* const kCountlyPNKeyActionButtonTitle =     @"t";
 NSString* const kCountlyPNKeyActionButtonURL =       @"l";
 
-@interface CountlyNotificationService ()
-#if TARGET_OS_IOS
-@property (nonatomic, strong) void (^contentHandler)(UNNotificationContent *contentToDeliver);
-@property (nonatomic, strong) UNMutableNotificationContent *bestAttemptContent;
-#endif
-@end
-
 @implementation CountlyNotificationService
 #if TARGET_OS_IOS
 + (void)didReceiveNotificationRequest:(UNNotificationRequest *)request withContentHandler:(void (^)(UNNotificationContent *))contentHandler
@@ -48,16 +41,15 @@ NSString* const kCountlyPNKeyActionButtonURL =       @"l";
         return;
     }
 
-    COUNTLY_EXT_LOG(@"notification modification in progress...");
-
+    COUNTLY_EXT_LOG(@"Checking for notification modifiers...");
     UNMutableNotificationContent* bestAttemptContent = request.content.mutableCopy;
 
     NSArray* buttons = countlyPayload[kCountlyPNKeyButtons];
-    if (buttons && buttons.count)
+    if (buttons.count)
     {
-        COUNTLY_EXT_LOG(@"custom action buttons found: %d", (int)buttons.count);
+        COUNTLY_EXT_LOG(@"%d custom action buttons found.", (int)buttons.count);
 
-        NSMutableArray * actions = @[].mutableCopy;
+        NSMutableArray* actions = NSMutableArray.new;
 
         [buttons enumerateObjectsUsingBlock:^(NSDictionary* button, NSUInteger idx, BOOL * stop)
         {
@@ -73,29 +65,34 @@ NSString* const kCountlyPNKeyActionButtonURL =       @"l";
         [UNUserNotificationCenter.currentNotificationCenter setNotificationCategories:[NSSet setWithObject:category]];
 
         bestAttemptContent.categoryIdentifier = categoryIdentifier;
+    
+        COUNTLY_EXT_LOG(@"%d custom action buttons added.", (int)buttons.count);
     }
 
     NSString* attachment = countlyPayload[kCountlyPNKeyAttachment];
-    if (attachment && attachment.length)
+    if (!attachment.length)
     {
-        COUNTLY_EXT_LOG(@"attachment found: %@", attachment);
+        COUNTLY_EXT_LOG(@"No attachment specified in Countly payload.");
+        COUNTLY_EXT_LOG(@"Handling of notification finished.");
+        contentHandler(bestAttemptContent);
+        return;
+    }
 
-        [[NSURLSession.sharedSession downloadTaskWithURL:[NSURL URLWithString:attachment] completionHandler:^(NSURL * location, NSURLResponse * response, NSError * error)
+    COUNTLY_EXT_LOG(@"Attachment specified in Countly payload: %@", attachment);
+
+    [[NSURLSession.sharedSession downloadTaskWithURL:[NSURL URLWithString:attachment] completionHandler:^(NSURL * location, NSURLResponse * response, NSError * error)
+    {
+        if (!error)
         {
-            if (error)
+            COUNTLY_EXT_LOG(@"Attachment download completed!");
+
+            NSString* attachmentFileName = [NSString stringWithFormat:@"%@-%@", notificationID, response.suggestedFilename ?: response.URL.absoluteString.lastPathComponent];
+
+            NSString* tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:attachmentFileName];
+
+            if (location && tempPath)
             {
-                COUNTLY_EXT_LOG(@"attachment download error: %@", error);
-            }
-            else
-            {
-                COUNTLY_EXT_LOG(@"attachment download completed!");
-
-                NSString* attachmentFileName = [NSString stringWithFormat:@"%@-%@", notificationID, response.suggestedFilename? response.suggestedFilename:response.URL.absoluteString.lastPathComponent];
-
-                NSString* tempPath = [NSTemporaryDirectory() stringByAppendingPathComponent:attachmentFileName];
-
-                if (location && tempPath)
-                    [NSFileManager.defaultManager moveItemAtPath:location.path toPath:tempPath error:&error];
+                [NSFileManager.defaultManager moveItemAtPath:location.path toPath:tempPath error:nil];
 
                 NSError* attachmentError = nil;
                 UNNotificationAttachment* attachment = [UNNotificationAttachment attachmentWithIdentifier:attachmentFileName URL:[NSURL fileURLWithPath:tempPath] options:nil error:&attachmentError];
@@ -104,26 +101,26 @@ NSString* const kCountlyPNKeyActionButtonURL =       @"l";
                 {
                     bestAttemptContent.attachments = @[attachment];
 
-                    COUNTLY_EXT_LOG(@"attachment added to notification!");
+                    COUNTLY_EXT_LOG(@"Attachment added to notification!");
                 }
                 else
                 {
-                    COUNTLY_EXT_LOG(@"attachment creation error: %@", attachmentError);
+                    COUNTLY_EXT_LOG(@"Attachment creation error: %@", attachmentError);
                 }
             }
+            else
+            {
+                COUNTLY_EXT_LOG(@"Attachment `location` and/or `tempPath` is nil!");
+            }
+        }
+        else
+        {
+            COUNTLY_EXT_LOG(@"Attachment download error: %@", error);
+        }
 
-            contentHandler(bestAttemptContent);
-
-            COUNTLY_EXT_LOG(@"notification modification completed.");
-
-        }] resume];
-    }
-    else
-    {
+        COUNTLY_EXT_LOG(@"Handling of notification finished.");
         contentHandler(bestAttemptContent);
-
-        COUNTLY_EXT_LOG(@"notification modification completed.");
-    }
+    }] resume];
 }
 #endif
 @end

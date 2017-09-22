@@ -232,7 +232,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
         UIAlertAction* visit = [UIAlertAction actionWithTitle:title style:UIAlertActionStyleDefault handler:^(UIAlertAction * action)
         {
-            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID : notificationID, kCountlyPNKeyActionButtonIndex : @(idx+1)}];
+            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID : notificationID, kCountlyPNKeyActionButtonIndex : @(idx + 1)}];
 
             [self openURL:URL];
 
@@ -254,13 +254,24 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 - (void)openURL:(NSString *)URLString
 {
-    if(!URLString)
+    if (!URLString)
         return;
 
-    dispatch_async(dispatch_get_main_queue(), ^
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
     {
         [UIApplication.sharedApplication openURL:[NSURL URLWithString:URLString]];
     });
+}
+
+- (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
+{
+    NSDictionary* countlyPayload = userInfo[kCountlyPNKeyCountlyPayload];
+    NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
+
+    if (!notificationID)
+        return;
+
+    [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID : notificationID, kCountlyPNKeyActionButtonIndex : @(buttonIndex)}];
 }
 
 #pragma mark ---
@@ -284,7 +295,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         completionHandler(UNNotificationPresentationOptionNone);
 }
 
-- (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void (^)())completionHandler
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void (^)(void))completionHandler
 {
     COUNTLY_LOG(@"userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:");
     COUNTLY_LOG(@"%@", response.notification.request.content.userInfo.description);

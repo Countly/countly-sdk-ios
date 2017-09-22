@@ -6,10 +6,11 @@
 
 #import <Foundation/Foundation.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 //NOTE: Countly features
 #if TARGET_OS_IOS
 extern NSString* const CLYPushNotifications;
-    extern NSString* const CLYMessaging DEPRECATED_MSG_ATTRIBUTE("Use CLYPushNotifications instead!");
 extern NSString* const CLYCrashReporting;
 extern NSString* const CLYAutoViewTracking;
 #elif TARGET_OS_TV
@@ -24,7 +25,7 @@ extern NSString* const CLYAutoViewTracking;
 extern NSString* const CLYIDFV;
 extern NSString* const CLYIDFA DEPRECATED_MSG_ATTRIBUTE("Use CLYIDFV instead!");
 extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use CLYIDFV instead!");
-#elif (!(TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_WATCH))
+#elif TARGET_OS_OSX
 extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device ID instead!");
 #endif
 
@@ -52,20 +53,10 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  */
 @property (nonatomic, strong) NSArray* features;
 
-/**
- * For enabling SDK debug mode which prints internal logs.
- * @discussion If set, SDK will print internal logs to console for debugging. Internal logging works only for Development environment where DEBUG flag is set in Build Settings.
- */
-@property (nonatomic) BOOL enableDebug;
+#pragma mark -
 
 /**
- * For specifiying application's launch options dictionary.
- * @discussion Previously it was required for @c CLYPushNotifications feature, but not needed anymore. It is just kept for future use.
- */
-@property (nonatomic, strong) NSDictionary* launchOptions;
-
-/**
- * For manually marking a device as test device for @c CLYPushNotifications feature. 
+ * For manually marking a device as test device for @c CLYPushNotifications feature.
  * @discussion Test push notifications can be sent to test devices by selecting "Development & test users only" on "Create Push Notification" section on Countly Server.
  */
 @property (nonatomic) BOOL isTestDevice;
@@ -82,10 +73,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  */
 @property (nonatomic) BOOL doNotShowAlertForNotifications;
 
-/**
- * For using custom crash segmentation with @c CLYCrashReporting feature.
- */
-@property (nonatomic, strong) NSDictionary* crashSegmentation;
+#pragma mark -
 
 /**
  * @discussion Custom or system generated device ID. If not set, Identifier For Advertising (IDFA) will be used by default.
@@ -98,15 +86,11 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 @property (nonatomic, strong) NSString* deviceID;
 
 /**
- * For forcing device ID initialization on start. When it is set, persistenly stored device ID will be reset and new device ID will be re-initialized with @c deviceID property on @c CountlyConfig object.
+ * For forcing device ID initialization on start. When it is set, persistenly stored device ID will be reset and new device ID will be re-initialized with @c deviceID property on @c CountlyConfig object. It is meant to be used for debugging purposes only while developing.
  */
 @property (nonatomic) BOOL forceDeviceIDInitialization;
 
-/**
- * For handling sessions manually.
- * @discussion If set, SDK does not handle beginning, updating and ending sessions automatically. Methods @c beginSession, @c updateSession and @c endSession need to be called manually.
- */
-@property (nonatomic) BOOL manualSessionHandling;
+#pragma mark -
 
 /**
  * Update session period is used for updating sessions and sending queued events to server periodically.
@@ -115,7 +99,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 @property (nonatomic) NSTimeInterval updateSessionPeriod;
 
 /**
- * Event send threshold is used for sending queued events to server when number of recorded events reaches to it, without waiting for next update session defined by @c updateSessionPeriod. 
+ * Event send threshold is used for sending queued events to server when number of recorded events reaches to it, without waiting for next update session defined by @c updateSessionPeriod.
  * @discussion If not set, it will be 10 for @c iOS, @c tvOS & @c OSX, and 3 for @c watchOS by default.
  */
 @property (nonatomic) NSUInteger eventSendThreshold;
@@ -126,6 +110,20 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  * @discussion If not set, it will be 1000 by default.
  */
 @property (nonatomic) NSUInteger storedRequestsLimit;
+
+#pragma mark -
+
+/**
+ * For enabling SDK debug mode which prints internal logs.
+ * @discussion If set, SDK will print internal logs to console for debugging. Internal logging works only for Development environment where DEBUG flag is set in Build Settings.
+ */
+@property (nonatomic) BOOL enableDebug;
+
+/**
+ * For handling sessions manually.
+ * @discussion If set, SDK does not handle beginning, updating and ending sessions automatically. Methods @c beginSession, @c updateSession and @c endSession need to be called manually.
+ */
+@property (nonatomic) BOOL manualSessionHandling;
 
 /**
  * For sending all requests using HTTP POST method.
@@ -140,7 +138,20 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 @property (nonatomic) BOOL enableAppleWatch;
 
 /**
- * ISO Country Code can be specified in ISO 3166-1 alpha-2 format to be used for advanced segmentation. 
+ * For applying zero-IDFA fix on queued requests.
+ * @discussion If set, all requests in persistently stored request queue will be checked against zero-IDFA issue. If found, they will be fixed by either replacing with IDFV or removing from queue.
+ */
+@property (nonatomic) BOOL applyZeroIDFAFix;
+
+#pragma mark -
+
+/**
+ * For using custom crash segmentation with @c CLYCrashReporting feature.
+ */
+@property (nonatomic, strong) NSDictionary* crashSegmentation;
+
+/**
+ * ISO Country Code can be specified in ISO 3166-1 alpha-2 format to be used for advanced segmentation.
  * @discussion It will be sent with @c begin_session request only.
  */
 @property (nonatomic, strong) NSString* ISOCountryCode;
@@ -162,6 +173,8 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  * @discussion It will be sent with @c begin_session request only.
  */
 @property (nonatomic) NSString* IP;
+
+#pragma mark -
 
 /**
  * For specifying bundled certificates to be used for public key pinning.
@@ -185,13 +198,15 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 
 /**
  * Salt value to be used for parameter tampering protection.
- * @discussion If set, every request sent to Countly server will have @c checksum value generated by SHA1(request + secretSalt)
+ * @discussion If set, every request sent to Countly server will have @c checksum256 value generated by SHA256(request + secretSalt)
  */
 @property (nonatomic, strong) NSString* secretSalt;
 
+#pragma mark -
+
 /**
  * For customizing star-rating dialog message.
- * @discussion If not set, it will be displayed in English: "How would you rate the app?" or corresponding supported (EN, TR, JP, ZH, RU) localized version.
+ * @discussion If not set, it will be displayed in English: "How would you rate the app?" or corresponding supported (EN, TR, JP, ZH, RU, LV, CZ, BN) localized version.
  */
 @property (nonatomic, strong) NSString* starRatingMessage;
 
@@ -212,4 +227,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  * @discussion Completion block has a single NSInteger parameter that indicates 1 to 5 star-rating given by user. If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to server.
  */
 @property (nonatomic, copy) void (^starRatingCompletion)(NSInteger rating);
+
+NS_ASSUME_NONNULL_END
+
 @end

@@ -6,6 +6,8 @@
 
 #import <Foundation/Foundation.h>
 
+extern NSString* const kCountlyZeroIDFA;
+
 @interface CountlyDeviceInfo : NSObject
 
 @property (nonatomic, strong) NSString *deviceID;
@@ -24,9 +26,6 @@
 + (NSString *)locale;
 + (NSString *)appVersion;
 + (NSString *)appBuild;
-+ (NSString *)buildUUID;
-+ (NSString *)bundleId;
-+ (NSString *)executableName;
 #if TARGET_OS_IOS
 + (NSInteger)hasWatch;
 + (NSInteger)installedWatchApp;

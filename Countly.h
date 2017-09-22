@@ -12,6 +12,8 @@
 #import <UserNotifications/UserNotifications.h>
 #endif
 
+NS_ASSUME_NONNULL_BEGIN
+
 @interface Countly : NSObject
 
 #pragma mark - Countly Core
@@ -33,7 +35,7 @@
  * @param deviceID New device ID
  * @param onServer If set, data on server will be merged automatically, otherwise device will be counted as a new device
  */
-- (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer;
+- (void)setNewDeviceID:(NSString * _Nullable)deviceID onServer:(BOOL)onServer;
 
 /**
  * Sets the value of the custom HTTP header field to be sent with every request if @c customHeaderFieldName is set on initial configuration.
@@ -119,7 +121,7 @@
  * @param key Event key
  * @param segmentation Segmentation key-value pairs of event
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation;
 
 /**
  * Records event with given key, segmentation and count.
@@ -127,7 +129,7 @@
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count;
 
 /**
  * Records event with given key, segmentation, count and sum.
@@ -136,7 +138,7 @@
  * @param count Count of event occurrences
  * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
 
 /**
  * Records event with given key, segmentation, count, sum and duration.
@@ -146,10 +148,10 @@
  * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
  * @param duration Duration of event in seconds
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
 
 /**
- * Starts a timed event with given key to be ended later. Duration of timed event will be calculated on ending. 
+ * Starts a timed event with given key to be ended later. Duration of timed event will be calculated on ending.
  * @discussion Trying to start an event with already started key will have no effect.
  * @param key Event key
  */
@@ -163,14 +165,14 @@
 - (void)endEvent:(NSString *)key;
 
 /**
- * Ends a previously started timed event with given key, segmentation, count and sum. 
+ * Ends a previously started timed event with given key, segmentation, count and sum.
  * @discussion Trying to end an event with already ended (or not yet started) key will have no effect.
  * @param key Event key
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
  * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
  */
-- (void)endEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum;
+- (void)endEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
 
 
 
@@ -196,6 +198,14 @@
  * @param coordinate User's location with latitude and longitude
  */
 - (void)recordLocation:(CLLocationCoordinate2D)coordinate;
+
+/**
+ * Records action event for a manually presented push notification with custom action buttons.
+ * @discussion If a push notification with custom action buttons is handled and presented manually using custom UI, user's action needs to be reported manually. With this convenience method user's action can be reported passing push notification dictionary and clicked button index. Button index should be 0 for default action, 1 for the first action button and 2 for the second action button.
+ * @param userInfo Manually presented push notification dictionary
+ * @param buttonIndex Clicked custom action button index
+ */
+- (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
 #endif
 
 
@@ -203,17 +213,32 @@
 #pragma mark - Countly CrashReporting
 #if TARGET_OS_IOS
 /**
- * Records a handled exception manually, besides automatically reported unhandled exceptions and crashes.
+ * Records a handled exception manually.
  * @param exception Exception to be reported
  */
 - (void)recordHandledException:(NSException *)exception;
 
 /**
- * Records custom logs to be delivered with crash report.
- * @discussion Logs recorded by `crashLog:` method are stored in a non-persistent structure, and delivered to server only in case of a crash.
- * @param format Custom log string or format to be recorded
+ * Records a handled exception and given stack trace manually.
+ * @param exception Exception to be reported
+ * @param stackTrace Stack trace to be reported
  */
-- (void)crashLog:(NSString *)format, ... NS_FORMAT_FUNCTION(1,2);
+- (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace;
+
+/**
+ * Records custom logs to be delivered with crash report.
+ * @discussion Logs recorded by this method are stored in a non-persistent structure, and delivered to server only in case of a crash.
+ * @param log Custom log string to be recorded
+ */
+- (void)recordCrashLog:(NSString *)log;
+
+/**
+ * @c crashLog: method is deprecated. Please use @c recordCrashLog: method instead.
+ * @discussion While @c crashLog: method's parameter type is string format, new @c recordCrashLog: method's parameter type is plain NSString for better Swift compatibility. Please update your code accordingly.
+ * @discussion Calls to @c crashLog: method will have no effect.
+ */
+- (void)crashLog:(NSString *)format, ... NS_FORMAT_FUNCTION(1,2) DEPRECATED_MSG_ATTRIBUTE("Use 'recordCrashLog:' method instead!");
+
 #endif
 
 
@@ -237,7 +262,7 @@
 #pragma mark - Countly AutoViewTracking
 
 /**
- * Reports a visited view with given name manually. 
+ * Reports a visited view with given name manually.
  * @discussion If auto ViewTracking feature is activated on initial configuration, this method does not need to be called manually.
  * @param viewName Name of the view visited
  */
@@ -297,4 +322,7 @@
  */
 - (void)askForStarRating:(void(^)(NSInteger rating))completion;
 #endif
+
+NS_ASSUME_NONNULL_END
+
 @end

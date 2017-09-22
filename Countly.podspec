@@ -1,13 +1,13 @@
 Pod::Spec.new do |s|
   s.name = 'Countly'
-  s.version = '17.05'
+  s.version = '17.09'
   s.license = {
     :type => 'COMMUNITY',
     :text => <<-LICENSE
               COUNTLY MOBILE ANALYTICS COMMUNITY EDITION LICENSE
               --------------------------------------------------
 
-              Copyright (c) 2012, 2016 Countly
+              Copyright (c) 2012, 2017 Countly
 
               Permission is hereby granted, free of charge, to any person obtaining a copy
               of this software and associated documentation files (the "Software"), to deal
@@ -40,4 +40,9 @@ Pod::Spec.new do |s|
   s.osx.deployment_target = '10.9'
   s.watchos.deployment_target = '2.0'
   s.tvos.deployment_target = '9.0'
+
+  s.subspec 'NotificationService' do |ns|
+    ns.source_files = 'CountlyNotificationService.{m,h}'
+  end
+
 end

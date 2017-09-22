@@ -9,6 +9,9 @@
 #if TARGET_OS_IOS
 #import <UserNotifications/UserNotifications.h>
 #endif
+
+NS_ASSUME_NONNULL_BEGIN
+
 extern NSString* const kCountlyActionIdentifier;
 
 extern NSString* const kCountlyPNKeyCountlyPayload;
@@ -24,4 +27,7 @@ extern NSString* const kCountlyPNKeyActionButtonURL;
 #if TARGET_OS_IOS
 + (void)didReceiveNotificationRequest:(UNNotificationRequest *)request withContentHandler:(void (^)(UNNotificationContent *))contentHandler;
 #endif
+
+NS_ASSUME_NONNULL_END
+
 @end

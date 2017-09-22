@@ -49,7 +49,8 @@ const float kCountlyStarRatingButtonSize = 40;
             @"zh" : @"请告诉我你的评价。",
             @"ru" : @"Как бы вы оценили приложение?",
             @"cz" : @"Jak hodnotíte aplikaci?",
-            @"lv" : @"Kā Jūs novērtētu šo lietotni?"            
+            @"lv" : @"Kā Jūs novērtētu šo lietotni?",
+            @"bn" : @"আপনি কিভাবে এই এপ্লিক্যাশনটি মূল্যায়ন করবেন?"
         };
 
         self.message = dictMessage[langDesignator];
@@ -163,7 +164,7 @@ const float kCountlyStarRatingButtonSize = 40;
         if (btn_star[i] == sender)
         {
             color = [self passiveStarColor];
-            rating = i+1;
+            rating = i + 1;
         }
     }
 

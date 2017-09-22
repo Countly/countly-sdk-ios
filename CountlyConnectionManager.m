@@ -50,7 +50,6 @@ NSString* const kCountlyQSKeyChecksum256 =          @"checksum256";
 
 const NSInteger kCountlyGETRequestMaxLength = 2048;
 NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
-NSString* const kCountlyZeroIDFA = @"00000000-0000-0000-0000-000000000000";
 NSString* const kCountlyInputEndpoint = @"/i";
 
 @implementation CountlyConnectionManager : NSObject
@@ -78,30 +77,40 @@ NSString* const kCountlyInputEndpoint = @"/i";
     if (firstItemInQueue == nil)
         return;
 
-    [self startBackgroundTask];
-
-    NSString* queryString = firstItemInQueue;
-
-    //NOTE: For Limit Ad Tracking zero-IDFA problem
-    NSString* deviceIDQueryString = [NSString stringWithFormat:@"&%@=", kCountlyQSKeyDeviceID];
-    NSString* deviceIDZeroIDFA = [deviceIDQueryString stringByAppendingString:kCountlyZeroIDFA];
-    NSString* deviceIDZeroIDFAOld = [deviceIDZeroIDFA stringByReplacingOccurrencesOfString:kCountlyQSKeyDeviceID withString:kCountlyQSKeyDeviceIDOld];
-    NSString* deviceIDFixed = [deviceIDQueryString stringByAppendingString:CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped];
-
-    if ([queryString rangeOfString:deviceIDZeroIDFA].location != NSNotFound)
+    if ([firstItemInQueue isEqual:NSNull.null])
     {
-        COUNTLY_LOG(@"Detected a request with zero-IDFA in queue and fixed.");
-
-        queryString = [queryString stringByReplacingOccurrencesOfString:deviceIDZeroIDFA withString:deviceIDFixed];
-    }
-
-    if ([queryString rangeOfString:deviceIDZeroIDFAOld].location != NSNotFound)
-    {
-        COUNTLY_LOG(@"Detected a request with zero-IDFA in queue and removed.");
+        COUNTLY_LOG(@"Detected an NSNull in queue and removed.");
 
         [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
         [self proceedOnQueue];
         return;
+    }
+
+    [self startBackgroundTask];
+
+    NSString* queryString = firstItemInQueue;
+
+    if (self.applyZeroIDFAFix)
+    {
+        NSString* deviceIDZeroIDFA = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, kCountlyZeroIDFA];
+        NSString* oldDeviceIDZeroIDFA = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceIDOld, kCountlyZeroIDFA];
+        NSString* deviceIDFixed = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped];
+
+        if ([queryString containsString:deviceIDZeroIDFA])
+        {
+            COUNTLY_LOG(@"Detected a request with zero-IDFA in queue and fixed.");
+
+            queryString = [queryString stringByReplacingOccurrencesOfString:deviceIDZeroIDFA withString:deviceIDFixed];
+        }
+
+        if ([queryString containsString:oldDeviceIDZeroIDFA])
+        {
+            COUNTLY_LOG(@"Detected a request with zero-IDFA in queue and removed.");
+
+            [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
+            [self proceedOnQueue];
+            return;
+        }
     }
 
     queryString = [self appendChecksum:queryString];
@@ -162,7 +171,7 @@ NSString* const kCountlyInputEndpoint = @"/i";
 
     [self.connection resume];
 
-    COUNTLY_LOG(@"Request <%p> started:\n[%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, request.HTTPBody?([request.HTTPBody cly_stringUTF8]?[request.HTTPBody cly_stringUTF8]:@"Picture uploading..."):@"");
+    COUNTLY_LOG(@"Request <%p> started:\n[%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, request.HTTPBody ? ([request.HTTPBody cly_stringUTF8] ?: @"Picture uploading...") : @"");
 }
 
 #pragma mark ---
@@ -270,7 +279,7 @@ NSString* const kCountlyInputEndpoint = @"/i";
         return;
     }
 
-    //NOTE: to prevent `event` and `end_session` requests from being added to queue and started, after `sendEvents` and `endSession` calls below.
+    //NOTE: to prevent `event` and `end_session` requests from being started, after `sendEvents` and `endSession` calls below.
     isCrashing = YES;
 
     [self sendEvents];
@@ -303,7 +312,7 @@ NSString* const kCountlyInputEndpoint = @"/i";
     {
         if (error || ![self isRequestSuccessful:response])
         {
-            COUNTLY_LOG(@"Crash Report Request <%p> failed!\n%@: %@", request, error ? @"Error":@"Server reply", error ? error:[data cly_stringUTF8]);
+            COUNTLY_LOG(@"Crash Report Request <%p> failed!\n%@: %@", request, error ? @"Error" : @"Server reply", error ?: [data cly_stringUTF8]);
             [CountlyPersistency.sharedInstance addToQueue:queryString];
             [CountlyPersistency.sharedInstance saveToFileSync];
         }
@@ -395,7 +404,7 @@ NSString* const kCountlyInputEndpoint = @"/i";
 
 - (NSString *)additionalInfo
 {
-    NSMutableString *additionalInfo = @"".mutableCopy;
+    NSMutableString *additionalInfo = NSMutableString.new;
 
     if (CountlyCommon.sharedInstance.ISOCountryCode)
         [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyCountryCode, CountlyCommon.sharedInstance.ISOCountryCode.cly_URLEscaped];
@@ -432,6 +441,9 @@ NSString* const kCountlyInputEndpoint = @"/i";
         if ([queryItem.name isEqualToString:kCountlyQSKeyUserDetails])
         {
             NSString* unescapedValue = [queryItem.value stringByRemovingPercentEncoding];
+            if (!unescapedValue)
+                return nil;
+
             NSDictionary* pathDictionary = [NSJSONSerialization JSONObjectWithData:[unescapedValue cly_dataUTF8] options:0 error:nil];
             localPicturePath = pathDictionary[kCountlyLocalPicturePath];
             break;
