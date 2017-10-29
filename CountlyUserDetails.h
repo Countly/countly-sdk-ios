@@ -240,7 +240,7 @@ extern NSString* const kCountlyLocalPicturePath;
 
 /**
  * Records user details and sends them to server.
- * @discussion Once called, default user details properties and custom user details property modifiers are reset. If sending them to server fails, they are stored peristenly in request queue, to be tried again later.
+ * @discussion Once called, default user details properties and custom user details property modifiers are reset. If sending them to server fails, they are stored peristently in request queue, to be tried again later.
  */
 - (void)save;
 

@@ -33,7 +33,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Sets new device ID to be persistently stored and used in following requests.
  * @param deviceID New device ID
- * @param onServer If set, data on server will be merged automatically, otherwise device will be counted as a new device
+ * @param onServer If set, data on Countly Server will be merged automatically, otherwise device will be counted as a new device
  */
 - (void)setNewDeviceID:(NSString * _Nullable)deviceID onServer:(BOOL)onServer;
 
@@ -180,13 +180,13 @@ NS_ASSUME_NONNULL_BEGIN
 #if TARGET_OS_IOS
 /**
  * Shows default system dialog that asks for user's permission to display notifications.
- * @discussion A unified convenience method that handles asking for notification permisson on both iOS10 and older iOS versions with badge, sound and alert notification types.
+ * @discussion A unified convenience method that handles asking for notification permission on both iOS10 and older iOS versions with badge, sound and alert notification types.
  */
 - (void)askForNotificationPermission;
 
 /**
  * Shows default system dialog that asks for user's permission to display notifications with given options and completion handler.
- * @discussion A more customizable version of unified convenience method that handles asking for notification permisson on both iOS10 and older iOS versions where notification types app wants to display can be specified using @c options parameter. Completion block has a @c BOOL parameter called @c granted which is @c YES if user gave permission, and an @c NSError parameter called @c error which indicates if there is an error.
+ * @discussion A more customizable version of unified convenience method that handles asking for notification permission on both iOS10 and older iOS versions where notification types the app wants to display can be specified using @c options parameter. Completion block has a @c BOOL parameter called @c granted which is @c YES if user gave permission, and an @c NSError parameter called @c error which indicates if there is an error.
  * @param options Bitwise combination of notification types (like badge, sound or alert) app wants to display
  * @param completionHandler A completion handler block to be executed when user answers notification permission dialog
  */
@@ -227,7 +227,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Records custom logs to be delivered with crash report.
- * @discussion Logs recorded by this method are stored in a non-persistent structure, and delivered to server only in case of a crash.
+ * @discussion Logs recorded by this method are stored in a non-persistent structure, and delivered to Countly Server only in case of a crash.
  * @param log Custom log string to be recorded
  */
 - (void)recordCrashLog:(NSString *)log;
@@ -271,15 +271,15 @@ NS_ASSUME_NONNULL_BEGIN
 #if TARGET_OS_IOS
 /**
  * Adds exception for AutoViewTracking.
- * @discussion @c UIViewContollers with specified title or class name will be ignored by AutoViewTracking and their appearances and disappearances will not be reported. Adding an already added @c UIViewController title or subclass name again will have no effect.
- * @param exception @c UIViewContoller title or subclass name to be added as exception
+ * @discussion @c UIViewControllers with specified title or class name will be ignored by AutoViewTracking and their appearances and disappearances will not be reported. Adding an already added @c UIViewController title or subclass name again will have no effect.
+ * @param exception @c UIViewController title or subclass name to be added as exception
  */
 - (void)addExceptionForAutoViewTracking:(NSString *)exception;
 
 /**
  * Removes exception for AutoViewTracking.
  * @discussion Removing an already removed (or not yet added) @c UIViewController title or subclass name will have no effect.
- * @param exception @c UIViewContoller title or subclass name to be removed
+ * @param exception @c UIViewController title or subclass name to be removed
  */
 - (void)removeExceptionForAutoViewTracking:(NSString *)exception;
 
@@ -302,7 +302,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Handles switching from device ID to custom user ID for logged in users
- * @discussion When a user logs in, this user can be tracked with custom user ID instead of device ID. This is just a convenience method that handles setting user ID as new device ID and merging existing data on server.
+ * @discussion When a user logs in, this user can be tracked with custom user ID instead of device ID. This is just a convenience method that handles setting user ID as new device ID and merging existing data on Countly Server.
  * @param userID Custom user ID uniquely defining the logged in user
  */
 - (void)userLoggedIn:(NSString *)userID;
@@ -317,7 +317,7 @@ NS_ASSUME_NONNULL_BEGIN
 #if TARGET_OS_IOS
 /**
  * Shows star-rating dialog manually and executes completion block after user's action.
- * @discussion Completion block has a single NSInteger parameter that indicates 1 to 5 star-rating given by user. If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to server.
+ * @discussion Completion block has a single NSInteger parameter that indicates 1 to 5 star-rating given by user. If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to Countly Server.
  * @param completion A block object to be executed when user gives a star-rating or dismisses dialog without rating
  */
 - (void)askForStarRating:(void(^)(NSInteger rating))completion;

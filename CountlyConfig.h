@@ -16,7 +16,7 @@ extern NSString* const CLYAutoViewTracking;
 #elif TARGET_OS_TV
 extern NSString* const CLYAutoViewTracking;
 #endif
-//NOTE: Disable APM feature until server completely supports it
+//NOTE: Disable APM feature until Countly Server completely supports it
 // extern NSString* const CLYAPM;
 
 
@@ -44,7 +44,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 @property (nonatomic, strong) NSString* appKey;
 
 /**
- * For specifiying which features Countly will start with.
+ * For specifying which features Countly will start with.
  * @discussion Available features:
  * @discussion @c CLYPushNotifications for push notifications,
  * @discussion @c CLYCrashReporting for crash reporting,
@@ -62,7 +62,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 @property (nonatomic) BOOL isTestDevice;
 
 /**
- * For sending push tokens to Countly server even for users who have not granted permission to display notifications.
+ * For sending push tokens to Countly Server even for users who have not granted permission to display notifications.
  * @discussion Push tokens from users who have not granted permission to display notifications, can be used to send silent notifications. But there will be no notification UI for users to interact. This may cause incorrect push notification interaction stats.
  */
 @property (nonatomic) BOOL sendPushTokenAlways;
@@ -77,7 +77,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 
 /**
  * @discussion Custom or system generated device ID. If not set, Identifier For Advertising (IDFA) will be used by default.
- * @discussion Available sytem generated device ID options:
+ * @discussion Available system generated device ID options:
  * @discussion @c CLYIDFA (Identifier For Advertising)
  * @discussion @c CLYIDFV (Identifier For Vendor)
  * @discussion @c CLYOpenUDID (OpenUDID)
@@ -86,27 +86,27 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 @property (nonatomic, strong) NSString* deviceID;
 
 /**
- * For forcing device ID initialization on start. When it is set, persistenly stored device ID will be reset and new device ID will be re-initialized with @c deviceID property on @c CountlyConfig object. It is meant to be used for debugging purposes only while developing.
+ * For forcing device ID initialization on start. When it is set, persistently stored device ID will be reset and new device ID will be re-initialized with @c deviceID property on @c CountlyConfig object. It is meant to be used for debugging purposes only while developing.
  */
 @property (nonatomic) BOOL forceDeviceIDInitialization;
 
 #pragma mark -
 
 /**
- * Update session period is used for updating sessions and sending queued events to server periodically.
- * @discussion If not set, it will be 60 seconds for @c iOS, @c tvOS & @c OSX, and 20 seconds for @c watchOS by default.
+ * Update session period is used for updating sessions and sending queued events to Countly Server periodically.
+ * @discussion If not set, it will be 60 seconds for @c iOS, @c tvOS & @c macOS, and 20 seconds for @c watchOS by default.
  */
 @property (nonatomic) NSTimeInterval updateSessionPeriod;
 
 /**
- * Event send threshold is used for sending queued events to server when number of recorded events reaches to it, without waiting for next update session defined by @c updateSessionPeriod.
- * @discussion If not set, it will be 10 for @c iOS, @c tvOS & @c OSX, and 3 for @c watchOS by default.
+ * Event send threshold is used for sending queued events to Countly Server when number of recorded events reaches to it, without waiting for next update session defined by @c updateSessionPeriod.
+ * @discussion If not set, it will be 10 for @c iOS, @c tvOS & @c macOS, and 3 for @c watchOS by default.
  */
 @property (nonatomic) NSUInteger eventSendThreshold;
 
 /**
- * Stored requests limit is used to limit number of request to be queued.
- * @discussion In case Countly Server is down or unreachable for a very long time, queued request may reach excessive numbers, and it may cause problems with being delivered to server and being stored on the device. To prevent this, SDK will only store requests up to @c storedRequestsLimit. If number of stored requests reach @c storedRequestsLimit, SDK will start to drop oldest request while inserting the newest one instead.
+ * Stored requests limit is used for limiting the number of request to be stored on the device, in case of a Countly Server connection problem.
+ * @discussion In case Countly Server is down or unreachable for a very long time, queued request may reach excessive numbers, and this may cause problems with requests being sent to Countly Server and being stored on the device. To prevent this, SDK will only store requests up to @c storedRequestsLimit. If number of stored requests reach @c storedRequestsLimit, SDK will start to drop oldest request while inserting the newest one instead.
  * @discussion If not set, it will be 1000 by default.
  */
 @property (nonatomic) NSUInteger storedRequestsLimit;
@@ -186,7 +186,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 /**
  * Name of the custom HTTP header field to be sent with every request.
  * @discussion e.g. X-My-Secret-Server-Token
- * @discussion If set, every request sent to Countly server will have this custom HTTP header and its value will be @c customHeaderFieldValue property. If @c customHeaderFieldValue is not set when Countly is started, requests will not start until it is set using @c setCustomHeaderFieldValue: method later.
+ * @discussion If set, every request sent to Countly Server will have this custom HTTP header and its value will be @c customHeaderFieldValue property. If @c customHeaderFieldValue is not set when Countly is started, requests will not start until it is set using @c setCustomHeaderFieldValue: method later.
  */
 @property (nonatomic, strong) NSString* customHeaderFieldName;
 
@@ -198,7 +198,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 
 /**
  * Salt value to be used for parameter tampering protection.
- * @discussion If set, every request sent to Countly server will have @c checksum256 value generated by SHA256(request + secretSalt)
+ * @discussion If set, every request sent to Countly Server will have @c checksum256 value generated by SHA256(request + secretSalt)
  */
 @property (nonatomic, strong) NSString* secretSalt;
 
@@ -224,7 +224,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 
 /**
  * Completion block to be executed after star-rating dialog is shown automatically.
- * @discussion Completion block has a single NSInteger parameter that indicates 1 to 5 star-rating given by user. If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to server.
+ * @discussion Completion block has a single NSInteger parameter that indicates 1 to 5 star-rating given by user. If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to Countly Server.
  */
 @property (nonatomic, copy) void (^starRatingCompletion)(NSInteger rating);
 
