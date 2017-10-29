@@ -30,6 +30,12 @@ NSString* const kCountlyMetricKeyLocale =            @"_locale";
 NSString* const kCountlyMetricKeyHasWatch =          @"_has_watch";
 NSString* const kCountlyMetricKeyInstalledWatchApp = @"_installed_watch_app";
 
+#if TARGET_OS_IOS
+@interface CountlyDeviceInfo ()
+@property (nonatomic, strong) CTTelephonyNetworkInfo* networkInfo;
+@end
+#endif
+
 @implementation CountlyDeviceInfo
 
 + (instancetype)sharedInstance
@@ -49,6 +55,8 @@ NSString* const kCountlyMetricKeyInstalledWatchApp = @"_installed_watch_app";
         //NOTE: For Limit Ad Tracking zero-IDFA problem
         if ([self.deviceID isEqualToString:kCountlyZeroIDFA])
             [self initializeDeviceID:CLYIDFV];
+
+        self.networkInfo = CTTelephonyNetworkInfo.new;
 #endif
     }
 
@@ -188,7 +196,7 @@ NSString* const kCountlyMetricKeyInstalledWatchApp = @"_installed_watch_app";
 + (NSString *)carrier
 {
 #if TARGET_OS_IOS
-    return CTTelephonyNetworkInfo.new.subscriberCellularProvider.carrierName;
+    return CountlyDeviceInfo.sharedInstance.networkInfo.subscriberCellularProvider.carrierName;
 #endif
     return nil;
 }
@@ -312,7 +320,6 @@ NSString* const kCountlyMetricKeyInstalledWatchApp = @"_installed_watch_app";
                         connType = CLYConnectionCellNetwork;
 
 #if TARGET_OS_IOS
-                        CTTelephonyNetworkInfo *tni = CTTelephonyNetworkInfo.new;
                         NSDictionary* connectionTypes =
                         @{
                             CTRadioAccessTechnologyGPRS:@(CLYConnectionCellNetwork2G),
@@ -328,8 +335,9 @@ NSString* const kCountlyMetricKeyInstalledWatchApp = @"_installed_watch_app";
                             CTRadioAccessTechnologyLTE:@(CLYConnectionCellNetworkLTE)
                         };
 
-                        if (connectionTypes[tni.currentRadioAccessTechnology])
-                            connType = [connectionTypes[tni.currentRadioAccessTechnology] integerValue];
+                        NSString* radioAccessTech = CountlyDeviceInfo.sharedInstance.networkInfo.currentRadioAccessTechnology;
+                        if (connectionTypes[radioAccessTech])
+                            connType = [connectionTypes[radioAccessTech] integerValue];
 #endif
                     }
                     else if ([[NSString stringWithUTF8String:i->ifa_name] isEqualToString:@"en0"])
