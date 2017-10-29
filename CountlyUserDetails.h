@@ -35,7 +35,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @protocol CountlyUserDetailsNullableNumber <NSObject>
 @end
-@interface NSNumber (NSDictionaryWithCountlyUserDetailsNullableNumber) <CountlyUserDetailsNullableNumber>
+@interface NSNumber (NSNumberWithCountlyUserDetailsNullableNumber) <CountlyUserDetailsNullableNumber>
 @end
 @interface NSNull (NSNullWithCountlyUserDetailsNullableNumber) <CountlyUserDetailsNullableNumber>
 @end
