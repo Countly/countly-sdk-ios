@@ -30,4 +30,4 @@ If you liked Countly (just like we do!), [why not use one of our badges](https:/
 
 ## Support
 Have any questions? Visit [http://community.count.ly](http://community.count.ly "Countly Community Forum").
-Slack user? [Join our Slack community](http://slack.count.ly:3000/)
+Slack user? [Join our Slack community](http://slack.count.ly)
