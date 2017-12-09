@@ -12,7 +12,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 @interface CountlyPushNotifications ()
 #if TARGET_OS_IOS
-@property (nonatomic, strong) NSString* token;
+@property (nonatomic) NSString* token;
 @property (nonatomic, copy) void (^permissionCompletion)(BOOL granted, NSError * error);
 #endif
 @end

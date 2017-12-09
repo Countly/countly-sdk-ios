@@ -7,9 +7,9 @@
 #import "CountlyCommon.h"
 
 @interface CountlyPersistency()
-@property (nonatomic, strong) NSMutableArray* queuedRequests;
-@property (nonatomic, strong) NSMutableArray* recordedEvents;
-@property (nonatomic, strong) NSMutableDictionary* startedEvents;
+@property (nonatomic) NSMutableArray* queuedRequests;
+@property (nonatomic) NSMutableArray* recordedEvents;
+@property (nonatomic) NSMutableDictionary* startedEvents;
 @end
 
 @implementation CountlyPersistency

@@ -7,7 +7,7 @@
 #import "CountlyCommon.h"
 
 @interface CountlyAPM ()
-@property (nonatomic, strong) NSMutableArray* exceptionURLs;
+@property (nonatomic) NSMutableArray* exceptionURLs;
 @end
 
 @implementation CountlyAPM

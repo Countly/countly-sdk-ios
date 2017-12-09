@@ -10,7 +10,7 @@ extern NSString* const kCountlyZeroIDFA;
 
 @interface CountlyDeviceInfo : NSObject
 
-@property (nonatomic, strong) NSString *deviceID;
+@property (nonatomic) NSString *deviceID;
 
 + (instancetype)sharedInstance;
 - (void)initializeDeviceID:(NSString *)deviceID;

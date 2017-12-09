@@ -7,7 +7,7 @@
 #import "CountlyCommon.h"
 
 @interface CountlyUserDetails ()
-@property (nonatomic, strong) NSMutableDictionary* modifications;
+@property (nonatomic) NSMutableDictionary* modifications;
 @end
 
 NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";

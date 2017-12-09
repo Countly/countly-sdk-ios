@@ -9,7 +9,7 @@
 @interface CountlyViewTracking ()
 @property (nonatomic) NSTimeInterval lastViewStartTime;
 @property (nonatomic) NSTimeInterval accumulatedTime;
-@property (nonatomic, strong) NSMutableArray* exceptionViewControllers;
+@property (nonatomic) NSMutableArray* exceptionViewControllers;
 @end
 
 NSString* const kCountlyReservedEventView = @"[CLY]_view";

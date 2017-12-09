@@ -13,8 +13,8 @@
 - (void)showDialog:(void(^)(NSInteger rating))completion;
 - (void)checkForAutoAsk;
 
-@property (nonatomic, strong) NSString* message;
-@property (nonatomic, strong) NSString* dismissButtonTitle;
+@property (nonatomic) NSString* message;
+@property (nonatomic) NSString* dismissButtonTitle;
 @property (nonatomic) NSUInteger sessionCount;
 @property (nonatomic) BOOL disableAskingForEachAppVersion;
 @property (nonatomic, copy) void (^ratingCompletionForAutoAsk)(NSInteger);

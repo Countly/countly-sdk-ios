@@ -8,7 +8,7 @@
 
 @interface CountlyStarRating ()
 #if TARGET_OS_IOS
-@property (nonatomic, strong) UIWindow* alertWindow;
+@property (nonatomic) UIWindow* alertWindow;
 @property (nonatomic, copy) void (^ratingCompletion)(NSInteger);
 #endif
 @end
