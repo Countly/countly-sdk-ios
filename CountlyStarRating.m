@@ -17,6 +17,10 @@ NSString* const kCountlyReservedEventStarRating = @"[CLY]_star_rating";
 NSString* const kCountlyStarRatingStatusSessionCountKey = @"kCountlyStarRatingStatusSessionCountKey";
 NSString* const kCountlyStarRatingStatusHasEverAskedAutomatically = @"kCountlyStarRatingStatusHasEverAskedAutomatically";
 
+NSString* const kCountlySRKeyPlatform    = @"platform";
+NSString* const kCountlySRKeyAppVersion  = @"app_version";
+NSString* const kCountlySRKeyRating      = @"rating";
+
 @implementation CountlyStarRating
 #if TARGET_OS_IOS
 {
@@ -183,9 +187,9 @@ const float kCountlyStarRatingButtonSize = 40;
     {
         NSDictionary* segmentation =
         @{
-            @"platform": CountlyDeviceInfo.osName,
-            @"app_version": CountlyDeviceInfo.appVersion,
-            @"rating": @(rating)
+            kCountlySRKeyPlatform: CountlyDeviceInfo.osName,
+            kCountlySRKeyAppVersion: CountlyDeviceInfo.appVersion,
+            kCountlySRKeyRating: @(rating)
         };
 
         [Countly.sharedInstance recordEvent:kCountlyReservedEventStarRating segmentation:segmentation count:1];
