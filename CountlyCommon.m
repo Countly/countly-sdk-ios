@@ -189,8 +189,8 @@ void CountlyInternalLog(NSString *format, ...)
 
 + (CLYButton *)dismissAlertButton
 {
-    const float kCountlyDismissButtonSize = 30.0;
-    const float kCountlyDismissButtonMargin = 10.0;
+    CGFloat const kCountlyDismissButtonSize = 30.0;
+    CGFloat const kCountlyDismissButtonMargin = 10.0;
     CLYButton* dismissButton = [CLYButton buttonWithType:UIButtonTypeCustom];
     dismissButton.frame = (CGRect){UIScreen.mainScreen.bounds.size.width - kCountlyDismissButtonSize - kCountlyDismissButtonMargin, kCountlyDismissButtonMargin, kCountlyDismissButtonSize, kCountlyDismissButtonSize};
     [dismissButton setTitle:@"✕" forState:UIControlStateNormal];

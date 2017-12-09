@@ -157,7 +157,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
 
 void CountlySignalHandler(int signalCode)
 {
-    const NSInteger kCountlyStackFramesMax = 128;
+    NSInteger const kCountlyStackFramesMax = 128;
     void *stack[kCountlyStackFramesMax];
     NSInteger frameCount = backtrace(stack, kCountlyStackFramesMax);
     char **lines = backtrace_symbols(stack, (int)frameCount);
@@ -207,7 +207,7 @@ void CountlySignalHandler(int signalCode)
     uint32_t imageCount = _dyld_image_count();
     for (uint32_t i = 0; i < imageCount; i++)
     {
-        const char *imageNameChar = _dyld_get_image_name(i);
+        const char* imageNameChar = _dyld_get_image_name(i);
         if (imageNameChar == NULL)
         {
             COUNTLY_LOG(@"Image Name can not be retrieved!");
@@ -223,7 +223,7 @@ void CountlySignalHandler(int signalCode)
         }
 
 
-        const struct mach_header *imageHeader = _dyld_get_image_header(i);
+        const struct mach_header* imageHeader = _dyld_get_image_header(i);
         if (imageHeader == NULL)
         {
             COUNTLY_LOG(@"Image Header can not be retrieved!");
@@ -236,11 +236,11 @@ void CountlySignalHandler(int signalCode)
 
         for (uint32_t j = 0; j < imageHeader->ncmds; j++)
         {
-            const struct segment_command_64 *segCmd = (struct segment_command_64 *)ptr;
+            const struct segment_command_64* segCmd = (struct segment_command_64*)ptr;
 
             if (segCmd->cmd == LC_UUID)
             {
-                const uint8_t *uuid = ((const struct uuid_command *)segCmd)->uuid;
+                const uint8_t* uuid = ((const struct uuid_command*)segCmd)->uuid;
                 imageUUID = [NSUUID.alloc initWithUUIDBytes:uuid].UUIDString;
                 break;
             }

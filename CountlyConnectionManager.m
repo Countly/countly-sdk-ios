@@ -48,7 +48,7 @@ NSString* const kCountlyQSKeyCity             = @"city";
 NSString* const kCountlyQSKeyIP               = @"ip";
 NSString* const kCountlyQSKeyChecksum256      = @"checksum256";
 
-const NSInteger kCountlyGETRequestMaxLength = 2048;
+NSInteger const kCountlyGETRequestMaxLength = 2048;
 NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 NSString* const kCountlyInputEndpoint = @"/i";
 

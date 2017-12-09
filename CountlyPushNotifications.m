@@ -53,7 +53,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         {
             Method method = class_getInstanceMethod(self.class, originalSelector);
             IMP imp = method_getImplementation(method);
-            const char *methodTypeEncoding = method_getTypeEncoding(method);
+            const char* methodTypeEncoding = method_getTypeEncoding(method);
             class_addMethod(appDelegateClass, originalSelector, imp, methodTypeEncoding);
             originalMethod = class_getInstanceMethod(appDelegateClass, originalSelector);
         }
@@ -246,7 +246,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     [alertWindow makeKeyAndVisible];
     [alertWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
 
-    const float kCountlyActionButtonHeight = 44.0;
+    CGFloat const kCountlyActionButtonHeight = 44.0;
     CGRect tempFrame = defaultButton.frame;
     tempFrame.size.height -= buttons.count * kCountlyActionButtonHeight;
     defaultButton.frame = tempFrame;
@@ -360,7 +360,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 - (void)Countly_application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken
 {
     COUNTLY_LOG(@"App didRegisterForRemoteNotificationsWithDeviceToken: %@", deviceToken);
-    const char *bytes = [deviceToken bytes];
+    const char* bytes = [deviceToken bytes];
     NSMutableString *token = NSMutableString.new;
     for (NSUInteger i = 0; i < deviceToken.length; i++)
         [token appendFormat:@"%02hhx", bytes[i]];
