@@ -40,7 +40,7 @@ extern NSString* const kCountlyZeroIDFA;
 + (unsigned long long)totalDisk;
 + (NSInteger)batteryLevel;
 + (NSString *)orientation;
-+ (float)OpenGLESversion;
++ (NSString *)OpenGLESversion;
 + (BOOL)isJailbroken;
 + (BOOL)isInBackground;
 @end

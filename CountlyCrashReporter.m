@@ -124,7 +124,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     crashReport[kCountlyCRKeyBattery] = @(CountlyDeviceInfo.batteryLevel);
     crashReport[kCountlyCRKeyOrientation] = CountlyDeviceInfo.orientation;
     crashReport[kCountlyCRKeyOnline] = @((CountlyDeviceInfo.connectionType) ? 1 : 0 );
-    crashReport[kCountlyCRKeyOpenGL] = @(CountlyDeviceInfo.OpenGLESversion);
+    crashReport[kCountlyCRKeyOpenGL] = CountlyDeviceInfo.OpenGLESversion;
     crashReport[kCountlyCRKeyRoot] = @(CountlyDeviceInfo.isJailbroken);
     crashReport[kCountlyCRKeyBackground] = @(CountlyDeviceInfo.isInBackground);
     crashReport[kCountlyCRKeyRun] = @(CountlyCommon.sharedInstance.timeSinceLaunch);
