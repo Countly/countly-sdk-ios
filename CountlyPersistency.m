@@ -201,7 +201,7 @@ NSString* const kCountlyNotificationPermissionKey = @"kCountlyNotificationPermis
 
     @synchronized (self)
     {
-        saveData = [NSKeyedArchiver archivedDataWithRootObject:@{kCountlyQueuedRequestsPersistencyKey:self.queuedRequests}];
+        saveData = [NSKeyedArchiver archivedDataWithRootObject:@{kCountlyQueuedRequestsPersistencyKey: self.queuedRequests}];
     }
 
     [saveData writeToFile:[self storageFileURL].path atomically:YES];

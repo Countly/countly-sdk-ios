@@ -118,7 +118,7 @@ void CountlyInternalLog(NSString *format, ...)
 
     if (WCSession.defaultSession.paired && WCSession.defaultSession.watchAppInstalled)
     {
-        [WCSession.defaultSession transferUserInfo:@{kCountlyParentDeviceIDTransferKey:CountlyDeviceInfo.sharedInstance.deviceID}];
+        [WCSession.defaultSession transferUserInfo:@{kCountlyParentDeviceIDTransferKey: CountlyDeviceInfo.sharedInstance.deviceID}];
         COUNTLY_LOG(@"Transferring parent device ID %@ ...", CountlyDeviceInfo.sharedInstance.deviceID);
     }
 }

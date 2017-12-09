@@ -43,14 +43,14 @@ const float kCountlyStarRatingButtonSize = 40;
 
         NSDictionary* dictMessage =
         @{
-            @"en" : @"How would you rate the app?",
-            @"tr" : @"Uygulamayı nasıl değerlendirirsiniz?",
-            @"jp" : @"あなたの評価を教えてください。",
-            @"zh" : @"请告诉我你的评价。",
-            @"ru" : @"Как бы вы оценили приложение?",
-            @"cz" : @"Jak hodnotíte aplikaci?",
-            @"lv" : @"Kā Jūs novērtētu šo lietotni?",
-            @"bn" : @"আপনি কিভাবে এই এপ্লিক্যাশনটি মূল্যায়ন করবেন?"
+            @"en": @"How would you rate the app?",
+            @"tr": @"Uygulamayı nasıl değerlendirirsiniz?",
+            @"jp": @"あなたの評価を教えてください。",
+            @"zh": @"请告诉我你的评价。",
+            @"ru": @"Как бы вы оценили приложение?",
+            @"cz": @"Jak hodnotíte aplikaci?",
+            @"lv": @"Kā Jūs novērtētu šo lietotni?",
+            @"bn": @"আপনি কিভাবে এই এপ্লিক্যাশনটি মূল্যায়ন করবেন?"
         };
 
         self.message = dictMessage[langDesignator];
@@ -185,7 +185,7 @@ const float kCountlyStarRatingButtonSize = 40;
         @{
             @"platform": CountlyDeviceInfo.osName,
             @"app_version": CountlyDeviceInfo.appVersion,
-            @"rating" : @(rating)
+            @"rating": @(rating)
         };
 
         [Countly.sharedInstance recordEvent:kCountlyReservedEventStarRating segmentation:segmentation count:1];

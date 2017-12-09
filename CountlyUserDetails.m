@@ -124,7 +124,7 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 - (void)multiply:(NSString *)key value:(NSNumber *)value
 {
-    self.modifications[key] = @{kCountlyUDKeyModifierMultiply:value};
+    self.modifications[key] = @{kCountlyUDKeyModifierMultiply: value};
 }
 
 - (void)max:(NSString *)key value:(NSNumber *)value
