@@ -8,14 +8,14 @@
 
 @implementation CountlyEvent
 
-NSString* const kCountlyEventKeyKey =           @"key";
-NSString* const kCountlyEventKeySegmentation =  @"segmentation";
-NSString* const kCountlyEventKeyCount =         @"count";
-NSString* const kCountlyEventKeySum =           @"sum";
-NSString* const kCountlyEventKeyTimestamp =     @"timestamp";
-NSString* const kCountlyEventKeyHourOfDay =     @"hour";
-NSString* const kCountlyEventKeyDayOfWeek =     @"dow";
-NSString* const kCountlyEventKeyDuration =      @"dur";
+NSString* const kCountlyEventKeyKey           = @"key";
+NSString* const kCountlyEventKeySegmentation  = @"segmentation";
+NSString* const kCountlyEventKeyCount         = @"count";
+NSString* const kCountlyEventKeySum           = @"sum";
+NSString* const kCountlyEventKeyTimestamp     = @"timestamp";
+NSString* const kCountlyEventKeyHourOfDay     = @"hour";
+NSString* const kCountlyEventKeyDayOfWeek     = @"dow";
+NSString* const kCountlyEventKeyDuration      = @"dur";
 
 - (NSDictionary *)dictionaryRepresentation
 {

@@ -19,16 +19,16 @@
 
 NSString* const kCountlyZeroIDFA = @"00000000-0000-0000-0000-000000000000";
 
-NSString* const kCountlyMetricKeyDevice =            @"_device";
-NSString* const kCountlyMetricKeyOS =                @"_os";
-NSString* const kCountlyMetricKeyOSVersion =         @"_os_version";
-NSString* const kCountlyMetricKeyAppVersion =        @"_app_version";
-NSString* const kCountlyMetricKeyCarrier =           @"_carrier";
-NSString* const kCountlyMetricKeyResolution =        @"_resolution";
-NSString* const kCountlyMetricKeyDensity =           @"_density";
-NSString* const kCountlyMetricKeyLocale =            @"_locale";
-NSString* const kCountlyMetricKeyHasWatch =          @"_has_watch";
-NSString* const kCountlyMetricKeyInstalledWatchApp = @"_installed_watch_app";
+NSString* const kCountlyMetricKeyDevice             = @"_device";
+NSString* const kCountlyMetricKeyOS                 = @"_os";
+NSString* const kCountlyMetricKeyOSVersion          = @"_os_version";
+NSString* const kCountlyMetricKeyAppVersion         = @"_app_version";
+NSString* const kCountlyMetricKeyCarrier            = @"_carrier";
+NSString* const kCountlyMetricKeyResolution         = @"_resolution";
+NSString* const kCountlyMetricKeyDensity            = @"_density";
+NSString* const kCountlyMetricKeyLocale             = @"_locale";
+NSString* const kCountlyMetricKeyHasWatch           = @"_has_watch";
+NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
 #if TARGET_OS_IOS
 @interface CountlyDeviceInfo ()

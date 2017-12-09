@@ -16,37 +16,37 @@
 #endif
 @end
 
-NSString* const kCountlyQSKeyAppKey =               @"app_key";
+NSString* const kCountlyQSKeyAppKey           = @"app_key";
 
-NSString* const kCountlyQSKeyDeviceID =             @"device_id";
-NSString* const kCountlyQSKeyDeviceIDOld =          @"old_device_id";
-NSString* const kCountlyQSKeyDeviceIDParent =       @"parent_device_id";
+NSString* const kCountlyQSKeyDeviceID         = @"device_id";
+NSString* const kCountlyQSKeyDeviceIDOld      = @"old_device_id";
+NSString* const kCountlyQSKeyDeviceIDParent   = @"parent_device_id";
 
-NSString* const kCountlyQSKeyTimestamp =            @"timestamp";
-NSString* const kCountlyQSKeyTimeZone =             @"tz";
-NSString* const kCountlyQSKeyTimeHourOfDay =        @"hour";
-NSString* const kCountlyQSKeyTimeDayOfWeek =        @"dow";
+NSString* const kCountlyQSKeyTimestamp        = @"timestamp";
+NSString* const kCountlyQSKeyTimeZone         = @"tz";
+NSString* const kCountlyQSKeyTimeHourOfDay    = @"hour";
+NSString* const kCountlyQSKeyTimeDayOfWeek    = @"dow";
 
-NSString* const kCountlyQSKeySessionBegin =         @"begin_session";
-NSString* const kCountlyQSKeySessionDuration =      @"session_duration";
-NSString* const kCountlyQSKeySessionEnd =           @"end_session";
+NSString* const kCountlyQSKeySessionBegin     = @"begin_session";
+NSString* const kCountlyQSKeySessionDuration  = @"session_duration";
+NSString* const kCountlyQSKeySessionEnd       = @"end_session";
 
-NSString* const kCountlyQSKeyTokenSession =         @"token_session";
-NSString* const kCountlyQSKeyTokeniOS =             @"ios_token";
-NSString* const kCountlyQSKeyTokenMode =            @"test_mode";
+NSString* const kCountlyQSKeyTokenSession     = @"token_session";
+NSString* const kCountlyQSKeyTokeniOS         = @"ios_token";
+NSString* const kCountlyQSKeyTokenMode        = @"test_mode";
 
-NSString* const kCountlyQSKeySDKVersion =           @"sdk_version";
-NSString* const kCountlyQSKeySDKName =              @"sdk_name";
+NSString* const kCountlyQSKeySDKVersion       = @"sdk_version";
+NSString* const kCountlyQSKeySDKName          = @"sdk_name";
 
-NSString* const kCountlyQSKeyMetrics =              @"metrics";
-NSString* const kCountlyQSKeyEvents =               @"events";
-NSString* const kCountlyQSKeyUserDetails =          @"user_details";
-NSString* const kCountlyQSKeyCrash =                @"crash";
-NSString* const kCountlyQSKeyLocation =             @"location";
-NSString* const kCountlyQSKeyCountryCode =          @"country_code";
-NSString* const kCountlyQSKeyCity =                 @"city";
-NSString* const kCountlyQSKeyIP =                   @"ip";
-NSString* const kCountlyQSKeyChecksum256 =          @"checksum256";
+NSString* const kCountlyQSKeyMetrics          = @"metrics";
+NSString* const kCountlyQSKeyEvents           = @"events";
+NSString* const kCountlyQSKeyUserDetails      = @"user_details";
+NSString* const kCountlyQSKeyCrash            = @"crash";
+NSString* const kCountlyQSKeyLocation         = @"location";
+NSString* const kCountlyQSKeyCountryCode      = @"country_code";
+NSString* const kCountlyQSKeyCity             = @"city";
+NSString* const kCountlyQSKeyIP               = @"ip";
+NSString* const kCountlyQSKeyChecksum256      = @"checksum256";
 
 const NSInteger kCountlyGETRequestMaxLength = 2048;
 NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";

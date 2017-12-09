@@ -14,10 +14,10 @@
 
 NSString* const kCountlyReservedEventView = @"[CLY]_view";
 
-NSString* const kCountlyVTKeyName =     @"name";
-NSString* const kCountlyVTKeySegment =  @"segment";
-NSString* const kCountlyVTKeyVisit =    @"visit";
-NSString* const kCountlyVTKeyStart =    @"start";
+NSString* const kCountlyVTKeyName     = @"name";
+NSString* const kCountlyVTKeySegment  = @"segment";
+NSString* const kCountlyVTKeyVisit    = @"visit";
+NSString* const kCountlyVTKeyStart    = @"start";
 
 @implementation CountlyViewTracking
 
