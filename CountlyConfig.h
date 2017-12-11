@@ -76,17 +76,18 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 #pragma mark -
 
 /**
- * @discussion Custom or system generated device ID. If not set, Identifier For Advertising (IDFA) will be used by default.
+ * @discussion Custom or system generated device ID. If not set, Identifier For Vendor (IDFV) will be used by default.
  * @discussion Available system generated device ID options:
- * @discussion @c CLYIDFA (Identifier For Advertising)
  * @discussion @c CLYIDFV (Identifier For Vendor)
+ * @discussion @c CLYIDFA (Identifier For Advertising)
  * @discussion @c CLYOpenUDID (OpenUDID)
  * @discussion Once set, device ID will be stored persistently (even after app delete and re-install) and will not be changed even if set another device ID is set on start, unless @c forceDeviceIDInitialization flag is set.
  */
 @property (nonatomic) NSString* deviceID;
 
 /**
- * For forcing device ID initialization on start. When it is set, persistently stored device ID will be reset and new device ID will be re-initialized with @c deviceID property on @c CountlyConfig object. It is meant to be used for debugging purposes only while developing.
+ * For forcing device ID initialization on start.
+ * @discussion When it is set, persistently stored device ID will be reset and new device ID will be re-initialized using @c deviceID property on @c CountlyConfig object. It is meant to be used for debugging purposes only while developing.
  */
 @property (nonatomic) BOOL forceDeviceIDInitialization;
 
