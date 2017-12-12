@@ -7,8 +7,12 @@
 #import <Foundation/Foundation.h>
 #import <CoreLocation/CoreLocation.h>
 #import "CountlyUserDetails.h"
-#import "CountlyCrashReporter.h"
 #import "CountlyConfig.h"
+#if TARGET_OS_IOS
+#import <UserNotifications/UserNotifications.h>
+#endif
+
+NS_ASSUME_NONNULL_BEGIN
 
 @interface Countly : NSObject
 
@@ -31,7 +35,7 @@
  * @param deviceID New device ID
  * @param onServer If set, data on server will be merged automatically, otherwise device will be counted as a new device
  */
-- (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer;
+- (void)setNewDeviceID:(NSString * _Nullable)deviceID onServer:(BOOL)onServer;
 
 /**
  * Sets the value of the custom HTTP header field to be sent with every request if @c customHeaderFieldName is set on initial configuration.
@@ -41,7 +45,27 @@
 - (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue;
 
 /**
- * Suspends Countly, add recorded events to request queue and ends current session.
+ * Starts session and sends @c begin_session request with default metrics for manual session handling.
+ * @discussion This method needs to be called for starting a session only if @c manualSessionHandling flag is set on initial configuration. Otherwise; sessions will be handled automatically by default, and calling this method will have no effect.
+ */
+- (void)beginSession;
+
+/**
+ * Updates session and sends unsent session duration for manual session handling.
+ * @discussion This method needs to be called for updating a session only if @c manualSessionHandling flag is set on initial configuration. Otherwise; sessions will be handled automatically by default, and calling this method will have no effect.
+ */
+- (void)updateSession;
+
+/**
+ * Ends session and sends @c end_session request for manual session handling.
+ * @discussion This method needs to be called for ending a session only if @c manualSessionHandling flag is set on initial configuration. Otherwise; sessions will be handled automatically by default, and calling this method will have no effect.
+ */
+- (void)endSession;
+
+
+#if TARGET_OS_WATCH
+/**
+ * Suspends Countly, adds recorded events to request queue and ends current session.
  * @discussion This method needs to be called manually only on @c watchOS, on other platforms it will be called automatically.
  */
 - (void)suspend;
@@ -51,6 +75,7 @@
  * @discussion This method needs to be called manually only on @c watchOS, on other platforms it will be called automatically.
  */
 - (void)resume;
+#endif
 
 
 
@@ -96,7 +121,7 @@
  * @param key Event key
  * @param segmentation Segmentation key-value pairs of event
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation;
 
 /**
  * Records event with given key, segmentation and count.
@@ -104,7 +129,7 @@
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count;
 
 /**
  * Records event with given key, segmentation, count and sum.
@@ -113,7 +138,7 @@
  * @param count Count of event occurrences
  * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
 
 /**
  * Records event with given key, segmentation, count, sum and duration.
@@ -123,10 +148,10 @@
  * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
  * @param duration Duration of event in seconds
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
 
 /**
- * Starts a timed event with given key to be ended later. Duration of timed event will be calculated on ending. 
+ * Starts a timed event with given key to be ended later. Duration of timed event will be calculated on ending.
  * @discussion Trying to start an event with already started key will have no effect.
  * @param key Event key
  */
@@ -140,72 +165,47 @@
 - (void)endEvent:(NSString *)key;
 
 /**
- * Ends a previously started timed event with given key, segmentation, count and sum. 
+ * Ends a previously started timed event with given key, segmentation, count and sum.
  * @discussion Trying to end an event with already ended (or not yet started) key will have no effect.
  * @param key Event key
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
  * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
  */
-- (void)endEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum;
+- (void)endEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
 
 
 
-#pragma mark - Countly Messaging
+#pragma mark - Countly PushNotifications
 #if TARGET_OS_IOS
-- (void)didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken;
-
-- (void)didFailToRegisterForRemoteNotifications;
-
 /**
- * Create a set of UIMutableUserNotificationCategory'ies which you can register in addition to your ones to enable iOS 8 actions.
+ * Shows default system dialog that asks for user's permission to display notifications.
+ * @discussion A unified convenience method that handles asking for notification permisson on both iOS10 and older iOS versions with badge, sound and alert notification types.
  */
-- (NSMutableSet *) countlyNotificationCategories;
+- (void)askForNotificationPermission;
 
 /**
- * Create a set of UIMutableUserNotificationCategory'ies which you can register in addition to your ones to enable iOS 8 actions. This method gives you ability to provide localized or just different versions of your action titles.
- * @param actions Array of NSString objects in following order: Cancel, Open, Update, Review
+ * Shows default system dialog that asks for user's permission to display notifications with given options and completion handler.
+ * @discussion A more customizable version of unified convenience method that handles asking for notification permisson on both iOS10 and older iOS versions where notification types app wants to display can be specified using @c options parameter. Completion block has a @c BOOL parameter called @c granted which is @c YES if user gave permission, and an @c NSError parameter called @c error which indicates if there is an error.
+ * @param options Bitwise combination of notification types (like badge, sound or alert) app wants to display
+ * @param completionHandler A completion handler block to be executed when user answers notification permission dialog
  */
-- (NSMutableSet *) countlyNotificationCategoriesWithActionTitles:(NSArray *)actions;
+- (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler;
 
 /**
- * Method that does automatic processing for Countly Messaging:
- * - It records that the message has been received.
- * - In case of standard Countly messages (Message, URL, Update, Review) it displays alert with app name as a title:
- * --- for Message - just alert with message text and button OK;
- * --- for URL - Cancel & Open buttons;
- * --- for Update - Cancel & Update buttons;
- * --- for Review - Cancel & Review buttons.
- * Whenever user presses one of (Open, Update, Review) buttons Countly performs corresponding action (opens up a Safari for URL type, opens your app page in App Store for Update and review section of your app in App Store for Review) and records Action event so you could then see conversion rates in Countly Dashboard.
- * @param info Dictionary you got from application:didReceiveRemoteNotification:
- * @param titles Array of NSString objects in following order: Cancel, Open, Update, Review
- * @return TRUE When Countly has successfully handled notification and presented alert, FALSE otherwise.
- */
-- (BOOL)handleRemoteNotification:(NSDictionary *)info withButtonTitles:(NSArray *)titles;
-
-/**
- * Same as previous method, but with default button titles Cancel, OK, URL, Update, Review.
- */
-- (BOOL)handleRemoteNotification:(NSDictionary *)info;
-
-/**
- * Method records push opened event. Quite handy if you do not call handleRemoteNotification: method, but still want to see conversions in Countly Dashboard.
- * @param c NSDictionary of @"c" userInfo key.
- */
-- (void)recordPushOpenForCountlyDictionary:(NSDictionary *)c;
-
-/**
- * Method records push action event. Quite handy if you do not call handleRemoteNotification: method, but still want to see conversions in Countly Dashboard.
- * @param c NSDictionary of @"c" userInfo key.
- */
-- (void)recordPushActionForCountlyDictionary:(NSDictionary *)c;
-
-
-/**
- * Records location with given coordinate to be used for location-aware push notifications.
- * @param coordinate CLLocationCoordinate2D struct with latitude and longitude
+ * Records user's location to be used for geo-location based push notifications and advanced segmentation.
+ * @discussion By default, geoip database is used for acquiring user's location. If the app uses Core Location services, location with better accuracy can be provided using this method. Calling this method once or twice per app launch is enough, instead of each location update.
+ * @param coordinate User's location with latitude and longitude
  */
 - (void)recordLocation:(CLLocationCoordinate2D)coordinate;
+
+/**
+ * Records action event for a manually presented push notification with custom action buttons.
+ * @discussion If a push notification with custom action buttons is handled and presented manually using custom UI, user's action needs to be reported manually. With this convenience method user's action can be reported passing push notification dictionary and clicked button index. Button index should be 0 for default action, 1 for the first action button and 2 for the second action button.
+ * @param userInfo Manually presented push notification dictionary
+ * @param buttonIndex Clicked custom action button index
+ */
+- (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
 #endif
 
 
@@ -213,17 +213,32 @@
 #pragma mark - Countly CrashReporting
 #if TARGET_OS_IOS
 /**
- * Records a handled exception manually, besides automatically reported unhandled exceptions and crashes.
+ * Records a handled exception manually.
  * @param exception Exception to be reported
  */
 - (void)recordHandledException:(NSException *)exception;
 
 /**
- * Records custom logs to be delivered with crash report.
- * @discussion Logs recorded by `crashLog:` method are stored in a non-persistent structure, and delivered to server only in case of a crash.
- * @param format Custom log string or format to be recorded
+ * Records a handled exception and given stack trace manually.
+ * @param exception Exception to be reported
+ * @param stackTrace Stack trace to be reported
  */
-- (void)crashLog:(NSString *)format, ... NS_FORMAT_FUNCTION(1,2);
+- (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace;
+
+/**
+ * Records custom logs to be delivered with crash report.
+ * @discussion Logs recorded by this method are stored in a non-persistent structure, and delivered to server only in case of a crash.
+ * @param log Custom log string to be recorded
+ */
+- (void)recordCrashLog:(NSString *)log;
+
+/**
+ * @c crashLog: method is deprecated. Please use @c recordCrashLog: method instead.
+ * @discussion While @c crashLog: method's parameter type is string format, new @c recordCrashLog: method's parameter type is plain NSString for better Swift compatibility. Please update your code accordingly.
+ * @discussion Calls to @c crashLog: method will have no effect.
+ */
+- (void)crashLog:(NSString *)format, ... NS_FORMAT_FUNCTION(1,2) DEPRECATED_MSG_ATTRIBUTE("Use 'recordCrashLog:' method instead!");
+
 #endif
 
 
@@ -247,26 +262,26 @@
 #pragma mark - Countly AutoViewTracking
 
 /**
- * Reports a visited view with given name manually. 
- * @discussion If auto ViewTracking feature is activated on start configuration, this method does not need to be called manually.
+ * Reports a visited view with given name manually.
+ * @discussion If auto ViewTracking feature is activated on initial configuration, this method does not need to be called manually.
  * @param viewName Name of the view visited
  */
 - (void)reportView:(NSString *)viewName;
 
 #if TARGET_OS_IOS
 /**
- * Adds exception @c UIViewController subclass for AutoViewTracking.
- * @discussion Added @c UIViewContoller subclasses will be ignored by AutoViewTracking and their appearances and disappearances will not be reported. Adding an already added @c UIViewController subclass again will have no effect.
- * @param exceptionViewControllerSubclass Exception @c UIViewController subclass to be added
+ * Adds exception for AutoViewTracking.
+ * @discussion @c UIViewContollers with specified title or class name will be ignored by AutoViewTracking and their appearances and disappearances will not be reported. Adding an already added @c UIViewController title or subclass name again will have no effect.
+ * @param exception @c UIViewContoller title or subclass name to be added as exception
  */
-- (void)addExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass;
+- (void)addExceptionForAutoViewTracking:(NSString *)exception;
 
 /**
- * Removes exception @c UIViewController subclass for AutoViewTracking.
- * @discussion Removing an already removed (or not yet added) @c UIViewController subclass again will have no effect.
- * @param exceptionViewControllerSubclass Exception @c UIViewController subclass to be removed
+ * Removes exception for AutoViewTracking.
+ * @discussion Removing an already removed (or not yet added) @c UIViewController title or subclass name will have no effect.
+ * @param exception @c UIViewContoller title or subclass name to be removed
  */
-- (void)removeExceptionForAutoViewTracking:(Class)exceptionViewControllerSubclass;
+- (void)removeExceptionForAutoViewTracking:(NSString *)exception;
 
 /**
  * Enables or disables AutoViewTracking, if AutoViewTracking feature is activated on start configuration.
@@ -285,14 +300,29 @@
  */
 + (CountlyUserDetails *)user;
 
+/**
+ * Handles switching from device ID to custom user ID for logged in users
+ * @discussion When a user logs in, this user can be tracked with custom user ID instead of device ID. This is just a convenience method that handles setting user ID as new device ID and merging existing data on server.
+ * @param userID Custom user ID uniquely defining the logged in user
+ */
+- (void)userLoggedIn:(NSString *)userID;
+
+/**
+ * Handles switching from custom user ID to device ID for logged out users
+ * @discussion When a user logs out, all the data can be tracked with default device ID henceforth. This is just a convenience method that handles resetting device ID to default one and starting a new session.
+ */
+- (void)userLoggedOut;
 
 #pragma mark - Countly StarRating
 #if TARGET_OS_IOS
 /**
  * Shows star-rating dialog manually and executes completion block after user's action.
- * @discussion Completion block takes a single NSInteger argument that indicates 1 to 5 star-rating given by user. If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to server.
+ * @discussion Completion block has a single NSInteger parameter that indicates 1 to 5 star-rating given by user. If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to server.
  * @param completion A block object to be executed when user gives a star-rating or dismisses dialog without rating
  */
 - (void)askForStarRating:(void(^)(NSInteger rating))completion;
 #endif
+
+NS_ASSUME_NONNULL_END
+
 @end

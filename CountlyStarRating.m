@@ -6,11 +6,11 @@
 
 #import "CountlyCommon.h"
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated"
-
 @interface CountlyStarRating ()
-@property (nonatomic, copy, nullable) void (^ratingCompletion)(NSInteger);
+#if TARGET_OS_IOS
+@property (nonatomic, strong) UIWindow* alertWindow;
+@property (nonatomic, copy) void (^ratingCompletion)(NSInteger);
+#endif
 @end
 
 NSString* const kCountlyReservedEventStarRating = @"[CLY]_star_rating";
@@ -22,10 +22,9 @@ NSString* const kCountlyStarRatingStatusHasEverAskedAutomatically = @"kCountlySt
 {
     UIButton* btn_star[5];
     UIAlertController* alertController;
-    UIAlertView* alertView;
 }
 
-const float buttonSize = 40;
+const float kCountlyStarRatingButtonSize = 40;
 
 + (instancetype)sharedInstance
 {
@@ -42,34 +41,20 @@ const float buttonSize = 40;
     {
         NSString* langDesignator = [NSLocale.preferredLanguages.firstObject substringToIndex:2];
 
-        NSDictionary* dictDismiss =
-        @{
-              @"en" : @"Dismiss",
-              @"tr" : @"Kapat",
-              @"jp" : @"閉じる",
-              @"zh" : @"关闭",
-              @"de" : @"Schließen",
-              @"fr" : @"Fermer",
-              @"es" : @"Cerrar",
-              @"ru" : @"закрыть",
-              @"lv" : @"Aizvērt",
-              @"cs" : @"Zavřít"
-        };
-
-        self.dismissButtonTitle = dictDismiss[langDesignator];
-        if(!self.dismissButtonTitle)
-            self.dismissButtonTitle = dictDismiss[@"en"];
-
         NSDictionary* dictMessage =
         @{
             @"en" : @"How would you rate the app?",
             @"tr" : @"Uygulamayı nasıl değerlendirirsiniz?",
             @"jp" : @"あなたの評価を教えてください。",
-            @"zh" : @"请告诉我你的评价。"
+            @"zh" : @"请告诉我你的评价。",
+            @"ru" : @"Как бы вы оценили приложение?",
+            @"cz" : @"Jak hodnotíte aplikaci?",
+            @"lv" : @"Kā Jūs novērtētu šo lietotni?",
+            @"bn" : @"আপনি কিভাবে এই এপ্লিক্যাশনটি মূল্যায়ন করবেন?"
         };
 
         self.message = dictMessage[langDesignator];
-        if(!self.message)
+        if (!self.message)
             self.message = dictMessage[@"en"];
     }
 
@@ -80,78 +65,56 @@ const float buttonSize = 40;
 {
     self.ratingCompletion = completion;
 
-    if(UIAlertController.class)
-    {
-        alertController = [UIAlertController alertControllerWithTitle:@" " message:self.message preferredStyle:UIAlertControllerStyleAlert];
+    alertController = [UIAlertController alertControllerWithTitle:@" " message:self.message preferredStyle:UIAlertControllerStyleAlert];
 
-        UIAlertAction* dismiss = [UIAlertAction actionWithTitle:self.dismissButtonTitle style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action)
+    CLYButton* dismissButton = [CLYButton dismissAlertButton];
+    dismissButton.onClick = ^(id sender)
+    {
+        [alertController dismissViewControllerAnimated:YES completion:^
         {
             [self finishWithRating:0];
         }];
+    };
+    [alertController.view addSubview:dismissButton];
 
-        [alertController addAction:dismiss];
+    CLYInternalViewController* cvc = CLYInternalViewController.new;
+    [cvc setPreferredContentSize:(CGSize){kCountlyStarRatingButtonSize * 5, kCountlyStarRatingButtonSize * 1.5}];
+    [cvc.view addSubview:[self starView]];
 
-        UIViewController* cvc = UIViewController.new;
-        [cvc setPreferredContentSize:(CGSize){buttonSize * 5, buttonSize * 1.5}];
-        [cvc.view addSubview:[self starView]];
-
-        @try
-        {
-            [alertController setValue:cvc forKey:@"contentViewController"];
-        }
-        @catch(NSException* exception)
-        {
-            COUNTLY_LOG(@"UIAlertController's contentViewController can not be set: \n%@", exception);
-        }
-
-        //NOTE: if rootViewController is not set at early app launch, try again 1 sec after.
-        UIViewController* rvc = UIApplication.sharedApplication.keyWindow.rootViewController;
-        if(rvc)
-        {
-            [rvc presentViewController:alertController animated:YES completion:nil];
-        }
-        else
-        {
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
-            {
-                [UIApplication.sharedApplication.keyWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
-            });
-        }
-    }
-    else
+    @try
     {
-        alertView = [UIAlertView.alloc initWithTitle:@" " message:self.message delegate:self cancelButtonTitle:self.dismissButtonTitle otherButtonTitles:nil];
-
-        UIView* vw_star = [self starView];
-        CGRect f = vw_star.frame;
-        f.size.height *= 1.5;
-        UIView* aligner = UIView.new;
-        aligner.frame = f;
-        [aligner addSubview:vw_star];
-
-        [alertView setValue:aligner forKey:@"accessoryView"];
-        [alertView show];
+        [alertController setValue:cvc forKey:@"contentViewController"];
     }
+    @catch(NSException* exception)
+    {
+        COUNTLY_LOG(@"UIAlertController's contentViewController can not be set: \n%@", exception);
+    }
+
+    self.alertWindow = [UIWindow.alloc initWithFrame:UIScreen.mainScreen.bounds];
+    self.alertWindow.rootViewController = CLYInternalViewController.new;
+    self.alertWindow.windowLevel = UIWindowLevelAlert;
+    [self.alertWindow makeKeyAndVisible];
+    [self.alertWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
 }
 
 - (void)checkForAutoAsk
 {
     NSMutableDictionary* status = [CountlyPersistency.sharedInstance retrieveStarRatingStatus].mutableCopy;
 
-    if(self.disableAskingForEachAppVersion && status[kCountlyStarRatingStatusHasEverAskedAutomatically])
+    if (self.disableAskingForEachAppVersion && status[kCountlyStarRatingStatusHasEverAskedAutomatically])
         return;
 
-    if(self.sessionCount != 0)
+    if (self.sessionCount != 0)
     {
         NSString* keyForAppVersion = [kCountlyStarRatingStatusSessionCountKey stringByAppendingString:CountlyDeviceInfo.appVersion];
         NSInteger sessionCountSoFar = [status[keyForAppVersion] integerValue];
         sessionCountSoFar++;
 
-        if(self.sessionCount == sessionCountSoFar)
+        if (self.sessionCount == sessionCountSoFar)
         {
-            COUNTLY_LOG(@"Asking for star-rating as session count reached specified limit %i ...", self.sessionCount);
+            COUNTLY_LOG(@"Asking for star-rating as session count reached specified limit %d ...", (int)self.sessionCount);
 
-            [self showDialog:^(NSInteger rating){}];
+            [self showDialog:self.ratingCompletionForAutoAsk];
 
             status[kCountlyStarRatingStatusHasEverAskedAutomatically] = @YES;
         }
@@ -164,12 +127,12 @@ const float buttonSize = 40;
 
 - (UIView *)starView
 {
-    UIView* vw_star = [UIView.alloc initWithFrame:(CGRect){0, 0, buttonSize * 5, buttonSize}];
+    UIView* vw_star = [UIView.alloc initWithFrame:(CGRect){0, 0, kCountlyStarRatingButtonSize * 5, kCountlyStarRatingButtonSize}];
     vw_star.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleRightMargin | UIViewAutoresizingFlexibleBottomMargin;
 
     for (int i = 0; i < 5; i++)
     {
-        btn_star[i] = [UIButton.alloc initWithFrame:(CGRect){i * buttonSize, 0, buttonSize, buttonSize}];
+        btn_star[i] = [UIButton.alloc initWithFrame:(CGRect){i * kCountlyStarRatingButtonSize, 0, kCountlyStarRatingButtonSize, kCountlyStarRatingButtonSize}];
         btn_star[i].titleLabel.font = [UIFont fontWithName:@"Helvetica" size:28];
         [btn_star[i] setTitle:@"★" forState:UIControlStateNormal];
         [btn_star[i] setTitleColor:[self passiveStarColor] forState:UIControlStateNormal];
@@ -189,14 +152,6 @@ const float buttonSize = 40;
     _message = message;
 }
 
-- (void)setDismissButtonTitle:(NSString *)dismissButtonTitle
-{
-    if (dismissButtonTitle == nil)
-        return;
-
-    _dismissButtonTitle = dismissButtonTitle;
-}
-
 - (void)onClick_star:(id)sender
 {
     UIColor* color = [self activeStarColor];
@@ -206,38 +161,38 @@ const float buttonSize = 40;
     {
         [btn_star[i] setTitleColor:color forState:UIControlStateNormal];
 
-        if(btn_star[i] == sender)
+        if (btn_star[i] == sender)
         {
             color = [self passiveStarColor];
-            rating = i+1;
+            rating = i + 1;
         }
     }
 
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
     {
-        if(alertController)
-            [alertController dismissViewControllerAnimated:YES completion:^{ [self finishWithRating:rating]; }];
-        else if(alertView)
-            [alertView dismissWithClickedButtonIndex:rating animated:YES];
+        [alertController dismissViewControllerAnimated:YES completion:^{ [self finishWithRating:rating]; }];
     });
 }
 
 - (void)finishWithRating:(NSInteger)rating
 {
-    if(self.ratingCompletion)
+    if (self.ratingCompletion)
         self.ratingCompletion(rating);
 
-    if(rating==0)
-        return;
+    if (rating != 0)
+    {
+        NSDictionary* segmentation =
+        @{
+            @"platform": CountlyDeviceInfo.osName,
+            @"app_version": CountlyDeviceInfo.appVersion,
+            @"rating" : @(rating)
+        };
 
-    NSDictionary* segmentation =
-    @{
-        @"platform": CountlyDeviceInfo.osName,
-        @"appVersion": CountlyDeviceInfo.appVersion,
-        @"rating" : @(rating)
-    };
+        [Countly.sharedInstance recordEvent:kCountlyReservedEventStarRating segmentation:segmentation count:1];
+    }
 
-    [Countly.sharedInstance recordEvent:kCountlyReservedEventStarRating segmentation:segmentation count:1 sum:0];
+    self.alertWindow.hidden = YES;
+    self.alertWindow = nil;
 
     self.ratingCompletion = nil;
 }
@@ -252,10 +207,5 @@ const float buttonSize = 40;
     return [UIColor colorWithWhite:178/255.0 alpha:1];
 }
 
-- (void)alertView:(UIAlertView *)alertView didDismissWithButtonIndex:(NSInteger)buttonIndex
-{
-    [self finishWithRating:buttonIndex];
-}
 #endif
 @end
-#pragma clang diagnostic pop

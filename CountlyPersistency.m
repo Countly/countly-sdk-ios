@@ -19,6 +19,7 @@ NSString* const kCountlyTVOSNSUDKey = @"kCountlyTVOSNSUDKey";
 NSString* const kCountlyStoredDeviceIDKey = @"kCountlyStoredDeviceIDKey";
 NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKey";
 NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
+NSString* const kCountlyNotificationPermissionKey = @"kCountlyNotificationPermissionKey";
 
 + (instancetype)sharedInstance
 {
@@ -38,17 +39,17 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 #else
         NSData* readData = [NSData dataWithContentsOfURL:[self storageFileURL]];
 #endif
-        if(readData)
+        if (readData)
         {
             NSDictionary* readDict = [NSKeyedUnarchiver unarchiveObjectWithData:readData];
 
             self.queuedRequests = [readDict[kCountlyQueuedRequestsPersistencyKey] mutableCopy];
         }
 
-        if(!self.queuedRequests)
+        if (!self.queuedRequests)
             self.queuedRequests = NSMutableArray.new;
 
-        if(!self.startedEvents)
+        if (!self.startedEvents)
             self.startedEvents = NSMutableDictionary.new;
 
         self.recordedEvents = NSMutableArray.new;
@@ -65,7 +66,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
     {
         [self.queuedRequests addObject:queryString];
 
-        if(self.queuedRequests.count > self.storedRequestsLimit && !CountlyConnectionManager.sharedInstance.connection)
+        if (self.queuedRequests.count > self.storedRequestsLimit && !CountlyConnectionManager.sharedInstance.connection)
         {
             [self.queuedRequests removeObjectsInRange:(NSRange){0,1}];
         }
@@ -107,7 +108,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 
     @synchronized (self.recordedEvents)
     {
-        if(self.recordedEvents.count == 0)
+        if (self.recordedEvents.count == 0)
             return nil;
 
         for (CountlyEvent* event in self.recordedEvents.copy)
@@ -117,7 +118,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
         }
     }
 
-    return [tempArray JSONify];
+    return [tempArray cly_JSONify];
 }
 
 #pragma mark ---
@@ -126,7 +127,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 {
     @synchronized (self.startedEvents)
     {
-        if(self.startedEvents[event.key])
+        if (self.startedEvents[event.key])
         {
             COUNTLY_LOG(@"Event with key '%@' already started!", event.key);
             return;
@@ -175,7 +176,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
         if (![NSFileManager.defaultManager fileExistsAtPath:url.absoluteString])
         {
             [NSFileManager.defaultManager createDirectoryAtURL:url withIntermediateDirectories:YES attributes:nil error:&error];
-            if(error){ COUNTLY_LOG(@"Application Support directory can not be created: \n%@", error); }
+            if (error){ COUNTLY_LOG(@"Application Support directory can not be created: \n%@", error); }
         }
 
         url = [url URLByAppendingPathComponent:kCountlyPersistencyFileName];
@@ -194,14 +195,11 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 
 - (void)saveToFileSync
 {
-    NSDictionary* saveDict = @{
-                                kCountlyQueuedRequestsPersistencyKey:self.queuedRequests
-                              };
     NSData* saveData;
 
     @synchronized (self)
     {
-        saveData = [NSKeyedArchiver archivedDataWithRootObject:saveDict];
+        saveData = [NSKeyedArchiver archivedDataWithRootObject:@{kCountlyQueuedRequestsPersistencyKey:self.queuedRequests}];
     }
 #if TARGET_OS_TV
     [NSUserDefaults.standardUserDefaults setObject:saveData forKey:kCountlyTVOSNSUDKey];
@@ -217,7 +215,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 {
     NSString* retrievedDeviceID = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyStoredDeviceIDKey];
 
-    if(retrievedDeviceID)
+    if (retrievedDeviceID)
     {
         COUNTLY_LOG(@"Device ID successfully retrieved from UserDefaults: %@", retrievedDeviceID);
         return retrievedDeviceID;
@@ -242,7 +240,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 
         if (data)
         {
-            retrievedDeviceID = [data stringUTF8];
+            retrievedDeviceID = [data cly_stringUTF8];
 
             COUNTLY_LOG(@"Device ID successfully retrieved from KeyChain: %@", retrievedDeviceID);
 
@@ -269,20 +267,20 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
         (__bridge id)kSecAttrService:       kCountlyStoredDeviceIDKey,
         (__bridge id)kSecClass:             (__bridge id)kSecClassGenericPassword,
         (__bridge id)kSecAttrAccessible:    (__bridge id)kSecAttrAccessibleAlways,
-        (__bridge id)kSecValueData:         [deviceID dataUTF8]
+        (__bridge id)kSecValueData:         [deviceID cly_dataUTF8]
     };
 
     SecItemDelete((__bridge CFDictionaryRef)keychainDict);
 
     OSStatus status = SecItemAdd((__bridge CFDictionaryRef)keychainDict, NULL);
 
-    if(status == noErr)
+    if (status == noErr)
     {
         COUNTLY_LOG(@"Device ID successfully stored: %@", deviceID);
     }
     else
     {
-        COUNTLY_LOG(@"Device ID can not be stored! %d", status);
+        COUNTLY_LOG(@"Device ID can not be stored! %d", (int)status);
     }
 }
 
@@ -300,7 +298,7 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 - (NSDictionary *)retrieveStarRatingStatus
 {
     NSDictionary* status = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyStarRatingStatusKey];
-    if(!status)
+    if (!status)
         status = NSDictionary.new;
 
     return status;
@@ -311,4 +309,16 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
     [NSUserDefaults.standardUserDefaults setObject:status forKey:kCountlyStarRatingStatusKey];
     [NSUserDefaults.standardUserDefaults synchronize];
 }
+
+- (BOOL)retrieveNotificationPermission
+{
+    return [NSUserDefaults.standardUserDefaults boolForKey:kCountlyNotificationPermissionKey];
+}
+
+- (void)storeNotificationPermission:(BOOL)allowed
+{
+    [NSUserDefaults.standardUserDefaults setBool:allowed forKey:kCountlyNotificationPermissionKey];
+    [NSUserDefaults.standardUserDefaults synchronize];
+}
+
 @end

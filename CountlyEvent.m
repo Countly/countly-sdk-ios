@@ -8,20 +8,29 @@
 
 @implementation CountlyEvent
 
+NSString* const kCountlyEventKeyKey =           @"key";
+NSString* const kCountlyEventKeySegmentation =  @"segmentation";
+NSString* const kCountlyEventKeyCount =         @"count";
+NSString* const kCountlyEventKeySum =           @"sum";
+NSString* const kCountlyEventKeyTimestamp =     @"timestamp";
+NSString* const kCountlyEventKeyHourOfDay =     @"hour";
+NSString* const kCountlyEventKeyDayOfWeek =     @"dow";
+NSString* const kCountlyEventKeyDuration =      @"dur";
+
 - (NSDictionary *)dictionaryRepresentation
 {
     NSMutableDictionary* eventData = NSMutableDictionary.dictionary;
-    eventData[@"key"] = self.key;
+    eventData[kCountlyEventKeyKey] = self.key;
     if (self.segmentation)
     {
-        eventData[@"segmentation"] = self.segmentation;
+        eventData[kCountlyEventKeySegmentation] = self.segmentation;
     }
-    eventData[@"count"] = @(self.count);
-    eventData[@"sum"] = @(self.sum);
-    eventData[@"timestamp"] = @((long)(self.timestamp * 1000));
-    eventData[@"hour"] = @(self.hourOfDay);
-    eventData[@"dow"] = @(self.dayOfWeek);
-    eventData[@"dur"] = @(self.duration);
+    eventData[kCountlyEventKeyCount] = @(self.count);
+    eventData[kCountlyEventKeySum] = @(self.sum);
+    eventData[kCountlyEventKeyTimestamp] = @((long long)(self.timestamp * 1000));
+    eventData[kCountlyEventKeyHourOfDay] = @(self.hourOfDay);
+    eventData[kCountlyEventKeyDayOfWeek] = @(self.dayOfWeek);
+    eventData[kCountlyEventKeyDuration] = @(self.duration);
     return eventData;
 }
 
@@ -33,27 +42,27 @@
         return nil;
     }
 
-    self.key = [decoder decodeObjectForKey:@"key"];
-    self.segmentation = [decoder decodeObjectForKey:@"segmentation"];
-    self.count = [decoder decodeIntegerForKey:@"count"];
-    self.sum = [decoder decodeDoubleForKey:@"sum"];
-    self.timestamp = [decoder decodeDoubleForKey:@"timestamp"];
-    self.hourOfDay = [decoder decodeIntegerForKey:@"hourOfDay"];
-    self.dayOfWeek = [decoder decodeIntegerForKey:@"dayOfWeek"];
-    self.duration = [decoder decodeDoubleForKey:@"duration"];
+    self.key = [decoder decodeObjectForKey:NSStringFromSelector(@selector(key))];
+    self.segmentation = [decoder decodeObjectForKey:NSStringFromSelector(@selector(segmentation))];
+    self.count = [decoder decodeIntegerForKey:NSStringFromSelector(@selector(count))];
+    self.sum = [decoder decodeDoubleForKey:NSStringFromSelector(@selector(sum))];
+    self.timestamp = [decoder decodeDoubleForKey:NSStringFromSelector(@selector(timestamp))];
+    self.hourOfDay = [decoder decodeIntegerForKey:NSStringFromSelector(@selector(hourOfDay))];
+    self.dayOfWeek = [decoder decodeIntegerForKey:NSStringFromSelector(@selector(dayOfWeek))];
+    self.duration = [decoder decodeDoubleForKey:NSStringFromSelector(@selector(duration))];
 
     return self;
 }
 
 - (void)encodeWithCoder:(NSCoder *)encoder
 {
-    [encoder encodeObject:self.key forKey:@"key"];
-    [encoder encodeObject:self.segmentation forKey:@"segmentation"];
-    [encoder encodeInteger:self.count forKey:@"count"];
-    [encoder encodeDouble:self.sum forKey:@"sum"];
-    [encoder encodeDouble:self.timestamp forKey:@"timestamp"];
-    [encoder encodeInteger:self.hourOfDay forKey:@"hourOfDay"];
-    [encoder encodeInteger:self.dayOfWeek forKey:@"dayOfWeek"];
-    [encoder encodeDouble:self.duration forKey:@"duration"];
+    [encoder encodeObject:self.key forKey:NSStringFromSelector(@selector(key))];
+    [encoder encodeObject:self.segmentation forKey:NSStringFromSelector(@selector(segmentation))];
+    [encoder encodeInteger:self.count forKey:NSStringFromSelector(@selector(count))];
+    [encoder encodeDouble:self.sum forKey:NSStringFromSelector(@selector(sum))];
+    [encoder encodeDouble:self.timestamp forKey:NSStringFromSelector(@selector(timestamp))];
+    [encoder encodeInteger:self.hourOfDay forKey:NSStringFromSelector(@selector(hourOfDay))];
+    [encoder encodeInteger:self.dayOfWeek forKey:NSStringFromSelector(@selector(dayOfWeek))];
+    [encoder encodeDouble:self.duration forKey:NSStringFromSelector(@selector(duration))];
 }
 @end

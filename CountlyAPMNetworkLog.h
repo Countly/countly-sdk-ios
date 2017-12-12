@@ -7,9 +7,8 @@
 #import <Foundation/Foundation.h>
 #import "Countly.h"
 
-@interface CountlyAPMNetworkLog : NSObject
-@property (nonatomic, strong) NSURLRequest* request;
-+ (instancetype)createWithRequest:(NSURLRequest *)request startImmediately:(BOOL)startImmediately;
+@interface CountlyAPMNetworkLog : NSObject <NSURLConnectionDataDelegate, NSURLConnectionDelegate>
++ (instancetype)logWithRequest:(NSURLRequest *)request andOriginalDelegate:(id)originalDelegate startNow:(BOOL)startNow;
 - (void)start;
 - (void)updateWithResponse:(NSURLResponse *)response;
 - (void)finish;

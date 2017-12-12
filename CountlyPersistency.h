@@ -35,6 +35,9 @@
 - (NSDictionary *)retrieveStarRatingStatus;
 - (void)storeStarRatingStatus:(NSDictionary *)status;
 
+- (BOOL)retrieveNotificationPermission;
+- (void)storeNotificationPermission:(BOOL)allowed;
+
 @property (nonatomic) NSUInteger eventSendThreshold;
 @property (nonatomic) NSUInteger storedRequestsLimit;
 @end

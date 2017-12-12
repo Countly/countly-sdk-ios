@@ -12,32 +12,28 @@
 @interface CountlyConnectionManager : NSObject <NSURLSessionDelegate>
 
 @property (nonatomic, strong) NSString* appKey;
-@property (nonatomic, strong) NSString* appHost;
+@property (nonatomic, strong) NSString* host;
 @property (nonatomic, strong) NSURLSessionTask* connection;
-@property (nonatomic) BOOL isTestDevice;
-@property (nonatomic) NSTimeInterval updateSessionPeriod;
 @property (nonatomic, strong) NSArray* pinnedCertificates;
 @property (nonatomic, strong) NSString* customHeaderFieldName;
 @property (nonatomic, strong) NSString* customHeaderFieldValue;
 @property (nonatomic, strong) NSString* secretSalt;
 @property (nonatomic) BOOL alwaysUsePOST;
+@property (nonatomic) BOOL applyZeroIDFAFix;
 
 + (instancetype)sharedInstance;
 
 - (void)beginSession;
-- (void)updateSessionWithDuration:(int)duration;
-- (void)endSessionWithDuration:(int)duration;
+- (void)updateSession;
+- (void)endSession;
 
 - (void)sendEvents;
 - (void)sendUserDetails:(NSString *)userDetails;
 - (void)sendPushToken:(NSString *)token;
-- (void)sendCrashReportLater:(NSString *)report;
+- (void)sendCrashReport:(NSString *)report immediately:(BOOL)immediately;
 - (void)sendOldDeviceID:(NSString *)oldDeviceID;
 - (void)sendParentDeviceID:(NSString *)parentDeviceID;
 - (void)sendLocation:(CLLocationCoordinate2D)coordinate;
 
-- (NSString *)queryEssentials;
-- (NSString *)boundary;
-- (BOOL)isRequestSuccessful:(NSURLResponse *)response;
-- (void)tick;
+- (void)proceedOnQueue;
 @end
