@@ -190,7 +190,8 @@ NS_ASSUME_NONNULL_BEGIN
  * @param options Bitwise combination of notification types (like badge, sound or alert) app wants to display
  * @param completionHandler A completion handler block to be executed when user answers notification permission dialog
  */
-- (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler;
+
+- (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler  NS_AVAILABLE_IOS(10_0);
 
 /**
  * Records user's location to be used for geo-location based push notifications and advanced segmentation.

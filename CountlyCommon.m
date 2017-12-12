@@ -99,17 +99,21 @@ void CountlyInternalLog(NSString *format, ...)
     if (!self.enableAppleWatch)
         return;
 
-    if ([WCSession isSupported])
-    {
-        WCSession *session = WCSession.defaultSession;
-        session.delegate = (id<WCSessionDelegate>)self;
-        [session activateSession];
+    if (@available(iOS 9.0, *)) {
+        if ([WCSession isSupported])
+        {
+            WCSession *session = WCSession.defaultSession;
+            session.delegate = (id<WCSessionDelegate>)self;
+            [session activateSession];
+        }
+    } else {
+        // Fallback on earlier versions
     }
 }
 #endif
 
 #if TARGET_OS_IOS
-- (void)transferParentDeviceID
+- (void)transferParentDeviceID NS_AVAILABLE_IOS(9_0)
 {
     if (!self.enableAppleWatch)
         return;

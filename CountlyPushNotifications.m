@@ -34,7 +34,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 #if TARGET_OS_IOS
 
-- (void)startPushNotifications
+- (void)startPushNotifications NS_AVAILABLE_IOS(10_0)
 {
     UNUserNotificationCenter.currentNotificationCenter.delegate = self;
 
@@ -104,22 +104,23 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
     BOOL hasNotificationPermissionBefore = [CountlyPersistency.sharedInstance retrieveNotificationPermission];
 
-    if (NSFoundationVersionNumber > NSFoundationVersionNumber_iOS_9_x_Max)
-    {
+
+    if (@available(iOS 10.0, *)) {
         [UNUserNotificationCenter.currentNotificationCenter getNotificationSettingsWithCompletionHandler:^(UNNotificationSettings* settings)
-        {
-            if (settings.authorizationStatus == UNAuthorizationStatusAuthorized)
-            {
-                [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
-                [CountlyPersistency.sharedInstance storeNotificationPermission:YES];
-            }
-            else if (hasNotificationPermissionBefore)
-            {
-                [CountlyConnectionManager.sharedInstance sendPushToken:@""];
-                [CountlyPersistency.sharedInstance storeNotificationPermission:NO];
-            }
-        }];
+         {
+             if (settings.authorizationStatus == UNAuthorizationStatusAuthorized)
+             {
+                 [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
+                 [CountlyPersistency.sharedInstance storeNotificationPermission:YES];
+             }
+             else if (hasNotificationPermissionBefore)
+             {
+                 [CountlyConnectionManager.sharedInstance sendPushToken:@""];
+                 [CountlyPersistency.sharedInstance storeNotificationPermission:NO];
+             }
+         }];
     }
+
     else
     {
         if (UIApplication.sharedApplication.currentUserNotificationSettings.types != UIUserNotificationTypeNone)
@@ -276,7 +277,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 #pragma mark ---
 
-- (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler NS_AVAILABLE_IOS(10_0)
 {
     COUNTLY_LOG(@"userNotificationCenter:willPresentNotification:withCompletionHandler:");
     COUNTLY_LOG(@"%@", notification.request.content.userInfo.description);
@@ -295,7 +296,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         completionHandler(UNNotificationPresentationOptionNone);
 }
 
-- (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void (^)(void))completionHandler
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void (^)(void))completionHandler NS_AVAILABLE_IOS(10_0)
 {
     COUNTLY_LOG(@"userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:");
     COUNTLY_LOG(@"%@", response.notification.request.content.userInfo.description);
