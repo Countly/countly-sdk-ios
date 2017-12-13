@@ -47,6 +47,7 @@ NSString* const kCountlyQSKeyCountryCode      = @"country_code";
 NSString* const kCountlyQSKeyCity             = @"city";
 NSString* const kCountlyQSKeyIP               = @"ip";
 NSString* const kCountlyQSKeyChecksum256      = @"checksum256";
+NSString* const kCountlyQSKeyIDFA             = @"idfa";
 
 NSInteger const kCountlyGETRequestMaxLength = 2048;
 NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
@@ -414,6 +415,9 @@ NSString* const kCountlyInputEndpoint = @"/i";
         [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyLocation, CountlyCommon.sharedInstance.location.cly_URLEscaped];
     if (CountlyCommon.sharedInstance.IP)
         [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyIP, CountlyCommon.sharedInstance.IP.cly_URLEscaped];
+
+    if (CountlyCommon.sharedInstance.enableAttribution && ASIdentifierManager.sharedManager.advertisingTrackingEnabled)
+        [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyIDFA, ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString];
 
     return additionalInfo;
 }

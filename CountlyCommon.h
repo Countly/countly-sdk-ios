@@ -60,6 +60,7 @@ extern NSString* const kCountlySDKName;
 
 @property (nonatomic) BOOL enableDebug;
 @property (nonatomic) BOOL enableAppleWatch;
+@property (nonatomic) BOOL enableAttribution;
 @property (nonatomic) BOOL manualSessionHandling;
 @property (nonatomic) NSString* ISOCountryCode;
 @property (nonatomic) NSString* city;

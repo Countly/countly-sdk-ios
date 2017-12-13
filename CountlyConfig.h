@@ -144,6 +144,12 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  */
 @property (nonatomic) BOOL applyZeroIDFAFix;
 
+/**
+ * For enabling campaign attribution.
+ * @discussion If set, IDFA (Identifier For Advertising) will be sent with @c begin_session request, unless user has limited ad tracking.
+ */
+@property (nonatomic) BOOL enableAttribution;
+
 #pragma mark -
 
 /**
