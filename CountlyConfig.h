@@ -43,6 +43,16 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  */
 @property (nonatomic) NSString* appKey;
 
+#pragma mark -
+
+/**
+ * For enabling SDK debug mode which prints internal logs.
+ * @discussion If set, SDK will print internal logs to console for debugging. Internal logging works only for Development environment where DEBUG flag is set in Build Settings.
+ */
+@property (nonatomic) BOOL enableDebug;
+
+#pragma mark -
+
 /**
  * For specifying which features Countly will start with.
  * @discussion Available features:
@@ -91,6 +101,12 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  */
 @property (nonatomic) BOOL forceDeviceIDInitialization;
 
+/**
+ * For applying zero-IDFA fix on queued requests.
+ * @discussion If set, all requests in persistently stored request queue will be checked against zero-IDFA issue. If found, they will be fixed by either replacing with IDFV or removing from queue.
+ */
+@property (nonatomic) BOOL applyZeroIDFAFix;
+
 #pragma mark -
 
 /**
@@ -112,13 +128,13 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  */
 @property (nonatomic) NSUInteger storedRequestsLimit;
 
-#pragma mark -
-
 /**
- * For enabling SDK debug mode which prints internal logs.
- * @discussion If set, SDK will print internal logs to console for debugging. Internal logging works only for Development environment where DEBUG flag is set in Build Settings.
+ * For sending all requests using HTTP POST method.
+ * @discussion If set, all requests will be sent using HTTP POST method. Otherwise; only the requests with a file upload or data size more than 2048 bytes will be sent using HTTP POST method.
  */
-@property (nonatomic) BOOL enableDebug;
+@property (nonatomic) BOOL alwaysUsePOST;
+
+#pragma mark -
 
 /**
  * For handling sessions manually.
@@ -127,22 +143,10 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 @property (nonatomic) BOOL manualSessionHandling;
 
 /**
- * For sending all requests using HTTP POST method.
- * @discussion If set, all requests will be sent using HTTP POST method. Otherwise; only the requests with a file upload or data size more than 2048 bytes will be sent using HTTP POST method.
- */
-@property (nonatomic) BOOL alwaysUsePOST;
-
-/**
- * Enables automatic handling of Apple Watch related features.
+ * For enabling automatic handling of Apple Watch related features.
  * @discussion If set, Apple Watch related features like parent device matching, pairing status, and watch app installing status will be handled automatically. Required for using Countly on Apple Watch apps.
  */
 @property (nonatomic) BOOL enableAppleWatch;
-
-/**
- * For applying zero-IDFA fix on queued requests.
- * @discussion If set, all requests in persistently stored request queue will be checked against zero-IDFA issue. If found, they will be fixed by either replacing with IDFV or removing from queue.
- */
-@property (nonatomic) BOOL applyZeroIDFAFix;
 
 /**
  * For enabling campaign attribution.
@@ -156,6 +160,8 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  * For using custom crash segmentation with @c CLYCrashReporting feature.
  */
 @property (nonatomic) NSDictionary* crashSegmentation;
+
+#pragma mark -
 
 /**
  * ISO Country Code can be specified in ISO 3166-1 alpha-2 format to be used for advanced segmentation.
