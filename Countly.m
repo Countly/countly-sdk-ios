@@ -127,7 +127,7 @@
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
 
-#if (TARGET_OS_WATCH)
+#if TARGET_OS_WATCH
     CountlyCommon.sharedInstance.enableAppleWatch = YES;
     [CountlyCommon.sharedInstance activateWatchConnectivity];
 #endif
