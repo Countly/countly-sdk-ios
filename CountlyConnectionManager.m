@@ -416,8 +416,10 @@ NSString* const kCountlyInputEndpoint = @"/i";
     if (CountlyCommon.sharedInstance.IP)
         [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyIP, CountlyCommon.sharedInstance.IP.cly_URLEscaped];
 
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     if (CountlyCommon.sharedInstance.enableAttribution && ASIdentifierManager.sharedManager.advertisingTrackingEnabled)
         [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyIDFA, ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString];
+#endif
 
     return additionalInfo;
 }
