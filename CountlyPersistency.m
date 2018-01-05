@@ -63,9 +63,7 @@ NSString* const kCountlyNotificationPermissionKey = @"kCountlyNotificationPermis
         [self.queuedRequests addObject:queryString];
 
         if (self.queuedRequests.count > self.storedRequestsLimit && !CountlyConnectionManager.sharedInstance.connection)
-        {
-            [self.queuedRequests removeObjectsInRange:(NSRange){0,1}];
-        }
+            [self.queuedRequests removeObjectAtIndex:0];
     }
 }
 
