@@ -47,6 +47,7 @@ NSString* const kCountlyQSKeyCountryCode      = @"country_code";
 NSString* const kCountlyQSKeyCity             = @"city";
 NSString* const kCountlyQSKeyIPAddress        = @"ip_address";
 NSString* const kCountlyQSKeyChecksum256      = @"checksum256";
+NSString* const kCountlyQSKeyAttributionID    = @"aid";
 NSString* const kCountlyQSKeyIDFA             = @"idfa";
 
 NSInteger const kCountlyGETRequestMaxLength = 2048;
@@ -418,7 +419,10 @@ NSString* const kCountlyInputEndpoint = @"/i";
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (CountlyCommon.sharedInstance.enableAttribution && ASIdentifierManager.sharedManager.advertisingTrackingEnabled)
-        [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyIDFA, ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString];
+    {
+        NSDictionary* attribution = @{kCountlyQSKeyIDFA: ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString};
+        [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyAttributionID, [attribution cly_JSONify]];
+    }
 #endif
 
     return additionalInfo;
