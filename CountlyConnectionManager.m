@@ -45,7 +45,7 @@ NSString* const kCountlyQSKeyCrash            = @"crash";
 NSString* const kCountlyQSKeyLocation         = @"location";
 NSString* const kCountlyQSKeyCountryCode      = @"country_code";
 NSString* const kCountlyQSKeyCity             = @"city";
-NSString* const kCountlyQSKeyIP               = @"ip";
+NSString* const kCountlyQSKeyIPAddress        = @"ip_address";
 NSString* const kCountlyQSKeyChecksum256      = @"checksum256";
 NSString* const kCountlyQSKeyIDFA             = @"idfa";
 
@@ -414,7 +414,7 @@ NSString* const kCountlyInputEndpoint = @"/i";
     if (CountlyCommon.sharedInstance.location)
         [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyLocation, CountlyCommon.sharedInstance.location.cly_URLEscaped];
     if (CountlyCommon.sharedInstance.IP)
-        [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyIP, CountlyCommon.sharedInstance.IP.cly_URLEscaped];
+        [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyIPAddress, CountlyCommon.sharedInstance.IP.cly_URLEscaped];
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (CountlyCommon.sharedInstance.enableAttribution && ASIdentifierManager.sharedManager.advertisingTrackingEnabled)
