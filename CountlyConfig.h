@@ -164,25 +164,25 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 #pragma mark -
 
 /**
- * ISO Country Code can be specified in ISO 3166-1 alpha-2 format to be used for advanced segmentation.
+ * ISO Country Code can be specified in ISO 3166-1 alpha-2 format to be used for geo-location based push notifications and advanced segmentation.
  * @discussion It will be sent with @c begin_session request only.
  */
 @property (nonatomic) NSString* ISOCountryCode;
 
 /**
- * City name can be specified as string to be used for advanced segmentation.
+ * City name can be specified as string to be used for geo-location based push notifications and advanced segmentation.
  * @discussion It will be sent with @c begin_session request only.
  */
 @property (nonatomic) NSString* city;
 
 /**
- * Location latitude and longitude can be specified as CLLocationCoordinate2D struct to be used for advanced segmentation and geo-location based push notifications.
+ * Location latitude and longitude can be specified as @c CLLocationCoordinate2D struct to be used for geo-location based push notifications and advanced segmentation.
  * @discussion It will be sent with @c begin_session request only.
  */
 @property (nonatomic) CLLocationCoordinate2D location;
 
 /**
- * IP address can be specified as string to be used for advanced segmentation and geo-ip based push notifications.
+ * IP address can be specified as string to be used for geo-location based push notifications and advanced segmentation.
  * @discussion It will be sent with @c begin_session request only.
  */
 @property (nonatomic) NSString* IP;

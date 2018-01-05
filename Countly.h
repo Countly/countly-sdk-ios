@@ -194,7 +194,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Records user's location to be used for geo-location based push notifications and advanced segmentation.
- * @discussion By default, geoip database is used for acquiring user's location. If the app uses Core Location services, location with better accuracy can be provided using this method. Calling this method once or twice per app launch is enough, instead of each location update.
+ * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location. If the app uses Core Location services and granted permission, a location with better accuracy can be provided using this method. Calling this method once or twice per app launch is enough, instead of on each location update.
  * @param coordinate User's location with latitude and longitude
  */
 - (void)recordLocation:(CLLocationCoordinate2D)coordinate;
