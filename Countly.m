@@ -408,9 +408,14 @@
 
 }
 
-- (void)recordLocation:(CLLocationCoordinate2D)coordinate
+- (void)recordLocation:(CLLocationCoordinate2D)location
 {
-    [CountlyConnectionManager.sharedInstance sendLocation:coordinate];
+    if (!CLLocationCoordinate2DIsValid(location))
+        return;
+
+    [CountlyConnectionManager.sharedInstance sendLocation:location];
+
+    CountlyCommon.sharedInstance.location = [NSString stringWithFormat:@"%f,%f", location.latitude, location.longitude];
 }
 
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
