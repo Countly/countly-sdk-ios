@@ -83,6 +83,33 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  */
 @property (nonatomic) BOOL doNotShowAlertForNotifications;
 
+/**
+ * Location latitude and longitude can be specified as @c CLLocationCoordinate2D struct to be used for geo-location based push notifications and advanced segmentation.
+ * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location. If the app uses Core Location services and granted permission, a location with better accuracy can be provided using this property.
+ * @discussion It will be sent with @c begin_session requests only.
+ */
+@property (nonatomic) CLLocationCoordinate2D location;
+
+/**
+ * City name can be specified as string to be used for geo-location based push notifications and advanced segmentation.
+ * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location. If the app has information about user's city, it can be provided using this property.
+ * @discussion It will be sent with @c begin_session request only.
+ */
+@property (nonatomic) NSString* city;
+
+/**
+ * ISO country code can be specified in ISO 3166-1 alpha-2 format to be used for geo-location based push notifications and advanced segmentation.
+ * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location. If the app has information about user's country, it can be provided using this property.
+ * @discussion It will be sent with @c begin_session request only.
+ */
+@property (nonatomic) NSString* ISOCountryCode;
+
+/**
+ * IP address can be specified as string to be used for geo-location based push notifications and advanced segmentation.
+ * @discussion It will be sent with @c begin_session request only.
+ */
+@property (nonatomic) NSString* IP;
+
 #pragma mark -
 
 /**
@@ -160,35 +187,6 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  * For using custom crash segmentation with @c CLYCrashReporting feature.
  */
 @property (nonatomic) NSDictionary* crashSegmentation;
-
-#pragma mark -
-
-/**
- * ISO country code can be specified in ISO 3166-1 alpha-2 format to be used for geo-location based push notifications and advanced segmentation.
- * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location. If the app has information about user's country, it can be provided using this property.
- * @discussion It will be sent with @c begin_session request only.
- */
-@property (nonatomic) NSString* ISOCountryCode;
-
-/**
- * City name can be specified as string to be used for geo-location based push notifications and advanced segmentation.
- * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location. If the app has information about user's city, it can be provided using this property.
- * @discussion It will be sent with @c begin_session request only.
- */
-@property (nonatomic) NSString* city;
-
-/**
- * Location latitude and longitude can be specified as @c CLLocationCoordinate2D struct to be used for geo-location based push notifications and advanced segmentation.
- * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location. If the app uses Core Location services and granted permission, a location with better accuracy can be provided using this property.
- * @discussion It will be sent with @c begin_session requests only.
- */
-@property (nonatomic) CLLocationCoordinate2D location;
-
-/**
- * IP address can be specified as string to be used for geo-location based push notifications and advanced segmentation.
- * @discussion It will be sent with @c begin_session request only.
- */
-@property (nonatomic) NSString* IP;
 
 #pragma mark -
 
