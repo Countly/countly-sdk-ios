@@ -177,7 +177,8 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 
 /**
  * Location latitude and longitude can be specified as @c CLLocationCoordinate2D struct to be used for geo-location based push notifications and advanced segmentation.
- * @discussion It will be sent with @c begin_session request only.
+ * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location. If the app uses Core Location services and granted permission, a location with better accuracy can be provided using this property.
+ * @discussion It will be sent with @c begin_session requests only.
  */
 @property (nonatomic) CLLocationCoordinate2D location;
 
