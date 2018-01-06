@@ -430,6 +430,11 @@
         [CountlyConnectionManager.sharedInstance sendCityAndCountryCode];
 }
 
+- (void)recordIP:(NSString *)IP
+{
+    CountlyCommon.sharedInstance.IP = IP;
+}
+
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
 {
     [CountlyPushNotifications.sharedInstance recordActionForNotification:userInfo clickedButtonIndex:buttonIndex];

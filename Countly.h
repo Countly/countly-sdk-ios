@@ -211,6 +211,14 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode;
 
 /**
+ * Records user's explicit IP address to be used for geo-location based push notifications and advanced segmentation.
+ * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location, and deduces the IP address from the connection. If the app needs to explicitly specify the IP address due to network requirements, it can be provided using this method.
+ * @discussion This method only overrides @c IP property specified on initial configuration, without sending an immediate request.
+ * @param IP User's explicit IP address
+ */
+- (void)recordIP:(NSString *)IP;
+
+/**
  * Records action event for a manually presented push notification with custom action buttons.
  * @discussion If a push notification with custom action buttons is handled and presented manually using custom UI, user's action needs to be reported manually. With this convenience method user's action can be reported passing push notification dictionary and clicked button index. Button index should be 0 for default action, 1 for the first action button and 2 for the second action button.
  * @param userInfo Manually presented push notification dictionary
