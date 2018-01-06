@@ -362,6 +362,24 @@ NSString* const kCountlyInputEndpoint = @"/i";
     [self proceedOnQueue];
 }
 
+- (void)sendCityAndCountryCode
+{
+    if (!(CountlyCommon.sharedInstance.city || CountlyCommon.sharedInstance.ISOCountryCode))
+        return;
+
+    NSString* queryString = [self queryEssentials];
+
+   if (CountlyCommon.sharedInstance.city)
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyCity, CountlyCommon.sharedInstance.city.cly_URLEscaped];
+
+    if (CountlyCommon.sharedInstance.ISOCountryCode)
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyCountryCode, CountlyCommon.sharedInstance.ISOCountryCode.cly_URLEscaped];
+
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
+
+    [self proceedOnQueue];
+}
+
 #pragma mark ---
 
 - (void)startBackgroundTask

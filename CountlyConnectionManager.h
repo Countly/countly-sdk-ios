@@ -34,6 +34,7 @@
 - (void)sendOldDeviceID:(NSString *)oldDeviceID;
 - (void)sendParentDeviceID:(NSString *)parentDeviceID;
 - (void)sendLocation:(CLLocationCoordinate2D)coordinate;
+- (void)sendCityAndCountryCode;
 
 - (void)proceedOnQueue;
 @end

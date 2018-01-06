@@ -418,6 +418,18 @@
     CountlyCommon.sharedInstance.location = [NSString stringWithFormat:@"%f,%f", location.latitude, location.longitude];
 }
 
+- (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode
+{
+    if (city)
+        CountlyCommon.sharedInstance.city = city;
+
+    if (ISOCountryCode)
+        CountlyCommon.sharedInstance.ISOCountryCode = ISOCountryCode;
+
+    if (city || ISOCountryCode)
+        [CountlyConnectionManager.sharedInstance sendCityAndCountryCode];
+}
+
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
 {
     [CountlyPushNotifications.sharedInstance recordActionForNotification:userInfo clickedButtonIndex:buttonIndex];

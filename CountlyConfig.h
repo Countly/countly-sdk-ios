@@ -164,13 +164,15 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 #pragma mark -
 
 /**
- * ISO Country Code can be specified in ISO 3166-1 alpha-2 format to be used for geo-location based push notifications and advanced segmentation.
+ * ISO country code can be specified in ISO 3166-1 alpha-2 format to be used for geo-location based push notifications and advanced segmentation.
+ * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location. If the app has information about user's country, it can be provided using this property.
  * @discussion It will be sent with @c begin_session request only.
  */
 @property (nonatomic) NSString* ISOCountryCode;
 
 /**
  * City name can be specified as string to be used for geo-location based push notifications and advanced segmentation.
+ * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location. If the app has information about user's city, it can be provided using this property.
  * @discussion It will be sent with @c begin_session request only.
  */
 @property (nonatomic) NSString* city;

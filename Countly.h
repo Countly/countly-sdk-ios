@@ -202,6 +202,15 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)recordLocation:(CLLocationCoordinate2D)coordinate;
 
 /**
+ * Records user's city and/or ISO country code to be used for geo-location based push notifications and advanced segmentation.
+ * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location. If the app has information about user's city and/or country, this information can be provided using this method.
+ * @discussion This method also overrides @c city and @c ISOCountryCode properties specified on initial configuration, in addition to sending an immediate request.
+ * @param city User's city
+ * @param ISOCountryCode User's ISO country code in ISO 3166-1 alpha-2 format
+ */
+- (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode;
+
+/**
  * Records action event for a manually presented push notification with custom action buttons.
  * @discussion If a push notification with custom action buttons is handled and presented manually using custom UI, user's action needs to be reported manually. With this convenience method user's action can be reported passing push notification dictionary and clicked button index. Button index should be 0 for default action, 1 for the first action button and 2 for the second action button.
  * @param userInfo Manually presented push notification dictionary
