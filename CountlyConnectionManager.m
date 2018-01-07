@@ -460,7 +460,7 @@ NSString* const kCountlyInputEndpoint = @"/i";
 
 - (NSInteger)sessionLengthInSeconds
 {
-    static double unsentSessionLength = 0.0;
+    static NSTimeInterval unsentSessionLength = 0.0;
 
     NSTimeInterval currentTime = NSDate.date.timeIntervalSince1970;
     unsentSessionLength += (currentTime - lastSessionStartTime);

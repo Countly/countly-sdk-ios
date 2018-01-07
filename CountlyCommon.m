@@ -88,7 +88,7 @@ void CountlyInternalLog(NSString *format, ...)
     else
         self.lastTimestamp = now;
 
-    return (double)(self.lastTimestamp / 1000.0);
+    return (NSTimeInterval)(self.lastTimestamp / 1000.0);
 }
 
 #pragma mark - Watch Connectivity
