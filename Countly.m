@@ -414,9 +414,9 @@
     if (!CLLocationCoordinate2DIsValid(location))
         return;
 
-    [CountlyConnectionManager.sharedInstance sendLocation:location];
-
     CountlyCommon.sharedInstance.location = [NSString stringWithFormat:@"%f,%f", location.latitude, location.longitude];
+
+    [CountlyConnectionManager.sharedInstance sendLocation];
 }
 
 - (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode

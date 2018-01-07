@@ -352,10 +352,10 @@ NSString* const kCountlyInputEndpoint = @"/i";
     [self proceedOnQueue];
 }
 
-- (void)sendLocation:(CLLocationCoordinate2D)coordinate
+- (void)sendLocation
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%f,%f",
-                             kCountlyQSKeyLocation, coordinate.latitude, coordinate.longitude];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
+                             kCountlyQSKeyLocation, CountlyCommon.sharedInstance.location.cly_URLEscaped];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 

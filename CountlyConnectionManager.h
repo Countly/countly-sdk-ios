@@ -33,7 +33,7 @@
 - (void)sendCrashReport:(NSString *)report immediately:(BOOL)immediately;
 - (void)sendOldDeviceID:(NSString *)oldDeviceID;
 - (void)sendParentDeviceID:(NSString *)parentDeviceID;
-- (void)sendLocation:(CLLocationCoordinate2D)coordinate;
+- (void)sendLocation;
 - (void)sendCityAndCountryCode;
 
 - (void)proceedOnQueue;
