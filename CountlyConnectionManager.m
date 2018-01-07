@@ -186,7 +186,9 @@ NSString* const kCountlyInputEndpoint = @"/i";
                              kCountlyQSKeySessionBegin, @"1",
                              kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
 
-    queryString = [queryString stringByAppendingString:[self additionalInfo]];
+    queryString = [queryString stringByAppendingString:[self pushGeoLocationInfo]];
+
+    queryString = [queryString stringByAppendingString:[self attributionInfo]];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -355,7 +357,7 @@ NSString* const kCountlyInputEndpoint = @"/i";
 - (void)sendLocation
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
-                             kCountlyQSKeyLocation, CountlyCommon.sharedInstance.location.cly_URLEscaped];
+                             kCountlyQSKeyLocation, CountlyPushNotifications.sharedInstance.location.cly_URLEscaped];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -364,16 +366,19 @@ NSString* const kCountlyInputEndpoint = @"/i";
 
 - (void)sendCityAndCountryCode
 {
-    if (!(CountlyCommon.sharedInstance.city || CountlyCommon.sharedInstance.ISOCountryCode))
+    NSString* city = CountlyPushNotifications.sharedInstance.city;
+    NSString* ISOCountryCode = CountlyPushNotifications.sharedInstance.ISOCountryCode;
+
+    if (!(city || ISOCountryCode))
         return;
 
     NSString* queryString = [self queryEssentials];
 
-   if (CountlyCommon.sharedInstance.city)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyCity, CountlyCommon.sharedInstance.city.cly_URLEscaped];
+   if (city)
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyCity, city.cly_URLEscaped];
 
-    if (CountlyCommon.sharedInstance.ISOCountryCode)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyCountryCode, CountlyCommon.sharedInstance.ISOCountryCode.cly_URLEscaped];
+    if (ISOCountryCode)
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyCountryCode, ISOCountryCode.cly_URLEscaped];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -422,28 +427,35 @@ NSString* const kCountlyInputEndpoint = @"/i";
                                         kCountlyQSKeySDKName, kCountlySDKName];
 }
 
-- (NSString *)additionalInfo
+- (NSString *)pushGeoLocationInfo
 {
-    NSMutableString *additionalInfo = NSMutableString.new;
+    NSMutableString* temp = NSMutableString.new;
 
-    if (CountlyCommon.sharedInstance.ISOCountryCode)
-        [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyCountryCode, CountlyCommon.sharedInstance.ISOCountryCode.cly_URLEscaped];
-    if (CountlyCommon.sharedInstance.city)
-        [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyCity, CountlyCommon.sharedInstance.city.cly_URLEscaped];
-    if (CountlyCommon.sharedInstance.location)
-        [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyLocation, CountlyCommon.sharedInstance.location.cly_URLEscaped];
-    if (CountlyCommon.sharedInstance.IP)
-        [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyIPAddress, CountlyCommon.sharedInstance.IP.cly_URLEscaped];
+    if (CountlyPushNotifications.sharedInstance.ISOCountryCode)
+        [temp appendFormat:@"&%@=%@", kCountlyQSKeyCountryCode, CountlyPushNotifications.sharedInstance.ISOCountryCode.cly_URLEscaped];
+    if (CountlyPushNotifications.sharedInstance.city)
+        [temp appendFormat:@"&%@=%@", kCountlyQSKeyCity, CountlyPushNotifications.sharedInstance.city.cly_URLEscaped];
+    if (CountlyPushNotifications.sharedInstance.location)
+        [temp appendFormat:@"&%@=%@", kCountlyQSKeyLocation, CountlyPushNotifications.sharedInstance.location.cly_URLEscaped];
+    if (CountlyPushNotifications.sharedInstance.IP)
+        [temp appendFormat:@"&%@=%@", kCountlyQSKeyIPAddress, CountlyPushNotifications.sharedInstance.IP.cly_URLEscaped];
+
+    return temp;
+}
+
+- (NSString *)attributionInfo
+{
+    NSMutableString* temp = NSMutableString.new;
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (CountlyCommon.sharedInstance.enableAttribution && ASIdentifierManager.sharedManager.advertisingTrackingEnabled)
     {
         NSDictionary* attribution = @{kCountlyQSKeyIDFA: ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString};
-        [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyAttributionID, [attribution cly_JSONify]];
+        [temp appendFormat:@"&%@=%@", kCountlyQSKeyAttributionID, [attribution cly_JSONify]];
     }
 #endif
 
-    return additionalInfo;
+    return temp;
 }
 
 - (NSInteger)sessionLengthInSeconds

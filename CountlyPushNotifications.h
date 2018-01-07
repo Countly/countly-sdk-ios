@@ -16,6 +16,11 @@
 @property (nonatomic) BOOL sendPushTokenAlways;
 @property (nonatomic) BOOL doNotShowAlertForNotifications;
 
+@property (nonatomic) NSString* location;
+@property (nonatomic) NSString* city;
+@property (nonatomic) NSString* ISOCountryCode;
+@property (nonatomic) NSString* IP;
+
 + (instancetype)sharedInstance;
 
 #if TARGET_OS_IOS

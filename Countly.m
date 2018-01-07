@@ -84,11 +84,6 @@
     CountlyCommon.sharedInstance.enableAppleWatch = config.enableAppleWatch;
     CountlyCommon.sharedInstance.enableAttribution = config.enableAttribution;
 
-    CountlyCommon.sharedInstance.location = CLLocationCoordinate2DIsValid(config.location) ? [NSString stringWithFormat:@"%f,%f", config.location.latitude, config.location.longitude] : nil;
-    CountlyCommon.sharedInstance.city = config.city;
-    CountlyCommon.sharedInstance.ISOCountryCode = config.ISOCountryCode;
-    CountlyCommon.sharedInstance.IP = config.IP;
-
 #if TARGET_OS_IOS
     CountlyStarRating.sharedInstance.message = config.starRatingMessage;
     CountlyStarRating.sharedInstance.sessionCount = config.starRatingSessionCount;
@@ -103,6 +98,12 @@
         CountlyPushNotifications.sharedInstance.isTestDevice = config.isTestDevice;
         CountlyPushNotifications.sharedInstance.sendPushTokenAlways = config.sendPushTokenAlways;
         CountlyPushNotifications.sharedInstance.doNotShowAlertForNotifications = config.doNotShowAlertForNotifications;
+
+        CountlyPushNotifications.sharedInstance.location = CLLocationCoordinate2DIsValid(config.location) ? [NSString stringWithFormat:@"%f,%f", config.location.latitude, config.location.longitude] : nil;
+        CountlyPushNotifications.sharedInstance.city = config.city;
+        CountlyPushNotifications.sharedInstance.ISOCountryCode = config.ISOCountryCode;
+        CountlyPushNotifications.sharedInstance.IP = config.IP;
+
         [CountlyPushNotifications.sharedInstance startPushNotifications];
     }
 
@@ -414,7 +415,7 @@
     if (!CLLocationCoordinate2DIsValid(location))
         return;
 
-    CountlyCommon.sharedInstance.location = [NSString stringWithFormat:@"%f,%f", location.latitude, location.longitude];
+    CountlyPushNotifications.sharedInstance.location = [NSString stringWithFormat:@"%f,%f", location.latitude, location.longitude];
 
     [CountlyConnectionManager.sharedInstance sendLocation];
 }
@@ -422,10 +423,10 @@
 - (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode
 {
     if (city)
-        CountlyCommon.sharedInstance.city = city;
+        CountlyPushNotifications.sharedInstance.city = city;
 
     if (ISOCountryCode)
-        CountlyCommon.sharedInstance.ISOCountryCode = ISOCountryCode;
+        CountlyPushNotifications.sharedInstance.ISOCountryCode = ISOCountryCode;
 
     if (city || ISOCountryCode)
         [CountlyConnectionManager.sharedInstance sendCityAndCountryCode];
@@ -433,7 +434,7 @@
 
 - (void)recordIP:(NSString *)IP
 {
-    CountlyCommon.sharedInstance.IP = IP;
+    CountlyPushNotifications.sharedInstance.IP = IP;
 }
 
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
