@@ -290,7 +290,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Reports a visited view with given name manually.
- * @discussion If auto ViewTracking feature is activated on initial configuration, this method does not need to be called manually.
+ * @discussion If AutoViewTracking feature is activated on initial configuration, this method does not need to be called manually.
  * @param viewName Name of the view visited
  */
 - (void)reportView:(NSString *)viewName;
