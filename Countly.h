@@ -225,6 +225,14 @@ NS_ASSUME_NONNULL_BEGIN
  * @param buttonIndex Clicked custom action button index
  */
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
+
+/**
+ * Enables or disables geo-location based push notifications.
+ * @discussion By default, it is enabled if PushNotifications feature is activated on initial configuration.
+ * @discussion Changes to this property is persistently stored, and will be effective even after app re-launch.
+ */
+@property (nonatomic) BOOL isGeoLocationEnabled;
+
 #endif
 
 

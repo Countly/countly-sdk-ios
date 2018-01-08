@@ -356,8 +356,12 @@ NSString* const kCountlyInputEndpoint = @"/i";
 
 - (void)sendLocation
 {
+    NSString* location = CountlyPushNotifications.sharedInstance.location.cly_URLEscaped;
+    if (!CountlyPushNotifications.sharedInstance.isGeoLocationEnabled)
+        location = @"";
+
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
-                             kCountlyQSKeyPushLocation, CountlyPushNotifications.sharedInstance.location.cly_URLEscaped];
+                             kCountlyQSKeyPushLocation, location];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -430,6 +434,12 @@ NSString* const kCountlyInputEndpoint = @"/i";
 - (NSString *)pushGeoLocationInfo
 {
     NSMutableString* temp = NSMutableString.new;
+
+    if (!CountlyPushNotifications.sharedInstance.isGeoLocationEnabled)
+    {
+        [temp appendFormat:@"&%@=%@", kCountlyQSKeyPushLocation, @""];
+        return temp;
+    }
 
     if (CountlyPushNotifications.sharedInstance.location)
         [temp appendFormat:@"&%@=%@", kCountlyQSKeyPushLocation, CountlyPushNotifications.sharedInstance.location.cly_URLEscaped];

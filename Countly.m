@@ -417,7 +417,8 @@
 
     CountlyPushNotifications.sharedInstance.location = [NSString stringWithFormat:@"%f,%f", location.latitude, location.longitude];
 
-    [CountlyConnectionManager.sharedInstance sendLocation];
+    if (CountlyPushNotifications.sharedInstance.isGeoLocationEnabled)
+        [CountlyConnectionManager.sharedInstance sendLocation];
 }
 
 - (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode
@@ -428,7 +429,7 @@
     if (ISOCountryCode)
         CountlyPushNotifications.sharedInstance.ISOCountryCode = ISOCountryCode;
 
-    if (city || ISOCountryCode)
+    if (CountlyPushNotifications.sharedInstance.isGeoLocationEnabled && (city || ISOCountryCode))
         [CountlyConnectionManager.sharedInstance sendCityAndCountryCode];
 }
 
@@ -440,6 +441,16 @@
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
 {
     [CountlyPushNotifications.sharedInstance recordActionForNotification:userInfo clickedButtonIndex:buttonIndex];
+}
+
+- (void)setIsGeoLocationEnabled:(BOOL)isGeoLocationEnabled
+{
+    CountlyPushNotifications.sharedInstance.isGeoLocationEnabled = isGeoLocationEnabled;
+}
+
+- (BOOL)isGeoLocationEnabled
+{
+    return CountlyPushNotifications.sharedInstance.isGeoLocationEnabled;
 }
 #endif
 

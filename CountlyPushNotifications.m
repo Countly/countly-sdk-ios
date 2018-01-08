@@ -36,6 +36,8 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 - (void)startPushNotifications
 {
+    self.isGeoLocationEnabled = ![CountlyPersistency.sharedInstance retrieveGeoLocationDisabled];
+
     UNUserNotificationCenter.currentNotificationCenter.delegate = self;
 
     Class appDelegateClass = UIApplication.sharedApplication.delegate.class;
@@ -272,6 +274,15 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         return;
 
     [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(buttonIndex)}];
+}
+
+- (void)setIsGeoLocationEnabled:(BOOL)isGeoLocationEnabled
+{
+    _isGeoLocationEnabled = isGeoLocationEnabled;
+    [CountlyPersistency.sharedInstance storeGeoLocationDisabled:!isGeoLocationEnabled];
+
+    if (!isGeoLocationEnabled)
+        [CountlyConnectionManager.sharedInstance sendLocation];
 }
 
 #pragma mark ---
