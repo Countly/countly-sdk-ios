@@ -30,14 +30,22 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     return s_sharedInstance;
 }
 
+- (instancetype)init
+{
+    if (self = [super init])
+    {
+        _isGeoLocationEnabled = ![CountlyPersistency.sharedInstance retrieveGeoLocationDisabled];
+    }
+
+    return self;
+}
+
 #pragma mark ---
 
 #if TARGET_OS_IOS
 
 - (void)startPushNotifications
 {
-    self.isGeoLocationEnabled = ![CountlyPersistency.sharedInstance retrieveGeoLocationDisabled];
-
     UNUserNotificationCenter.currentNotificationCenter.delegate = self;
 
     Class appDelegateClass = UIApplication.sharedApplication.delegate.class;
