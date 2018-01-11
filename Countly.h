@@ -97,7 +97,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Records event with given key and sum.
  * @param key Event key
- * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
+ * @param sum Sum of any specific value for event
  */
 - (void)recordEvent:(NSString *)key sum:(double)sum;
 
@@ -112,7 +112,7 @@ NS_ASSUME_NONNULL_BEGIN
  * Records event with given key, count and sum.
  * @param key Event key
  * @param count Count of event occurrences
- * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
+ * @param sum Sum of any specific value for event
  */
 - (void)recordEvent:(NSString *)key count:(NSUInteger)count sum:(double)sum;
 
@@ -136,7 +136,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param key Event key
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
- * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
+ * @param sum Sum of any specific value for event
  */
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
 
@@ -145,7 +145,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param key Event key
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
- * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
+ * @param sum Sum of any specific value for event
  * @param duration Duration of event in seconds
  */
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
@@ -170,7 +170,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param key Event key
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
- * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
+ * @param sum Sum of any specific value for event
  */
 - (void)endEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
 
