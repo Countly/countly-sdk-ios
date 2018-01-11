@@ -72,7 +72,8 @@ NSString* const kCountlyGeoLocationDisabledKey = @"kCountlyGeoLocationDisabledKe
 {
     @synchronized (self)
     {
-        [self.queuedRequests removeObject:queryString];
+        if (self.queuedRequests.count)
+            [self.queuedRequests removeObject:queryString inRange:(NSRange){0, 1}];
     }
 }
 
