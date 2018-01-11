@@ -78,7 +78,7 @@
     CountlyConnectionManager.sharedInstance.applyZeroIDFAFix = config.applyZeroIDFAFix;
 
     CountlyPersistency.sharedInstance.eventSendThreshold = config.eventSendThreshold;
-    CountlyPersistency.sharedInstance.storedRequestsLimit = config.storedRequestsLimit;
+    CountlyPersistency.sharedInstance.storedRequestsLimit = MAX(1, config.storedRequestsLimit);
 
     CountlyCommon.sharedInstance.manualSessionHandling = config.manualSessionHandling;
     CountlyCommon.sharedInstance.enableAppleWatch = config.enableAppleWatch;
