@@ -54,7 +54,8 @@ CGFloat const kCountlyStarRatingButtonSize = 40.0;
             @"ru": @"Как бы вы оценили приложение?",
             @"cz": @"Jak hodnotíte aplikaci?",
             @"lv": @"Kā Jūs novērtētu šo lietotni?",
-            @"bn": @"আপনি কিভাবে এই এপ্লিক্যাশনটি মূল্যায়ন করবেন?"
+            @"bn": @"আপনি কিভাবে এই এপ্লিক্যাশনটি মূল্যায়ন করবেন?",
+            @"hi": @"आप एप्लीकेशन का मूल्यांकन कैसे करेंगे?",
         };
 
         self.message = dictMessage[langDesignator];
