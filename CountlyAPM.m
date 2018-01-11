@@ -22,8 +22,7 @@
 
 - (instancetype)init
 {
-    self = [super init];
-    if (self)
+    if (self = [super init])
     {
         NSURL * url = [NSURL URLWithString:CountlyConnectionManager.sharedInstance.host];
         NSString* hostAndPath = [url.host stringByAppendingString:url.path];

@@ -31,8 +31,7 @@ NSString* const kCountlyGeoLocationDisabledKey = @"kCountlyGeoLocationDisabledKe
 
 - (instancetype)init
 {
-    self = [super init];
-    if (self)
+    if (self = [super init])
     {
         NSData* readData = [NSData dataWithContentsOfURL:[self storageFileURL]];
 

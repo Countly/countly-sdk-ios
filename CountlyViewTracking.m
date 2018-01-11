@@ -31,8 +31,7 @@ NSString* const kCountlyVTKeyStart    = @"start";
 
 - (instancetype)init
 {
-    self = [super init];
-    if (self)
+    if (self = [super init])
     {
         self.exceptionViewControllers =
         @[

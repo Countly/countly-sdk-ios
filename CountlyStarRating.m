@@ -40,8 +40,7 @@ CGFloat const kCountlyStarRatingButtonSize = 40.0;
 
 - (instancetype)init
 {
-    self = [super init];
-    if (self)
+    if (self = [super init])
     {
         NSString* langDesignator = [NSLocale.preferredLanguages.firstObject substringToIndex:2];
 
