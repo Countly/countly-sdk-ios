@@ -33,7 +33,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 
 /**
  * County Server's URL without the slash at the end.
- * @discussion e.g. https://example.com
+ * @discussion e.g. @c https://example.com
  */
 @property (nonatomic) NSString* host;
 
@@ -46,8 +46,8 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 #pragma mark -
 
 /**
- * For enabling SDK debug mode which prints internal logs.
- * @discussion If set, SDK will print internal logs to console for debugging. Internal logging works only for Development environment where DEBUG flag is set in Build Settings.
+ * For enabling SDK debugging mode which prints internal logs.
+ * @discussion If set, SDK will print internal logs to console for debugging. Internal logging works only for Development environment where @c DEBUG flag is set in Build Settings.
  */
 @property (nonatomic) BOOL enableDebug;
 
@@ -79,7 +79,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 
 /**
  * For disabling automatically showing of message alerts by @c CLYPushNotifications feature.
- * @discussion If set, push notifications that contain a message or a URL visit request will not show alerts automatically. Push Open event will be recorded, but Push Action event needs to be recorded manually, as well as displaying the message manually.
+ * @discussion If set, push notifications that contain a message or a URL visit request will not show alerts automatically. Push Open event will be recorded automatically, but Push Action event needs to be recorded manually, as well as displaying the message manually.
  */
 @property (nonatomic) BOOL doNotShowAlertForNotifications;
 
@@ -119,7 +119,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  * @discussion @c CLYIDFV (Identifier For Vendor)
  * @discussion @c CLYIDFA (Identifier For Advertising)
  * @discussion @c CLYOpenUDID (OpenUDID)
- * @discussion Once set, device ID will be stored persistently (even after app delete and re-install) and will not be changed even if set another device ID is set on start, unless @c forceDeviceIDInitialization flag is set.
+ * @discussion Once set, device ID will be stored persistently (even after app delete and re-install) and will not change even if another device ID is set on start, unless @c forceDeviceIDInitialization flag is set.
  */
 @property (nonatomic) NSString* deviceID;
 
@@ -151,7 +151,8 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 
 /**
  * Stored requests limit is used for limiting the number of request to be stored on the device, in case of a Countly Server connection problem.
- * @discussion In case Countly Server is down or unreachable for a very long time, queued request may reach excessive numbers, and this may cause problems with requests being sent to Countly Server and being stored on the device. To prevent this, SDK will only store requests up to @c storedRequestsLimit. If number of stored requests reach @c storedRequestsLimit, SDK will start to drop oldest request while inserting the newest one instead.
+ * @discussion In case Countly Server is down or unreachable for a very long time, queued request may reach excessive numbers, and this may cause problems with requests being sent to Countly Server and being stored on the device. To prevent this, SDK will only store requests up to @c storedRequestsLimit.
+ * @discussion If number of stored requests reach @c storedRequestsLimit, SDK will start to drop oldest request while inserting the newest one instead.
  * @discussion If not set, it will be 1000 by default.
  */
 @property (nonatomic) NSUInteger storedRequestsLimit;
@@ -172,7 +173,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 
 /**
  * For enabling automatic handling of Apple Watch related features.
- * @discussion If set, Apple Watch related features like parent device matching, pairing status, and watch app installing status will be handled automatically. Required for using Countly on Apple Watch apps.
+ * @discussion If set, Apple Watch related features such as parent device matching, pairing status, and watch app installing status will be handled automatically. Required for using Countly on Apple Watch apps.
  */
 @property (nonatomic) BOOL enableAppleWatch;
 
@@ -193,15 +194,16 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 
 /**
  * For specifying bundled certificates to be used for public key pinning.
- * @discussion Certificates have to be DER encoded with one of the following extensions: .der .cer or .crt
- * @discussion e.g. myserver.com.cer
+ * @discussion Certificates have to be DER encoded with one of the following extensions: @c .der @c .cer or @c .crt
+ * @discussion e.g. @c myserver.com.cer
  */
 @property (nonatomic) NSArray* pinnedCertificates;
 
 /**
  * Name of the custom HTTP header field to be sent with every request.
  * @discussion e.g. X-My-Secret-Server-Token
- * @discussion If set, every request sent to Countly Server will have this custom HTTP header and its value will be @c customHeaderFieldValue property. If @c customHeaderFieldValue is not set when Countly is started, requests will not start until it is set using @c setCustomHeaderFieldValue: method later.
+ * @discussion If set, every request sent to Countly Server will have this custom HTTP header and its value will be @c customHeaderFieldValue property.
+ * @discussion If @c customHeaderFieldValue is not set when Countly is started, requests will not start until it is set using @c setCustomHeaderFieldValue: method later.
  */
 @property (nonatomic) NSString* customHeaderFieldName;
 
@@ -221,7 +223,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 
 /**
  * For customizing star-rating dialog message.
- * @discussion If not set, it will be displayed in English: "How would you rate the app?" or corresponding supported (EN, TR, JP, ZH, RU, LV, CZ, BN) localized version.
+ * @discussion If not set, it will be displayed in English: "How would you rate the app?" or corresponding supported (@c en, @c tr, @c jp, @c zh, @c ru, @c lv, @c cz, @c bn) localized version.
  */
 @property (nonatomic) NSString* starRatingMessage;
 

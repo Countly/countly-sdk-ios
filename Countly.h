@@ -71,7 +71,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)suspend;
 
 /**
- * Resumes Countly, begins a new session after app comes to foreground.
+ * Resumes Countly, begins a new session after the app comes to foreground.
  * @discussion This method needs to be called manually only on @c watchOS, on other platforms it will be called automatically.
  */
 - (void)resume;
@@ -186,8 +186,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Shows default system dialog that asks for user's permission to display notifications with given options and completion handler.
- * @discussion A more customizable version of unified convenience method that handles asking for notification permission on both iOS10 and older iOS versions where notification types the app wants to display can be specified using @c options parameter. Completion block has a @c BOOL parameter called @c granted which is @c YES if user gave permission, and an @c NSError parameter called @c error which indicates if there is an error.
- * @param options Bitwise combination of notification types (like badge, sound or alert) app wants to display
+ * @discussion A more customizable version of unified convenience method that handles asking for notification permission on both iOS10 and older iOS versions.
+ * @discussion Notification types the app wants to display can be specified using @c options parameter.
+ * @discussion Completion block has a @c BOOL parameter named @c granted which is @c YES if user granted permission, and an @c NSError parameter named @c error which indicates if there is an error.
+ * @param options Bitwise combination of notification types (badge, sound or alert) the app wants to display
  * @param completionHandler A completion handler block to be executed when user answers notification permission dialog
  */
 - (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler;
@@ -220,9 +222,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Records action event for a manually presented push notification with custom action buttons.
- * @discussion If a push notification with custom action buttons is handled and presented manually using custom UI, user's action needs to be reported manually. With this convenience method user's action can be reported passing push notification dictionary and clicked button index. Button index should be 0 for default action, 1 for the first action button and 2 for the second action button.
+ * @discussion If a push notification with custom action buttons is handled and presented manually using custom UI, user's action needs to be reported manually. With this convenience method user's action can be reported passing push notification dictionary and clicked button index.
+ * @discussion Button index should be @c 0 for default action, @c 1 for the first action button and @c 2 for the second action button.
  * @param userInfo Manually presented push notification dictionary
- * @param buttonIndex Clicked custom action button index
+ * @param buttonIndex Index of custom action button user clicked
  */
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
 
@@ -273,13 +276,16 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - Countly APM
 
 /**
- * Adds exception URL for APM. Added URLs (with or without specific path) will be ignored by APM. Adding an already added URL again will have no effect.
+ * Adds exception URL for APM.
+ * @discussion Added URLs (with or without specific path) will be ignored by APM.
+ * @discussion Adding an already added URL again will have no effect.
  * @param exceptionURL Exception URL to be added
  */
 - (void)addExceptionForAPM:(NSString *)exceptionURL;
 
 /**
- * Removes exception URL for APM. Removing an already removed (or not yet added) URL again will have no effect.
+ * Removes exception URL for APM.
+ * @discussion Removing an already removed (or not yet added) URL again will have no effect.
  * @param exceptionURL Exception URL to be removed
  */
 - (void)removeExceptionForAPM:(NSString *)exceptionURL;
@@ -298,7 +304,8 @@ NS_ASSUME_NONNULL_BEGIN
 #if TARGET_OS_IOS
 /**
  * Adds exception for AutoViewTracking.
- * @discussion @c UIViewControllers with specified title or class name will be ignored by AutoViewTracking and their appearances and disappearances will not be reported. Adding an already added @c UIViewController title or subclass name again will have no effect.
+ * @discussion @c UIViewControllers with specified title or class name will be ignored by AutoViewTracking and their appearances and disappearances will not be reported.
+ * @discussion Adding an already added @c UIViewController title or subclass name again will have no effect.
  * @param exception @c UIViewController title or subclass name to be added as exception
  */
 - (void)addExceptionForAutoViewTracking:(NSString *)exception;
