@@ -1,3 +1,29 @@
+## 18.01
+
+- Added `attribution` config
+- Added recording city and country for GeoLocation
+- Added recording explicit IP address for GeoLocation
+- Added disabling GeoLocation
+- Updated `recordLocation` method to override inital `location` config
+- Fixed reserved key for IP address query string
+- Fixed a `CoreTelephony` related crash due to an iOS bug
+- Replaced `NSUserDefaults` with `NSCachesDirectory` on tvOS for persistency
+- Improved auto dSYM uploader script
+- Improved performance on stored request limit execution
+
+- Other various improvements
+  - Fixed a placeholder type specifier for `NSNumber`
+  - Deleted unnecessary `CLYMessaging` definition
+  - Deleted unnecessary strong ownership qualifiers
+  - Added Hindu translation for star rating dialog
+  - Added change log file
+  - Updated user details and star rating reserved keys as constants
+  - Updated `OpenGLESVersion` method return type as `NSString`
+  - Updated time related types as `NSTimeInterval`
+  - Updated HeaderDocs
+
+
+
 ## 17.09
 
 - Updated for Xcode 9 and iOS 11
