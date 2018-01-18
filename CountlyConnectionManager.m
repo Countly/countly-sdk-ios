@@ -50,9 +50,9 @@ NSString* const kCountlyQSKeyChecksum256      = @"checksum256";
 NSString* const kCountlyQSKeyAttributionID    = @"aid";
 NSString* const kCountlyQSKeyIDFA             = @"idfa";
 
-NSInteger const kCountlyGETRequestMaxLength = 2048;
 NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 NSString* const kCountlyInputEndpoint = @"/i";
+const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 @implementation CountlyConnectionManager : NSObject
 

@@ -157,7 +157,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
 
 void CountlySignalHandler(int signalCode)
 {
-    NSInteger const kCountlyStackFramesMax = 128;
+    const NSInteger kCountlyStackFramesMax = 128;
     void *stack[kCountlyStackFramesMax];
     NSInteger frameCount = backtrace(stack, kCountlyStackFramesMax);
     char **lines = backtrace_symbols(stack, (int)frameCount);

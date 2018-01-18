@@ -256,7 +256,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     [alertWindow makeKeyAndVisible];
     [alertWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
 
-    CGFloat const kCountlyActionButtonHeight = 44.0;
+    const CGFloat kCountlyActionButtonHeight = 44.0;
     CGRect tempFrame = defaultButton.frame;
     tempFrame.size.height -= buttons.count * kCountlyActionButtonHeight;
     defaultButton.frame = tempFrame;

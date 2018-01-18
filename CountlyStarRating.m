@@ -28,7 +28,7 @@ NSString* const kCountlySRKeyRating      = @"rating";
     UIAlertController* alertController;
 }
 
-CGFloat const kCountlyStarRatingButtonSize = 40.0;
+const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 + (instancetype)sharedInstance
 {
