@@ -13,7 +13,7 @@
 @property (nonatomic) long long sentDataSize;
 @property (nonatomic) long long receivedDataSize;
 @property (nonatomic) NSInteger connectionType;
-@property (nonatomic, strong) NSURLRequest* request;
+@property (nonatomic) NSURLRequest* request;
 @property (nonatomic, weak) id <NSURLConnectionDataDelegate, NSURLConnectionDelegate> originalDelegate;
 @end
 

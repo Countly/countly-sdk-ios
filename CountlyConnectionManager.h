@@ -11,13 +11,13 @@
 
 @interface CountlyConnectionManager : NSObject <NSURLSessionDelegate>
 
-@property (nonatomic, strong) NSString* appKey;
-@property (nonatomic, strong) NSString* host;
-@property (nonatomic, strong) NSURLSessionTask* connection;
-@property (nonatomic, strong) NSArray* pinnedCertificates;
-@property (nonatomic, strong) NSString* customHeaderFieldName;
-@property (nonatomic, strong) NSString* customHeaderFieldValue;
-@property (nonatomic, strong) NSString* secretSalt;
+@property (nonatomic) NSString* appKey;
+@property (nonatomic) NSString* host;
+@property (nonatomic) NSURLSessionTask* connection;
+@property (nonatomic) NSArray* pinnedCertificates;
+@property (nonatomic) NSString* customHeaderFieldName;
+@property (nonatomic) NSString* customHeaderFieldValue;
+@property (nonatomic) NSString* secretSalt;
 @property (nonatomic) BOOL alwaysUsePOST;
 @property (nonatomic) BOOL applyZeroIDFAFix;
 
@@ -33,7 +33,8 @@
 - (void)sendCrashReport:(NSString *)report immediately:(BOOL)immediately;
 - (void)sendOldDeviceID:(NSString *)oldDeviceID;
 - (void)sendParentDeviceID:(NSString *)parentDeviceID;
-- (void)sendLocation:(CLLocationCoordinate2D)coordinate;
+- (void)sendLocation;
+- (void)sendCityAndCountryCode;
 
 - (void)proceedOnQueue;
 @end

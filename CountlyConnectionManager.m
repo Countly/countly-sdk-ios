@@ -16,41 +16,43 @@
 #endif
 @end
 
-NSString* const kCountlyQSKeyAppKey =               @"app_key";
+NSString* const kCountlyQSKeyAppKey           = @"app_key";
 
-NSString* const kCountlyQSKeyDeviceID =             @"device_id";
-NSString* const kCountlyQSKeyDeviceIDOld =          @"old_device_id";
-NSString* const kCountlyQSKeyDeviceIDParent =       @"parent_device_id";
+NSString* const kCountlyQSKeyDeviceID         = @"device_id";
+NSString* const kCountlyQSKeyDeviceIDOld      = @"old_device_id";
+NSString* const kCountlyQSKeyDeviceIDParent   = @"parent_device_id";
 
-NSString* const kCountlyQSKeyTimestamp =            @"timestamp";
-NSString* const kCountlyQSKeyTimeZone =             @"tz";
-NSString* const kCountlyQSKeyTimeHourOfDay =        @"hour";
-NSString* const kCountlyQSKeyTimeDayOfWeek =        @"dow";
+NSString* const kCountlyQSKeyTimestamp        = @"timestamp";
+NSString* const kCountlyQSKeyTimeZone         = @"tz";
+NSString* const kCountlyQSKeyTimeHourOfDay    = @"hour";
+NSString* const kCountlyQSKeyTimeDayOfWeek    = @"dow";
 
-NSString* const kCountlyQSKeySessionBegin =         @"begin_session";
-NSString* const kCountlyQSKeySessionDuration =      @"session_duration";
-NSString* const kCountlyQSKeySessionEnd =           @"end_session";
+NSString* const kCountlyQSKeySessionBegin     = @"begin_session";
+NSString* const kCountlyQSKeySessionDuration  = @"session_duration";
+NSString* const kCountlyQSKeySessionEnd       = @"end_session";
 
-NSString* const kCountlyQSKeyTokenSession =         @"token_session";
-NSString* const kCountlyQSKeyTokeniOS =             @"ios_token";
-NSString* const kCountlyQSKeyTokenMode =            @"test_mode";
+NSString* const kCountlyQSKeyPushTokenSession = @"token_session";
+NSString* const kCountlyQSKeyPushTokeniOS     = @"ios_token";
+NSString* const kCountlyQSKeyPushTestMode     = @"test_mode";
+NSString* const kCountlyQSKeyPushLocation     = @"location";
+NSString* const kCountlyQSKeyPushCity         = @"city";
+NSString* const kCountlyQSKeyPushCountryCode  = @"country_code";
+NSString* const kCountlyQSKeyPushIPAddress    = @"ip_address";
 
-NSString* const kCountlyQSKeySDKVersion =           @"sdk_version";
-NSString* const kCountlyQSKeySDKName =              @"sdk_name";
+NSString* const kCountlyQSKeySDKVersion       = @"sdk_version";
+NSString* const kCountlyQSKeySDKName          = @"sdk_name";
 
-NSString* const kCountlyQSKeyMetrics =              @"metrics";
-NSString* const kCountlyQSKeyEvents =               @"events";
-NSString* const kCountlyQSKeyUserDetails =          @"user_details";
-NSString* const kCountlyQSKeyCrash =                @"crash";
-NSString* const kCountlyQSKeyLocation =             @"location";
-NSString* const kCountlyQSKeyCountryCode =          @"country_code";
-NSString* const kCountlyQSKeyCity =                 @"city";
-NSString* const kCountlyQSKeyIP =                   @"ip";
-NSString* const kCountlyQSKeyChecksum256 =          @"checksum256";
+NSString* const kCountlyQSKeyMetrics          = @"metrics";
+NSString* const kCountlyQSKeyEvents           = @"events";
+NSString* const kCountlyQSKeyUserDetails      = @"user_details";
+NSString* const kCountlyQSKeyCrash            = @"crash";
+NSString* const kCountlyQSKeyChecksum256      = @"checksum256";
+NSString* const kCountlyQSKeyAttributionID    = @"aid";
+NSString* const kCountlyQSKeyIDFA             = @"idfa";
 
-const NSInteger kCountlyGETRequestMaxLength = 2048;
 NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 NSString* const kCountlyInputEndpoint = @"/i";
+const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 @implementation CountlyConnectionManager : NSObject
 
@@ -184,7 +186,9 @@ NSString* const kCountlyInputEndpoint = @"/i";
                              kCountlyQSKeySessionBegin, @"1",
                              kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
 
-    queryString = [queryString stringByAppendingString:[self additionalInfo]];
+    queryString = [queryString stringByAppendingString:[self pushGeoLocationInfo]];
+
+    queryString = [queryString stringByAppendingString:[self attributionInfo]];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -248,9 +252,9 @@ NSString* const kCountlyInputEndpoint = @"/i";
 #endif
 
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%@&%@=%d",
-                             kCountlyQSKeyTokenSession, @"1",
-                             kCountlyQSKeyTokeniOS, token,
-                             kCountlyQSKeyTokenMode, testMode];
+                             kCountlyQSKeyPushTokenSession, @"1",
+                             kCountlyQSKeyPushTokeniOS, token,
+                             kCountlyQSKeyPushTestMode, testMode];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -350,10 +354,35 @@ NSString* const kCountlyInputEndpoint = @"/i";
     [self proceedOnQueue];
 }
 
-- (void)sendLocation:(CLLocationCoordinate2D)coordinate
+- (void)sendLocation
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%f,%f",
-                             kCountlyQSKeyLocation, coordinate.latitude, coordinate.longitude];
+    NSString* location = CountlyPushNotifications.sharedInstance.location.cly_URLEscaped;
+    if (!CountlyPushNotifications.sharedInstance.isGeoLocationEnabled)
+        location = @"";
+
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
+                             kCountlyQSKeyPushLocation, location];
+
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
+
+    [self proceedOnQueue];
+}
+
+- (void)sendCityAndCountryCode
+{
+    NSString* city = CountlyPushNotifications.sharedInstance.city;
+    NSString* ISOCountryCode = CountlyPushNotifications.sharedInstance.ISOCountryCode;
+
+    if (!(city || ISOCountryCode))
+        return;
+
+    NSString* queryString = [self queryEssentials];
+
+   if (city)
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyPushCity, city.cly_URLEscaped];
+
+    if (ISOCountryCode)
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyPushCountryCode, ISOCountryCode.cly_URLEscaped];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -402,25 +431,46 @@ NSString* const kCountlyInputEndpoint = @"/i";
                                         kCountlyQSKeySDKName, kCountlySDKName];
 }
 
-- (NSString *)additionalInfo
+- (NSString *)pushGeoLocationInfo
 {
-    NSMutableString *additionalInfo = NSMutableString.new;
+    NSMutableString* temp = NSMutableString.new;
 
-    if (CountlyCommon.sharedInstance.ISOCountryCode)
-        [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyCountryCode, CountlyCommon.sharedInstance.ISOCountryCode.cly_URLEscaped];
-    if (CountlyCommon.sharedInstance.city)
-        [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyCity, CountlyCommon.sharedInstance.city.cly_URLEscaped];
-    if (CountlyCommon.sharedInstance.location)
-        [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyLocation, CountlyCommon.sharedInstance.location.cly_URLEscaped];
-    if (CountlyCommon.sharedInstance.IP)
-        [additionalInfo appendFormat:@"&%@=%@", kCountlyQSKeyIP, CountlyCommon.sharedInstance.IP.cly_URLEscaped];
+    if (!CountlyPushNotifications.sharedInstance.isGeoLocationEnabled)
+    {
+        [temp appendFormat:@"&%@=%@", kCountlyQSKeyPushLocation, @""];
+        return temp;
+    }
 
-    return additionalInfo;
+    if (CountlyPushNotifications.sharedInstance.location)
+        [temp appendFormat:@"&%@=%@", kCountlyQSKeyPushLocation, CountlyPushNotifications.sharedInstance.location.cly_URLEscaped];
+    if (CountlyPushNotifications.sharedInstance.city)
+        [temp appendFormat:@"&%@=%@", kCountlyQSKeyPushCity, CountlyPushNotifications.sharedInstance.city.cly_URLEscaped];
+    if (CountlyPushNotifications.sharedInstance.ISOCountryCode)
+        [temp appendFormat:@"&%@=%@", kCountlyQSKeyPushCountryCode, CountlyPushNotifications.sharedInstance.ISOCountryCode.cly_URLEscaped];
+    if (CountlyPushNotifications.sharedInstance.IP)
+        [temp appendFormat:@"&%@=%@", kCountlyQSKeyPushIPAddress, CountlyPushNotifications.sharedInstance.IP.cly_URLEscaped];
+
+    return temp;
+}
+
+- (NSString *)attributionInfo
+{
+    NSMutableString* temp = NSMutableString.new;
+
+#if (TARGET_OS_IOS || TARGET_OS_TV)
+    if (CountlyCommon.sharedInstance.enableAttribution && ASIdentifierManager.sharedManager.advertisingTrackingEnabled)
+    {
+        NSDictionary* attribution = @{kCountlyQSKeyIDFA: ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString};
+        [temp appendFormat:@"&%@=%@", kCountlyQSKeyAttributionID, [attribution cly_JSONify]];
+    }
+#endif
+
+    return temp;
 }
 
 - (NSInteger)sessionLengthInSeconds
 {
-    static double unsentSessionLength = 0.0;
+    static NSTimeInterval unsentSessionLength = 0.0;
 
     NSTimeInterval currentTime = NSDate.date.timeIntervalSince1970;
     unsentSessionLength += (currentTime - lastSessionStartTime);

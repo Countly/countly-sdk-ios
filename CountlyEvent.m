@@ -8,14 +8,14 @@
 
 @implementation CountlyEvent
 
-NSString* const kCountlyEventKeyKey =           @"key";
-NSString* const kCountlyEventKeySegmentation =  @"segmentation";
-NSString* const kCountlyEventKeyCount =         @"count";
-NSString* const kCountlyEventKeySum =           @"sum";
-NSString* const kCountlyEventKeyTimestamp =     @"timestamp";
-NSString* const kCountlyEventKeyHourOfDay =     @"hour";
-NSString* const kCountlyEventKeyDayOfWeek =     @"dow";
-NSString* const kCountlyEventKeyDuration =      @"dur";
+NSString* const kCountlyEventKeyKey           = @"key";
+NSString* const kCountlyEventKeySegmentation  = @"segmentation";
+NSString* const kCountlyEventKeyCount         = @"count";
+NSString* const kCountlyEventKeySum           = @"sum";
+NSString* const kCountlyEventKeyTimestamp     = @"timestamp";
+NSString* const kCountlyEventKeyHourOfDay     = @"hour";
+NSString* const kCountlyEventKeyDayOfWeek     = @"dow";
+NSString* const kCountlyEventKeyDuration      = @"dur";
 
 - (NSDictionary *)dictionaryRepresentation
 {
@@ -34,22 +34,19 @@ NSString* const kCountlyEventKeyDuration =      @"dur";
     return eventData;
 }
 
-- (id)initWithCoder:(NSCoder *)decoder
+- (instancetype)initWithCoder:(NSCoder *)decoder
 {
-    self = [super init];
-    if (!self)
+    if (self = [super init])
     {
-        return nil;
+        self.key = [decoder decodeObjectForKey:NSStringFromSelector(@selector(key))];
+        self.segmentation = [decoder decodeObjectForKey:NSStringFromSelector(@selector(segmentation))];
+        self.count = [decoder decodeIntegerForKey:NSStringFromSelector(@selector(count))];
+        self.sum = [decoder decodeDoubleForKey:NSStringFromSelector(@selector(sum))];
+        self.timestamp = [decoder decodeDoubleForKey:NSStringFromSelector(@selector(timestamp))];
+        self.hourOfDay = [decoder decodeIntegerForKey:NSStringFromSelector(@selector(hourOfDay))];
+        self.dayOfWeek = [decoder decodeIntegerForKey:NSStringFromSelector(@selector(dayOfWeek))];
+        self.duration = [decoder decodeDoubleForKey:NSStringFromSelector(@selector(duration))];
     }
-
-    self.key = [decoder decodeObjectForKey:NSStringFromSelector(@selector(key))];
-    self.segmentation = [decoder decodeObjectForKey:NSStringFromSelector(@selector(segmentation))];
-    self.count = [decoder decodeIntegerForKey:NSStringFromSelector(@selector(count))];
-    self.sum = [decoder decodeDoubleForKey:NSStringFromSelector(@selector(sum))];
-    self.timestamp = [decoder decodeDoubleForKey:NSStringFromSelector(@selector(timestamp))];
-    self.hourOfDay = [decoder decodeIntegerForKey:NSStringFromSelector(@selector(hourOfDay))];
-    self.dayOfWeek = [decoder decodeIntegerForKey:NSStringFromSelector(@selector(dayOfWeek))];
-    self.duration = [decoder decodeDoubleForKey:NSStringFromSelector(@selector(duration))];
 
     return self;
 }

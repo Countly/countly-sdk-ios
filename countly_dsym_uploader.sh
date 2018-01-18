@@ -6,7 +6,7 @@
 
 
 # For your target, go to Build Phases tab and choose New Run Script Phase after clicking plus (+) button.
-# Add these two lines and do not forget to replace your server and app key.
+# Add these two lines and do not forget to replace YOUR_COUNTLY_SERVER and YOUR_APP_KEY.
 #
 # COUNTLY_DSYM_UPLOADER=$(/usr/bin/find $SRCROOT -name "countly_dsym_uploader.sh" | head -n 1)
 # sh "$COUNTLY_DSYM_UPLOADER" "https://YOUR_COUNTLY_SERVER" "YOUR_APP_KEY"
@@ -44,7 +44,9 @@ fi
 
 # Creating archive of DSYM folder using zip
 DSYM_ZIP_PATH="/tmp/$(date +%s)_$DWARF_DSYM_FILE_NAME.zip"
-zip -rqj $DSYM_ZIP_PATH $DSYM_PATH
+pushd $DWARF_DSYM_FOLDER_PATH > /dev/null
+zip -rq $DSYM_ZIP_PATH $DWARF_DSYM_FILE_NAME
+popd > /dev/null
 if [ $? -eq 0 ]; then
     countly_log "Created archive at $DSYM_ZIP_PATH"
 else
@@ -62,7 +64,7 @@ countly_log "Uploading to $URL"
 
 
 # Uploading to server using curl
-UPLOAD_RESULT=$(curl -F "symbols=@$DSYM_ZIP_PATH" $URL)
+UPLOAD_RESULT=$(curl -s -F "symbols=@$DSYM_ZIP_PATH" $URL)
 if [ $? -eq 0 ] && [ "$UPLOAD_RESULT" == "{\"result\":\"Success\"}" ]; then
     countly_log "dSYM upload succesfully completed."
 else

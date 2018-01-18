@@ -15,14 +15,14 @@
 NSString* const kCountlyActionIdentifier = @"CountlyActionIdentifier";
 NSString* const kCountlyCategoryIdentifier = @"CountlyCategoryIdentifier";
 
-NSString* const kCountlyPNKeyCountlyPayload =        @"c";
-NSString* const kCountlyPNKeyNotificationID =        @"i";
-NSString* const kCountlyPNKeyButtons =               @"b";
-NSString* const kCountlyPNKeyDefaultURL =            @"l";
-NSString* const kCountlyPNKeyAttachment =            @"a";
-NSString* const kCountlyPNKeyActionButtonIndex =     @"b";
-NSString* const kCountlyPNKeyActionButtonTitle =     @"t";
-NSString* const kCountlyPNKeyActionButtonURL =       @"l";
+NSString* const kCountlyPNKeyCountlyPayload     = @"c";
+NSString* const kCountlyPNKeyNotificationID     = @"i";
+NSString* const kCountlyPNKeyButtons            = @"b";
+NSString* const kCountlyPNKeyDefaultURL         = @"l";
+NSString* const kCountlyPNKeyAttachment         = @"a";
+NSString* const kCountlyPNKeyActionButtonIndex  = @"b";
+NSString* const kCountlyPNKeyActionButtonTitle  = @"t";
+NSString* const kCountlyPNKeyActionButtonURL    = @"l";
 
 @implementation CountlyNotificationService
 #if TARGET_OS_IOS

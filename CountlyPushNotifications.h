@@ -15,6 +15,11 @@
 @property (nonatomic) BOOL isTestDevice;
 @property (nonatomic) BOOL sendPushTokenAlways;
 @property (nonatomic) BOOL doNotShowAlertForNotifications;
+@property (nonatomic) BOOL isGeoLocationEnabled;
+@property (nonatomic) NSString* location;
+@property (nonatomic) NSString* city;
+@property (nonatomic) NSString* ISOCountryCode;
+@property (nonatomic) NSString* IP;
 
 + (instancetype)sharedInstance;
 

@@ -12,7 +12,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 @interface CountlyPushNotifications ()
 #if TARGET_OS_IOS
-@property (nonatomic, strong) NSString* token;
+@property (nonatomic) NSString* token;
 @property (nonatomic, copy) void (^permissionCompletion)(BOOL granted, NSError * error);
 #endif
 @end
@@ -28,6 +28,16 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
     return s_sharedInstance;
+}
+
+- (instancetype)init
+{
+    if (self = [super init])
+    {
+        _isGeoLocationEnabled = ![CountlyPersistency.sharedInstance retrieveGeoLocationDisabled];
+    }
+
+    return self;
 }
 
 #pragma mark ---
@@ -53,7 +63,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         {
             Method method = class_getInstanceMethod(self.class, originalSelector);
             IMP imp = method_getImplementation(method);
-            const char *methodTypeEncoding = method_getTypeEncoding(method);
+            const char* methodTypeEncoding = method_getTypeEncoding(method);
             class_addMethod(appDelegateClass, originalSelector, imp, methodTypeEncoding);
             originalMethod = class_getInstanceMethod(appDelegateClass, originalSelector);
         }
@@ -150,7 +160,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
     COUNTLY_LOG(@"Countly Push Notification ID: %@", notificationID);
 
-    [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{kCountlyPNKeyNotificationID : notificationID}];
+    [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{kCountlyPNKeyNotificationID: notificationID}];
 
     if (self.doNotShowAlertForNotifications)
     {
@@ -197,7 +207,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         defaultButton.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         defaultButton.onClick = ^(id sender)
         {
-            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID : notificationID, kCountlyPNKeyActionButtonIndex : @(0)}];
+            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(0)}];
 
             [self openURL:defaultURL];
 
@@ -232,7 +242,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
         UIAlertAction* visit = [UIAlertAction actionWithTitle:title style:UIAlertActionStyleDefault handler:^(UIAlertAction * action)
         {
-            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID : notificationID, kCountlyPNKeyActionButtonIndex : @(idx + 1)}];
+            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(idx + 1)}];
 
             [self openURL:URL];
 
@@ -246,7 +256,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     [alertWindow makeKeyAndVisible];
     [alertWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
 
-    const float kCountlyActionButtonHeight = 44.0;
+    const CGFloat kCountlyActionButtonHeight = 44.0;
     CGRect tempFrame = defaultButton.frame;
     tempFrame.size.height -= buttons.count * kCountlyActionButtonHeight;
     defaultButton.frame = tempFrame;
@@ -271,7 +281,16 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     if (!notificationID)
         return;
 
-    [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID : notificationID, kCountlyPNKeyActionButtonIndex : @(buttonIndex)}];
+    [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(buttonIndex)}];
+}
+
+- (void)setIsGeoLocationEnabled:(BOOL)isGeoLocationEnabled
+{
+    _isGeoLocationEnabled = isGeoLocationEnabled;
+    [CountlyPersistency.sharedInstance storeGeoLocationDisabled:!isGeoLocationEnabled];
+
+    if (!isGeoLocationEnabled)
+        [CountlyConnectionManager.sharedInstance sendLocation];
 }
 
 #pragma mark ---
@@ -305,7 +324,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
     if (notificationID)
     {
-        [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{kCountlyPNKeyNotificationID : notificationID}];
+        [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{kCountlyPNKeyNotificationID: notificationID}];
 
         NSInteger buttonIndex = -1;
         NSString* URL = nil;
@@ -328,7 +347,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
         if (buttonIndex >= 0)
         {
-            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID : notificationID, kCountlyPNKeyActionButtonIndex : @(buttonIndex)}];
+            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(buttonIndex)}];
         }
 
         [self openURL:URL];
@@ -360,7 +379,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 - (void)Countly_application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken
 {
     COUNTLY_LOG(@"App didRegisterForRemoteNotificationsWithDeviceToken: %@", deviceToken);
-    const char *bytes = [deviceToken bytes];
+    const char* bytes = [deviceToken bytes];
     NSMutableString *token = NSMutableString.new;
     for (NSUInteger i = 0; i < deviceToken.length; i++)
         [token appendFormat:@"%02hhx", bytes[i]];

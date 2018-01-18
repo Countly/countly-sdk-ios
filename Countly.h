@@ -33,7 +33,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Sets new device ID to be persistently stored and used in following requests.
  * @param deviceID New device ID
- * @param onServer If set, data on server will be merged automatically, otherwise device will be counted as a new device
+ * @param onServer If set, data on Countly Server will be merged automatically, otherwise device will be counted as a new device
  */
 - (void)setNewDeviceID:(NSString * _Nullable)deviceID onServer:(BOOL)onServer;
 
@@ -71,7 +71,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)suspend;
 
 /**
- * Resumes Countly, begins a new session after app comes to foreground.
+ * Resumes Countly, begins a new session after the app comes to foreground.
  * @discussion This method needs to be called manually only on @c watchOS, on other platforms it will be called automatically.
  */
 - (void)resume;
@@ -97,7 +97,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Records event with given key and sum.
  * @param key Event key
- * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
+ * @param sum Sum of any specific value for event
  */
 - (void)recordEvent:(NSString *)key sum:(double)sum;
 
@@ -112,7 +112,7 @@ NS_ASSUME_NONNULL_BEGIN
  * Records event with given key, count and sum.
  * @param key Event key
  * @param count Count of event occurrences
- * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
+ * @param sum Sum of any specific value for event
  */
 - (void)recordEvent:(NSString *)key count:(NSUInteger)count sum:(double)sum;
 
@@ -136,7 +136,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param key Event key
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
- * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
+ * @param sum Sum of any specific value for event
  */
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
 
@@ -145,7 +145,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param key Event key
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
- * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
+ * @param sum Sum of any specific value for event
  * @param duration Duration of event in seconds
  */
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
@@ -170,7 +170,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param key Event key
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
- * @param sum Sum of any specific value to event (i.e. Total In-App Purchase amount)
+ * @param sum Sum of any specific value for event
  */
 - (void)endEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
 
@@ -180,32 +180,62 @@ NS_ASSUME_NONNULL_BEGIN
 #if TARGET_OS_IOS
 /**
  * Shows default system dialog that asks for user's permission to display notifications.
- * @discussion A unified convenience method that handles asking for notification permisson on both iOS10 and older iOS versions with badge, sound and alert notification types.
+ * @discussion A unified convenience method that handles asking for notification permission on both iOS10 and older iOS versions with badge, sound and alert notification types.
  */
 - (void)askForNotificationPermission;
 
 /**
  * Shows default system dialog that asks for user's permission to display notifications with given options and completion handler.
- * @discussion A more customizable version of unified convenience method that handles asking for notification permisson on both iOS10 and older iOS versions where notification types app wants to display can be specified using @c options parameter. Completion block has a @c BOOL parameter called @c granted which is @c YES if user gave permission, and an @c NSError parameter called @c error which indicates if there is an error.
- * @param options Bitwise combination of notification types (like badge, sound or alert) app wants to display
+ * @discussion A more customizable version of unified convenience method that handles asking for notification permission on both iOS10 and older iOS versions.
+ * @discussion Notification types the app wants to display can be specified using @c options parameter.
+ * @discussion Completion block has a @c BOOL parameter named @c granted which is @c YES if user granted permission, and an @c NSError parameter named @c error which indicates if there is an error.
+ * @param options Bitwise combination of notification types (badge, sound or alert) the app wants to display
  * @param completionHandler A completion handler block to be executed when user answers notification permission dialog
  */
 - (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler;
 
 /**
  * Records user's location to be used for geo-location based push notifications and advanced segmentation.
- * @discussion By default, geoip database is used for acquiring user's location. If the app uses Core Location services, location with better accuracy can be provided using this method. Calling this method once or twice per app launch is enough, instead of each location update.
+ * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location. If the app uses Core Location services and granted permission, a location with better accuracy can be provided using this method.
+ * @discussion Calling this method once or twice per app life is enough, instead of on each location update.
+ * @discussion This method also overrides @c location property specified on initial configuration, in addition to sending an immediate request.
  * @param coordinate User's location with latitude and longitude
  */
 - (void)recordLocation:(CLLocationCoordinate2D)coordinate;
 
 /**
+ * Records user's city and/or ISO country code to be used for geo-location based push notifications and advanced segmentation.
+ * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location. If the app has information about user's city and/or country, this information can be provided using this method.
+ * @discussion This method also overrides @c city and @c ISOCountryCode properties specified on initial configuration, in addition to sending an immediate request.
+ * @param city User's city
+ * @param ISOCountryCode User's ISO country code in ISO 3166-1 alpha-2 format
+ */
+- (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode;
+
+/**
+ * Records user's explicit IP address to be used for geo-location based push notifications and advanced segmentation.
+ * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location, and deduces the IP address from the connection. If the app needs to explicitly specify the IP address due to network requirements, it can be provided using this method.
+ * @discussion This method only overrides @c IP property specified on initial configuration, without sending an immediate request.
+ * @param IP User's explicit IP address
+ */
+- (void)recordIP:(NSString *)IP;
+
+/**
  * Records action event for a manually presented push notification with custom action buttons.
- * @discussion If a push notification with custom action buttons is handled and presented manually using custom UI, user's action needs to be reported manually. With this convenience method user's action can be reported passing push notification dictionary and clicked button index. Button index should be 0 for default action, 1 for the first action button and 2 for the second action button.
+ * @discussion If a push notification with custom action buttons is handled and presented manually using custom UI, user's action needs to be reported manually. With this convenience method user's action can be reported passing push notification dictionary and clicked button index.
+ * @discussion Button index should be @c 0 for default action, @c 1 for the first action button and @c 2 for the second action button.
  * @param userInfo Manually presented push notification dictionary
- * @param buttonIndex Clicked custom action button index
+ * @param buttonIndex Index of custom action button user clicked
  */
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
+
+/**
+ * Enables or disables geo-location based push notifications.
+ * @discussion By default, it is enabled if PushNotifications feature is activated on initial configuration.
+ * @discussion Changes to this property is persistently stored, and will be effective even after app re-launch.
+ */
+@property (nonatomic) BOOL isGeoLocationEnabled;
+
 #endif
 
 
@@ -227,7 +257,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Records custom logs to be delivered with crash report.
- * @discussion Logs recorded by this method are stored in a non-persistent structure, and delivered to server only in case of a crash.
+ * @discussion Logs recorded by this method are stored in a non-persistent structure, and delivered to Countly Server only in case of a crash.
  * @param log Custom log string to be recorded
  */
 - (void)recordCrashLog:(NSString *)log;
@@ -246,13 +276,16 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - Countly APM
 
 /**
- * Adds exception URL for APM. Added URLs (with or without specific path) will be ignored by APM. Adding an already added URL again will have no effect.
+ * Adds exception URL for APM.
+ * @discussion Added URLs (with or without specific path) will be ignored by APM.
+ * @discussion Adding an already added URL again will have no effect.
  * @param exceptionURL Exception URL to be added
  */
 - (void)addExceptionForAPM:(NSString *)exceptionURL;
 
 /**
- * Removes exception URL for APM. Removing an already removed (or not yet added) URL again will have no effect.
+ * Removes exception URL for APM.
+ * @discussion Removing an already removed (or not yet added) URL again will have no effect.
  * @param exceptionURL Exception URL to be removed
  */
 - (void)removeExceptionForAPM:(NSString *)exceptionURL;
@@ -263,7 +296,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Reports a visited view with given name manually.
- * @discussion If auto ViewTracking feature is activated on initial configuration, this method does not need to be called manually.
+ * @discussion If AutoViewTracking feature is activated on initial configuration, this method does not need to be called manually.
  * @param viewName Name of the view visited
  */
 - (void)reportView:(NSString *)viewName;
@@ -271,15 +304,16 @@ NS_ASSUME_NONNULL_BEGIN
 #if TARGET_OS_IOS
 /**
  * Adds exception for AutoViewTracking.
- * @discussion @c UIViewContollers with specified title or class name will be ignored by AutoViewTracking and their appearances and disappearances will not be reported. Adding an already added @c UIViewController title or subclass name again will have no effect.
- * @param exception @c UIViewContoller title or subclass name to be added as exception
+ * @discussion @c UIViewControllers with specified title or class name will be ignored by AutoViewTracking and their appearances and disappearances will not be reported.
+ * @discussion Adding an already added @c UIViewController title or subclass name again will have no effect.
+ * @param exception @c UIViewController title or subclass name to be added as exception
  */
 - (void)addExceptionForAutoViewTracking:(NSString *)exception;
 
 /**
  * Removes exception for AutoViewTracking.
  * @discussion Removing an already removed (or not yet added) @c UIViewController title or subclass name will have no effect.
- * @param exception @c UIViewContoller title or subclass name to be removed
+ * @param exception @c UIViewController title or subclass name to be removed
  */
 - (void)removeExceptionForAutoViewTracking:(NSString *)exception;
 
@@ -302,7 +336,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Handles switching from device ID to custom user ID for logged in users
- * @discussion When a user logs in, this user can be tracked with custom user ID instead of device ID. This is just a convenience method that handles setting user ID as new device ID and merging existing data on server.
+ * @discussion When a user logs in, this user can be tracked with custom user ID instead of device ID. This is just a convenience method that handles setting user ID as new device ID and merging existing data on Countly Server.
  * @param userID Custom user ID uniquely defining the logged in user
  */
 - (void)userLoggedIn:(NSString *)userID;
@@ -317,7 +351,7 @@ NS_ASSUME_NONNULL_BEGIN
 #if TARGET_OS_IOS
 /**
  * Shows star-rating dialog manually and executes completion block after user's action.
- * @discussion Completion block has a single NSInteger parameter that indicates 1 to 5 star-rating given by user. If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to server.
+ * @discussion Completion block has a single NSInteger parameter that indicates 1 to 5 star-rating given by user. If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to Countly Server.
  * @param completion A block object to be executed when user gives a star-rating or dismisses dialog without rating
  */
 - (void)askForStarRating:(void(^)(NSInteger rating))completion;

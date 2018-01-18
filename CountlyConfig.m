@@ -11,7 +11,6 @@
 //NOTE: Countly features
 #if TARGET_OS_IOS
     NSString* const CLYPushNotifications = @"CLYPushNotifications";
-        NSString* const CLYMessaging = @"CLYPushNotifications";
     NSString* const CLYCrashReporting = @"CLYCrashReporting";
     NSString* const CLYAutoViewTracking = @"CLYAutoViewTracking";
 #elif TARGET_OS_TV

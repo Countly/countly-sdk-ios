@@ -10,37 +10,37 @@
 
 NSString* const kCountlyExceptionUserInfoBacktraceKey = @"kCountlyExceptionUserInfoBacktraceKey";
 
-NSString* const kCountlyCRKeyBinaryImages =     @"_binary_images";
-NSString* const kCountlyCRKeyOS =               @"_os";
-NSString* const kCountlyCRKeyOSVersion =        @"_os_version";
-NSString* const kCountlyCRKeyDevice =           @"_device";
-NSString* const kCountlyCRKeyArchitecture =     @"_architecture";
-NSString* const kCountlyCRKeyResolution =       @"_resolution";
-NSString* const kCountlyCRKeyAppVersion =       @"_app_version";
-NSString* const kCountlyCRKeyAppBuild =         @"_app_build";
-NSString* const kCountlyCRKeyBuildUUID =        @"_build_uuid";
-NSString* const kCountlyCRKeyLoadAddress =      @"_load_address";
-NSString* const kCountlyCRKeyExecutableName =   @"_executable_name";
-NSString* const kCountlyCRKeyName =             @"_name";
-NSString* const kCountlyCRKeyType =             @"_type";
-NSString* const kCountlyCRKeyError =            @"_error";
-NSString* const kCountlyCRKeyNonfatal =         @"_nonfatal";
-NSString* const kCountlyCRKeyRAMCurrent =       @"_ram_current";
-NSString* const kCountlyCRKeyRAMTotal =         @"_ram_total";
-NSString* const kCountlyCRKeyDiskCurrent =      @"_disk_current";
-NSString* const kCountlyCRKeyDiskTotal =        @"_disk_total";
-NSString* const kCountlyCRKeyBattery =          @"_bat";
-NSString* const kCountlyCRKeyOrientation =      @"_orientation";
-NSString* const kCountlyCRKeyOnline =           @"_online";
-NSString* const kCountlyCRKeyOpenGL =           @"_opengl";
-NSString* const kCountlyCRKeyRoot =             @"_root";
-NSString* const kCountlyCRKeyBackground =       @"_background";
-NSString* const kCountlyCRKeyRun =              @"_run";
-NSString* const kCountlyCRKeyCustom =           @"_custom";
-NSString* const kCountlyCRKeyLogs =             @"_logs";
-NSString* const kCountlyCRKeySignalCode =       @"signal_code";
-NSString* const kCountlyCRKeyImageLoadAddress = @"la";
-NSString* const kCountlyCRKeyImageBuildUUID =   @"id";
+NSString* const kCountlyCRKeyBinaryImages      = @"_binary_images";
+NSString* const kCountlyCRKeyOS                = @"_os";
+NSString* const kCountlyCRKeyOSVersion         = @"_os_version";
+NSString* const kCountlyCRKeyDevice            = @"_device";
+NSString* const kCountlyCRKeyArchitecture      = @"_architecture";
+NSString* const kCountlyCRKeyResolution        = @"_resolution";
+NSString* const kCountlyCRKeyAppVersion        = @"_app_version";
+NSString* const kCountlyCRKeyAppBuild          = @"_app_build";
+NSString* const kCountlyCRKeyBuildUUID         = @"_build_uuid";
+NSString* const kCountlyCRKeyLoadAddress       = @"_load_address";
+NSString* const kCountlyCRKeyExecutableName    = @"_executable_name";
+NSString* const kCountlyCRKeyName              = @"_name";
+NSString* const kCountlyCRKeyType              = @"_type";
+NSString* const kCountlyCRKeyError             = @"_error";
+NSString* const kCountlyCRKeyNonfatal          = @"_nonfatal";
+NSString* const kCountlyCRKeyRAMCurrent        = @"_ram_current";
+NSString* const kCountlyCRKeyRAMTotal          = @"_ram_total";
+NSString* const kCountlyCRKeyDiskCurrent       = @"_disk_current";
+NSString* const kCountlyCRKeyDiskTotal         = @"_disk_total";
+NSString* const kCountlyCRKeyBattery           = @"_bat";
+NSString* const kCountlyCRKeyOrientation       = @"_orientation";
+NSString* const kCountlyCRKeyOnline            = @"_online";
+NSString* const kCountlyCRKeyOpenGL            = @"_opengl";
+NSString* const kCountlyCRKeyRoot              = @"_root";
+NSString* const kCountlyCRKeyBackground        = @"_background";
+NSString* const kCountlyCRKeyRun               = @"_run";
+NSString* const kCountlyCRKeyCustom            = @"_custom";
+NSString* const kCountlyCRKeyLogs              = @"_logs";
+NSString* const kCountlyCRKeySignalCode        = @"signal_code";
+NSString* const kCountlyCRKeyImageLoadAddress  = @"la";
+NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 
 @implementation CountlyCrashReporter
 
@@ -124,7 +124,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     crashReport[kCountlyCRKeyBattery] = @(CountlyDeviceInfo.batteryLevel);
     crashReport[kCountlyCRKeyOrientation] = CountlyDeviceInfo.orientation;
     crashReport[kCountlyCRKeyOnline] = @((CountlyDeviceInfo.connectionType) ? 1 : 0 );
-    crashReport[kCountlyCRKeyOpenGL] = @(CountlyDeviceInfo.OpenGLESversion);
+    crashReport[kCountlyCRKeyOpenGL] = CountlyDeviceInfo.OpenGLESversion;
     crashReport[kCountlyCRKeyRoot] = @(CountlyDeviceInfo.isJailbroken);
     crashReport[kCountlyCRKeyBackground] = @(CountlyDeviceInfo.isInBackground);
     crashReport[kCountlyCRKeyRun] = @(CountlyCommon.sharedInstance.timeSinceLaunch);
@@ -207,7 +207,7 @@ void CountlySignalHandler(int signalCode)
     uint32_t imageCount = _dyld_image_count();
     for (uint32_t i = 0; i < imageCount; i++)
     {
-        const char *imageNameChar = _dyld_get_image_name(i);
+        const char* imageNameChar = _dyld_get_image_name(i);
         if (imageNameChar == NULL)
         {
             COUNTLY_LOG(@"Image Name can not be retrieved!");
@@ -223,7 +223,7 @@ void CountlySignalHandler(int signalCode)
         }
 
 
-        const struct mach_header *imageHeader = _dyld_get_image_header(i);
+        const struct mach_header* imageHeader = _dyld_get_image_header(i);
         if (imageHeader == NULL)
         {
             COUNTLY_LOG(@"Image Header can not be retrieved!");
@@ -236,11 +236,11 @@ void CountlySignalHandler(int signalCode)
 
         for (uint32_t j = 0; j < imageHeader->ncmds; j++)
         {
-            const struct segment_command_64 *segCmd = (struct segment_command_64 *)ptr;
+            const struct segment_command_64* segCmd = (struct segment_command_64*)ptr;
 
             if (segCmd->cmd == LC_UUID)
             {
-                const uint8_t *uuid = ((const struct uuid_command *)segCmd)->uuid;
+                const uint8_t* uuid = ((const struct uuid_command*)segCmd)->uuid;
                 imageUUID = [NSUUID.alloc initWithUUIDBytes:uuid].UUIDString;
                 break;
             }

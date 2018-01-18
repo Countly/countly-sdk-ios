@@ -7,10 +7,29 @@
 #import "CountlyCommon.h"
 
 @interface CountlyUserDetails ()
-@property (nonatomic, strong) NSMutableDictionary* modifications;
+@property (nonatomic) NSMutableDictionary* modifications;
 @end
 
 NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
+
+NSString* const kCountlyUDKeyName          = @"name";
+NSString* const kCountlyUDKeyUsername      = @"username";
+NSString* const kCountlyUDKeyEmail         = @"email";
+NSString* const kCountlyUDKeyOrganization  = @"organization";
+NSString* const kCountlyUDKeyPhone         = @"phone";
+NSString* const kCountlyUDKeyGender        = @"gender";
+NSString* const kCountlyUDKeyPicture       = @"picture";
+NSString* const kCountlyUDKeyBirthyear     = @"byear";
+NSString* const kCountlyUDKeyCustom        = @"custom";
+
+NSString* const kCountlyUDKeyModifierSetOnce    = @"$setOnce";
+NSString* const kCountlyUDKeyModifierIncrement  = @"$inc";
+NSString* const kCountlyUDKeyModifierMultiply   = @"$mul";
+NSString* const kCountlyUDKeyModifierMax        = @"$max";
+NSString* const kCountlyUDKeyModifierMin        = @"$min";
+NSString* const kCountlyUDKeyModifierPush       = @"$push";
+NSString* const kCountlyUDKeyModifierAddToSet   = @"$addToSet";
+NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 @implementation CountlyUserDetails
 
@@ -36,23 +55,23 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
 {
     NSMutableDictionary* userDictionary = NSMutableDictionary.new;
     if (self.name)
-        userDictionary[@"name"] = self.name;
+        userDictionary[kCountlyUDKeyName] = self.name;
     if (self.username)
-        userDictionary[@"username"] = self.username;
+        userDictionary[kCountlyUDKeyUsername] = self.username;
     if (self.email)
-        userDictionary[@"email"] = self.email;
+        userDictionary[kCountlyUDKeyEmail] = self.email;
     if (self.organization)
-        userDictionary[@"organization"] = self.organization;
+        userDictionary[kCountlyUDKeyOrganization] = self.organization;
     if (self.phone)
-        userDictionary[@"phone"] = self.phone;
+        userDictionary[kCountlyUDKeyPhone] = self.phone;
     if (self.gender)
-        userDictionary[@"gender"] = self.gender;
+        userDictionary[kCountlyUDKeyGender] = self.gender;
     if (self.pictureURL)
-        userDictionary[@"picture"] = self.pictureURL;
+        userDictionary[kCountlyUDKeyPicture] = self.pictureURL;
     if (self.birthYear)
-        userDictionary[@"byear"] = self.birthYear;
+        userDictionary[kCountlyUDKeyBirthyear] = self.birthYear;
     if (self.custom)
-        userDictionary[@"custom"] = self.custom;
+        userDictionary[kCountlyUDKeyCustom] = self.custom;
 
     if (userDictionary.allKeys.count)
         return [userDictionary cly_JSONify];
@@ -85,7 +104,7 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
 
 - (void)setOnce:(NSString *)key value:(NSString *)value
 {
-    self.modifications[key] = @{@"$setOnce":value};
+    self.modifications[key] = @{kCountlyUDKeyModifierSetOnce: value};
 }
 
 - (void)unSet:(NSString *)key
@@ -100,52 +119,52 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
 
 - (void)incrementBy:(NSString *)key value:(NSNumber *)value
 {
-    self.modifications[key] = @{@"$inc":value};
+    self.modifications[key] = @{kCountlyUDKeyModifierIncrement: value};
 }
 
 - (void)multiply:(NSString *)key value:(NSNumber *)value
 {
-    self.modifications[key] = @{@"$mul":value};
+    self.modifications[key] = @{kCountlyUDKeyModifierMultiply: value};
 }
 
 - (void)max:(NSString *)key value:(NSNumber *)value
 {
-    self.modifications[key] = @{@"$max":value};
+    self.modifications[key] = @{kCountlyUDKeyModifierMax: value};
 }
 
 - (void)min:(NSString *)key value:(NSNumber *)value
 {
-    self.modifications[key] = @{@"$min":value};
+    self.modifications[key] = @{kCountlyUDKeyModifierMin: value};
 }
 
 - (void)push:(NSString *)key value:(NSString *)value
 {
-    self.modifications[key] = @{@"$push":value};
+    self.modifications[key] = @{kCountlyUDKeyModifierPush: value};
 }
 
 - (void)push:(NSString *)key values:(NSArray *)value
 {
-    self.modifications[key] = @{@"$push":value};
+    self.modifications[key] = @{kCountlyUDKeyModifierPush: value};
 }
 
 - (void)pushUnique:(NSString *)key value:(NSString *)value
 {
-    self.modifications[key] = @{@"$addToSet":value};
+    self.modifications[key] = @{kCountlyUDKeyModifierAddToSet: value};
 }
 
 - (void)pushUnique:(NSString *)key values:(NSArray *)value
 {
-    self.modifications[key] = @{@"$addToSet":value};
+    self.modifications[key] = @{kCountlyUDKeyModifierAddToSet: value};
 }
 
 - (void)pull:(NSString *)key value:(NSString *)value
 {
-    self.modifications[key] = @{@"$pull":value};
+    self.modifications[key] = @{kCountlyUDKeyModifierPull: value};
 }
 
 - (void)pull:(NSString *)key values:(NSArray *)value
 {
-    self.modifications[key] = @{@"$pull":value};
+    self.modifications[key] = @{kCountlyUDKeyModifierPull: value};
 }
 
 - (void)save
@@ -155,10 +174,10 @@ NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
         [CountlyConnectionManager.sharedInstance sendUserDetails:userDetails];
 
     if (self.pictureLocalPath && !self.pictureURL)
-        [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyLocalPicturePath:self.pictureLocalPath} cly_JSONify]];
+        [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyLocalPicturePath: self.pictureLocalPath} cly_JSONify]];
 
     if (self.modifications.count)
-        [CountlyConnectionManager.sharedInstance sendUserDetails:[@{@"custom":self.modifications} cly_JSONify]];
+        [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyUDKeyCustom: self.modifications} cly_JSONify]];
 
     [self clearUserDetails];
 }

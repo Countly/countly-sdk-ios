@@ -10,7 +10,7 @@ extern NSString* const kCountlyZeroIDFA;
 
 @interface CountlyDeviceInfo : NSObject
 
-@property (nonatomic, strong) NSString *deviceID;
+@property (nonatomic) NSString *deviceID;
 
 + (instancetype)sharedInstance;
 - (void)initializeDeviceID:(NSString *)deviceID;
@@ -40,7 +40,7 @@ extern NSString* const kCountlyZeroIDFA;
 + (unsigned long long)totalDisk;
 + (NSInteger)batteryLevel;
 + (NSString *)orientation;
-+ (float)OpenGLESversion;
++ (NSString *)OpenGLESversion;
 + (BOOL)isJailbroken;
 + (BOOL)isInBackground;
 @end

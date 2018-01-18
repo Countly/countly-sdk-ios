@@ -8,7 +8,7 @@
 
 @interface CountlyStarRating ()
 #if TARGET_OS_IOS
-@property (nonatomic, strong) UIWindow* alertWindow;
+@property (nonatomic) UIWindow* alertWindow;
 @property (nonatomic, copy) void (^ratingCompletion)(NSInteger);
 #endif
 @end
@@ -17,6 +17,10 @@ NSString* const kCountlyReservedEventStarRating = @"[CLY]_star_rating";
 NSString* const kCountlyStarRatingStatusSessionCountKey = @"kCountlyStarRatingStatusSessionCountKey";
 NSString* const kCountlyStarRatingStatusHasEverAskedAutomatically = @"kCountlyStarRatingStatusHasEverAskedAutomatically";
 
+NSString* const kCountlySRKeyPlatform    = @"platform";
+NSString* const kCountlySRKeyAppVersion  = @"app_version";
+NSString* const kCountlySRKeyRating      = @"rating";
+
 @implementation CountlyStarRating
 #if TARGET_OS_IOS
 {
@@ -24,7 +28,7 @@ NSString* const kCountlyStarRatingStatusHasEverAskedAutomatically = @"kCountlySt
     UIAlertController* alertController;
 }
 
-const float kCountlyStarRatingButtonSize = 40;
+const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 + (instancetype)sharedInstance
 {
@@ -36,21 +40,21 @@ const float kCountlyStarRatingButtonSize = 40;
 
 - (instancetype)init
 {
-    self = [super init];
-    if (self)
+    if (self = [super init])
     {
         NSString* langDesignator = [NSLocale.preferredLanguages.firstObject substringToIndex:2];
 
         NSDictionary* dictMessage =
         @{
-            @"en" : @"How would you rate the app?",
-            @"tr" : @"Uygulamayı nasıl değerlendirirsiniz?",
-            @"jp" : @"あなたの評価を教えてください。",
-            @"zh" : @"请告诉我你的评价。",
-            @"ru" : @"Как бы вы оценили приложение?",
-            @"cz" : @"Jak hodnotíte aplikaci?",
-            @"lv" : @"Kā Jūs novērtētu šo lietotni?",
-            @"bn" : @"আপনি কিভাবে এই এপ্লিক্যাশনটি মূল্যায়ন করবেন?"
+            @"en": @"How would you rate the app?",
+            @"tr": @"Uygulamayı nasıl değerlendirirsiniz?",
+            @"jp": @"あなたの評価を教えてください。",
+            @"zh": @"请告诉我你的评价。",
+            @"ru": @"Как бы вы оценили приложение?",
+            @"cz": @"Jak hodnotíte aplikaci?",
+            @"lv": @"Kā Jūs novērtētu šo lietotni?",
+            @"bn": @"আপনি কিভাবে এই এপ্লিক্যাশনটি মূল্যায়ন করবেন?",
+            @"hi": @"आप एप्लीकेशन का मूल्यांकन कैसे करेंगे?",
         };
 
         self.message = dictMessage[langDesignator];
@@ -183,9 +187,9 @@ const float kCountlyStarRatingButtonSize = 40;
     {
         NSDictionary* segmentation =
         @{
-            @"platform": CountlyDeviceInfo.osName,
-            @"app_version": CountlyDeviceInfo.appVersion,
-            @"rating" : @(rating)
+            kCountlySRKeyPlatform: CountlyDeviceInfo.osName,
+            kCountlySRKeyAppVersion: CountlyDeviceInfo.appVersion,
+            kCountlySRKeyRating: @(rating)
         };
 
         [Countly.sharedInstance recordEvent:kCountlyReservedEventStarRating segmentation:segmentation count:1];

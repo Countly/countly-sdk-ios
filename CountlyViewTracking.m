@@ -9,15 +9,15 @@
 @interface CountlyViewTracking ()
 @property (nonatomic) NSTimeInterval lastViewStartTime;
 @property (nonatomic) NSTimeInterval accumulatedTime;
-@property (nonatomic, strong) NSMutableArray* exceptionViewControllers;
+@property (nonatomic) NSMutableArray* exceptionViewControllers;
 @end
 
 NSString* const kCountlyReservedEventView = @"[CLY]_view";
 
-NSString* const kCountlyVTKeyName =     @"name";
-NSString* const kCountlyVTKeySegment =  @"segment";
-NSString* const kCountlyVTKeyVisit =    @"visit";
-NSString* const kCountlyVTKeyStart =    @"start";
+NSString* const kCountlyVTKeyName     = @"name";
+NSString* const kCountlyVTKeySegment  = @"segment";
+NSString* const kCountlyVTKeyVisit    = @"visit";
+NSString* const kCountlyVTKeyStart    = @"start";
 
 @implementation CountlyViewTracking
 
@@ -31,8 +31,7 @@ NSString* const kCountlyVTKeyStart =    @"start";
 
 - (instancetype)init
 {
-    self = [super init];
-    if (self)
+    if (self = [super init])
     {
         self.exceptionViewControllers =
         @[

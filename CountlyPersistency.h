@@ -38,6 +38,9 @@
 - (BOOL)retrieveNotificationPermission;
 - (void)storeNotificationPermission:(BOOL)allowed;
 
+- (BOOL)retrieveGeoLocationDisabled;
+- (void)storeGeoLocationDisabled:(BOOL)disabled;
+
 @property (nonatomic) NSUInteger eventSendThreshold;
 @property (nonatomic) NSUInteger storedRequestsLimit;
 @end
