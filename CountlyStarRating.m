@@ -48,7 +48,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         @{
             @"en": @"How would you rate the app?",
             @"tr": @"Uygulamayı nasıl değerlendirirsiniz?",
-            @"jp": @"あなたの評価を教えてください。",
+            @"ja": @"あなたの評価を教えてください。",
             @"zh": @"请告诉我你的评价。",
             @"ru": @"Как бы вы оценили приложение?",
             @"cz": @"Jak hodnotíte aplikaci?",
