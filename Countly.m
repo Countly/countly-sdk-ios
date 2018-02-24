@@ -179,7 +179,7 @@
 
 - (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue
 {
-    CountlyConnectionManager.sharedInstance.customHeaderFieldValue = customHeaderFieldValue;
+    CountlyConnectionManager.sharedInstance.customHeaderFieldValue = customHeaderFieldValue.copy;
     [CountlyConnectionManager.sharedInstance proceedOnQueue];
 }
 
@@ -424,10 +424,10 @@
 - (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode
 {
     if (city)
-        CountlyPushNotifications.sharedInstance.city = city;
+        CountlyPushNotifications.sharedInstance.city = city.copy;
 
     if (ISOCountryCode)
-        CountlyPushNotifications.sharedInstance.ISOCountryCode = ISOCountryCode;
+        CountlyPushNotifications.sharedInstance.ISOCountryCode = ISOCountryCode.copy;
 
     if (CountlyPushNotifications.sharedInstance.isGeoLocationEnabled && (city || ISOCountryCode))
         [CountlyConnectionManager.sharedInstance sendCityAndCountryCode];
@@ -501,18 +501,18 @@
 
 - (void)reportView:(NSString *)viewName
 {
-    [CountlyViewTracking.sharedInstance reportView:viewName];
+    [CountlyViewTracking.sharedInstance reportView:viewName.copy];
 }
 
 #if TARGET_OS_IOS
 - (void)addExceptionForAutoViewTracking:(NSString *)exception
 {
-    [CountlyViewTracking.sharedInstance addExceptionForAutoViewTracking:exception];
+    [CountlyViewTracking.sharedInstance addExceptionForAutoViewTracking:exception.copy];
 }
 
 - (void)removeExceptionForAutoViewTracking:(NSString *)exception
 {
-    [CountlyViewTracking.sharedInstance removeExceptionForAutoViewTracking:exception];
+    [CountlyViewTracking.sharedInstance removeExceptionForAutoViewTracking:exception.copy];
 }
 
 - (void)setIsAutoViewTrackingEnabled:(BOOL)isAutoViewTrackingEnabled
