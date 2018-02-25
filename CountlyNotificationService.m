@@ -69,8 +69,8 @@ NSString* const kCountlyPNKeyActionButtonURL    = @"l";
         COUNTLY_EXT_LOG(@"%d custom action buttons added.", (int)buttons.count);
     }
 
-    NSString* attachment = countlyPayload[kCountlyPNKeyAttachment];
-    if (!attachment.length)
+    NSString* attachmentURL = countlyPayload[kCountlyPNKeyAttachment];
+    if (!attachmentURL.length)
     {
         COUNTLY_EXT_LOG(@"No attachment specified in Countly payload.");
         COUNTLY_EXT_LOG(@"Handling of notification finished.");
@@ -78,9 +78,9 @@ NSString* const kCountlyPNKeyActionButtonURL    = @"l";
         return;
     }
 
-    COUNTLY_EXT_LOG(@"Attachment specified in Countly payload: %@", attachment);
+    COUNTLY_EXT_LOG(@"Attachment specified in Countly payload: %@", attachmentURL);
 
-    [[NSURLSession.sharedSession downloadTaskWithURL:[NSURL URLWithString:attachment] completionHandler:^(NSURL * location, NSURLResponse * response, NSError * error)
+    [[NSURLSession.sharedSession downloadTaskWithURL:[NSURL URLWithString:attachmentURL] completionHandler:^(NSURL * location, NSURLResponse * response, NSError * error)
     {
         if (!error)
         {

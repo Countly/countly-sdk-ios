@@ -237,10 +237,10 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     [buttons enumerateObjectsUsingBlock:^(NSDictionary* button, NSUInteger idx, BOOL * stop)
     {
         //NOTE: space is added to force buttons to be laid out vertically
-        NSString* title = [button[kCountlyPNKeyActionButtonTitle] stringByAppendingString:@"                       "];
+        NSString* actionTitle = [button[kCountlyPNKeyActionButtonTitle] stringByAppendingString:@"                       "];
         NSString* URL = button[kCountlyPNKeyActionButtonURL];
 
-        UIAlertAction* visit = [UIAlertAction actionWithTitle:title style:UIAlertActionStyleDefault handler:^(UIAlertAction * action)
+        UIAlertAction* visit = [UIAlertAction actionWithTitle:actionTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction * action)
         {
             [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(idx + 1)}];
 
