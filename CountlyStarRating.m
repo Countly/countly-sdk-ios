@@ -9,6 +9,7 @@
 @interface CountlyStarRating ()
 #if TARGET_OS_IOS
 @property (nonatomic) UIWindow* alertWindow;
+@property (nonatomic) UIAlertController* alertController;
 @property (nonatomic, copy) void (^ratingCompletion)(NSInteger);
 #endif
 @end
@@ -25,7 +26,6 @@ NSString* const kCountlySRKeyRating      = @"rating";
 #if TARGET_OS_IOS
 {
     UIButton* btn_star[5];
-    UIAlertController* alertController;
 }
 
 const CGFloat kCountlyStarRatingButtonSize = 40.0;
@@ -69,17 +69,17 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 {
     self.ratingCompletion = completion;
 
-    alertController = [UIAlertController alertControllerWithTitle:@" " message:self.message preferredStyle:UIAlertControllerStyleAlert];
+    self.alertController = [UIAlertController alertControllerWithTitle:@" " message:self.message preferredStyle:UIAlertControllerStyleAlert];
 
     CLYButton* dismissButton = [CLYButton dismissAlertButton];
     dismissButton.onClick = ^(id sender)
     {
-        [alertController dismissViewControllerAnimated:YES completion:^
+        [self.alertController dismissViewControllerAnimated:YES completion:^
         {
             [self finishWithRating:0];
         }];
     };
-    [alertController.view addSubview:dismissButton];
+    [self.alertController.view addSubview:dismissButton];
 
     CLYInternalViewController* cvc = CLYInternalViewController.new;
     [cvc setPreferredContentSize:(CGSize){kCountlyStarRatingButtonSize * 5, kCountlyStarRatingButtonSize * 1.5}];
@@ -87,7 +87,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
     @try
     {
-        [alertController setValue:cvc forKey:@"contentViewController"];
+        [self.alertController setValue:cvc forKey:@"contentViewController"];
     }
     @catch(NSException* exception)
     {
@@ -98,7 +98,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     self.alertWindow.rootViewController = CLYInternalViewController.new;
     self.alertWindow.windowLevel = UIWindowLevelAlert;
     [self.alertWindow makeKeyAndVisible];
-    [self.alertWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
+    [self.alertWindow.rootViewController presentViewController:self.alertController animated:YES completion:nil];
 }
 
 - (void)checkForAutoAsk
@@ -174,7 +174,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
     {
-        [alertController dismissViewControllerAnimated:YES completion:^{ [self finishWithRating:rating]; }];
+        [self.alertController dismissViewControllerAnimated:YES completion:^{ [self finishWithRating:rating]; }];
     });
 }
 
@@ -197,7 +197,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
     self.alertWindow.hidden = YES;
     self.alertWindow = nil;
-
+    self.alertController = nil;
     self.ratingCompletion = nil;
 }
 
