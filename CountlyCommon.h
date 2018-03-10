@@ -58,6 +58,7 @@ extern NSString* const kCountlySDKName;
 
 @interface CountlyCommon : NSObject
 
+@property (nonatomic) BOOL hasStarted;
 @property (nonatomic) BOOL enableDebug;
 @property (nonatomic) BOOL enableAppleWatch;
 @property (nonatomic) BOOL enableAttribution;

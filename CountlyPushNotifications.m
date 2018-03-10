@@ -24,6 +24,9 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 + (instancetype)sharedInstance
 {
+    if (!CountlyCommon.sharedInstance.hasStarted)
+        return nil;
+
     static CountlyPushNotifications* s_sharedInstance;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});

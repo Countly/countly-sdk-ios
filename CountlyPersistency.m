@@ -23,6 +23,9 @@ NSString* const kCountlyGeoLocationDisabledKey = @"kCountlyGeoLocationDisabledKe
 
 + (instancetype)sharedInstance
 {
+    if (!CountlyCommon.sharedInstance.hasStarted)
+        return nil;
+
     static CountlyPersistency* s_sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});

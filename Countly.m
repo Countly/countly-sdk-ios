@@ -57,6 +57,11 @@
 
 - (void)startWithConfig:(CountlyConfig *)config
 {
+    if (CountlyCommon.sharedInstance.hasStarted)
+        return;
+
+    CountlyCommon.sharedInstance.hasStarted = YES;
+
     CountlyCommon.sharedInstance.enableDebug = config.enableDebug;
 
     NSAssert(config.appKey && ![config.appKey isEqualToString:@"YOUR_APP_KEY"], @"[CountlyAssert] App key in Countly configuration is not set!");
@@ -137,6 +142,9 @@
 
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer
 {
+    if (!CountlyCommon.sharedInstance.hasStarted)
+        return;
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
@@ -218,6 +226,9 @@
 
 - (void)suspend
 {
+    if (!CountlyCommon.sharedInstance.hasStarted)
+        return;
+
     if (isSuspended)
         return;
 
@@ -237,6 +248,9 @@
 
 - (void)resume
 {
+    if (!CountlyCommon.sharedInstance.hasStarted)
+        return;
+
 #if TARGET_OS_WATCH
     //NOTE: skip first time to prevent double begin session because of applicationDidBecomeActive call on launch of watchOS apps
     static BOOL isFirstCall = YES;
