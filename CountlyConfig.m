@@ -37,6 +37,7 @@
 #if TARGET_OS_WATCH
         self.updateSessionPeriod = 20.0;
         self.eventSendThreshold = 3;
+        self.enableAppleWatch = YES;
 #else
         self.updateSessionPeriod = 60.0;
         self.eventSendThreshold = 10;

@@ -72,13 +72,8 @@ void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
 - (NSInteger)timeZone;
 - (NSInteger)timeSinceLaunch;
 - (NSTimeInterval)uniqueTimestamp;
-#if (TARGET_OS_IOS || TARGET_OS_WATCH)
-- (void)activateWatchConnectivity;
-#endif
 
-#if TARGET_OS_IOS
-- (void)transferParentDeviceID;
-#endif
+- (void)startAppleWatchMatching;
 @end
 
 

@@ -93,36 +93,28 @@ void CountlyInternalLog(NSString *format, ...)
 
 #pragma mark - Watch Connectivity
 
-#if (TARGET_OS_IOS || TARGET_OS_WATCH)
-- (void)activateWatchConnectivity
+- (void)startAppleWatchMatching
 {
     if (!self.enableAppleWatch)
         return;
 
+#if (TARGET_OS_IOS || TARGET_OS_WATCH)
     if ([WCSession isSupported])
     {
         WCSession *session = WCSession.defaultSession;
         session.delegate = (id<WCSessionDelegate>)self;
         [session activateSession];
     }
-}
 #endif
 
 #if TARGET_OS_IOS
-- (void)transferParentDeviceID
-{
-    if (!self.enableAppleWatch)
-        return;
-
-    [self activateWatchConnectivity];
-
     if (WCSession.defaultSession.paired && WCSession.defaultSession.watchAppInstalled)
     {
         [WCSession.defaultSession transferUserInfo:@{kCountlyParentDeviceIDTransferKey: CountlyDeviceInfo.sharedInstance.deviceID}];
         COUNTLY_LOG(@"Transferring parent device ID %@ ...", CountlyDeviceInfo.sharedInstance.deviceID);
     }
-}
 #endif
+}
 
 #if TARGET_OS_WATCH
 - (void)session:(WCSession *)session didReceiveUserInfo:(NSDictionary<NSString *, id> *)userInfo

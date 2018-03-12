@@ -96,8 +96,6 @@
     CountlyStarRating.sharedInstance.ratingCompletionForAutoAsk = config.starRatingCompletion;
     [CountlyStarRating.sharedInstance checkForAutoAsk];
 
-    [CountlyCommon.sharedInstance transferParentDeviceID];
-
     if ([config.features containsObject:CLYPushNotifications])
     {
         CountlyPushNotifications.sharedInstance.isTestDevice = config.isTestDevice;
@@ -134,10 +132,7 @@
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
 
-#if TARGET_OS_WATCH
-    CountlyCommon.sharedInstance.enableAppleWatch = YES;
-    [CountlyCommon.sharedInstance activateWatchConnectivity];
-#endif
+    [CountlyCommon.sharedInstance startAppleWatchMatching];
 }
 
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer
