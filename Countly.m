@@ -61,8 +61,8 @@
         return;
 
     CountlyCommon.sharedInstance.hasStarted = YES;
-
     CountlyCommon.sharedInstance.enableDebug = config.enableDebug;
+    CountlyCommon.sharedInstance.requiresConsent = config.requiresConsent;
 
     NSAssert(config.appKey && ![config.appKey isEqualToString:@"YOUR_APP_KEY"], @"[CountlyAssert] App key in Countly configuration is not set!");
     NSAssert(config.host && ![config.host isEqualToString:@"https://YOUR_COUNTLY_SERVER"], @"[CountlyAssert] Host in Countly configuration is not set!");

@@ -29,6 +29,19 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use CLYIDFV instead
 extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device ID instead!");
 #endif
 
+
+//NOTE: Consents for Features
+extern NSString* const CLYConsentSessions;
+extern NSString* const CLYConsentEvents;
+extern NSString* const CLYConsentUserDetails;
+extern NSString* const CLYConsentCrashReporting;
+extern NSString* const CLYConsentPushNotifications;
+extern NSString* const CLYConsentViewTracking;
+extern NSString* const CLYConsentAttribution;
+extern NSString* const CLYConsentStarRating;
+extern NSString* const CLYConsentAppleWatch;
+
+
 @interface CountlyConfig : NSObject
 
 /**
@@ -62,6 +75,14 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  * @discussion @c CLYAPM for application performance management.
  */
 @property (nonatomic, copy) NSArray* features;
+
+#pragma mark -
+
+/**
+ * For limiting features based on user consent.
+ * @discussion If set, SDK will wait for explicit consent to be given for features to work.
+ */
+@property (nonatomic) BOOL requiresConsent;
 
 #pragma mark -
 
