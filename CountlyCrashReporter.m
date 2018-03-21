@@ -73,6 +73,9 @@ static NSString *executableName;
 
 - (void)startCrashReporting
 {
+    if(!self.isEnabledOnInitialConfig)
+        return;
+
     NSSetUncaughtExceptionHandler(&CountlyUncaughtExceptionHandler);
     signal(SIGABRT, CountlySignalHandler);
     signal(SIGILL, CountlySignalHandler);
@@ -101,6 +104,9 @@ static NSString *executableName;
 
 - (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray *)stackTrace
 {
+    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForCrashReporting)
+        return;
+
     if (stackTrace)
     {
         NSMutableDictionary* userInfo = [NSMutableDictionary dictionaryWithDictionary:exception.userInfo];
@@ -189,6 +195,9 @@ void CountlySignalHandler(int signalCode)
 
 - (void)log:(NSString *)log
 {
+    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForCrashReporting)
+        return;
+
     static NSDateFormatter* df = nil;
 
     if ( customCrashLogs == nil )

@@ -112,8 +112,11 @@
 
     if ([config.features containsObject:CLYCrashReporting])
     {
+        CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;
         CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
-        [CountlyCrashReporter.sharedInstance startCrashReporting];
+    
+        if (!CountlyConsentManager.sharedInstance.requiresConsent)
+            [CountlyCrashReporter.sharedInstance startCrashReporting];
     }
 #endif
 
@@ -297,6 +300,25 @@
         [timer invalidate];
         timer = nil;
     }
+}
+
+
+
+#pragma mark - Countly Consents
+- (void)giveConsentForFeature:(NSString *)featureName
+{
+    if (!featureName.length)
+        return;
+
+    [CountlyConsentManager.sharedInstance giveConsentForFeatures:@[featureName]];
+}
+
+- (void)cancelConsentForFeature:(NSString *)featureName
+{
+    if (!featureName.length)
+        return;
+
+    [CountlyConsentManager.sharedInstance cancelConsentForFeatures:@[featureName]];
 }
 
 

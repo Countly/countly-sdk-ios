@@ -79,6 +79,29 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 
+#pragma mark - Countly Consents
+
+/**
+ * Grants consent to given feature and starts it.
+ * @discussion If @c requiresConsent flag is set on initial configuration, each feature waits until explicit consent is given.
+ * @discussion After giving consent to a feature, it is started and kept active henceforth.
+ * @discussion If consent to the feature is already given before, call for this method will be ignored.
+ * @discussion If @c requiresConsent flag is not set on initial configuration, call for this method will be ignored.
+ * @param featureName Feature name to give consent to
+ */
+- (void)giveConsentForFeature:(NSString *)featureName;
+
+/**
+ * Cancels consent to given feature and stops it.
+ * @discussion After cancelling consent to a feature, it is stopped and kept inactive henceforth.
+ * @discussion If consent to the feature is already cancelled before, call for this method will be ignored.
+ * @discussion If @c requiresConsent flag is not set on initial configuration, call for this method will be ignored.
+ * @param featureName Feature name to cancel consent to
+ */
+- (void)cancelConsentForFeature:(NSString *)featureName;
+
+
+
 #pragma mark - Countly CustomEvents
 
 /**
