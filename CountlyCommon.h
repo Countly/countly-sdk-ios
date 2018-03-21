@@ -20,6 +20,7 @@
 #import "CountlyStarRating.h"
 #import "CountlyPushNotifications.h"
 #import "CountlyNotificationService.h"
+#import "CountlyConsentManager.h"
 
 #if DEBUG
 #define COUNTLY_LOG(fmt, ...) CountlyInternalLog(fmt, ##__VA_ARGS__)
@@ -63,7 +64,6 @@ extern NSString* const kCountlySDKName;
 @property (nonatomic) BOOL enableAppleWatch;
 @property (nonatomic) BOOL enableAttribution;
 @property (nonatomic) BOOL manualSessionHandling;
-@property (nonatomic) BOOL requiresConsent;
 
 void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
 

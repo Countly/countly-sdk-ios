@@ -30,18 +30,6 @@
 #endif
 
 
-//NOTE: Consent Features
-NSString* const CLYConsentSessions             = @"sessions";
-NSString* const CLYConsentEvents               = @"events";
-NSString* const CLYConsentUserDetails          = @"users";
-NSString* const CLYConsentCrashReporting       = @"crashes";
-NSString* const CLYConsentPushNotifications    = @"push";
-NSString* const CLYConsentViewTracking         = @"views";
-NSString* const CLYConsentAttribution          = @"attribution";
-NSString* const CLYConsentStarRating           = @"star-rating";
-NSString* const CLYConsentAppleWatch           = @"accessory-devices";
-
-
 - (instancetype)init
 {
     if (self = [super init])
