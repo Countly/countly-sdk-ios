@@ -83,6 +83,22 @@ static NSString *executableName;
     signal(SIGTRAP, CountlySignalHandler);
 }
 
+
+- (void)stopCrashReporting
+{
+    NSSetUncaughtExceptionHandler(NULL);
+    signal(SIGABRT, SIG_DFL);
+    signal(SIGILL, SIG_DFL);
+    signal(SIGSEGV, SIG_DFL);
+    signal(SIGFPE, SIG_DFL);
+    signal(SIGBUS, SIG_DFL);
+    signal(SIGPIPE, SIG_DFL);
+    signal(SIGTRAP, SIG_DFL);
+
+    customCrashLogs = nil;
+}
+
+
 - (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray *)stackTrace
 {
     if (stackTrace)
@@ -148,14 +164,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
 
     [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:YES];
 
-    NSSetUncaughtExceptionHandler(NULL);
-    signal(SIGABRT, SIG_DFL);
-    signal(SIGILL, SIG_DFL);
-    signal(SIGSEGV, SIG_DFL);
-    signal(SIGFPE, SIG_DFL);
-    signal(SIGBUS, SIG_DFL);
-    signal(SIGPIPE, SIG_DFL);
-    signal(SIGTRAP, SIG_DFL);
+    [CountlyCrashReporter.sharedInstance stopCrashReporting];
 }
 
 void CountlySignalHandler(int signalCode)
