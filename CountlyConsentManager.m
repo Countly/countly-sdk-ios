@@ -53,6 +53,9 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 
     if ([features containsObject:CLYConsentCrashReporting] && !self.consentForCrashReporting)
         self.consentForCrashReporting = YES;
+
+    if ([features containsObject:CLYConsentAppleWatch] && !self.consentForAppleWatch)
+        self.consentForAppleWatch = YES;
 }
 
 
@@ -63,6 +66,9 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 
     if ([features containsObject:CLYConsentCrashReporting] && self.consentForCrashReporting)
         self.consentForCrashReporting = NO;
+
+    if ([features containsObject:CLYConsentAppleWatch] && self.consentForAppleWatch)
+        self.consentForAppleWatch = NO;
 }
 
 
@@ -77,6 +83,21 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     else
     {
         [CountlyCrashReporter.sharedInstance stopCrashReporting];
+    }
+}
+
+
+- (void)setConsentForAppleWatch:(BOOL)consentForAppleWatch
+{
+    _consentForAppleWatch = consentForAppleWatch;
+
+    if (consentForAppleWatch)
+    {
+        [CountlyCommon.sharedInstance startAppleWatchMatching];
+    }
+    else
+    {
+
     }
 }
 

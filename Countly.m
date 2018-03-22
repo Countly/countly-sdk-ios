@@ -135,7 +135,8 @@
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
 
-    [CountlyCommon.sharedInstance startAppleWatchMatching];
+    if (!CountlyConsentManager.sharedInstance.requiresConsent)
+        [CountlyCommon.sharedInstance startAppleWatchMatching];
 }
 
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer
