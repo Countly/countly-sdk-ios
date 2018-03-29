@@ -251,12 +251,22 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 #if TARGET_OS_IOS
 + (NSInteger)hasWatch
 {
-    return (int)WCSession.defaultSession.paired;
+    if (@available(iOS 9.0, *)) {
+        return (int)WCSession.defaultSession.paired;
+    } else {
+        COUNTLY_LOG(@"watchOS 1 (aka WatchKit) is not supported.");
+        return 0;
+    }
 }
 
 + (NSInteger)installedWatchApp
 {
-    return (int)WCSession.defaultSession.watchAppInstalled;
+    if (@available(iOS 9.0, *)) {
+        return (int)WCSession.defaultSession.watchAppInstalled;
+    } else {
+        COUNTLY_LOG(@"watchOS 1 (aka WatchKit) is not supported.");
+        return 0;
+    }
 }
 #endif
 
