@@ -46,7 +46,9 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 - (void)startPushNotifications
 {
-    UNUserNotificationCenter.currentNotificationCenter.delegate = self;
+    if (@available(iOS 10.0, *)) {
+        UNUserNotificationCenter.currentNotificationCenter.delegate = self;
+    }
 
     Class appDelegateClass = UIApplication.sharedApplication.delegate.class;
     NSArray* selectors = @[@"application:didRegisterForRemoteNotificationsWithDeviceToken:",
@@ -78,7 +80,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 - (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler
 {
-    if (NSFoundationVersionNumber > NSFoundationVersionNumber_iOS_9_x_Max)
+    if (@available(iOS 10.0, *))
     {
         [UNUserNotificationCenter.currentNotificationCenter requestAuthorizationWithOptions:options completionHandler:^(BOOL granted, NSError* error)
         {
@@ -88,11 +90,16 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     }
     else
     {
-        self.permissionCompletion = completionHandler;
-        UIUserNotificationType userNotificationTypes = (UIUserNotificationType)options;
-        UIUserNotificationSettings* settings = [UIUserNotificationSettings settingsForTypes:userNotificationTypes categories:nil];
-        [UIApplication.sharedApplication registerUserNotificationSettings:settings];
+        [self askForNotificationPermissionWithLegacyOptions:(UIUserNotificationType)options completionHandler:completionHandler];
     }
+}
+
+- (void)askForNotificationPermissionWithLegacyOptions:(UIUserNotificationType)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler
+{
+    self.permissionCompletion = completionHandler;
+    UIUserNotificationType userNotificationTypes = options;
+    UIUserNotificationSettings* settings = [UIUserNotificationSettings settingsForTypes:userNotificationTypes categories:nil];
+    [UIApplication.sharedApplication registerUserNotificationSettings:settings];
 }
 
 - (void)sendToken
@@ -114,21 +121,21 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
     BOOL hasNotificationPermissionBefore = [CountlyPersistency.sharedInstance retrieveNotificationPermission];
 
-    if (NSFoundationVersionNumber > NSFoundationVersionNumber_iOS_9_x_Max)
+    if (@available(iOS 10.0, *))
     {
         [UNUserNotificationCenter.currentNotificationCenter getNotificationSettingsWithCompletionHandler:^(UNNotificationSettings* settings)
-        {
-            if (settings.authorizationStatus == UNAuthorizationStatusAuthorized)
-            {
-                [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
-                [CountlyPersistency.sharedInstance storeNotificationPermission:YES];
-            }
-            else if (hasNotificationPermissionBefore)
-            {
-                [CountlyConnectionManager.sharedInstance sendPushToken:@""];
-                [CountlyPersistency.sharedInstance storeNotificationPermission:NO];
-            }
-        }];
+         {
+             if (settings.authorizationStatus == UNAuthorizationStatusAuthorized)
+             {
+                 [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
+                 [CountlyPersistency.sharedInstance storeNotificationPermission:YES];
+             }
+             else if (hasNotificationPermissionBefore)
+             {
+                 [CountlyConnectionManager.sharedInstance sendPushToken:@""];
+                 [CountlyPersistency.sharedInstance storeNotificationPermission:NO];
+             }
+         }];
     }
     else
     {
@@ -295,7 +302,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 #pragma mark ---
 
-- (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler API_AVAILABLE(ios(10.0))
 {
     COUNTLY_LOG(@"userNotificationCenter:willPresentNotification:withCompletionHandler:");
     COUNTLY_LOG(@"%@", notification.request.content.userInfo.description);
@@ -314,7 +321,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         completionHandler(UNNotificationPresentationOptionNone);
 }
 
-- (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void (^)(void))completionHandler
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void (^)(void))completionHandler API_AVAILABLE(ios(10.0))
 {
     COUNTLY_LOG(@"userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:");
     COUNTLY_LOG(@"%@", response.notification.request.content.userInfo.description);

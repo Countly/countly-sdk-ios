@@ -399,15 +399,18 @@
 
 - (void)askForNotificationPermission
 {
-    UNAuthorizationOptions authorizationOptions = UNAuthorizationOptionBadge | UNAuthorizationOptionSound | UNAuthorizationOptionAlert;
-
-    [CountlyPushNotifications.sharedInstance askForNotificationPermissionWithOptions:authorizationOptions completionHandler:nil];
+    if (@available(iOS 10.0, *)) {
+        UNAuthorizationOptions authorizationOptions = UNAuthorizationOptionBadge | UNAuthorizationOptionSound | UNAuthorizationOptionAlert;
+        [CountlyPushNotifications.sharedInstance askForNotificationPermissionWithOptions:authorizationOptions completionHandler:nil];
+    } else {
+        UIUserNotificationType authorizationOptions = UIUserNotificationTypeBadge | UIUserNotificationTypeSound | UIUserNotificationTypeAlert;
+        [CountlyPushNotifications.sharedInstance askForNotificationPermissionWithLegacyOptions:authorizationOptions completionHandler:nil];
+    }
 }
 
 - (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler;
 {
     [CountlyPushNotifications.sharedInstance askForNotificationPermissionWithOptions:options completionHandler:completionHandler];
-
 }
 
 - (void)recordLocation:(CLLocationCoordinate2D)location
