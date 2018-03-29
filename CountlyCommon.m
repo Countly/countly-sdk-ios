@@ -99,11 +99,15 @@ void CountlyInternalLog(NSString *format, ...)
     if (!self.enableAppleWatch)
         return;
 
-    if ([WCSession isSupported])
-    {
-        WCSession *session = WCSession.defaultSession;
-        session.delegate = (id<WCSessionDelegate>)self;
-        [session activateSession];
+    if (@available(iOS 9.0, *)) {
+        if ([WCSession isSupported])
+        {
+            WCSession *session = WCSession.defaultSession;
+            session.delegate = (id<WCSessionDelegate>)self;
+            [session activateSession];
+        }
+    } else {
+        COUNTLY_LOG(@"watchOS 1 (aka WatchKit) is not supported.");
     }
 }
 #endif
@@ -116,10 +120,14 @@ void CountlyInternalLog(NSString *format, ...)
 
     [self activateWatchConnectivity];
 
-    if (WCSession.defaultSession.paired && WCSession.defaultSession.watchAppInstalled)
-    {
-        [WCSession.defaultSession transferUserInfo:@{kCountlyParentDeviceIDTransferKey: CountlyDeviceInfo.sharedInstance.deviceID}];
-        COUNTLY_LOG(@"Transferring parent device ID %@ ...", CountlyDeviceInfo.sharedInstance.deviceID);
+    if (@available(iOS 9.0, *)) {
+        if (WCSession.defaultSession.paired && WCSession.defaultSession.watchAppInstalled)
+        {
+            [WCSession.defaultSession transferUserInfo:@{kCountlyParentDeviceIDTransferKey: CountlyDeviceInfo.sharedInstance.deviceID}];
+            COUNTLY_LOG(@"Transferring parent device ID %@ ...", CountlyDeviceInfo.sharedInstance.deviceID);
+        }
+    } else {
+        COUNTLY_LOG(@"watchOS 1 (aka WatchKit) is not supported.");
     }
 }
 #endif
