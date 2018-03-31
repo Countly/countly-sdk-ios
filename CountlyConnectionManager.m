@@ -49,6 +49,7 @@ NSString* const kCountlyQSKeyCrash            = @"crash";
 NSString* const kCountlyQSKeyChecksum256      = @"checksum256";
 NSString* const kCountlyQSKeyAttributionID    = @"aid";
 NSString* const kCountlyQSKeyIDFA             = @"idfa";
+NSString* const kCountlyQSKeyConsent          = @"consent";
 
 NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 NSString* const kCountlyInputEndpoint = @"/i";
@@ -386,6 +387,16 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     if (ISOCountryCode)
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyPushCountryCode, ISOCountryCode.cly_URLEscaped];
+
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
+
+    [self proceedOnQueue];
+}
+
+- (void)sendConsentChanges:(NSString *)consentChanges
+{
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
+                             kCountlyQSKeyConsent, consentChanges];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 

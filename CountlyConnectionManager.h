@@ -35,6 +35,7 @@
 - (void)sendParentDeviceID:(NSString *)parentDeviceID;
 - (void)sendLocation;
 - (void)sendCityAndCountryCode;
+- (void)sendConsentChanges:(NSString *)consentChanges;
 
 - (void)proceedOnQueue;
 @end

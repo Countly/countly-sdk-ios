@@ -20,6 +20,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 
 
 @interface CountlyConsentManager()
+@property (nonatomic, strong) NSMutableDictionary* consentChanges;
 @end
 
 @implementation CountlyConsentManager
@@ -35,11 +36,12 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     return s_sharedInstance;
 }
 
+
 - (instancetype)init
 {
     if (self = [super init])
     {
-
+        self.consentChanges = NSMutableDictionary.new;
     }
 
     return self;
@@ -56,6 +58,8 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 
     if ([features containsObject:CLYConsentAppleWatch] && !self.consentForAppleWatch)
         self.consentForAppleWatch = YES;
+
+    [self sendConsentChanges];
 }
 
 
@@ -69,6 +73,18 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 
     if ([features containsObject:CLYConsentAppleWatch] && self.consentForAppleWatch)
         self.consentForAppleWatch = NO;
+
+    [self sendConsentChanges];
+}
+
+
+- (void)sendConsentChanges
+{
+    if (self.consentChanges.allKeys.count)
+    {
+        [CountlyConnectionManager.sharedInstance sendConsentChanges:[self.consentChanges cly_JSONify]];
+        [self.consentChanges removeAllObjects];
+    }
 }
 
 
@@ -84,6 +100,8 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     {
         [CountlyCrashReporter.sharedInstance stopCrashReporting];
     }
+
+    self.consentChanges[CLYConsentCrashReporting] = @(consentForCrashReporting);
 }
 
 
@@ -99,6 +117,8 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     {
 
     }
+
+    self.consentChanges[CLYConsentAppleWatch] = @(consentForAppleWatch);
 }
 
 @end
