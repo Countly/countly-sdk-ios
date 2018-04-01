@@ -88,6 +88,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 }
 
 
+#if TARGET_OS_IOS
 - (void)setConsentForCrashReporting:(BOOL)consentForCrashReporting
 {
     _consentForCrashReporting = consentForCrashReporting;
@@ -103,8 +104,10 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 
     self.consentChanges[CLYConsentCrashReporting] = @(consentForCrashReporting);
 }
+#endif
 
 
+#if (TARGET_OS_IOS || TARGET_OS_WATCH)
 - (void)setConsentForAppleWatch:(BOOL)consentForAppleWatch
 {
     _consentForAppleWatch = consentForAppleWatch;
@@ -120,5 +123,6 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 
     self.consentChanges[CLYConsentAppleWatch] = @(consentForAppleWatch);
 }
+#endif
 
 @end
