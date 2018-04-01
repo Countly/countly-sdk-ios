@@ -108,6 +108,23 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 }
 
 
+- (void)setConsentForUserDetails:(BOOL)consentForUserDetails
+{
+    _consentForUserDetails = consentForUserDetails;
+
+    if (consentForUserDetails)
+    {
+        //NOTE: consent for UserDetails is given
+    }
+    else
+    {
+        [CountlyUserDetails.sharedInstance clearUserDetails];
+    }
+
+    self.consentChanges[CLYConsentUserDetails] = @(consentForUserDetails);
+}
+
+
 #if TARGET_OS_IOS
 - (void)setConsentForCrashReporting:(BOOL)consentForCrashReporting
 {
