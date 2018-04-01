@@ -372,6 +372,9 @@
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration timestamp:(NSTimeInterval)timestamp
 {
+    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForEvents)
+        return;
+
     if (key.length == 0)
         return;
 
@@ -392,6 +395,9 @@
 
 - (void)startEvent:(NSString *)key
 {
+    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForEvents)
+        return;
+
     CountlyEvent *event = CountlyEvent.new;
     event.key = key;
     event.timestamp = CountlyCommon.sharedInstance.uniqueTimestamp;
@@ -408,6 +414,9 @@
 
 - (void)endEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum
 {
+    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForEvents)
+        return;
+
     CountlyEvent *event = [CountlyPersistency.sharedInstance timedEventForKey:key];
 
     if (!event)

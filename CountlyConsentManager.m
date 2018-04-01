@@ -88,6 +88,26 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 }
 
 
+#pragma mark -
+
+
+- (void)setConsentForEvents:(BOOL)consentForEvents
+{
+    _consentForEvents = consentForEvents;
+
+    if (consentForEvents)
+    {
+        //NOTE: consent for Events is given
+    }
+    else
+    {
+        [CountlyPersistency.sharedInstance clearAllTimedEvents];
+    }
+
+    self.consentChanges[CLYConsentEvents] = @(consentForEvents);
+}
+
+
 #if TARGET_OS_IOS
 - (void)setConsentForCrashReporting:(BOOL)consentForCrashReporting
 {
@@ -118,7 +138,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     }
     else
     {
-
+        //NOTE: consent for AppleWatch is cancelled
     }
 
     self.consentChanges[CLYConsentAppleWatch] = @(consentForAppleWatch);
