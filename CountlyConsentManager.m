@@ -53,6 +53,12 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     if (!self.requiresConsent)
         return;
 
+    if ([features containsObject:CLYConsentEvents] && !self.consentForEvents)
+        self.consentForEvents = YES;
+
+    if ([features containsObject:CLYConsentUserDetails] && !self.consentForUserDetails)
+        self.consentForUserDetails = YES;
+
     if ([features containsObject:CLYConsentCrashReporting] && !self.consentForCrashReporting)
         self.consentForCrashReporting = YES;
 
@@ -67,6 +73,12 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 {
     if (!self.requiresConsent)
         return;
+
+    if ([features containsObject:CLYConsentEvents] && self.consentForEvents)
+        self.consentForEvents = NO;
+
+    if ([features containsObject:CLYConsentUserDetails] && self.consentForUserDetails)
+        self.consentForUserDetails = NO;
 
     if ([features containsObject:CLYConsentCrashReporting] && self.consentForCrashReporting)
         self.consentForCrashReporting = NO;
