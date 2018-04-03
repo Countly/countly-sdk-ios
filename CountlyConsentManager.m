@@ -62,6 +62,9 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     if ([features containsObject:CLYConsentCrashReporting] && !self.consentForCrashReporting)
         self.consentForCrashReporting = YES;
 
+    if ([features containsObject:CLYConsentAttribution] && !self.consentForAttribution)
+        self.consentForAttribution = YES;
+
     if ([features containsObject:CLYConsentAppleWatch] && !self.consentForAppleWatch)
         self.consentForAppleWatch = YES;
 
@@ -82,6 +85,9 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 
     if ([features containsObject:CLYConsentCrashReporting] && self.consentForCrashReporting)
         self.consentForCrashReporting = NO;
+
+    if ([features containsObject:CLYConsentAttribution] && self.consentForAttribution)
+        self.consentForAttribution = NO;
 
     if ([features containsObject:CLYConsentAppleWatch] && self.consentForAppleWatch)
         self.consentForAppleWatch = NO;
@@ -154,6 +160,23 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     self.consentChanges[CLYConsentCrashReporting] = @(consentForCrashReporting);
 }
 #endif
+
+- (void)setConsentForAttribution:(BOOL)consentForAttribution
+{
+    _consentForAttribution = consentForAttribution;
+
+    if (consentForAttribution)
+    {
+        //NOTE: consent for Attribution is given
+    }
+    else
+    {
+        //NOTE: consent for Attribution is cancelled
+    }
+
+    self.consentChanges[CLYConsentAttribution] = @(consentForAttribution);
+}
+
 
 
 #if (TARGET_OS_IOS || TARGET_OS_WATCH)

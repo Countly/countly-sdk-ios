@@ -471,6 +471,9 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 {
     NSMutableString* temp = NSMutableString.new;
 
+    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForAttribution)
+        return temp;
+
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (CountlyCommon.sharedInstance.enableAttribution && ASIdentifierManager.sharedManager.advertisingTrackingEnabled)
     {
