@@ -167,7 +167,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 
     if (consentForAttribution)
     {
-        //NOTE: consent for Attribution is given
+        [CountlyConnectionManager.sharedInstance sendAttribution];
     }
     else
     {

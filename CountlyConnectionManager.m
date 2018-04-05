@@ -393,6 +393,19 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     [self proceedOnQueue];
 }
 
+- (void)sendAttribution
+{
+    NSString* attriutionInfo = [self attributionInfo];
+    if (!attriutionInfo.length)
+        return;
+
+    NSString* queryString = [[self queryEssentials] stringByAppendingString:attriutionInfo];
+
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
+
+    [self proceedOnQueue];
+}
+
 - (void)sendConsentChanges:(NSString *)consentChanges
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
