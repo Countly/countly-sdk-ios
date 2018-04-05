@@ -65,6 +65,9 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     if ([features containsObject:CLYConsentAttribution] && !self.consentForAttribution)
         self.consentForAttribution = YES;
 
+    if ([features containsObject:CLYConsentStarRating] && !self.consentForStarRating)
+        self.consentForStarRating = YES;
+
     if ([features containsObject:CLYConsentAppleWatch] && !self.consentForAppleWatch)
         self.consentForAppleWatch = YES;
 
@@ -88,6 +91,9 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 
     if ([features containsObject:CLYConsentAttribution] && self.consentForAttribution)
         self.consentForAttribution = NO;
+
+    if ([features containsObject:CLYConsentStarRating] && self.consentForStarRating)
+        self.consentForStarRating = NO;
 
     if ([features containsObject:CLYConsentAppleWatch] && self.consentForAppleWatch)
         self.consentForAppleWatch = NO;
@@ -177,6 +183,22 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     self.consentChanges[CLYConsentAttribution] = @(consentForAttribution);
 }
 
+
+- (void)setConsentForStarRating:(BOOL)consentForStarRating
+{
+    _consentForStarRating = consentForStarRating;
+
+    if (consentForStarRating)
+    {
+        [CountlyStarRating.sharedInstance checkForAutoAsk];
+    }
+    else
+    {
+        //NOTE: consent for StarRating is cancelled
+    }
+
+    self.consentChanges[CLYConsentStarRating] = @(consentForStarRating);
+}
 
 
 #if (TARGET_OS_IOS || TARGET_OS_WATCH)

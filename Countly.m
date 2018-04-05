@@ -94,7 +94,8 @@
     CountlyStarRating.sharedInstance.sessionCount = config.starRatingSessionCount;
     CountlyStarRating.sharedInstance.disableAskingForEachAppVersion = config.starRatingDisableAskingForEachAppVersion;
     CountlyStarRating.sharedInstance.ratingCompletionForAutoAsk = config.starRatingCompletion;
-    [CountlyStarRating.sharedInstance checkForAutoAsk];
+    if (!CountlyConsentManager.sharedInstance.requiresConsent)
+        [CountlyStarRating.sharedInstance checkForAutoAsk];
 
     if ([config.features containsObject:CLYPushNotifications])
     {
