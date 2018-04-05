@@ -70,6 +70,9 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 - (void)showDialog:(void(^)(NSInteger rating))completion
 {
+    if (!CountlyCommon.sharedInstance.hasStarted)
+        return;
+
     if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForStarRating)
         return;
 
