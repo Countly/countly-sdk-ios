@@ -107,7 +107,7 @@ void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
 - (NSString *)cly_stringUTF8;
 @end
 
-@interface Countly (RecordEventWithTimeStamp)
+@interface Countly (RecordReservedEvent)
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation;
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration timestamp:(NSTimeInterval)timestamp;
 @end
