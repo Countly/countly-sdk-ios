@@ -7,6 +7,7 @@
 #import "CountlyCommon.h"
 
 @interface CountlyViewTracking ()
+@property (nonatomic) NSString* lastView;
 @property (nonatomic) NSTimeInterval lastViewStartTime;
 @property (nonatomic) NSTimeInterval accumulatedTime;
 @property (nonatomic) NSMutableArray* exceptionViewControllers;
@@ -18,6 +19,12 @@ NSString* const kCountlyVTKeyName     = @"name";
 NSString* const kCountlyVTKeySegment  = @"segment";
 NSString* const kCountlyVTKeyVisit    = @"visit";
 NSString* const kCountlyVTKeyStart    = @"start";
+
+#if (TARGET_OS_IOS || TARGET_OS_TV)
+@interface UIViewController (CountlyViewTracking)
+- (void)Countly_viewDidAppear:(BOOL)animated;
+@end
+#endif
 
 @implementation CountlyViewTracking
 
@@ -83,10 +90,12 @@ NSString* const kCountlyVTKeyStart    = @"start";
     return self;
 }
 
-- (void)reportView:(NSString *)viewName
+- (void)startView:(NSString *)viewName
 {
     if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
+
+    viewName = viewName.copy;
 
     [self endView];
 
@@ -163,6 +172,10 @@ NSString* const kCountlyVTKeyStart    = @"start";
     Method O_method = class_getInstanceMethod(UIViewController.class, @selector(viewDidAppear:));
     Method C_method = class_getInstanceMethod(UIViewController.class, @selector(Countly_viewDidAppear:));
     method_exchangeImplementations(O_method, C_method);
+
+    self.lastView = nil;
+    self.lastViewStartTime = 0;
+    self.accumulatedTime = 0;
 }
 
 - (void)setIsAutoViewTrackingEnabled:(BOOL)isAutoViewTrackingEnabled
@@ -222,7 +235,7 @@ NSString* const kCountlyVTKeyStart    = @"start";
         }
 
         if (!isException)
-            [CountlyViewTracking.sharedInstance reportView:viewTitle];
+            [CountlyViewTracking.sharedInstance startView:viewTitle];
     }
 
     [self Countly_viewDidAppear:animated];

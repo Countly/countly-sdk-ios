@@ -562,7 +562,7 @@
 
 - (void)reportView:(NSString *)viewName
 {
-    [CountlyViewTracking.sharedInstance reportView:viewName.copy];
+    [CountlyViewTracking.sharedInstance startView:viewName];
 }
 
 #if TARGET_OS_IOS

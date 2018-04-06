@@ -15,7 +15,7 @@
 
 + (instancetype)sharedInstance;
 
-- (void)reportView:(NSString *)viewName;
+- (void)startView:(NSString *)viewName;
 - (void)endView;
 - (void)pauseView;
 - (void)resumeView;
@@ -26,11 +26,4 @@
 - (void)removeExceptionForAutoViewTracking:(NSString *)exception;
 @property (nonatomic) BOOL isAutoViewTrackingEnabled;
 #endif
-@property (nonatomic) NSString* lastView;
 @end
-
-#if (TARGET_OS_IOS || TARGET_OS_TV)
-@interface UIViewController (CountlyViewTracking)
-- (void)Countly_viewDidAppear:(BOOL)animated;
-@end
-#endif
