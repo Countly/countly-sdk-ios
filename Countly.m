@@ -328,54 +328,68 @@
 #pragma mark - Countly CustomEvents
 - (void)recordEvent:(NSString *)key
 {
-    [self recordEvent:key segmentation:nil count:1 sum:0 duration:0 timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
+    [self recordEvent:key segmentation:nil count:1 sum:0 duration:0];
 }
 
 - (void)recordEvent:(NSString *)key count:(NSUInteger)count
 {
-    [self recordEvent:key segmentation:nil count:count sum:0 duration:0 timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
+    [self recordEvent:key segmentation:nil count:count sum:0 duration:0];
 }
 
 - (void)recordEvent:(NSString *)key sum:(double)sum
 {
-    [self recordEvent:key segmentation:nil count:1 sum:sum duration:0 timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
+    [self recordEvent:key segmentation:nil count:1 sum:sum duration:0];
 }
 
 - (void)recordEvent:(NSString *)key duration:(NSTimeInterval)duration
 {
-    [self recordEvent:key segmentation:nil count:1 sum:0 duration:duration timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
+    [self recordEvent:key segmentation:nil count:1 sum:0 duration:duration];
 }
 
 - (void)recordEvent:(NSString *)key count:(NSUInteger)count sum:(double)sum
 {
-    [self recordEvent:key segmentation:nil count:count sum:sum duration:0 timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
+    [self recordEvent:key segmentation:nil count:count sum:sum duration:0];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation
 {
-    [self recordEvent:key segmentation:segmentation count:1 sum:0 duration:0 timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
+    [self recordEvent:key segmentation:segmentation count:1 sum:0 duration:0];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count
 {
-    [self recordEvent:key segmentation:segmentation count:count sum:0 duration:0 timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
+    [self recordEvent:key segmentation:segmentation count:count sum:0 duration:0];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum
 {
-    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:0 timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
+    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:0];
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration
 {
-    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
-}
-
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration timestamp:(NSTimeInterval)timestamp
-{
     if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForEvents)
         return;
 
+    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
+}
+
+#pragma mark - Countly Reserved Events
+
+- (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation
+{
+    [self recordEvent:key segmentation:segmentation count:1 sum:0 duration:0 timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
+}
+
+- (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration timestamp:(NSTimeInterval)timestamp
+{
+    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration timestamp:timestamp];
+}
+
+#pragma mark -
+
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration timestamp:(NSTimeInterval)timestamp
+{
     if (key.length == 0)
         return;
 

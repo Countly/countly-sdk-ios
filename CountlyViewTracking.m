@@ -99,7 +99,7 @@ NSString* const kCountlyVTKeyStart    = @"start";
     if (!self.lastView)
         segmentation[kCountlyVTKeyStart] = @1;
 
-    [Countly.sharedInstance recordEvent:kCountlyReservedEventView segmentation:segmentation];
+    [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventView segmentation:segmentation];
 
     self.lastView = viewName;
     self.lastViewStartTime = CountlyCommon.sharedInstance.uniqueTimestamp;
@@ -117,7 +117,7 @@ NSString* const kCountlyVTKeyStart    = @"start";
 
         NSTimeInterval duration = NSDate.date.timeIntervalSince1970 - self.lastViewStartTime + self.accumulatedTime;
         self.accumulatedTime = 0;
-        [Countly.sharedInstance recordEvent:kCountlyReservedEventView segmentation:segmentation count:1 sum:0 duration:duration timestamp:self.lastViewStartTime];
+        [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventView segmentation:segmentation count:1 sum:0 duration:duration timestamp:self.lastViewStartTime];
 
         COUNTLY_LOG(@"View tracking ended: %@ duration: %f", self.lastView, duration);
     }

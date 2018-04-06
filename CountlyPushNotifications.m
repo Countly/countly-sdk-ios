@@ -163,7 +163,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
     COUNTLY_LOG(@"Countly Push Notification ID: %@", notificationID);
 
-    [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{kCountlyPNKeyNotificationID: notificationID}];
+    [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushOpen segmentation:@{kCountlyPNKeyNotificationID: notificationID}];
 
     if (self.doNotShowAlertForNotifications)
     {
@@ -210,7 +210,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         defaultButton.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         defaultButton.onClick = ^(id sender)
         {
-            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(0)}];
+            [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(0)}];
 
             [self openURL:defaultURL];
 
@@ -245,7 +245,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
         UIAlertAction* visit = [UIAlertAction actionWithTitle:actionTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction * action)
         {
-            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(idx + 1)}];
+            [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(idx + 1)}];
 
             [self openURL:URL];
 
@@ -284,7 +284,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     if (!notificationID)
         return;
 
-    [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(buttonIndex)}];
+    [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(buttonIndex)}];
 }
 
 - (void)setIsGeoLocationEnabled:(BOOL)isGeoLocationEnabled
@@ -327,7 +327,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
     if (notificationID)
     {
-        [Countly.sharedInstance recordEvent:kCountlyReservedEventPushOpen segmentation:@{kCountlyPNKeyNotificationID: notificationID}];
+        [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushOpen segmentation:@{kCountlyPNKeyNotificationID: notificationID}];
 
         NSInteger buttonIndex = -1;
         NSString* URL = nil;
@@ -350,7 +350,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
         if (buttonIndex >= 0)
         {
-            [Countly.sharedInstance recordEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(buttonIndex)}];
+            [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(buttonIndex)}];
         }
 
         [self openURL:URL];

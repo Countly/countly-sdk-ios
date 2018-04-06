@@ -201,7 +201,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
             kCountlySRKeyRating: @(rating)
         };
 
-        [Countly.sharedInstance recordEvent:kCountlyReservedEventStarRating segmentation:segmentation count:1];
+        [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventStarRating segmentation:segmentation];
     }
 
     self.alertWindow.hidden = YES;
