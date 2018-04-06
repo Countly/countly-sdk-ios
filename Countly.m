@@ -560,9 +560,14 @@
 
 #pragma mark - Countly AutoViewTracking
 
-- (void)reportView:(NSString *)viewName
+- (void)recordView:(NSString *)viewName;
 {
     [CountlyViewTracking.sharedInstance startView:viewName];
+}
+
+- (void)reportView:(NSString *)viewName
+{
+
 }
 
 #if TARGET_OS_IOS

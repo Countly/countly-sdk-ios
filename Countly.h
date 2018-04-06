@@ -318,11 +318,18 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - Countly AutoViewTracking
 
 /**
- * Reports a visited view with given name manually.
+ * Records a visited view with given name.
+ * @discussion Total duration of the view will be calculated on next @c recordView: call.
  * @discussion If AutoViewTracking feature is activated on initial configuration, this method does not need to be called manually.
  * @param viewName Name of the view visited
  */
-- (void)reportView:(NSString *)viewName;
+- (void)recordView:(NSString *)viewName;
+
+/**
+ * @c reportView: method is deprecated. Please use @c recordView: method instead.
+ * @discussion Calls to @c reportView: method will have no effect.
+ */
+- (void)reportView:(NSString *)viewName DEPRECATED_MSG_ATTRIBUTE("Use 'recordView:' method instead!");
 
 #if TARGET_OS_IOS
 /**
@@ -341,8 +348,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)removeExceptionForAutoViewTracking:(NSString *)exception;
 
 /**
- * Enables or disables AutoViewTracking, if AutoViewTracking feature is activated on start configuration.
- * @discussion If AutoViewTracking feature is not activated on start configuration, this property has no effect on enabling or disabling it later.
+ * Enables or disables AutoViewTracking, if AutoViewTracking feature is activated on initial configuration.
+ * @discussion If AutoViewTracking feature is not activated on initial configuration, this property has no effect on enabling or disabling it later.
  */
 @property (nonatomic) BOOL isAutoViewTrackingEnabled;
 #endif
