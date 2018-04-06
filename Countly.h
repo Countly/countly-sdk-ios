@@ -83,7 +83,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Grants consent to given feature and starts it.
- * @discussion If @c requiresConsent flag is set on initial configuration, each feature waits until explicit consent is given.
+ * @discussion If @c requiresConsent flag is set on initial configuration, each feature waits and ignores manual calls until explicit consent is given.
  * @discussion After giving consent to a feature, it is started and kept active henceforth.
  * @discussion If consent to the feature is already given before, call for this method will be ignored.
  * @discussion If @c requiresConsent flag is not set on initial configuration, call for this method will be ignored.
