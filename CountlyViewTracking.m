@@ -85,6 +85,9 @@ NSString* const kCountlyVTKeyStart    = @"start";
 
 - (void)reportView:(NSString *)viewName
 {
+    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForViewTracking)
+        return;
+
     [self endView];
 
     COUNTLY_LOG(@"View tracking started: %@", viewName);
@@ -107,6 +110,9 @@ NSString* const kCountlyVTKeyStart    = @"start";
 
 - (void)endView
 {
+    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForViewTracking)
+        return;
+
     if (self.lastView)
     {
         NSDictionary* segmentation =
@@ -137,14 +143,37 @@ NSString* const kCountlyVTKeyStart    = @"start";
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 - (void)startAutoViewTracking
 {
+    if (!self.isEnabledOnInitialConfig)
+        return;
+
     self.isAutoViewTrackingEnabled = YES;
 
-    Method O_method;
-    Method C_method;
-
-    O_method = class_getInstanceMethod(UIViewController.class, @selector(viewDidAppear:));
-    C_method = class_getInstanceMethod(UIViewController.class, @selector(Countly_viewDidAppear:));
+    Method O_method = class_getInstanceMethod(UIViewController.class, @selector(viewDidAppear:));
+    Method C_method = class_getInstanceMethod(UIViewController.class, @selector(Countly_viewDidAppear:));
     method_exchangeImplementations(O_method, C_method);
+}
+
+- (void)stopAutoViewTracking
+{
+    if (!self.isEnabledOnInitialConfig)
+        return;
+
+    self.isAutoViewTrackingEnabled = NO;
+
+    Method O_method = class_getInstanceMethod(UIViewController.class, @selector(viewDidAppear:));
+    Method C_method = class_getInstanceMethod(UIViewController.class, @selector(Countly_viewDidAppear:));
+    method_exchangeImplementations(O_method, C_method);
+}
+
+- (void)setIsAutoViewTrackingEnabled:(BOOL)isAutoViewTrackingEnabled
+{
+    if (!self.isEnabledOnInitialConfig)
+        return;
+
+    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForViewTracking)
+        return;
+
+    _isAutoViewTrackingEnabled = isAutoViewTrackingEnabled;
 }
 
 - (void)addExceptionForAutoViewTracking:(NSString *)exception

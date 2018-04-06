@@ -62,6 +62,9 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     if ([features containsObject:CLYConsentCrashReporting] && !self.consentForCrashReporting)
         self.consentForCrashReporting = YES;
 
+    if ([features containsObject:CLYConsentViewTracking] && !self.consentForViewTracking)
+        self.consentForViewTracking = YES;
+
     if ([features containsObject:CLYConsentAttribution] && !self.consentForAttribution)
         self.consentForAttribution = YES;
 
@@ -88,6 +91,9 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 
     if ([features containsObject:CLYConsentCrashReporting] && self.consentForCrashReporting)
         self.consentForCrashReporting = NO;
+
+    if ([features containsObject:CLYConsentViewTracking] && self.consentForViewTracking)
+        self.consentForViewTracking = NO;
 
     if ([features containsObject:CLYConsentAttribution] && self.consentForAttribution)
         self.consentForAttribution = NO;
@@ -166,6 +172,24 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     self.consentChanges[CLYConsentCrashReporting] = @(consentForCrashReporting);
 }
 #endif
+
+
+- (void)setConsentForViewTracking:(BOOL)consentForViewTracking
+{
+    _consentForViewTracking = consentForViewTracking;
+
+    if (consentForViewTracking)
+    {
+        [CountlyViewTracking.sharedInstance startAutoViewTracking];
+    }
+    else
+    {
+        [CountlyViewTracking.sharedInstance stopAutoViewTracking];
+    }
+
+    self.consentChanges[CLYConsentViewTracking] = @(consentForViewTracking);
+}
+
 
 - (void)setConsentForAttribution:(BOOL)consentForAttribution
 {

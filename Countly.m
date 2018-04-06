@@ -123,7 +123,12 @@
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if ([config.features containsObject:CLYAutoViewTracking])
-        [CountlyViewTracking.sharedInstance startAutoViewTracking];
+    {
+        CountlyViewTracking.sharedInstance.isEnabledOnInitialConfig = YES;
+
+        if (!CountlyConsentManager.sharedInstance.requiresConsent)
+            [CountlyViewTracking.sharedInstance startAutoViewTracking];
+    }
 #endif
 
 //NOTE: Disable APM feature until server completely supports it
