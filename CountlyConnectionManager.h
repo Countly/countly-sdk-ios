@@ -28,13 +28,12 @@
 - (void)endSession;
 
 - (void)sendEvents;
-- (void)sendUserDetails:(NSString *)userDetails;
 - (void)sendPushToken:(NSString *)token;
+- (void)sendGeoLocationInfo;
+- (void)sendUserDetails:(NSString *)userDetails;
 - (void)sendCrashReport:(NSString *)report immediately:(BOOL)immediately;
 - (void)sendOldDeviceID:(NSString *)oldDeviceID;
 - (void)sendParentDeviceID:(NSString *)parentDeviceID;
-- (void)sendLocation;
-- (void)sendCityAndCountryCode;
 - (void)sendAttribution;
 - (void)sendConsentChanges:(NSString *)consentChanges;
 

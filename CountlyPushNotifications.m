@@ -37,7 +37,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 {
     if (self = [super init])
     {
-        _isGeoLocationEnabled = ![CountlyPersistency.sharedInstance retrieveGeoLocationDisabled];
+
     }
 
     return self;
@@ -57,6 +57,8 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     [self swizzlePushNotificationMethods];
 
     [UIApplication.sharedApplication registerForRemoteNotifications];
+
+    [CountlyConnectionManager.sharedInstance sendGeoLocationInfo];
 }
 
 - (void)stopPushNotifications
@@ -70,6 +72,11 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     [CountlyConnectionManager.sharedInstance sendPushToken:@""];
 
     [UIApplication.sharedApplication unregisterForRemoteNotifications];
+
+    self.location = nil;
+    self.city = nil;
+    self.ISOCountryCode = nil;
+    self.IP = nil;
 }
 
 - (void)swizzlePushNotificationMethods
@@ -309,6 +316,36 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     });
 }
 
+- (void)recordGeoLocation:(CLLocationCoordinate2D)location city:(NSString *)city ISOCountryCode:(NSString *)ISOCountryCode andIP:(NSString *)IP
+{
+    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForPushNotifications)
+        return;
+
+    if (CLLocationCoordinate2DIsValid(location))
+        self.location = [NSString stringWithFormat:@"%f,%f", location.latitude, location.longitude];
+    else
+        self.location = nil;
+
+    self.city = city;
+    self.ISOCountryCode = ISOCountryCode;
+    self.IP = IP;
+
+    [CountlyConnectionManager.sharedInstance sendGeoLocationInfo];
+}
+
+- (void)disableGeoLocation
+{
+    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForPushNotifications)
+        return;
+
+    self.location = @""; //NOTE: Server needs empty string, to explicitly mark geo-location as disabled
+    self.city = nil;
+    self.ISOCountryCode = nil;
+    self.IP = nil;
+
+    [CountlyConnectionManager.sharedInstance sendGeoLocationInfo];
+}
+
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
 {
     if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForPushNotifications)
@@ -321,15 +358,6 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         return;
 
     [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(buttonIndex)}];
-}
-
-- (void)setIsGeoLocationEnabled:(BOOL)isGeoLocationEnabled
-{
-    _isGeoLocationEnabled = isGeoLocationEnabled;
-    [CountlyPersistency.sharedInstance storeGeoLocationDisabled:!isGeoLocationEnabled];
-
-    if (!isGeoLocationEnabled)
-        [CountlyConnectionManager.sharedInstance sendLocation];
 }
 
 #pragma mark ---

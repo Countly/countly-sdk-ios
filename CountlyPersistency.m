@@ -19,7 +19,6 @@ NSString* const kCountlyStoredDeviceIDKey = @"kCountlyStoredDeviceIDKey";
 NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKey";
 NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 NSString* const kCountlyNotificationPermissionKey = @"kCountlyNotificationPermissionKey";
-NSString* const kCountlyGeoLocationDisabledKey = @"kCountlyGeoLocationDisabledKey";
 
 + (instancetype)sharedInstance
 {
@@ -318,17 +317,6 @@ NSString* const kCountlyGeoLocationDisabledKey = @"kCountlyGeoLocationDisabledKe
 - (void)storeNotificationPermission:(BOOL)allowed
 {
     [NSUserDefaults.standardUserDefaults setBool:allowed forKey:kCountlyNotificationPermissionKey];
-    [NSUserDefaults.standardUserDefaults synchronize];
-}
-
-- (BOOL)retrieveGeoLocationDisabled
-{
-    return [NSUserDefaults.standardUserDefaults boolForKey:kCountlyGeoLocationDisabledKey];
-}
-
-- (void)storeGeoLocationDisabled:(BOOL)disabled
-{
-    [NSUserDefaults.standardUserDefaults setBool:disabled forKey:kCountlyGeoLocationDisabledKey];
     [NSUserDefaults.standardUserDefaults synchronize];
 }
 

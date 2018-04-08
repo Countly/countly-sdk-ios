@@ -470,50 +470,36 @@
 - (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler;
 {
     [CountlyPushNotifications.sharedInstance askForNotificationPermissionWithOptions:options completionHandler:completionHandler];
+}
 
+- (void)recordGeoLocation:(CLLocationCoordinate2D)location city:(NSString *)city ISOCountryCode:(NSString *)ISOCountryCode andIP:(NSString *)IP
+{
+    [CountlyPushNotifications.sharedInstance recordGeoLocation:location city:city ISOCountryCode:ISOCountryCode andIP:IP];
+}
+
+- (void)disableGeoLocation
+{
+    [CountlyPushNotifications.sharedInstance disableGeoLocation];
 }
 
 - (void)recordLocation:(CLLocationCoordinate2D)location
 {
-    if (!CLLocationCoordinate2DIsValid(location))
-        return;
 
-    CountlyPushNotifications.sharedInstance.location = [NSString stringWithFormat:@"%f,%f", location.latitude, location.longitude];
-
-    if (CountlyPushNotifications.sharedInstance.isGeoLocationEnabled)
-        [CountlyConnectionManager.sharedInstance sendLocation];
 }
 
 - (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode
 {
-    if (city)
-        CountlyPushNotifications.sharedInstance.city = city.copy;
 
-    if (ISOCountryCode)
-        CountlyPushNotifications.sharedInstance.ISOCountryCode = ISOCountryCode.copy;
-
-    if (CountlyPushNotifications.sharedInstance.isGeoLocationEnabled && (city || ISOCountryCode))
-        [CountlyConnectionManager.sharedInstance sendCityAndCountryCode];
 }
 
 - (void)recordIP:(NSString *)IP
 {
-    CountlyPushNotifications.sharedInstance.IP = IP;
+
 }
 
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
 {
     [CountlyPushNotifications.sharedInstance recordActionForNotification:userInfo clickedButtonIndex:buttonIndex];
-}
-
-- (void)setIsGeoLocationEnabled:(BOOL)isGeoLocationEnabled
-{
-    CountlyPushNotifications.sharedInstance.isGeoLocationEnabled = isGeoLocationEnabled;
-}
-
-- (BOOL)isGeoLocationEnabled
-{
-    return CountlyPushNotifications.sharedInstance.isGeoLocationEnabled;
 }
 #endif
 
