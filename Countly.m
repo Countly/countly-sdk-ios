@@ -99,6 +99,7 @@
 
     if ([config.features containsObject:CLYPushNotifications])
     {
+        CountlyPushNotifications.sharedInstance.isEnabledOnInitialConfig = YES;
         CountlyPushNotifications.sharedInstance.isTestDevice = config.isTestDevice;
         CountlyPushNotifications.sharedInstance.sendPushTokenAlways = config.sendPushTokenAlways;
         CountlyPushNotifications.sharedInstance.doNotShowAlertForNotifications = config.doNotShowAlertForNotifications;
@@ -108,7 +109,8 @@
         CountlyPushNotifications.sharedInstance.ISOCountryCode = config.ISOCountryCode;
         CountlyPushNotifications.sharedInstance.IP = config.IP;
 
-        [CountlyPushNotifications.sharedInstance startPushNotifications];
+        if (!CountlyConsentManager.sharedInstance.requiresConsent)
+            [CountlyPushNotifications.sharedInstance startPushNotifications];
     }
 
     if ([config.features containsObject:CLYCrashReporting])

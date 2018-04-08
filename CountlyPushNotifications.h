@@ -11,7 +11,7 @@
 #else
 @interface CountlyPushNotifications : NSObject
 #endif
-
+@property (nonatomic) BOOL isEnabledOnInitialConfig;
 @property (nonatomic) BOOL isTestDevice;
 @property (nonatomic) BOOL sendPushTokenAlways;
 @property (nonatomic) BOOL doNotShowAlertForNotifications;
@@ -25,6 +25,7 @@
 
 #if TARGET_OS_IOS
 - (void)startPushNotifications;
+- (void)stopPushNotifications;
 - (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler;
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
 #endif

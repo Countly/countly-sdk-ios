@@ -62,6 +62,9 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     if ([features containsObject:CLYConsentCrashReporting] && !self.consentForCrashReporting)
         self.consentForCrashReporting = YES;
 
+    if ([features containsObject:CLYConsentPushNotifications] && !self.consentForPushNotifications)
+        self.consentForPushNotifications = YES;
+
     if ([features containsObject:CLYConsentViewTracking] && !self.consentForViewTracking)
         self.consentForViewTracking = YES;
 
@@ -91,6 +94,9 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 
     if ([features containsObject:CLYConsentCrashReporting] && self.consentForCrashReporting)
         self.consentForCrashReporting = NO;
+
+    if ([features containsObject:CLYConsentPushNotifications] && self.consentForPushNotifications)
+        self.consentForPushNotifications = NO;
 
     if ([features containsObject:CLYConsentViewTracking] && self.consentForViewTracking)
         self.consentForViewTracking = NO;
@@ -172,6 +178,23 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     self.consentChanges[CLYConsentCrashReporting] = @(consentForCrashReporting);
 }
 #endif
+
+
+- (void)setConsentForPushNotifications:(BOOL)consentForPushNotifications
+{
+    _consentForPushNotifications = consentForPushNotifications;
+
+    if (consentForPushNotifications)
+    {
+        [CountlyPushNotifications.sharedInstance startPushNotifications];
+    }
+    else
+    {
+        [CountlyPushNotifications.sharedInstance stopPushNotifications];
+    }
+
+    self.consentChanges[CLYConsentPushNotifications] = @(consentForPushNotifications);
+}
 
 
 - (void)setConsentForViewTracking:(BOOL)consentForViewTracking

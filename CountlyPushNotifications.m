@@ -49,7 +49,36 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 - (void)startPushNotifications
 {
+    if (!self.isEnabledOnInitialConfig)
+        return;
+
     UNUserNotificationCenter.currentNotificationCenter.delegate = self;
+
+    [self swizzlePushNotificationMethods];
+
+    [UIApplication.sharedApplication registerForRemoteNotifications];
+}
+
+- (void)stopPushNotifications
+{
+    if (!self.isEnabledOnInitialConfig)
+        return;
+
+    if (UNUserNotificationCenter.currentNotificationCenter.delegate == self)
+        UNUserNotificationCenter.currentNotificationCenter.delegate = nil;
+
+    [CountlyConnectionManager.sharedInstance sendPushToken:@""];
+
+    [UIApplication.sharedApplication unregisterForRemoteNotifications];
+}
+
+- (void)swizzlePushNotificationMethods
+{
+    static BOOL alreadySwizzled;
+    if (alreadySwizzled)
+        return;
+
+    alreadySwizzled = YES;
 
     Class appDelegateClass = UIApplication.sharedApplication.delegate.class;
     NSArray* selectors = @[@"application:didRegisterForRemoteNotificationsWithDeviceToken:",
@@ -75,8 +104,6 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         Method countlyMethod = class_getInstanceMethod(appDelegateClass, countlySelector);
         method_exchangeImplementations(originalMethod, countlyMethod);
     }
-
-    [UIApplication.sharedApplication registerForRemoteNotifications];
 }
 
 - (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler
@@ -100,6 +127,9 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 - (void)sendToken
 {
+    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForPushNotifications)
+        return;
+
     if (!self.token)
         return;
 
@@ -150,6 +180,9 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 - (void)handleNotification:(NSDictionary *)notification
 {
+    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForPushNotifications)
+        return;
+
     COUNTLY_LOG(@"Handling remote notification %@", notification);
 
     NSDictionary* countlyPayload = notification[kCountlyPNKeyCountlyPayload];
@@ -278,6 +311,9 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
 {
+    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForPushNotifications)
+        return;
+
     NSDictionary* countlyPayload = userInfo[kCountlyPNKeyCountlyPayload];
     NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
 
@@ -325,7 +361,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     NSDictionary* countlyPayload = response.notification.request.content.userInfo[kCountlyPNKeyCountlyPayload];
     NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
 
-    if (notificationID)
+    if (notificationID && (!CountlyConsentManager.sharedInstance.requiresConsent || CountlyConsentManager.sharedInstance.consentForPushNotifications))
     {
         [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushOpen segmentation:@{kCountlyPNKeyNotificationID: notificationID}];
 
