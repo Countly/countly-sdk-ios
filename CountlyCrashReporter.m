@@ -73,7 +73,7 @@ static NSString *executableName;
 
 - (void)startCrashReporting
 {
-    if(!self.isEnabledOnInitialConfig)
+    if (!self.isEnabledOnInitialConfig)
         return;
 
     NSSetUncaughtExceptionHandler(&CountlyUncaughtExceptionHandler);
@@ -89,6 +89,9 @@ static NSString *executableName;
 
 - (void)stopCrashReporting
 {
+    if (!self.isEnabledOnInitialConfig)
+        return;
+
     NSSetUncaughtExceptionHandler(NULL);
     signal(SIGABRT, SIG_DFL);
     signal(SIGILL, SIG_DFL);
