@@ -98,6 +98,9 @@ void CountlyInternalLog(NSString *format, ...)
     if (!self.enableAppleWatch)
         return;
 
+    if (!CountlyConsentManager.sharedInstance.consentForAppleWatch)
+        return;
+
 #if (TARGET_OS_IOS || TARGET_OS_WATCH)
     if ([WCSession isSupported])
     {

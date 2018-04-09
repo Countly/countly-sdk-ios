@@ -76,6 +76,9 @@ static NSString *executableName;
     if (!self.isEnabledOnInitialConfig)
         return;
 
+    if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
+        return;
+
     NSSetUncaughtExceptionHandler(&CountlyUncaughtExceptionHandler);
     signal(SIGABRT, CountlySignalHandler);
     signal(SIGILL, CountlySignalHandler);

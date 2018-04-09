@@ -155,6 +155,9 @@ NSString* const kCountlyVTKeyStart    = @"start";
     if (!self.isEnabledOnInitialConfig)
         return;
 
+    if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
+        return;
+
     self.isAutoViewTrackingEnabled = YES;
 
     Method O_method = class_getInstanceMethod(UIViewController.class, @selector(viewDidAppear:));

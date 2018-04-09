@@ -109,6 +109,9 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 - (void)checkForAutoAsk
 {
+    if (!CountlyConsentManager.sharedInstance.consentForStarRating)
+        return;
+
     NSMutableDictionary* status = [CountlyPersistency.sharedInstance retrieveStarRatingStatus].mutableCopy;
 
     if (self.disableAskingForEachAppVersion && status[kCountlyStarRatingStatusHasEverAskedAutomatically])

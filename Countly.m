@@ -97,8 +97,7 @@
     CountlyStarRating.sharedInstance.sessionCount = config.starRatingSessionCount;
     CountlyStarRating.sharedInstance.disableAskingForEachAppVersion = config.starRatingDisableAskingForEachAppVersion;
     CountlyStarRating.sharedInstance.ratingCompletionForAutoAsk = config.starRatingCompletion;
-    if (!CountlyConsentManager.sharedInstance.requiresConsent)
-        [CountlyStarRating.sharedInstance checkForAutoAsk];
+    [CountlyStarRating.sharedInstance checkForAutoAsk];
 
     if ([config.features containsObject:CLYPushNotifications])
     {
@@ -106,23 +105,18 @@
         CountlyPushNotifications.sharedInstance.isTestDevice = config.isTestDevice;
         CountlyPushNotifications.sharedInstance.sendPushTokenAlways = config.sendPushTokenAlways;
         CountlyPushNotifications.sharedInstance.doNotShowAlertForNotifications = config.doNotShowAlertForNotifications;
-
         CountlyPushNotifications.sharedInstance.location = CLLocationCoordinate2DIsValid(config.location) ? [NSString stringWithFormat:@"%f,%f", config.location.latitude, config.location.longitude] : nil;
         CountlyPushNotifications.sharedInstance.city = config.city;
         CountlyPushNotifications.sharedInstance.ISOCountryCode = config.ISOCountryCode;
         CountlyPushNotifications.sharedInstance.IP = config.IP;
-
-        if (!CountlyConsentManager.sharedInstance.requiresConsent)
-            [CountlyPushNotifications.sharedInstance startPushNotifications];
+        [CountlyPushNotifications.sharedInstance startPushNotifications];
     }
 
     if ([config.features containsObject:CLYCrashReporting])
     {
         CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;
         CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
-    
-        if (!CountlyConsentManager.sharedInstance.requiresConsent)
-            [CountlyCrashReporter.sharedInstance startCrashReporting];
+        [CountlyCrashReporter.sharedInstance startCrashReporting];
     }
 #endif
 
@@ -130,9 +124,7 @@
     if ([config.features containsObject:CLYAutoViewTracking])
     {
         CountlyViewTracking.sharedInstance.isEnabledOnInitialConfig = YES;
-
-        if (!CountlyConsentManager.sharedInstance.requiresConsent)
-            [CountlyViewTracking.sharedInstance startAutoViewTracking];
+        [CountlyViewTracking.sharedInstance startAutoViewTracking];
     }
 #endif
 
@@ -143,8 +135,7 @@
     timer = [NSTimer scheduledTimerWithTimeInterval:config.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
     [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
 
-    if (!CountlyConsentManager.sharedInstance.requiresConsent)
-        [CountlyCommon.sharedInstance startAppleWatchMatching];
+    [CountlyCommon.sharedInstance startAppleWatchMatching];
 }
 
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer

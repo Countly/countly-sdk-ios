@@ -52,6 +52,9 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     if (!self.isEnabledOnInitialConfig)
         return;
 
+    if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
+        return;
+
     UNUserNotificationCenter.currentNotificationCenter.delegate = self;
 
     [self swizzlePushNotificationMethods];
