@@ -107,7 +107,7 @@ static NSString *executableName;
 
 - (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray *)stackTrace
 {
-    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForCrashReporting)
+    if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
         return;
 
     if (stackTrace)
@@ -198,7 +198,7 @@ void CountlySignalHandler(int signalCode)
 
 - (void)log:(NSString *)log
 {
-    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForCrashReporting)
+    if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
         return;
 
     static NSDateFormatter* df = nil;

@@ -290,4 +290,90 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 }
 #endif
 
+#pragma mark -
+
+- (BOOL)getConsentForSessions
+{
+    if (!self.requiresConsent)
+      return YES;
+
+    return _consentForSessions;
+}
+
+
+- (BOOL)getConsentForEvents
+{
+    if (!self.requiresConsent)
+      return YES;
+
+    return _consentForEvents;
+}
+
+
+- (BOOL)getConsentForUserDetails
+{
+    if (!self.requiresConsent)
+      return YES;
+
+    return _consentForUserDetails;
+}
+
+
+#if TARGET_OS_IOS
+- (BOOL)getConsentForCrashReporting
+{
+    if (!self.requiresConsent)
+      return YES;
+
+    return _consentForCrashReporting;
+}
+#endif
+
+
+- (BOOL)getConsentForPushNotifications
+{
+    if (!self.requiresConsent)
+      return YES;
+
+    return _consentForPushNotifications;
+}
+
+
+- (BOOL)getConsentForViewTracking
+{
+    if (!self.requiresConsent)
+      return YES;
+
+    return _consentForViewTracking;
+}
+
+
+- (BOOL)getConsentForAttribution
+{
+    if (!self.requiresConsent)
+      return YES;
+
+    return _consentForAttribution;
+}
+
+
+- (BOOL)getConsentForStarRating
+{
+    if (!self.requiresConsent)
+      return YES;
+
+    return _consentForStarRating;
+}
+
+
+#if (TARGET_OS_IOS || TARGET_OS_WATCH)
+- (BOOL)getConsentForAppleWatch
+{
+    if (!self.requiresConsent)
+      return YES;
+
+    return _consentForAppleWatch;
+}
+#endif
+
 @end

@@ -279,7 +279,7 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 #if TARGET_OS_IOS
     if (CountlyCommon.sharedInstance.enableAppleWatch)
     {
-        if (!CountlyConsentManager.sharedInstance.requiresConsent || CountlyConsentManager.sharedInstance.consentForAppleWatch)
+        if (CountlyConsentManager.sharedInstance.consentForAppleWatch)
         {
             metricsDictionary[kCountlyMetricKeyHasWatch] = @(CountlyDeviceInfo.hasWatch);
             metricsDictionary[kCountlyMetricKeyInstalledWatchApp] = @(CountlyDeviceInfo.installedWatchApp);

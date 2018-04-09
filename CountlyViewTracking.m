@@ -92,7 +92,7 @@ NSString* const kCountlyVTKeyStart    = @"start";
 
 - (void)startView:(NSString *)viewName
 {
-    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForViewTracking)
+    if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
 
     viewName = viewName.copy;
@@ -119,7 +119,7 @@ NSString* const kCountlyVTKeyStart    = @"start";
 
 - (void)endView
 {
-    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForViewTracking)
+    if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
 
     if (self.lastView)
@@ -183,7 +183,7 @@ NSString* const kCountlyVTKeyStart    = @"start";
     if (!self.isEnabledOnInitialConfig)
         return;
 
-    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForViewTracking)
+    if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
 
     _isAutoViewTrackingEnabled = isAutoViewTrackingEnabled;

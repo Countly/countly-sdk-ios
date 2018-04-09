@@ -134,7 +134,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 - (void)sendToken
 {
-    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForPushNotifications)
+    if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
         return;
 
     if (!self.token)
@@ -187,7 +187,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 - (void)handleNotification:(NSDictionary *)notification
 {
-    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForPushNotifications)
+    if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
         return;
 
     COUNTLY_LOG(@"Handling remote notification %@", notification);
@@ -318,7 +318,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 - (void)recordGeoLocation:(CLLocationCoordinate2D)location city:(NSString *)city ISOCountryCode:(NSString *)ISOCountryCode andIP:(NSString *)IP
 {
-    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForPushNotifications)
+    if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
         return;
 
     if (CLLocationCoordinate2DIsValid(location))
@@ -335,7 +335,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 - (void)disableGeoLocation
 {
-    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForPushNotifications)
+    if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
         return;
 
     self.location = @""; //NOTE: Server needs empty string, to explicitly mark geo-location as disabled
@@ -348,7 +348,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
 {
-    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForPushNotifications)
+    if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
         return;
 
     NSDictionary* countlyPayload = userInfo[kCountlyPNKeyCountlyPayload];
@@ -389,7 +389,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     NSDictionary* countlyPayload = response.notification.request.content.userInfo[kCountlyPNKeyCountlyPayload];
     NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
 
-    if (notificationID && (!CountlyConsentManager.sharedInstance.requiresConsent || CountlyConsentManager.sharedInstance.consentForPushNotifications))
+    if (notificationID && CountlyConsentManager.sharedInstance.consentForPushNotifications)
     {
         [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushOpen segmentation:@{kCountlyPNKeyNotificationID: notificationID}];
 

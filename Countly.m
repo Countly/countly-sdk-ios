@@ -375,7 +375,7 @@
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration
 {
-    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForEvents)
+    if (!CountlyConsentManager.sharedInstance.consentForEvents)
         return;
 
     [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
@@ -417,7 +417,7 @@
 
 - (void)startEvent:(NSString *)key
 {
-    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForEvents)
+    if (!CountlyConsentManager.sharedInstance.consentForEvents)
         return;
 
     CountlyEvent *event = CountlyEvent.new;
@@ -436,7 +436,7 @@
 
 - (void)endEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum
 {
-    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForEvents)
+    if (!CountlyConsentManager.sharedInstance.consentForEvents)
         return;
 
     CountlyEvent *event = [CountlyPersistency.sharedInstance timedEventForKey:key];
