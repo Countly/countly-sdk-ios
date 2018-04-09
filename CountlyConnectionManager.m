@@ -184,6 +184,9 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)beginSession
 {
+    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForSessions)
+        return;
+
     lastSessionStartTime = NSDate.date.timeIntervalSince1970;
 
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%@",
@@ -199,6 +202,9 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)updateSession
 {
+    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForSessions)
+        return;
+
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%d",
                              kCountlyQSKeySessionDuration, (int)[self sessionLengthInSeconds]];
 
@@ -209,6 +215,9 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)endSession
 {
+    if (CountlyConsentManager.sharedInstance.requiresConsent && !CountlyConsentManager.sharedInstance.consentForSessions)
+        return;
+
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%d",
                              kCountlyQSKeySessionEnd, @"1",
                              kCountlyQSKeySessionDuration, (int)[self sessionLengthInSeconds]];

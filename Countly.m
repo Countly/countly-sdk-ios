@@ -89,6 +89,9 @@
     CountlyCommon.sharedInstance.enableAppleWatch = config.enableAppleWatch;
     CountlyCommon.sharedInstance.enableAttribution = config.enableAttribution;
 
+    if (!CountlyCommon.sharedInstance.manualSessionHandling)
+        [CountlyConnectionManager.sharedInstance beginSession];
+
 #if TARGET_OS_IOS
     CountlyStarRating.sharedInstance.message = config.starRatingMessage;
     CountlyStarRating.sharedInstance.sessionCount = config.starRatingSessionCount;
@@ -139,9 +142,6 @@
 
     timer = [NSTimer scheduledTimerWithTimeInterval:config.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
     [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
-
-    if (!CountlyCommon.sharedInstance.manualSessionHandling)
-        [CountlyConnectionManager.sharedInstance beginSession];
 
     if (!CountlyConsentManager.sharedInstance.requiresConsent)
         [CountlyCommon.sharedInstance startAppleWatchMatching];

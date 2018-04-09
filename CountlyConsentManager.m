@@ -53,6 +53,9 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     if (!self.requiresConsent)
         return;
 
+    if ([features containsObject:CLYConsentSessions] && !self.consentForSessions)
+        self.consentForSessions = YES;
+
     if ([features containsObject:CLYConsentEvents] && !self.consentForEvents)
         self.consentForEvents = YES;
 
@@ -85,6 +88,9 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 {
     if (!self.requiresConsent)
         return;
+
+    if ([features containsObject:CLYConsentSessions] && self.consentForSessions)
+        self.consentForSessions = NO;
 
     if ([features containsObject:CLYConsentEvents] && self.consentForEvents)
         self.consentForEvents = NO;
@@ -125,6 +131,24 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 
 
 #pragma mark -
+
+
+- (void)setConsentForSessions:(BOOL)consentForSessions
+{
+    _consentForSessions = consentForSessions;
+
+    if (consentForSessions)
+    {
+        if (!CountlyCommon.sharedInstance.manualSessionHandling)
+            [CountlyConnectionManager.sharedInstance beginSession];
+    }
+    else
+    {
+        //NOTE: consent for Sessions is cancelled
+    }
+
+    self.consentChanges[CLYConsentSessions] = @(consentForSessions);
+}
 
 
 - (void)setConsentForEvents:(BOOL)consentForEvents
