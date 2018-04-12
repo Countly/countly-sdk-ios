@@ -10,15 +10,15 @@
 
 @property (nonatomic) BOOL requiresConsent;
 
-@property (nonatomic) BOOL consentForSessions;
-@property (nonatomic) BOOL consentForEvents;
-@property (nonatomic) BOOL consentForUserDetails;
-@property (nonatomic) BOOL consentForCrashReporting;
-@property (nonatomic) BOOL consentForPushNotifications;
-@property (nonatomic) BOOL consentForViewTracking;
-@property (nonatomic) BOOL consentForAttribution;
-@property (nonatomic) BOOL consentForStarRating;
-@property (nonatomic) BOOL consentForAppleWatch;
+@property (nonatomic, readonly) BOOL consentForSessions;
+@property (nonatomic, readonly) BOOL consentForEvents;
+@property (nonatomic, readonly) BOOL consentForUserDetails;
+@property (nonatomic, readonly) BOOL consentForCrashReporting;
+@property (nonatomic, readonly) BOOL consentForPushNotifications;
+@property (nonatomic, readonly) BOOL consentForViewTracking;
+@property (nonatomic, readonly) BOOL consentForAttribution;
+@property (nonatomic, readonly) BOOL consentForStarRating;
+@property (nonatomic, readonly) BOOL consentForAppleWatch;
 
 + (instancetype)sharedInstance;
 - (void)giveConsentForFeatures:(NSArray *)features;

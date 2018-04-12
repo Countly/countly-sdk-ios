@@ -25,6 +25,16 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 
 @implementation CountlyConsentManager
 
+@synthesize consentForSessions = _consentForSessions;
+@synthesize consentForEvents = _consentForEvents;
+@synthesize consentForUserDetails = _consentForUserDetails;
+@synthesize consentForCrashReporting = _consentForCrashReporting;
+@synthesize consentForPushNotifications = _consentForPushNotifications;
+@synthesize consentForViewTracking = _consentForViewTracking;
+@synthesize consentForAttribution = _consentForAttribution;
+@synthesize consentForStarRating = _consentForStarRating;
+@synthesize consentForAppleWatch = _consentForAppleWatch;
+
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
@@ -292,7 +302,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 
 #pragma mark -
 
-- (BOOL)getConsentForSessions
+- (BOOL)consentForSessions
 {
     if (!self.requiresConsent)
       return YES;
@@ -301,7 +311,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 }
 
 
-- (BOOL)getConsentForEvents
+- (BOOL)consentForEvents
 {
     if (!self.requiresConsent)
       return YES;
@@ -310,7 +320,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 }
 
 
-- (BOOL)getConsentForUserDetails
+- (BOOL)consentForUserDetails
 {
     if (!self.requiresConsent)
       return YES;
@@ -320,7 +330,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 
 
 #if TARGET_OS_IOS
-- (BOOL)getConsentForCrashReporting
+- (BOOL)consentForCrashReporting
 {
     if (!self.requiresConsent)
       return YES;
@@ -330,7 +340,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 #endif
 
 
-- (BOOL)getConsentForPushNotifications
+- (BOOL)consentForPushNotifications
 {
     if (!self.requiresConsent)
       return YES;
@@ -339,7 +349,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 }
 
 
-- (BOOL)getConsentForViewTracking
+- (BOOL)consentForViewTracking
 {
     if (!self.requiresConsent)
       return YES;
@@ -348,7 +358,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 }
 
 
-- (BOOL)getConsentForAttribution
+- (BOOL)consentForAttribution
 {
     if (!self.requiresConsent)
       return YES;
@@ -357,7 +367,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 }
 
 
-- (BOOL)getConsentForStarRating
+- (BOOL)consentForStarRating
 {
     if (!self.requiresConsent)
       return YES;
@@ -367,7 +377,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 
 
 #if (TARGET_OS_IOS || TARGET_OS_WATCH)
-- (BOOL)getConsentForAppleWatch
+- (BOOL)consentForAppleWatch
 {
     if (!self.requiresConsent)
       return YES;
