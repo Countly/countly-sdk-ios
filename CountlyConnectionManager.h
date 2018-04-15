@@ -29,7 +29,7 @@
 
 - (void)sendEvents;
 - (void)sendPushToken:(NSString *)token;
-- (void)sendGeoLocationInfo;
+- (void)sendLocationInfo;
 - (void)sendUserDetails:(NSString *)userDetails;
 - (void)sendCrashReport:(NSString *)report immediately:(BOOL)immediately;
 - (void)sendOldDeviceID:(NSString *)oldDeviceID;

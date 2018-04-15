@@ -104,6 +104,8 @@ extern NSString* const CLYConsentAppleWatch;
  */
 @property (nonatomic) BOOL doNotShowAlertForNotifications;
 
+#pragma mark -
+
 /**
  * Location latitude and longitude can be specified as @c CLLocationCoordinate2D struct to be used for geo-location based push notifications and advanced segmentation.
  * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location. If the app uses Core Location services and granted permission, a location with better accuracy can be provided using this property.

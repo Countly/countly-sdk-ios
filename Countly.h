@@ -218,45 +218,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler;
 
 /**
- * Records user's geo-location info to be used for geo-location based push notifications.
- * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location.
- * @discussion If the app uses Core Location services and granted permission, a location with better accuracy can be provided using this method.
- * @discussion If the app has information about user's city and/or country, these information can be provided using this method.
- * @discussion If the app needs to explicitly specify the IP address due to network requirements, it can be provided using this method.
- * @discussion This method overrides @c location, @c city and @c ISOCountryCode and @c IP properties specified on initial configuration, and sends an immediate request.
- * @discussion Parameters are independent of each other, and can be omitted by passing @c nil or @c kCLLocationCoordinate2DInvalid for @c location.
- * @param location User's location with latitude and longitude
- * @param city User's city
- * @param ISOCountryCode User's ISO country code in ISO 3166-1 alpha-2 format
- * @param IP User's explicit IP address
- */
-- (void)recordGeoLocation:(CLLocationCoordinate2D)location city:(NSString * _Nullable)city ISOCountryCode:(NSString * _Nullable)ISOCountryCode andIP:(NSString * _Nullable)IP;
-
-/**
- * Disables geo-location based push notifications by clearing all exsisting geo-location info.
- * @discussion Once disabled, geo-location based push notifications can be enabled again by calling @c recordGeoLocation:city:ISOCountryCode:andIP: method.
- */
-- (void)disableGeoLocation;
-
-/**
- * @c recordLocation: method is deprecated. Please use @c recordGeoLocation:city:ISOCountryCode:andIP: method instead.
- * @discussion Calls to @c recordLocation: method will have no effect.
- */
-- (void)recordLocation:(CLLocationCoordinate2D)coordinate DEPRECATED_MSG_ATTRIBUTE("Use 'recordGeoLocation:city:ISOCountryCode:andIP:' method instead!");
-
-/**
- * @c recordCity:andISOCountryCode: method is deprecated. Please use @c recordGeoLocation:city:ISOCountryCode:andIP: method instead.
- * @discussion Calls to @c recordCity:andISOCountryCode: method will have no effect.
- */
-- (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode DEPRECATED_MSG_ATTRIBUTE("Use 'recordGeoLocation:city:ISOCountryCode:andIP:' method instead!");
-
-/**
- * @c recordIP: method is deprecated. Please use @c recordGeoLocation:city:ISOCountryCode:andIP: method instead.
- * @discussion Calls to @c recordIP: method will have no effect.
- */
-- (void)recordIP:(NSString *)IP DEPRECATED_MSG_ATTRIBUTE("Use 'recordGeoLocation:city:ISOCountryCode:andIP:' method instead!");
-
-/**
  * Records action event for a manually presented push notification with custom action buttons.
  * @discussion If a push notification with custom action buttons is handled and presented manually using custom UI, user's action needs to be reported manually. With this convenience method user's action can be reported passing push notification dictionary and clicked button index.
  * @discussion Button index should be @c 0 for default action, @c 1 for the first action button and @c 2 for the second action button.
@@ -265,14 +226,49 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
 
-/**
- * @c isGeoLocationEnabled property is deprecated. Please use @c disableGeoLocation method instead.
- */
-@property (nonatomic) BOOL isGeoLocationEnabled DEPRECATED_MSG_ATTRIBUTE("Use 'disableGeoLocation' method instead!");
-
 #endif
 
 
+#pragma mark - Countly Location
+
+/**
+ * Records user's location info to be used for geo-location based push notifications and advanced user segmentation.
+ * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location.
+ * @discussion If the app uses Core Location services and granted permission, a location with better accuracy can be provided using this method.
+ * @discussion This method overrides @c location property specified on initial configuration, and sends an immediate request.
+ * @param location User's location with latitude and longitude
+ */
+- (void)recordLocation:(CLLocationCoordinate2D)coordinate;
+
+/**
+ * Records user's city and country info to be used for geo-location based push notifications and advanced user segmentation.
+ * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location.
+ * @discussion If the app has information about user's city and/or country, these information can be provided using this method.
+ * @discussion This method overrides @c city and @c ISOCountryCode properties specified on initial configuration, and sends an immediate request.
+ * @param city User's city
+ * @param ISOCountryCode User's ISO country code in ISO 3166-1 alpha-2 format
+ */
+- (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode;
+
+/**
+ * Records user's IP address to be used for geo-location based push notifications and advanced user segmentation.
+ * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location.
+ * @discussion If the app needs to explicitly specify the IP address due to network requirements, it can be provided using this method.
+ * @discussion This method overrides @c IP property specified on initial configuration, and sends an immediate request.
+ * @param IP User's explicit IP address
+ */
+- (void)recordIP:(NSString *)IP;
+
+/**
+ * Disables geo-location based push notifications by clearing all exsisting location info.
+ * @discussion Once disabled, geo-location based push notifications can be enabled again by calling @c recordLocation: or @c recordCity:andISOCountryCode: or @c recordIP: method.
+ */
+- (void)disableLocationInfo;
+
+/**
+ * @c isGeoLocationEnabled property is deprecated. Please use @c disableLocationInfo method instead.
+ */
+@property (nonatomic) BOOL isGeoLocationEnabled DEPRECATED_MSG_ATTRIBUTE("Use 'disableLocationInfo' method instead!");
 
 #pragma mark - Countly CrashReporting
 #if TARGET_OS_IOS

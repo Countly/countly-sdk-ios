@@ -272,12 +272,15 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     [self proceedOnQueue];
 }
 
-- (void)sendGeoLocationInfo
+- (void)sendLocationInfo
 {
-    NSString* location = CountlyPushNotifications.sharedInstance.location.cly_URLEscaped;
-    NSString* city = CountlyPushNotifications.sharedInstance.city.cly_URLEscaped;
-    NSString* ISOCountryCode = CountlyPushNotifications.sharedInstance.ISOCountryCode.cly_URLEscaped;
-    NSString* IP = CountlyPushNotifications.sharedInstance.IP.cly_URLEscaped;
+    NSString* location = CountlyLocationManager.sharedInstance.location.cly_URLEscaped;
+    NSString* city = CountlyLocationManager.sharedInstance.city.cly_URLEscaped;
+    NSString* ISOCountryCode = CountlyLocationManager.sharedInstance.ISOCountryCode.cly_URLEscaped;
+    NSString* IP = CountlyLocationManager.sharedInstance.IP.cly_URLEscaped;
+
+    if (!(location || city || ISOCountryCode || IP))
+        return;
 
     NSString* queryString = [self queryEssentials];
 

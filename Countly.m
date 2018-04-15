@@ -99,16 +99,18 @@
     CountlyStarRating.sharedInstance.ratingCompletionForAutoAsk = config.starRatingCompletion;
     [CountlyStarRating.sharedInstance checkForAutoAsk];
 
+    CountlyLocationManager.sharedInstance.location = CLLocationCoordinate2DIsValid(config.location) ? [NSString stringWithFormat:@"%f,%f", config.location.latitude, config.location.longitude] : nil;
+    CountlyLocationManager.sharedInstance.city = config.city;
+    CountlyLocationManager.sharedInstance.ISOCountryCode = config.ISOCountryCode;
+    CountlyLocationManager.sharedInstance.IP = config.IP;
+    [CountlyLocationManager.sharedInstance sendLocationInfo];
+
     if ([config.features containsObject:CLYPushNotifications])
     {
         CountlyPushNotifications.sharedInstance.isEnabledOnInitialConfig = YES;
         CountlyPushNotifications.sharedInstance.isTestDevice = config.isTestDevice;
         CountlyPushNotifications.sharedInstance.sendPushTokenAlways = config.sendPushTokenAlways;
         CountlyPushNotifications.sharedInstance.doNotShowAlertForNotifications = config.doNotShowAlertForNotifications;
-        CountlyPushNotifications.sharedInstance.location = CLLocationCoordinate2DIsValid(config.location) ? [NSString stringWithFormat:@"%f,%f", config.location.latitude, config.location.longitude] : nil;
-        CountlyPushNotifications.sharedInstance.city = config.city;
-        CountlyPushNotifications.sharedInstance.ISOCountryCode = config.ISOCountryCode;
-        CountlyPushNotifications.sharedInstance.IP = config.IP;
         [CountlyPushNotifications.sharedInstance startPushNotifications];
     }
 
@@ -463,36 +465,35 @@
     [CountlyPushNotifications.sharedInstance askForNotificationPermissionWithOptions:options completionHandler:completionHandler];
 }
 
-- (void)recordGeoLocation:(CLLocationCoordinate2D)location city:(NSString *)city ISOCountryCode:(NSString *)ISOCountryCode andIP:(NSString *)IP
-{
-    [CountlyPushNotifications.sharedInstance recordGeoLocation:location city:city ISOCountryCode:ISOCountryCode andIP:IP];
-}
-
-- (void)disableGeoLocation
-{
-    [CountlyPushNotifications.sharedInstance disableGeoLocation];
-}
-
-- (void)recordLocation:(CLLocationCoordinate2D)location
-{
-
-}
-
-- (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode
-{
-
-}
-
-- (void)recordIP:(NSString *)IP
-{
-
-}
-
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
 {
     [CountlyPushNotifications.sharedInstance recordActionForNotification:userInfo clickedButtonIndex:buttonIndex];
 }
 #endif
+
+
+
+#pragma mark - Countly Location
+
+- (void)recordLocation:(CLLocationCoordinate2D)location
+{
+    [CountlyLocationManager.sharedInstance recordLocationInfo:location city:nil ISOCountryCode:nil andIP:nil];
+}
+
+- (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode
+{
+    [CountlyLocationManager.sharedInstance recordLocationInfo:kCLLocationCoordinate2DInvalid city:city ISOCountryCode:ISOCountryCode andIP:nil];
+}
+
+- (void)recordIP:(NSString *)IP
+{
+    [CountlyLocationManager.sharedInstance recordLocationInfo:kCLLocationCoordinate2DInvalid city:nil ISOCountryCode:nil andIP:IP];
+}
+
+- (void)disableLocationInfo
+{
+    [CountlyLocationManager.sharedInstance disableLocationInfo];
+}
 
 
 
