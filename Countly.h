@@ -130,7 +130,11 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)cancelConsentForAllFeatures;
 
-
+/**
+ * Returns current device ID being used for tracking.
+ * @discussion Device ID can be used for handling data export and/or removal requests as part of data privacy compliance.
+ */
+- (NSString *)deviceID;
 
 #pragma mark - Countly CustomEvents
 

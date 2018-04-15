@@ -345,6 +345,11 @@
     [CountlyConsentManager.sharedInstance cancelConsentForAllFeatures];
 }
 
+- (NSString *)deviceID
+{
+    return CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped;
+}
+
 
 
 #pragma mark - Countly CustomEvents
