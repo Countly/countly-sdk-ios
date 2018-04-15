@@ -352,38 +352,41 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     COUNTLY_LOG(@"userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:");
     COUNTLY_LOG(@"%@", response.notification.request.content.userInfo.description);
 
-    NSDictionary* countlyPayload = response.notification.request.content.userInfo[kCountlyPNKeyCountlyPayload];
-    NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
-
-    if (notificationID && CountlyConsentManager.sharedInstance.consentForPushNotifications)
+    if (CountlyConsentManager.sharedInstance.consentForPushNotifications)
     {
-        [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushOpen segmentation:@{kCountlyPNKeyNotificationID: notificationID}];
+        NSDictionary* countlyPayload = response.notification.request.content.userInfo[kCountlyPNKeyCountlyPayload];
+        NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
 
-        NSInteger buttonIndex = -1;
-        NSString* URL = nil;
-
-        COUNTLY_LOG(@"Action Identifier: %@", response.actionIdentifier);
-
-        if ([response.actionIdentifier isEqualToString:UNNotificationDefaultActionIdentifier])
+        if (notificationID)
         {
-            if (countlyPayload[kCountlyPNKeyDefaultURL])
+            [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushOpen segmentation:@{kCountlyPNKeyNotificationID: notificationID}];
+
+            NSInteger buttonIndex = -1;
+            NSString* URL = nil;
+
+            COUNTLY_LOG(@"Action Identifier: %@", response.actionIdentifier);
+
+            if ([response.actionIdentifier isEqualToString:UNNotificationDefaultActionIdentifier])
             {
-                buttonIndex = 0;
-                URL = countlyPayload[kCountlyPNKeyDefaultURL];
+                if (countlyPayload[kCountlyPNKeyDefaultURL])
+                {
+                    buttonIndex = 0;
+                    URL = countlyPayload[kCountlyPNKeyDefaultURL];
+                }
             }
-        }
-        else if ([response.actionIdentifier hasPrefix:kCountlyActionIdentifier])
-        {
-            buttonIndex = [[response.actionIdentifier stringByReplacingOccurrencesOfString:kCountlyActionIdentifier withString:@""] integerValue];
-            URL = countlyPayload[kCountlyPNKeyButtons][buttonIndex - 1][kCountlyPNKeyActionButtonURL];
-        }
+            else if ([response.actionIdentifier hasPrefix:kCountlyActionIdentifier])
+            {
+                buttonIndex = [[response.actionIdentifier stringByReplacingOccurrencesOfString:kCountlyActionIdentifier withString:@""] integerValue];
+                URL = countlyPayload[kCountlyPNKeyButtons][buttonIndex - 1][kCountlyPNKeyActionButtonURL];
+            }
 
-        if (buttonIndex >= 0)
-        {
-            [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(buttonIndex)}];
-        }
+            if (buttonIndex >= 0)
+            {
+                [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(buttonIndex)}];
+            }
 
-        [self openURL:URL];
+            [self openURL:URL];
+        }
     }
 
     id<UNUserNotificationCenterDelegate> appDelegate = (id<UNUserNotificationCenterDelegate>)UIApplication.sharedApplication.delegate;
