@@ -23,6 +23,8 @@
 
 + (instancetype)sharedInstance;
 - (void)giveConsentForFeatures:(NSArray *)features;
+- (void)giveConsentForAllFeatures;
 - (void)cancelConsentForFeatures:(NSArray *)features;
+- (void)cancelConsentForAllFeatures;
 
 @end

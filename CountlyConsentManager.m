@@ -60,6 +60,12 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 }
 
 
+- (void)giveConsentForAllFeatures
+{
+    [self giveConsentForFeatures:[self allFeatures]];
+}
+
+
 - (void)giveConsentForFeatures:(NSArray *)features
 {
     if (!self.requiresConsent)
@@ -99,6 +105,12 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
         self.consentForAppleWatch = YES;
 
     [self sendConsentChanges];
+}
+
+
+- (void)cancelConsentForAllFeatures
+{
+    [self cancelConsentForFeatures:[self allFeatures]];
 }
 
 
@@ -150,6 +162,23 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     }
 }
 
+
+- (NSArray *)allFeatures
+{
+    return
+    @[
+        CLYConsentSessions,
+        CLYConsentEvents,
+        CLYConsentUserDetails,
+        CLYConsentCrashReporting,
+        CLYConsentPushNotifications,
+        CLYConsentLocation,
+        CLYConsentViewTracking,
+        CLYConsentAttribution,
+        CLYConsentStarRating,
+        CLYConsentAppleWatch,
+    ];
+}
 
 #pragma mark -
 
