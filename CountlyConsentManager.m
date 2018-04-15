@@ -235,11 +235,11 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 }
 
 
-#if TARGET_OS_IOS
 - (void)setConsentForCrashReporting:(BOOL)consentForCrashReporting
 {
     _consentForCrashReporting = consentForCrashReporting;
 
+#if TARGET_OS_IOS
     if (consentForCrashReporting)
     {
         [CountlyCrashReporter.sharedInstance startCrashReporting];
@@ -248,16 +248,17 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     {
         [CountlyCrashReporter.sharedInstance stopCrashReporting];
     }
+#endif
 
     self.consentChanges[CLYConsentCrashReporting] = @(consentForCrashReporting);
 }
-#endif
 
 
 - (void)setConsentForPushNotifications:(BOOL)consentForPushNotifications
 {
     _consentForPushNotifications = consentForPushNotifications;
 
+#if TARGET_OS_IOS
     if (consentForPushNotifications)
     {
         [CountlyPushNotifications.sharedInstance startPushNotifications];
@@ -266,6 +267,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     {
         [CountlyPushNotifications.sharedInstance stopPushNotifications];
     }
+#endif
 
     self.consentChanges[CLYConsentPushNotifications] = @(consentForPushNotifications);
 }
@@ -292,6 +294,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 {
     _consentForViewTracking = consentForViewTracking;
 
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     if (consentForViewTracking)
     {
         [CountlyViewTracking.sharedInstance startAutoViewTracking];
@@ -300,6 +303,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     {
         [CountlyViewTracking.sharedInstance stopAutoViewTracking];
     }
+#endif
 
     self.consentChanges[CLYConsentViewTracking] = @(consentForViewTracking);
 }
@@ -326,6 +330,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 {
     _consentForStarRating = consentForStarRating;
 
+#if TARGET_OS_IOS
     if (consentForStarRating)
     {
         [CountlyStarRating.sharedInstance checkForAutoAsk];
@@ -334,16 +339,17 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     {
         //NOTE: consent for StarRating is cancelled
     }
+#endif
 
     self.consentChanges[CLYConsentStarRating] = @(consentForStarRating);
 }
 
 
-#if (TARGET_OS_IOS || TARGET_OS_WATCH)
 - (void)setConsentForAppleWatch:(BOOL)consentForAppleWatch
 {
     _consentForAppleWatch = consentForAppleWatch;
 
+#if (TARGET_OS_IOS || TARGET_OS_WATCH)
     if (consentForAppleWatch)
     {
         [CountlyCommon.sharedInstance startAppleWatchMatching];
@@ -352,10 +358,10 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     {
         //NOTE: consent for AppleWatch is cancelled
     }
+#endif
 
     self.consentChanges[CLYConsentAppleWatch] = @(consentForAppleWatch);
 }
-#endif
 
 #pragma mark -
 
@@ -386,7 +392,6 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 }
 
 
-#if TARGET_OS_IOS
 - (BOOL)consentForCrashReporting
 {
     if (!self.requiresConsent)
@@ -394,7 +399,6 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 
     return _consentForCrashReporting;
 }
-#endif
 
 
 - (BOOL)consentForPushNotifications
@@ -442,7 +446,6 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 }
 
 
-#if (TARGET_OS_IOS || TARGET_OS_WATCH)
 - (BOOL)consentForAppleWatch
 {
     if (!self.requiresConsent)
@@ -450,6 +453,5 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 
     return _consentForAppleWatch;
 }
-#endif
 
 @end
