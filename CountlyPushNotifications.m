@@ -10,10 +10,12 @@ NSString* const kCountlyReservedEventPushOpen = @"[CLY]_push_open";
 NSString* const kCountlyReservedEventPushAction = @"[CLY]_push_action";
 NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
-@interface CountlyPushNotifications ()
 #if TARGET_OS_IOS
+@interface CountlyPushNotifications () <UNUserNotificationCenterDelegate>
 @property (nonatomic) NSString* token;
 @property (nonatomic, copy) void (^permissionCompletion)(BOOL granted, NSError * error);
+#else
+@interface CountlyPushNotifications ()
 #endif
 @end
 
