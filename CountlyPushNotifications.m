@@ -72,8 +72,6 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     if (UNUserNotificationCenter.currentNotificationCenter.delegate == self)
         UNUserNotificationCenter.currentNotificationCenter.delegate = nil;
 
-    [CountlyConnectionManager.sharedInstance sendPushToken:@""];
-
     [UIApplication.sharedApplication unregisterForRemoteNotifications];
 }
 
