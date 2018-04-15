@@ -92,6 +92,14 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)giveConsentForFeature:(NSString *)featureName;
 
 /**
+ * Grants consent to given features and starts them.
+ * @discussion This is a convenience method for grating consent for multiple features at once.
+ * @discussion Inner workings of @c giveConsentForFeature: method applies for this method as well.
+ * @param features Array of feature names to give consent to
+ */
+- (void)giveConsentForFeatures:(NSArray *)features;
+
+/**
  * Cancels consent to given feature and stops it.
  * @discussion After cancelling consent to a feature, it is stopped and kept inactive henceforth.
  * @discussion If consent to the feature is already cancelled before, call for this method will be ignored.
@@ -99,6 +107,14 @@ NS_ASSUME_NONNULL_BEGIN
  * @param featureName Feature name to cancel consent to
  */
 - (void)cancelConsentForFeature:(NSString *)featureName;
+
+/**
+ * Cancels consent to given features and stops them.
+ * @discussion This is a convenience method for cancelling consent for multiple features at once.
+ * @discussion Inner workings of @c cancelConsentForFeature: method applies for this method as well.
+ * @param features Array of feature names to cancel consent to
+ */
+- (void)cancelConsentForFeatures:(NSArray *)features;
 
 
 

@@ -65,6 +65,9 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     if (!self.requiresConsent)
         return;
 
+    if (!features.count)
+        return;
+
     if ([features containsObject:CLYConsentSessions] && !self.consentForSessions)
         self.consentForSessions = YES;
 

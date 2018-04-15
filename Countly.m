@@ -317,12 +317,22 @@
     [CountlyConsentManager.sharedInstance giveConsentForFeatures:@[featureName]];
 }
 
+- (void)giveConsentForFeatures:(NSArray *)features
+{
+    [CountlyConsentManager.sharedInstance giveConsentForFeatures:features];
+}
+
 - (void)cancelConsentForFeature:(NSString *)featureName
 {
     if (!featureName.length)
         return;
 
     [CountlyConsentManager.sharedInstance cancelConsentForFeatures:@[featureName]];
+}
+
+- (void)cancelConsentForFeatures:(NSArray *)features
+{
+    [CountlyConsentManager.sharedInstance cancelConsentForFeatures:features];
 }
 
 
