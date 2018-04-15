@@ -113,6 +113,9 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 - (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler
 {
+    if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
+        return;
+
     if (NSFoundationVersionNumber > NSFoundationVersionNumber_iOS_9_x_Max)
     {
         [UNUserNotificationCenter.currentNotificationCenter requestAuthorizationWithOptions:options completionHandler:^(BOOL granted, NSError* error)
