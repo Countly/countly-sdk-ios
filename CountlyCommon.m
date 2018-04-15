@@ -15,9 +15,11 @@
 @property long long lastTimestamp;
 @end
 
-NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
 NSString* const kCountlySDKVersion = @"18.01";
 NSString* const kCountlySDKName = @"objc-native-ios";
+
+NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
+NSString* const kCountlyAttributionIDFAKey = @"idfa";
 
 @implementation CountlyCommon
 
@@ -136,6 +138,29 @@ void CountlyInternalLog(NSString *format, ...)
     }
 }
 #endif
+
+- (void)startAttribution
+{
+    if (!self.enableAttribution)
+        return;
+
+    if (!CountlyConsentManager.sharedInstance.consentForAttribution)
+        return;
+
+    NSDictionary* attribution = nil;
+
+#if (TARGET_OS_IOS || TARGET_OS_TV)
+    if (ASIdentifierManager.sharedManager.advertisingTrackingEnabled)
+    {
+        attribution = @{kCountlyAttributionIDFAKey: ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString};
+    }
+#endif
+
+    if (!attribution)
+        return;
+
+    [CountlyConnectionManager.sharedInstance sendAttribution:[attribution cly_JSONify]];
+}
 
 @end
 

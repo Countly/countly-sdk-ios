@@ -34,7 +34,7 @@
 - (void)sendCrashReport:(NSString *)report immediately:(BOOL)immediately;
 - (void)sendOldDeviceID:(NSString *)oldDeviceID;
 - (void)sendParentDeviceID:(NSString *)parentDeviceID;
-- (void)sendAttribution;
+- (void)sendAttribution:(NSString *)attribution;
 - (void)sendConsentChanges:(NSString *)consentChanges;
 
 - (void)proceedOnQueue;

@@ -48,7 +48,6 @@ NSString* const kCountlyQSKeyUserDetails      = @"user_details";
 NSString* const kCountlyQSKeyCrash            = @"crash";
 NSString* const kCountlyQSKeyChecksum256      = @"checksum256";
 NSString* const kCountlyQSKeyAttributionID    = @"aid";
-NSString* const kCountlyQSKeyIDFA             = @"idfa";
 NSString* const kCountlyQSKeyConsent          = @"consent";
 
 NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
@@ -192,8 +191,6 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%@",
                              kCountlyQSKeySessionBegin, @"1",
                              kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
-
-    queryString = [queryString stringByAppendingString:[self attributionInfo]];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -394,13 +391,10 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     [self proceedOnQueue];
 }
 
-- (void)sendAttribution
+- (void)sendAttribution:(NSString *)attribution
 {
-    NSString* attriutionInfo = [self attributionInfo];
-    if (!attriutionInfo.length)
-        return;
-
-    NSString* queryString = [[self queryEssentials] stringByAppendingString:attriutionInfo];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
+                             kCountlyQSKeyAttributionID, attribution];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -457,24 +451,6 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
                                         kCountlyQSKeyTimeZone, (int)CountlyCommon.sharedInstance.timeZone,
                                         kCountlyQSKeySDKVersion, kCountlySDKVersion,
                                         kCountlyQSKeySDKName, kCountlySDKName];
-}
-
-- (NSString *)attributionInfo
-{
-    NSMutableString* temp = NSMutableString.new;
-
-    if (!CountlyConsentManager.sharedInstance.consentForAttribution)
-        return temp;
-
-#if (TARGET_OS_IOS || TARGET_OS_TV)
-    if (CountlyCommon.sharedInstance.enableAttribution && ASIdentifierManager.sharedManager.advertisingTrackingEnabled)
-    {
-        NSDictionary* attribution = @{kCountlyQSKeyIDFA: ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString};
-        [temp appendFormat:@"&%@=%@", kCountlyQSKeyAttributionID, [attribution cly_JSONify]];
-    }
-#endif
-
-    return temp;
 }
 
 - (NSInteger)sessionLengthInSeconds

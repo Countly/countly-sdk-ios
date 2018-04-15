@@ -138,6 +138,8 @@
     [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
 
     [CountlyCommon.sharedInstance startAppleWatchMatching];
+
+    [CountlyCommon.sharedInstance startAttribution];
 }
 
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer

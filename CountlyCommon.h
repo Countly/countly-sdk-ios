@@ -76,6 +76,7 @@ void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
 - (NSTimeInterval)uniqueTimestamp;
 
 - (void)startAppleWatchMatching;
+- (void)startAttribution;
 @end
 
 
