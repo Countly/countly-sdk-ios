@@ -4,7 +4,7 @@
 //
 // Please visit www.count.ly for more information.
 
-#pragma mark - Countly Core
+#pragma mark - Core
 
 #import "CountlyCommon.h"
 
@@ -308,7 +308,7 @@
 
 
 
-#pragma mark - Countly Consents
+#pragma mark - Consents
 - (void)giveConsentForFeature:(NSString *)featureName
 {
     if (!featureName.length)
@@ -352,7 +352,7 @@
 
 
 
-#pragma mark - Countly CustomEvents
+#pragma mark - Events
 - (void)recordEvent:(NSString *)key
 {
     [self recordEvent:key segmentation:nil count:1 sum:0 duration:0];
@@ -401,7 +401,7 @@
     [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
 }
 
-#pragma mark - Countly Reserved Events
+#pragma mark -
 
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation
 {
@@ -477,7 +477,7 @@
 
 
 
-#pragma mark - Countly PushNotifications
+#pragma mark - Push Notifications
 #if TARGET_OS_IOS
 
 - (void)askForNotificationPermission
@@ -500,7 +500,7 @@
 
 
 
-#pragma mark - Countly Location
+#pragma mark - Location
 
 - (void)recordLocation:(CLLocationCoordinate2D)location
 {
@@ -524,7 +524,7 @@
 
 
 
-#pragma mark - Countly CrashReporting
+#pragma mark - Crash Reporting
 
 #if TARGET_OS_IOS
 - (void)recordHandledException:(NSException *)exception
@@ -551,7 +551,7 @@
 
 
 
-#pragma mark - Countly APM
+#pragma mark - APM
 
 - (void)addExceptionForAPM:(NSString *)exceptionURL
 {
@@ -565,7 +565,7 @@
 
 
 
-#pragma mark - Countly AutoViewTracking
+#pragma mark - View Tracking
 
 - (void)recordView:(NSString *)viewName;
 {
@@ -601,7 +601,7 @@
 
 
 
-#pragma mark - Countly UserDetails
+#pragma mark - User Details
 
 + (CountlyUserDetails *)user
 {
@@ -620,7 +620,7 @@
 
 
 
-#pragma mark - Countly StarRating
+#pragma mark - Star Rating
 #if TARGET_OS_IOS
 
 - (void)askForStarRating:(void(^)(NSInteger rating))completion

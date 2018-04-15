@@ -16,7 +16,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface Countly : NSObject
 
-#pragma mark - Countly Core
+#pragma mark - Core
 
 /**
  * Returns @c Countly singleton to be used throughout the app.
@@ -39,29 +39,32 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Sets the value of the custom HTTP header field to be sent with every request if @c customHeaderFieldName is set on initial configuration.
- * @discussion If @c customHeaderFieldValue on initial configuration can not be set on app launch, this method can be used to do so later. Requests not started due to missing @c customHeaderFieldValue since app launch will start hereafter.
+ * @discussion If @c customHeaderFieldValue on initial configuration can not be set on app launch, this method can be used to do so later.
+ * @discussion Requests not started due to missing @c customHeaderFieldValue since app launch will start hereafter.
  * @param customHeaderFieldValue Custom header field value
  */
 - (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue;
 
 /**
  * Starts session and sends @c begin_session request with default metrics for manual session handling.
- * @discussion This method needs to be called for starting a session only if @c manualSessionHandling flag is set on initial configuration. Otherwise; sessions will be handled automatically by default, and calling this method will have no effect.
+ * @discussion This method needs to be called for starting a session only if @c manualSessionHandling flag is set on initial configuration.
+ * @discussion Otherwise; sessions will be handled automatically by default, and calling this method will have no effect.
  */
 - (void)beginSession;
 
 /**
  * Updates session and sends unsent session duration for manual session handling.
- * @discussion This method needs to be called for updating a session only if @c manualSessionHandling flag is set on initial configuration. Otherwise; sessions will be handled automatically by default, and calling this method will have no effect.
+ * @discussion This method needs to be called for updating a session only if @c manualSessionHandling flag is set on initial configuration.
+ * @discussion Otherwise; sessions will be handled automatically by default, and calling this method will have no effect.
  */
 - (void)updateSession;
 
 /**
  * Ends session and sends @c end_session request for manual session handling.
- * @discussion This method needs to be called for ending a session only if @c manualSessionHandling flag is set on initial configuration. Otherwise; sessions will be handled automatically by default, and calling this method will have no effect.
+ * @discussion This method needs to be called for ending a session only if @c manualSessionHandling flag is set on initial configuration.
+ * @discussion Otherwise; sessions will be handled automatically by default, and calling this method will have no effect.
  */
 - (void)endSession;
-
 
 #if TARGET_OS_WATCH
 /**
@@ -79,7 +82,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 
-#pragma mark - Countly Consents
+#pragma mark - Consents
 
 /**
  * Grants consent to given feature and starts it.
@@ -136,7 +139,9 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (NSString *)deviceID;
 
-#pragma mark - Countly CustomEvents
+
+
+#pragma mark - Events
 
 /**
  * Records event with given key.
@@ -233,7 +238,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 
-#pragma mark - Countly PushNotifications
+#pragma mark - Push Notification
 #if TARGET_OS_IOS
 /**
  * Shows default system dialog that asks for user's permission to display notifications.
@@ -245,7 +250,7 @@ NS_ASSUME_NONNULL_BEGIN
  * Shows default system dialog that asks for user's permission to display notifications with given options and completion handler.
  * @discussion A more customizable version of unified convenience method that handles asking for notification permission on both iOS10 and older iOS versions.
  * @discussion Notification types the app wants to display can be specified using @c options parameter.
- * @discussion Completion block has a @c BOOL parameter named @c granted which is @c YES if user granted permission, and an @c NSError parameter named @c error which indicates if there is an error.
+ * @discussion Completion block has @c granted (@c BOOL) parameter which is @c YES if user granted permission, and @c error (@c NSError) parameter which is non-nil if there is an error.
  * @param options Bitwise combination of notification types (badge, sound or alert) the app wants to display
  * @param completionHandler A completion handler block to be executed when user answers notification permission dialog
  */
@@ -253,7 +258,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Records action event for a manually presented push notification with custom action buttons.
- * @discussion If a push notification with custom action buttons is handled and presented manually using custom UI, user's action needs to be reported manually. With this convenience method user's action can be reported passing push notification dictionary and clicked button index.
+ * @discussion If a push notification with custom action buttons is handled and presented manually using custom UI, user's action needs to be reported manually.
+ * @discussion With this convenience method user's action can be reported passing push notification dictionary and clicked button index.
  * @discussion Button index should be @c 0 for default action, @c 1 for the first action button and @c 2 for the second action button.
  * @param userInfo Manually presented push notification dictionary
  * @param buttonIndex Index of custom action button user clicked
@@ -263,7 +269,8 @@ NS_ASSUME_NONNULL_BEGIN
 #endif
 
 
-#pragma mark - Countly Location
+
+#pragma mark - Location
 
 /**
  * Records user's location info to be used for geo-location based push notifications and advanced user segmentation.
@@ -304,7 +311,9 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic) BOOL isGeoLocationEnabled DEPRECATED_MSG_ATTRIBUTE("Use 'disableLocationInfo' method instead!");
 
-#pragma mark - Countly CrashReporting
+
+
+#pragma mark - Crash Reporting
 #if TARGET_OS_IOS
 /**
  * Records a handled exception manually.
@@ -328,7 +337,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * @c crashLog: method is deprecated. Please use @c recordCrashLog: method instead.
- * @discussion While @c crashLog: method's parameter type is string format, new @c recordCrashLog: method's parameter type is plain NSString for better Swift compatibility. Please update your code accordingly.
+ * @discussion Be advised, parameter type chenged to plain @c NSString from string format, for better Swift compatibility.
  * @discussion Calls to @c crashLog: method will have no effect.
  */
 - (void)crashLog:(NSString *)format, ... NS_FORMAT_FUNCTION(1,2) DEPRECATED_MSG_ATTRIBUTE("Use 'recordCrashLog:' method instead!");
@@ -337,7 +346,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 
-#pragma mark - Countly APM
+#pragma mark - APM
 
 /**
  * Adds exception URL for APM.
@@ -356,7 +365,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 
-#pragma mark - Countly AutoViewTracking
+#pragma mark - View Tracking
 
 /**
  * Records a visited view with given name.
@@ -397,7 +406,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 
-#pragma mark - Countly UserDetails
+#pragma mark - User Details
 
 /**
  * Returns @c CountlyUserDetails singleton to be used throughout the app.
@@ -407,22 +416,27 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Handles switching from device ID to custom user ID for logged in users
- * @discussion When a user logs in, this user can be tracked with custom user ID instead of device ID. This is just a convenience method that handles setting user ID as new device ID and merging existing data on Countly Server.
+ * @discussion When a user logs in, this user can be tracked with custom user ID instead of device ID.
+ * @discussion This is just a convenience method that handles setting user ID as new device ID and merging existing data on Countly Server.
  * @param userID Custom user ID uniquely defining the logged in user
  */
 - (void)userLoggedIn:(NSString *)userID;
 
 /**
  * Handles switching from custom user ID to device ID for logged out users
- * @discussion When a user logs out, all the data can be tracked with default device ID henceforth. This is just a convenience method that handles resetting device ID to default one and starting a new session.
+ * @discussion When a user logs out, all the data can be tracked with default device ID henceforth.
+ * @discussion This is just a convenience method that handles resetting device ID to default one and starting a new session.
  */
 - (void)userLoggedOut;
 
-#pragma mark - Countly StarRating
+
+
+#pragma mark - Star Rating
 #if TARGET_OS_IOS
 /**
  * Shows star-rating dialog manually and executes completion block after user's action.
- * @discussion Completion block has a single NSInteger parameter that indicates 1 to 5 star-rating given by user. If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to Countly Server.
+ * @discussion Completion block has a single NSInteger parameter that indicates 1 to 5 star-rating given by user.
+ * @discussion If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to Countly Server.
  * @param completion A block object to be executed when user gives a star-rating or dismisses dialog without rating
  */
 - (void)askForStarRating:(void(^)(NSInteger rating))completion;
