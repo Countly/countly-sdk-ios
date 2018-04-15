@@ -279,7 +279,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion This method overrides @c location property specified on initial configuration, and sends an immediate request.
  * @param location User's location with latitude and longitude
  */
-- (void)recordLocation:(CLLocationCoordinate2D)coordinate;
+- (void)recordLocation:(CLLocationCoordinate2D)location;
 
 /**
  * Records user's city and country info to be used for geo-location based push notifications and advanced user segmentation.
