@@ -180,6 +180,23 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     ];
 }
 
+
+- (BOOL)hasAnyConsent
+{
+    return
+    self.consentForSessions ||
+    self.consentForEvents ||
+    self.consentForUserDetails ||
+    self.consentForCrashReporting ||
+    self.consentForPushNotifications ||
+    self.consentForLocation ||
+    self.consentForViewTracking ||
+    self.consentForAttribution ||
+    self.consentForStarRating ||
+    self.consentForAppleWatch;
+}
+
+
 #pragma mark -
 
 

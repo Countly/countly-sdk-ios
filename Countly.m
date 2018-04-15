@@ -147,6 +147,9 @@
     if (!CountlyCommon.sharedInstance.hasStarted)
         return;
 
+    if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
+        return;
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 

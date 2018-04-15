@@ -26,5 +26,6 @@
 - (void)giveConsentForAllFeatures;
 - (void)cancelConsentForFeatures:(NSArray *)features;
 - (void)cancelConsentForAllFeatures;
+- (BOOL)hasAnyConsent;
 
 @end
