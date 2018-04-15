@@ -34,7 +34,7 @@
 
 - (void)sendLocationInfo
 {
-    if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
+    if (!CountlyConsentManager.sharedInstance.consentForLocation)
         return;
 
     [CountlyConnectionManager.sharedInstance sendLocationInfo];
@@ -42,7 +42,7 @@
 
 - (void)recordLocationInfo:(CLLocationCoordinate2D)location city:(NSString *)city ISOCountryCode:(NSString *)ISOCountryCode andIP:(NSString *)IP
 {
-    if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
+    if (!CountlyConsentManager.sharedInstance.consentForLocation)
         return;
 
     if (CLLocationCoordinate2DIsValid(location))
@@ -59,7 +59,7 @@
 
 - (void)disableLocationInfo
 {
-    if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
+    if (!CountlyConsentManager.sharedInstance.consentForLocation)
         return;
 
     self.location = @""; //NOTE: Server needs empty string, to explicitly mark geo-location as disabled

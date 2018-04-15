@@ -15,6 +15,7 @@
 @property (nonatomic, readonly) BOOL consentForUserDetails;
 @property (nonatomic, readonly) BOOL consentForCrashReporting;
 @property (nonatomic, readonly) BOOL consentForPushNotifications;
+@property (nonatomic, readonly) BOOL consentForLocation;
 @property (nonatomic, readonly) BOOL consentForViewTracking;
 @property (nonatomic, readonly) BOOL consentForAttribution;
 @property (nonatomic, readonly) BOOL consentForStarRating;

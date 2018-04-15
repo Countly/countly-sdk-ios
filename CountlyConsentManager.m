@@ -13,6 +13,7 @@ NSString* const CLYConsentEvents               = @"events";
 NSString* const CLYConsentUserDetails          = @"users";
 NSString* const CLYConsentCrashReporting       = @"crashes";
 NSString* const CLYConsentPushNotifications    = @"push";
+NSString* const CLYConsentLocation             = @"location";
 NSString* const CLYConsentViewTracking         = @"views";
 NSString* const CLYConsentAttribution          = @"attribution";
 NSString* const CLYConsentStarRating           = @"star-rating";
@@ -30,6 +31,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 @synthesize consentForUserDetails = _consentForUserDetails;
 @synthesize consentForCrashReporting = _consentForCrashReporting;
 @synthesize consentForPushNotifications = _consentForPushNotifications;
+@synthesize consentForLocation = _consentForLocation;
 @synthesize consentForViewTracking = _consentForViewTracking;
 @synthesize consentForAttribution = _consentForAttribution;
 @synthesize consentForStarRating = _consentForStarRating;
@@ -78,6 +80,9 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     if ([features containsObject:CLYConsentPushNotifications] && !self.consentForPushNotifications)
         self.consentForPushNotifications = YES;
 
+    if ([features containsObject:CLYConsentLocation] && !self.consentForLocation)
+        self.consentForLocation = YES;
+
     if ([features containsObject:CLYConsentViewTracking] && !self.consentForViewTracking)
         self.consentForViewTracking = YES;
 
@@ -113,6 +118,9 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 
     if ([features containsObject:CLYConsentPushNotifications] && self.consentForPushNotifications)
         self.consentForPushNotifications = NO;
+
+    if ([features containsObject:CLYConsentLocation] && self.consentForLocation)
+        self.consentForLocation = NO;
 
     if ([features containsObject:CLYConsentViewTracking] && self.consentForViewTracking)
         self.consentForViewTracking = NO;
@@ -231,6 +239,23 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 }
 
 
+- (void)setConsentForLocation:(BOOL)consentForLocation
+{
+    _consentForLocation = consentForLocation;
+
+    if (consentForLocation)
+    {
+        [CountlyLocationManager.sharedInstance sendLocationInfo];
+    }
+    else
+    {
+        //NOTE: consent for Location is cancelled
+    }
+
+    self.consentChanges[CLYConsentLocation] = @(consentForLocation);
+}
+
+
 - (void)setConsentForViewTracking:(BOOL)consentForViewTracking
 {
     _consentForViewTracking = consentForViewTracking;
@@ -346,6 +371,15 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
       return YES;
 
     return _consentForPushNotifications;
+}
+
+
+- (BOOL)consentForLocation
+{
+    if (!self.requiresConsent)
+        return YES;
+
+    return _consentForLocation;
 }
 
 

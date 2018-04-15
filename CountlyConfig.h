@@ -36,6 +36,7 @@ extern NSString* const CLYConsentEvents;
 extern NSString* const CLYConsentUserDetails;
 extern NSString* const CLYConsentCrashReporting;
 extern NSString* const CLYConsentPushNotifications;
+extern NSString* const CLYConsentLocation;
 extern NSString* const CLYConsentViewTracking;
 extern NSString* const CLYConsentAttribution;
 extern NSString* const CLYConsentStarRating;
