@@ -27,6 +27,9 @@ NSString* const kCountlyQSKeyTimeZone         = @"tz";
 NSString* const kCountlyQSKeyTimeHourOfDay    = @"hour";
 NSString* const kCountlyQSKeyTimeDayOfWeek    = @"dow";
 
+NSString* const kCountlyQSKeySDKVersion       = @"sdk_version";
+NSString* const kCountlyQSKeySDKName          = @"sdk_name";
+
 NSString* const kCountlyQSKeySessionBegin     = @"begin_session";
 NSString* const kCountlyQSKeySessionDuration  = @"session_duration";
 NSString* const kCountlyQSKeySessionEnd       = @"end_session";
@@ -34,13 +37,11 @@ NSString* const kCountlyQSKeySessionEnd       = @"end_session";
 NSString* const kCountlyQSKeyPushTokenSession = @"token_session";
 NSString* const kCountlyQSKeyPushTokeniOS     = @"ios_token";
 NSString* const kCountlyQSKeyPushTestMode     = @"test_mode";
-NSString* const kCountlyQSKeyPushLocation     = @"location";
-NSString* const kCountlyQSKeyPushCity         = @"city";
-NSString* const kCountlyQSKeyPushCountryCode  = @"country_code";
-NSString* const kCountlyQSKeyPushIPAddress    = @"ip_address";
 
-NSString* const kCountlyQSKeySDKVersion       = @"sdk_version";
-NSString* const kCountlyQSKeySDKName          = @"sdk_name";
+NSString* const kCountlyQSKeyLocation         = @"location";
+NSString* const kCountlyQSKeyLocationCity     = @"city";
+NSString* const kCountlyQSKeyLocationCountry  = @"country_code";
+NSString* const kCountlyQSKeyLocationIP       = @"ip_address";
 
 NSString* const kCountlyQSKeyMetrics          = @"metrics";
 NSString* const kCountlyQSKeyEvents           = @"events";
@@ -282,16 +283,16 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     NSString* queryString = [self queryEssentials];
 
     if (location)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyPushLocation, location];
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocation, location];
 
    if (city)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyPushCity, city];
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationCity, city];
 
     if (ISOCountryCode)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyPushCountryCode, ISOCountryCode];
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationCountry, ISOCountryCode];
 
     if (IP)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyPushCountryCode, IP];
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationCountry, IP];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
