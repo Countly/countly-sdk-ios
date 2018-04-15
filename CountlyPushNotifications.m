@@ -336,11 +336,14 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     COUNTLY_LOG(@"userNotificationCenter:willPresentNotification:withCompletionHandler:");
     COUNTLY_LOG(@"%@", notification.request.content.userInfo.description);
 
-    NSDictionary* countlyPayload = notification.request.content.userInfo[kCountlyPNKeyCountlyPayload];
-    NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
+    if (!self.doNotShowAlertForNotifications)
+    {
+        NSDictionary* countlyPayload = notification.request.content.userInfo[kCountlyPNKeyCountlyPayload];
+        NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
 
-    if (notificationID)
-        completionHandler(UNNotificationPresentationOptionAlert);
+        if (notificationID)
+            completionHandler(UNNotificationPresentationOptionAlert);
+    }
 
     id<UNUserNotificationCenterDelegate> appDelegate = (id<UNUserNotificationCenterDelegate>)UIApplication.sharedApplication.delegate;
 
