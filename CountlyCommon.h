@@ -74,6 +74,7 @@ void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
 - (NSInteger)timeZone;
 - (NSInteger)timeSinceLaunch;
 - (NSTimeInterval)uniqueTimestamp;
+- (UIViewController *)topViewController;
 
 - (void)startAppleWatchMatching;
 - (void)startAttribution;

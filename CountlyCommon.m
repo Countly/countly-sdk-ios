@@ -139,6 +139,8 @@ void CountlyInternalLog(NSString *format, ...)
 }
 #endif
 
+#pragma mark - Attribution
+
 - (void)startAttribution
 {
     if (!self.enableAttribution)
@@ -162,6 +164,27 @@ void CountlyInternalLog(NSString *format, ...)
     [CountlyConnectionManager.sharedInstance sendAttribution:[attribution cly_JSONify]];
 }
 
+#pragma mark - Others
+
+- (UIViewController *)topViewController
+{
+    UIViewController* topVC = UIApplication.sharedApplication.keyWindow.rootViewController;
+
+    while (YES)
+    {
+        if (topVC.presentedViewController)
+            topVC = topVC.presentedViewController;
+         else if ([topVC isKindOfClass:UINavigationController.class])
+             topVC = ((UINavigationController *)topVC).topViewController;
+         else if ([topVC isKindOfClass:UITabBarController.class])
+             topVC = ((UITabBarController *)topVC).selectedViewController;
+         else
+             break;
+    }
+
+    return topVC;
+}
+
 @end
 
 
@@ -169,21 +192,23 @@ void CountlyInternalLog(NSString *format, ...)
 #if TARGET_OS_IOS
 @implementation CLYInternalViewController : UIViewController
 
-//NOTE: For using the same status bar preferences as the view controller currently being  displayed, when a Countly triggered alert is displayed using a separate window
+//NOTE: For using the same status bar preferences as the currently displayed view controller, when a Countly triggered alert is displayed in a separate window
 - (UIStatusBarStyle)preferredStatusBarStyle
 {
-    if (UIApplication.sharedApplication.windows.firstObject.rootViewController == self)
+    UIViewController* topVC = [CountlyCommon.sharedInstance topViewController];
+    if (topVC == self)
         return UIStatusBarStyleDefault;
 
-    return [UIApplication.sharedApplication.windows.firstObject.rootViewController preferredStatusBarStyle];
+    return [topVC preferredStatusBarStyle];
 }
 
 - (BOOL)prefersStatusBarHidden
 {
-    if (UIApplication.sharedApplication.windows.firstObject.rootViewController == self)
+    UIViewController* topVC = [CountlyCommon.sharedInstance topViewController];
+    if (topVC == self)
         return NO;
 
-    return [UIApplication.sharedApplication.windows.firstObject.rootViewController prefersStatusBarHidden];
+    return [topVC prefersStatusBarHidden];
 }
 
 @end
