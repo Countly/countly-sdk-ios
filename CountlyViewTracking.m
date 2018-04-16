@@ -90,8 +90,13 @@ NSString* const kCountlyVTKeyStart    = @"start";
     return self;
 }
 
+#pragma mark -
+
 - (void)startView:(NSString *)viewName
 {
+    if (!viewName)
+        return;
+
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
 
@@ -149,6 +154,8 @@ NSString* const kCountlyVTKeyStart    = @"start";
     self.lastViewStartTime = CountlyCommon.sharedInstance.uniqueTimestamp;
 }
 
+#pragma mark -
+
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 - (void)startAutoViewTracking
 {
@@ -161,6 +168,10 @@ NSString* const kCountlyVTKeyStart    = @"start";
     self.isAutoViewTrackingEnabled = YES;
 
     [self swizzleViewTrackingMethods];
+
+    UIViewController* topVC = [CountlyCommon.sharedInstance topViewController];
+    NSString* viewTitle = [CountlyViewTracking.sharedInstance titleForViewController:topVC];
+    [self startView:viewTitle];
 }
 
 - (void)swizzleViewTrackingMethods
@@ -188,6 +199,8 @@ NSString* const kCountlyVTKeyStart    = @"start";
     self.accumulatedTime = 0;
 }
 
+#pragma mark -
+
 - (void)setIsAutoViewTrackingEnabled:(BOOL)isAutoViewTrackingEnabled
 {
     if (!self.isEnabledOnInitialConfig)
@@ -199,6 +212,8 @@ NSString* const kCountlyVTKeyStart    = @"start";
     _isAutoViewTrackingEnabled = isAutoViewTrackingEnabled;
 }
 
+#pragma mark -
+
 - (void)addExceptionForAutoViewTracking:(NSString *)exception
 {
     if (![self.exceptionViewControllers containsObject:exception])
@@ -208,6 +223,24 @@ NSString* const kCountlyVTKeyStart    = @"start";
 - (void)removeExceptionForAutoViewTracking:(NSString *)exception
 {
     [self.exceptionViewControllers removeObject:exception];
+}
+
+#pragma mark -
+
+- (NSString*)titleForViewController:(UIViewController *)viewController
+{
+    if (!viewController)
+        return nil;
+
+    NSString* title = viewController.title;
+
+    if (!title)
+        title = [viewController.navigationItem.titleView isKindOfClass:UILabel.class] ? ((UILabel *)viewController.navigationItem.titleView).text : nil;
+
+    if (!title)
+        title = NSStringFromClass(viewController.class);
+
+    return title;
 }
 
 #endif
@@ -227,13 +260,7 @@ NSString* const kCountlyVTKeyStart    = @"start";
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
 
-    NSString* viewTitle = self.title;
-
-    if (!viewTitle)
-        viewTitle = [self.navigationItem.titleView isKindOfClass:UILabel.class] ? ((UILabel *)self.navigationItem.titleView).text : nil;
-
-    if (!viewTitle)
-        viewTitle = NSStringFromClass(self.class);
+    NSString* viewTitle = [CountlyViewTracking.sharedInstance titleForViewController:self];
 
     if ([CountlyViewTracking.sharedInstance.lastView isEqualToString:viewTitle])
         return;
