@@ -160,6 +160,17 @@ NSString* const kCountlyVTKeyStart    = @"start";
 
     self.isAutoViewTrackingEnabled = YES;
 
+    [self swizzleViewTrackingMethods];
+}
+
+- (void)swizzleViewTrackingMethods
+{
+    static BOOL alreadySwizzled;
+    if (alreadySwizzled)
+        return;
+
+    alreadySwizzled = YES;
+
     Method O_method = class_getInstanceMethod(UIViewController.class, @selector(viewDidAppear:));
     Method C_method = class_getInstanceMethod(UIViewController.class, @selector(Countly_viewDidAppear:));
     method_exchangeImplementations(O_method, C_method);
@@ -171,10 +182,6 @@ NSString* const kCountlyVTKeyStart    = @"start";
         return;
 
     self.isAutoViewTrackingEnabled = NO;
-
-    Method O_method = class_getInstanceMethod(UIViewController.class, @selector(viewDidAppear:));
-    Method C_method = class_getInstanceMethod(UIViewController.class, @selector(Countly_viewDidAppear:));
-    method_exchangeImplementations(O_method, C_method);
 
     self.lastView = nil;
     self.lastViewStartTime = 0;
@@ -212,36 +219,39 @@ NSString* const kCountlyVTKeyStart    = @"start";
 @implementation UIViewController (CountlyViewTracking)
 - (void)Countly_viewDidAppear:(BOOL)animated
 {
+    [self Countly_viewDidAppear:animated];
+
+    if (!CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled)
+        return;
+
+    if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
+        return;
+
     NSString* viewTitle = self.title;
 
     if (!viewTitle)
-        viewTitle = [self.navigationItem.titleView isKindOfClass:UILabel.class] ? ((UILabel*)self.navigationItem.titleView).text : nil;
+        viewTitle = [self.navigationItem.titleView isKindOfClass:UILabel.class] ? ((UILabel *)self.navigationItem.titleView).text : nil;
 
     if (!viewTitle)
         viewTitle = NSStringFromClass(self.class);
 
-    if (CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled && ![CountlyViewTracking.sharedInstance.lastView isEqualToString:viewTitle])
+    if ([CountlyViewTracking.sharedInstance.lastView isEqualToString:viewTitle])
+        return;
+
+    BOOL isException = NO;
+
+    for (NSString* exception in CountlyViewTracking.sharedInstance.exceptionViewControllers)
     {
-        BOOL isException = NO;
+        isException = [self.title isEqualToString:exception] ||
+                      [self isKindOfClass:NSClassFromString(exception)] ||
+                      [NSStringFromClass(self.class) isEqualToString:exception];
 
-        for (NSString* exception in CountlyViewTracking.sharedInstance.exceptionViewControllers)
-        {
-            BOOL isExceptionClass = [self isKindOfClass:NSClassFromString(exception)] || [NSStringFromClass(self.class) isEqualToString:exception];
-            BOOL isExceptionTitle = [self.title isEqualToString:exception];
-            BOOL isExceptionCustomTitle = [self.navigationItem.titleView isKindOfClass:UILabel.class] && [((UILabel*)self.navigationItem.titleView).text isEqualToString:exception];
-
-            if (isExceptionClass || isExceptionTitle || isExceptionCustomTitle)
-            {
-                isException = YES;
-                break;
-            }
-        }
-
-        if (!isException)
-            [CountlyViewTracking.sharedInstance startView:viewTitle];
+        if (isException)
+            break;
     }
 
-    [self Countly_viewDidAppear:animated];
+    if (!isException)
+        [CountlyViewTracking.sharedInstance startView:viewTitle];
 }
 @end
 #endif
