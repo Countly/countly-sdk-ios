@@ -13,7 +13,7 @@
     NSTimeInterval startTime;
 }
 @property long long lastTimestamp;
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_TV)
 @property (nonatomic) UIBackgroundTaskIdentifier bgTask;
 #endif
 @end
@@ -171,7 +171,7 @@ void CountlyInternalLog(NSString *format, ...)
 
 - (void)startBackgroundTask
 {
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.bgTask != UIBackgroundTaskInvalid)
         return;
 
@@ -185,7 +185,7 @@ void CountlyInternalLog(NSString *format, ...)
 
 - (void)finishBackgroundTask
 {
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.bgTask != UIBackgroundTaskInvalid && !CountlyConnectionManager.sharedInstance.connection)
     {
         [UIApplication.sharedApplication endBackgroundTask:self.bgTask];
@@ -194,6 +194,7 @@ void CountlyInternalLog(NSString *format, ...)
 #endif
 }
 
+#if (TARGET_OS_IOS || TARGET_OS_TV)
 - (UIViewController *)topViewController
 {
     UIViewController* topVC = UIApplication.sharedApplication.keyWindow.rootViewController;
@@ -212,6 +213,7 @@ void CountlyInternalLog(NSString *format, ...)
 
     return topVC;
 }
+#endif
 
 @end
 
