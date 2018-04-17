@@ -206,6 +206,7 @@ NSString* const kCountlyNotificationPermissionKey = @"kCountlyNotificationPermis
     }
 
     [saveData writeToFile:[self storageFileURL].path atomically:YES];
+    [CountlyCommon.sharedInstance finishBackgroundTask];
 }
 
 #pragma mark ---

@@ -13,6 +13,9 @@
     NSTimeInterval startTime;
 }
 @property long long lastTimestamp;
+#if TARGET_OS_IOS
+@property (nonatomic) UIBackgroundTaskIdentifier bgTask;
+#endif
 @end
 
 NSString* const kCountlySDKVersion = @"18.01";
@@ -165,6 +168,31 @@ void CountlyInternalLog(NSString *format, ...)
 }
 
 #pragma mark - Others
+
+- (void)startBackgroundTask
+{
+#if TARGET_OS_IOS
+    if (self.bgTask != UIBackgroundTaskInvalid)
+        return;
+
+    self.bgTask = [UIApplication.sharedApplication beginBackgroundTaskWithExpirationHandler:^
+    {
+        [UIApplication.sharedApplication endBackgroundTask:self.bgTask];
+        self.bgTask = UIBackgroundTaskInvalid;
+    }];
+#endif
+}
+
+- (void)finishBackgroundTask
+{
+#if TARGET_OS_IOS
+    if (self.bgTask != UIBackgroundTaskInvalid && !CountlyConnectionManager.sharedInstance.connection)
+    {
+        [UIApplication.sharedApplication endBackgroundTask:self.bgTask];
+        self.bgTask = UIBackgroundTaskInvalid;
+    }
+#endif
+}
 
 - (UIViewController *)topViewController
 {

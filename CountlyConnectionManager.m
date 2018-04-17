@@ -11,9 +11,6 @@
     NSTimeInterval lastSessionStartTime;
     BOOL isCrashing;
 }
-#if TARGET_OS_IOS
-@property (nonatomic) UIBackgroundTaskIdentifier bgTask;
-#endif
 @end
 
 NSString* const kCountlyQSKeyAppKey           = @"app_key";
@@ -92,7 +89,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return;
     }
 
-    [self startBackgroundTask];
+    [CountlyCommon.sharedInstance startBackgroundTask];
 
     NSString* queryString = firstItemInQueue;
 
@@ -171,8 +168,6 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
             [CountlyPersistency.sharedInstance saveToFile];
 #endif
         }
-
-        [self finishBackgroundTask];
     }];
 
     [self.connection resume];
@@ -410,33 +405,6 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
     [self proceedOnQueue];
-}
-
-#pragma mark ---
-
-- (void)startBackgroundTask
-{
-#if TARGET_OS_IOS
-    if (self.bgTask != UIBackgroundTaskInvalid)
-        return;
-
-    self.bgTask = [UIApplication.sharedApplication beginBackgroundTaskWithExpirationHandler:^
-    {
-        [UIApplication.sharedApplication endBackgroundTask:self.bgTask];
-        self.bgTask = UIBackgroundTaskInvalid;
-    }];
-#endif
-}
-
-- (void)finishBackgroundTask
-{
-#if TARGET_OS_IOS
-    if (self.bgTask != UIBackgroundTaskInvalid && !self.connection)
-    {
-        [UIApplication.sharedApplication endBackgroundTask:self.bgTask];
-        self.bgTask = UIBackgroundTaskInvalid;
-    }
-#endif
 }
 
 #pragma mark ---
