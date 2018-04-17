@@ -257,7 +257,7 @@
         return;
 
 #if TARGET_OS_WATCH
-    //NOTE: skip first time to prevent double begin session because of applicationDidBecomeActive call on launch of watchOS apps
+    //NOTE: Skip first time to prevent double begin session because of applicationDidBecomeActive call on launch of watchOS apps
     static BOOL isFirstCall = YES;
 
     if (isFirstCall)

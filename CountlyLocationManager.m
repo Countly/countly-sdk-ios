@@ -62,7 +62,8 @@
     if (!CountlyConsentManager.sharedInstance.consentForLocation)
         return;
 
-    self.location = @""; //NOTE: Server needs empty string, to explicitly mark geo-location as disabled
+    //NOTE: Set location to empty string, as Countly Server needs it for disabling geo-location
+    self.location = @"";
     self.city = nil;
     self.ISOCountryCode = nil;
     self.IP = nil;

@@ -119,6 +119,6 @@ void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration timestamp:(NSTimeInterval)timestamp;
 @end
 
-@interface CountlyUserDetails(ClearUserDetails)
+@interface CountlyUserDetails (ClearUserDetails)
 - (void)clearUserDetails;
 @end

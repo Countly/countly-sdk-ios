@@ -95,7 +95,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     {
         [self.alertController setValue:cvc forKey:@"contentViewController"];
     }
-    @catch(NSException* exception)
+    @catch (NSException* exception)
     {
         COUNTLY_LOG(@"UIAlertController's contentViewController can not be set: \n%@", exception);
     }

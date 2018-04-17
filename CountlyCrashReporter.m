@@ -280,7 +280,7 @@ void CountlySignalHandler(int signalCode)
             continue;
         }
 
-        //NOTE: Server needs app's own build uuid directly in crash report object, for fast lookup
+        //NOTE: Include app's own build UUID directly in crash report object, as Countly Server needs it for fast lookup
         if (imageHeader->filetype == MH_EXECUTE)
         {
             buildUUID = imageUUID;

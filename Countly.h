@@ -88,8 +88,8 @@ NS_ASSUME_NONNULL_BEGIN
  * Grants consent to given feature and starts it.
  * @discussion If @c requiresConsent flag is set on initial configuration, each feature waits and ignores manual calls until explicit consent is given.
  * @discussion After giving consent to a feature, it is started and kept active henceforth.
- * @discussion If consent to the feature is already given before, call for this method will be ignored.
- * @discussion If @c requiresConsent flag is not set on initial configuration, call for this method will be ignored.
+ * @discussion If consent to the feature is already given before, calling this method will have no effect.
+ * @discussion If @c requiresConsent flag is not set on initial configuration, calling this method will have no effect.
  * @param featureName Feature name to give consent to
  */
 - (void)giveConsentForFeature:(NSString *)featureName;
@@ -112,8 +112,8 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Cancels consent to given feature and stops it.
  * @discussion After cancelling consent to a feature, it is stopped and kept inactive henceforth.
- * @discussion If consent to the feature is already cancelled before, call for this method will be ignored.
- * @discussion If @c requiresConsent flag is not set on initial configuration, call for this method will be ignored.
+ * @discussion If consent to the feature is already cancelled before, calling this method will have no effect.
+ * @discussion If @c requiresConsent flag is not set on initial configuration, calling this method will have no effect.
  * @param featureName Feature name to cancel consent to
  */
 - (void)cancelConsentForFeature:(NSString *)featureName;
@@ -338,7 +338,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * @c crashLog: method is deprecated. Please use @c recordCrashLog: method instead.
  * @discussion Be advised, parameter type chenged to plain @c NSString from string format, for better Swift compatibility.
- * @discussion Calls to @c crashLog: method will have no effect.
+ * @discussion Calling this method will have no effect.
  */
 - (void)crashLog:(NSString *)format, ... NS_FORMAT_FUNCTION(1,2) DEPRECATED_MSG_ATTRIBUTE("Use 'recordCrashLog:' method instead!");
 
@@ -377,7 +377,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * @c reportView: method is deprecated. Please use @c recordView: method instead.
- * @discussion Calls to @c reportView: method will have no effect.
+ * @discussion Calling this method will have no effect.
  */
 - (void)reportView:(NSString *)viewName DEPRECATED_MSG_ATTRIBUTE("Use 'recordView:' method instead!");
 

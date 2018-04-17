@@ -52,7 +52,7 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     {
         self.deviceID = [CountlyPersistency.sharedInstance retrieveStoredDeviceID];
 #if TARGET_OS_IOS
-        //NOTE: For Limit Ad Tracking zero-IDFA problem
+        //NOTE: Handle Limit Ad Tracking zero-IDFA problem
         if ([self.deviceID isEqualToString:kCountlyZeroIDFA])
             [self initializeDeviceID:CLYIDFV];
 
@@ -112,7 +112,7 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 {
 #if TARGET_OS_IOS
     NSString* IDFA = ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
-    //NOTE: For Limit Ad Tracking zero-IDFA problem
+    //NOTE: Handle Limit Ad Tracking zero-IDFA problem
     if ([IDFA isEqualToString:kCountlyZeroIDFA])
         IDFA = UIDevice.currentDevice.identifierForVendor.UUIDString;
 

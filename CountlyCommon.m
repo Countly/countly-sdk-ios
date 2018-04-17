@@ -220,7 +220,7 @@ void CountlyInternalLog(NSString *format, ...)
 #if TARGET_OS_IOS
 @implementation CLYInternalViewController : UIViewController
 
-//NOTE: For using the same status bar preferences as the currently displayed view controller, when a Countly triggered alert is displayed in a separate window
+//NOTE: Use the same status bar preferences as the currently displayed view controller, when a Countly triggered alert is displayed in a separate window
 - (UIStatusBarStyle)preferredStatusBarStyle
 {
     UIViewController* topVC = [CountlyCommon.sharedInstance topViewController];

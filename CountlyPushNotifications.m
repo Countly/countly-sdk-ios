@@ -278,7 +278,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     NSArray* buttons = countlyPayload[kCountlyPNKeyButtons];
     [buttons enumerateObjectsUsingBlock:^(NSDictionary* button, NSUInteger idx, BOOL * stop)
     {
-        //NOTE: space is added to force buttons to be laid out vertically
+        //NOTE: Add space to force buttons to be laid out vertically
         NSString* actionTitle = [button[kCountlyPNKeyActionButtonTitle] stringByAppendingString:@"                       "];
         NSString* URL = button[kCountlyPNKeyActionButtonURL];
 

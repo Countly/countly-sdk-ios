@@ -30,7 +30,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 #endif
 
 
-//NOTE: Consents for Features
+//NOTE: Available consents
 extern NSString* const CLYConsentSessions;
 extern NSString* const CLYConsentEvents;
 extern NSString* const CLYConsentUserDetails;

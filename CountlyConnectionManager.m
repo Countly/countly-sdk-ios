@@ -6,7 +6,7 @@
 
 #import "CountlyCommon.h"
 
-@interface CountlyConnectionManager()
+@interface CountlyConnectionManager ()
 {
     NSTimeInterval lastSessionStartTime;
     BOOL isCrashing;
@@ -316,7 +316,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return;
     }
 
-    //NOTE: to prevent `event` and `end_session` requests from being started, after `sendEvents` and `endSession` calls below.
+    //NOTE: Prevent `event` and `end_session` requests from being started, after `sendEvents` and `endSession` calls below.
     isCrashing = YES;
 
     [self sendEvents];
@@ -476,11 +476,11 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     COUNTLY_LOG(@"Local picture data read successfully.");
 
-    //NOTE: png file data read directly from disk somehow fails on upload, this fixes it
+    //NOTE: Overcome failing PNG file upload if data is directly read from disk
     if (fileExtIndex == 1)
         imageData = UIImagePNGRepresentation([UIImage imageWithData:imageData]);
 
-    //NOTE: for mime type jpg -> jpeg
+    //NOTE: Remap content type from jpg to jpeg
     if (fileExtIndex == 2)
         fileExtIndex = 3;
 
