@@ -140,6 +140,8 @@
     [CountlyCommon.sharedInstance startAppleWatchMatching];
 
     [CountlyCommon.sharedInstance startAttribution];
+
+    [CountlyConnectionManager.sharedInstance proceedOnQueue];
 }
 
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer
