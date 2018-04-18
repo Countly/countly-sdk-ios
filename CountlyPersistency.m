@@ -174,7 +174,7 @@ NSString* const kCountlyGeoLocationDisabledKey = @"kCountlyGeoLocationDisabledKe
 #endif
         NSError *error = nil;
 
-        if (![NSFileManager.defaultManager fileExistsAtPath:url.absoluteString])
+        if (![NSFileManager.defaultManager fileExistsAtPath:url.path])
         {
             [NSFileManager.defaultManager createDirectoryAtURL:url withIntermediateDirectories:YES attributes:nil error:&error];
             if (error){ COUNTLY_LOG(@"Application Support directory can not be created: \n%@", error); }
