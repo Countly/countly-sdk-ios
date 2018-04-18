@@ -107,19 +107,25 @@ void CountlyInternalLog(NSString *format, ...)
         return;
 
 #if (TARGET_OS_IOS || TARGET_OS_WATCH)
-    if ([WCSession isSupported])
+    if (@available(iOS 9.0, *))
     {
-        WCSession *session = WCSession.defaultSession;
-        session.delegate = (id<WCSessionDelegate>)self;
-        [session activateSession];
+        if ([WCSession isSupported])
+        {
+            WCSession *session = WCSession.defaultSession;
+            session.delegate = (id<WCSessionDelegate>)self;
+            [session activateSession];
+        }
     }
 #endif
 
 #if TARGET_OS_IOS
-    if (WCSession.defaultSession.paired && WCSession.defaultSession.watchAppInstalled)
+    if (@available(iOS 9.0, *))
     {
-        [WCSession.defaultSession transferUserInfo:@{kCountlyParentDeviceIDTransferKey: CountlyDeviceInfo.sharedInstance.deviceID}];
-        COUNTLY_LOG(@"Transferring parent device ID %@ ...", CountlyDeviceInfo.sharedInstance.deviceID);
+        if (WCSession.defaultSession.paired && WCSession.defaultSession.watchAppInstalled)
+        {
+            [WCSession.defaultSession transferUserInfo:@{kCountlyParentDeviceIDTransferKey: CountlyDeviceInfo.sharedInstance.deviceID}];
+            COUNTLY_LOG(@"Transferring parent device ID %@ ...", CountlyDeviceInfo.sharedInstance.deviceID);
+        }
     }
 #endif
 }

@@ -251,12 +251,18 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 #if TARGET_OS_IOS
 + (NSInteger)hasWatch
 {
-    return (int)WCSession.defaultSession.paired;
+    if (@available(iOS 9.0, *))
+        return (NSInteger)WCSession.defaultSession.paired;
+
+    return 0;
 }
 
 + (NSInteger)installedWatchApp
 {
-    return (int)WCSession.defaultSession.watchAppInstalled;
+    if (@available(iOS 9.0, *))
+        return (NSInteger)WCSession.defaultSession.watchAppInstalled;
+
+    return 0;
 }
 #endif
 
