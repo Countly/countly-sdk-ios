@@ -235,6 +235,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     {
         COUNTLY_LOG(@"Consent for Events is cancelled.");
 
+        [CountlyConnectionManager.sharedInstance sendEvents];
         [CountlyPersistency.sharedInstance clearAllTimedEvents];
     }
 
