@@ -8,6 +8,7 @@
 
 @interface CountlyConnectionManager ()
 {
+    NSTimeInterval unsentSessionLength;
     NSTimeInterval lastSessionStartTime;
     BOOL isCrashing;
 }
@@ -63,6 +64,16 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
     return s_sharedInstance;
+}
+
+- (instancetype)init
+{
+    if (self = [super init])
+    {
+        unsentSessionLength = 0.0;
+    }
+
+    return self;
 }
 
 - (void)proceedOnQueue
@@ -183,6 +194,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return;
 
     lastSessionStartTime = NSDate.date.timeIntervalSince1970;
+    unsentSessionLength = 0.0;
 
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%@",
                              kCountlyQSKeySessionBegin, @"1",
@@ -424,8 +436,6 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (NSInteger)sessionLengthInSeconds
 {
-    static NSTimeInterval unsentSessionLength = 0.0;
-
     NSTimeInterval currentTime = NSDate.date.timeIntervalSince1970;
     unsentSessionLength += (currentTime - lastSessionStartTime);
     lastSessionStartTime = currentTime;
