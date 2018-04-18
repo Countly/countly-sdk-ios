@@ -254,7 +254,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param options Bitwise combination of notification types (badge, sound or alert) the app wants to display
  * @param completionHandler A completion handler block to be executed when user answers notification permission dialog
  */
-- (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler;
+- (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler API_AVAILABLE(ios(10.0));
 
 /**
  * Records action event for a manually presented push notification with custom action buttons.
