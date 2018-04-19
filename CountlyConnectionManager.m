@@ -78,7 +78,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)proceedOnQueue
 {
-    if (self.connection != nil || isCrashing)
+    if (self.connection || isCrashing)
         return;
 
     if (self.customHeaderFieldName && !self.customHeaderFieldValue)
@@ -88,7 +88,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     }
 
     NSString* firstItemInQueue = [CountlyPersistency.sharedInstance firstItemInQueue];
-    if (firstItemInQueue == nil)
+    if (!firstItemInQueue)
         return;
 
     if ([firstItemInQueue isEqual:NSNull.null])
@@ -556,7 +556,8 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     for (NSString* certificate in self.pinnedCertificates )
     {
         NSString* localCertPath = [NSBundle.mainBundle pathForResource:certificate ofType:nil];
-        NSAssert(localCertPath != nil, @"[CountlyAssert] Bundled certificate can not be found");
+        if (!localCertPath)
+           [NSException raise:@"CountlyCertificateNotFoundException" format:@"Bundled certificate can not be found for %@", certificate];
         NSData* localCertData = [NSData dataWithContentsOfFile:localCertPath];
         SecCertificateRef localCert = SecCertificateCreateWithData(NULL, (__bridge CFDataRef)localCertData);
         SecTrustRef localTrust = NULL;

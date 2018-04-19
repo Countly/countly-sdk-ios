@@ -64,8 +64,11 @@
     CountlyCommon.sharedInstance.enableDebug = config.enableDebug;
     CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
 
-    NSAssert(config.appKey && ![config.appKey isEqualToString:@"YOUR_APP_KEY"], @"[CountlyAssert] App key in Countly configuration is not set!");
-    NSAssert(config.host && ![config.host isEqualToString:@"https://YOUR_COUNTLY_SERVER"], @"[CountlyAssert] Host in Countly configuration is not set!");
+    if (!config.appKey.length || [config.appKey isEqualToString:@"YOUR_APP_KEY"])
+        [NSException raise:@"CountlyAppKeyNotSetException" format:@"appKey property on CountlyConfig object is not set"];
+
+    if (!config.host.length || [config.host isEqualToString:@"https://YOUR_COUNTLY_SERVER"])
+        [NSException raise:@"CountlyHostNotSetException" format:@"host property on CountlyConfig object is not set"];
 
     COUNTLY_LOG(@"Initializing with %@ SDK v%@", kCountlySDKName, kCountlySDKVersion);
 

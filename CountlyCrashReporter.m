@@ -206,7 +206,7 @@ void CountlySignalHandler(int signalCode)
 
     static NSDateFormatter* df = nil;
 
-    if ( customCrashLogs == nil )
+    if (!customCrashLogs)
     {
         customCrashLogs = NSMutableArray.new;
         df = NSDateFormatter.new;

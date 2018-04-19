@@ -159,7 +159,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 - (void)setMessage:(NSString *)message
 {
-    if (message == nil)
+    if (!message)
         return;
 
     _message = message;
