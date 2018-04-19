@@ -109,6 +109,9 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 - (void)checkForAutoAsk
 {
+    if (!self.sessionCount)
+        return;
+
     if (!CountlyConsentManager.sharedInstance.consentForStarRating)
         return;
 
@@ -117,25 +120,22 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     if (self.disableAskingForEachAppVersion && status[kCountlyStarRatingStatusHasEverAskedAutomatically])
         return;
 
-    if (self.sessionCount != 0)
+    NSString* keyForAppVersion = [kCountlyStarRatingStatusSessionCountKey stringByAppendingString:CountlyDeviceInfo.appVersion];
+    NSInteger sessionCountSoFar = [status[keyForAppVersion] integerValue];
+    sessionCountSoFar++;
+
+    if (self.sessionCount == sessionCountSoFar)
     {
-        NSString* keyForAppVersion = [kCountlyStarRatingStatusSessionCountKey stringByAppendingString:CountlyDeviceInfo.appVersion];
-        NSInteger sessionCountSoFar = [status[keyForAppVersion] integerValue];
-        sessionCountSoFar++;
+        COUNTLY_LOG(@"Asking for star-rating as session count reached specified limit %d ...", (int)self.sessionCount);
 
-        if (self.sessionCount == sessionCountSoFar)
-        {
-            COUNTLY_LOG(@"Asking for star-rating as session count reached specified limit %d ...", (int)self.sessionCount);
+        [self showDialog:self.ratingCompletionForAutoAsk];
 
-            [self showDialog:self.ratingCompletionForAutoAsk];
-
-            status[kCountlyStarRatingStatusHasEverAskedAutomatically] = @YES;
-        }
-
-        status[keyForAppVersion] = @(sessionCountSoFar);
-
-        [CountlyPersistency.sharedInstance storeStarRatingStatus:status];
+        status[kCountlyStarRatingStatusHasEverAskedAutomatically] = @YES;
     }
+
+    status[keyForAppVersion] = @(sessionCountSoFar);
+
+    [CountlyPersistency.sharedInstance storeStarRatingStatus:status];
 }
 
 - (UIView *)starView
