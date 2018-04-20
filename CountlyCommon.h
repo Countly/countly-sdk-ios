@@ -31,7 +31,9 @@
 
 #if TARGET_OS_IOS
 #import <UIKit/UIKit.h>
+#ifndef COUNTLY_EXCLUDE_IDFA
 #import <AdSupport/ASIdentifierManager.h>
+#endif
 #import "WatchConnectivity/WatchConnectivity.h"
 #endif
 
@@ -42,7 +44,9 @@
 
 #if TARGET_OS_TV
 #import <UIKit/UIKit.h>
+#ifndef COUNTLY_EXCLUDE_IDFA
 #import <AdSupport/ASIdentifierManager.h>
+#endif
 #endif
 
 #ifndef TARGET_OS_OSX

@@ -160,10 +160,12 @@ void CountlyInternalLog(NSString *format, ...)
     NSDictionary* attribution = nil;
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
+#ifndef COUNTLY_EXCLUDE_IDFA
     if (ASIdentifierManager.sharedManager.advertisingTrackingEnabled)
     {
         attribution = @{kCountlyAttributionIDFAKey: ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString};
     }
+#endif
 #endif
 
     if (!attribution)

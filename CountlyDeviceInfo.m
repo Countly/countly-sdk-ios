@@ -111,7 +111,11 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 - (NSString *)zeroSafeIDFA
 {
 #if TARGET_OS_IOS
+#ifndef COUNTLY_EXCLUDE_IDFA
     NSString* IDFA = ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
+#else
+    NSString* IDFA = UIDevice.currentDevice.identifierForVendor.UUIDString;
+#endif
     //NOTE: Handle Limit Ad Tracking zero-IDFA problem
     if ([IDFA isEqualToString:kCountlyZeroIDFA])
         IDFA = UIDevice.currentDevice.identifierForVendor.UUIDString;
