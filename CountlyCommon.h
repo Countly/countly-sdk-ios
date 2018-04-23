@@ -49,10 +49,6 @@
 #endif
 #endif
 
-#ifndef TARGET_OS_OSX
-#define TARGET_OS_OSX (!(TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_WATCH))
-#endif
-
 #if TARGET_OS_OSX
 #import <AppKit/AppKit.h>
 #endif
