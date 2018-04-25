@@ -200,6 +200,9 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
                              kCountlyQSKeySessionBegin, @"1",
                              kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
 
+    if (!CountlyConsentManager.sharedInstance.consentForLocation || CountlyLocationManager.sharedInstance.isLocationInfoDisabled)
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocation, @""];
+
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
     [self proceedOnQueue];

@@ -11,7 +11,7 @@
 @property (nonatomic, copy) NSString* city;
 @property (nonatomic, copy) NSString* ISOCountryCode;
 @property (nonatomic, copy) NSString* IP;
-
+@property (nonatomic) BOOL isLocationInfoDisabled;
 + (instancetype)sharedInstance;
 
 - (void)sendLocationInfo;

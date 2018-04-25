@@ -54,6 +54,9 @@
     self.ISOCountryCode = ISOCountryCode;
     self.IP = IP;
 
+    if ((self.location || self.city || self.ISOCountryCode || self.IP))
+        self.isLocationInfoDisabled = NO;
+
     [CountlyConnectionManager.sharedInstance sendLocationInfo];
 }
 
@@ -61,6 +64,8 @@
 {
     if (!CountlyConsentManager.sharedInstance.consentForLocation)
         return;
+
+    self.isLocationInfoDisabled = YES;
 
     //NOTE: Set location to empty string, as Countly Server needs it for disabling geo-location
     self.location = @"";
