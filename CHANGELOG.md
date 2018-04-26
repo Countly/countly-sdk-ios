@@ -1,3 +1,37 @@
+## 18.04
+- Added consent management for GDPR compliance
+- Exposed device ID to be used for data export and/or removal requests
+- Added precautions for SDK start state to prevent re-starting and early method calls
+- Added mutability protection for core functions, configuration properties, events and user details
+- Added `COUNTLY_EXCLUDE_IDFA` pre-processor flag to exclude IDFA references
+- Added API availability checks and warnings for Apple Watch and Push Notifications
+- Renamed `reportView:` method as `recordView:` 
+- Fixed early ending of `UIBackgroundTask`
+- Fixed getting file path form local storage URL (thanks @dsmo)
+- Fixed not respecting `doNotShowAlertForNotifications` flag on iOS10+ devices
+- Fixed not starting requests queue when `manualSessionHandling` is enabled
+- Fixed `block implicitly retains self` warning in Star Rating
+- Fixed local variable shadowing warnings
+- Fixed Japanese language code for Star Rating dialog
+
+- Other various improvements
+  - Refactored all location info into Location Manager
+  - Refactored `checkForAutoAsk` in Star Rating
+  - Refactored event recording for consents compatibility
+  - Refactored Apple Watch matching
+  - Refactored auto view tracking
+  - Added top view controller finding method
+  - Replaced asserts with exceptions 
+  - Deleted unneccessary method declarations in Push Notifications 
+  - Deleted unnecessary reference for `WCSession.defaultSession.delegate`
+  - Deleted unnecessary `TARGET_OS_OSX` definition
+  - Standardized `nil` checks
+  - Renamed and reordered some query string constants
+  - Updated HeaderDocs, inline notes, pragma marks 
+  - Performed whitespace cleaning
+
+
+
 ## 18.01
 
 - Added `attribution` config

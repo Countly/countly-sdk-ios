@@ -52,6 +52,9 @@ static NSString *executableName;
 
 + (instancetype)sharedInstance
 {
+    if (!CountlyCommon.sharedInstance.hasStarted)
+        return nil;
+
     static CountlyCrashReporter *s_sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
@@ -70,6 +73,12 @@ static NSString *executableName;
 
 - (void)startCrashReporting
 {
+    if (!self.isEnabledOnInitialConfig)
+        return;
+
+    if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
+        return;
+
     NSSetUncaughtExceptionHandler(&CountlyUncaughtExceptionHandler);
     signal(SIGABRT, CountlySignalHandler);
     signal(SIGILL, CountlySignalHandler);
@@ -80,8 +89,30 @@ static NSString *executableName;
     signal(SIGTRAP, CountlySignalHandler);
 }
 
+
+- (void)stopCrashReporting
+{
+    if (!self.isEnabledOnInitialConfig)
+        return;
+
+    NSSetUncaughtExceptionHandler(NULL);
+    signal(SIGABRT, SIG_DFL);
+    signal(SIGILL, SIG_DFL);
+    signal(SIGSEGV, SIG_DFL);
+    signal(SIGFPE, SIG_DFL);
+    signal(SIGBUS, SIG_DFL);
+    signal(SIGPIPE, SIG_DFL);
+    signal(SIGTRAP, SIG_DFL);
+
+    customCrashLogs = nil;
+}
+
+
 - (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray *)stackTrace
 {
+    if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
+        return;
+
     if (stackTrace)
     {
         NSMutableDictionary* userInfo = [NSMutableDictionary dictionaryWithDictionary:exception.userInfo];
@@ -145,14 +176,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
 
     [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:YES];
 
-    NSSetUncaughtExceptionHandler(NULL);
-    signal(SIGABRT, SIG_DFL);
-    signal(SIGILL, SIG_DFL);
-    signal(SIGSEGV, SIG_DFL);
-    signal(SIGFPE, SIG_DFL);
-    signal(SIGBUS, SIG_DFL);
-    signal(SIGPIPE, SIG_DFL);
-    signal(SIGTRAP, SIG_DFL);
+    [CountlyCrashReporter.sharedInstance stopCrashReporting];
 }
 
 void CountlySignalHandler(int signalCode)
@@ -177,9 +201,12 @@ void CountlySignalHandler(int signalCode)
 
 - (void)log:(NSString *)log
 {
+    if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
+        return;
+
     static NSDateFormatter* df = nil;
 
-    if ( customCrashLogs == nil )
+    if (!customCrashLogs)
     {
         customCrashLogs = NSMutableArray.new;
         df = NSDateFormatter.new;
@@ -253,7 +280,7 @@ void CountlySignalHandler(int signalCode)
             continue;
         }
 
-        //NOTE: Server needs app's own build uuid directly in crash report object, for fast lookup
+        //NOTE: Include app's own build UUID directly in crash report object, as Countly Server needs it for fast lookup
         if (imageHeader->filetype == MH_EXECUTE)
         {
             buildUUID = imageUUID;

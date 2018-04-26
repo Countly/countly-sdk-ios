@@ -8,8 +8,8 @@
 
 @interface CountlyEvent : NSObject <NSCoding>
 
-@property (nonatomic) NSString* key;
-@property (nonatomic) NSDictionary* segmentation;
+@property (nonatomic, copy) NSString* key;
+@property (nonatomic, copy) NSDictionary* segmentation;
 @property (nonatomic) NSUInteger count;
 @property (nonatomic) double sum;
 @property (nonatomic) NSTimeInterval timestamp;

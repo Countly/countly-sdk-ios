@@ -25,7 +25,7 @@ extern NSString* const kCountlyPNKeyActionButtonURL;
 
 @interface CountlyNotificationService : NSObject
 #if TARGET_OS_IOS
-+ (void)didReceiveNotificationRequest:(UNNotificationRequest *)request withContentHandler:(void (^)(UNNotificationContent *))contentHandler;
++ (void)didReceiveNotificationRequest:(UNNotificationRequest *)request withContentHandler:(void (^)(UNNotificationContent *))contentHandler API_AVAILABLE(ios(10.0));
 #endif
 
 NS_ASSUME_NONNULL_END

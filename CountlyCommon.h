@@ -20,6 +20,8 @@
 #import "CountlyStarRating.h"
 #import "CountlyPushNotifications.h"
 #import "CountlyNotificationService.h"
+#import "CountlyConsentManager.h"
+#import "CountlyLocationManager.h"
 
 #if DEBUG
 #define COUNTLY_LOG(fmt, ...) CountlyInternalLog(fmt, ##__VA_ARGS__)
@@ -29,7 +31,9 @@
 
 #if TARGET_OS_IOS
 #import <UIKit/UIKit.h>
+#ifndef COUNTLY_EXCLUDE_IDFA
 #import <AdSupport/ASIdentifierManager.h>
+#endif
 #import "WatchConnectivity/WatchConnectivity.h"
 #endif
 
@@ -40,11 +44,9 @@
 
 #if TARGET_OS_TV
 #import <UIKit/UIKit.h>
+#ifndef COUNTLY_EXCLUDE_IDFA
 #import <AdSupport/ASIdentifierManager.h>
 #endif
-
-#ifndef TARGET_OS_OSX
-#define TARGET_OS_OSX (!(TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_WATCH))
 #endif
 
 #if TARGET_OS_OSX
@@ -58,6 +60,7 @@ extern NSString* const kCountlySDKName;
 
 @interface CountlyCommon : NSObject
 
+@property (nonatomic) BOOL hasStarted;
 @property (nonatomic) BOOL enableDebug;
 @property (nonatomic) BOOL enableAppleWatch;
 @property (nonatomic) BOOL enableAttribution;
@@ -71,13 +74,16 @@ void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
 - (NSInteger)timeZone;
 - (NSInteger)timeSinceLaunch;
 - (NSTimeInterval)uniqueTimestamp;
-#if (TARGET_OS_IOS || TARGET_OS_WATCH)
-- (void)activateWatchConnectivity;
+
+- (void)startBackgroundTask;
+- (void)finishBackgroundTask;
+
+#if (TARGET_OS_IOS || TARGET_OS_TV)
+- (UIViewController *)topViewController;
 #endif
 
-#if TARGET_OS_IOS
-- (void)transferParentDeviceID;
-#endif
+- (void)startAppleWatchMatching;
+- (void)startAttribution;
 @end
 
 
@@ -110,6 +116,11 @@ void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
 - (NSString *)cly_stringUTF8;
 @end
 
-@interface Countly (RecordEventWithTimeStamp)
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration timestamp:(NSTimeInterval)timestamp;
+@interface Countly (RecordReservedEvent)
+- (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation;
+- (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration timestamp:(NSTimeInterval)timestamp;
+@end
+
+@interface CountlyUserDetails (ClearUserDetails)
+- (void)clearUserDetails;
 @end

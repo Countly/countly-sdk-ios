@@ -6,14 +6,12 @@
 
 #import "CountlyCommon.h"
 
-@interface CountlyConnectionManager()
+@interface CountlyConnectionManager ()
 {
+    NSTimeInterval unsentSessionLength;
     NSTimeInterval lastSessionStartTime;
     BOOL isCrashing;
 }
-#if TARGET_OS_IOS
-@property (nonatomic) UIBackgroundTaskIdentifier bgTask;
-#endif
 @end
 
 NSString* const kCountlyQSKeyAppKey           = @"app_key";
@@ -27,6 +25,9 @@ NSString* const kCountlyQSKeyTimeZone         = @"tz";
 NSString* const kCountlyQSKeyTimeHourOfDay    = @"hour";
 NSString* const kCountlyQSKeyTimeDayOfWeek    = @"dow";
 
+NSString* const kCountlyQSKeySDKVersion       = @"sdk_version";
+NSString* const kCountlyQSKeySDKName          = @"sdk_name";
+
 NSString* const kCountlyQSKeySessionBegin     = @"begin_session";
 NSString* const kCountlyQSKeySessionDuration  = @"session_duration";
 NSString* const kCountlyQSKeySessionEnd       = @"end_session";
@@ -34,13 +35,11 @@ NSString* const kCountlyQSKeySessionEnd       = @"end_session";
 NSString* const kCountlyQSKeyPushTokenSession = @"token_session";
 NSString* const kCountlyQSKeyPushTokeniOS     = @"ios_token";
 NSString* const kCountlyQSKeyPushTestMode     = @"test_mode";
-NSString* const kCountlyQSKeyPushLocation     = @"location";
-NSString* const kCountlyQSKeyPushCity         = @"city";
-NSString* const kCountlyQSKeyPushCountryCode  = @"country_code";
-NSString* const kCountlyQSKeyPushIPAddress    = @"ip_address";
 
-NSString* const kCountlyQSKeySDKVersion       = @"sdk_version";
-NSString* const kCountlyQSKeySDKName          = @"sdk_name";
+NSString* const kCountlyQSKeyLocation         = @"location";
+NSString* const kCountlyQSKeyLocationCity     = @"city";
+NSString* const kCountlyQSKeyLocationCountry  = @"country_code";
+NSString* const kCountlyQSKeyLocationIP       = @"ip_address";
 
 NSString* const kCountlyQSKeyMetrics          = @"metrics";
 NSString* const kCountlyQSKeyEvents           = @"events";
@@ -48,7 +47,7 @@ NSString* const kCountlyQSKeyUserDetails      = @"user_details";
 NSString* const kCountlyQSKeyCrash            = @"crash";
 NSString* const kCountlyQSKeyChecksum256      = @"checksum256";
 NSString* const kCountlyQSKeyAttributionID    = @"aid";
-NSString* const kCountlyQSKeyIDFA             = @"idfa";
+NSString* const kCountlyQSKeyConsent          = @"consent";
 
 NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 NSString* const kCountlyInputEndpoint = @"/i";
@@ -58,15 +57,28 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 + (instancetype)sharedInstance
 {
+    if (!CountlyCommon.sharedInstance.hasStarted)
+        return nil;
+
     static CountlyConnectionManager *s_sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
     return s_sharedInstance;
 }
 
+- (instancetype)init
+{
+    if (self = [super init])
+    {
+        unsentSessionLength = 0.0;
+    }
+
+    return self;
+}
+
 - (void)proceedOnQueue
 {
-    if (self.connection != nil || isCrashing)
+    if (self.connection || isCrashing)
         return;
 
     if (self.customHeaderFieldName && !self.customHeaderFieldValue)
@@ -76,7 +88,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     }
 
     NSString* firstItemInQueue = [CountlyPersistency.sharedInstance firstItemInQueue];
-    if (firstItemInQueue == nil)
+    if (!firstItemInQueue)
         return;
 
     if ([firstItemInQueue isEqual:NSNull.null])
@@ -88,7 +100,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return;
     }
 
-    [self startBackgroundTask];
+    [CountlyCommon.sharedInstance startBackgroundTask];
 
     NSString* queryString = firstItemInQueue;
 
@@ -167,8 +179,6 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
             [CountlyPersistency.sharedInstance saveToFile];
 #endif
         }
-
-        [self finishBackgroundTask];
     }];
 
     [self.connection resume];
@@ -180,15 +190,18 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)beginSession
 {
+    if (!CountlyConsentManager.sharedInstance.consentForSessions)
+        return;
+
     lastSessionStartTime = NSDate.date.timeIntervalSince1970;
+    unsentSessionLength = 0.0;
 
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%@",
                              kCountlyQSKeySessionBegin, @"1",
                              kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
 
-    queryString = [queryString stringByAppendingString:[self pushGeoLocationInfo]];
-
-    queryString = [queryString stringByAppendingString:[self attributionInfo]];
+    if (!CountlyConsentManager.sharedInstance.consentForLocation || CountlyLocationManager.sharedInstance.isLocationInfoDisabled)
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocation, @""];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -197,6 +210,9 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)updateSession
 {
+    if (!CountlyConsentManager.sharedInstance.consentForSessions)
+        return;
+
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%d",
                              kCountlyQSKeySessionDuration, (int)[self sessionLengthInSeconds]];
 
@@ -207,6 +223,9 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)endSession
 {
+    if (!CountlyConsentManager.sharedInstance.consentForSessions)
+        return;
+
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%d",
                              kCountlyQSKeySessionEnd, @"1",
                              kCountlyQSKeySessionDuration, (int)[self sessionLengthInSeconds]];
@@ -261,6 +280,35 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     [self proceedOnQueue];
 }
 
+- (void)sendLocationInfo
+{
+    NSString* location = CountlyLocationManager.sharedInstance.location.cly_URLEscaped;
+    NSString* city = CountlyLocationManager.sharedInstance.city.cly_URLEscaped;
+    NSString* ISOCountryCode = CountlyLocationManager.sharedInstance.ISOCountryCode.cly_URLEscaped;
+    NSString* IP = CountlyLocationManager.sharedInstance.IP.cly_URLEscaped;
+
+    if (!(location || city || ISOCountryCode || IP))
+        return;
+
+    NSString* queryString = [self queryEssentials];
+
+    if (location)
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocation, location];
+
+   if (city)
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationCity, city];
+
+    if (ISOCountryCode)
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationCountry, ISOCountryCode];
+
+    if (IP)
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationCountry, IP];
+
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
+
+    [self proceedOnQueue];
+}
+
 - (void)sendUserDetails:(NSString *)userDetails
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
@@ -283,7 +331,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return;
     }
 
-    //NOTE: to prevent `event` and `end_session` requests from being started, after `sendEvents` and `endSession` calls below.
+    //NOTE: Prevent `event` and `end_session` requests from being started, after `sendEvents` and `endSession` calls below.
     isCrashing = YES;
 
     [self sendEvents];
@@ -354,66 +402,24 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     [self proceedOnQueue];
 }
 
-- (void)sendLocation
+- (void)sendAttribution:(NSString *)attribution
 {
-    NSString* location = CountlyPushNotifications.sharedInstance.location.cly_URLEscaped;
-    if (!CountlyPushNotifications.sharedInstance.isGeoLocationEnabled)
-        location = @"";
-
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
-                             kCountlyQSKeyPushLocation, location];
+                             kCountlyQSKeyAttributionID, attribution];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
     [self proceedOnQueue];
 }
 
-- (void)sendCityAndCountryCode
+- (void)sendConsentChanges:(NSString *)consentChanges
 {
-    NSString* city = CountlyPushNotifications.sharedInstance.city;
-    NSString* ISOCountryCode = CountlyPushNotifications.sharedInstance.ISOCountryCode;
-
-    if (!(city || ISOCountryCode))
-        return;
-
-    NSString* queryString = [self queryEssentials];
-
-   if (city)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyPushCity, city.cly_URLEscaped];
-
-    if (ISOCountryCode)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyPushCountryCode, ISOCountryCode.cly_URLEscaped];
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
+                             kCountlyQSKeyConsent, consentChanges];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
     [self proceedOnQueue];
-}
-
-#pragma mark ---
-
-- (void)startBackgroundTask
-{
-#if TARGET_OS_IOS
-    if (self.bgTask != UIBackgroundTaskInvalid)
-        return;
-
-    self.bgTask = [UIApplication.sharedApplication beginBackgroundTaskWithExpirationHandler:^
-    {
-        [UIApplication.sharedApplication endBackgroundTask:self.bgTask];
-        self.bgTask = UIBackgroundTaskInvalid;
-    }];
-#endif
-}
-
-- (void)finishBackgroundTask
-{
-#if TARGET_OS_IOS
-    if (self.bgTask != UIBackgroundTaskInvalid && !self.connection)
-    {
-        [UIApplication.sharedApplication endBackgroundTask:self.bgTask];
-        self.bgTask = UIBackgroundTaskInvalid;
-    }
-#endif
 }
 
 #pragma mark ---
@@ -431,47 +437,8 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
                                         kCountlyQSKeySDKName, kCountlySDKName];
 }
 
-- (NSString *)pushGeoLocationInfo
-{
-    NSMutableString* temp = NSMutableString.new;
-
-    if (!CountlyPushNotifications.sharedInstance.isGeoLocationEnabled)
-    {
-        [temp appendFormat:@"&%@=%@", kCountlyQSKeyPushLocation, @""];
-        return temp;
-    }
-
-    if (CountlyPushNotifications.sharedInstance.location)
-        [temp appendFormat:@"&%@=%@", kCountlyQSKeyPushLocation, CountlyPushNotifications.sharedInstance.location.cly_URLEscaped];
-    if (CountlyPushNotifications.sharedInstance.city)
-        [temp appendFormat:@"&%@=%@", kCountlyQSKeyPushCity, CountlyPushNotifications.sharedInstance.city.cly_URLEscaped];
-    if (CountlyPushNotifications.sharedInstance.ISOCountryCode)
-        [temp appendFormat:@"&%@=%@", kCountlyQSKeyPushCountryCode, CountlyPushNotifications.sharedInstance.ISOCountryCode.cly_URLEscaped];
-    if (CountlyPushNotifications.sharedInstance.IP)
-        [temp appendFormat:@"&%@=%@", kCountlyQSKeyPushIPAddress, CountlyPushNotifications.sharedInstance.IP.cly_URLEscaped];
-
-    return temp;
-}
-
-- (NSString *)attributionInfo
-{
-    NSMutableString* temp = NSMutableString.new;
-
-#if (TARGET_OS_IOS || TARGET_OS_TV)
-    if (CountlyCommon.sharedInstance.enableAttribution && ASIdentifierManager.sharedManager.advertisingTrackingEnabled)
-    {
-        NSDictionary* attribution = @{kCountlyQSKeyIDFA: ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString};
-        [temp appendFormat:@"&%@=%@", kCountlyQSKeyAttributionID, [attribution cly_JSONify]];
-    }
-#endif
-
-    return temp;
-}
-
 - (NSInteger)sessionLengthInSeconds
 {
-    static NSTimeInterval unsentSessionLength = 0.0;
-
     NSTimeInterval currentTime = NSDate.date.timeIntervalSince1970;
     unsentSessionLength += (currentTime - lastSessionStartTime);
     lastSessionStartTime = currentTime;
@@ -522,11 +489,11 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     COUNTLY_LOG(@"Local picture data read successfully.");
 
-    //NOTE: png file data read directly from disk somehow fails on upload, this fixes it
+    //NOTE: Overcome failing PNG file upload if data is directly read from disk
     if (fileExtIndex == 1)
         imageData = UIImagePNGRepresentation([UIImage imageWithData:imageData]);
 
-    //NOTE: for mime type jpg -> jpeg
+    //NOTE: Remap content type from jpg to jpeg
     if (fileExtIndex == 2)
         fileExtIndex = 3;
 
@@ -592,7 +559,8 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     for (NSString* certificate in self.pinnedCertificates )
     {
         NSString* localCertPath = [NSBundle.mainBundle pathForResource:certificate ofType:nil];
-        NSAssert(localCertPath != nil, @"[CountlyAssert] Bundled certificate can not be found");
+        if (!localCertPath)
+           [NSException raise:@"CountlyCertificateNotFoundException" format:@"Bundled certificate can not be found for %@", certificate];
         NSData* localCertData = [NSData dataWithContentsOfFile:localCertPath];
         SecCertificateRef localCert = SecCertificateCreateWithData(NULL, (__bridge CFDataRef)localCertData);
         SecTrustRef localTrust = NULL;

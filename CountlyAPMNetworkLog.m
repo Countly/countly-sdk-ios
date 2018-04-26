@@ -52,8 +52,9 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
     self.HTTPStatusCode =((NSHTTPURLResponse*)response).statusCode;
     self.receivedDataSize = [response expectedContentLength];
 
+    //NOTE: Handle if expectedContentLength is not available
     if (self.receivedDataSize == NSURLResponseUnknownLength)
-        self.receivedDataSize = 0; //NOTE: sometimes expectedContentLength is not available
+        self.receivedDataSize = 0;
 }
 
 - (void)finishWithStatusCode:(NSInteger)statusCode andDataSize:(long long)dataSize
@@ -79,7 +80,7 @@ NSString* const kCountlyReservedEventAPM = @"[CLY]_apm";
         @"u": @NO
     };
 
-    [Countly.sharedInstance recordEvent:kCountlyReservedEventAPM segmentation:segmentation count:1 sum:self.sentDataSize + self.receivedDataSize duration:self.endTime - self.startTime timestamp:self.startTime];
+    [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventAPM segmentation:segmentation count:1 sum:self.sentDataSize + self.receivedDataSize duration:self.endTime - self.startTime timestamp:self.startTime];
 
     COUNTLY_LOG(@"APM log recorded:\n%@", self);
 }

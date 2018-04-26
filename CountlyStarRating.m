@@ -9,6 +9,7 @@
 @interface CountlyStarRating ()
 #if TARGET_OS_IOS
 @property (nonatomic) UIWindow* alertWindow;
+@property (nonatomic) UIAlertController* alertController;
 @property (nonatomic, copy) void (^ratingCompletion)(NSInteger);
 #endif
 @end
@@ -25,13 +26,15 @@ NSString* const kCountlySRKeyRating      = @"rating";
 #if TARGET_OS_IOS
 {
     UIButton* btn_star[5];
-    UIAlertController* alertController;
 }
 
 const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 + (instancetype)sharedInstance
 {
+    if (!CountlyCommon.sharedInstance.hasStarted)
+        return nil;
+
     static CountlyStarRating* s_sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
@@ -48,7 +51,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         @{
             @"en": @"How would you rate the app?",
             @"tr": @"Uygulamayı nasıl değerlendirirsiniz?",
-            @"jp": @"あなたの評価を教えてください。",
+            @"ja": @"あなたの評価を教えてください。",
             @"zh": @"请告诉我你的评价。",
             @"ru": @"Как бы вы оценили приложение?",
             @"cz": @"Jak hodnotíte aplikaci?",
@@ -67,19 +70,22 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 - (void)showDialog:(void(^)(NSInteger rating))completion
 {
+    if (!CountlyConsentManager.sharedInstance.consentForStarRating)
+        return;
+
     self.ratingCompletion = completion;
 
-    alertController = [UIAlertController alertControllerWithTitle:@" " message:self.message preferredStyle:UIAlertControllerStyleAlert];
+    self.alertController = [UIAlertController alertControllerWithTitle:@" " message:self.message preferredStyle:UIAlertControllerStyleAlert];
 
     CLYButton* dismissButton = [CLYButton dismissAlertButton];
     dismissButton.onClick = ^(id sender)
     {
-        [alertController dismissViewControllerAnimated:YES completion:^
+        [self.alertController dismissViewControllerAnimated:YES completion:^
         {
             [self finishWithRating:0];
         }];
     };
-    [alertController.view addSubview:dismissButton];
+    [self.alertController.view addSubview:dismissButton];
 
     CLYInternalViewController* cvc = CLYInternalViewController.new;
     [cvc setPreferredContentSize:(CGSize){kCountlyStarRatingButtonSize * 5, kCountlyStarRatingButtonSize * 1.5}];
@@ -87,9 +93,9 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
     @try
     {
-        [alertController setValue:cvc forKey:@"contentViewController"];
+        [self.alertController setValue:cvc forKey:@"contentViewController"];
     }
-    @catch(NSException* exception)
+    @catch (NSException* exception)
     {
         COUNTLY_LOG(@"UIAlertController's contentViewController can not be set: \n%@", exception);
     }
@@ -98,35 +104,38 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     self.alertWindow.rootViewController = CLYInternalViewController.new;
     self.alertWindow.windowLevel = UIWindowLevelAlert;
     [self.alertWindow makeKeyAndVisible];
-    [self.alertWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
+    [self.alertWindow.rootViewController presentViewController:self.alertController animated:YES completion:nil];
 }
 
 - (void)checkForAutoAsk
 {
+    if (!self.sessionCount)
+        return;
+
+    if (!CountlyConsentManager.sharedInstance.consentForStarRating)
+        return;
+
     NSMutableDictionary* status = [CountlyPersistency.sharedInstance retrieveStarRatingStatus].mutableCopy;
 
     if (self.disableAskingForEachAppVersion && status[kCountlyStarRatingStatusHasEverAskedAutomatically])
         return;
 
-    if (self.sessionCount != 0)
+    NSString* keyForAppVersion = [kCountlyStarRatingStatusSessionCountKey stringByAppendingString:CountlyDeviceInfo.appVersion];
+    NSInteger sessionCountSoFar = [status[keyForAppVersion] integerValue];
+    sessionCountSoFar++;
+
+    if (self.sessionCount == sessionCountSoFar)
     {
-        NSString* keyForAppVersion = [kCountlyStarRatingStatusSessionCountKey stringByAppendingString:CountlyDeviceInfo.appVersion];
-        NSInteger sessionCountSoFar = [status[keyForAppVersion] integerValue];
-        sessionCountSoFar++;
+        COUNTLY_LOG(@"Asking for star-rating as session count reached specified limit %d ...", (int)self.sessionCount);
 
-        if (self.sessionCount == sessionCountSoFar)
-        {
-            COUNTLY_LOG(@"Asking for star-rating as session count reached specified limit %d ...", (int)self.sessionCount);
+        [self showDialog:self.ratingCompletionForAutoAsk];
 
-            [self showDialog:self.ratingCompletionForAutoAsk];
-
-            status[kCountlyStarRatingStatusHasEverAskedAutomatically] = @YES;
-        }
-
-        status[keyForAppVersion] = @(sessionCountSoFar);
-
-        [CountlyPersistency.sharedInstance storeStarRatingStatus:status];
+        status[kCountlyStarRatingStatusHasEverAskedAutomatically] = @YES;
     }
+
+    status[keyForAppVersion] = @(sessionCountSoFar);
+
+    [CountlyPersistency.sharedInstance storeStarRatingStatus:status];
 }
 
 - (UIView *)starView
@@ -150,7 +159,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 - (void)setMessage:(NSString *)message
 {
-    if (message == nil)
+    if (!message)
         return;
 
     _message = message;
@@ -174,7 +183,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
     {
-        [alertController dismissViewControllerAnimated:YES completion:^{ [self finishWithRating:rating]; }];
+        [self.alertController dismissViewControllerAnimated:YES completion:^{ [self finishWithRating:rating]; }];
     });
 }
 
@@ -192,12 +201,12 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
             kCountlySRKeyRating: @(rating)
         };
 
-        [Countly.sharedInstance recordEvent:kCountlyReservedEventStarRating segmentation:segmentation count:1];
+        [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventStarRating segmentation:segmentation];
     }
 
     self.alertWindow.hidden = YES;
     self.alertWindow = nil;
-
+    self.alertController = nil;
     self.ratingCompletion = nil;
 }
 

@@ -99,12 +99,12 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 - (void)set:(NSString *)key value:(NSString *)value
 {
-    self.modifications[key] = value;
+    self.modifications[key] = value.copy;
 }
 
 - (void)setOnce:(NSString *)key value:(NSString *)value
 {
-    self.modifications[key] = @{kCountlyUDKeyModifierSetOnce: value};
+    self.modifications[key] = @{kCountlyUDKeyModifierSetOnce: value.copy};
 }
 
 - (void)unSet:(NSString *)key
@@ -139,37 +139,43 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 - (void)push:(NSString *)key value:(NSString *)value
 {
-    self.modifications[key] = @{kCountlyUDKeyModifierPush: value};
+    self.modifications[key] = @{kCountlyUDKeyModifierPush: value.copy};
 }
 
 - (void)push:(NSString *)key values:(NSArray *)value
 {
-    self.modifications[key] = @{kCountlyUDKeyModifierPush: value};
+    self.modifications[key] = @{kCountlyUDKeyModifierPush: value.copy};
 }
 
 - (void)pushUnique:(NSString *)key value:(NSString *)value
 {
-    self.modifications[key] = @{kCountlyUDKeyModifierAddToSet: value};
+    self.modifications[key] = @{kCountlyUDKeyModifierAddToSet: value.copy};
 }
 
 - (void)pushUnique:(NSString *)key values:(NSArray *)value
 {
-    self.modifications[key] = @{kCountlyUDKeyModifierAddToSet: value};
+    self.modifications[key] = @{kCountlyUDKeyModifierAddToSet: value.copy};
 }
 
 - (void)pull:(NSString *)key value:(NSString *)value
 {
-    self.modifications[key] = @{kCountlyUDKeyModifierPull: value};
+    self.modifications[key] = @{kCountlyUDKeyModifierPull: value.copy};
 }
 
 - (void)pull:(NSString *)key values:(NSArray *)value
 {
-    self.modifications[key] = @{kCountlyUDKeyModifierPull: value};
+    self.modifications[key] = @{kCountlyUDKeyModifierPull: value.copy};
 }
 
 - (void)save
 {
-    NSString* userDetails = [CountlyUserDetails.sharedInstance serializedUserDetails];
+    if (!CountlyCommon.sharedInstance.hasStarted)
+        return;
+
+    if (!CountlyConsentManager.sharedInstance.consentForUserDetails)
+        return;
+
+    NSString* userDetails = [self serializedUserDetails];
     if (userDetails)
         [CountlyConnectionManager.sharedInstance sendUserDetails:userDetails];
 

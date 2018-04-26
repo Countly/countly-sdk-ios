@@ -52,7 +52,7 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     {
         self.deviceID = [CountlyPersistency.sharedInstance retrieveStoredDeviceID];
 #if TARGET_OS_IOS
-        //NOTE: For Limit Ad Tracking zero-IDFA problem
+        //NOTE: Handle Limit Ad Tracking zero-IDFA problem
         if ([self.deviceID isEqualToString:kCountlyZeroIDFA])
             [self initializeDeviceID:CLYIDFV];
 
@@ -111,8 +111,12 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 - (NSString *)zeroSafeIDFA
 {
 #if TARGET_OS_IOS
+#ifndef COUNTLY_EXCLUDE_IDFA
     NSString* IDFA = ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
-    //NOTE: For Limit Ad Tracking zero-IDFA problem
+#else
+    NSString* IDFA = UIDevice.currentDevice.identifierForVendor.UUIDString;
+#endif
+    //NOTE: Handle Limit Ad Tracking zero-IDFA problem
     if ([IDFA isEqualToString:kCountlyZeroIDFA])
         IDFA = UIDevice.currentDevice.identifierForVendor.UUIDString;
 
@@ -251,12 +255,18 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 #if TARGET_OS_IOS
 + (NSInteger)hasWatch
 {
-    return (int)WCSession.defaultSession.paired;
+    if (@available(iOS 9.0, *))
+        return (NSInteger)WCSession.defaultSession.paired;
+
+    return 0;
 }
 
 + (NSInteger)installedWatchApp
 {
-    return (int)WCSession.defaultSession.watchAppInstalled;
+    if (@available(iOS 9.0, *))
+        return (NSInteger)WCSession.defaultSession.watchAppInstalled;
+
+    return 0;
 }
 #endif
 
@@ -279,8 +289,11 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 #if TARGET_OS_IOS
     if (CountlyCommon.sharedInstance.enableAppleWatch)
     {
-        metricsDictionary[kCountlyMetricKeyHasWatch] = @(CountlyDeviceInfo.hasWatch);
-        metricsDictionary[kCountlyMetricKeyInstalledWatchApp] = @(CountlyDeviceInfo.installedWatchApp);
+        if (CountlyConsentManager.sharedInstance.consentForAppleWatch)
+        {
+            metricsDictionary[kCountlyMetricKeyHasWatch] = @(CountlyDeviceInfo.hasWatch);
+            metricsDictionary[kCountlyMetricKeyInstalledWatchApp] = @(CountlyDeviceInfo.installedWatchApp);
+        }
     }
 #endif
 

@@ -29,19 +29,33 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use CLYIDFV instead
 extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device ID instead!");
 #endif
 
+
+//NOTE: Available consents
+extern NSString* const CLYConsentSessions;
+extern NSString* const CLYConsentEvents;
+extern NSString* const CLYConsentUserDetails;
+extern NSString* const CLYConsentCrashReporting;
+extern NSString* const CLYConsentPushNotifications;
+extern NSString* const CLYConsentLocation;
+extern NSString* const CLYConsentViewTracking;
+extern NSString* const CLYConsentAttribution;
+extern NSString* const CLYConsentStarRating;
+extern NSString* const CLYConsentAppleWatch;
+
+
 @interface CountlyConfig : NSObject
 
 /**
  * County Server's URL without the slash at the end.
  * @discussion e.g. @c https://example.com
  */
-@property (nonatomic) NSString* host;
+@property (nonatomic, copy) NSString* host;
 
 /**
  * Application's App Key found on Countly Server's "Management > Applications" section.
  * @discussion Using API Key or App ID will not work.
  */
-@property (nonatomic) NSString* appKey;
+@property (nonatomic, copy) NSString* appKey;
 
 #pragma mark -
 
@@ -61,7 +75,15 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  * @discussion @c CLYAutoViewTracking for auto view tracking and
  * @discussion @c CLYAPM for application performance management.
  */
-@property (nonatomic) NSArray* features;
+@property (nonatomic, copy) NSArray* features;
+
+#pragma mark -
+
+/**
+ * For limiting features based on user consent.
+ * @discussion If set, SDK will wait for explicit consent to be given for features to work.
+ */
+@property (nonatomic) BOOL requiresConsent;
 
 #pragma mark -
 
@@ -83,6 +105,8 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  */
 @property (nonatomic) BOOL doNotShowAlertForNotifications;
 
+#pragma mark -
+
 /**
  * Location latitude and longitude can be specified as @c CLLocationCoordinate2D struct to be used for geo-location based push notifications and advanced segmentation.
  * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location. If the app uses Core Location services and granted permission, a location with better accuracy can be provided using this property.
@@ -95,21 +119,21 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location. If the app has information about user's city, it can be provided using this property.
  * @discussion It will be sent with @c begin_session requests only.
  */
-@property (nonatomic) NSString* city;
+@property (nonatomic, copy) NSString* city;
 
 /**
  * ISO country code can be specified in ISO 3166-1 alpha-2 format to be used for geo-location based push notifications and advanced segmentation.
  * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location. If the app has information about user's country, it can be provided using this property.
  * @discussion It will be sent with @c begin_session requests only.
  */
-@property (nonatomic) NSString* ISOCountryCode;
+@property (nonatomic, copy) NSString* ISOCountryCode;
 
 /**
  * IP address can be specified as string to be used for geo-location based push notifications and advanced segmentation.
  * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location, and deduces the IP address from the connection. If the app needs to explicitly specify the IP address due to network requirements, it can be provided using this property.
  * @discussion It will be sent with @c begin_session requests only.
  */
-@property (nonatomic) NSString* IP;
+@property (nonatomic, copy) NSString* IP;
 
 #pragma mark -
 
@@ -121,7 +145,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  * @discussion @c CLYOpenUDID (OpenUDID)
  * @discussion Once set, device ID will be stored persistently (even after app delete and re-install) and will not change even if another device ID is set on start, unless @c forceDeviceIDInitialization flag is set.
  */
-@property (nonatomic) NSString* deviceID;
+@property (nonatomic, copy) NSString* deviceID;
 
 /**
  * For forcing device ID initialization on start.
@@ -188,7 +212,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
 /**
  * For using custom crash segmentation with @c CLYCrashReporting feature.
  */
-@property (nonatomic) NSDictionary* crashSegmentation;
+@property (nonatomic, copy) NSDictionary* crashSegmentation;
 
 #pragma mark -
 
@@ -197,7 +221,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  * @discussion Certificates have to be DER encoded with one of the following extensions: @c .der @c .cer or @c .crt
  * @discussion e.g. @c myserver.com.cer
  */
-@property (nonatomic) NSArray* pinnedCertificates;
+@property (nonatomic, copy) NSArray* pinnedCertificates;
 
 /**
  * Name of the custom HTTP header field to be sent with every request.
@@ -205,19 +229,19 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  * @discussion If set, every request sent to Countly Server will have this custom HTTP header and its value will be @c customHeaderFieldValue property.
  * @discussion If @c customHeaderFieldValue is not set when Countly is started, requests will not start until it is set using @c setCustomHeaderFieldValue: method later.
  */
-@property (nonatomic) NSString* customHeaderFieldName;
+@property (nonatomic, copy) NSString* customHeaderFieldName;
 
 /**
  * Value of the custom HTTP header field to be sent with every request if @c customHeaderFieldName is set.
  * @discussion If not set while @c customHeaderFieldName is set, requests will not start until it is set using @c setCustomHeaderFieldValue: method later.
  */
-@property (nonatomic) NSString* customHeaderFieldValue;
+@property (nonatomic, copy) NSString* customHeaderFieldValue;
 
 /**
  * Salt value to be used for parameter tampering protection.
  * @discussion If set, every request sent to Countly Server will have @c checksum256 value generated by SHA256(request + secretSalt)
  */
-@property (nonatomic) NSString* secretSalt;
+@property (nonatomic, copy) NSString* secretSalt;
 
 #pragma mark -
 
@@ -225,7 +249,7 @@ extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device I
  * For customizing star-rating dialog message.
  * @discussion If not set, it will be displayed in English: "How would you rate the app?" or corresponding supported (@c en, @c tr, @c jp, @c zh, @c ru, @c lv, @c cz, @c bn) localized version.
  */
-@property (nonatomic) NSString* starRatingMessage;
+@property (nonatomic, copy) NSString* starRatingMessage;
 
 /**
  * For displaying star-rating dialog depending on session count, once for each new version of the app.
