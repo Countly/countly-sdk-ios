@@ -491,11 +491,17 @@
 - (void)askForNotificationPermission
 {
     NSUInteger options = 0;
-    if (@available(iOS 10.0, *))
+    if (@available(iOS 10.0, *)) 
+    {
         options = UNAuthorizationOptionBadge | UNAuthorizationOptionSound | UNAuthorizationOptionAlert;
-    else
+    } 
+    else 
+    {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
         options = UIUserNotificationTypeBadge | UIUserNotificationTypeSound | UIUserNotificationTypeAlert;
-
+#pragma clang diagnostic pop
+    }
     [CountlyPushNotifications.sharedInstance askForNotificationPermissionWithOptions:options completionHandler:nil];
 }
 
