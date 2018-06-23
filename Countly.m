@@ -471,7 +471,7 @@
 
     if (!event)
     {
-        COUNTLY_LOG(@"Event with key '%@' not started before!", key);
+        COUNTLY_LOG(@"Event with key '%@' not started yet or cancelled/ended before!", key);
         return;
     }
 
@@ -483,6 +483,21 @@
     [CountlyPersistency.sharedInstance recordEvent:event];
 }
 
+- (void)cancelEvent:(NSString *)key
+{
+    if (!CountlyConsentManager.sharedInstance.consentForEvents)
+        return;
+
+    CountlyEvent *event = [CountlyPersistency.sharedInstance timedEventForKey:key];
+
+    if (!event)
+    {
+        COUNTLY_LOG(@"Event with key '%@' not started yet or cancelled/ended before!", key);
+        return;
+    }
+
+    COUNTLY_LOG(@"Event with key '%@' cancelled!", key);
+}
 
 
 #pragma mark - Push Notifications
