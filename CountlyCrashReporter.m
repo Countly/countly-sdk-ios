@@ -108,7 +108,7 @@ static NSString *executableName;
 }
 
 
-- (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray *)stackTrace
+- (void)recordException:(NSException *)exception withStackTrace:(NSArray *)stackTrace isFatal:(BOOL)isFatal
 {
     if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
         return;
@@ -120,15 +120,15 @@ static NSString *executableName;
         exception = [NSException exceptionWithName:exception.name reason:exception.reason userInfo:userInfo];
     }
 
-    CountlyExceptionHandler(exception, true);
+    CountlyExceptionHandler(exception, isFatal, false);
 }
 
 void CountlyUncaughtExceptionHandler(NSException *exception)
 {
-    CountlyExceptionHandler(exception, false);
+    CountlyExceptionHandler(exception, true, true);
 }
 
-void CountlyExceptionHandler(NSException *exception, bool nonfatal)
+void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDetect)
 {
     NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
 
@@ -147,7 +147,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     crashReport[kCountlyCRKeyExecutableName] = executableName ?: @"";
     crashReport[kCountlyCRKeyName] = exception.description;
     crashReport[kCountlyCRKeyType] = exception.name;
-    crashReport[kCountlyCRKeyNonfatal] = @(nonfatal);
+    crashReport[kCountlyCRKeyNonfatal] = @(!isFatal);
     crashReport[kCountlyCRKeyRAMCurrent] = @((CountlyDeviceInfo.totalRAM-CountlyDeviceInfo.freeRAM) / 1048576);
     crashReport[kCountlyCRKeyRAMTotal] = @(CountlyDeviceInfo.totalRAM / 1048576);
     crashReport[kCountlyCRKeyDiskCurrent] = @((CountlyDeviceInfo.totalDisk-CountlyDeviceInfo.freeDisk) / 1048576);
@@ -168,7 +168,7 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
 
     crashReport[kCountlyCRKeyError] = [stackTrace componentsJoinedByString:@"\n"];
 
-    if (nonfatal)
+    if (!isAutoDetect)
     {
         [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:NO];
         return;

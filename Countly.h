@@ -336,6 +336,14 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace;
 
 /**
+ * Records an unhandled exception and given stack trace manually.
+ * @discussion For recording non-native level fatal exceptions, where the app keeps running at native level and can recover.
+ * @param exception Exception to be reported
+ * @param stackTrace Stack trace to be reported
+ */
+- (void)recordUnhandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace;
+
+/**
  * Records custom logs to be delivered with crash report.
  * @discussion Logs recorded by this method are stored in a non-persistent structure, and delivered to Countly Server only in case of a crash.
  * @param log Custom log string to be recorded

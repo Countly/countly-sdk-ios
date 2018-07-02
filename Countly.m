@@ -556,12 +556,17 @@
 #if TARGET_OS_IOS
 - (void)recordHandledException:(NSException *)exception
 {
-    [CountlyCrashReporter.sharedInstance recordHandledException:exception withStackTrace:nil];
+    [CountlyCrashReporter.sharedInstance recordException:exception withStackTrace:nil isFatal:NO];
 }
 
 - (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray *)stackTrace
 {
-    [CountlyCrashReporter.sharedInstance recordHandledException:exception withStackTrace:stackTrace];
+    [CountlyCrashReporter.sharedInstance recordException:exception withStackTrace:stackTrace isFatal:NO];
+}
+
+- (void)recordUnhandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace
+{
+    [CountlyCrashReporter.sharedInstance recordException:exception withStackTrace:stackTrace isFatal:YES];
 }
 
 - (void)recordCrashLog:(NSString *)log
