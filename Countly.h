@@ -227,13 +227,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)endEvent:(NSString *)key;
 
 /**
- * Cancels a previously started timed event with given key.
- * @discussion Trying to cancel an event with already cancelled (or ended or not yet started) key will have no effect.
- * @param key Event key
- */
-- (void)cancelEvent:(NSString *)key;
-
-/**
  * Ends a previously started timed event with given key, segmentation, count and sum.
  * @discussion Trying to end an event with already ended (or not yet started) key will have no effect.
  * @param key Event key
@@ -242,6 +235,13 @@ NS_ASSUME_NONNULL_BEGIN
  * @param sum Sum of any specific value for event
  */
 - (void)endEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
+
+/**
+ * Cancels a previously started timed event with given key.
+ * @discussion Trying to cancel an event with already cancelled (or ended or not yet started) key will have no effect.
+ * @param key Event key
+ */
+- (void)cancelEvent:(NSString *)key;
 
 
 
