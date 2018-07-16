@@ -10,6 +10,7 @@
 #if TARGET_OS_IOS
 @property (nonatomic) BOOL isEnabledOnInitialConfig;
 @property (nonatomic) NSDictionary* crashSegmentation;
+@property (nonatomic) NSUInteger crashLogLimit;
 
 + (instancetype)sharedInstance;
 - (void)startCrashReporting;

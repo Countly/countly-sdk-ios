@@ -43,6 +43,7 @@
         self.eventSendThreshold = 10;
 #endif
         self.storedRequestsLimit = 1000;
+        self.crashLogLimit = 100;
 
         self.location = kCLLocationCoordinate2DInvalid;
     }

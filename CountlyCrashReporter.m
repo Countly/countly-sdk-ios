@@ -42,9 +42,14 @@ NSString* const kCountlyCRKeySignalCode        = @"signal_code";
 NSString* const kCountlyCRKeyImageLoadAddress  = @"la";
 NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 
+@interface CountlyCrashReporter ()
+@property (nonatomic) NSMutableArray* customCrashLogs;
+@property (nonatomic) NSDateFormatter* dateFormatter;
+@end
+
+
 @implementation CountlyCrashReporter
 
-static NSMutableArray *customCrashLogs = nil;
 static NSString *buildUUID;
 static NSString *executableName;
 
@@ -66,6 +71,9 @@ static NSString *executableName;
     if (self = [super init])
     {
         self.crashSegmentation = nil;
+        self.customCrashLogs = NSMutableArray.new;
+        self.dateFormatter = NSDateFormatter.new;
+        self.dateFormatter.dateFormat = @"yyyy-MM-dd HH:mm:ss.SSS";
     }
 
     return self;
@@ -104,7 +112,7 @@ static NSString *executableName;
     signal(SIGPIPE, SIG_DFL);
     signal(SIGTRAP, SIG_DFL);
 
-    customCrashLogs = nil;
+    self.customCrashLogs = nil;
 }
 
 
@@ -163,8 +171,8 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     if (CountlyCrashReporter.sharedInstance.crashSegmentation)
         crashReport[kCountlyCRKeyCustom] = CountlyCrashReporter.sharedInstance.crashSegmentation;
 
-    if (customCrashLogs)
-        crashReport[kCountlyCRKeyLogs] = [customCrashLogs componentsJoinedByString:@"\n"];
+    if (CountlyCrashReporter.sharedInstance.customCrashLogs)
+        crashReport[kCountlyCRKeyLogs] = [CountlyCrashReporter.sharedInstance.customCrashLogs componentsJoinedByString:@"\n"];
 
     crashReport[kCountlyCRKeyError] = [stackTrace componentsJoinedByString:@"\n"];
 
@@ -204,17 +212,11 @@ void CountlySignalHandler(int signalCode)
     if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
         return;
 
-    static NSDateFormatter* df = nil;
+    NSString* logWithDateTime = [NSString stringWithFormat:@"<%@> %@",[self.dateFormatter stringFromDate:NSDate.date], log];
+    [self.customCrashLogs addObject:logWithDateTime];
 
-    if (!customCrashLogs)
-    {
-        customCrashLogs = NSMutableArray.new;
-        df = NSDateFormatter.new;
-        df.dateFormat = @"yyyy-MM-dd HH:mm:ss.SSS";
-    }
-
-    NSString* logWithDateTime = [NSString stringWithFormat:@"<%@> %@",[df stringFromDate:NSDate.date], log];
-    [customCrashLogs addObject:logWithDateTime];
+    if (self.customCrashLogs.count > self.crashLogLimit)
+        [self.customCrashLogs removeObjectAtIndex:0];
 }
 
 - (NSDictionary *)binaryImagesForStackTrace:(NSArray *)stackTrace
