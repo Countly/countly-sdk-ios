@@ -141,8 +141,10 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
 
     NSArray* stackTrace = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
-    if (!stackTrace) stackTrace = exception.callStackSymbols;
+    if (!stackTrace)
+        stackTrace = exception.callStackSymbols;
 
+    crashReport[kCountlyCRKeyError] = [stackTrace componentsJoinedByString:@"\n"];
     crashReport[kCountlyCRKeyBinaryImages] = [CountlyCrashReporter.sharedInstance binaryImagesForStackTrace:stackTrace];
     crashReport[kCountlyCRKeyOS] = CountlyDeviceInfo.osName;
     crashReport[kCountlyCRKeyOSVersion] = CountlyDeviceInfo.osVersion;
@@ -168,13 +170,19 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     crashReport[kCountlyCRKeyBackground] = @(CountlyDeviceInfo.isInBackground);
     crashReport[kCountlyCRKeyRun] = @(CountlyCommon.sharedInstance.timeSinceLaunch);
 
+    NSMutableDictionary* custom = NSMutableDictionary.new;
     if (CountlyCrashReporter.sharedInstance.crashSegmentation)
-        crashReport[kCountlyCRKeyCustom] = CountlyCrashReporter.sharedInstance.crashSegmentation;
+        [custom addEntriesFromDictionary:CountlyCrashReporter.sharedInstance.crashSegmentation];
+
+    NSMutableDictionary* userInfo = exception.userInfo.mutableCopy;
+    [userInfo removeObjectForKey:kCountlyExceptionUserInfoBacktraceKey];
+    [custom addEntriesFromDictionary:userInfo];
+
+    if (custom.allKeys.count)
+        crashReport[kCountlyCRKeyCustom] = custom;
 
     if (CountlyCrashReporter.sharedInstance.customCrashLogs)
         crashReport[kCountlyCRKeyLogs] = [CountlyCrashReporter.sharedInstance.customCrashLogs componentsJoinedByString:@"\n"];
-
-    crashReport[kCountlyCRKeyError] = [stackTrace componentsJoinedByString:@"\n"];
 
     if (!isAutoDetect)
     {
