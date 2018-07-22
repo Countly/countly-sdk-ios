@@ -42,16 +42,16 @@ NSString* const kCountlyCRKeySignalCode        = @"signal_code";
 NSString* const kCountlyCRKeyImageLoadAddress  = @"la";
 NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 
+
 @interface CountlyCrashReporter ()
 @property (nonatomic) NSMutableArray* customCrashLogs;
 @property (nonatomic) NSDateFormatter* dateFormatter;
+@property (nonatomic) NSString* buildUUID;
+@property (nonatomic) NSString* executableName;
 @end
 
 
 @implementation CountlyCrashReporter
-
-static NSString *buildUUID;
-static NSString *executableName;
 
 #if TARGET_OS_IOS
 
@@ -151,8 +151,8 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     crashReport[kCountlyCRKeyResolution] = CountlyDeviceInfo.resolution;
     crashReport[kCountlyCRKeyAppVersion] = CountlyDeviceInfo.appVersion;
     crashReport[kCountlyCRKeyAppBuild] = CountlyDeviceInfo.appBuild;
-    crashReport[kCountlyCRKeyBuildUUID] = buildUUID ?: @"";
-    crashReport[kCountlyCRKeyExecutableName] = executableName ?: @"";
+    crashReport[kCountlyCRKeyBuildUUID] = CountlyCrashReporter.sharedInstance.buildUUID ?: @"";
+    crashReport[kCountlyCRKeyExecutableName] = CountlyCrashReporter.sharedInstance.executableName ?: @"";
     crashReport[kCountlyCRKeyName] = exception.description;
     crashReport[kCountlyCRKeyType] = exception.name;
     crashReport[kCountlyCRKeyNonfatal] = @(!isFatal);
@@ -285,8 +285,8 @@ void CountlySignalHandler(int signalCode)
         //NOTE: Include app's own build UUID directly in crash report object, as Countly Server needs it for fast lookup
         if (imageHeader->filetype == MH_EXECUTE)
         {
-            buildUUID = imageUUID;
-            executableName = imageName;
+            CountlyCrashReporter.sharedInstance.buildUUID = imageUUID;
+            CountlyCrashReporter.sharedInstance.executableName = imageName;
         }
 
         NSString *imageLoadAddress = [NSString stringWithFormat:@"0x%llX", (uint64_t)imageHeader];
