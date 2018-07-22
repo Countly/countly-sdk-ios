@@ -165,7 +165,7 @@ NSString* const kCountlyVTKeyStart    = @"start";
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
 
-    self.isAutoViewTrackingEnabled = YES;
+    self.isAutoViewTrackingActive = YES;
 
     [self swizzleViewTrackingMethods];
 
@@ -192,7 +192,7 @@ NSString* const kCountlyVTKeyStart    = @"start";
     if (!self.isEnabledOnInitialConfig)
         return;
 
-    self.isAutoViewTrackingEnabled = NO;
+    self.isAutoViewTrackingActive = NO;
 
     self.lastView = nil;
     self.lastViewStartTime = 0;
@@ -201,7 +201,7 @@ NSString* const kCountlyVTKeyStart    = @"start";
 
 #pragma mark -
 
-- (void)setIsAutoViewTrackingEnabled:(BOOL)isAutoViewTrackingEnabled
+- (void)setIsAutoViewTrackingActive:(BOOL)isAutoViewTrackingActive
 {
     if (!self.isEnabledOnInitialConfig)
         return;
@@ -209,7 +209,7 @@ NSString* const kCountlyVTKeyStart    = @"start";
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
 
-    _isAutoViewTrackingEnabled = isAutoViewTrackingEnabled;
+    _isAutoViewTrackingActive = isAutoViewTrackingActive;
 }
 
 #pragma mark -
@@ -254,7 +254,7 @@ NSString* const kCountlyVTKeyStart    = @"start";
 {
     [self Countly_viewDidAppear:animated];
 
-    if (!CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled)
+    if (!CountlyViewTracking.sharedInstance.isAutoViewTrackingActive)
         return;
 
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)

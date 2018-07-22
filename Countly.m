@@ -621,14 +621,14 @@
     [CountlyViewTracking.sharedInstance removeExceptionForAutoViewTracking:exception.copy];
 }
 
-- (void)setIsAutoViewTrackingEnabled:(BOOL)isAutoViewTrackingEnabled
+- (void)setIsAutoViewTrackingActive:(BOOL)isAutoViewTrackingActive
 {
-    CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled = isAutoViewTrackingEnabled;
+    CountlyViewTracking.sharedInstance.isAutoViewTrackingActive = isAutoViewTrackingActive;
 }
 
-- (BOOL)isAutoViewTrackingEnabled
+- (BOOL)isAutoViewTrackingActive
 {
-    return CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled;
+    return CountlyViewTracking.sharedInstance.isAutoViewTrackingActive;
 }
 #endif
 

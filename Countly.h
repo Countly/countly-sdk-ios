@@ -315,6 +315,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * @c isGeoLocationEnabled property is deprecated. Please use @c disableLocationInfo method instead.
+ * @discussion Using this property will have no effect.
  */
 @property (nonatomic) BOOL isGeoLocationEnabled DEPRECATED_MSG_ATTRIBUTE("Use 'disableLocationInfo' method instead!");
 
@@ -385,7 +386,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Records a visited view with given name.
  * @discussion Total duration of the view will be calculated on next @c recordView: call.
- * @discussion If AutoViewTracking feature is activated on initial configuration, this method does not need to be called manually.
+ * @discussion If AutoViewTracking feature is enabled on initial configuration, this method does not need to be called manually.
  * @param viewName Name of the view visited
  */
 - (void)recordView:(NSString *)viewName;
@@ -413,10 +414,17 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)removeExceptionForAutoViewTracking:(NSString *)exception;
 
 /**
- * Enables or disables AutoViewTracking, if AutoViewTracking feature is activated on initial configuration.
- * @discussion If AutoViewTracking feature is not activated on initial configuration, this property has no effect on enabling or disabling it later.
+ * Temporarily activates or deactivates AutoViewTracking, if AutoViewTracking feature is enabled on initial configuration.
+ * @discussion If AutoViewTracking feature is not enabled on initial configuration, this property has no effect.
  */
-@property (nonatomic) BOOL isAutoViewTrackingEnabled;
+@property (nonatomic) BOOL isAutoViewTrackingActive;
+
+/**
+ * @c isAutoViewTrackingEnabled property is deprecated. Please use @c isAutoViewTrackingActive property instead.
+ * @discussion Using this property will have no effect.
+ */
+@property (nonatomic) BOOL isAutoViewTrackingEnabled DEPRECATED_MSG_ATTRIBUTE("Use 'isAutoViewTrackingActive' property instead!");
+
 #endif
 
 
