@@ -160,7 +160,10 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
             return;
         }
 
-        [self presentFeedbackWidgetWithID:widgetID completionHandler:completionHandler];
+        dispatch_async(dispatch_get_main_queue(), ^
+        {
+            [self presentFeedbackWidgetWithID:widgetID completionHandler:completionHandler];
+        });
     }];
 
     [task resume];
@@ -168,6 +171,10 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 - (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
 {
+    __block UIWindow* window = [UIWindow.alloc initWithFrame:UIScreen.mainScreen.bounds];
+    window.rootViewController = CLYInternalViewController.new;
+    window.windowLevel = UIWindowLevelAlert;
+
     CLYInternalViewController* webVC = CLYInternalViewController.new;
     webVC.view.backgroundColor = UIColor.whiteColor;
     webVC.view.bounds = UIScreen.mainScreen.bounds;
@@ -185,21 +192,14 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
             if (completionHandler)
                 completionHandler(nil);
 
-            self.alertWindow.hidden = YES;
-            self.alertWindow = nil;
+            window.hidden = YES;
+            window = nil;
         }];
     };
     [webVC.view addSubview:dismissButton];
 
-    self.alertWindow = [UIWindow.alloc initWithFrame:UIScreen.mainScreen.bounds];
-    self.alertWindow.rootViewController = CLYInternalViewController.new;
-    self.alertWindow.windowLevel = UIWindowLevelAlert;
-
-    dispatch_async(dispatch_get_main_queue(), ^
-    {
-        [self.alertWindow makeKeyAndVisible];
-        [self.alertWindow.rootViewController presentViewController:webVC animated:YES completion:nil];
-    });
+    [window makeKeyAndVisible];
+    [window.rootViewController presentViewController:webVC animated:YES completion:nil];
 }
 
 - (NSURL *)widgetCheckURL:(NSString *)widgetID
