@@ -11,7 +11,7 @@
 + (instancetype)sharedInstance;
 
 - (void)showDialog:(void(^)(NSInteger rating))completion;
-- (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler;
+- (void)checkFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler;
 - (void)checkForAutoAsk;
 
 @property (nonatomic) NSString* message;

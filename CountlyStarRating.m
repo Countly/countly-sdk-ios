@@ -5,6 +5,7 @@
 // Please visit www.count.ly for more information.
 
 #import "CountlyCommon.h"
+#import <WebKit/WebKit.h>
 
 @interface CountlyStarRating ()
 #if TARGET_OS_IOS
@@ -114,8 +115,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     [self.alertWindow.rootViewController presentViewController:self.alertController animated:YES completion:nil];
 }
 
-
-- (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
+- (void)checkFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
 {
     if (!CountlyConsentManager.sharedInstance.consentForStarRating)
         return;
@@ -160,11 +160,46 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
             return;
         }
 
-        NSURL* widgetDisplayURL = [self widgetDisplayURL:widgetID];
-        NSLog(@"widgetDisplayURL %@", widgetDisplayURL);
+        [self presentFeedbackWidgetWithID:widgetID completionHandler:completionHandler];
     }];
 
     [task resume];
+}
+
+- (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
+{
+    CLYInternalViewController* webVC = CLYInternalViewController.new;
+    webVC.view.backgroundColor = UIColor.whiteColor;
+    webVC.view.bounds = UIScreen.mainScreen.bounds;
+
+    WKWebView* webView = [WKWebView.alloc initWithFrame:webVC.view.bounds];
+    [webVC.view addSubview:webView];
+    NSURL* widgetDisplayURL = [self widgetDisplayURL:widgetID];
+    [webView loadRequest:[NSURLRequest requestWithURL:widgetDisplayURL]];
+
+    CLYButton* dismissButton = [CLYButton dismissAlertButton];
+    dismissButton.onClick = ^(id sender)
+    {
+        [webVC dismissViewControllerAnimated:YES completion:^
+        {
+            if (completionHandler)
+                completionHandler(nil);
+
+            self.alertWindow.hidden = YES;
+            self.alertWindow = nil;
+        }];
+    };
+    [webVC.view addSubview:dismissButton];
+
+    self.alertWindow = [UIWindow.alloc initWithFrame:UIScreen.mainScreen.bounds];
+    self.alertWindow.rootViewController = CLYInternalViewController.new;
+    self.alertWindow.windowLevel = UIWindowLevelAlert;
+
+    dispatch_async(dispatch_get_main_queue(), ^
+    {
+        [self.alertWindow makeKeyAndVisible];
+        [self.alertWindow.rootViewController presentViewController:webVC animated:YES completion:nil];
+    });
 }
 
 - (NSURL *)widgetCheckURL:(NSString *)widgetID
