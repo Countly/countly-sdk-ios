@@ -25,6 +25,7 @@ NSString* const kCountlySRKeyRating      = @"rating";
 NSString* const kCountlySRKeyWidgetID    = @"widget_id";
 NSString* const kCountlySRKeyDeviceID    = @"device_id";
 NSString* const kCountlySRKeySDKVersion  = @"sdk_version";
+NSString* const kCountlySRKeySDKName  = @"sdk_name";
 
 NSString* const kCountlyOutputEndpoint = @"/o";
 NSString* const kCountlyFeedbackEndpoint = @"/feedback";
@@ -216,13 +217,14 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 - (NSURL *)widgetDisplayURL:(NSString *)widgetID
 {
-    NSString* URLString = [NSString stringWithFormat:@"%@%@?%@=%@&%@=%@&%@=%@&%@=%@",
+    NSString* URLString = [NSString stringWithFormat:@"%@%@?%@=%@&%@=%@&%@=%@&%@=%@&%@=%@",
                            CountlyConnectionManager.sharedInstance.host,
                            kCountlyFeedbackEndpoint,
                            kCountlySRKeyWidgetID, widgetID,
                            kCountlySRKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped,
                            kCountlySRKeyAppVersion, CountlyDeviceInfo.appVersion,
-                           kCountlySRKeySDKVersion, kCountlySDKVersion];
+                           kCountlySRKeySDKVersion, kCountlySDKVersion,
+                           kCountlySRKeySDKName, kCountlySDKName];
 
     return [NSURL URLWithString:URLString];
 }
