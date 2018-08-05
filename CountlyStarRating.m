@@ -19,17 +19,21 @@ NSString* const kCountlyReservedEventStarRating = @"[CLY]_star_rating";
 NSString* const kCountlyStarRatingStatusSessionCountKey = @"kCountlyStarRatingStatusSessionCountKey";
 NSString* const kCountlyStarRatingStatusHasEverAskedAutomatically = @"kCountlyStarRatingStatusHasEverAskedAutomatically";
 
-NSString* const kCountlySRKeyPlatform    = @"platform";
-NSString* const kCountlySRKeyAppVersion  = @"app_version";
-NSString* const kCountlySRKeyRating      = @"rating";
-NSString* const kCountlySRKeyWidgetID    = @"widget_id";
-NSString* const kCountlySRKeyDeviceID    = @"device_id";
-NSString* const kCountlySRKeySDKVersion  = @"sdk_version";
-NSString* const kCountlySRKeySDKName  = @"sdk_name";
+NSString* const kCountlySRKeyPlatform       = @"platform";
+NSString* const kCountlySRKeyAppVersion     = @"app_version";
+NSString* const kCountlySRKeyRating         = @"rating";
+NSString* const kCountlySRKeyWidgetID       = @"widget_id";
+NSString* const kCountlySRKeyDeviceID       = @"device_id";
+NSString* const kCountlySRKeySDKVersion     = @"sdk_version";
+NSString* const kCountlySRKeySDKName        = @"sdk_name";
+NSString* const kCountlySRKeyID             = @"_id";
+NSString* const kCountlySRKeyTargetDevices  = @"target_devices";
+NSString* const kCountlySRKeyPhone          = @"phone";
+NSString* const kCountlySRKeyTablet         = @"tablet";
 
-NSString* const kCountlyOutputEndpoint = @"/o";
-NSString* const kCountlyFeedbackEndpoint = @"/feedback";
-NSString* const kCountlyWidgetEndpoint = @"/widget";
+NSString* const kCountlyOutputEndpoint      = @"/o";
+NSString* const kCountlyFeedbackEndpoint    = @"/feedback";
+NSString* const kCountlyWidgetEndpoint      = @"/widget";
 
 const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
@@ -256,7 +260,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         {
             NSMutableDictionary* userInfo = widgetInfo.mutableCopy;
 
-            if (![widgetInfo[@"_id"] isEqualToString:widgetID])
+            if (![widgetInfo[kCountlySRKeyID] isEqualToString:widgetID])
             {
                 userInfo[NSLocalizedDescriptionKey] = [NSString stringWithFormat:@"Feedback widget with ID %@ is not available.", widgetID];
                 error = [NSError errorWithDomain:kCountlyErrorDomain code:CLYErrorFeedbackWidgetNotAvailable userInfo:userInfo];
@@ -350,8 +354,8 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 {
     BOOL isTablet = UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad;
     BOOL isPhone = UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone;
-    BOOL isTabletTargeted = [widgetInfo[@"target_devices"][@"tablet"] boolValue];
-    BOOL isPhoneTargeted = [widgetInfo[@"target_devices"][@"phone"] boolValue];
+    BOOL isTabletTargeted = [widgetInfo[kCountlySRKeyTargetDevices][kCountlySRKeyTablet] boolValue];
+    BOOL isPhoneTargeted = [widgetInfo[kCountlySRKeyTargetDevices][kCountlySRKeyPhone] boolValue];
 
     return ((isTablet && isTabletTargeted) || (isPhone && isPhoneTargeted));
 }
