@@ -258,13 +258,13 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
             if (![widgetInfo[@"_id"] isEqualToString:widgetID])
             {
-                userInfo[NSLocalizedDescriptionKey] = [NSString stringWithFormat:@"Feedback widget with ID %@ is not available", widgetID];
-                error = [NSError errorWithDomain:@"ly.count" code:10001 userInfo:userInfo];
+                userInfo[NSLocalizedDescriptionKey] = [NSString stringWithFormat:@"Feedback widget with ID %@ is not available.", widgetID];
+                error = [NSError errorWithDomain:kCountlyErrorDomain code:CLYErrorFeedbackWidgetNotAvailable userInfo:userInfo];
             }
             else if (![self isDeviceTargetedByWidget:widgetInfo])
             {
-                userInfo[NSLocalizedDescriptionKey] = [NSString stringWithFormat:@"Feedback widget with ID %@ does not include this device in target devices", widgetID];
-                error = [NSError errorWithDomain:@"ly.count" code:10002 userInfo:userInfo];
+                userInfo[NSLocalizedDescriptionKey] = [NSString stringWithFormat:@"Feedback widget with ID %@ does not include this device in target devices list.", widgetID];
+                error = [NSError errorWithDomain:kCountlyErrorDomain code:CLYErrorFeedbackWidgetNotTargetedForDevice userInfo:userInfo];
             }
         }
 

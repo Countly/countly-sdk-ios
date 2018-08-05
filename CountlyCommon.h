@@ -58,6 +58,14 @@
 extern NSString* const kCountlySDKVersion;
 extern NSString* const kCountlySDKName;
 
+extern NSString* const kCountlyErrorDomain;
+
+NS_ERROR_ENUM(kCountlyErrorDomain)
+{
+    CLYErrorFeedbackWidgetNotAvailable = 10001,
+    CLYErrorFeedbackWidgetNotTargetedForDevice = 10002,
+};
+
 @interface CountlyCommon : NSObject
 
 @property (nonatomic) BOOL hasStarted;

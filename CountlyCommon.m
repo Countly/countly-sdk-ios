@@ -24,6 +24,8 @@ NSString* const kCountlySDKName = @"objc-native-ios";
 NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
 NSString* const kCountlyAttributionIDFAKey = @"idfa";
 
+NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
+
 @implementation CountlyCommon
 
 + (instancetype)sharedInstance
