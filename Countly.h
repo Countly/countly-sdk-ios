@@ -463,6 +463,18 @@ NS_ASSUME_NONNULL_BEGIN
  * @param completion A block object to be executed when user gives a star-rating or dismisses dialog without rating
  */
 - (void)askForStarRating:(void(^)(NSInteger rating))completion;
+
+/**
+ * Presents feedback widget with given ID in a WKWebView placed in a UIViewController.
+ * @discussion First, the availability of the feedback widget will be checked asynchronously.
+ * @discussion If the feedback widget with given ID is available, it will be modally presented.
+ * @discussion Otherwise, @c completionHandler will be called with an @c NSError.
+ * @discussion @c completionHandler will also be called with @c nil when feedback widget is dismissed by user.
+ * @param widgetID ID of the feedback widget created on Countly Server.
+ * @param completionHandler A completion handler block to be executed when feedback widget is dismissed by user or there is an error.
+ */
+- (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler;
+
 #endif
 
 NS_ASSUME_NONNULL_END

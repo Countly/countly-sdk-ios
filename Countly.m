@@ -660,6 +660,12 @@
 {
     [CountlyStarRating.sharedInstance showDialog:completion];
 }
+
+- (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
+{
+    [CountlyStarRating.sharedInstance checkFeedbackWidgetWithID:widgetID completionHandler:completionHandler];
+}
+
 #endif
 
 @end
