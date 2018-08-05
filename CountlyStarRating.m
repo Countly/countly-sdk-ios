@@ -5,7 +5,9 @@
 // Please visit www.count.ly for more information.
 
 #import "CountlyCommon.h"
+#if TARGET_OS_IOS
 #import <WebKit/WebKit.h>
+#endif
 
 @interface CountlyStarRating ()
 #if TARGET_OS_IOS
