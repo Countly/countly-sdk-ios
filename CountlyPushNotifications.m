@@ -241,7 +241,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     alertWindow.rootViewController = CLYInternalViewController.new;
     alertWindow.windowLevel = UIWindowLevelAlert;
 
-    UIAlertController* alertController = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
+    __block UIAlertController* alertController = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
 
 
     CLYButton* defaultButton = nil;
@@ -261,6 +261,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
             {
                 alertWindow.hidden = YES;
                 alertWindow = nil;
+                alertController = nil;
             }];
         };
         [alertController.view addSubview:defaultButton];
@@ -274,6 +275,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         {
             alertWindow.hidden = YES;
             alertWindow = nil;
+            alertController = nil;
         }];
     };
     [alertController.view addSubview:dismissButton];
@@ -294,6 +296,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
             alertWindow.hidden = YES;
             alertWindow = nil;
+            alertController = nil;
         }];
 
         [alertController addAction:visit];
