@@ -175,9 +175,10 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     window.rootViewController = CLYInternalViewController.new;
     window.windowLevel = UIWindowLevelAlert;
 
-    CLYInternalViewController* webVC = CLYInternalViewController.new;
+    __block CLYInternalViewController* webVC = CLYInternalViewController.new;
     webVC.view.backgroundColor = UIColor.whiteColor;
     webVC.view.bounds = UIScreen.mainScreen.bounds;
+    webVC.modalPresentationStyle = UIModalPresentationCustom;
 
     WKWebView* webView = [WKWebView.alloc initWithFrame:webVC.view.bounds];
     [webVC.view addSubview:webView];
@@ -194,6 +195,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
             window.hidden = YES;
             window = nil;
+            webVC = nil;
         }];
     };
     [webVC.view addSubview:dismissButton];
