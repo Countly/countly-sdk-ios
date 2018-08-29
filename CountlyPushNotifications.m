@@ -120,6 +120,9 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
     if (@available(iOS 10.0, *))
     {
+        if (options == 0)
+            options = UNAuthorizationOptionBadge | UNAuthorizationOptionSound | UNAuthorizationOptionAlert;
+
         [UNUserNotificationCenter.currentNotificationCenter requestAuthorizationWithOptions:options completionHandler:^(BOOL granted, NSError* error)
         {
             if (completionHandler)
@@ -129,6 +132,10 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     else
     {
         self.permissionCompletion = completionHandler;
+
+        if (options == 0)
+            options = UIUserNotificationTypeBadge | UIUserNotificationTypeSound | UIUserNotificationTypeAlert;
+
         UIUserNotificationType userNotificationTypes = (UIUserNotificationType)options;
         UIUserNotificationSettings* settings = [UIUserNotificationSettings settingsForTypes:userNotificationTypes categories:nil];
         [UIApplication.sharedApplication registerUserNotificationSettings:settings];

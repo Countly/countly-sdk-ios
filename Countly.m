@@ -506,13 +506,7 @@
 
 - (void)askForNotificationPermission
 {
-    NSUInteger options = 0;
-    if (@available(iOS 10.0, *))
-        options = UNAuthorizationOptionBadge | UNAuthorizationOptionSound | UNAuthorizationOptionAlert;
-    else
-        options = UIUserNotificationTypeBadge | UIUserNotificationTypeSound | UIUserNotificationTypeAlert;
-
-    [CountlyPushNotifications.sharedInstance askForNotificationPermissionWithOptions:options completionHandler:nil];
+    [CountlyPushNotifications.sharedInstance askForNotificationPermissionWithOptions:0 completionHandler:nil];
 }
 
 - (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler;
