@@ -11,7 +11,6 @@
 
 @interface CountlyStarRating ()
 #if TARGET_OS_IOS
-@property (nonatomic) UIWindow* alertWindow;
 @property (nonatomic) UIAlertController* alertController;
 @property (nonatomic, copy) void (^ratingCompletion)(NSInteger);
 #endif
@@ -117,11 +116,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         COUNTLY_LOG(@"UIAlertController's contentViewController can not be set: \n%@", exception);
     }
 
-    self.alertWindow = [UIWindow.alloc initWithFrame:UIScreen.mainScreen.bounds];
-    self.alertWindow.rootViewController = CLYInternalViewController.new;
-    self.alertWindow.windowLevel = UIWindowLevelAlert;
-    [self.alertWindow makeKeyAndVisible];
-    [self.alertWindow.rootViewController presentViewController:self.alertController animated:YES completion:nil];
+    [CountlyCommon.sharedInstance.topViewController presentViewController:self.alertController animated:YES completion:nil];
 }
 
 - (void)checkForAutoAsk
@@ -221,8 +216,6 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventStarRating segmentation:segmentation];
     }
 
-    self.alertWindow.hidden = YES;
-    self.alertWindow = nil;
     self.alertController = nil;
     self.ratingCompletion = nil;
 }

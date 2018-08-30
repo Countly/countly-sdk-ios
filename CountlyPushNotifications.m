@@ -244,10 +244,6 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     }
 
 
-    __block UIWindow* alertWindow = [UIWindow.alloc initWithFrame:UIScreen.mainScreen.bounds];
-    alertWindow.rootViewController = CLYInternalViewController.new;
-    alertWindow.windowLevel = UIWindowLevelAlert;
-
     __block UIAlertController* alertController = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
 
 
@@ -266,8 +262,6 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
             [alertController dismissViewControllerAnimated:YES completion:^
             {
-                alertWindow.hidden = YES;
-                alertWindow = nil;
                 alertController = nil;
             }];
         };
@@ -280,8 +274,6 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     {
         [alertController dismissViewControllerAnimated:YES completion:^
         {
-            alertWindow.hidden = YES;
-            alertWindow = nil;
             alertController = nil;
         }];
     };
@@ -301,16 +293,13 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
             [self openURL:URL];
 
-            alertWindow.hidden = YES;
-            alertWindow = nil;
             alertController = nil;
         }];
 
         [alertController addAction:visit];
     }];
 
-    [alertWindow makeKeyAndVisible];
-    [alertWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
+    [CountlyCommon.sharedInstance.topViewController presentViewController:alertController animated:YES completion:nil];
 
     const CGFloat kCountlyActionButtonHeight = 44.0;
     CGRect tempFrame = defaultButton.frame;
@@ -323,7 +312,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     if (!URLString)
         return;
 
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
+    dispatch_async(dispatch_get_main_queue(), ^
     {
         [UIApplication.sharedApplication openURL:[NSURL URLWithString:URLString]];
     });
