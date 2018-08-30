@@ -18,11 +18,13 @@
 #endif
 @end
 
-NSString* const kCountlySDKVersion = @"18.04";
+NSString* const kCountlySDKVersion = @"18.08";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
 NSString* const kCountlyAttributionIDFAKey = @"idfa";
+
+NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
 
 @implementation CountlyCommon
 
@@ -228,25 +230,6 @@ void CountlyInternalLog(NSString *format, ...)
 #pragma mark - Internal ViewController
 #if TARGET_OS_IOS
 @implementation CLYInternalViewController : UIViewController
-
-//NOTE: Use the same status bar preferences as the currently displayed view controller, when a Countly triggered alert is displayed in a separate window
-- (UIStatusBarStyle)preferredStatusBarStyle
-{
-    UIViewController* topVC = [CountlyCommon.sharedInstance topViewController];
-    if (topVC == self)
-        return UIStatusBarStyleDefault;
-
-    return [topVC preferredStatusBarStyle];
-}
-
-- (BOOL)prefersStatusBarHidden
-{
-    UIViewController* topVC = [CountlyCommon.sharedInstance topViewController];
-    if (topVC == self)
-        return NO;
-
-    return [topVC prefersStatusBarHidden];
-}
 
 @end
 

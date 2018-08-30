@@ -120,6 +120,9 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
     if (@available(iOS 10.0, *))
     {
+        if (options == 0)
+            options = UNAuthorizationOptionBadge | UNAuthorizationOptionSound | UNAuthorizationOptionAlert;
+
         [UNUserNotificationCenter.currentNotificationCenter requestAuthorizationWithOptions:options completionHandler:^(BOOL granted, NSError* error)
         {
             if (completionHandler)
@@ -129,6 +132,10 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     else
     {
         self.permissionCompletion = completionHandler;
+
+        if (options == 0)
+            options = UIUserNotificationTypeBadge | UIUserNotificationTypeSound | UIUserNotificationTypeAlert;
+
         UIUserNotificationType userNotificationTypes = (UIUserNotificationType)options;
         UIUserNotificationSettings* settings = [UIUserNotificationSettings settingsForTypes:userNotificationTypes categories:nil];
         [UIApplication.sharedApplication registerUserNotificationSettings:settings];
@@ -237,11 +244,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     }
 
 
-    __block UIWindow* alertWindow = [UIWindow.alloc initWithFrame:UIScreen.mainScreen.bounds];
-    alertWindow.rootViewController = CLYInternalViewController.new;
-    alertWindow.windowLevel = UIWindowLevelAlert;
-
-    UIAlertController* alertController = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
+    __block UIAlertController* alertController = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
 
 
     CLYButton* defaultButton = nil;
@@ -259,8 +262,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
             [alertController dismissViewControllerAnimated:YES completion:^
             {
-                alertWindow.hidden = YES;
-                alertWindow = nil;
+                alertController = nil;
             }];
         };
         [alertController.view addSubview:defaultButton];
@@ -272,8 +274,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     {
         [alertController dismissViewControllerAnimated:YES completion:^
         {
-            alertWindow.hidden = YES;
-            alertWindow = nil;
+            alertController = nil;
         }];
     };
     [alertController.view addSubview:dismissButton];
@@ -292,15 +293,13 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
             [self openURL:URL];
 
-            alertWindow.hidden = YES;
-            alertWindow = nil;
+            alertController = nil;
         }];
 
         [alertController addAction:visit];
     }];
 
-    [alertWindow makeKeyAndVisible];
-    [alertWindow.rootViewController presentViewController:alertController animated:YES completion:nil];
+    [CountlyCommon.sharedInstance.topViewController presentViewController:alertController animated:YES completion:nil];
 
     const CGFloat kCountlyActionButtonHeight = 44.0;
     CGRect tempFrame = defaultButton.frame;
@@ -313,7 +312,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     if (!URLString)
         return;
 
-    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
+    dispatch_async(dispatch_get_main_queue(), ^
     {
         [UIApplication.sharedApplication openURL:[NSURL URLWithString:URLString]];
     });

@@ -24,6 +24,6 @@
 - (void)stopAutoViewTracking;
 - (void)addExceptionForAutoViewTracking:(NSString *)exception;
 - (void)removeExceptionForAutoViewTracking:(NSString *)exception;
-@property (nonatomic) BOOL isAutoViewTrackingEnabled;
+@property (nonatomic) BOOL isAutoViewTrackingActive;
 #endif
 @end

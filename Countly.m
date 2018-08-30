@@ -117,10 +117,11 @@
         [CountlyPushNotifications.sharedInstance startPushNotifications];
     }
 
+    CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
+    CountlyCrashReporter.sharedInstance.crashLogLimit = MAX(1, config.crashLogLimit);
     if ([config.features containsObject:CLYCrashReporting])
     {
         CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;
-        CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
         [CountlyCrashReporter.sharedInstance startCrashReporting];
     }
 #endif
@@ -471,7 +472,7 @@
 
     if (!event)
     {
-        COUNTLY_LOG(@"Event with key '%@' not started before!", key);
+        COUNTLY_LOG(@"Event with key '%@' not started yet or cancelled/ended before!", key);
         return;
     }
 
@@ -483,6 +484,21 @@
     [CountlyPersistency.sharedInstance recordEvent:event];
 }
 
+- (void)cancelEvent:(NSString *)key
+{
+    if (!CountlyConsentManager.sharedInstance.consentForEvents)
+        return;
+
+    CountlyEvent *event = [CountlyPersistency.sharedInstance timedEventForKey:key];
+
+    if (!event)
+    {
+        COUNTLY_LOG(@"Event with key '%@' not started yet or cancelled/ended before!", key);
+        return;
+    }
+
+    COUNTLY_LOG(@"Event with key '%@' cancelled!", key);
+}
 
 
 #pragma mark - Push Notifications
@@ -490,13 +506,7 @@
 
 - (void)askForNotificationPermission
 {
-    NSUInteger options = 0;
-    if (@available(iOS 10.0, *))
-        options = UNAuthorizationOptionBadge | UNAuthorizationOptionSound | UNAuthorizationOptionAlert;
-    else
-        options = UIUserNotificationTypeBadge | UIUserNotificationTypeSound | UIUserNotificationTypeAlert;
-
-    [CountlyPushNotifications.sharedInstance askForNotificationPermissionWithOptions:options completionHandler:nil];
+    [CountlyPushNotifications.sharedInstance askForNotificationPermissionWithOptions:0 completionHandler:nil];
 }
 
 - (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler;
@@ -541,12 +551,17 @@
 #if TARGET_OS_IOS
 - (void)recordHandledException:(NSException *)exception
 {
-    [CountlyCrashReporter.sharedInstance recordHandledException:exception withStackTrace:nil];
+    [CountlyCrashReporter.sharedInstance recordException:exception withStackTrace:nil isFatal:NO];
 }
 
 - (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray *)stackTrace
 {
-    [CountlyCrashReporter.sharedInstance recordHandledException:exception withStackTrace:stackTrace];
+    [CountlyCrashReporter.sharedInstance recordException:exception withStackTrace:stackTrace isFatal:NO];
+}
+
+- (void)recordUnhandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace
+{
+    [CountlyCrashReporter.sharedInstance recordException:exception withStackTrace:stackTrace isFatal:YES];
 }
 
 - (void)recordCrashLog:(NSString *)log
@@ -600,14 +615,14 @@
     [CountlyViewTracking.sharedInstance removeExceptionForAutoViewTracking:exception.copy];
 }
 
-- (void)setIsAutoViewTrackingEnabled:(BOOL)isAutoViewTrackingEnabled
+- (void)setIsAutoViewTrackingActive:(BOOL)isAutoViewTrackingActive
 {
-    CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled = isAutoViewTrackingEnabled;
+    CountlyViewTracking.sharedInstance.isAutoViewTrackingActive = isAutoViewTrackingActive;
 }
 
-- (BOOL)isAutoViewTrackingEnabled
+- (BOOL)isAutoViewTrackingActive
 {
-    return CountlyViewTracking.sharedInstance.isAutoViewTrackingEnabled;
+    return CountlyViewTracking.sharedInstance.isAutoViewTrackingActive;
 }
 #endif
 
@@ -639,6 +654,12 @@
 {
     [CountlyStarRating.sharedInstance showDialog:completion];
 }
+
+- (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
+{
+    [CountlyStarRating.sharedInstance checkFeedbackWidgetWithID:widgetID completionHandler:completionHandler];
+}
+
 #endif
 
 @end

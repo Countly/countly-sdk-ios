@@ -11,6 +11,8 @@
     NSTimeInterval unsentSessionLength;
     NSTimeInterval lastSessionStartTime;
     BOOL isCrashing;
+    BOOL isDelayingDeviceIDChange;
+    BOOL hasAlreadyDelayedDeviceIDChange;
 }
 @end
 
@@ -78,7 +80,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)proceedOnQueue
 {
-    if (self.connection || isCrashing)
+    if (self.connection || isCrashing || isDelayingDeviceIDChange)
         return;
 
     if (self.customHeaderFieldName && !self.customHeaderFieldValue)
@@ -99,6 +101,20 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         [self proceedOnQueue];
         return;
     }
+
+    if ([firstItemInQueue containsString:[NSString stringWithFormat:@"&%@=", kCountlyQSKeyDeviceIDOld]] && !hasAlreadyDelayedDeviceIDChange)
+    {
+        COUNTLY_LOG(@"Server needs changing device ID request to be delayed 10 sec");
+
+        isDelayingDeviceIDChange = YES;
+        hasAlreadyDelayedDeviceIDChange = YES;
+
+        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(endDelayingDeviceIDChange) object:nil];
+        [self performSelector:@selector(endDelayingDeviceIDChange) withObject:nil afterDelay:10];
+        return;
+    }
+
+    hasAlreadyDelayedDeviceIDChange = NO;
 
     [CountlyCommon.sharedInstance startBackgroundTask];
 
@@ -532,6 +548,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     NSInteger code = ((NSHTTPURLResponse*)response).statusCode;
 
     return (code >= 200 && code < 300);
+}
+
+- (void)endDelayingDeviceIDChange
+{
+    isDelayingDeviceIDChange = NO;
+    [self proceedOnQueue];
 }
 
 #pragma mark ---

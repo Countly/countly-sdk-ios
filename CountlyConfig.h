@@ -174,9 +174,9 @@ extern NSString* const CLYConsentAppleWatch;
 @property (nonatomic) NSUInteger eventSendThreshold;
 
 /**
- * Stored requests limit is used for limiting the number of request to be stored on the device, in case of a Countly Server connection problem.
+ * Stored requests limit is used for limiting the number of request to be stored on the device, in case Countly Server is not reachable.
  * @discussion In case Countly Server is down or unreachable for a very long time, queued request may reach excessive numbers, and this may cause problems with requests being sent to Countly Server and being stored on the device. To prevent this, SDK will only store requests up to @c storedRequestsLimit.
- * @discussion If number of stored requests reach @c storedRequestsLimit, SDK will start to drop oldest request while inserting the newest one instead.
+ * @discussion If number of stored requests reaches @c storedRequestsLimit, SDK will start to drop oldest request while appending the newest one.
  * @discussion If not set, it will be 1000 by default.
  */
 @property (nonatomic) NSUInteger storedRequestsLimit;
@@ -213,6 +213,13 @@ extern NSString* const CLYConsentAppleWatch;
  * For using custom crash segmentation with @c CLYCrashReporting feature.
  */
 @property (nonatomic, copy) NSDictionary* crashSegmentation;
+
+/**
+ * Crash log limit is used for limiting the number of crash logs to be stored on the device.
+ * @discussion If number of stored crash logs reaches @c crashLogLimit, SDK will start to drop oldest crash log while appending the newest one.
+ * @discussion If not set, it will be 100 by default.
+ */
+@property (nonatomic) NSUInteger crashLogLimit;
 
 #pragma mark -
 

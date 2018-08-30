@@ -1,3 +1,26 @@
+## 18.08
+- Added feedback widgets support
+- Added limit for number of custom crash logs (100 logs)
+- Added limit for each custom crash log length (1000 chars)
+- Added support for cancelling timed events
+- Added support for recording fatal exceptions manually
+- Added `userInfo` to crash report custom property
+- Added delay before sending change device ID request (server requirement)
+- Renamed `isAutoViewTrackingEnabled` as `isAutoViewTrackingActive`
+- Fixed Xcode warnings for `askForNotificationPermission` method 
+- Fixed `UIAlertController` leak in push notification manager
+- Fixed `crashSegmentation` availability for manually recorded crashes
+- Fixed `openURL:` call thread as main thread
+- Updated minimum supported `macOS` version as `10.10`
+
+- Other various improvements
+  - Discarded separate `UIWindow` for presenting `UIAlertControllers`
+  - Refactored `buildUUID` and `executableName` as properties
+  - Refactored custom crash log array and date formatter
+  - Updated HeaderDocs, inline notes, pragma marks 
+
+
+
 ## 18.04
 - Added consent management for GDPR compliance
 - Exposed device ID to be used for data export and/or removal requests

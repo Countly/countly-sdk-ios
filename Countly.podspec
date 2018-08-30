@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name = 'Countly'
-  s.version = '18.04'
+  s.version = '18.08'
   s.license = {
     :type => 'COMMUNITY',
     :text => <<-LICENSE
@@ -37,7 +37,7 @@ Pod::Spec.new do |s|
   s.public_header_files = 'Countly.h', 'CountlyUserDetails.h', 'CountlyConfig.h'
   s.requires_arc = true
   s.ios.deployment_target = '8.0'
-  s.osx.deployment_target = '10.9'
+  s.osx.deployment_target = '10.10'
   s.watchos.deployment_target = '2.0'
   s.tvos.deployment_target = '9.0'
 

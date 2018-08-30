@@ -236,6 +236,13 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)endEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
 
+/**
+ * Cancels a previously started timed event with given key.
+ * @discussion Trying to cancel an event with already cancelled (or ended or not yet started) key will have no effect.
+ * @param key Event key
+ */
+- (void)cancelEvent:(NSString *)key;
+
 
 
 #pragma mark - Push Notification
@@ -308,6 +315,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * @c isGeoLocationEnabled property is deprecated. Please use @c disableLocationInfo method instead.
+ * @discussion Using this property will have no effect.
  */
 @property (nonatomic) BOOL isGeoLocationEnabled DEPRECATED_MSG_ATTRIBUTE("Use 'disableLocationInfo' method instead!");
 
@@ -327,6 +335,14 @@ NS_ASSUME_NONNULL_BEGIN
  * @param stackTrace Stack trace to be reported
  */
 - (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace;
+
+/**
+ * Records an unhandled exception and given stack trace manually.
+ * @discussion For recording non-native level fatal exceptions, where the app keeps running at native level and can recover.
+ * @param exception Exception to be reported
+ * @param stackTrace Stack trace to be reported
+ */
+- (void)recordUnhandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace;
 
 /**
  * Records custom logs to be delivered with crash report.
@@ -370,7 +386,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Records a visited view with given name.
  * @discussion Total duration of the view will be calculated on next @c recordView: call.
- * @discussion If AutoViewTracking feature is activated on initial configuration, this method does not need to be called manually.
+ * @discussion If AutoViewTracking feature is enabled on initial configuration, this method does not need to be called manually.
  * @param viewName Name of the view visited
  */
 - (void)recordView:(NSString *)viewName;
@@ -398,10 +414,17 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)removeExceptionForAutoViewTracking:(NSString *)exception;
 
 /**
- * Enables or disables AutoViewTracking, if AutoViewTracking feature is activated on initial configuration.
- * @discussion If AutoViewTracking feature is not activated on initial configuration, this property has no effect on enabling or disabling it later.
+ * Temporarily activates or deactivates AutoViewTracking, if AutoViewTracking feature is enabled on initial configuration.
+ * @discussion If AutoViewTracking feature is not enabled on initial configuration, this property has no effect.
  */
-@property (nonatomic) BOOL isAutoViewTrackingEnabled;
+@property (nonatomic) BOOL isAutoViewTrackingActive;
+
+/**
+ * @c isAutoViewTrackingEnabled property is deprecated. Please use @c isAutoViewTrackingActive property instead.
+ * @discussion Using this property will have no effect.
+ */
+@property (nonatomic) BOOL isAutoViewTrackingEnabled DEPRECATED_MSG_ATTRIBUTE("Use 'isAutoViewTrackingActive' property instead!");
+
 #endif
 
 
@@ -440,6 +463,18 @@ NS_ASSUME_NONNULL_BEGIN
  * @param completion A block object to be executed when user gives a star-rating or dismisses dialog without rating
  */
 - (void)askForStarRating:(void(^)(NSInteger rating))completion;
+
+/**
+ * Presents feedback widget with given ID in a WKWebView placed in a UIViewController.
+ * @discussion First, the availability of the feedback widget will be checked asynchronously.
+ * @discussion If the feedback widget with given ID is available, it will be modally presented.
+ * @discussion Otherwise, @c completionHandler will be called with an @c NSError.
+ * @discussion @c completionHandler will also be called with @c nil when feedback widget is dismissed by user.
+ * @param widgetID ID of the feedback widget created on Countly Server.
+ * @param completionHandler A completion handler block to be executed when feedback widget is dismissed by user or there is an error.
+ */
+- (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler;
+
 #endif
 
 NS_ASSUME_NONNULL_END

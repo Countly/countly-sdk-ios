@@ -42,11 +42,16 @@ NSString* const kCountlyCRKeySignalCode        = @"signal_code";
 NSString* const kCountlyCRKeyImageLoadAddress  = @"la";
 NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 
-@implementation CountlyCrashReporter
 
-static NSMutableArray *customCrashLogs = nil;
-static NSString *buildUUID;
-static NSString *executableName;
+@interface CountlyCrashReporter ()
+@property (nonatomic) NSMutableArray* customCrashLogs;
+@property (nonatomic) NSDateFormatter* dateFormatter;
+@property (nonatomic) NSString* buildUUID;
+@property (nonatomic) NSString* executableName;
+@end
+
+
+@implementation CountlyCrashReporter
 
 #if TARGET_OS_IOS
 
@@ -66,6 +71,9 @@ static NSString *executableName;
     if (self = [super init])
     {
         self.crashSegmentation = nil;
+        self.customCrashLogs = NSMutableArray.new;
+        self.dateFormatter = NSDateFormatter.new;
+        self.dateFormatter.dateFormat = @"yyyy-MM-dd HH:mm:ss.SSS";
     }
 
     return self;
@@ -104,11 +112,11 @@ static NSString *executableName;
     signal(SIGPIPE, SIG_DFL);
     signal(SIGTRAP, SIG_DFL);
 
-    customCrashLogs = nil;
+    self.customCrashLogs = nil;
 }
 
 
-- (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray *)stackTrace
+- (void)recordException:(NSException *)exception withStackTrace:(NSArray *)stackTrace isFatal:(BOOL)isFatal
 {
     if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
         return;
@@ -120,21 +128,23 @@ static NSString *executableName;
         exception = [NSException exceptionWithName:exception.name reason:exception.reason userInfo:userInfo];
     }
 
-    CountlyExceptionHandler(exception, true);
+    CountlyExceptionHandler(exception, isFatal, false);
 }
 
 void CountlyUncaughtExceptionHandler(NSException *exception)
 {
-    CountlyExceptionHandler(exception, false);
+    CountlyExceptionHandler(exception, true, true);
 }
 
-void CountlyExceptionHandler(NSException *exception, bool nonfatal)
+void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDetect)
 {
     NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
 
     NSArray* stackTrace = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
-    if (!stackTrace) stackTrace = exception.callStackSymbols;
+    if (!stackTrace)
+        stackTrace = exception.callStackSymbols;
 
+    crashReport[kCountlyCRKeyError] = [stackTrace componentsJoinedByString:@"\n"];
     crashReport[kCountlyCRKeyBinaryImages] = [CountlyCrashReporter.sharedInstance binaryImagesForStackTrace:stackTrace];
     crashReport[kCountlyCRKeyOS] = CountlyDeviceInfo.osName;
     crashReport[kCountlyCRKeyOSVersion] = CountlyDeviceInfo.osVersion;
@@ -143,11 +153,11 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     crashReport[kCountlyCRKeyResolution] = CountlyDeviceInfo.resolution;
     crashReport[kCountlyCRKeyAppVersion] = CountlyDeviceInfo.appVersion;
     crashReport[kCountlyCRKeyAppBuild] = CountlyDeviceInfo.appBuild;
-    crashReport[kCountlyCRKeyBuildUUID] = buildUUID ?: @"";
-    crashReport[kCountlyCRKeyExecutableName] = executableName ?: @"";
+    crashReport[kCountlyCRKeyBuildUUID] = CountlyCrashReporter.sharedInstance.buildUUID ?: @"";
+    crashReport[kCountlyCRKeyExecutableName] = CountlyCrashReporter.sharedInstance.executableName ?: @"";
     crashReport[kCountlyCRKeyName] = exception.description;
     crashReport[kCountlyCRKeyType] = exception.name;
-    crashReport[kCountlyCRKeyNonfatal] = @(nonfatal);
+    crashReport[kCountlyCRKeyNonfatal] = @(!isFatal);
     crashReport[kCountlyCRKeyRAMCurrent] = @((CountlyDeviceInfo.totalRAM-CountlyDeviceInfo.freeRAM) / 1048576);
     crashReport[kCountlyCRKeyRAMTotal] = @(CountlyDeviceInfo.totalRAM / 1048576);
     crashReport[kCountlyCRKeyDiskCurrent] = @((CountlyDeviceInfo.totalDisk-CountlyDeviceInfo.freeDisk) / 1048576);
@@ -160,15 +170,21 @@ void CountlyExceptionHandler(NSException *exception, bool nonfatal)
     crashReport[kCountlyCRKeyBackground] = @(CountlyDeviceInfo.isInBackground);
     crashReport[kCountlyCRKeyRun] = @(CountlyCommon.sharedInstance.timeSinceLaunch);
 
+    NSMutableDictionary* custom = NSMutableDictionary.new;
     if (CountlyCrashReporter.sharedInstance.crashSegmentation)
-        crashReport[kCountlyCRKeyCustom] = CountlyCrashReporter.sharedInstance.crashSegmentation;
+        [custom addEntriesFromDictionary:CountlyCrashReporter.sharedInstance.crashSegmentation];
 
-    if (customCrashLogs)
-        crashReport[kCountlyCRKeyLogs] = [customCrashLogs componentsJoinedByString:@"\n"];
+    NSMutableDictionary* userInfo = exception.userInfo.mutableCopy;
+    [userInfo removeObjectForKey:kCountlyExceptionUserInfoBacktraceKey];
+    [custom addEntriesFromDictionary:userInfo];
 
-    crashReport[kCountlyCRKeyError] = [stackTrace componentsJoinedByString:@"\n"];
+    if (custom.allKeys.count)
+        crashReport[kCountlyCRKeyCustom] = custom;
 
-    if (nonfatal)
+    if (CountlyCrashReporter.sharedInstance.customCrashLogs)
+        crashReport[kCountlyCRKeyLogs] = [CountlyCrashReporter.sharedInstance.customCrashLogs componentsJoinedByString:@"\n"];
+
+    if (!isAutoDetect)
     {
         [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:NO];
         return;
@@ -204,17 +220,16 @@ void CountlySignalHandler(int signalCode)
     if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
         return;
 
-    static NSDateFormatter* df = nil;
+    const NSInteger kCountlyCustomCrashLogLengthLimit = 1000;
 
-    if (!customCrashLogs)
-    {
-        customCrashLogs = NSMutableArray.new;
-        df = NSDateFormatter.new;
-        df.dateFormat = @"yyyy-MM-dd HH:mm:ss.SSS";
-    }
+    if (log.length > kCountlyCustomCrashLogLengthLimit)
+        log = [log substringToIndex:kCountlyCustomCrashLogLengthLimit];
 
-    NSString* logWithDateTime = [NSString stringWithFormat:@"<%@> %@",[df stringFromDate:NSDate.date], log];
-    [customCrashLogs addObject:logWithDateTime];
+    NSString* logWithDateTime = [NSString stringWithFormat:@"<%@> %@",[self.dateFormatter stringFromDate:NSDate.date], log];
+    [self.customCrashLogs addObject:logWithDateTime];
+
+    if (self.customCrashLogs.count > self.crashLogLimit)
+        [self.customCrashLogs removeObjectAtIndex:0];
 }
 
 - (NSDictionary *)binaryImagesForStackTrace:(NSArray *)stackTrace
@@ -283,8 +298,8 @@ void CountlySignalHandler(int signalCode)
         //NOTE: Include app's own build UUID directly in crash report object, as Countly Server needs it for fast lookup
         if (imageHeader->filetype == MH_EXECUTE)
         {
-            buildUUID = imageUUID;
-            executableName = imageName;
+            CountlyCrashReporter.sharedInstance.buildUUID = imageUUID;
+            CountlyCrashReporter.sharedInstance.executableName = imageName;
         }
 
         NSString *imageLoadAddress = [NSString stringWithFormat:@"0x%llX", (uint64_t)imageHeader];
