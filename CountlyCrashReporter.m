@@ -220,6 +220,11 @@ void CountlySignalHandler(int signalCode)
     if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
         return;
 
+    const NSInteger kCountlyCustomCrashLogLengthLimit = 1000;
+
+    if (log.length > kCountlyCustomCrashLogLengthLimit)
+        log = [log substringToIndex:kCountlyCustomCrashLogLengthLimit];
+
     NSString* logWithDateTime = [NSString stringWithFormat:@"<%@> %@",[self.dateFormatter stringFromDate:NSDate.date], log];
     [self.customCrashLogs addObject:logWithDateTime];
 
