@@ -11,6 +11,7 @@
 - Fixed `UIAlertController` leak in push notification manager
 - Fixed `crashSegmentation` availability for manually recorded crashes
 - Fixed `openURL:` call thread as main thread
+- Updated minimum supported `macOS` version as `10.10`
 
 - Other various improvements
   - Discarded separate `UIWindow` for presenting `UIAlertControllers`
