@@ -288,10 +288,6 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 - (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
 {
-    __block UIWindow* window = [UIWindow.alloc initWithFrame:UIScreen.mainScreen.bounds];
-    window.rootViewController = CLYInternalViewController.new;
-    window.windowLevel = UIWindowLevelAlert;
-
     __block CLYInternalViewController* webVC = CLYInternalViewController.new;
     webVC.view.backgroundColor = UIColor.whiteColor;
     webVC.view.bounds = UIScreen.mainScreen.bounds;
@@ -310,15 +306,12 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
             if (completionHandler)
                 completionHandler(nil);
 
-            window.hidden = YES;
-            window = nil;
             webVC = nil;
         }];
     };
     [webVC.view addSubview:dismissButton];
 
-    [window makeKeyAndVisible];
-    [window.rootViewController presentViewController:webVC animated:YES completion:nil];
+    [CountlyCommon.sharedInstance.topViewController presentViewController:webVC animated:YES completion:nil];
 }
 
 - (NSURL *)widgetCheckURL:(NSString *)widgetID
