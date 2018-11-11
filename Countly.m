@@ -108,6 +108,16 @@
     CountlyLocationManager.sharedInstance.IP = config.IP;
     [CountlyLocationManager.sharedInstance sendLocationInfo];
 
+    CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
+    CountlyCrashReporter.sharedInstance.crashLogLimit = MAX(1, config.crashLogLimit);
+    if ([config.features containsObject:CLYCrashReporting])
+    {
+        CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;
+        [CountlyCrashReporter.sharedInstance startCrashReporting];
+    }
+#endif
+
+#if (TARGET_OS_IOS || TARGET_OS_OSX)
     if ([config.features containsObject:CLYPushNotifications])
     {
         CountlyPushNotifications.sharedInstance.isEnabledOnInitialConfig = YES;
@@ -115,14 +125,6 @@
         CountlyPushNotifications.sharedInstance.sendPushTokenAlways = config.sendPushTokenAlways;
         CountlyPushNotifications.sharedInstance.doNotShowAlertForNotifications = config.doNotShowAlertForNotifications;
         [CountlyPushNotifications.sharedInstance startPushNotifications];
-    }
-
-    CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
-    CountlyCrashReporter.sharedInstance.crashLogLimit = MAX(1, config.crashLogLimit);
-    if ([config.features containsObject:CLYCrashReporting])
-    {
-        CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;
-        [CountlyCrashReporter.sharedInstance startCrashReporting];
     }
 #endif
 
@@ -502,7 +504,7 @@
 
 
 #pragma mark - Push Notifications
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_OSX)
 
 - (void)askForNotificationPermission
 {
