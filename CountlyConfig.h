@@ -15,6 +15,8 @@ extern NSString* const CLYCrashReporting;
 extern NSString* const CLYAutoViewTracking;
 #elif TARGET_OS_TV
 extern NSString* const CLYAutoViewTracking;
+#elif TARGET_OS_OSX
+extern NSString* const CLYPushNotifications;
 #endif
 //NOTE: Disable APM feature until Countly Server completely supports it
 // extern NSString* const CLYAPM;
