@@ -15,7 +15,7 @@
 
 + (instancetype)sharedInstance;
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_OSX)
 - (void)startPushNotifications;
 - (void)stopPushNotifications;
 - (void)askForNotificationPermissionWithOptions:(NSUInteger)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler;
