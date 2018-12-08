@@ -12,6 +12,7 @@
 @property (nonatomic) BOOL isTestDevice;
 @property (nonatomic) BOOL sendPushTokenAlways;
 @property (nonatomic) BOOL doNotShowAlertForNotifications;
+@property (nonatomic) NSNotification* launchNotification;
 
 + (instancetype)sharedInstance;
 

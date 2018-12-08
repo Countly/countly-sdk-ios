@@ -124,6 +124,7 @@
         CountlyPushNotifications.sharedInstance.isTestDevice = config.isTestDevice;
         CountlyPushNotifications.sharedInstance.sendPushTokenAlways = config.sendPushTokenAlways;
         CountlyPushNotifications.sharedInstance.doNotShowAlertForNotifications = config.doNotShowAlertForNotifications;
+        CountlyPushNotifications.sharedInstance.launchNotification = config.launchNotification;
         [CountlyPushNotifications.sharedInstance startPushNotifications];
     }
 #endif

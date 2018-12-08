@@ -71,6 +71,13 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     [UIApplication.sharedApplication registerForRemoteNotifications];
 #elif TARGET_OS_OSX
     [NSApplication.sharedApplication registerForRemoteNotificationTypes:NSRemoteNotificationTypeBadge | NSRemoteNotificationTypeAlert | NSRemoteNotificationTypeSound];
+
+    if (@available(macOS 10.14, *))
+    {
+        UNNotificationResponse* notificationResponse = self.launchNotification.userInfo[NSApplicationLaunchUserNotificationKey];
+        if (notificationResponse)
+            [self userNotificationCenter:UNUserNotificationCenter.currentNotificationCenter didReceiveNotificationResponse:notificationResponse withCompletionHandler:^{}];
+    }
 #endif
 }
 

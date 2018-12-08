@@ -107,6 +107,12 @@ extern NSString* const CLYConsentAppleWatch;
  */
 @property (nonatomic) BOOL doNotShowAlertForNotifications;
 
+/**
+ * For handling push notifications for macOS apps on launch.
+ * @discussion Needs to be set in @c applicationDidFinishLaunching: method of macOS apps that uses @c CLYPushNotifications feature, in order to handle app launches by push notification click.
+ */
+@property (nonatomic) NSNotification* launchNotification;
+
 #pragma mark -
 
 /**
