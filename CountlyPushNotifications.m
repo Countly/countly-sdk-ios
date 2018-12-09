@@ -179,7 +179,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
     if ([self.token isEqualToString:kCountlyTokenError])
     {
-        [CountlyConnectionManager.sharedInstance sendPushToken:@""];
+        [self clearToken];
         return;
     }
 
@@ -202,7 +202,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
             }
             else if (hasNotificationPermissionBefore)
             {
-                [CountlyConnectionManager.sharedInstance sendPushToken:@""];
+                [self clearToken];
                 [CountlyPersistency.sharedInstance storeNotificationPermission:NO];
             }
         }];
@@ -217,7 +217,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         }
         else if (hasNotificationPermissionBefore)
         {
-            [CountlyConnectionManager.sharedInstance sendPushToken:@""];
+            [self clearToken];
             [CountlyPersistency.sharedInstance storeNotificationPermission:NO];
         }
     }
