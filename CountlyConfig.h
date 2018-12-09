@@ -15,6 +15,8 @@ extern NSString* const CLYCrashReporting;
 extern NSString* const CLYAutoViewTracking;
 #elif TARGET_OS_TV
 extern NSString* const CLYAutoViewTracking;
+#elif TARGET_OS_OSX
+extern NSString* const CLYPushNotifications;
 #endif
 //NOTE: Disable APM feature until Countly Server completely supports it
 // extern NSString* const CLYAPM;
@@ -104,6 +106,12 @@ extern NSString* const CLYConsentAppleWatch;
  * @discussion If set, push notifications that contain a message or a URL visit request will not show alerts automatically. Push Open event will be recorded automatically, but Push Action event needs to be recorded manually, as well as displaying the message manually.
  */
 @property (nonatomic) BOOL doNotShowAlertForNotifications;
+
+/**
+ * For handling push notifications for macOS apps on launch.
+ * @discussion Needs to be set in @c applicationDidFinishLaunching: method of macOS apps that uses @c CLYPushNotifications feature, in order to handle app launches by push notification click.
+ */
+@property (nonatomic) NSNotification* launchNotification;
 
 #pragma mark -
 
