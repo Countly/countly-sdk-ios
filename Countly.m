@@ -521,6 +521,16 @@
 {
     [CountlyPushNotifications.sharedInstance recordActionForNotification:userInfo clickedButtonIndex:buttonIndex];
 }
+
+- (void)recordPushNotificationToken
+{
+    [CountlyPushNotifications.sharedInstance sendToken];
+}
+
+- (void)clearPushNotificationToken
+{
+    [CountlyPushNotifications.sharedInstance clearToken];
+}
 #endif
 
 

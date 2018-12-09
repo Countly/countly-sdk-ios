@@ -224,6 +224,11 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 #endif
 }
 
+- (void)clearToken
+{
+    [CountlyConnectionManager.sharedInstance sendPushToken:@""];
+}
+
 - (void)handleNotification:(NSDictionary *)notification
 {
 #if (TARGET_OS_IOS || TARGET_OS_OSX)

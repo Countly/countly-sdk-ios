@@ -21,5 +21,7 @@
 - (void)stopPushNotifications;
 - (void)askForNotificationPermissionWithOptions:(NSUInteger)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler;
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
+- (void)sendToken;
+- (void)clearToken;
 #endif
 @end

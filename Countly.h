@@ -273,6 +273,18 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
 
+/**
+ * Records push notification token to Countly Server for current device ID.
+ * @discussion Can be used to re-send push notification token for current device ID, after a new user logs in and device ID changes, without waiting for the app to be restarted.
+ * @discussion In general, push notification token is handled automatically and this method does not need to be called manually.
+ */
+- (void)recordPushNotificationToken;
+
+/**
+ * Clears push notification token on Countly Server for current device ID.
+ * @discussion Can be used to clear push notification token for current device ID, before the current user logs out and device ID changes, without waiting for the app to be restarted.
+ */
+- (void)clearPushNotificationToken;
 #endif
 
 
