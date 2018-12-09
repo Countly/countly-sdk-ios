@@ -88,6 +88,7 @@ void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 - (UIViewController *)topViewController;
+- (void)tryPresentingViewController:(UIViewController *)viewController;
 #endif
 
 - (void)startAppleWatchMatching;

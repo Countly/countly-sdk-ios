@@ -299,7 +299,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         [alertController addAction:visit];
     }];
 
-    [CountlyCommon.sharedInstance.topViewController presentViewController:alertController animated:YES completion:nil];
+    [CountlyCommon.sharedInstance tryPresentingViewController:alertController];
 
     const CGFloat kCountlyActionButtonHeight = 44.0;
     CGRect tempFrame = defaultButton.frame;

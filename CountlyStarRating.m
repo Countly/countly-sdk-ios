@@ -116,7 +116,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         COUNTLY_LOG(@"UIAlertController's contentViewController can not be set: \n%@", exception);
     }
 
-    [CountlyCommon.sharedInstance.topViewController presentViewController:self.alertController animated:YES completion:nil];
+    [CountlyCommon.sharedInstance tryPresentingViewController:self.alertController];
 }
 
 - (void)checkForAutoAsk
@@ -317,7 +317,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         center.y += 24; //NOTE: adjust dismiss button position for iPhone X type of devices
     dismissButton.center = center;
 
-    [CountlyCommon.sharedInstance.topViewController presentViewController:webVC animated:YES completion:nil];
+    [CountlyCommon.sharedInstance tryPresentingViewController:webVC];
 }
 
 - (NSURL *)widgetCheckURL:(NSString *)widgetID

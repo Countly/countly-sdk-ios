@@ -222,6 +222,19 @@ void CountlyInternalLog(NSString *format, ...)
 
     return topVC;
 }
+
+- (void)tryPresentingViewController:(UIViewController *)viewController
+{
+    UIViewController* topVC = self.topViewController;
+
+    if (topVC)
+    {
+        [topVC presentViewController:viewController animated:YES completion:nil];
+        return;
+    }
+
+    [self performSelector:@selector(tryPresentingViewController:) withObject:viewController afterDelay:1.0];
+}
 #endif
 
 @end
