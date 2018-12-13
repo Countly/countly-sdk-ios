@@ -20,6 +20,7 @@ NSString* const kCountlyReservedEventStarRating = @"[CLY]_star_rating";
 NSString* const kCountlyStarRatingStatusSessionCountKey = @"kCountlyStarRatingStatusSessionCountKey";
 NSString* const kCountlyStarRatingStatusHasEverAskedAutomatically = @"kCountlyStarRatingStatusHasEverAskedAutomatically";
 
+NSString* const kCountlySRKeyAppKey         = @"app_key";
 NSString* const kCountlySRKeyPlatform       = @"platform";
 NSString* const kCountlySRKeyAppVersion     = @"app_version";
 NSString* const kCountlySRKeyRating         = @"rating";
@@ -322,9 +323,10 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 - (NSURL *)widgetCheckURL:(NSString *)widgetID
 {
-    NSString* URLString = [NSString stringWithFormat:@"%@%@%@%@?%@=%@",
+    NSString* URLString = [NSString stringWithFormat:@"%@%@%@%@?%@=%@&%@=%@",
                            CountlyConnectionManager.sharedInstance.host,
                            kCountlyOutputEndpoint, kCountlyFeedbackEndpoint, kCountlyWidgetEndpoint,
+                           kCountlySRKeyAppKey, CountlyConnectionManager.sharedInstance.appKey,
                            kCountlySRKeyWidgetID, widgetID];
 
     return [NSURL URLWithString:URLString];
@@ -332,9 +334,10 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 - (NSURL *)widgetDisplayURL:(NSString *)widgetID
 {
-    NSString* URLString = [NSString stringWithFormat:@"%@%@?%@=%@&%@=%@&%@=%@&%@=%@&%@=%@",
+    NSString* URLString = [NSString stringWithFormat:@"%@%@?%@=%@&%@=%@&%@=%@&%@=%@&%@=%@&%@=%@",
                            CountlyConnectionManager.sharedInstance.host,
                            kCountlyFeedbackEndpoint,
+                           kCountlySRKeyAppKey, CountlyConnectionManager.sharedInstance.appKey,
                            kCountlySRKeyWidgetID, widgetID,
                            kCountlySRKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped,
                            kCountlySRKeyAppVersion, CountlyDeviceInfo.appVersion,
