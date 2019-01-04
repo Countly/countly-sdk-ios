@@ -318,7 +318,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationCountry, ISOCountryCode];
 
     if (IP)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationCountry, IP];
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationIP, IP];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
