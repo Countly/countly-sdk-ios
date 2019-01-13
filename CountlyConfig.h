@@ -215,12 +215,6 @@ extern NSString* const CLYConsentAppleWatch;
  */
 @property (nonatomic) BOOL enableAttribution;
 
-/**
- * For enabling automatic fetching of remote config values.
- * @discussion If set, Remote Config values specified on Countly Server will be fetched on beginning of sessions.
- */
-@property (nonatomic) BOOL enableRemoteConfig;
-
 #pragma mark -
 
 /**
@@ -289,6 +283,24 @@ extern NSString* const CLYConsentAppleWatch;
  * @discussion Completion block has a single NSInteger parameter that indicates 1 to 5 star-rating given by user. If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to Countly Server.
  */
 @property (nonatomic, copy) void (^starRatingCompletion)(NSInteger rating);
+
+#pragma mark -
+
+/**
+ * For enabling automatic fetching of remote config values.
+ * @discussion If set, Remote Config values specified on Countly Server will be fetched on beginning of sessions.
+ */
+@property (nonatomic) BOOL enableRemoteConfig;
+
+/**
+ * Completion block to be executed after remote config is fetched from Countly Server on start.
+ * @discussion This completion block can be used to detect updating of remote config values is completed, either with success or failure.
+ * @discussion It has an @c NSError parameter that will be either @ nil or an @c NSError object, depending of request result.
+ * @discussion If there is no error, it will be executed with an @c nil, which means latest remote config values are ready to be used.
+ * @discussion If Countly Server is not reachable or if there is another error, it will be executed with an @c NSError indicating the problem.
+ * @discussion If @c enableRemoteConfig flag is not set on initial config, it will never be executed.
+ */
+@property (nonatomic, copy) void (^remoteConfigCompletionHandler)(NSError * _Nullable error);
 
 NS_ASSUME_NONNULL_END
 

@@ -10,6 +10,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface CountlyRemoteConfig : NSObject
 @property (nonatomic) BOOL isEnabledOnInitialConfig;
+@property (nonatomic, copy) void (^remoteConfigCompletionHandler)(NSError * _Nullable error);
 
 + (instancetype)sharedInstance;
 

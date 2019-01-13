@@ -55,16 +55,20 @@ NSString* const kCountlyRCKeyDeviceID           = @"device_id";
 
     [self fetchRemoteConfigForKeys:nil omitKeys:nil completionHandler:^(NSDictionary *remoteConfig, NSError *error)
     {
-        if (error)
+        if (!error)
+        {
+            COUNTLY_LOG(@"Fetching remote config on start is successful. \n%@", remoteConfig);
+
+            self.cachedRemoteConfig = remoteConfig;
+            [CountlyPersistency.sharedInstance storeRemoteConfig:self.cachedRemoteConfig];
+        }
+        else
         {
             COUNTLY_LOG(@"Fetching remote config on start failed: %@", error);
-            return;
         }
 
-        COUNTLY_LOG(@"Fetching remote config on start is successful. \n%@", remoteConfig);
-
-        self.cachedRemoteConfig = remoteConfig;
-        [CountlyPersistency.sharedInstance storeRemoteConfig:self.cachedRemoteConfig];
+        if (self.remoteConfigCompletionHandler)
+            self.remoteConfigCompletionHandler(error);
     }];
 }
 

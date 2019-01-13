@@ -149,6 +149,7 @@
     [CountlyCommon.sharedInstance startAttribution];
 
     CountlyRemoteConfig.sharedInstance.isEnabledOnInitialConfig = config.enableRemoteConfig;
+    CountlyRemoteConfig.sharedInstance.remoteConfigCompletionHandler = config.remoteConfigCompletionHandler;
     [CountlyRemoteConfig.sharedInstance startRemoteConfig];
 
     [CountlyConnectionManager.sharedInstance proceedOnQueue];
