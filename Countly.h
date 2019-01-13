@@ -489,6 +489,18 @@ NS_ASSUME_NONNULL_BEGIN
 
 #endif
 
+
+
+#pragma mark - Remote Config
+/**
+ * Returns last retrieved remote config value for given key, if exists.
+ * @discussion If remote config is never retrieved from Countly Server before, this method will return @c nil.
+ * @discussion If @c key is not defined in remote config on Countly Server, this method will return @c nil.
+ * @discussion If Countly Server is not reachable, this method will return the last retrieved value which is stored on device.
+ * @param key Remote config key specified on Countly Server
+ */
+- (id)remoteConfigValueForKey:(NSString *)key;
+
 NS_ASSUME_NONNULL_END
 
 @end

@@ -148,6 +148,9 @@
 
     [CountlyCommon.sharedInstance startAttribution];
 
+    CountlyRemoteConfig.sharedInstance.isEnabledOnInitialConfig = config.enableRemoteConfig;
+    [CountlyRemoteConfig.sharedInstance startRemoteConfig];
+
     [CountlyConnectionManager.sharedInstance proceedOnQueue];
 }
 
@@ -674,5 +677,14 @@
 }
 
 #endif
+
+
+
+#pragma mark - Remote Config
+
+- (id)remoteConfigValueForKey:(NSString *)key
+{
+    return [CountlyRemoteConfig.sharedInstance remoteConfigValueForKey:key];
+}
 
 @end

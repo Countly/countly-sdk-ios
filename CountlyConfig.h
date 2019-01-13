@@ -215,6 +215,12 @@ extern NSString* const CLYConsentAppleWatch;
  */
 @property (nonatomic) BOOL enableAttribution;
 
+/**
+ * For enabling automatic fetching of remote config values.
+ * @discussion If set, Remote Config values specified on Countly Server will be fetched on beginning of sessions.
+ */
+@property (nonatomic) BOOL enableRemoteConfig;
+
 #pragma mark -
 
 /**
