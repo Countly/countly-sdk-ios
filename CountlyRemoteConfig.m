@@ -13,6 +13,7 @@ NSString* const kCountlyRCKeyMethod             = @"method";
 NSString* const kCountlyRCKeyFetchRemoteConfig  = @"fetch_remote_config";
 NSString* const kCountlyRCKeyAppKey             = @"app_key";
 NSString* const kCountlyRCKeyDeviceID           = @"device_id";
+NSString* const kCountlyRCKeyMetrics            = @"metrics";
 
 @interface CountlyRemoteConfig ()
 @property (nonatomic) NSDictionary* cachedRemoteConfig;
@@ -86,12 +87,12 @@ NSString* const kCountlyRCKeyDeviceID           = @"device_id";
 
     NSURL* remoteConfigURL = [self remoteConfigURL];
 
-    NSURLRequest* remoteConfigRequest = [NSURLRequest requestWithURL:remoteConfigURL];
-    NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:remoteConfigRequest completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLRequest* request = [NSURLRequest requestWithURL:remoteConfigURL];
+    NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
         if (error) //NOTE: remote config request error
         {
-            COUNTLY_LOG(@"Fetching remote config request failed: %@", error);
+            COUNTLY_LOG(@"Request <%p> failed!\nError: %@", request, error);
 
             dispatch_async(dispatch_get_main_queue(), ^
             {
@@ -105,7 +106,7 @@ NSString* const kCountlyRCKeyDeviceID           = @"device_id";
 
         if (error) //NOTE: JSON parse error
         {
-            COUNTLY_LOG(@"Parsing remote config JSON failed: %@", error);
+            COUNTLY_LOG(@"Remote Config Request <%p> failed!\nServer reply: %@", request, [data cly_stringUTF8]);
 
             dispatch_async(dispatch_get_main_queue(), ^
             {
@@ -115,6 +116,8 @@ NSString* const kCountlyRCKeyDeviceID           = @"device_id";
             return;
         }
 
+        COUNTLY_LOG(@"Remote Config Request <%p> successfully completed.", request);
+
         dispatch_async(dispatch_get_main_queue(), ^
         {
             completionHandler(remoteConfig, error);
@@ -122,6 +125,8 @@ NSString* const kCountlyRCKeyDeviceID           = @"device_id";
     }];
 
     [task resume];
+
+    COUNTLY_LOG(@"Remote Config Request <%p> started:\n[%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, [request.HTTPBody cly_stringUTF8]);
 }
 
 - (NSURL *)remoteConfigURL
@@ -132,6 +137,11 @@ NSString* const kCountlyRCKeyDeviceID           = @"device_id";
                            kCountlyRCKeyMethod, kCountlyRCKeyFetchRemoteConfig,
                            kCountlyRCKeyAppKey, CountlyConnectionManager.sharedInstance.appKey,
                            kCountlyRCKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped];
+
+    if (CountlyConsentManager.sharedInstance.consentForSessions)
+    {
+        URLString = [URLString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyMetrics, [CountlyDeviceInfo metrics]];
+    }
 
     return [NSURL URLWithString:URLString];
 }
