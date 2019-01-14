@@ -14,6 +14,8 @@ NSString* const kCountlyRCKeyFetchRemoteConfig  = @"fetch_remote_config";
 NSString* const kCountlyRCKeyAppKey             = @"app_key";
 NSString* const kCountlyRCKeyDeviceID           = @"device_id";
 NSString* const kCountlyRCKeyMetrics            = @"metrics";
+NSString* const kCountlyRCKeyKeys               = @"keys";
+NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
 
 @interface CountlyRemoteConfig ()
 @property (nonatomic) NSDictionary* cachedRemoteConfig;
@@ -85,7 +87,7 @@ NSString* const kCountlyRCKeyMetrics            = @"metrics";
     if (!completionHandler)
         return;
 
-    NSURL* remoteConfigURL = [self remoteConfigURL];
+    NSURL* remoteConfigURL = [self remoteConfigURLForKeys:keys omitKeys:omitKeys];
 
     NSURLRequest* request = [NSURLRequest requestWithURL:remoteConfigURL];
     NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
@@ -129,7 +131,7 @@ NSString* const kCountlyRCKeyMetrics            = @"metrics";
     COUNTLY_LOG(@"Remote Config Request <%p> started:\n[%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, [request.HTTPBody cly_stringUTF8]);
 }
 
-- (NSURL *)remoteConfigURL
+- (NSURL *)remoteConfigURLForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys
 {
     NSString* URLString = [NSString stringWithFormat:@"%@%@%@?%@=%@&%@=%@&%@=%@",
                            CountlyConnectionManager.sharedInstance.host,
@@ -137,6 +139,14 @@ NSString* const kCountlyRCKeyMetrics            = @"metrics";
                            kCountlyRCKeyMethod, kCountlyRCKeyFetchRemoteConfig,
                            kCountlyRCKeyAppKey, CountlyConnectionManager.sharedInstance.appKey,
                            kCountlyRCKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped];
+    if (keys)
+    {
+        URLString = [URLString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyKeys, keys.cly_JSONify];
+    }
+    else if (omitKeys)
+    {
+        URLString = [URLString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyOmitKeys, omitKeys.cly_JSONify];
+    }
 
     if (CountlyConsentManager.sharedInstance.consentForSessions)
     {
