@@ -20,6 +20,7 @@
 @property (nonatomic) NSString* secretSalt;
 @property (nonatomic) BOOL alwaysUsePOST;
 @property (nonatomic) BOOL applyZeroIDFAFix;
+@property (nonatomic) NSURLSessionConfiguration *configuration;
 
 + (instancetype)sharedInstance;
 
