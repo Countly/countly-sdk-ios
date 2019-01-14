@@ -6,16 +6,13 @@
 
 #import <Foundation/Foundation.h>
 
-NS_ASSUME_NONNULL_BEGIN
-
 @interface CountlyRemoteConfig : NSObject
 @property (nonatomic) BOOL isEnabledOnInitialConfig;
-@property (nonatomic, copy) void (^remoteConfigCompletionHandler)(NSError * _Nullable error);
+@property (nonatomic, copy) void (^remoteConfigCompletionHandler)(NSError * error);
 
 + (instancetype)sharedInstance;
 
 - (void)startRemoteConfig;
 - (id)remoteConfigValueForKey:(NSString *)key;
+- (void)updateRemoteConfigForForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler;
 @end
-
-NS_ASSUME_NONNULL_END

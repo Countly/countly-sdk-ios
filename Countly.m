@@ -688,4 +688,20 @@
     return [CountlyRemoteConfig.sharedInstance remoteConfigValueForKey:key];
 }
 
+- (void)updateRemoteConfigWithCompletionHandler:(void (^)(NSError * error))completionHandler
+{
+    [CountlyRemoteConfig.sharedInstance updateRemoteConfigForForKeys:nil omitKeys:nil completionHandler:completionHandler];
+}
+
+- (void)updateRemoteConfigOnlyForKeys:(NSArray *)keys completionHandler:(void (^)(NSError * error))completionHandler
+{
+    [CountlyRemoteConfig.sharedInstance updateRemoteConfigForForKeys:keys omitKeys:nil completionHandler:completionHandler];
+}
+
+- (void)updateRemoteConfigExceptForKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler
+{
+    [CountlyRemoteConfig.sharedInstance updateRemoteConfigForForKeys:nil omitKeys:omitKeys completionHandler:completionHandler];
+}
+
+
 @end

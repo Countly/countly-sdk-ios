@@ -501,6 +501,29 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (id)remoteConfigValueForKey:(NSString *)key;
 
+/**
+ * Manually updates all locally stored remote config values by fetching latest values from Countly Server, and executes completion handler.
+ * @discussion @c completionHandler has an @c NSError parameter that will be either @ nil or an @c NSError object, depending on result.
+ * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure.
+ */
+- (void)updateRemoteConfigWithCompletionHandler:(void (^)(NSError * error))completionHandler;
+
+/**
+ * Manually updates locally stored remote config values only for specified keys, by fetching latest values from Countly Server, and executes completion handler.
+ * @discussion @c completionHandler has an @c NSError parameter that will be either @ nil or an @c NSError object, depending on result.
+ * @param keys An array of remote config keys to update
+ * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure
+ */
+- (void)updateRemoteConfigOnlyForKeys:(NSArray *)keys completionHandler:(void (^)(NSError * error))completionHandler;
+
+/**
+ * Manually updates locally stored remote config values except for specified keys, by fetching latest values from Countly Server, and executes completion handler.
+ * @discussion @c completionHandler has an @c NSError parameter that will be either @ nil or an @c NSError object, depending on result.
+ * @param omitKeys An array of remote config keys to omit from updating
+ * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure
+ */
+- (void)updateRemoteConfigExceptForKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler;
+
 NS_ASSUME_NONNULL_END
 
 @end

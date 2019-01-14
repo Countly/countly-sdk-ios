@@ -75,6 +75,42 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
     }];
 }
 
+- (void)updateRemoteConfigForForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler
+{
+    if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
+        return;
+
+    COUNTLY_LOG(@"Fetching remote config manually...");
+
+    [self fetchRemoteConfigForKeys:keys omitKeys:omitKeys completionHandler:^(NSDictionary *remoteConfig, NSError *error)
+    {
+        if (!error)
+        {
+            COUNTLY_LOG(@"Fetching remote config manually is successful. \n%@", remoteConfig);
+
+            if (!keys && !omitKeys)
+            {
+                self.cachedRemoteConfig = remoteConfig;
+            }
+            else
+            {
+                NSMutableDictionary* partiallyUpdatedRemoteConfig = self.cachedRemoteConfig.mutableCopy;
+                [partiallyUpdatedRemoteConfig addEntriesFromDictionary:remoteConfig];
+                self.cachedRemoteConfig = [NSDictionary dictionaryWithDictionary:partiallyUpdatedRemoteConfig];
+            }
+
+            [CountlyPersistency.sharedInstance storeRemoteConfig:self.cachedRemoteConfig];
+        }
+        else
+        {
+            COUNTLY_LOG(@"Fetching remote config manually failed: %@", error);
+        }
+
+        if (completionHandler)
+            completionHandler(error);
+    }];
+}
+
 - (id)remoteConfigValueForKey:(NSString *)key
 {
     return self.cachedRemoteConfig[key];
