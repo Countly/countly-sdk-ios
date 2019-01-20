@@ -116,6 +116,12 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
     return self.cachedRemoteConfig[key];
 }
 
+- (void)clearCachedRemoteConfig
+{
+    self.cachedRemoteConfig = nil;
+    [CountlyPersistency.sharedInstance storeRemoteConfig:self.cachedRemoteConfig];
+}
+
 #pragma mark ---
 
 - (void)fetchRemoteConfigForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSDictionary* remoteConfig, NSError * error))completionHandler

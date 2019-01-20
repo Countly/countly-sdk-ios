@@ -15,4 +15,5 @@
 - (void)startRemoteConfig;
 - (id)remoteConfigValueForKey:(NSString *)key;
 - (void)updateRemoteConfigForForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler;
+- (void)clearCachedRemoteConfig;
 @end
