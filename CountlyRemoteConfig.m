@@ -195,6 +195,8 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
         URLString = [URLString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyMetrics, [CountlyDeviceInfo metrics]];
     }
 
+    URLString = [CountlyConnectionManager.sharedInstance appendChecksum:URLString];
+
     return [NSURL URLWithString:URLString];
 }
 

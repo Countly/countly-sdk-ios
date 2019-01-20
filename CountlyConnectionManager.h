@@ -38,4 +38,7 @@
 - (void)sendConsentChanges:(NSString *)consentChanges;
 
 - (void)proceedOnQueue;
+
+- (NSString *)appendChecksum:(NSString *)queryString;
+
 @end
