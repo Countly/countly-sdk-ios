@@ -201,6 +201,9 @@
 
         [CountlyPersistency.sharedInstance clearAllTimedEvents];
     }
+
+    [CountlyRemoteConfig.sharedInstance clearCachedRemoteConfig];
+    [CountlyRemoteConfig.sharedInstance startRemoteConfig];
 }
 
 - (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue

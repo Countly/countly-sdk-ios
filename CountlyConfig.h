@@ -293,7 +293,7 @@ extern NSString* const CLYConsentAppleWatch;
 @property (nonatomic) BOOL enableRemoteConfig;
 
 /**
- * Completion block to be executed after remote config is fetched from Countly Server on start.
+ * Completion block to be executed after remote config is fetched from Countly Server, on start or device ID change.
  * @discussion This completion block can be used to detect updating of remote config values is completed, either with success or failure.
  * @discussion It has an @c NSError parameter that will be either @ nil or an @c NSError object, depending of request result.
  * @discussion If there is no error, it will be executed with an @c nil, which means latest remote config values are ready to be used.
