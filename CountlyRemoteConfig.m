@@ -136,7 +136,7 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
     {
         if (error) //NOTE: remote config request error
         {
-            COUNTLY_LOG(@"Request <%p> failed!\nError: %@", request, error);
+            COUNTLY_LOG(@"Remote Config Request <%p> failed!\nError: %@", request, error);
 
             dispatch_async(dispatch_get_main_queue(), ^
             {
@@ -148,7 +148,7 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
 
         NSDictionary* remoteConfig = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
 
-        if (error) //NOTE: JSON parse error
+        if (error || ((NSHTTPURLResponse*)response).statusCode != 200) //NOTE: JSON parse error or API error
         {
             COUNTLY_LOG(@"Remote Config Request <%p> failed!\nServer reply: %@", request, [data cly_stringUTF8]);
 
@@ -170,7 +170,7 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
 
     [task resume];
 
-    COUNTLY_LOG(@"Remote Config Request <%p> started:\n[%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, [request.HTTPBody cly_stringUTF8]);
+    COUNTLY_LOG(@"Remote Config Request <%p> started:\n[%@] %@", (id)request, request.HTTPMethod, request.URL.absoluteString);
 }
 
 - (NSURL *)remoteConfigURLForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys
