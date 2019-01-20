@@ -175,27 +175,31 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
 
 - (NSURL *)remoteConfigURLForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys
 {
-    NSString* URLString = [NSString stringWithFormat:@"%@%@%@?%@=%@&%@=%@&%@=%@",
-                           CountlyConnectionManager.sharedInstance.host,
-                           kCountlyRCOutputEndpoint, kCountlyRCSDKEndpoint,
-                           kCountlyRCKeyMethod, kCountlyRCKeyFetchRemoteConfig,
-                           kCountlyRCKeyAppKey, CountlyConnectionManager.sharedInstance.appKey,
-                           kCountlyRCKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped];
+    NSString* queryString = [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%@",
+                             kCountlyRCKeyMethod, kCountlyRCKeyFetchRemoteConfig,
+                             kCountlyRCKeyAppKey, CountlyConnectionManager.sharedInstance.appKey,
+                             kCountlyRCKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped];
+
     if (keys)
     {
-        URLString = [URLString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyKeys, keys.cly_JSONify];
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyKeys, keys.cly_JSONify];
     }
     else if (omitKeys)
     {
-        URLString = [URLString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyOmitKeys, omitKeys.cly_JSONify];
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyOmitKeys, omitKeys.cly_JSONify];
     }
 
     if (CountlyConsentManager.sharedInstance.consentForSessions)
     {
-        URLString = [URLString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyMetrics, [CountlyDeviceInfo metrics]];
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyMetrics, [CountlyDeviceInfo metrics]];
     }
 
-    URLString = [CountlyConnectionManager.sharedInstance appendChecksum:URLString];
+    queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
+
+    NSString* URLString = [NSString stringWithFormat:@"%@%@%@?%@",
+                           CountlyConnectionManager.sharedInstance.host,
+                           kCountlyRCOutputEndpoint, kCountlyRCSDKEndpoint,
+                           queryString];
 
     return [NSURL URLWithString:URLString];
 }
