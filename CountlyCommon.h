@@ -65,6 +65,7 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 {
     CLYErrorFeedbackWidgetNotAvailable = 10001,
     CLYErrorFeedbackWidgetNotTargetedForDevice = 10002,
+    CLYErrorRemoteConfigGeneralAPIError = 10011,
 };
 
 @interface CountlyCommon : NSObject

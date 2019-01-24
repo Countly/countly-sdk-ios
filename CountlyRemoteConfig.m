@@ -134,23 +134,26 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
     NSURLRequest* request = [NSURLRequest requestWithURL:remoteConfigURL];
     NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
-        if (error) //NOTE: remote config request error
+        NSDictionary* remoteConfig = nil;
+
+        if (!error)
         {
-            COUNTLY_LOG(@"Remote Config Request <%p> failed!\nError: %@", request, error);
-
-            dispatch_async(dispatch_get_main_queue(), ^
-            {
-                completionHandler(nil, error);
-            });
-
-            return;
+            remoteConfig = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
         }
 
-        NSDictionary* remoteConfig = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
-
-        if (error || ((NSHTTPURLResponse*)response).statusCode != 200) //NOTE: JSON parse error or API error
+        if (!error)
         {
-            COUNTLY_LOG(@"Remote Config Request <%p> failed!\nServer reply: %@", request, [data cly_stringUTF8]);
+            if (((NSHTTPURLResponse*)response).statusCode != 200)
+            {
+                NSMutableDictionary* userInfo = remoteConfig.mutableCopy;
+                userInfo[NSLocalizedDescriptionKey] = @"Remote config general API error";
+                error = [NSError errorWithDomain:kCountlyErrorDomain code:CLYErrorRemoteConfigGeneralAPIError userInfo:userInfo];
+            }
+        }
+
+        if (error)
+        {
+            COUNTLY_LOG(@"Remote Config Request <%p> failed!\nError: %@", request, error);
 
             dispatch_async(dispatch_get_main_queue(), ^
             {
@@ -164,7 +167,7 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
 
         dispatch_async(dispatch_get_main_queue(), ^
         {
-            completionHandler(remoteConfig, error);
+            completionHandler(remoteConfig, nil);
         });
     }];
 
