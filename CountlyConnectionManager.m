@@ -109,8 +109,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         isDelayingDeviceIDChange = YES;
         hasAlreadyDelayedDeviceIDChange = YES;
 
-        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(endDelayingDeviceIDChange) object:nil];
-        [self performSelector:@selector(endDelayingDeviceIDChange) withObject:nil afterDelay:10];
+        dispatch_async(dispatch_get_main_queue(), ^
+        {
+            [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(endDelayingDeviceIDChange) object:nil];
+            [self performSelector:@selector(endDelayingDeviceIDChange) withObject:nil afterDelay:10 ];
+        });
+
         return;
     }
 
