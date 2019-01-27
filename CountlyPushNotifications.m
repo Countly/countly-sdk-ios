@@ -250,7 +250,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 #if TARGET_OS_OSX
     //NOTE: For macOS targets, just record action event.
-    [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(0)}];
+    [self recordActionEvent:notificationID buttonIndex:0];
 #endif
 
 #if TARGET_OS_IOS
@@ -295,7 +295,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         defaultButton.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         defaultButton.onClick = ^(id sender)
         {
-            [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(0)}];
+            [self recordActionEvent:notificationID buttonIndex:0];
 
             [self openURL:defaultURL];
 
@@ -311,7 +311,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     CLYButton* dismissButton = [CLYButton dismissAlertButton];
     dismissButton.onClick = ^(id sender)
     {
-        [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(0)}];
+        [self recordActionEvent:notificationID buttonIndex:0];
 
         [alertController dismissViewControllerAnimated:YES completion:^
         {
@@ -330,7 +330,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
         UIAlertAction* visit = [UIAlertAction actionWithTitle:actionTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction * action)
         {
-            [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(idx + 1)}];
+            [self recordActionEvent:notificationID buttonIndex:idx + 1];
 
             [self openURL:URL];
 
@@ -364,7 +364,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     });
 }
 
-- (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
+- (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex
 {
     if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
         return;
@@ -372,10 +372,21 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     NSDictionary* countlyPayload = userInfo[kCountlyPNKeyCountlyPayload];
     NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
 
+    [self recordActionEvent:notificationID buttonIndex:buttonIndex];
+}
+
+- (void)recordActionEvent:(NSString *)notificationID buttonIndex:(NSInteger)buttonIndex
+{
     if (!notificationID)
         return;
 
-    [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(buttonIndex)}];
+    NSDictionary* segmentation =
+    @{
+        kCountlyPNKeyNotificationID: notificationID,
+        kCountlyPNKeyActionButtonIndex: @(buttonIndex)
+    };
+
+    [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushAction segmentation:segmentation];
 }
 
 #pragma mark ---
@@ -414,19 +425,14 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
         if (notificationID)
         {
-            NSInteger buttonIndex = -1;
+            NSInteger buttonIndex = 0;
             NSString* URL = nil;
 
             COUNTLY_LOG(@"Action Identifier: %@", response.actionIdentifier);
 
             if ([response.actionIdentifier isEqualToString:UNNotificationDefaultActionIdentifier])
             {
-                buttonIndex = 0;
-
-                if (countlyPayload[kCountlyPNKeyDefaultURL])
-                {
-                    URL = countlyPayload[kCountlyPNKeyDefaultURL];
-                }
+                URL = countlyPayload[kCountlyPNKeyDefaultURL];
             }
             else if ([response.actionIdentifier hasPrefix:kCountlyActionIdentifier])
             {
@@ -434,10 +440,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
                 URL = countlyPayload[kCountlyPNKeyButtons][buttonIndex - 1][kCountlyPNKeyActionButtonURL];
             }
 
-            if (buttonIndex >= 0)
-            {
-                [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(buttonIndex)}];
-            }
+            [self recordActionEvent:notificationID buttonIndex:buttonIndex];
 
             [self openURL:URL];
         }
