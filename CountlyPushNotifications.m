@@ -6,7 +6,6 @@
 
 #import "CountlyCommon.h"
 
-NSString* const kCountlyReservedEventPushOpen = @"[CLY]_push_open";
 NSString* const kCountlyReservedEventPushAction = @"[CLY]_push_action";
 NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
@@ -247,10 +246,11 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     }
 
     COUNTLY_LOG(@"Countly Push Notification ID: %@", notificationID);
+#endif
 
-    [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushOpen segmentation:@{kCountlyPNKeyNotificationID: notificationID}];
-
-    //NOTE: If it is a macOS target, no need to show alerts manually. So, after this point it is only for iOS targets.
+#if TARGET_OS_OSX
+    //NOTE: For macOS targets, just record action event.
+    [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(0)}];
 #endif
 
 #if TARGET_OS_IOS
@@ -311,6 +311,8 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     CLYButton* dismissButton = [CLYButton dismissAlertButton];
     dismissButton.onClick = ^(id sender)
     {
+        [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(0)}];
+
         [alertController dismissViewControllerAnimated:YES completion:^
         {
             alertController = nil;
@@ -412,8 +414,6 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
         if (notificationID)
         {
-            [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushOpen segmentation:@{kCountlyPNKeyNotificationID: notificationID}];
-
             NSInteger buttonIndex = -1;
             NSString* URL = nil;
 
@@ -421,9 +421,10 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
             if ([response.actionIdentifier isEqualToString:UNNotificationDefaultActionIdentifier])
             {
+                buttonIndex = 0;
+
                 if (countlyPayload[kCountlyPNKeyDefaultURL])
                 {
-                    buttonIndex = 0;
                     URL = countlyPayload[kCountlyPNKeyDefaultURL];
                 }
             }
