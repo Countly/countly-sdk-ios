@@ -38,6 +38,10 @@
 - (BOOL)retrieveNotificationPermission;
 - (void)storeNotificationPermission:(BOOL)allowed;
 
+
+- (NSDictionary *)retrieveRemoteConfig;
+- (void)storeRemoteConfig:(NSDictionary *)remoteConfig;
+
 @property (nonatomic) NSUInteger eventSendThreshold;
 @property (nonatomic) NSUInteger storedRequestsLimit;
 @end

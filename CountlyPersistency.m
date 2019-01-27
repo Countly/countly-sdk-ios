@@ -19,6 +19,7 @@ NSString* const kCountlyStoredDeviceIDKey = @"kCountlyStoredDeviceIDKey";
 NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKey";
 NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 NSString* const kCountlyNotificationPermissionKey = @"kCountlyNotificationPermissionKey";
+NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersistencyKey";
 
 + (instancetype)sharedInstance
 {
@@ -318,6 +319,21 @@ NSString* const kCountlyNotificationPermissionKey = @"kCountlyNotificationPermis
 - (void)storeNotificationPermission:(BOOL)allowed
 {
     [NSUserDefaults.standardUserDefaults setBool:allowed forKey:kCountlyNotificationPermissionKey];
+    [NSUserDefaults.standardUserDefaults synchronize];
+}
+
+- (NSDictionary *)retrieveRemoteConfig
+{
+    NSDictionary* remoteConfig = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyRemoteConfigPersistencyKey];
+    if (!remoteConfig)
+        remoteConfig = NSDictionary.new;
+
+    return remoteConfig;
+}
+
+- (void)storeRemoteConfig:(NSDictionary *)remoteConfig
+{
+    [NSUserDefaults.standardUserDefaults setObject:remoteConfig forKey:kCountlyRemoteConfigPersistencyKey];
     [NSUserDefaults.standardUserDefaults synchronize];
 }
 

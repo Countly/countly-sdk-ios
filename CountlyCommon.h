@@ -22,6 +22,7 @@
 #import "CountlyNotificationService.h"
 #import "CountlyConsentManager.h"
 #import "CountlyLocationManager.h"
+#import "CountlyRemoteConfig.h"
 
 #if DEBUG
 #define COUNTLY_LOG(fmt, ...) CountlyInternalLog(fmt, ##__VA_ARGS__)
@@ -64,6 +65,7 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 {
     CLYErrorFeedbackWidgetNotAvailable = 10001,
     CLYErrorFeedbackWidgetNotTargetedForDevice = 10002,
+    CLYErrorRemoteConfigGeneralAPIError = 10011,
 };
 
 @interface CountlyCommon : NSObject

@@ -148,6 +148,10 @@
 
     [CountlyCommon.sharedInstance startAttribution];
 
+    CountlyRemoteConfig.sharedInstance.isEnabledOnInitialConfig = config.enableRemoteConfig;
+    CountlyRemoteConfig.sharedInstance.remoteConfigCompletionHandler = config.remoteConfigCompletionHandler;
+    [CountlyRemoteConfig.sharedInstance startRemoteConfig];
+
     [CountlyConnectionManager.sharedInstance proceedOnQueue];
 }
 
@@ -197,6 +201,9 @@
 
         [CountlyPersistency.sharedInstance clearAllTimedEvents];
     }
+
+    [CountlyRemoteConfig.sharedInstance clearCachedRemoteConfig];
+    [CountlyRemoteConfig.sharedInstance startRemoteConfig];
 }
 
 - (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue
@@ -674,5 +681,30 @@
 }
 
 #endif
+
+
+
+#pragma mark - Remote Config
+
+- (id)remoteConfigValueForKey:(NSString *)key
+{
+    return [CountlyRemoteConfig.sharedInstance remoteConfigValueForKey:key];
+}
+
+- (void)updateRemoteConfigWithCompletionHandler:(void (^)(NSError * error))completionHandler
+{
+    [CountlyRemoteConfig.sharedInstance updateRemoteConfigForForKeys:nil omitKeys:nil completionHandler:completionHandler];
+}
+
+- (void)updateRemoteConfigOnlyForKeys:(NSArray *)keys completionHandler:(void (^)(NSError * error))completionHandler
+{
+    [CountlyRemoteConfig.sharedInstance updateRemoteConfigForForKeys:keys omitKeys:nil completionHandler:completionHandler];
+}
+
+- (void)updateRemoteConfigExceptForKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler
+{
+    [CountlyRemoteConfig.sharedInstance updateRemoteConfigForForKeys:nil omitKeys:omitKeys completionHandler:completionHandler];
+}
+
 
 @end
