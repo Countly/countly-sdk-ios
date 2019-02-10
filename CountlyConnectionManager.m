@@ -78,18 +78,32 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)proceedOnQueue
 {
-    if (self.connection || isCrashing)
+    COUNTLY_LOG(@"Proceeding on queue...");
+
+    if (self.connection)
+    {
+        COUNTLY_LOG(@"Proceeding on queue is aborted: Already has a request in process!");
         return;
+    }
+
+    if (isCrashing)
+    {
+        COUNTLY_LOG(@"Proceeding on queue is aborted: Application is crashing!");
+        return;
+    }
 
     if (self.customHeaderFieldName && !self.customHeaderFieldValue)
     {
-        COUNTLY_LOG(@"customHeaderFieldName specified on config, but customHeaderFieldValue not set! Requests are postponed!");
+        COUNTLY_LOG(@"Proceeding on queue is aborted: customHeaderFieldName specified on config, but customHeaderFieldValue not set yet!");
         return;
     }
 
     NSString* firstItemInQueue = [CountlyPersistency.sharedInstance firstItemInQueue];
     if (!firstItemInQueue)
+    {
+        COUNTLY_LOG(@"Queue is empty. All requests are processed.");
         return;
+    }
 
     if ([firstItemInQueue isEqual:NSNull.null])
     {
