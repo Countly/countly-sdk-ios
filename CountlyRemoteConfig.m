@@ -11,13 +11,9 @@ NSString* const kCountlyRCSDKEndpoint           = @"/sdk";
 
 NSString* const kCountlyRCKeyMethod             = @"method";
 NSString* const kCountlyRCKeyFetchRemoteConfig  = @"fetch_remote_config";
-NSString* const kCountlyRCKeyAppKey             = @"app_key";
-NSString* const kCountlyRCKeyDeviceID           = @"device_id";
-NSString* const kCountlyRCKeySDKVersion         = @"sdk_version";
-NSString* const kCountlyRCKeySDKName            = @"sdk_name";
-NSString* const kCountlyRCKeyMetrics            = @"metrics";
 NSString* const kCountlyRCKeyKeys               = @"keys";
 NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
+NSString* const kCountlyRCKeyMetrics            = @"metrics";
 
 @interface CountlyRemoteConfig ()
 @property (nonatomic) NSDictionary* cachedRemoteConfig;
@@ -180,12 +176,9 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
 
 - (NSURL *)remoteConfigURLForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys
 {
-    NSString* queryString = [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%@&%@=%@&%@=%@",
-                             kCountlyRCKeyMethod, kCountlyRCKeyFetchRemoteConfig,
-                             kCountlyRCKeyAppKey, CountlyConnectionManager.sharedInstance.appKey,
-                             kCountlyRCKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped,
-                             kCountlyRCKeySDKVersion, kCountlySDKVersion,
-                             kCountlyRCKeySDKName, kCountlySDKName];
+    NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
+
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyMethod, kCountlyRCKeyFetchRemoteConfig];
 
     if (keys)
     {
