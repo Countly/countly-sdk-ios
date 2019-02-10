@@ -194,7 +194,13 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     {
         [UNUserNotificationCenter.currentNotificationCenter getNotificationSettingsWithCompletionHandler:^(UNNotificationSettings* settings)
         {
-            if (settings.authorizationStatus == UNAuthorizationStatusAuthorized)
+            BOOL hasProvisionalPermission = NO;
+            if (@available(iOS 12.0, *))
+            {
+                hasProvisionalPermission = settings.authorizationStatus == UNAuthorizationStatusProvisional;
+            }
+        
+            if (settings.authorizationStatus == UNAuthorizationStatusAuthorized || hasProvisionalPermission)
             {
                 [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
                 [CountlyPersistency.sharedInstance storeNotificationPermission:YES];
