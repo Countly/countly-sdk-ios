@@ -323,26 +323,34 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 - (NSURL *)widgetCheckURL:(NSString *)widgetID
 {
-    NSString* URLString = [NSString stringWithFormat:@"%@%@%@%@?%@=%@&%@=%@",
+    NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
+
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlySRKeyWidgetID, widgetID];
+
+    queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
+
+    NSString* URLString = [NSString stringWithFormat:@"%@%@%@%@?%@",
                            CountlyConnectionManager.sharedInstance.host,
                            kCountlyOutputEndpoint, kCountlyFeedbackEndpoint, kCountlyWidgetEndpoint,
-                           kCountlySRKeyAppKey, CountlyConnectionManager.sharedInstance.appKey,
-                           kCountlySRKeyWidgetID, widgetID];
+                           queryString];
 
     return [NSURL URLWithString:URLString];
 }
 
 - (NSURL *)widgetDisplayURL:(NSString *)widgetID
 {
-    NSString* URLString = [NSString stringWithFormat:@"%@%@?%@=%@&%@=%@&%@=%@&%@=%@&%@=%@&%@=%@",
+    NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
+
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@&%@=%@",
+                   kCountlySRKeyWidgetID, widgetID,
+                   kCountlySRKeyAppVersion, CountlyDeviceInfo.appVersion];
+
+    queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
+
+    NSString* URLString = [NSString stringWithFormat:@"%@%@?%@",
                            CountlyConnectionManager.sharedInstance.host,
                            kCountlyFeedbackEndpoint,
-                           kCountlySRKeyAppKey, CountlyConnectionManager.sharedInstance.appKey,
-                           kCountlySRKeyWidgetID, widgetID,
-                           kCountlySRKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped,
-                           kCountlySRKeyAppVersion, CountlyDeviceInfo.appVersion,
-                           kCountlySRKeySDKVersion, kCountlySDKVersion,
-                           kCountlySRKeySDKName, kCountlySDKName];
+                           queryString];
 
     return [NSURL URLWithString:URLString];
 }
