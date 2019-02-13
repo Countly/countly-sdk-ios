@@ -11,8 +11,6 @@
     NSTimeInterval unsentSessionLength;
     NSTimeInterval lastSessionStartTime;
     BOOL isCrashing;
-    BOOL isDelayingDeviceIDChange;
-    BOOL hasAlreadyDelayedDeviceIDChange;
 }
 @end
 
@@ -80,18 +78,32 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)proceedOnQueue
 {
-    if (self.connection || isCrashing || isDelayingDeviceIDChange)
+    COUNTLY_LOG(@"Proceeding on queue...");
+
+    if (self.connection)
+    {
+        COUNTLY_LOG(@"Proceeding on queue is aborted: Already has a request in process!");
         return;
+    }
+
+    if (isCrashing)
+    {
+        COUNTLY_LOG(@"Proceeding on queue is aborted: Application is crashing!");
+        return;
+    }
 
     if (self.customHeaderFieldName && !self.customHeaderFieldValue)
     {
-        COUNTLY_LOG(@"customHeaderFieldName specified on config, but customHeaderFieldValue not set! Requests are postponed!");
+        COUNTLY_LOG(@"Proceeding on queue is aborted: customHeaderFieldName specified on config, but customHeaderFieldValue not set yet!");
         return;
     }
 
     NSString* firstItemInQueue = [CountlyPersistency.sharedInstance firstItemInQueue];
     if (!firstItemInQueue)
+    {
+        COUNTLY_LOG(@"Queue is empty. All requests are processed.");
         return;
+    }
 
     if ([firstItemInQueue isEqual:NSNull.null])
     {
@@ -101,20 +113,6 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         [self proceedOnQueue];
         return;
     }
-
-    if ([firstItemInQueue containsString:[NSString stringWithFormat:@"&%@=", kCountlyQSKeyDeviceIDOld]] && !hasAlreadyDelayedDeviceIDChange)
-    {
-        COUNTLY_LOG(@"Server needs changing device ID request to be delayed 10 sec");
-
-        isDelayingDeviceIDChange = YES;
-        hasAlreadyDelayedDeviceIDChange = YES;
-
-        [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(endDelayingDeviceIDChange) object:nil];
-        [self performSelector:@selector(endDelayingDeviceIDChange) withObject:nil afterDelay:10];
-        return;
-    }
-
-    hasAlreadyDelayedDeviceIDChange = NO;
 
     [CountlyCommon.sharedInstance startBackgroundTask];
 
@@ -318,7 +316,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationCountry, ISOCountryCode];
 
     if (IP)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationCountry, IP];
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationIP, IP];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -548,12 +546,6 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     NSInteger code = ((NSHTTPURLResponse*)response).statusCode;
 
     return (code >= 200 && code < 300);
-}
-
-- (void)endDelayingDeviceIDChange
-{
-    isDelayingDeviceIDChange = NO;
-    [self proceedOnQueue];
 }
 
 #pragma mark ---

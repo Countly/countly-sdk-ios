@@ -18,7 +18,7 @@
 #endif
 @end
 
-NSString* const kCountlySDKVersion = @"18.08";
+NSString* const kCountlySDKVersion = @"19.02";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
@@ -221,6 +221,19 @@ void CountlyInternalLog(NSString *format, ...)
     }
 
     return topVC;
+}
+
+- (void)tryPresentingViewController:(UIViewController *)viewController
+{
+    UIViewController* topVC = self.topViewController;
+
+    if (topVC)
+    {
+        [topVC presentViewController:viewController animated:YES completion:nil];
+        return;
+    }
+
+    [self performSelector:@selector(tryPresentingViewController:) withObject:viewController afterDelay:1.0];
 }
 #endif
 
