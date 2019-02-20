@@ -109,21 +109,24 @@
     CountlyLocationManager.sharedInstance.IP = config.IP;
     [CountlyLocationManager.sharedInstance sendLocationInfo];
 
-    if ([config.features containsObject:CLYPushNotifications])
-    {
-        CountlyPushNotifications.sharedInstance.isEnabledOnInitialConfig = YES;
-        CountlyPushNotifications.sharedInstance.isTestDevice = config.isTestDevice;
-        CountlyPushNotifications.sharedInstance.sendPushTokenAlways = config.sendPushTokenAlways;
-        CountlyPushNotifications.sharedInstance.doNotShowAlertForNotifications = config.doNotShowAlertForNotifications;
-        [CountlyPushNotifications.sharedInstance startPushNotifications];
-    }
-
     CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
     CountlyCrashReporter.sharedInstance.crashLogLimit = MAX(1, config.crashLogLimit);
     if ([config.features containsObject:CLYCrashReporting])
     {
         CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;
         [CountlyCrashReporter.sharedInstance startCrashReporting];
+    }
+#endif
+
+#if (TARGET_OS_IOS || TARGET_OS_OSX)
+    if ([config.features containsObject:CLYPushNotifications])
+    {
+        CountlyPushNotifications.sharedInstance.isEnabledOnInitialConfig = YES;
+        CountlyPushNotifications.sharedInstance.isTestDevice = config.isTestDevice;
+        CountlyPushNotifications.sharedInstance.sendPushTokenAlways = config.sendPushTokenAlways;
+        CountlyPushNotifications.sharedInstance.doNotShowAlertForNotifications = config.doNotShowAlertForNotifications;
+        CountlyPushNotifications.sharedInstance.launchNotification = config.launchNotification;
+        [CountlyPushNotifications.sharedInstance startPushNotifications];
     }
 #endif
 
@@ -145,6 +148,10 @@
     [CountlyCommon.sharedInstance startAppleWatchMatching];
 
     [CountlyCommon.sharedInstance startAttribution];
+
+    CountlyRemoteConfig.sharedInstance.isEnabledOnInitialConfig = config.enableRemoteConfig;
+    CountlyRemoteConfig.sharedInstance.remoteConfigCompletionHandler = config.remoteConfigCompletionHandler;
+    [CountlyRemoteConfig.sharedInstance startRemoteConfig];
 
     [CountlyConnectionManager.sharedInstance proceedOnQueue];
 }
@@ -195,6 +202,9 @@
 
         [CountlyPersistency.sharedInstance clearAllTimedEvents];
     }
+
+    [CountlyRemoteConfig.sharedInstance clearCachedRemoteConfig];
+    [CountlyRemoteConfig.sharedInstance startRemoteConfig];
 }
 
 - (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue
@@ -503,7 +513,7 @@
 
 
 #pragma mark - Push Notifications
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_OSX)
 
 - (void)askForNotificationPermission
 {
@@ -518,6 +528,16 @@
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
 {
     [CountlyPushNotifications.sharedInstance recordActionForNotification:userInfo clickedButtonIndex:buttonIndex];
+}
+
+- (void)recordPushNotificationToken
+{
+    [CountlyPushNotifications.sharedInstance sendToken];
+}
+
+- (void)clearPushNotificationToken
+{
+    [CountlyPushNotifications.sharedInstance clearToken];
 }
 #endif
 
@@ -662,5 +682,30 @@
 }
 
 #endif
+
+
+
+#pragma mark - Remote Config
+
+- (id)remoteConfigValueForKey:(NSString *)key
+{
+    return [CountlyRemoteConfig.sharedInstance remoteConfigValueForKey:key];
+}
+
+- (void)updateRemoteConfigWithCompletionHandler:(void (^)(NSError * error))completionHandler
+{
+    [CountlyRemoteConfig.sharedInstance updateRemoteConfigForForKeys:nil omitKeys:nil completionHandler:completionHandler];
+}
+
+- (void)updateRemoteConfigOnlyForKeys:(NSArray *)keys completionHandler:(void (^)(NSError * error))completionHandler
+{
+    [CountlyRemoteConfig.sharedInstance updateRemoteConfigForForKeys:keys omitKeys:nil completionHandler:completionHandler];
+}
+
+- (void)updateRemoteConfigExceptForKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler
+{
+    [CountlyRemoteConfig.sharedInstance updateRemoteConfigForForKeys:nil omitKeys:omitKeys completionHandler:completionHandler];
+}
+
 
 @end

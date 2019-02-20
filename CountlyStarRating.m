@@ -20,6 +20,7 @@ NSString* const kCountlyReservedEventStarRating = @"[CLY]_star_rating";
 NSString* const kCountlyStarRatingStatusSessionCountKey = @"kCountlyStarRatingStatusSessionCountKey";
 NSString* const kCountlyStarRatingStatusHasEverAskedAutomatically = @"kCountlyStarRatingStatusHasEverAskedAutomatically";
 
+NSString* const kCountlySRKeyAppKey         = @"app_key";
 NSString* const kCountlySRKeyPlatform       = @"platform";
 NSString* const kCountlySRKeyAppVersion     = @"app_version";
 NSString* const kCountlySRKeyRating         = @"rating";
@@ -116,7 +117,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         COUNTLY_LOG(@"UIAlertController's contentViewController can not be set: \n%@", exception);
     }
 
-    [CountlyCommon.sharedInstance.topViewController presentViewController:self.alertController animated:YES completion:nil];
+    [CountlyCommon.sharedInstance tryPresentingViewController:self.alertController];
 }
 
 - (void)checkForAutoAsk
@@ -288,10 +289,6 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 - (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
 {
-    __block UIWindow* window = [UIWindow.alloc initWithFrame:UIScreen.mainScreen.bounds];
-    window.rootViewController = CLYInternalViewController.new;
-    window.windowLevel = UIWindowLevelAlert;
-
     __block CLYInternalViewController* webVC = CLYInternalViewController.new;
     webVC.view.backgroundColor = UIColor.whiteColor;
     webVC.view.bounds = UIScreen.mainScreen.bounds;
@@ -310,37 +307,50 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
             if (completionHandler)
                 completionHandler(nil);
 
-            window.hidden = YES;
-            window = nil;
             webVC = nil;
         }];
     };
     [webVC.view addSubview:dismissButton];
 
-    [window makeKeyAndVisible];
-    [window.rootViewController presentViewController:webVC animated:YES completion:nil];
+    CGPoint center = dismissButton.center;
+    center.y += 20; //NOTE: adjust dismiss button position for status bar
+    if (webVC.view.bounds.size.height == 812 || webVC.view.bounds.size.height == 896)
+        center.y += 24; //NOTE: adjust dismiss button position for iPhone X type of devices
+    dismissButton.center = center;
+
+    [CountlyCommon.sharedInstance tryPresentingViewController:webVC];
 }
 
 - (NSURL *)widgetCheckURL:(NSString *)widgetID
 {
-    NSString* URLString = [NSString stringWithFormat:@"%@%@%@%@?%@=%@",
+    NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
+
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlySRKeyWidgetID, widgetID];
+
+    queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
+
+    NSString* URLString = [NSString stringWithFormat:@"%@%@%@%@?%@",
                            CountlyConnectionManager.sharedInstance.host,
                            kCountlyOutputEndpoint, kCountlyFeedbackEndpoint, kCountlyWidgetEndpoint,
-                           kCountlySRKeyWidgetID, widgetID];
+                           queryString];
 
     return [NSURL URLWithString:URLString];
 }
 
 - (NSURL *)widgetDisplayURL:(NSString *)widgetID
 {
-    NSString* URLString = [NSString stringWithFormat:@"%@%@?%@=%@&%@=%@&%@=%@&%@=%@&%@=%@",
+    NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
+
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@&%@=%@",
+                   kCountlySRKeyWidgetID, widgetID,
+                   kCountlySRKeyAppVersion, CountlyDeviceInfo.appVersion];
+
+    queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
+
+    NSString* URLString = [NSString stringWithFormat:@"%@%@?%@",
                            CountlyConnectionManager.sharedInstance.host,
                            kCountlyFeedbackEndpoint,
-                           kCountlySRKeyWidgetID, widgetID,
-                           kCountlySRKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped,
-                           kCountlySRKeyAppVersion, CountlyDeviceInfo.appVersion,
-                           kCountlySRKeySDKVersion, kCountlySDKVersion,
-                           kCountlySRKeySDKName, kCountlySDKName];
+                           queryString];
 
     return [NSURL URLWithString:URLString];
 }

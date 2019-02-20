@@ -8,7 +8,7 @@
 #import <CoreLocation/CoreLocation.h>
 #import "CountlyUserDetails.h"
 #import "CountlyConfig.h"
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_OSX)
 #import <UserNotifications/UserNotifications.h>
 #endif
 
@@ -246,7 +246,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 #pragma mark - Push Notification
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_OSX)
 /**
  * Shows default system dialog that asks for user's permission to display notifications.
  * @discussion A unified convenience method that handles asking for notification permission on both iOS10 and older iOS versions with badge, sound and alert notification types.
@@ -261,7 +261,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param options Bitwise combination of notification types (badge, sound or alert) the app wants to display
  * @param completionHandler A completion handler block to be executed when user answers notification permission dialog
  */
-- (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler API_AVAILABLE(ios(10.0));
+- (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler API_AVAILABLE(ios(10.0), macos(10.14));
 
 /**
  * Records action event for a manually presented push notification with custom action buttons.
@@ -273,6 +273,18 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
 
+/**
+ * Records push notification token to Countly Server for current device ID.
+ * @discussion Can be used to re-send push notification token for current device ID, after a new user logs in and device ID changes, without waiting for the app to be restarted.
+ * @discussion In general, push notification token is handled automatically and this method does not need to be called manually.
+ */
+- (void)recordPushNotificationToken;
+
+/**
+ * Clears push notification token on Countly Server for current device ID.
+ * @discussion Can be used to clear push notification token for current device ID, before the current user logs out and device ID changes, without waiting for the app to be restarted.
+ */
+- (void)clearPushNotificationToken;
 #endif
 
 
@@ -476,6 +488,41 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler;
 
 #endif
+
+
+
+#pragma mark - Remote Config
+/**
+ * Returns last retrieved remote config value for given key, if exists.
+ * @discussion If remote config is never retrieved from Countly Server before, this method will return @c nil.
+ * @discussion If @c key is not defined in remote config on Countly Server, this method will return @c nil.
+ * @discussion If Countly Server is not reachable, this method will return the last retrieved value which is stored on device.
+ * @param key Remote config key specified on Countly Server
+ */
+- (id)remoteConfigValueForKey:(NSString *)key;
+
+/**
+ * Manually updates all locally stored remote config values by fetching latest values from Countly Server, and executes completion handler.
+ * @discussion @c completionHandler has an @c NSError parameter that will be either @ nil or an @c NSError object, depending on result.
+ * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure.
+ */
+- (void)updateRemoteConfigWithCompletionHandler:(void (^)(NSError * error))completionHandler;
+
+/**
+ * Manually updates locally stored remote config values only for specified keys, by fetching latest values from Countly Server, and executes completion handler.
+ * @discussion @c completionHandler has an @c NSError parameter that will be either @ nil or an @c NSError object, depending on result.
+ * @param keys An array of remote config keys to update
+ * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure
+ */
+- (void)updateRemoteConfigOnlyForKeys:(NSArray *)keys completionHandler:(void (^)(NSError * error))completionHandler;
+
+/**
+ * Manually updates locally stored remote config values except for specified keys, by fetching latest values from Countly Server, and executes completion handler.
+ * @discussion @c completionHandler has an @c NSError parameter that will be either @ nil or an @c NSError object, depending on result.
+ * @param omitKeys An array of remote config keys to omit from updating
+ * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure
+ */
+- (void)updateRemoteConfigExceptForKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler;
 
 NS_ASSUME_NONNULL_END
 

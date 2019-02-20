@@ -1,13 +1,13 @@
 Pod::Spec.new do |s|
   s.name = 'Countly'
-  s.version = '18.08'
+  s.version = '19.02'
   s.license = {
     :type => 'COMMUNITY',
     :text => <<-LICENSE
               COUNTLY MOBILE ANALYTICS COMMUNITY EDITION LICENSE
               --------------------------------------------------
 
-              Copyright (c) 2012, 2018 Countly
+              Copyright (c) 2012, 2019 Countly
 
               Permission is hereby granted, free of charge, to any person obtaining a copy
               of this software and associated documentation files (the "Software"), to deal

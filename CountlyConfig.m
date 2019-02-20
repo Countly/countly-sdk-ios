@@ -15,6 +15,8 @@
     NSString* const CLYAutoViewTracking = @"CLYAutoViewTracking";
 #elif TARGET_OS_TV
     NSString* const CLYAutoViewTracking = @"CLYAutoViewTracking";
+#elif TARGET_OS_OSX
+    NSString* const CLYPushNotifications = @"CLYPushNotifications";
 #endif
 //NOTE: Disable APM feature until Countly Server completely supports it
 // NSString* const CLYAPM = @"CLYAPM";

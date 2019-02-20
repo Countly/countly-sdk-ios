@@ -6,11 +6,10 @@
 
 #import "CountlyCommon.h"
 
-NSString* const kCountlyReservedEventPushOpen = @"[CLY]_push_open";
 NSString* const kCountlyReservedEventPushAction = @"[CLY]_push_action";
 NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_OSX)
 @interface CountlyPushNotifications () <UNUserNotificationCenterDelegate>
 @property (nonatomic) NSString* token;
 @property (nonatomic, copy) void (^permissionCompletion)(BOOL granted, NSError * error);
@@ -18,6 +17,12 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 @interface CountlyPushNotifications ()
 #endif
 @end
+
+#if TARGET_OS_IOS
+    #define CLYApplication UIApplication
+#elif TARGET_OS_OSX
+    #define CLYApplication NSApplication
+#endif
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -47,8 +52,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 #pragma mark ---
 
-#if TARGET_OS_IOS
-
+#if (TARGET_OS_IOS || TARGET_OS_OSX)
 - (void)startPushNotifications
 {
     if (!self.isEnabledOnInitialConfig)
@@ -57,12 +61,23 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
         return;
 
-    if (@available(iOS 10.0, *))
+    if (@available(iOS 10.0, macOS 10.14, *))
         UNUserNotificationCenter.currentNotificationCenter.delegate = self;
 
     [self swizzlePushNotificationMethods];
 
+#if TARGET_OS_IOS
     [UIApplication.sharedApplication registerForRemoteNotifications];
+#elif TARGET_OS_OSX
+    [NSApplication.sharedApplication registerForRemoteNotificationTypes:NSRemoteNotificationTypeBadge | NSRemoteNotificationTypeAlert | NSRemoteNotificationTypeSound];
+
+    if (@available(macOS 10.14, *))
+    {
+        UNNotificationResponse* notificationResponse = self.launchNotification.userInfo[NSApplicationLaunchUserNotificationKey];
+        if (notificationResponse)
+            [self userNotificationCenter:UNUserNotificationCenter.currentNotificationCenter didReceiveNotificationResponse:notificationResponse withCompletionHandler:^{}];
+    }
+#endif
 }
 
 - (void)stopPushNotifications
@@ -70,13 +85,13 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     if (!self.isEnabledOnInitialConfig)
         return;
 
-    if (@available(iOS 10.0, *))
+    if (@available(iOS 10.0, macOS 10.14, *))
     {
         if (UNUserNotificationCenter.currentNotificationCenter.delegate == self)
             UNUserNotificationCenter.currentNotificationCenter.delegate = nil;
     }
 
-    [UIApplication.sharedApplication unregisterForRemoteNotifications];
+    [CLYApplication.sharedApplication unregisterForRemoteNotifications];
 }
 
 - (void)swizzlePushNotificationMethods
@@ -87,11 +102,18 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
     alreadySwizzled = YES;
 
-    Class appDelegateClass = UIApplication.sharedApplication.delegate.class;
-    NSArray* selectors = @[@"application:didRegisterForRemoteNotificationsWithDeviceToken:",
-                           @"application:didFailToRegisterForRemoteNotificationsWithError:",
-                           @"application:didRegisterUserNotificationSettings:",
-                           @"application:didReceiveRemoteNotification:fetchCompletionHandler:"];
+    Class appDelegateClass = CLYApplication.sharedApplication.delegate.class;
+    NSArray* selectors =
+    @[
+        @"application:didRegisterForRemoteNotificationsWithDeviceToken:",
+        @"application:didFailToRegisterForRemoteNotificationsWithError:",
+#if TARGET_OS_IOS
+        @"application:didRegisterUserNotificationSettings:",
+        @"application:didReceiveRemoteNotification:fetchCompletionHandler:",
+#elif TARGET_OS_OSX
+        @"application:didReceiveRemoteNotification:",
+#endif
+    ];
 
     for (NSString* selectorString in selectors)
     {
@@ -118,7 +140,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
         return;
 
-    if (@available(iOS 10.0, *))
+    if (@available(iOS 10.0, macOS 10.14, *))
     {
         if (options == 0)
             options = UNAuthorizationOptionBadge | UNAuthorizationOptionSound | UNAuthorizationOptionAlert;
@@ -127,8 +149,11 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         {
             if (completionHandler)
                 completionHandler(granted, error);
+
+            [self sendToken];
         }];
     }
+#if TARGET_OS_IOS
     else
     {
         self.permissionCompletion = completionHandler;
@@ -140,6 +165,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         UIUserNotificationSettings* settings = [UIUserNotificationSettings settingsForTypes:userNotificationTypes categories:nil];
         [UIApplication.sharedApplication registerUserNotificationSettings:settings];
     }
+#endif
 }
 
 - (void)sendToken
@@ -152,7 +178,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
     if ([self.token isEqualToString:kCountlyTokenError])
     {
-        [CountlyConnectionManager.sharedInstance sendPushToken:@""];
+        [self clearToken];
         return;
     }
 
@@ -164,22 +190,29 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
     BOOL hasNotificationPermissionBefore = [CountlyPersistency.sharedInstance retrieveNotificationPermission];
 
-    if (@available(iOS 10.0, *))
+    if (@available(iOS 10.0, macOS 10.14, *))
     {
         [UNUserNotificationCenter.currentNotificationCenter getNotificationSettingsWithCompletionHandler:^(UNNotificationSettings* settings)
         {
-            if (settings.authorizationStatus == UNAuthorizationStatusAuthorized)
+            BOOL hasProvisionalPermission = NO;
+            if (@available(iOS 12.0, *))
+            {
+                hasProvisionalPermission = settings.authorizationStatus == UNAuthorizationStatusProvisional;
+            }
+        
+            if (settings.authorizationStatus == UNAuthorizationStatusAuthorized || hasProvisionalPermission)
             {
                 [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
                 [CountlyPersistency.sharedInstance storeNotificationPermission:YES];
             }
             else if (hasNotificationPermissionBefore)
             {
-                [CountlyConnectionManager.sharedInstance sendPushToken:@""];
+                [self clearToken];
                 [CountlyPersistency.sharedInstance storeNotificationPermission:NO];
             }
         }];
     }
+#if TARGET_OS_IOS
     else
     {
         if (UIApplication.sharedApplication.currentUserNotificationSettings.types != UIUserNotificationTypeNone)
@@ -189,14 +222,21 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         }
         else if (hasNotificationPermissionBefore)
         {
-            [CountlyConnectionManager.sharedInstance sendPushToken:@""];
+            [self clearToken];
             [CountlyPersistency.sharedInstance storeNotificationPermission:NO];
         }
     }
+#endif
+}
+
+- (void)clearToken
+{
+    [CountlyConnectionManager.sharedInstance sendPushToken:@""];
 }
 
 - (void)handleNotification:(NSDictionary *)notification
 {
+#if (TARGET_OS_IOS || TARGET_OS_OSX)
     if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
         return;
 
@@ -212,9 +252,14 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     }
 
     COUNTLY_LOG(@"Countly Push Notification ID: %@", notificationID);
+#endif
 
-    [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushOpen segmentation:@{kCountlyPNKeyNotificationID: notificationID}];
+#if TARGET_OS_OSX
+    //NOTE: For macOS targets, just record action event.
+    [self recordActionEvent:notificationID buttonIndex:0];
+#endif
 
+#if TARGET_OS_IOS
     if (self.doNotShowAlertForNotifications)
     {
         COUNTLY_LOG(@"doNotShowAlertForNotifications flag is set!");
@@ -256,7 +301,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         defaultButton.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
         defaultButton.onClick = ^(id sender)
         {
-            [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(0)}];
+            [self recordActionEvent:notificationID buttonIndex:0];
 
             [self openURL:defaultURL];
 
@@ -272,6 +317,8 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     CLYButton* dismissButton = [CLYButton dismissAlertButton];
     dismissButton.onClick = ^(id sender)
     {
+        [self recordActionEvent:notificationID buttonIndex:0];
+
         [alertController dismissViewControllerAnimated:YES completion:^
         {
             alertController = nil;
@@ -289,7 +336,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
         UIAlertAction* visit = [UIAlertAction actionWithTitle:actionTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction * action)
         {
-            [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(idx + 1)}];
+            [self recordActionEvent:notificationID buttonIndex:idx + 1];
 
             [self openURL:URL];
 
@@ -299,12 +346,13 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         [alertController addAction:visit];
     }];
 
-    [CountlyCommon.sharedInstance.topViewController presentViewController:alertController animated:YES completion:nil];
+    [CountlyCommon.sharedInstance tryPresentingViewController:alertController];
 
     const CGFloat kCountlyActionButtonHeight = 44.0;
     CGRect tempFrame = defaultButton.frame;
     tempFrame.size.height -= buttons.count * kCountlyActionButtonHeight;
     defaultButton.frame = tempFrame;
+#endif
 }
 
 - (void)openURL:(NSString *)URLString
@@ -312,13 +360,17 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     if (!URLString)
         return;
 
-    dispatch_async(dispatch_get_main_queue(), ^
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.01 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
     {
+#if TARGET_OS_IOS
         [UIApplication.sharedApplication openURL:[NSURL URLWithString:URLString]];
+#elif TARGET_OS_OSX
+        [NSWorkspace.sharedWorkspace openURL:[NSURL URLWithString:URLString]];
+#endif
     });
 }
 
-- (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
+- (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex
 {
     if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
         return;
@@ -326,15 +378,26 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     NSDictionary* countlyPayload = userInfo[kCountlyPNKeyCountlyPayload];
     NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
 
+    [self recordActionEvent:notificationID buttonIndex:buttonIndex];
+}
+
+- (void)recordActionEvent:(NSString *)notificationID buttonIndex:(NSInteger)buttonIndex
+{
     if (!notificationID)
         return;
 
-    [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(buttonIndex)}];
+    NSDictionary* segmentation =
+    @{
+        kCountlyPNKeyNotificationID: notificationID,
+        kCountlyPNKeyActionButtonIndex: @(buttonIndex)
+    };
+
+    [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushAction segmentation:segmentation];
 }
 
 #pragma mark ---
 
-- (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler API_AVAILABLE(ios(10.0))
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler API_AVAILABLE(ios(10.0), macos(10.14))
 {
     COUNTLY_LOG(@"userNotificationCenter:willPresentNotification:withCompletionHandler:");
     COUNTLY_LOG(@"%@", notification.request.content.userInfo.description);
@@ -348,7 +411,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
             completionHandler(UNNotificationPresentationOptionAlert);
     }
 
-    id<UNUserNotificationCenterDelegate> appDelegate = (id<UNUserNotificationCenterDelegate>)UIApplication.sharedApplication.delegate;
+    id<UNUserNotificationCenterDelegate> appDelegate = (id<UNUserNotificationCenterDelegate>)CLYApplication.sharedApplication.delegate;
 
     if ([appDelegate respondsToSelector:@selector(userNotificationCenter:willPresentNotification:withCompletionHandler:)])
         [appDelegate userNotificationCenter:center willPresentNotification:notification withCompletionHandler:completionHandler];
@@ -356,7 +419,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         completionHandler(UNNotificationPresentationOptionNone);
 }
 
-- (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void (^)(void))completionHandler API_AVAILABLE(ios(10.0))
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void (^)(void))completionHandler API_AVAILABLE(ios(10.0), macos(10.14))
 {
     COUNTLY_LOG(@"userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:");
     COUNTLY_LOG(@"%@", response.notification.request.content.userInfo.description);
@@ -368,20 +431,14 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
         if (notificationID)
         {
-            [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushOpen segmentation:@{kCountlyPNKeyNotificationID: notificationID}];
-
-            NSInteger buttonIndex = -1;
+            NSInteger buttonIndex = 0;
             NSString* URL = nil;
 
             COUNTLY_LOG(@"Action Identifier: %@", response.actionIdentifier);
 
             if ([response.actionIdentifier isEqualToString:UNNotificationDefaultActionIdentifier])
             {
-                if (countlyPayload[kCountlyPNKeyDefaultURL])
-                {
-                    buttonIndex = 0;
-                    URL = countlyPayload[kCountlyPNKeyDefaultURL];
-                }
+                URL = countlyPayload[kCountlyPNKeyDefaultURL];
             }
             else if ([response.actionIdentifier hasPrefix:kCountlyActionIdentifier])
             {
@@ -389,16 +446,13 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
                 URL = countlyPayload[kCountlyPNKeyButtons][buttonIndex - 1][kCountlyPNKeyActionButtonURL];
             }
 
-            if (buttonIndex >= 0)
-            {
-                [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushAction segmentation:@{kCountlyPNKeyNotificationID: notificationID, kCountlyPNKeyActionButtonIndex: @(buttonIndex)}];
-            }
+            [self recordActionEvent:notificationID buttonIndex:buttonIndex];
 
             [self openURL:URL];
         }
     }
 
-    id<UNUserNotificationCenterDelegate> appDelegate = (id<UNUserNotificationCenterDelegate>)UIApplication.sharedApplication.delegate;
+    id<UNUserNotificationCenterDelegate> appDelegate = (id<UNUserNotificationCenterDelegate>)CLYApplication.sharedApplication.delegate;
 
     if ([appDelegate respondsToSelector:@selector(userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:)])
         [appDelegate userNotificationCenter:center didReceiveNotificationResponse:response withCompletionHandler:completionHandler];
@@ -408,22 +462,27 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
 #pragma mark ---
 
-- (void)application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken{}
-- (void)application:(UIApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error{}
+- (void)application:(CLYApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken{}
+- (void)application:(CLYApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error{}
+#if TARGET_OS_IOS
 - (void)application:(UIApplication *)application didRegisterUserNotificationSettings:(UIUserNotificationSettings *)notificationSettings{}
 - (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler
 {
     completionHandler(UIBackgroundFetchResultNewData);
 }
+#elif TARGET_OS_OSX
+- (void)application:(NSApplication *)application didReceiveRemoteNotification:(NSDictionary<NSString *,id> *)userInfo{}
+#endif
 #endif
 @end
 
 
-#if TARGET_OS_IOS
-@implementation UIResponder (CountlyPushNotifications)
-- (void)Countly_application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken
+@implementation NSObject (CountlyPushNotifications)
+#if (TARGET_OS_IOS || TARGET_OS_OSX)
+- (void)Countly_application:(CLYApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken
 {
     COUNTLY_LOG(@"App didRegisterForRemoteNotificationsWithDeviceToken: %@", deviceToken);
+
     const char* bytes = [deviceToken bytes];
     NSMutableString *token = NSMutableString.new;
     for (NSUInteger i = 0; i < deviceToken.length; i++)
@@ -436,7 +495,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
     [self Countly_application:application didRegisterForRemoteNotificationsWithDeviceToken:deviceToken];
 }
 
-- (void)Countly_application:(UIApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error
+- (void)Countly_application:(CLYApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error
 {
     COUNTLY_LOG(@"App didFailToRegisterForRemoteNotificationsWithError: %@", error);
 
@@ -446,7 +505,9 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
     [self Countly_application:application didFailToRegisterForRemoteNotificationsWithError:error];
 }
+#endif
 
+#if TARGET_OS_IOS
 - (void)Countly_application:(UIApplication *)application didRegisterUserNotificationSettings:(UIUserNotificationSettings *)notificationSettings
 {
     COUNTLY_LOG(@"App didRegisterUserNotificationSettings: %@", notificationSettings);
@@ -469,6 +530,17 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
     [self Countly_application:application didReceiveRemoteNotification:userInfo fetchCompletionHandler:completionHandler];
 }
-@end
+
+#elif TARGET_OS_OSX
+- (void)Countly_application:(NSApplication *)application didReceiveRemoteNotification:(NSDictionary<NSString *,id> *)userInfo
+{
+    COUNTLY_LOG(@"App didReceiveRemoteNotification:");
+
+    [CountlyPushNotifications.sharedInstance handleNotification:userInfo];
+
+    [self Countly_application:application didReceiveRemoteNotification:userInfo];
+}
 #endif
+
+@end
 #pragma GCC diagnostic pop

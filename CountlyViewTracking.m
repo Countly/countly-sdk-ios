@@ -169,7 +169,7 @@ NSString* const kCountlyVTKeyStart    = @"start";
 
     [self swizzleViewTrackingMethods];
 
-    UIViewController* topVC = [CountlyCommon.sharedInstance topViewController];
+    UIViewController* topVC = CountlyCommon.sharedInstance.topViewController;
     NSString* viewTitle = [CountlyViewTracking.sharedInstance titleForViewController:topVC];
     [self startView:viewTitle];
 }
