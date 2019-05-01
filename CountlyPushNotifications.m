@@ -282,9 +282,9 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         title = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleDisplayName"];
     }
 
-    if (!message)
+    if (!message && !title)
     {
-        COUNTLY_LOG(@"Message not found in notification dictionary!");
+        COUNTLY_LOG(@"Title and Message are both not found in notification dictionary!");
         return;
     }
 
