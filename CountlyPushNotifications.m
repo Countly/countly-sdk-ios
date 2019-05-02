@@ -266,6 +266,12 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         return;
     }
 
+    if (@available(iOS 10.0, *))
+    {
+        //NOTE: On iOS10+ when a silent notification (content-available: 1) with `alert` key arrives, do not show alert here, as it is shown in UN framework delegate method
+        COUNTLY_LOG(@"A silent notification (content-available: 1) with `alert` key on iOS10+.");
+        return;
+    }
 
     id alert = notification[@"aps"][@"alert"];
     NSString* message = nil;
