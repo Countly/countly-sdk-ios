@@ -404,10 +404,14 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)recordView:(NSString *)viewName;
 
 /**
- * @c reportView: method is deprecated. Please use @c recordView: method instead.
- * @discussion Calling this method will have no effect.
+ * Records a visited view with given name and custom segmentation.
+ * @discussion This is an extendened version of @c recordView: method.
+ * @discussion If segmentation has any of Countly reserved keys, they will be ignored:
+ * @discussion @c name, @c segment, @c visit, @c start, @c bounce, @c exit, @c view, @c domain, @c dur
+ * @param viewName Name of the view visited
+ * @param segmentation Custom segmentation key-value pairs
  */
-- (void)reportView:(NSString *)viewName DEPRECATED_MSG_ATTRIBUTE("Use 'recordView:' method instead!");
+- (void)recordView:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
 
 #if TARGET_OS_IOS
 /**

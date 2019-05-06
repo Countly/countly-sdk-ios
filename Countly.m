@@ -616,12 +616,12 @@
 
 - (void)recordView:(NSString *)viewName;
 {
-    [CountlyViewTracking.sharedInstance startView:viewName];
+    [CountlyViewTracking.sharedInstance startView:viewName customSegmentation:nil];
 }
 
-- (void)reportView:(NSString *)viewName
+- (void)recordView:(NSString *)viewName segmentation:(NSDictionary *)segmentation
 {
-
+    [CountlyViewTracking.sharedInstance startView:viewName customSegmentation:segmentation];
 }
 
 #if TARGET_OS_IOS

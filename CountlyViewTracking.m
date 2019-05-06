@@ -19,6 +19,11 @@ NSString* const kCountlyVTKeyName     = @"name";
 NSString* const kCountlyVTKeySegment  = @"segment";
 NSString* const kCountlyVTKeyVisit    = @"visit";
 NSString* const kCountlyVTKeyStart    = @"start";
+NSString* const kCountlyVTKeyBounce   = @"bounce";
+NSString* const kCountlyVTKeyExit     = @"exit";
+NSString* const kCountlyVTKeyView     = @"view";
+NSString* const kCountlyVTKeyDomain   = @"domain";
+NSString* const kCountlyVTKeyDur      = @"dur";
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 @interface UIViewController (CountlyViewTracking)
@@ -94,6 +99,11 @@ NSString* const kCountlyVTKeyStart    = @"start";
 
 - (void)startView:(NSString *)viewName
 {
+    [self startView:viewName customSegmentation:nil];
+}
+
+- (void)startView:(NSString *)viewName customSegmentation:(NSDictionary *)customSegmentation
+{
     if (!viewName)
         return;
 
@@ -115,6 +125,13 @@ NSString* const kCountlyVTKeyStart    = @"start";
 
     if (!self.lastView)
         segmentation[kCountlyVTKeyStart] = @1;
+
+    if (customSegmentation)
+    {
+        NSMutableDictionary* mutableCustomSegmenation = customSegmentation.mutableCopy;
+        [mutableCustomSegmenation removeObjectsForKeys:self.reservedViewTrackingSegmentationKeys];
+        [segmentation addEntriesFromDictionary:mutableCustomSegmenation];
+    }
 
     [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventView segmentation:segmentation];
 
@@ -243,6 +260,23 @@ NSString* const kCountlyVTKeyStart    = @"start";
     return title;
 }
 
+- (NSArray *)reservedViewTrackingSegmentationKeys
+{
+    NSArray* reservedViewTrackingSegmentationKeys =
+    @[
+        kCountlyVTKeyName,
+        kCountlyVTKeySegment,
+        kCountlyVTKeyVisit,
+        kCountlyVTKeyStart,
+        kCountlyVTKeyBounce,
+        kCountlyVTKeyExit,
+        kCountlyVTKeyView,
+        kCountlyVTKeyDomain,
+        kCountlyVTKeyDur
+    ];
+
+    return reservedViewTrackingSegmentationKeys;
+}
 #endif
 @end
 

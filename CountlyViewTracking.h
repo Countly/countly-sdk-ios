@@ -15,7 +15,7 @@
 
 + (instancetype)sharedInstance;
 
-- (void)startView:(NSString *)viewName;
+- (void)startView:(NSString *)viewName customSegmentation:(NSDictionary *)customSegmentation;
 - (void)endView;
 - (void)pauseView;
 - (void)resumeView;
