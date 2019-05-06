@@ -128,9 +128,9 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
     if (customSegmentation)
     {
-        NSMutableDictionary* mutableCustomSegmenation = customSegmentation.mutableCopy;
-        [mutableCustomSegmenation removeObjectsForKeys:self.reservedViewTrackingSegmentationKeys];
-        [segmentation addEntriesFromDictionary:mutableCustomSegmenation];
+        NSMutableDictionary* mutableCustomSegmentation = customSegmentation.mutableCopy;
+        [mutableCustomSegmentation removeObjectsForKeys:self.reservedViewTrackingSegmentationKeys];
+        [segmentation addEntriesFromDictionary:mutableCustomSegmentation];
     }
 
     [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventView segmentation:segmentation];
@@ -260,6 +260,8 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     return title;
 }
 
+#endif
+
 - (NSArray *)reservedViewTrackingSegmentationKeys
 {
     NSArray* reservedViewTrackingSegmentationKeys =
@@ -277,7 +279,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
     return reservedViewTrackingSegmentationKeys;
 }
-#endif
+
 @end
 
 #pragma mark -
