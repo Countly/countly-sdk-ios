@@ -23,8 +23,6 @@ NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersi
 
 + (instancetype)sharedInstance
 {
-    if (!CountlyCommon.sharedInstance.hasStarted)
-        return nil;
 
     static CountlyPersistency* s_sharedInstance = nil;
     static dispatch_once_t onceToken;
@@ -65,7 +63,7 @@ NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersi
     {
         [self.queuedRequests addObject:queryString];
 
-        if (self.queuedRequests.count > self.storedRequestsLimit && !CountlyConnectionManager.sharedInstance.connection)
+        if (self.queuedRequests.count > self.storedRequestsLimit && CountlyConnectionManager.sharedInstance.connection == nil)
             [self.queuedRequests removeObjectAtIndex:0];
     }
 }
@@ -95,7 +93,7 @@ NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersi
     {
         [self.recordedEvents addObject:event];
 
-        if (self.recordedEvents.count >= self.eventSendThreshold)
+        if (self.recordedEvents.count >= self.eventSendThreshold && CountlyConnectionManager.sharedInstance != nil)
             [CountlyConnectionManager.sharedInstance sendEvents];
     }
 }
