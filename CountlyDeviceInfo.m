@@ -405,6 +405,15 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 #if TARGET_OS_IOS
     UIDevice.currentDevice.batteryMonitoringEnabled = YES;
     return abs((int)(UIDevice.currentDevice.batteryLevel * 100));
+#elif TARGET_OS_WATCH
+    if (@available(watchOS 4.0, *))
+    {
+        return abs((int)(WKInterfaceDevice.currentDevice.batteryLevel * 100));
+    }
+    else
+    {
+        return 100;
+    }
 #else
     return 100;
 #endif
