@@ -281,6 +281,25 @@ void CountlyInternalLog(NSString *format, ...)
 @end
 #endif
 
+
+#pragma mark - Proxy Object
+@implementation CLYDelegateInterceptor
+
+- (NSMethodSignature *)methodSignatureForSelector:(SEL)sel
+{
+    return [self.originalDelegate methodSignatureForSelector:sel];
+}
+
+- (void)forwardInvocation:(NSInvocation *)invocation
+{
+    if ([self.originalDelegate respondsToSelector:invocation.selector])
+        [invocation invokeWithTarget:self.originalDelegate];
+    else
+        [super forwardInvocation:invocation];
+}
+@end
+
+
 #pragma mark - Categories
 NSString* CountlyJSONFromObject(id object)
 {
