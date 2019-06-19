@@ -38,6 +38,15 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setNewDeviceID:(NSString * _Nullable)deviceID onServer:(BOOL)onServer;
 
 /**
+ * Sets new app key to be used in following requests.
+ * @discussion Before switching to new app key, this method suspends Countly and resumes immediately after.
+ * @discussion Requests already queued previously will keep using the old app key.
+ * @discussion New app key needs to be a non-zero length string, otherwise it is ignored.
+ * @param newAppKey New app key
+ */
+- (void)setNewAppKey:(NSString *)newAppKey;
+
+/**
  * Sets the value of the custom HTTP header field to be sent with every request if @c customHeaderFieldName is set on initial configuration.
  * @discussion If @c customHeaderFieldValue on initial configuration can not be set on app launch, this method can be used to do so later.
  * @discussion Requests not started due to missing @c customHeaderFieldValue since app launch will start hereafter.

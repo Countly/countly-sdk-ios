@@ -206,6 +206,18 @@
     [CountlyRemoteConfig.sharedInstance startRemoteConfig];
 }
 
+- (void)setNewAppKey:(NSString *)newAppKey
+{
+    if (!newAppKey.length)
+        return;
+
+    [self suspend];
+
+    CountlyConnectionManager.sharedInstance.appKey = newAppKey;
+
+    [self resume];
+}
+
 - (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue
 {
     CountlyConnectionManager.sharedInstance.customHeaderFieldValue = customHeaderFieldValue.copy;
