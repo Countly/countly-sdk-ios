@@ -165,6 +165,8 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     if (self.customHeaderFieldName && self.customHeaderFieldValue)
         [request setValue:self.customHeaderFieldValue forHTTPHeaderField:self.customHeaderFieldName];
 
+    request.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
+
     self.connection = [[self URLSession] dataTaskWithRequest:request completionHandler:^(NSData * data, NSURLResponse * response, NSError * error)
     {
         self.connection = nil;

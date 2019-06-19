@@ -108,6 +108,9 @@ void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
 @end
 #endif
 
+@interface CLYDelegateInterceptor : NSObject
+@property (nonatomic, weak) id originalDelegate;
+@end
 
 @interface NSString (Countly)
 - (NSString *)cly_URLEscaped;

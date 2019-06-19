@@ -7,6 +7,10 @@
 #import "CountlyCommon.h"
 #include <CommonCrypto/CommonDigest.h>
 
+@interface CLYWCSessionDelegateInterceptor : CLYDelegateInterceptor
+@end
+
+
 @interface CountlyCommon ()
 {
     NSCalendar* gregorianCalendar;
@@ -15,6 +19,9 @@
 @property long long lastTimestamp;
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 @property (nonatomic) UIBackgroundTaskIdentifier bgTask;
+#endif
+#if (TARGET_OS_IOS || TARGET_OS_WATCH)
+@property (nonatomic) CLYWCSessionDelegateInterceptor* watchDelegate;
 #endif
 @end
 
@@ -111,9 +118,11 @@ void CountlyInternalLog(NSString *format, ...)
 #if (TARGET_OS_IOS || TARGET_OS_WATCH)
     if (@available(iOS 9.0, *))
     {
-        if ([WCSession isSupported])
+        if (WCSession.isSupported)
         {
-            WCSession.defaultSession.delegate = (id<WCSessionDelegate>)self;
+            self.watchDelegate = [CLYWCSessionDelegateInterceptor alloc];
+            self.watchDelegate.originalDelegate = WCSession.defaultSession.delegate;
+            WCSession.defaultSession.delegate = (id<WCSessionDelegate>)self.watchDelegate;
             [WCSession.defaultSession activateSession];
         }
     }
@@ -130,24 +139,6 @@ void CountlyInternalLog(NSString *format, ...)
     }
 #endif
 }
-
-#if TARGET_OS_WATCH
-- (void)session:(WCSession *)session didReceiveUserInfo:(NSDictionary<NSString *, id> *)userInfo
-{
-    COUNTLY_LOG(@"Watch received user info: \n%@", userInfo);
-
-    NSString* parentDeviceID = userInfo[kCountlyParentDeviceIDTransferKey];
-
-    if (parentDeviceID && ![parentDeviceID isEqualToString:[CountlyPersistency.sharedInstance retrieveWatchParentDeviceID]])
-    {
-        [CountlyConnectionManager.sharedInstance sendParentDeviceID:parentDeviceID];
-
-        COUNTLY_LOG(@"Parent device ID %@ added to queue.", parentDeviceID);
-
-        [CountlyPersistency.sharedInstance storeWatchParentDeviceID:parentDeviceID];
-    }
-}
-#endif
 
 #pragma mark - Attribution
 
@@ -280,6 +271,55 @@ void CountlyInternalLog(NSString *format, ...)
 
 @end
 #endif
+
+
+#pragma mark - Proxy Object
+@implementation CLYDelegateInterceptor
+
+- (NSMethodSignature *)methodSignatureForSelector:(SEL)sel
+{
+    return [self.originalDelegate methodSignatureForSelector:sel];
+}
+
+- (void)forwardInvocation:(NSInvocation *)invocation
+{
+    if ([self.originalDelegate respondsToSelector:invocation.selector])
+        [invocation invokeWithTarget:self.originalDelegate];
+    else
+        [super forwardInvocation:invocation];
+}
+@end
+
+
+#pragma mark - Watch Delegate Proxy
+@implementation CLYWCSessionDelegateInterceptor
+
+#if TARGET_OS_WATCH
+- (void)session:(WCSession *)session didReceiveUserInfo:(NSDictionary<NSString *, id> *)userInfo
+{
+    COUNTLY_LOG(@"Watch received user info: \n%@", userInfo);
+
+    NSString* parentDeviceID = userInfo[kCountlyParentDeviceIDTransferKey];
+
+    if (parentDeviceID && ![parentDeviceID isEqualToString:[CountlyPersistency.sharedInstance retrieveWatchParentDeviceID]])
+    {
+        [CountlyConnectionManager.sharedInstance sendParentDeviceID:parentDeviceID];
+
+        COUNTLY_LOG(@"Parent device ID %@ added to queue.", parentDeviceID);
+
+        [CountlyPersistency.sharedInstance storeWatchParentDeviceID:parentDeviceID];
+    }
+
+    if ([self.originalDelegate respondsToSelector:@selector(session:didReceiveUserInfo:)])
+    {
+        COUNTLY_LOG(@"Forwarding WCSession user info to original delegate.");
+
+        [self.originalDelegate session:session didReceiveUserInfo:userInfo];
+    }
+}
+#endif
+@end
+
 
 #pragma mark - Categories
 NSString* CountlyJSONFromObject(id object)
