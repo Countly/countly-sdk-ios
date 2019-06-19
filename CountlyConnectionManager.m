@@ -443,7 +443,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 - (NSString *)queryEssentials
 {
     return [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%lld&%@=%d&%@=%d&%@=%d&%@=%@&%@=%@",
-                                        kCountlyQSKeyAppKey, self.appKey,
+                                        kCountlyQSKeyAppKey, self.appKey.cly_URLEscaped,
                                         kCountlyQSKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped,
                                         kCountlyQSKeyTimestamp, (long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000),
                                         kCountlyQSKeyTimeHourOfDay, (int)CountlyCommon.sharedInstance.hourOfDay,
