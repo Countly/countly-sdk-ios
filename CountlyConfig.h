@@ -50,12 +50,14 @@ extern NSString* const CLYConsentAppleWatch;
 /**
  * County Server's URL without the slash at the end.
  * @discussion e.g. @c https://example.com
+ * @discussion Host needs to be a non-zero length string, otherwise an exception is thrown.
  */
 @property (nonatomic, copy) NSString* host;
 
 /**
  * Application's App Key found on Countly Server's "Management > Applications" section.
  * @discussion Using API Key or App ID will not work.
+ * @discussion App key needs to be a non-zero length string, otherwise an exception is thrown.
  */
 @property (nonatomic, copy) NSString* appKey;
 
