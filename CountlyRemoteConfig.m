@@ -73,7 +73,7 @@ NSString* const kCountlyRCKeyMetrics            = @"metrics";
     }];
 }
 
-- (void)updateRemoteConfigForForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler
+- (void)updateRemoteConfigForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler
 {
     if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
         return;
