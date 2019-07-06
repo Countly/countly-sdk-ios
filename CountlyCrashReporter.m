@@ -140,6 +140,7 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
 {
     NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
 
+    const NSInteger kCLYMebibit = 1048576;
     NSArray* stackTrace = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
     if (!stackTrace)
         stackTrace = exception.callStackSymbols;
@@ -158,10 +159,10 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     crashReport[kCountlyCRKeyName] = exception.description;
     crashReport[kCountlyCRKeyType] = exception.name;
     crashReport[kCountlyCRKeyNonfatal] = @(!isFatal);
-    crashReport[kCountlyCRKeyRAMCurrent] = @((CountlyDeviceInfo.totalRAM-CountlyDeviceInfo.freeRAM) / 1048576);
-    crashReport[kCountlyCRKeyRAMTotal] = @(CountlyDeviceInfo.totalRAM / 1048576);
-    crashReport[kCountlyCRKeyDiskCurrent] = @((CountlyDeviceInfo.totalDisk-CountlyDeviceInfo.freeDisk) / 1048576);
-    crashReport[kCountlyCRKeyDiskTotal] = @(CountlyDeviceInfo.totalDisk / 1048576);
+    crashReport[kCountlyCRKeyRAMCurrent] = @((CountlyDeviceInfo.totalRAM - CountlyDeviceInfo.freeRAM) / kCLYMebibit);
+    crashReport[kCountlyCRKeyRAMTotal] = @(CountlyDeviceInfo.totalRAM / kCLYMebibit);
+    crashReport[kCountlyCRKeyDiskCurrent] = @((CountlyDeviceInfo.totalDisk - CountlyDeviceInfo.freeDisk) / kCLYMebibit);
+    crashReport[kCountlyCRKeyDiskTotal] = @(CountlyDeviceInfo.totalDisk / kCLYMebibit);
     crashReport[kCountlyCRKeyBattery] = @(CountlyDeviceInfo.batteryLevel);
     crashReport[kCountlyCRKeyOrientation] = CountlyDeviceInfo.orientation;
     crashReport[kCountlyCRKeyOnline] = @((CountlyDeviceInfo.connectionType) ? 1 : 0 );
