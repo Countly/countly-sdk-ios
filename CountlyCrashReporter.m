@@ -19,7 +19,6 @@ NSString* const kCountlyCRKeyResolution        = @"_resolution";
 NSString* const kCountlyCRKeyAppVersion        = @"_app_version";
 NSString* const kCountlyCRKeyAppBuild          = @"_app_build";
 NSString* const kCountlyCRKeyBuildUUID         = @"_build_uuid";
-NSString* const kCountlyCRKeyLoadAddress       = @"_load_address";
 NSString* const kCountlyCRKeyExecutableName    = @"_executable_name";
 NSString* const kCountlyCRKeyName              = @"_name";
 NSString* const kCountlyCRKeyType              = @"_type";
