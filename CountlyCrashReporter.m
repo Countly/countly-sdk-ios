@@ -260,10 +260,10 @@ void CountlySignalHandler(int signalCode)
 
         if (![binaryImagesInStack containsObject:imageName])
         {
-            COUNTLY_LOG(@"Image Name is not in stack trace, so it is not needed!");
             continue;
         }
 
+        COUNTLY_LOG(@"Image Name is in the stack trace, so it will be used!\n%@", imageName);
 
         const struct mach_header* imageHeader = _dyld_get_image_header(i);
         if (imageHeader == NULL)
