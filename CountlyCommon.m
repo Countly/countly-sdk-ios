@@ -327,6 +327,12 @@ NSString* CountlyJSONFromObject(id object)
     if (!object)
         return nil;
 
+    if (![NSJSONSerialization isValidJSONObject:object])
+    {
+        COUNTLY_LOG(@"Object is not valid for converting to JSON!");
+        return nil;
+    }
+
     NSError *error = nil;
     NSData *data = [NSJSONSerialization dataWithJSONObject:object options:0 error:&error];
     if (error){ COUNTLY_LOG(@"JSON can not be created: \n%@", error); }
