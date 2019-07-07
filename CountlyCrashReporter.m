@@ -237,11 +237,14 @@ void CountlySignalHandler(int signalCode)
     NSMutableSet* binaryImagesInStack = NSMutableSet.new;
     for (NSString* line in stackTrace)
     {
-        NSRegularExpression* regex = [NSRegularExpression regularExpressionWithPattern:@"\\s+\\s" options:0 error:nil];
-        NSString* trimmedLine = [regex stringByReplacingMatchesInString:line options:0 range:(NSRange){0,line.length} withTemplate:@" "];
-        NSArray* lineComponents = [trimmedLine componentsSeparatedByString:@" "];
-        if (lineComponents.count > 1)
-            [binaryImagesInStack addObject:lineComponents[1]];
+        //NOTE: See _BACKTRACE_FORMAT in https://opensource.apple.com/source/Libc/Libc-498/gen/backtrace.c.auto.html
+        NSRange rangeOfBinaryImageName = (NSRange){4, 35};
+        if (line.length >= rangeOfBinaryImageName.location + rangeOfBinaryImageName.length)
+        {
+            NSString* binaryImageName = [line substringWithRange:rangeOfBinaryImageName];
+            binaryImageName = [binaryImageName stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
+            [binaryImagesInStack addObject:binaryImageName];
+        }
     }
 
     NSMutableDictionary* binaryImages = NSMutableDictionary.new;
