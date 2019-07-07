@@ -260,6 +260,7 @@ void CountlySignalHandler(int signalCode)
 
         if (![binaryImagesInStack containsObject:imageName])
         {
+            //NOTE: Image Name is not in the stack trace, so it will be ignored!
             continue;
         }
 
