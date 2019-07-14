@@ -87,6 +87,14 @@ NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersi
     }
 }
 
+- (void)flushQueue
+{
+    @synchronized (self)
+    {
+        [self.queuedRequests removeAllObjects];
+    }
+}
+
 #pragma mark ---
 
 - (void)recordEvent:(CountlyEvent *)event
@@ -117,6 +125,14 @@ NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersi
     }
 
     return [tempArray cly_JSONify];
+}
+
+- (void)flushEvents
+{
+    @synchronized (self.recordedEvents)
+    {
+        [self.recordedEvents removeAllObjects];
+    }
 }
 
 #pragma mark ---

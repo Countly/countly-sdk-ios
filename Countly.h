@@ -55,6 +55,13 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue;
 
 /**
+ * Flushes request and event queues.
+ * @discussion Flushes persistenly stored request queue and events recorded but not converted to a request so far.
+ * @discussion Started timed events will not be affected.
+ */
+- (void)flushQueues;
+
+/**
  * Starts session and sends @c begin_session request with default metrics for manual session handling.
  * @discussion This method needs to be called for starting a session only if @c manualSessionHandling flag is set on initial configuration.
  * @discussion Otherwise; sessions will be handled automatically by default, and calling this method will have no effect.

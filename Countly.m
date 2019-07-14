@@ -224,6 +224,12 @@
     [CountlyConnectionManager.sharedInstance proceedOnQueue];
 }
 
+- (void)flushQueues
+{
+    [CountlyPersistency.sharedInstance flushEvents];
+    [CountlyPersistency.sharedInstance flushQueue];
+}
+
 #pragma mark ---
 
 - (void)beginSession

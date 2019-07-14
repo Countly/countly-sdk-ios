@@ -15,9 +15,11 @@
 - (void)addToQueue:(NSString *)queryString;
 - (void)removeFromQueue:(NSString *)queryString;
 - (NSString *)firstItemInQueue;
+- (void)flushQueue;
 
 - (void)recordEvent:(CountlyEvent *)event;
 - (NSString *)serializedRecordedEvents;
+- (void)flushEvents;
 
 - (void)recordTimedEvent:(CountlyEvent *)event;
 - (CountlyEvent *)timedEventForKey:(NSString *)key;
