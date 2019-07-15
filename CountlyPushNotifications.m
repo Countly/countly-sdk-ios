@@ -466,6 +466,17 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         completionHandler();
 }
 
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center openSettingsForNotification:(UNNotification *)notification
+{
+    if (@available(iOS 12.0, macOS 10.14, *))
+    {
+        id<UNUserNotificationCenterDelegate> appDelegate = (id<UNUserNotificationCenterDelegate>)CLYApplication.sharedApplication.delegate;
+
+        if ([appDelegate respondsToSelector:@selector(userNotificationCenter:openSettingsForNotification:)])
+            [appDelegate userNotificationCenter:center openSettingsForNotification:notification];
+    }
+}
+
 #pragma mark ---
 
 - (void)application:(CLYApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken{}
