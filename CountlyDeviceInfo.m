@@ -69,7 +69,7 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 #if TARGET_OS_IOS
-    if (!deviceID || !deviceID.length)
+    if (!deviceID.length)
         self.deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
     else if ([deviceID isEqualToString:CLYIDFV])
         self.deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
@@ -81,26 +81,28 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
         self.deviceID = deviceID;
 
 #elif TARGET_OS_WATCH
-    if (!deviceID || !deviceID.length)
+    if (!deviceID.length)
         self.deviceID = NSUUID.UUID.UUIDString;
     else
         self.deviceID = deviceID;
 
 #elif TARGET_OS_TV
-    if (!deviceID || !deviceID.length)
+    if (!deviceID.length)
         self.deviceID = NSUUID.UUID.UUIDString;
     else
         self.deviceID = deviceID;
 
 #elif TARGET_OS_OSX
-    if (!deviceID || !deviceID.length)
+    if (!deviceID.length)
         self.deviceID = NSUUID.UUID.UUIDString;
     else if ([deviceID isEqualToString:CLYOpenUDID])
         self.deviceID = [Countly_OpenUDID value];
     else
         self.deviceID = deviceID;
+
 #else
     self.deviceID = @"UnsupportedPlaftormDevice";
+
 #endif
 
 #pragma GCC diagnostic pop
