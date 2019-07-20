@@ -171,11 +171,6 @@
         deviceID = [CountlyDeviceInfo.sharedInstance zeroSafeIDFA];
     else if ([deviceID isEqualToString:CLYIDFV])
         deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
-    else if ([deviceID isEqualToString:CLYOpenUDID])
-        deviceID = [Countly_OpenUDID value];
-#elif TARGET_OS_OSX
-    if ([deviceID isEqualToString:CLYOpenUDID])
-        deviceID = [Countly_OpenUDID value];
 #endif
 
 #pragma GCC diagnostic pop

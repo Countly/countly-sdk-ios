@@ -75,8 +75,6 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
         self.deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
     else if ([deviceID isEqualToString:CLYIDFA])
         self.deviceID = [self zeroSafeIDFA];
-    else if ([deviceID isEqualToString:CLYOpenUDID])
-        self.deviceID = [Countly_OpenUDID value];
     else
         self.deviceID = deviceID;
 
@@ -95,8 +93,6 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 #elif TARGET_OS_OSX
     if (!deviceID.length)
         self.deviceID = NSUUID.UUID.UUIDString;
-    else if ([deviceID isEqualToString:CLYOpenUDID])
-        self.deviceID = [Countly_OpenUDID value];
     else
         self.deviceID = deviceID;
 

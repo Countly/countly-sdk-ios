@@ -26,9 +26,6 @@ extern NSString* const CLYPushNotifications;
 #if TARGET_OS_IOS
 extern NSString* const CLYIDFV;
 extern NSString* const CLYIDFA DEPRECATED_MSG_ATTRIBUTE("Use CLYIDFV instead!");
-extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use CLYIDFV instead!");
-#elif TARGET_OS_OSX
-extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Use custom device ID instead!");
 #endif
 
 
@@ -152,7 +149,6 @@ extern NSString* const CLYConsentAppleWatch;
  * @discussion Available system generated device ID options:
  * @discussion @c CLYIDFV (Identifier For Vendor)
  * @discussion @c CLYIDFA (Identifier For Advertising)
- * @discussion @c CLYOpenUDID (OpenUDID)
  * @discussion Once set, device ID will be stored persistently and will not change even if another device ID is set on start, unless @c resetStoredDeviceID flag is set.
  */
 @property (nonatomic, copy) NSString* deviceID;

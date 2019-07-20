@@ -26,9 +26,6 @@
 #if TARGET_OS_IOS
     NSString* const CLYIDFA = @"CLYIDFA";
     NSString* const CLYIDFV = @"CLYIDFV";
-    NSString* const CLYOpenUDID = @"CLYOpenUDID";
-#elif TARGET_OS_OSX
-    NSString* const CLYOpenUDID = @"CLYOpenUDID";
 #endif
 
 
