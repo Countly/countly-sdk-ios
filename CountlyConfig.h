@@ -153,15 +153,22 @@ extern NSString* const CLYConsentAppleWatch;
  * @discussion @c CLYIDFV (Identifier For Vendor)
  * @discussion @c CLYIDFA (Identifier For Advertising)
  * @discussion @c CLYOpenUDID (OpenUDID)
- * @discussion Once set, device ID will be stored persistently and will not change even if another device ID is set on start, unless @c forceDeviceIDInitialization flag is set.
+ * @discussion Once set, device ID will be stored persistently and will not change even if another device ID is set on start, unless @c resetStoredDeviceID flag is set.
  */
 @property (nonatomic, copy) NSString* deviceID;
 
 /**
- * For forcing device ID initialization on start.
- * @discussion When it is set, persistently stored device ID will be reset and new device ID will be re-initialized using @c deviceID property on @c CountlyConfig object. It is meant to be used for debugging purposes only while developing.
+ * For resetting persistently stored device ID on SDK start.
+ * @discussion If set, persistently stored device ID will be reset and new device ID specified on @c deviceID property of @c CountlyConfig object will be stored and used.
+ * @discussion It is meant to be used for debugging purposes only while developing.
  */
-@property (nonatomic) BOOL forceDeviceIDInitialization;
+@property (nonatomic) BOOL resetStoredDeviceID;
+
+/**
+ * @c forceDeviceIDInitialization property is deprecated. Please use @c resetStoredDeviceID property instead.
+ * @discussion Using this property will have no effect.
+ */
+@property (nonatomic) BOOL forceDeviceIDInitialization DEPRECATED_MSG_ATTRIBUTE("Use 'resetStoredDeviceID' property instead!");
 
 /**
  * For applying zero-IDFA fix on queued requests.

@@ -72,7 +72,7 @@
 
     COUNTLY_LOG(@"Initializing with %@ SDK v%@", kCountlySDKName, kCountlySDKVersion);
 
-    if (!CountlyDeviceInfo.sharedInstance.deviceID || config.forceDeviceIDInitialization)
+    if (!CountlyDeviceInfo.sharedInstance.deviceID || config.resetStoredDeviceID)
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:config.deviceID];
 
     CountlyConnectionManager.sharedInstance.appKey = config.appKey;
