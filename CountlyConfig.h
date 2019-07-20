@@ -153,7 +153,7 @@ extern NSString* const CLYConsentAppleWatch;
  * @discussion @c CLYIDFV (Identifier For Vendor)
  * @discussion @c CLYIDFA (Identifier For Advertising)
  * @discussion @c CLYOpenUDID (OpenUDID)
- * @discussion Once set, device ID will be stored persistently (even after app delete and re-install) and will not change even if another device ID is set on start, unless @c forceDeviceIDInitialization flag is set.
+ * @discussion Once set, device ID will be stored persistently and will not change even if another device ID is set on start, unless @c forceDeviceIDInitialization flag is set.
  */
 @property (nonatomic, copy) NSString* deviceID;
 
