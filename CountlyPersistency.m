@@ -238,37 +238,7 @@ NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersi
         return retrievedDeviceID;
     }
 
-    NSDictionary *keychainDict =
-    @{
-        (__bridge id)kSecAttrAccount:       kCountlyStoredDeviceIDKey,
-        (__bridge id)kSecAttrService:       kCountlyStoredDeviceIDKey,
-        (__bridge id)kSecClass:             (__bridge id)kSecClassGenericPassword,
-        (__bridge id)kSecAttrAccessible:    (__bridge id)kSecAttrAccessibleAlways,
-        (__bridge id)kSecReturnData:        (__bridge id)kCFBooleanTrue,
-        (__bridge id)kSecReturnAttributes:  (__bridge id)kCFBooleanTrue
-    };
-
-    CFDictionaryRef resultDictRef = nil;
-    OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)keychainDict, (CFTypeRef *)&resultDictRef);
-    if (status == noErr)
-    {
-        NSDictionary *resultDict = (__bridge_transfer NSDictionary *)resultDictRef;
-        NSData *data = resultDict[(__bridge id)kSecValueData];
-
-        if (data)
-        {
-            retrievedDeviceID = [data cly_stringUTF8];
-
-            COUNTLY_LOG(@"Device ID successfully retrieved from KeyChain: %@", retrievedDeviceID);
-
-            [NSUserDefaults.standardUserDefaults setObject:retrievedDeviceID forKey:kCountlyStoredDeviceIDKey];
-            [NSUserDefaults.standardUserDefaults synchronize];
-
-            return retrievedDeviceID;
-        }
-    }
-
-    COUNTLY_LOG(@"Device ID can not be retrieved!");
+    COUNTLY_LOG(@"There is no stored Device ID in UserDefaults!");
 
     return nil;
 }
@@ -278,27 +248,7 @@ NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersi
     [NSUserDefaults.standardUserDefaults setObject:deviceID forKey:kCountlyStoredDeviceIDKey];
     [NSUserDefaults.standardUserDefaults synchronize];
 
-    NSDictionary *keychainDict =
-    @{
-        (__bridge id)kSecAttrAccount:       kCountlyStoredDeviceIDKey,
-        (__bridge id)kSecAttrService:       kCountlyStoredDeviceIDKey,
-        (__bridge id)kSecClass:             (__bridge id)kSecClassGenericPassword,
-        (__bridge id)kSecAttrAccessible:    (__bridge id)kSecAttrAccessibleAlways,
-        (__bridge id)kSecValueData:         [deviceID cly_dataUTF8]
-    };
-
-    SecItemDelete((__bridge CFDictionaryRef)keychainDict);
-
-    OSStatus status = SecItemAdd((__bridge CFDictionaryRef)keychainDict, NULL);
-
-    if (status == noErr)
-    {
-        COUNTLY_LOG(@"Device ID successfully stored: %@", deviceID);
-    }
-    else
-    {
-        COUNTLY_LOG(@"Device ID can not be stored! %d", (int)status);
-    }
+    COUNTLY_LOG(@"Device ID successfully stored in UserDefaults: %@", deviceID);
 }
 
 - (NSString *)retrieveWatchParentDeviceID
