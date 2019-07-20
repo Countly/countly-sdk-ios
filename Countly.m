@@ -166,9 +166,7 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 #if TARGET_OS_IOS
-    if ([deviceID isEqualToString:CLYIDFA])
-        deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
-    else if ([deviceID isEqualToString:CLYIDFV])
+    if ([deviceID isEqualToString:CLYIDFV])
         deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
 #endif
 
