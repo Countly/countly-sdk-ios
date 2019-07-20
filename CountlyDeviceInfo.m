@@ -59,41 +59,14 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
 - (void)initializeDeviceID:(NSString *)deviceID
 {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
+    if (!deviceID.length)
 #if TARGET_OS_IOS
-    if (!deviceID.length)
-        self.deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
-    else if ([deviceID isEqualToString:CLYIDFV])
-        self.deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
-    else
-        self.deviceID = deviceID;
-
-#elif TARGET_OS_WATCH
-    if (!deviceID.length)
-        self.deviceID = NSUUID.UUID.UUIDString;
-    else
-        self.deviceID = deviceID;
-
-#elif TARGET_OS_TV
-    if (!deviceID.length)
-        self.deviceID = NSUUID.UUID.UUIDString;
-    else
-        self.deviceID = deviceID;
-
-#elif TARGET_OS_OSX
-    if (!deviceID.length)
-        self.deviceID = NSUUID.UUID.UUIDString;
-    else
-        self.deviceID = deviceID;
-
+        deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
 #else
-    self.deviceID = @"UnsupportedPlaftormDevice";
-
+        deviceID = NSUUID.UUID.UUIDString;
 #endif
 
-#pragma GCC diagnostic pop
+    self.deviceID = deviceID;
 
     [CountlyPersistency.sharedInstance storeDeviceID:self.deviceID];
 }

@@ -162,15 +162,12 @@
     if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
         return;
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
+    if (!deviceID.length)
 #if TARGET_OS_IOS
-    if ([deviceID isEqualToString:CLYIDFV])
         deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
+#else
+        deviceID = NSUUID.UUID.UUIDString;
 #endif
-
-#pragma GCC diagnostic pop
 
     if ([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
         return;

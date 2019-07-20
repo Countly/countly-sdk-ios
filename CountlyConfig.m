@@ -24,7 +24,7 @@
 
 //NOTE: Device ID options
 #if TARGET_OS_IOS
-    NSString* const CLYIDFV = @"CLYIDFV";
+    NSString* const CLYIDFV = nil;
 #endif
 
 
