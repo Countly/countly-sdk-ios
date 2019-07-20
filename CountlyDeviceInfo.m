@@ -17,8 +17,6 @@
 #import <CoreTelephony/CTCarrier.h>
 #endif
 
-NSString* const kCountlyZeroIDFA = @"00000000-0000-0000-0000-000000000000";
-
 NSString* const kCountlyMetricKeyDevice             = @"_device";
 NSString* const kCountlyMetricKeyOS                 = @"_os";
 NSString* const kCountlyMetricKeyOSVersion          = @"_os_version";
@@ -52,10 +50,6 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     {
         self.deviceID = [CountlyPersistency.sharedInstance retrieveStoredDeviceID];
 #if TARGET_OS_IOS
-        //NOTE: Handle Limit Ad Tracking zero-IDFA problem
-        if ([self.deviceID isEqualToString:kCountlyZeroIDFA])
-            [self initializeDeviceID:CLYIDFV];
-
         self.networkInfo = CTTelephonyNetworkInfo.new;
 #endif
     }
@@ -74,7 +68,7 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     else if ([deviceID isEqualToString:CLYIDFV])
         self.deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
     else if ([deviceID isEqualToString:CLYIDFA])
-        self.deviceID = [self zeroSafeIDFA];
+        self.deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
     else
         self.deviceID = deviceID;
 
@@ -104,24 +98,6 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 #pragma GCC diagnostic pop
 
     [CountlyPersistency.sharedInstance storeDeviceID:self.deviceID];
-}
-
-- (NSString *)zeroSafeIDFA
-{
-#if TARGET_OS_IOS
-#ifndef COUNTLY_EXCLUDE_IDFA
-    NSString* IDFA = ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
-#else
-    NSString* IDFA = UIDevice.currentDevice.identifierForVendor.UUIDString;
-#endif
-    //NOTE: Handle Limit Ad Tracking zero-IDFA problem
-    if ([IDFA isEqualToString:kCountlyZeroIDFA])
-        IDFA = UIDevice.currentDevice.identifierForVendor.UUIDString;
-
-    return IDFA;
-#else
-    return nil;
-#endif
 }
 
 #pragma mark -

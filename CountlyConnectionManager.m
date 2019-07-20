@@ -118,29 +118,6 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     NSString* queryString = firstItemInQueue;
 
-    if (self.applyZeroIDFAFix)
-    {
-        NSString* deviceIDZeroIDFA = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, kCountlyZeroIDFA];
-        NSString* oldDeviceIDZeroIDFA = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceIDOld, kCountlyZeroIDFA];
-        NSString* deviceIDFixed = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped];
-
-        if ([queryString containsString:deviceIDZeroIDFA])
-        {
-            COUNTLY_LOG(@"Detected a request with zero-IDFA in queue and fixed.");
-
-            queryString = [queryString stringByReplacingOccurrencesOfString:deviceIDZeroIDFA withString:deviceIDFixed];
-        }
-
-        if ([queryString containsString:oldDeviceIDZeroIDFA])
-        {
-            COUNTLY_LOG(@"Detected a request with zero-IDFA in queue and removed.");
-
-            [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
-            [self proceedOnQueue];
-            return;
-        }
-    }
-
     queryString = [self appendChecksum:queryString];
 
     NSString* serverInputEndpoint = [self.host stringByAppendingString:kCountlyInputEndpoint];

@@ -83,7 +83,6 @@
     CountlyConnectionManager.sharedInstance.customHeaderFieldName = config.customHeaderFieldName;
     CountlyConnectionManager.sharedInstance.customHeaderFieldValue = config.customHeaderFieldValue;
     CountlyConnectionManager.sharedInstance.secretSalt = config.secretSalt;
-    CountlyConnectionManager.sharedInstance.applyZeroIDFAFix = config.applyZeroIDFAFix;
 
     CountlyPersistency.sharedInstance.eventSendThreshold = config.eventSendThreshold;
     CountlyPersistency.sharedInstance.storedRequestsLimit = MAX(1, config.storedRequestsLimit);
@@ -168,7 +167,7 @@
 
 #if TARGET_OS_IOS
     if ([deviceID isEqualToString:CLYIDFA])
-        deviceID = [CountlyDeviceInfo.sharedInstance zeroSafeIDFA];
+        deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
     else if ([deviceID isEqualToString:CLYIDFV])
         deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
 #endif

@@ -167,10 +167,11 @@ extern NSString* const CLYConsentAppleWatch;
 @property (nonatomic) BOOL forceDeviceIDInitialization DEPRECATED_MSG_ATTRIBUTE("Use 'resetStoredDeviceID' property instead!");
 
 /**
- * For applying zero-IDFA fix on queued requests.
- * @discussion If set, all requests in persistently stored request queue will be checked against zero-IDFA issue. If found, they will be fixed by either replacing with IDFV or removing from queue.
+ * @c applyZeroIDFAFixFor property is deprecated.
+ * @discussion As IDFA is not supported anymore, @c applyZeroIDFAFix is now inoperative.
+ * @discussion Using this property will have no effect.
  */
-@property (nonatomic) BOOL applyZeroIDFAFix;
+@property (nonatomic) BOOL applyZeroIDFAFix DEPRECATED_MSG_ATTRIBUTE("As IDFA is not supported anymore, 'applyZeroIDFAFix' is now inoperative!");
 
 #pragma mark -
 
