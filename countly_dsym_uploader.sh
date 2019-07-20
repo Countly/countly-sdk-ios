@@ -27,14 +27,14 @@ if [ ! "$DWARF_DSYM_FOLDER_PATH" ] || [ ! "$DWARF_DSYM_FILE_NAME" ]; then
     countly_fail "Xcode Environment Variables are missing!"
 fi
 
-DSYM_PATH="$DWARF_DSYM_FOLDER_PATH/$DWARF_DSYM_FILE_NAME";
+DSYM_PATH="${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}";
 if [ ! -d $DSYM_PATH ]; then
     countly_fail "$DWARF_DSYM_FILE_NAME does not exist!"
 fi
 
 
 # Extracting Build UUIDs from DSYM using dwarfdump
-BUILD_UUIDS=$(xcrun dwarfdump --uuid $DSYM_PATH | awk '{print $2}' | xargs | sed 's/ /,/g')
+BUILD_UUIDS=$(xcrun dwarfdump --uuid "${DSYM_PATH}" | awk '{print $2}' | xargs | sed 's/ /,/g')
 if [ $? -eq 0 ]; then
     countly_log "Extracted Build UUIDs: $BUILD_UUIDS"
 else
@@ -43,9 +43,9 @@ fi
 
 
 # Creating archive of DSYM folder using zip
-DSYM_ZIP_PATH="/tmp/$(date +%s)_$DWARF_DSYM_FILE_NAME.zip"
-pushd $DWARF_DSYM_FOLDER_PATH > /dev/null
-zip -rq $DSYM_ZIP_PATH $DWARF_DSYM_FILE_NAME
+DSYM_ZIP_PATH="/tmp/$(date +%s)_${DWARF_DSYM_FILE_NAME}.zip"
+pushd "${DWARF_DSYM_FOLDER_PATH}" > /dev/null
+zip -rq "${DSYM_ZIP_PATH}" "${DWARF_DSYM_FILE_NAME}"
 popd > /dev/null
 if [ $? -eq 0 ]; then
     countly_log "Created archive at $DSYM_ZIP_PATH"
@@ -58,13 +58,13 @@ fi
 HOST="$1";
 APPKEY="$2";
 ENDPOINT="/i/crash_symbols/upload_symbol"
-QUERY="?platform=ios&app_key=$APPKEY&build=$BUILD_UUIDS"
-URL="$HOST$ENDPOINT$QUERY"
+QUERY="?platform=ios&app_key=${APPKEY}&build=${BUILD_UUIDS}"
+URL="$HOST$ENDPOINT${QUERY}"
 countly_log "Uploading to $URL"
 
 
 # Uploading to server using curl
-UPLOAD_RESULT=$(curl -s -F "symbols=@$DSYM_ZIP_PATH" $URL)
+UPLOAD_RESULT=$(curl -s -F "symbols=@${DSYM_ZIP_PATH}" "${URL}")
 if [ $? -eq 0 ] && [ "$UPLOAD_RESULT" == "{\"result\":\"Success\"}" ]; then
     countly_log "dSYM upload succesfully completed."
 else
@@ -73,6 +73,6 @@ fi
 
 
 # Removing artifacts
-rm $DSYM_ZIP_PATH
+rm "${DSYM_ZIP_PATH}"
 
 exit 0

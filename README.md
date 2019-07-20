@@ -13,6 +13,10 @@ We also have a useful [sample iOS application](https://github.com/Countly/countl
 
 ![iOS-sample-app](https://count.ly/github/countly-ios-sample-app.png)
 
+## Security
+
+Security is very important to us. If you discover any issue regarding security, please disclose the information responsibly by sending an email to security@count.ly and **not by creating a GitHub issue**.
+
 ## Other Countly Resources
 This SDK needs one of the following counterpart Countly editions to work: 
 
