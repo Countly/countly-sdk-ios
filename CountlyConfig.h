@@ -26,7 +26,7 @@ extern NSString* const CLYPushNotifications;
 #if TARGET_OS_IOS
 extern NSString* const CLYIDFV DEPRECATED_MSG_ATTRIBUTE("As IDFV is the default device ID, 'CLYIDFV' is now inoperative! You can use nil or empty string instead.");
 #endif
-
+extern NSString* const CLYTemporaryDeviceID;
 
 //NOTE: Available consents
 extern NSString* const CLYConsentSessions;
@@ -157,6 +157,13 @@ extern NSString* const CLYConsentAppleWatch;
  * @discussion It is meant to be used for debugging purposes only while developing.
  */
 @property (nonatomic) BOOL resetStoredDeviceID;
+
+/**
+ * For holding all requests until device ID is set later.
+ * @discussion If set, temporarily a reserved keyword will be used as device ID and all requests will be on hold.
+ * @discussion Later when device ID is set using @c setNewDeviceID:onServer: method, reserved keyword will be replaced with specified device ID and requests will start.
+ */
+@property (nonatomic) BOOL holdRequestsUntilDeviceIDIsSet;
 
 /**
  * @c forceDeviceIDInitialization property is deprecated. Please use @c resetStoredDeviceID property instead.

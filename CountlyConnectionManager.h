@@ -19,6 +19,7 @@
 @property (nonatomic) NSString* customHeaderFieldValue;
 @property (nonatomic) NSString* secretSalt;
 @property (nonatomic) BOOL alwaysUsePOST;
+@property (nonatomic) BOOL holdRequestsUntilDeviceIDIsSet;
 
 + (instancetype)sharedInstance;
 

@@ -72,7 +72,10 @@
 
     COUNTLY_LOG(@"Initializing with %@ SDK v%@", kCountlySDKName, kCountlySDKVersion);
 
-    if (!CountlyDeviceInfo.sharedInstance.deviceID || config.resetStoredDeviceID)
+    if (config.holdRequestsUntilDeviceIDIsSet)
+        config.deviceID = CLYTemporaryDeviceID;
+
+    if (!CountlyDeviceInfo.sharedInstance.deviceID || config.resetStoredDeviceID || config.holdRequestsUntilDeviceIDIsSet)
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:config.deviceID];
 
     CountlyConnectionManager.sharedInstance.appKey = config.appKey;
@@ -83,6 +86,7 @@
     CountlyConnectionManager.sharedInstance.customHeaderFieldName = config.customHeaderFieldName;
     CountlyConnectionManager.sharedInstance.customHeaderFieldValue = config.customHeaderFieldValue;
     CountlyConnectionManager.sharedInstance.secretSalt = config.secretSalt;
+    CountlyConnectionManager.sharedInstance.holdRequestsUntilDeviceIDIsSet = config.holdRequestsUntilDeviceIDIsSet;
 
     CountlyPersistency.sharedInstance.eventSendThreshold = config.eventSendThreshold;
     CountlyPersistency.sharedInstance.storedRequestsLimit = MAX(1, config.storedRequestsLimit);
@@ -172,7 +176,16 @@
     if ([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
         return;
 
-    if (onServer)
+    if (CountlyConnectionManager.sharedInstance.holdRequestsUntilDeviceIDIsSet)
+    {
+        COUNTLY_LOG(@"Device ID is set, so no need to hold requests anymore.");
+        [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
+        CountlyConnectionManager.sharedInstance.holdRequestsUntilDeviceIDIsSet = NO;
+        [CountlyConnectionManager.sharedInstance proceedOnQueue];
+        return;
+    }
+
+    if (onServer) //TODO: how to handle onServer calls for holdRequestsUntilDeviceIDIsSet
     {
         NSString* oldDeviceID = CountlyDeviceInfo.sharedInstance.deviceID;
 
