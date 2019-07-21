@@ -98,9 +98,9 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return;
     }
 
-    if (self.holdRequestsUntilDeviceIDIsSet)
+    if ([CountlyDeviceInfo.sharedInstance.deviceID isEqualToString:CLYTemporaryDeviceID])
     {
-        COUNTLY_LOG(@"Proceeding on queue is aborted: holdRequestsUntilDeviceIDIsSet flag is set!");
+        COUNTLY_LOG(@"Proceeding on queue is aborted: Device ID is set as CLYTemporaryDeviceID!");
         return;
     }
 
@@ -123,14 +123,6 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     [CountlyCommon.sharedInstance startBackgroundTask];
 
     NSString* queryString = firstItemInQueue;
-
-    NSString* temporaryDeviceIDQueryString = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, CLYTemporaryDeviceID];
-    NSString* realDeviceIDQueryString = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped];
-    if ([queryString containsString:temporaryDeviceIDQueryString])
-    {
-        COUNTLY_LOG(@"Detected a request with temporary device ID in queue and replaced it with current device ID.");
-        queryString = [queryString stringByReplacingOccurrencesOfString:temporaryDeviceIDQueryString withString:realDeviceIDQueryString];
-    }
 
     queryString = [self appendChecksum:queryString];
 

@@ -72,10 +72,7 @@
 
     COUNTLY_LOG(@"Initializing with %@ SDK v%@", kCountlySDKName, kCountlySDKVersion);
 
-    if (config.holdRequestsUntilDeviceIDIsSet)
-        config.deviceID = CLYTemporaryDeviceID;
-
-    if (!CountlyDeviceInfo.sharedInstance.deviceID || config.resetStoredDeviceID || config.holdRequestsUntilDeviceIDIsSet)
+    if (!CountlyDeviceInfo.sharedInstance.deviceID || config.resetStoredDeviceID)
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:config.deviceID];
 
     CountlyConnectionManager.sharedInstance.appKey = config.appKey;
@@ -86,7 +83,6 @@
     CountlyConnectionManager.sharedInstance.customHeaderFieldName = config.customHeaderFieldName;
     CountlyConnectionManager.sharedInstance.customHeaderFieldValue = config.customHeaderFieldValue;
     CountlyConnectionManager.sharedInstance.secretSalt = config.secretSalt;
-    CountlyConnectionManager.sharedInstance.holdRequestsUntilDeviceIDIsSet = config.holdRequestsUntilDeviceIDIsSet;
 
     CountlyPersistency.sharedInstance.eventSendThreshold = config.eventSendThreshold;
     CountlyPersistency.sharedInstance.storedRequestsLimit = MAX(1, config.storedRequestsLimit);
@@ -176,11 +172,13 @@
     if ([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
         return;
 
-    if (CountlyConnectionManager.sharedInstance.holdRequestsUntilDeviceIDIsSet)
+    if ([CountlyDeviceInfo.sharedInstance.deviceID isEqualToString:CLYTemporaryDeviceID])
     {
-        COUNTLY_LOG(@"Device ID is set, so no need to hold requests anymore.");
+        COUNTLY_LOG(@"Going out of temporary device ID mode, so no need to hold requests anymore.");
+        [CountlyPersistency.sharedInstance replaceAllTemporaryDeviceIDsInQueueWithDeviceID:deviceID];
+
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
-        CountlyConnectionManager.sharedInstance.holdRequestsUntilDeviceIDIsSet = NO;
+
         [CountlyConnectionManager.sharedInstance proceedOnQueue];
         return;
     }

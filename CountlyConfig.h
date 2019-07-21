@@ -159,13 +159,6 @@ extern NSString* const CLYConsentAppleWatch;
 @property (nonatomic) BOOL resetStoredDeviceID;
 
 /**
- * For holding all requests until device ID is set later.
- * @discussion If set, temporarily a reserved keyword will be used as device ID and all requests will be on hold.
- * @discussion Later when device ID is set using @c setNewDeviceID:onServer: method, reserved keyword will be replaced with specified device ID and requests will start.
- */
-@property (nonatomic) BOOL holdRequestsUntilDeviceIDIsSet;
-
-/**
  * @c forceDeviceIDInitialization property is deprecated. Please use @c resetStoredDeviceID property instead.
  * @discussion Using this property will have no effect.
  */
