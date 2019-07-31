@@ -172,7 +172,7 @@
     if ([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
         return;
 
-    if ([CountlyDeviceInfo.sharedInstance.deviceID isEqualToString:CLYTemporaryDeviceID])
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
     {
         COUNTLY_LOG(@"Going out of temporary device ID mode, so no need to hold requests anymore.");
         [CountlyPersistency.sharedInstance replaceAllTemporaryDeviceIDsInQueueWithDeviceID:deviceID];

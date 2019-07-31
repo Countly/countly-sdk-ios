@@ -98,7 +98,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return;
     }
 
-    if ([CountlyDeviceInfo.sharedInstance.deviceID isEqualToString:CLYTemporaryDeviceID])
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
     {
         COUNTLY_LOG(@"Proceeding on queue is aborted: Device ID is set as CLYTemporaryDeviceID!");
         return;
