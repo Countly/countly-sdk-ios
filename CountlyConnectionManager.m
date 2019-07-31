@@ -323,7 +323,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
                              kCountlyQSKeyCrash, report];
 
-    if (!immediately)
+    if (!immediately || CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
     {
         [CountlyPersistency.sharedInstance addToQueue:queryString];
         [self proceedOnQueue];
