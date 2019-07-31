@@ -183,7 +183,7 @@
         return;
     }
 
-    if (onServer) //TODO: how to handle onServer calls for holdRequestsUntilDeviceIDIsSet
+    if (onServer)
     {
         NSString* oldDeviceID = CountlyDeviceInfo.sharedInstance.deviceID;
 
