@@ -81,6 +81,9 @@ NSString* const kCountlyRCKeyMetrics            = @"metrics";
     if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
         return;
 
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+        return;
+
     COUNTLY_LOG(@"Fetching remote config manually...");
 
     [self fetchRemoteConfigForKeys:keys omitKeys:omitKeys completionHandler:^(NSDictionary *remoteConfig, NSError *error)
