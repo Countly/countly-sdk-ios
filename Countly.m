@@ -170,7 +170,10 @@
 #endif
 
     if ([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
+    {
+        COUNTLY_LOG(@"Setting new device ID aborted: Attempted to set the same device ID.");
         return;
+    }
 
     if ([deviceID isEqualToString:CLYTemporaryDeviceID] && onServer)
     {
