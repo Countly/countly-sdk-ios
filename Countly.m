@@ -183,12 +183,16 @@
 
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
     {
-        COUNTLY_LOG(@"Going out of temporary device ID mode, so no need to hold requests anymore.");
+        COUNTLY_LOG(@"Going out of CLYTemporaryDeviceID mode and switching back to normal mode.");
+
         [CountlyPersistency.sharedInstance replaceAllTemporaryDeviceIDsInQueueWithDeviceID:deviceID];
 
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
 
         [CountlyConnectionManager.sharedInstance proceedOnQueue];
+
+        [CountlyRemoteConfig.sharedInstance startRemoteConfig];
+
         return;
     }
 
