@@ -172,6 +172,12 @@
     if ([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
         return;
 
+    if ([deviceID isEqualToString:CLYTemporaryDeviceID] && onServer)
+    {
+        COUNTLY_LOG(@"Setting new device ID aborted: Attempted to set device ID as CLYTemporaryDeviceID with onServer option.");
+        return;
+    }
+
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
     {
         COUNTLY_LOG(@"Going out of temporary device ID mode, so no need to hold requests anymore.");
