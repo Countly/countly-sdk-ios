@@ -95,6 +95,25 @@ NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersi
     }
 }
 
+- (void)replaceAllTemporaryDeviceIDsInQueueWithDeviceID:(NSString *)deviceID
+{
+    NSString* temporaryDeviceIDQueryString = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, CLYTemporaryDeviceID];
+    NSString* realDeviceIDQueryString = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, deviceID.cly_URLEscaped];
+
+    @synchronized (self)
+    {
+        [self.queuedRequests.copy enumerateObjectsUsingBlock:^(NSString* queryString, NSUInteger idx, BOOL* stop)
+        {
+            if ([queryString containsString:temporaryDeviceIDQueryString])
+            {
+                COUNTLY_LOG(@"Detected a request with temporary device ID in queue and replaced it with real device ID.");
+                NSString * replacedQueryString = [queryString stringByReplacingOccurrencesOfString:temporaryDeviceIDQueryString withString:realDeviceIDQueryString];
+                self.queuedRequests[idx] = replacedQueryString;
+            }
+        }];
+    }
+}
+
 #pragma mark ---
 
 - (void)recordEvent:(CountlyEvent *)event

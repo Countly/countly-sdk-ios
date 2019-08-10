@@ -170,7 +170,31 @@
 #endif
 
     if ([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
+    {
+        COUNTLY_LOG(@"Attempted to set the same device ID again. So, setting new device ID is aborted.");
         return;
+    }
+
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+    {
+        COUNTLY_LOG(@"Going out of CLYTemporaryDeviceID mode and switching back to normal mode.");
+
+        [CountlyPersistency.sharedInstance replaceAllTemporaryDeviceIDsInQueueWithDeviceID:deviceID];
+
+        [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
+
+        [CountlyConnectionManager.sharedInstance proceedOnQueue];
+
+        [CountlyRemoteConfig.sharedInstance startRemoteConfig];
+
+        return;
+    }
+
+    if ([deviceID isEqualToString:CLYTemporaryDeviceID] && onServer)
+    {
+        COUNTLY_LOG(@"Attempted to set device ID as CLYTemporaryDeviceID with onServer option. So, onServer value is overridden as NO.");
+        onServer = NO;
+    }
 
     if (onServer)
     {

@@ -26,6 +26,7 @@
 #if TARGET_OS_IOS
     NSString* const CLYIDFV = nil;
 #endif
+    NSString* const CLYTemporaryDeviceID = @"CLYTemporaryDeviceID";
 
 
 - (instancetype)init

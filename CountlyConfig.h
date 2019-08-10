@@ -27,6 +27,14 @@ extern NSString* const CLYPushNotifications;
 extern NSString* const CLYIDFV DEPRECATED_MSG_ATTRIBUTE("As IDFV is the default device ID, 'CLYIDFV' is now inoperative! You can use nil or empty string instead.");
 #endif
 
+/**
+ * Use this as device ID for keeping all requests on hold until the real device ID is set later.
+ * @discussion It can be used as @c deviceID on initial configuration, or passed as an argument for @c deviceID parameter on @c setNewDeviceID:onServer: method.
+ * @discussion As long as device ID is @c CLYTemporaryDeviceID, all requests will be on hold, but they will be persistently stored.
+ * @discussion Later when the real device ID is set using @c setNewDeviceID:onServer: method, all requests kept on hold so far will start with the real device ID.
+ * @discussion When in @c CLYTemporaryDeviceID mode, method calls for presenting feedback widgets and updating remote config will be ignored.
+ */
+extern NSString* const CLYTemporaryDeviceID;
 
 //NOTE: Available consents
 extern NSString* const CLYConsentSessions;

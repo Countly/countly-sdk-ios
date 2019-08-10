@@ -98,6 +98,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return;
     }
 
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+    {
+        COUNTLY_LOG(@"Proceeding on queue is aborted: Device ID is set as CLYTemporaryDeviceID!");
+        return;
+    }
+
     NSString* firstItemInQueue = [CountlyPersistency.sharedInstance firstItemInQueue];
     if (!firstItemInQueue)
     {
@@ -335,6 +341,15 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     if (self.customHeaderFieldName && !self.customHeaderFieldValue)
     {
         COUNTLY_LOG(@"customHeaderFieldName specified on config, but customHeaderFieldValue not set! Crash report stored to be sent later!");
+
+        [CountlyPersistency.sharedInstance addToQueue:queryString];
+        [CountlyPersistency.sharedInstance saveToFileSync];
+        return;
+    }
+
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+    {
+        COUNTLY_LOG(@"Device ID is set as CLYTemporaryDeviceID! Crash report stored to be sent later!");
 
         [CountlyPersistency.sharedInstance addToQueue:queryString];
         [CountlyPersistency.sharedInstance saveToFileSync];

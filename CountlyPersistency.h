@@ -16,6 +16,7 @@
 - (void)removeFromQueue:(NSString *)queryString;
 - (NSString *)firstItemInQueue;
 - (void)flushQueue;
+- (void)replaceAllTemporaryDeviceIDsInQueueWithDeviceID:(NSString *)deviceID;
 
 - (void)recordEvent:(CountlyEvent *)event;
 - (NSString *)serializedRecordedEvents;

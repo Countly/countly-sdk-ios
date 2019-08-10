@@ -9,6 +9,8 @@
 #import <UIKit/UIKit.h>
 #endif
 
+extern NSString* const kCountlyQSKeyDeviceID;
+
 @interface CountlyConnectionManager : NSObject <NSURLSessionDelegate>
 
 @property (nonatomic) NSString* appKey;

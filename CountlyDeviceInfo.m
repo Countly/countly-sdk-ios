@@ -71,6 +71,11 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     [CountlyPersistency.sharedInstance storeDeviceID:self.deviceID];
 }
 
+- (BOOL)isDeviceIDTemporary
+{
+    return [self.deviceID isEqualToString:CLYTemporaryDeviceID];
+}
+
 #pragma mark -
 
 + (NSString *)device
