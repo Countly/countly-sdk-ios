@@ -23,9 +23,13 @@ extern NSString* const CLYPushNotifications;
 
 
 //NOTE: Device ID options
-#if TARGET_OS_IOS
-extern NSString* const CLYIDFV DEPRECATED_MSG_ATTRIBUTE("As IDFV is the default device ID, 'CLYIDFV' is now inoperative! You can use nil or empty string instead.");
-#endif
+/**
+ * Use this as device ID when you need to switch back to default device ID, if you had set a custom device ID before.
+ * @discussion It can be used as @c deviceID on initial configuration, or passed as an argument for @c deviceID parameter on @c setNewDeviceID:onServer: method.
+ * @discussion On iOS, it will be identifierForVendor.
+ * @discussion On tvOS, watchOS and macOS, it will be a persistently stored random NSUUID string.
+ */
+extern NSString* const CLYDefaultDeviceID;
 
 /**
  * Use this as device ID for keeping all requests on hold until the real device ID is set later.
@@ -35,6 +39,11 @@ extern NSString* const CLYIDFV DEPRECATED_MSG_ATTRIBUTE("As IDFV is the default 
  * @discussion When in @c CLYTemporaryDeviceID mode, method calls for presenting feedback widgets and updating remote config will be ignored.
  */
 extern NSString* const CLYTemporaryDeviceID;
+
+//NOTE: Legacy device ID options
+extern NSString* const CLYIDFV DEPRECATED_MSG_ATTRIBUTE("Please use CLYDefaultDeviceID instead!");
+extern NSString* const CLYIDFA DEPRECATED_MSG_ATTRIBUTE("Please use CLYDefaultDeviceID instead!");
+extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Please use CLYDefaultDeviceID instead!");
 
 //NOTE: Available consents
 extern NSString* const CLYConsentSessions;
