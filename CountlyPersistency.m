@@ -247,7 +247,7 @@ NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersi
 
 #pragma mark ---
 
-- (NSString* )retrieveStoredDeviceID
+- (NSString* )retrieveDeviceID
 {
     NSString* retrievedDeviceID = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyStoredDeviceIDKey];
 

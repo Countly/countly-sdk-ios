@@ -29,7 +29,7 @@
 - (void)saveToFile;
 - (void)saveToFileSync;
 
-- (NSString *)retrieveStoredDeviceID;
+- (NSString *)retrieveDeviceID;
 - (void)storeDeviceID:(NSString *)deviceID;
 
 - (NSString *)retrieveWatchParentDeviceID;

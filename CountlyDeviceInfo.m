@@ -48,7 +48,7 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 {
     if (self = [super init])
     {
-        self.deviceID = [CountlyPersistency.sharedInstance retrieveStoredDeviceID];
+        self.deviceID = [CountlyPersistency.sharedInstance retrieveDeviceID];
 #if TARGET_OS_IOS
         self.networkInfo = CTTelephonyNetworkInfo.new;
 #endif
