@@ -162,12 +162,7 @@
     if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
         return;
 
-    if (!deviceID.length)
-#if TARGET_OS_IOS
-        deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
-#else
-        deviceID = NSUUID.UUID.UUIDString;
-#endif
+    deviceID = [CountlyDeviceInfo.sharedInstance ensafeDeviceID:deviceID];
 
     if ([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
     {

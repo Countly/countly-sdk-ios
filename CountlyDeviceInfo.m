@@ -59,16 +59,21 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
 - (void)initializeDeviceID:(NSString *)deviceID
 {
-    if (!deviceID.length)
-#if TARGET_OS_IOS
-        deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
-#else
-        deviceID = NSUUID.UUID.UUIDString;
-#endif
-
-    self.deviceID = deviceID;
+    self.deviceID = [self ensafeDeviceID:deviceID];
 
     [CountlyPersistency.sharedInstance storeDeviceID:self.deviceID];
+}
+
+- (NSString *)ensafeDeviceID:(NSString *)deviceID
+{
+    if (deviceID.length)
+        return deviceID;
+
+#if (TARGET_OS_IOS || TARGET_OS_TV)
+    return UIDevice.currentDevice.identifierForVendor.UUIDString;
+#else
+    return NSUUID.UUID.UUIDString;
+#endif
 }
 
 - (BOOL)isDeviceIDTemporary
