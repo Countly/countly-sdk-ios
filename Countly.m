@@ -171,13 +171,7 @@
 
     if ([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
     {
-        COUNTLY_LOG(@"Setting new device ID aborted: Attempted to set the same device ID.");
-        return;
-    }
-
-    if ([deviceID isEqualToString:CLYTemporaryDeviceID] && onServer)
-    {
-        COUNTLY_LOG(@"Setting new device ID aborted: Attempted to set device ID as CLYTemporaryDeviceID with onServer option.");
+        COUNTLY_LOG(@"Attempted to set the same device ID again. So, setting new device ID is aborted.");
         return;
     }
 
@@ -194,6 +188,12 @@
         [CountlyRemoteConfig.sharedInstance startRemoteConfig];
 
         return;
+    }
+
+    if ([deviceID isEqualToString:CLYTemporaryDeviceID] && onServer)
+    {
+        COUNTLY_LOG(@"Attempted to set device ID as CLYTemporaryDeviceID with onServer option. So, onServer value is overridden as NO.");
+        onServer = NO;
     }
 
     if (onServer)
