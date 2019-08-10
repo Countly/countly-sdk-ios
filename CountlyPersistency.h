@@ -32,6 +32,9 @@
 - (NSString *)retrieveDeviceID;
 - (void)storeDeviceID:(NSString *)deviceID;
 
+- (NSString *)retrieveNSUUID;
+- (void)storeNSUUID:(NSString *)UUID;
+
 - (NSString *)retrieveWatchParentDeviceID;
 - (void)storeWatchParentDeviceID:(NSString *)deviceID;
 

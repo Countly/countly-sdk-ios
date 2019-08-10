@@ -72,7 +72,14 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     return UIDevice.currentDevice.identifierForVendor.UUIDString;
 #else
-    return NSUUID.UUID.UUIDString;
+    NSString* UUID = [CountlyPersistency.sharedInstance retrieveNSUUID];
+    if (!UUID)
+    {
+        UUID = NSUUID.UUID.UUIDString;
+        [CountlyPersistency.sharedInstance storeNSUUID:UUID];
+    }
+
+    return UUID;
 #endif
 }
 
