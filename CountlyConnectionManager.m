@@ -111,15 +111,6 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return;
     }
 
-    if ([firstItemInQueue isEqual:NSNull.null])
-    {
-        COUNTLY_LOG(@"Detected an NSNull in queue and removed.");
-
-        [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
-        [self proceedOnQueue];
-        return;
-    }
-
     [CountlyCommon.sharedInstance startBackgroundTask];
 
     NSString* queryString = firstItemInQueue;
