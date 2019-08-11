@@ -541,11 +541,11 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     if (self.pinnedCertificates)
     {
         COUNTLY_LOG(@"%d pinned certificate(s) specified in config.", (int)self.pinnedCertificates.count);
-        NSURLSessionConfiguration *sc = [NSURLSessionConfiguration defaultSessionConfiguration];
-        return [NSURLSession sessionWithConfiguration:sc delegate:self delegateQueue:nil];
+        return [NSURLSession sessionWithConfiguration:self.configuration delegate:self delegateQueue:nil];
     }
 
-    return NSURLSession.sharedSession;
+    return [NSURLSession sessionWithConfiguration:self.configuration];
+    
 }
 
 - (void)URLSession:(NSURLSession *)session didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential *))completionHandler

@@ -302,6 +302,7 @@ extern NSString* const CLYConsentAppleWatch;
  */
 @property (nonatomic, copy) void (^starRatingCompletion)(NSInteger rating);
 
+@property (nonatomic, copy) NSURLSessionConfiguration *sessionConfiguration;
 #pragma mark -
 
 /**
