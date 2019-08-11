@@ -45,7 +45,8 @@ NSString* const CLYOpenUDID = CLYDefaultDeviceID;
         self.crashLogLimit = 100;
 
         self.location = kCLLocationCoordinate2DInvalid;
-        self.sessionConfiguration = NSURLSessionConfiguration.defaultSessionConfiguration;
+
+        self.URLSessionConfiguration = NSURLSessionConfiguration.defaultSessionConfiguration;
     }
 
     return self;

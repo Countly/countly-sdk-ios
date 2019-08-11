@@ -276,6 +276,12 @@ extern NSString* const CLYConsentAppleWatch;
  */
 @property (nonatomic, copy) NSString* secretSalt;
 
+/**
+ * Custom URL session configuration to be used with all requests.
+ * @discussion If not set, @c NSURLSessionConfiguration's @c defaultSessionConfiguration will be used by default.
+ */
+@property (nonatomic, copy) NSURLSessionConfiguration* URLSessionConfiguration;
+
 #pragma mark -
 
 /**
@@ -302,7 +308,6 @@ extern NSString* const CLYConsentAppleWatch;
  */
 @property (nonatomic, copy) void (^starRatingCompletion)(NSInteger rating);
 
-@property (nonatomic, copy) NSURLSessionConfiguration *sessionConfiguration;
 #pragma mark -
 
 /**

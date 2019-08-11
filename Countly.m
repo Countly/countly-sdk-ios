@@ -80,10 +80,10 @@
     CountlyConnectionManager.sharedInstance.host = hostHasExtraSlash ? [config.host substringToIndex:config.host.length - 1] : config.host;
     CountlyConnectionManager.sharedInstance.alwaysUsePOST = config.alwaysUsePOST;
     CountlyConnectionManager.sharedInstance.pinnedCertificates = config.pinnedCertificates;
-    CountlyConnectionManager.sharedInstance.configuration = config.sessionConfiguration;
     CountlyConnectionManager.sharedInstance.customHeaderFieldName = config.customHeaderFieldName;
     CountlyConnectionManager.sharedInstance.customHeaderFieldValue = config.customHeaderFieldValue;
     CountlyConnectionManager.sharedInstance.secretSalt = config.secretSalt;
+    CountlyConnectionManager.sharedInstance.URLSessionConfiguration = config.URLSessionConfiguration;
 
     CountlyPersistency.sharedInstance.eventSendThreshold = config.eventSendThreshold;
     CountlyPersistency.sharedInstance.storedRequestsLimit = MAX(1, config.storedRequestsLimit);

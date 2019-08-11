@@ -21,7 +21,7 @@ extern NSString* const kCountlyQSKeyDeviceID;
 @property (nonatomic) NSString* customHeaderFieldValue;
 @property (nonatomic) NSString* secretSalt;
 @property (nonatomic) BOOL alwaysUsePOST;
-@property (nonatomic) NSURLSessionConfiguration *configuration;
+@property (nonatomic) NSURLSessionConfiguration* URLSessionConfiguration;
 
 + (instancetype)sharedInstance;
 
