@@ -136,10 +136,6 @@
     }
 #endif
 
-//NOTE: Disable APM feature until server completely supports it
-//    if ([config.features containsObject:CLYAPM])
-//        [CountlyAPM.sharedInstance startAPM];
-
     timer = [NSTimer scheduledTimerWithTimeInterval:config.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
     [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
 
@@ -619,22 +615,7 @@
 {
 
 }
-
 #endif
-
-
-
-#pragma mark - APM
-
-- (void)addExceptionForAPM:(NSString *)exceptionURL
-{
-    [CountlyAPM.sharedInstance addExceptionForAPM:exceptionURL];
-}
-
-- (void)removeExceptionForAPM:(NSString *)exceptionURL
-{
-    [CountlyAPM.sharedInstance removeExceptionForAPM:exceptionURL];
-}
 
 
 

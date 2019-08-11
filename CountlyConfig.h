@@ -18,8 +18,6 @@ extern NSString* const CLYAutoViewTracking;
 #elif TARGET_OS_OSX
 extern NSString* const CLYPushNotifications;
 #endif
-//NOTE: Disable APM feature until Countly Server completely supports it
-// extern NSString* const CLYAPM;
 
 
 //NOTE: Device ID options
@@ -90,7 +88,6 @@ extern NSString* const CLYConsentAppleWatch;
  * @discussion @c CLYPushNotifications for push notifications,
  * @discussion @c CLYCrashReporting for crash reporting,
  * @discussion @c CLYAutoViewTracking for auto view tracking and
- * @discussion @c CLYAPM for application performance management.
  */
 @property (nonatomic, copy) NSArray* features;
 

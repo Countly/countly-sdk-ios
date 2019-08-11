@@ -12,8 +12,6 @@
 #import "CountlyUserDetails.h"
 #import "CountlyDeviceInfo.h"
 #import "CountlyCrashReporter.h"
-#import "CountlyAPMNetworkLog.h"
-#import "CountlyAPM.h"
 #import "CountlyConfig.h"
 #import "CountlyViewTracking.h"
 #import "CountlyStarRating.h"

@@ -394,25 +394,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 
-#pragma mark - APM
-
-/**
- * Adds exception URL for APM.
- * @discussion Added URLs (with or without specific path) will be ignored by APM.
- * @discussion Adding an already added URL again will have no effect.
- * @param exceptionURL Exception URL to be added
- */
-- (void)addExceptionForAPM:(NSString *)exceptionURL;
-
-/**
- * Removes exception URL for APM.
- * @discussion Removing an already removed (or not yet added) URL again will have no effect.
- * @param exceptionURL Exception URL to be removed
- */
-- (void)removeExceptionForAPM:(NSString *)exceptionURL;
-
-
-
 #pragma mark - View Tracking
 
 /**
