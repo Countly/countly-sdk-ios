@@ -62,6 +62,9 @@ NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersi
 
 - (void)addToQueue:(NSString *)queryString
 {
+    if (!queryString.length || [queryString isEqual:NSNull.null])
+        return;
+
     @synchronized (self)
     {
         [self.queuedRequests addObject:queryString];
