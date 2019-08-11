@@ -16,6 +16,7 @@
 NSString* const kCountlyQueuedRequestsPersistencyKey = @"kCountlyQueuedRequestsPersistencyKey";
 NSString* const kCountlyStartedEventsPersistencyKey = @"kCountlyStartedEventsPersistencyKey";
 NSString* const kCountlyStoredDeviceIDKey = @"kCountlyStoredDeviceIDKey";
+NSString* const kCountlyStoredNSUUIDKey = @"kCountlyStoredNSUUIDKey";
 NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKey";
 NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 NSString* const kCountlyNotificationPermissionKey = @"kCountlyNotificationPermissionKey";
@@ -61,6 +62,9 @@ NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersi
 
 - (void)addToQueue:(NSString *)queryString
 {
+    if (!queryString.length || [queryString isEqual:NSNull.null])
+        return;
+
     @synchronized (self)
     {
         [self.queuedRequests addObject:queryString];
@@ -92,6 +96,25 @@ NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersi
     @synchronized (self)
     {
         [self.queuedRequests removeAllObjects];
+    }
+}
+
+- (void)replaceAllTemporaryDeviceIDsInQueueWithDeviceID:(NSString *)deviceID
+{
+    NSString* temporaryDeviceIDQueryString = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, CLYTemporaryDeviceID];
+    NSString* realDeviceIDQueryString = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, deviceID.cly_URLEscaped];
+
+    @synchronized (self)
+    {
+        [self.queuedRequests.copy enumerateObjectsUsingBlock:^(NSString* queryString, NSUInteger idx, BOOL* stop)
+        {
+            if ([queryString containsString:temporaryDeviceIDQueryString])
+            {
+                COUNTLY_LOG(@"Detected a request with temporary device ID in queue and replaced it with real device ID.");
+                NSString * replacedQueryString = [queryString stringByReplacingOccurrencesOfString:temporaryDeviceIDQueryString withString:realDeviceIDQueryString];
+                self.queuedRequests[idx] = replacedQueryString;
+            }
+        }];
     }
 }
 
@@ -228,7 +251,7 @@ NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersi
 
 #pragma mark ---
 
-- (NSString* )retrieveStoredDeviceID
+- (NSString* )retrieveDeviceID
 {
     NSString* retrievedDeviceID = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyStoredDeviceIDKey];
 
@@ -238,37 +261,7 @@ NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersi
         return retrievedDeviceID;
     }
 
-    NSDictionary *keychainDict =
-    @{
-        (__bridge id)kSecAttrAccount:       kCountlyStoredDeviceIDKey,
-        (__bridge id)kSecAttrService:       kCountlyStoredDeviceIDKey,
-        (__bridge id)kSecClass:             (__bridge id)kSecClassGenericPassword,
-        (__bridge id)kSecAttrAccessible:    (__bridge id)kSecAttrAccessibleAlways,
-        (__bridge id)kSecReturnData:        (__bridge id)kCFBooleanTrue,
-        (__bridge id)kSecReturnAttributes:  (__bridge id)kCFBooleanTrue
-    };
-
-    CFDictionaryRef resultDictRef = nil;
-    OSStatus status = SecItemCopyMatching((__bridge CFDictionaryRef)keychainDict, (CFTypeRef *)&resultDictRef);
-    if (status == noErr)
-    {
-        NSDictionary *resultDict = (__bridge_transfer NSDictionary *)resultDictRef;
-        NSData *data = resultDict[(__bridge id)kSecValueData];
-
-        if (data)
-        {
-            retrievedDeviceID = [data cly_stringUTF8];
-
-            COUNTLY_LOG(@"Device ID successfully retrieved from KeyChain: %@", retrievedDeviceID);
-
-            [NSUserDefaults.standardUserDefaults setObject:retrievedDeviceID forKey:kCountlyStoredDeviceIDKey];
-            [NSUserDefaults.standardUserDefaults synchronize];
-
-            return retrievedDeviceID;
-        }
-    }
-
-    COUNTLY_LOG(@"Device ID can not be retrieved!");
+    COUNTLY_LOG(@"There is no stored Device ID in UserDefaults!");
 
     return nil;
 }
@@ -278,27 +271,18 @@ NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersi
     [NSUserDefaults.standardUserDefaults setObject:deviceID forKey:kCountlyStoredDeviceIDKey];
     [NSUserDefaults.standardUserDefaults synchronize];
 
-    NSDictionary *keychainDict =
-    @{
-        (__bridge id)kSecAttrAccount:       kCountlyStoredDeviceIDKey,
-        (__bridge id)kSecAttrService:       kCountlyStoredDeviceIDKey,
-        (__bridge id)kSecClass:             (__bridge id)kSecClassGenericPassword,
-        (__bridge id)kSecAttrAccessible:    (__bridge id)kSecAttrAccessibleAlways,
-        (__bridge id)kSecValueData:         [deviceID cly_dataUTF8]
-    };
+    COUNTLY_LOG(@"Device ID successfully stored in UserDefaults: %@", deviceID);
+}
 
-    SecItemDelete((__bridge CFDictionaryRef)keychainDict);
+- (NSString *)retrieveNSUUID
+{
+    return [NSUserDefaults.standardUserDefaults objectForKey:kCountlyStoredNSUUIDKey];
+}
 
-    OSStatus status = SecItemAdd((__bridge CFDictionaryRef)keychainDict, NULL);
-
-    if (status == noErr)
-    {
-        COUNTLY_LOG(@"Device ID successfully stored: %@", deviceID);
-    }
-    else
-    {
-        COUNTLY_LOG(@"Device ID can not be stored! %d", (int)status);
-    }
+- (void)storeNSUUID:(NSString *)UUID
+{
+    [NSUserDefaults.standardUserDefaults setObject:UUID forKey:kCountlyStoredNSUUIDKey];
+    [NSUserDefaults.standardUserDefaults synchronize];
 }
 
 - (NSString *)retrieveWatchParentDeviceID

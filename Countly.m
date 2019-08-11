@@ -72,7 +72,7 @@
 
     COUNTLY_LOG(@"Initializing with %@ SDK v%@", kCountlySDKName, kCountlySDKVersion);
 
-    if (!CountlyDeviceInfo.sharedInstance.deviceID || config.forceDeviceIDInitialization)
+    if (!CountlyDeviceInfo.sharedInstance.deviceID || config.resetStoredDeviceID)
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:config.deviceID];
 
     CountlyConnectionManager.sharedInstance.appKey = config.appKey;
@@ -83,7 +83,6 @@
     CountlyConnectionManager.sharedInstance.customHeaderFieldName = config.customHeaderFieldName;
     CountlyConnectionManager.sharedInstance.customHeaderFieldValue = config.customHeaderFieldValue;
     CountlyConnectionManager.sharedInstance.secretSalt = config.secretSalt;
-    CountlyConnectionManager.sharedInstance.applyZeroIDFAFix = config.applyZeroIDFAFix;
 
     CountlyPersistency.sharedInstance.eventSendThreshold = config.eventSendThreshold;
     CountlyPersistency.sharedInstance.storedRequestsLimit = MAX(1, config.storedRequestsLimit);
@@ -163,25 +162,34 @@
     if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
         return;
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-#if TARGET_OS_IOS
-    if ([deviceID isEqualToString:CLYIDFA])
-        deviceID = [CountlyDeviceInfo.sharedInstance zeroSafeIDFA];
-    else if ([deviceID isEqualToString:CLYIDFV])
-        deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
-    else if ([deviceID isEqualToString:CLYOpenUDID])
-        deviceID = [Countly_OpenUDID value];
-#elif TARGET_OS_OSX
-    if ([deviceID isEqualToString:CLYOpenUDID])
-        deviceID = [Countly_OpenUDID value];
-#endif
-
-#pragma GCC diagnostic pop
+    deviceID = [CountlyDeviceInfo.sharedInstance ensafeDeviceID:deviceID];
 
     if ([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
+    {
+        COUNTLY_LOG(@"Attempted to set the same device ID again. So, setting new device ID is aborted.");
         return;
+    }
+
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+    {
+        COUNTLY_LOG(@"Going out of CLYTemporaryDeviceID mode and switching back to normal mode.");
+
+        [CountlyPersistency.sharedInstance replaceAllTemporaryDeviceIDsInQueueWithDeviceID:deviceID];
+
+        [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
+
+        [CountlyConnectionManager.sharedInstance proceedOnQueue];
+
+        [CountlyRemoteConfig.sharedInstance startRemoteConfig];
+
+        return;
+    }
+
+    if ([deviceID isEqualToString:CLYTemporaryDeviceID] && onServer)
+    {
+        COUNTLY_LOG(@"Attempted to set device ID as CLYTemporaryDeviceID with onServer option. So, onServer value is overridden as NO.");
+        onServer = NO;
+    }
 
     if (onServer)
     {

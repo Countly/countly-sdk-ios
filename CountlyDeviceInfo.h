@@ -6,15 +6,14 @@
 
 #import <Foundation/Foundation.h>
 
-extern NSString* const kCountlyZeroIDFA;
-
 @interface CountlyDeviceInfo : NSObject
 
 @property (nonatomic) NSString *deviceID;
 
 + (instancetype)sharedInstance;
 - (void)initializeDeviceID:(NSString *)deviceID;
-- (NSString *)zeroSafeIDFA;
+- (NSString *)ensafeDeviceID:(NSString *)deviceID;
+- (BOOL)isDeviceIDTemporary;
 
 + (NSString *)device;
 + (NSString *)architecture;

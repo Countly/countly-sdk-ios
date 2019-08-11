@@ -6,7 +6,6 @@
 
 #import <Foundation/Foundation.h>
 #import "Countly.h"
-#import "Countly_OpenUDID.h"
 #import "CountlyPersistency.h"
 #import "CountlyConnectionManager.h"
 #import "CountlyEvent.h"

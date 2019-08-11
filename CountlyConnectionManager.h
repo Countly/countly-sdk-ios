@@ -9,6 +9,8 @@
 #import <UIKit/UIKit.h>
 #endif
 
+extern NSString* const kCountlyQSKeyDeviceID;
+
 @interface CountlyConnectionManager : NSObject <NSURLSessionDelegate>
 
 @property (nonatomic) NSString* appKey;
@@ -19,7 +21,6 @@
 @property (nonatomic) NSString* customHeaderFieldValue;
 @property (nonatomic) NSString* secretSalt;
 @property (nonatomic) BOOL alwaysUsePOST;
-@property (nonatomic) BOOL applyZeroIDFAFix;
 
 + (instancetype)sharedInstance;
 
