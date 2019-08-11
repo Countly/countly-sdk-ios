@@ -98,16 +98,17 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return;
     }
 
-    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
-    {
-        COUNTLY_LOG(@"Proceeding on queue is aborted: Device ID is set as CLYTemporaryDeviceID!");
-        return;
-    }
-
     NSString* firstItemInQueue = [CountlyPersistency.sharedInstance firstItemInQueue];
     if (!firstItemInQueue)
     {
         COUNTLY_LOG(@"Queue is empty. All requests are processed.");
+        return;
+    }
+
+    NSString* temporaryDeviceIDQueryString = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, CLYTemporaryDeviceID];
+    if ([firstItemInQueue containsString:temporaryDeviceIDQueryString])
+    {
+        COUNTLY_LOG(@"Proceeding on queue is aborted: Device ID in request is CLYTemporaryDeviceID!");
         return;
     }
 
