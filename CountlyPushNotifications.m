@@ -466,7 +466,7 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         completionHandler();
 }
 
-- (void)userNotificationCenter:(UNUserNotificationCenter *)center openSettingsForNotification:(UNNotification *)notification
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center openSettingsForNotification:(UNNotification *)notification API_AVAILABLE(ios(12.0), macos(10.14))
 {
     if (@available(iOS 12.0, macOS 10.14, *))
     {
