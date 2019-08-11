@@ -1,3 +1,8 @@
+## 19.08
+- Change log will be here
+
+
+
 ## 19.02
 - Added push notification support for macOS
 - Added provisional push notification permission support for iOS12

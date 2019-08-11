@@ -25,7 +25,7 @@
 #endif
 @end
 
-NSString* const kCountlySDKVersion = @"19.02";
+NSString* const kCountlySDKVersion = @"19.08";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
