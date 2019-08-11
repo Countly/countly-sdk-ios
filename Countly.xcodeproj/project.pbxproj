@@ -24,7 +24,6 @@
 		3B20A9BF2245228700E3D7AE /* CountlyLocationManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A99A2245228400E3D7AE /* CountlyLocationManager.h */; };
 		3B20A9C02245228700E3D7AE /* CountlyConsentManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B20A99B2245228400E3D7AE /* CountlyConsentManager.m */; };
 		3B20A9C12245228700E3D7AE /* CountlyRemoteConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A99C2245228400E3D7AE /* CountlyRemoteConfig.h */; };
-		3B20A9C22245228700E3D7AE /* Countly_OpenUDID.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A99D2245228400E3D7AE /* Countly_OpenUDID.h */; };
 		3B20A9C32245228700E3D7AE /* CountlyEvent.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A99E2245228400E3D7AE /* CountlyEvent.h */; };
 		3B20A9C42245228700E3D7AE /* CountlyUserDetails.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A99F2245228400E3D7AE /* CountlyUserDetails.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3B20A9C52245228700E3D7AE /* CountlyCrashReporter.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9A02245228400E3D7AE /* CountlyCrashReporter.h */; };
@@ -43,7 +42,6 @@
 		3B20A9D22245228700E3D7AE /* CountlyLocationManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B20A9AD2245228600E3D7AE /* CountlyLocationManager.m */; };
 		3B20A9D32245228700E3D7AE /* CountlyPushNotifications.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9AE2245228600E3D7AE /* CountlyPushNotifications.h */; };
 		3B20A9D42245228700E3D7AE /* CountlyPersistency.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B20A9AF2245228600E3D7AE /* CountlyPersistency.m */; };
-		3B20A9D52245228700E3D7AE /* Countly_OpenUDID.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B20A9B02245228700E3D7AE /* Countly_OpenUDID.m */; };
 		3B20A9D62245228700E3D7AE /* CountlyConsentManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9B12245228700E3D7AE /* CountlyConsentManager.h */; };
 /* End PBXBuildFile section */
 
@@ -67,7 +65,6 @@
 		3B20A99A2245228400E3D7AE /* CountlyLocationManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyLocationManager.h; sourceTree = "<group>"; };
 		3B20A99B2245228400E3D7AE /* CountlyConsentManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyConsentManager.m; sourceTree = "<group>"; };
 		3B20A99C2245228400E3D7AE /* CountlyRemoteConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyRemoteConfig.h; sourceTree = "<group>"; };
-		3B20A99D2245228400E3D7AE /* Countly_OpenUDID.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Countly_OpenUDID.h; sourceTree = "<group>"; };
 		3B20A99E2245228400E3D7AE /* CountlyEvent.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyEvent.h; sourceTree = "<group>"; };
 		3B20A99F2245228400E3D7AE /* CountlyUserDetails.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyUserDetails.h; sourceTree = "<group>"; };
 		3B20A9A02245228400E3D7AE /* CountlyCrashReporter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyCrashReporter.h; sourceTree = "<group>"; };
@@ -86,7 +83,6 @@
 		3B20A9AD2245228600E3D7AE /* CountlyLocationManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyLocationManager.m; sourceTree = "<group>"; };
 		3B20A9AE2245228600E3D7AE /* CountlyPushNotifications.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyPushNotifications.h; sourceTree = "<group>"; };
 		3B20A9AF2245228600E3D7AE /* CountlyPersistency.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyPersistency.m; sourceTree = "<group>"; };
-		3B20A9B02245228700E3D7AE /* Countly_OpenUDID.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Countly_OpenUDID.m; sourceTree = "<group>"; };
 		3B20A9B12245228700E3D7AE /* CountlyConsentManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyConsentManager.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -104,8 +100,6 @@
 		3B20A9782245225A00E3D7AE = {
 			isa = PBXGroup;
 			children = (
-				3B20A99D2245228400E3D7AE /* Countly_OpenUDID.h */,
-				3B20A9B02245228700E3D7AE /* Countly_OpenUDID.m */,
 				3B20A9852245225A00E3D7AE /* Countly.h */,
 				3B20A9942245228400E3D7AE /* Countly.m */,
 				3B20A9932245228300E3D7AE /* CountlyAPM.h */,
@@ -180,7 +174,6 @@
 				3B20A9B82245228700E3D7AE /* CountlyAPM.h in Headers */,
 				3B20A9C72245228700E3D7AE /* CountlyNotificationService.h in Headers */,
 				3B20A9B72245228700E3D7AE /* CountlyPersistency.h in Headers */,
-				3B20A9C22245228700E3D7AE /* Countly_OpenUDID.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -259,7 +252,6 @@
 				3B20A9BB2245228700E3D7AE /* CountlyAPM.m in Sources */,
 				3B20A9D42245228700E3D7AE /* CountlyPersistency.m in Sources */,
 				3B20A9B62245228700E3D7AE /* CountlyAPMNetworkLog.m in Sources */,
-				3B20A9D52245228700E3D7AE /* Countly_OpenUDID.m in Sources */,
 				3B20A9B32245228700E3D7AE /* CountlyNotificationService.m in Sources */,
 				3B20A9CB2245228700E3D7AE /* CountlyRemoteConfig.m in Sources */,
 				3B20A9BD2245228700E3D7AE /* CountlyConnectionManager.m in Sources */,
