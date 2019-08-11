@@ -285,8 +285,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Records action event for a manually presented push notification with custom action buttons.
- * @discussion If a push notification with custom action buttons is handled and presented manually using custom UI, user's action needs to be reported manually.
- * @discussion With this convenience method user's action can be reported passing push notification dictionary and clicked button index.
+ * @discussion If a push notification with custom action buttons is handled and presented manually using custom UI, user's action needs to be recorded manually.
+ * @discussion With this convenience method user's action can be recorded passing push notification dictionary and clicked button index.
  * @discussion Button index should be @c 0 for default action, @c 1 for the first action button and @c 2 for the second action button.
  * @param userInfo Manually presented push notification dictionary
  * @param buttonIndex Index of custom action button user clicked
@@ -357,22 +357,22 @@ NS_ASSUME_NONNULL_BEGIN
 #if TARGET_OS_IOS
 /**
  * Records a handled exception manually.
- * @param exception Exception to be reported
+ * @param exception Exception to be recorded
  */
 - (void)recordHandledException:(NSException *)exception;
 
 /**
  * Records a handled exception and given stack trace manually.
- * @param exception Exception to be reported
- * @param stackTrace Stack trace to be reported
+ * @param exception Exception to be recorded
+ * @param stackTrace Stack trace to be recorded
  */
 - (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace;
 
 /**
  * Records an unhandled exception and given stack trace manually.
  * @discussion For recording non-native level fatal exceptions, where the app keeps running at native level and can recover.
- * @param exception Exception to be reported
- * @param stackTrace Stack trace to be reported
+ * @param exception Exception to be recorded
+ * @param stackTrace Stack trace to be recorded
  */
 - (void)recordUnhandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace;
 
@@ -417,7 +417,7 @@ NS_ASSUME_NONNULL_BEGIN
 #if TARGET_OS_IOS
 /**
  * Adds exception for AutoViewTracking.
- * @discussion @c UIViewControllers with specified title or class name will be ignored by AutoViewTracking and their appearances and disappearances will not be reported.
+ * @discussion @c UIViewControllers with specified title or class name will be ignored by AutoViewTracking and their appearances and disappearances will not be recorded.
  * @discussion Adding an already added @c UIViewController title or subclass name again will have no effect.
  * @param exception @c UIViewController title or subclass name to be added as exception
  */
@@ -476,7 +476,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Shows star-rating dialog manually and executes completion block after user's action.
  * @discussion Completion block has a single NSInteger parameter that indicates 1 to 5 star-rating given by user.
- * @discussion If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to Countly Server.
+ * @discussion If user dismissed dialog without giving a rating, this value will be 0 and it will not be sent to Countly Server.
  * @param completion A block object to be executed when user gives a star-rating or dismisses dialog without rating
  */
 - (void)askForStarRating:(void(^)(NSInteger rating))completion;
