@@ -171,9 +171,9 @@
     {
         COUNTLY_LOG(@"Going out of CLYTemporaryDeviceID mode and switching back to normal mode.");
 
-        [CountlyPersistency.sharedInstance replaceAllTemporaryDeviceIDsInQueueWithDeviceID:deviceID];
-
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
+
+        [CountlyPersistency.sharedInstance replaceAllTemporaryDeviceIDsInQueueWithDeviceID:deviceID];
 
         [CountlyConnectionManager.sharedInstance proceedOnQueue];
 
