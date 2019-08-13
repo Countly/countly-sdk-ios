@@ -104,7 +104,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)startView:(NSString *)viewName customSegmentation:(NSDictionary *)customSegmentation
 {
-    if (!viewName)
+    if (!viewName.length)
         return;
 
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
