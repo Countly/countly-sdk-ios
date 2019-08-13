@@ -233,6 +233,9 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)addExceptionForAutoViewTracking:(NSString *)exception
 {
+    if (!exception.length)
+        return;
+
     if (![self.exceptionViewControllers containsObject:exception])
         [self.exceptionViewControllers addObject:exception];
 }
