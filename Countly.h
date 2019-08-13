@@ -415,7 +415,7 @@ NS_ASSUME_NONNULL_BEGIN
  * Records a visited view with given name.
  * @discussion Total duration of the view will be calculated on next @c recordView: call.
  * @discussion If AutoViewTracking feature is enabled on initial configuration, this method does not need to be called manually.
- * @param viewName Name of the view visited
+ * @param viewName Name of the view visited, a non-zero length valid string
  */
 - (void)recordView:(NSString *)viewName;
 
@@ -427,7 +427,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
  * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
  * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
- * @param viewName Name of the view visited
+ * @param viewName Name of the view visited, a non-zero length valid string
  * @param segmentation Custom segmentation key-value pairs
  */
 - (void)recordView:(NSString *)viewName segmentation:(NSDictionary<NSString *, NSString *> *)segmentation;
