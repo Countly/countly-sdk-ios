@@ -424,6 +424,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion This is an extendened version of @c recordView: method.
  * @discussion If segmentation has any of Countly reserved keys, they will be ignored:
  * @discussion @c name, @c segment, @c visit, @c start, @c bounce, @c exit, @c view, @c domain, @c dur
+ * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
+ * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
+ * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
  * @param viewName Name of the view visited
  * @param segmentation Custom segmentation key-value pairs
  */
