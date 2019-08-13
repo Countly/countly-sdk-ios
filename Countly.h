@@ -165,34 +165,34 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Records event with given key.
- * @param key Event key
+ * @param key Event key, a non-zero length valid string
  */
 - (void)recordEvent:(NSString *)key;
 
 /**
  * Records event with given key and count.
- * @param key Event key
+ * @param key Event key, a non-zero length valid string
  * @param count Count of event occurrences
  */
 - (void)recordEvent:(NSString *)key count:(NSUInteger)count;
 
 /**
  * Records event with given key and sum.
- * @param key Event key
+ * @param key Event key, a non-zero length valid string
  * @param sum Sum of any specific value for event
  */
 - (void)recordEvent:(NSString *)key sum:(double)sum;
 
 /**
  * Records event with given key and duration.
- * @param key Event key
+ * @param key Event key, a non-zero length valid string
  * @param duration Duration of event in seconds
  */
 - (void)recordEvent:(NSString *)key duration:(NSTimeInterval)duration;
 
 /**
  * Records event with given key, count and sum.
- * @param key Event key
+ * @param key Event key, a non-zero length valid string
  * @param count Count of event occurrences
  * @param sum Sum of any specific value for event
  */
@@ -203,7 +203,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
  * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
  * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
- * @param key Event key
+ * @param key Event key, a non-zero length valid string
  * @param segmentation Segmentation key-value pairs of event
  */
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary<NSString *, NSString *> * _Nullable)segmentation;
@@ -213,7 +213,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
  * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
  * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
- * @param key Event key
+ * @param key Event key, a non-zero length valid string
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
  */
@@ -224,7 +224,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
  * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
  * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
- * @param key Event key
+ * @param key Event key, a non-zero length valid string
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
  * @param sum Sum of any specific value for event
@@ -236,7 +236,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
  * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
  * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
- * @param key Event key
+ * @param key Event key, a non-zero length valid string
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
  * @param sum Sum of any specific value for event
@@ -247,14 +247,14 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Starts a timed event with given key to be ended later. Duration of timed event will be calculated on ending.
  * @discussion Trying to start an event with already started key will have no effect.
- * @param key Event key
+ * @param key Event key, a non-zero length valid string
  */
 - (void)startEvent:(NSString *)key;
 
 /**
  * Ends a previously started timed event with given key.
  * @discussion Trying to end an event with already ended (or not yet started) key will have no effect.
- * @param key Event key
+ * @param key Event key, a non-zero length valid string
  */
 - (void)endEvent:(NSString *)key;
 
@@ -264,7 +264,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
  * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
  * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
- * @param key Event key
+ * @param key Event key, a non-zero length valid string
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
  * @param sum Sum of any specific value for event
@@ -274,7 +274,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Cancels a previously started timed event with given key.
  * @discussion Trying to cancel an event with already cancelled (or ended or not yet started) key will have no effect.
- * @param key Event key
+ * @param key Event key, a non-zero length valid string
  */
 - (void)cancelEvent:(NSString *)key;
 
