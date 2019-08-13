@@ -200,37 +200,49 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Records event with given key and segmentation.
+ * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
+ * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
+ * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
  * @param key Event key
  * @param segmentation Segmentation key-value pairs of event
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary<NSString *, NSString *> * _Nullable)segmentation;
 
 /**
  * Records event with given key, segmentation and count.
+ * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
+ * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
+ * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
  * @param key Event key
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary<NSString *, NSString *> * _Nullable)segmentation count:(NSUInteger)count;
 
 /**
  * Records event with given key, segmentation, count and sum.
+ * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
+ * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
+ * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
  * @param key Event key
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
  * @param sum Sum of any specific value for event
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary<NSString *, NSString *> * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
 
 /**
  * Records event with given key, segmentation, count, sum and duration.
+ * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
+ * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
+ * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
  * @param key Event key
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
  * @param sum Sum of any specific value for event
  * @param duration Duration of event in seconds
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary<NSString *, NSString *> * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
 
 /**
  * Starts a timed event with given key to be ended later. Duration of timed event will be calculated on ending.
@@ -249,12 +261,15 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Ends a previously started timed event with given key, segmentation, count and sum.
  * @discussion Trying to end an event with already ended (or not yet started) key will have no effect.
+ * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
+ * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
+ * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
  * @param key Event key
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
  * @param sum Sum of any specific value for event
  */
-- (void)endEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
+- (void)endEvent:(NSString *)key segmentation:(NSDictionary<NSString *, NSString *> * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
 
 /**
  * Cancels a previously started timed event with given key.
@@ -412,7 +427,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param viewName Name of the view visited
  * @param segmentation Custom segmentation key-value pairs
  */
-- (void)recordView:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
+- (void)recordView:(NSString *)viewName segmentation:(NSDictionary<NSString *, NSString *> *)segmentation;
 
 #if TARGET_OS_IOS
 /**
