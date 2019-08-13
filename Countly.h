@@ -505,7 +505,10 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion If the feedback widget with given ID is available, it will be modally presented.
  * @discussion Otherwise, @c completionHandler will be called with an @c NSError.
  * @discussion @c completionHandler will also be called with @c nil when feedback widget is dismissed by user.
- * @discussion Calls to this method will be ignored if the current device ID is @c CLYTemporaryDeviceID.
+ * @discussion Calls to this method will be ignored and @c completionHandler will not be executed if:
+ * @discussion - Consent for @c CLYConsentStarRating is not given, while @c requiresConsent flag is set on initial configuration.
+ * @discussion - Current device ID is @c CLYTemporaryDeviceID.
+ * @discussion - @c widgetID is not a non-zero length valid string.
  * @param widgetID ID of the feedback widget created on Countly Server.
  * @param completionHandler A completion handler block to be executed when feedback widget is dismissed by user or there is an error.
  */
@@ -528,7 +531,9 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Manually updates all locally stored remote config values by fetching latest values from Countly Server, and executes completion handler.
  * @discussion @c completionHandler has an @c NSError parameter that will be either @ nil or an @c NSError object, depending on result.
- * @discussion Calls to this method will be ignored if the current device ID is @c CLYTemporaryDeviceID.
+ * @discussion Calls to this method will be ignored and @c completionHandler will not be executed if:
+ * @discussion - There is not any consent given, while @c requiresConsent flag is set on initial configuration.
+ * @discussion - Current device ID is @c CLYTemporaryDeviceID.
  * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure.
  */
 - (void)updateRemoteConfigWithCompletionHandler:(void (^)(NSError * error))completionHandler;
@@ -536,7 +541,9 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Manually updates locally stored remote config values only for specified keys, by fetching latest values from Countly Server, and executes completion handler.
  * @discussion @c completionHandler has an @c NSError parameter that will be either @ nil or an @c NSError object, depending on result.
- * @discussion Calls to this method will be ignored if the current device ID is @c CLYTemporaryDeviceID.
+ * @discussion Calls to this method will be ignored and @c completionHandler will not be executed if:
+ * @discussion - There is not any consent given, while @c requiresConsent flag is set on initial configuration.
+ * @discussion - Current device ID is @c CLYTemporaryDeviceID.
  * @param keys An array of remote config keys to update
  * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure
  */
@@ -545,7 +552,9 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Manually updates locally stored remote config values except for specified keys, by fetching latest values from Countly Server, and executes completion handler.
  * @discussion @c completionHandler has an @c NSError parameter that will be either @ nil or an @c NSError object, depending on result.
- * @discussion Calls to this method will be ignored if the current device ID is @c CLYTemporaryDeviceID.
+ * @discussion Calls to this method will be ignored and @c completionHandler will not be executed if:
+ * @discussion - There is not any consent given, while @c requiresConsent flag is set on initial configuration.
+ * @discussion - Current device ID is @c CLYTemporaryDeviceID.
  * @param omitKeys An array of remote config keys to omit from updating
  * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure
  */
