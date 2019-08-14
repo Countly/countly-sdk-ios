@@ -238,7 +238,7 @@ extern NSString* const CLYConsentAppleWatch;
 /**
  * For using custom crash segmentation with @c CLYCrashReporting feature.
  */
-@property (nonatomic, copy) NSDictionary* crashSegmentation;
+@property (nonatomic, copy) NSDictionary<NSString*, id>* crashSegmentation;
 
 /**
  * Crash log limit is used for limiting the number of crash logs to be stored on the device.
