@@ -237,8 +237,11 @@ extern NSString* const CLYConsentAppleWatch;
 
 /**
  * For using custom crash segmentation with @c CLYCrashReporting feature.
+ * @discussion Crash segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
+ * @discussion Custom objects in crash segmentation will cause crash report not to be sent to Countly Server.
+ * @discussion Nested values in crash segmentation will be ignored by Counly Server.
  */
-@property (nonatomic, copy) NSDictionary<NSString*, id>* crashSegmentation;
+@property (nonatomic, copy) NSDictionary<NSString *, NSString *>* crashSegmentation;
 
 /**
  * Crash log limit is used for limiting the number of crash logs to be stored on the device.
