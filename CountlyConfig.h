@@ -22,7 +22,7 @@ extern NSString* const CLYPushNotifications;
 
 //NOTE: Device ID options
 /**
- * Use this as device ID when you need to switch back to default device ID, if you had set a custom device ID before.
+ * Can be used as device ID to switch back to default device ID, if a custom device ID is set before.
  * @discussion It can be used as @c deviceID on initial configuration, or passed as an argument for @c deviceID parameter on @c setNewDeviceID:onServer: method.
  * @discussion On iOS and tvOS, it will be identifierForVendor.
  * @discussion On watchOS and macOS, it will be a persistently stored random NSUUID string.
