@@ -9,6 +9,10 @@
 NSString* const kCountlyReservedEventPushAction = @"[CLY]_push_action";
 NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
+//NOTE: Push Notification Test Modes
+NSString* const CLYPushTestModeDevelopment = @"CLYPushTestModeDevelopment";
+NSString* const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFlightOrAdHoc";
+
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 @interface CountlyPushNotifications () <UNUserNotificationCenterDelegate>
 @property (nonatomic) NSString* token;

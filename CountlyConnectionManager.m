@@ -247,24 +247,17 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)sendPushToken:(NSString *)token
 {
-    typedef enum : NSInteger
-    {
-        CLYPushTokenModeProduction,
-        CLYPushTokenModeDevelopment,
-        CLYPushTokenModeAdHoc,
-    } CLYPushTokenMode;
+    NSInteger testMode = 0; //NOTE: default is 0: Production - not test mode
 
-    int testMode;
-#ifdef DEBUG
-    testMode = CLYPushTokenModeDevelopment;
-#else
-    testMode = CountlyPushNotifications.sharedInstance.isTestDevice ? CLYPushTokenModeAdHoc : CLYPushTokenModeProduction;
-#endif
+    if ([CountlyPushNotifications.sharedInstance.pushTestMode isEqualToString:CLYPushTestModeDevelopment])
+        testMode = 1; //NOTE: 1: Developement/Debug builds - standard test mode using Sandbox APNs
+    else if ([CountlyPushNotifications.sharedInstance.pushTestMode isEqualToString:CLYPushTestModeTestFlightOrAdHoc])
+        testMode = 2; //NOTE: 2: TestFlight/AdHoc builds - special test mode using Production APNs
 
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%@&%@=%d",
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%@&%@=%ld",
                              kCountlyQSKeyPushTokenSession, @"1",
                              kCountlyQSKeyPushTokeniOS, token,
-                             kCountlyQSKeyPushTestMode, testMode];
+                             kCountlyQSKeyPushTestMode, (long)testMode];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 

@@ -55,6 +55,9 @@ extern NSString* const CLYConsentAttribution;
 extern NSString* const CLYConsentStarRating;
 extern NSString* const CLYConsentAppleWatch;
 
+//NOTE: Push Notification Test Modes
+extern NSString* const CLYPushTestModeDevelopment;
+extern NSString* const CLYPushTestModeTestFlightOrAdHoc;
 
 @interface CountlyConfig : NSObject
 
@@ -102,10 +105,20 @@ extern NSString* const CLYConsentAppleWatch;
 #pragma mark -
 
 /**
- * For manually marking a device as test device for @c CLYPushNotifications feature.
- * @discussion Test push notifications can be sent to test devices by selecting "Development & test users only" on "Create Push Notification" section on Countly Server.
+ * @c isTestDevice property is deprecated. Please use @c pushTestMode property instead.
+ * @discussion Using this property will have no effect.
  */
-@property (nonatomic) BOOL isTestDevice;
+@property (nonatomic) BOOL isTestDevice DEPRECATED_MSG_ATTRIBUTE("Use 'pushTestMode' property instead!");;
+
+/**
+ * For specifying which test mode Countly Server should use for sending push notifications.
+ * @discussion There are 2 test modes:
+ * @discussion - @c CLYPushTestModeDevelopment: For development/debug builds signed with a development provisioning profile. Countly Server will send push notifications to Sandbox APNs.
+ * @discussion - @c CLYPushTestModeTestFlightOrAdHoc: For TestFlight or AdHoc builds signed with a distribution provisioning profile. Countly Server will send push notifications to Production APNs.
+ * @discussion If set, Test Users mark should be selected on Create Push Notification screen of Countly Server to send push notifications.
+ * @discussion If not set, Countly Server will use Production APNs by default.
+ */
+@property (nonatomic) NSString* pushTestMode;
 
 /**
  * For sending push tokens to Countly Server even for users who have not granted permission to display notifications.

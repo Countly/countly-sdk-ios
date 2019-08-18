@@ -121,7 +121,7 @@
     if ([config.features containsObject:CLYPushNotifications])
     {
         CountlyPushNotifications.sharedInstance.isEnabledOnInitialConfig = YES;
-        CountlyPushNotifications.sharedInstance.isTestDevice = config.isTestDevice;
+        CountlyPushNotifications.sharedInstance.pushTestMode = config.pushTestMode;
         CountlyPushNotifications.sharedInstance.sendPushTokenAlways = config.sendPushTokenAlways;
         CountlyPushNotifications.sharedInstance.doNotShowAlertForNotifications = config.doNotShowAlertForNotifications;
         CountlyPushNotifications.sharedInstance.launchNotification = config.launchNotification;
