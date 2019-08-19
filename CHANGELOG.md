@@ -1,5 +1,39 @@
 ## 19.08
-- Change log will be here
+- Added temporary device ID mode
+- Added support for Carthage
+- Added custom URL session configuration support
+- Added custom segmentation support on view tracking
+- Added ability to change app key on the run
+- Added ability to flush queues
+- Added `pushTestMode` property and discarded `isTestDevice` property
+- Fixed `WCSessionDelegate` interception
+- Fixed title and message check in push notification payloads
+- Fixed binary image name extraction for crash reports
+- Fixed missing delegate forwarding for `userNotificationCenter:openSettingsForNotification:` method
+- Fixed in-app alerts on iOS10+ devices when a silent notification with alert key arrives
+- Discarded device ID persistency on Keychain
+- Discarded OpenUDID device ID option
+- Discarded IDFA device ID option
+- Discarded zero IDFA fix
+- Updated default device ID on tvOS as `identifierForVendor` 
+
+- Other various improvements
+    - Renamed `forceDeviceIDInitialization` flag as `resetStoredDeviceID`
+    - Added lightweight generics for segmentation parameters
+    - Added dSYM upload script to preserved paths in Podspec
+    - Updated dSYM upload script to support paths with spaces     
+    - Changed request cache policy to `NSURLRequestReloadIgnoringLocalCacheData`
+    - Added battery level for watchOS 4.0+
+    - Added JSON validity check before converting objects
+    - Deleted unused `kCountlyCRKeyLoadAddress` constant
+    - Improved internal logging in binary images processing for crash reports
+    - Added persistency for generated `NSUUID`
+    - Added precaution to prevent invalid requests from being added to queue
+    - Discarded null check on request queue
+    - Discarded all APM related files
+    - Added length check for view tracking view name
+    - Added length check for view tracking exceptions
+    - Updated HeaderDocs, internal logs, inline notes and pragma marks 
 
 
 
