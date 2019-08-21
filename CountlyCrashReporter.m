@@ -19,7 +19,6 @@ NSString* const kCountlyCRKeyResolution        = @"_resolution";
 NSString* const kCountlyCRKeyAppVersion        = @"_app_version";
 NSString* const kCountlyCRKeyAppBuild          = @"_app_build";
 NSString* const kCountlyCRKeyBuildUUID         = @"_build_uuid";
-NSString* const kCountlyCRKeyLoadAddress       = @"_load_address";
 NSString* const kCountlyCRKeyExecutableName    = @"_executable_name";
 NSString* const kCountlyCRKeyName              = @"_name";
 NSString* const kCountlyCRKeyType              = @"_type";
@@ -140,6 +139,7 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
 {
     NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
 
+    const NSInteger kCLYMebibit = 1048576;
     NSArray* stackTrace = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
     if (!stackTrace)
         stackTrace = exception.callStackSymbols;
@@ -158,10 +158,10 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     crashReport[kCountlyCRKeyName] = exception.description;
     crashReport[kCountlyCRKeyType] = exception.name;
     crashReport[kCountlyCRKeyNonfatal] = @(!isFatal);
-    crashReport[kCountlyCRKeyRAMCurrent] = @((CountlyDeviceInfo.totalRAM-CountlyDeviceInfo.freeRAM) / 1048576);
-    crashReport[kCountlyCRKeyRAMTotal] = @(CountlyDeviceInfo.totalRAM / 1048576);
-    crashReport[kCountlyCRKeyDiskCurrent] = @((CountlyDeviceInfo.totalDisk-CountlyDeviceInfo.freeDisk) / 1048576);
-    crashReport[kCountlyCRKeyDiskTotal] = @(CountlyDeviceInfo.totalDisk / 1048576);
+    crashReport[kCountlyCRKeyRAMCurrent] = @((CountlyDeviceInfo.totalRAM - CountlyDeviceInfo.freeRAM) / kCLYMebibit);
+    crashReport[kCountlyCRKeyRAMTotal] = @(CountlyDeviceInfo.totalRAM / kCLYMebibit);
+    crashReport[kCountlyCRKeyDiskCurrent] = @((CountlyDeviceInfo.totalDisk - CountlyDeviceInfo.freeDisk) / kCLYMebibit);
+    crashReport[kCountlyCRKeyDiskTotal] = @(CountlyDeviceInfo.totalDisk / kCLYMebibit);
     crashReport[kCountlyCRKeyBattery] = @(CountlyDeviceInfo.batteryLevel);
     crashReport[kCountlyCRKeyOrientation] = CountlyDeviceInfo.orientation;
     crashReport[kCountlyCRKeyOnline] = @((CountlyDeviceInfo.connectionType) ? 1 : 0 );
@@ -237,11 +237,14 @@ void CountlySignalHandler(int signalCode)
     NSMutableSet* binaryImagesInStack = NSMutableSet.new;
     for (NSString* line in stackTrace)
     {
-        NSRegularExpression* regex = [NSRegularExpression regularExpressionWithPattern:@"\\s+\\s" options:0 error:nil];
-        NSString* trimmedLine = [regex stringByReplacingMatchesInString:line options:0 range:(NSRange){0,line.length} withTemplate:@" "];
-        NSArray* lineComponents = [trimmedLine componentsSeparatedByString:@" "];
-        if (lineComponents.count > 1)
-            [binaryImagesInStack addObject:lineComponents[1]];
+        //NOTE: See _BACKTRACE_FORMAT in https://opensource.apple.com/source/Libc/Libc-498/gen/backtrace.c.auto.html
+        NSRange rangeOfBinaryImageName = (NSRange){4, 35};
+        if (line.length >= rangeOfBinaryImageName.location + rangeOfBinaryImageName.length)
+        {
+            NSString* binaryImageName = [line substringWithRange:rangeOfBinaryImageName];
+            binaryImageName = [binaryImageName stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceCharacterSet];
+            [binaryImagesInStack addObject:binaryImageName];
+        }
     }
 
     NSMutableDictionary* binaryImages = NSMutableDictionary.new;
@@ -260,10 +263,11 @@ void CountlySignalHandler(int signalCode)
 
         if (![binaryImagesInStack containsObject:imageName])
         {
-            COUNTLY_LOG(@"Image Name is not in stack trace, so it is not needed!");
+            //NOTE: Image Name is not in the stack trace, so it will be ignored!
             continue;
         }
 
+        COUNTLY_LOG(@"Image Name is in the stack trace, so it will be used!\n%@", imageName);
 
         const struct mach_header* imageHeader = _dyld_get_image_header(i);
         if (imageHeader == NULL)

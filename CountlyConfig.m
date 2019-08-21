@@ -18,19 +18,16 @@
 #elif TARGET_OS_OSX
     NSString* const CLYPushNotifications = @"CLYPushNotifications";
 #endif
-//NOTE: Disable APM feature until Countly Server completely supports it
-// NSString* const CLYAPM = @"CLYAPM";
 
 
 //NOTE: Device ID options
-#if TARGET_OS_IOS
-    NSString* const CLYIDFA = @"CLYIDFA";
-    NSString* const CLYIDFV = @"CLYIDFV";
-    NSString* const CLYOpenUDID = @"CLYOpenUDID";
-#elif TARGET_OS_OSX
-    NSString* const CLYOpenUDID = @"CLYOpenUDID";
-#endif
+NSString* const CLYDefaultDeviceID = @""; //NOTE: It will be overridden to default device ID mechanism, depending on platform.
+NSString* const CLYTemporaryDeviceID = @"CLYTemporaryDeviceID";
 
+//NOTE: Legacy device ID options. They will fallback to default device ID.
+NSString* const CLYIDFA = CLYDefaultDeviceID;
+NSString* const CLYIDFV = CLYDefaultDeviceID;
+NSString* const CLYOpenUDID = CLYDefaultDeviceID;
 
 - (instancetype)init
 {
@@ -48,6 +45,8 @@
         self.crashLogLimit = 100;
 
         self.location = kCLLocationCoordinate2DInvalid;
+
+        self.URLSessionConfiguration = NSURLSessionConfiguration.defaultSessionConfiguration;
     }
 
     return self;

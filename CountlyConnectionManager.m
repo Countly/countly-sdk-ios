@@ -105,41 +105,16 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return;
     }
 
-    if ([firstItemInQueue isEqual:NSNull.null])
+    NSString* temporaryDeviceIDQueryString = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, CLYTemporaryDeviceID];
+    if ([firstItemInQueue containsString:temporaryDeviceIDQueryString])
     {
-        COUNTLY_LOG(@"Detected an NSNull in queue and removed.");
-
-        [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
-        [self proceedOnQueue];
+        COUNTLY_LOG(@"Proceeding on queue is aborted: Device ID in request is CLYTemporaryDeviceID!");
         return;
     }
 
     [CountlyCommon.sharedInstance startBackgroundTask];
 
     NSString* queryString = firstItemInQueue;
-
-    if (self.applyZeroIDFAFix)
-    {
-        NSString* deviceIDZeroIDFA = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, kCountlyZeroIDFA];
-        NSString* oldDeviceIDZeroIDFA = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceIDOld, kCountlyZeroIDFA];
-        NSString* deviceIDFixed = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped];
-
-        if ([queryString containsString:deviceIDZeroIDFA])
-        {
-            COUNTLY_LOG(@"Detected a request with zero-IDFA in queue and fixed.");
-
-            queryString = [queryString stringByReplacingOccurrencesOfString:deviceIDZeroIDFA withString:deviceIDFixed];
-        }
-
-        if ([queryString containsString:oldDeviceIDZeroIDFA])
-        {
-            COUNTLY_LOG(@"Detected a request with zero-IDFA in queue and removed.");
-
-            [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
-            [self proceedOnQueue];
-            return;
-        }
-    }
 
     queryString = [self appendChecksum:queryString];
 
@@ -164,6 +139,8 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     if (self.customHeaderFieldName && self.customHeaderFieldValue)
         [request setValue:self.customHeaderFieldValue forHTTPHeaderField:self.customHeaderFieldName];
+
+    request.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
 
     self.connection = [[self URLSession] dataTaskWithRequest:request completionHandler:^(NSData * data, NSURLResponse * response, NSError * error)
     {
@@ -270,24 +247,17 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)sendPushToken:(NSString *)token
 {
-    typedef enum : NSInteger
-    {
-        CLYPushTokenModeProduction,
-        CLYPushTokenModeDevelopment,
-        CLYPushTokenModeAdHoc,
-    } CLYPushTokenMode;
+    NSInteger testMode = 0; //NOTE: default is 0: Production - not test mode
 
-    int testMode;
-#ifdef DEBUG
-    testMode = CLYPushTokenModeDevelopment;
-#else
-    testMode = CountlyPushNotifications.sharedInstance.isTestDevice ? CLYPushTokenModeAdHoc : CLYPushTokenModeProduction;
-#endif
+    if ([CountlyPushNotifications.sharedInstance.pushTestMode isEqualToString:CLYPushTestModeDevelopment])
+        testMode = 1; //NOTE: 1: Developement/Debug builds - standard test mode using Sandbox APNs
+    else if ([CountlyPushNotifications.sharedInstance.pushTestMode isEqualToString:CLYPushTestModeTestFlightOrAdHoc])
+        testMode = 2; //NOTE: 2: TestFlight/AdHoc builds - special test mode using Production APNs
 
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%@&%@=%d",
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%@&%@=%ld",
                              kCountlyQSKeyPushTokenSession, @"1",
                              kCountlyQSKeyPushTokeniOS, token,
-                             kCountlyQSKeyPushTestMode, testMode];
+                             kCountlyQSKeyPushTestMode, (long)testMode];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -356,6 +326,15 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     if (self.customHeaderFieldName && !self.customHeaderFieldValue)
     {
         COUNTLY_LOG(@"customHeaderFieldName specified on config, but customHeaderFieldValue not set! Crash report stored to be sent later!");
+
+        [CountlyPersistency.sharedInstance addToQueue:queryString];
+        [CountlyPersistency.sharedInstance saveToFileSync];
+        return;
+    }
+
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+    {
+        COUNTLY_LOG(@"Device ID is set as CLYTemporaryDeviceID! Crash report stored to be sent later!");
 
         [CountlyPersistency.sharedInstance addToQueue:queryString];
         [CountlyPersistency.sharedInstance saveToFileSync];
@@ -441,7 +420,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 - (NSString *)queryEssentials
 {
     return [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%lld&%@=%d&%@=%d&%@=%d&%@=%@&%@=%@",
-                                        kCountlyQSKeyAppKey, self.appKey,
+                                        kCountlyQSKeyAppKey, self.appKey.cly_URLEscaped,
                                         kCountlyQSKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped,
                                         kCountlyQSKeyTimestamp, (long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000),
                                         kCountlyQSKeyTimeHourOfDay, (int)CountlyCommon.sharedInstance.hourOfDay,
@@ -555,11 +534,10 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     if (self.pinnedCertificates)
     {
         COUNTLY_LOG(@"%d pinned certificate(s) specified in config.", (int)self.pinnedCertificates.count);
-        NSURLSessionConfiguration *sc = [NSURLSessionConfiguration defaultSessionConfiguration];
-        return [NSURLSession sessionWithConfiguration:sc delegate:self delegateQueue:nil];
+        return [NSURLSession sessionWithConfiguration:self.URLSessionConfiguration delegate:self delegateQueue:nil];
     }
 
-    return NSURLSession.sharedSession;
+    return [NSURLSession sessionWithConfiguration:self.URLSessionConfiguration];
 }
 
 - (void)URLSession:(NSURLSession *)session didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential *))completionHandler

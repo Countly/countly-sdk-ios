@@ -9,6 +9,10 @@
 NSString* const kCountlyReservedEventPushAction = @"[CLY]_push_action";
 NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
+//NOTE: Push Notification Test Modes
+NSString* const CLYPushTestModeDevelopment = @"CLYPushTestModeDevelopment";
+NSString* const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFlightOrAdHoc";
+
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 @interface CountlyPushNotifications () <UNUserNotificationCenterDelegate>
 @property (nonatomic) NSString* token;
@@ -266,6 +270,12 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         return;
     }
 
+    if (@available(iOS 10.0, *))
+    {
+        //NOTE: On iOS10+ when a silent notification (content-available: 1) with `alert` key arrives, do not show alert here, as it is shown in UN framework delegate method
+        COUNTLY_LOG(@"A silent notification (content-available: 1) with `alert` key on iOS10+.");
+        return;
+    }
 
     id alert = notification[@"aps"][@"alert"];
     NSString* message = nil;
@@ -282,9 +292,9 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         title = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleDisplayName"];
     }
 
-    if (!message)
+    if (!message && !title)
     {
-        COUNTLY_LOG(@"Message not found in notification dictionary!");
+        COUNTLY_LOG(@"Title and Message are both not found in notification dictionary!");
         return;
     }
 
@@ -458,6 +468,17 @@ NSString* const kCountlyTokenError = @"kCountlyTokenError";
         [appDelegate userNotificationCenter:center didReceiveNotificationResponse:response withCompletionHandler:completionHandler];
     else
         completionHandler();
+}
+
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center openSettingsForNotification:(UNNotification *)notification API_AVAILABLE(ios(12.0), macos(10.14))
+{
+    if (@available(iOS 12.0, macOS 10.14, *))
+    {
+        id<UNUserNotificationCenterDelegate> appDelegate = (id<UNUserNotificationCenterDelegate>)CLYApplication.sharedApplication.delegate;
+
+        if ([appDelegate respondsToSelector:@selector(userNotificationCenter:openSettingsForNotification:)])
+            [appDelegate userNotificationCenter:center openSettingsForNotification:notification];
+    }
 }
 
 #pragma mark ---

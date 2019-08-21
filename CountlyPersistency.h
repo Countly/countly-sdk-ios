@@ -15,9 +15,12 @@
 - (void)addToQueue:(NSString *)queryString;
 - (void)removeFromQueue:(NSString *)queryString;
 - (NSString *)firstItemInQueue;
+- (void)flushQueue;
+- (void)replaceAllTemporaryDeviceIDsInQueueWithDeviceID:(NSString *)deviceID;
 
 - (void)recordEvent:(CountlyEvent *)event;
 - (NSString *)serializedRecordedEvents;
+- (void)flushEvents;
 
 - (void)recordTimedEvent:(CountlyEvent *)event;
 - (CountlyEvent *)timedEventForKey:(NSString *)key;
@@ -26,8 +29,11 @@
 - (void)saveToFile;
 - (void)saveToFileSync;
 
-- (NSString *)retrieveStoredDeviceID;
+- (NSString *)retrieveDeviceID;
 - (void)storeDeviceID:(NSString *)deviceID;
+
+- (NSString *)retrieveNSUUID;
+- (void)storeNSUUID:(NSString *)UUID;
 
 - (NSString *)retrieveWatchParentDeviceID;
 - (void)storeWatchParentDeviceID:(NSString *)deviceID;

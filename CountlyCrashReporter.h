@@ -9,7 +9,7 @@
 @interface CountlyCrashReporter : NSObject
 #if TARGET_OS_IOS
 @property (nonatomic) BOOL isEnabledOnInitialConfig;
-@property (nonatomic) NSDictionary<NSString*, id>* crashSegmentation;
+@property (nonatomic) NSDictionary<NSString *, NSString *>* crashSegmentation;
 @property (nonatomic) NSUInteger crashLogLimit;
 
 + (instancetype)sharedInstance;

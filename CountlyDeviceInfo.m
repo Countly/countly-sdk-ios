@@ -17,8 +17,6 @@
 #import <CoreTelephony/CTCarrier.h>
 #endif
 
-NSString* const kCountlyZeroIDFA = @"00000000-0000-0000-0000-000000000000";
-
 NSString* const kCountlyMetricKeyDevice             = @"_device";
 NSString* const kCountlyMetricKeyOS                 = @"_os";
 NSString* const kCountlyMetricKeyOSVersion          = @"_os_version";
@@ -50,12 +48,8 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 {
     if (self = [super init])
     {
-        self.deviceID = [CountlyPersistency.sharedInstance retrieveStoredDeviceID];
+        self.deviceID = [CountlyPersistency.sharedInstance retrieveDeviceID];
 #if TARGET_OS_IOS
-        //NOTE: Handle Limit Ad Tracking zero-IDFA problem
-        if ([self.deviceID isEqualToString:kCountlyZeroIDFA])
-            [self initializeDeviceID:CLYIDFV];
-
         self.networkInfo = CTTelephonyNetworkInfo.new;
 #endif
     }
@@ -65,65 +59,33 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
 - (void)initializeDeviceID:(NSString *)deviceID
 {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-
-#if TARGET_OS_IOS
-    if (!deviceID || !deviceID.length)
-        self.deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
-    else if ([deviceID isEqualToString:CLYIDFV])
-        self.deviceID = UIDevice.currentDevice.identifierForVendor.UUIDString;
-    else if ([deviceID isEqualToString:CLYIDFA])
-        self.deviceID = [self zeroSafeIDFA];
-    else if ([deviceID isEqualToString:CLYOpenUDID])
-        self.deviceID = [Countly_OpenUDID value];
-    else
-        self.deviceID = deviceID;
-
-#elif TARGET_OS_WATCH
-    if (!deviceID || !deviceID.length)
-        self.deviceID = NSUUID.UUID.UUIDString;
-    else
-        self.deviceID = deviceID;
-
-#elif TARGET_OS_TV
-    if (!deviceID || !deviceID.length)
-        self.deviceID = NSUUID.UUID.UUIDString;
-    else
-        self.deviceID = deviceID;
-
-#elif TARGET_OS_OSX
-    if (!deviceID || !deviceID.length)
-        self.deviceID = NSUUID.UUID.UUIDString;
-    else if ([deviceID isEqualToString:CLYOpenUDID])
-        self.deviceID = [Countly_OpenUDID value];
-    else
-        self.deviceID = deviceID;
-#else
-    self.deviceID = @"UnsupportedPlaftormDevice";
-#endif
-
-#pragma GCC diagnostic pop
+    self.deviceID = [self ensafeDeviceID:deviceID];
 
     [CountlyPersistency.sharedInstance storeDeviceID:self.deviceID];
 }
 
-- (NSString *)zeroSafeIDFA
+- (NSString *)ensafeDeviceID:(NSString *)deviceID
 {
-#if TARGET_OS_IOS
-#ifndef COUNTLY_EXCLUDE_IDFA
-    NSString* IDFA = ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString;
-#else
-    NSString* IDFA = UIDevice.currentDevice.identifierForVendor.UUIDString;
-#endif
-    //NOTE: Handle Limit Ad Tracking zero-IDFA problem
-    if ([IDFA isEqualToString:kCountlyZeroIDFA])
-        IDFA = UIDevice.currentDevice.identifierForVendor.UUIDString;
+    if (deviceID.length)
+        return deviceID;
 
-    return IDFA;
+#if (TARGET_OS_IOS || TARGET_OS_TV)
+    return UIDevice.currentDevice.identifierForVendor.UUIDString;
 #else
-    return nil;
+    NSString* UUID = [CountlyPersistency.sharedInstance retrieveNSUUID];
+    if (!UUID)
+    {
+        UUID = NSUUID.UUID.UUIDString;
+        [CountlyPersistency.sharedInstance storeNSUUID:UUID];
+    }
+
+    return UUID;
 #endif
+}
+
+- (BOOL)isDeviceIDTemporary
+{
+    return [self.deviceID isEqualToString:CLYTemporaryDeviceID];
 }
 
 #pragma mark -
@@ -405,6 +367,15 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 #if TARGET_OS_IOS
     UIDevice.currentDevice.batteryMonitoringEnabled = YES;
     return abs((int)(UIDevice.currentDevice.batteryLevel * 100));
+#elif TARGET_OS_WATCH
+    if (@available(watchOS 4.0, *))
+    {
+        return abs((int)(WKInterfaceDevice.currentDevice.batteryLevel * 100));
+    }
+    else
+    {
+        return 100;
+    }
 #else
     return 100;
 #endif

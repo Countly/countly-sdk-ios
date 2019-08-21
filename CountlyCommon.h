@@ -6,15 +6,12 @@
 
 #import <Foundation/Foundation.h>
 #import "Countly.h"
-#import "Countly_OpenUDID.h"
 #import "CountlyPersistency.h"
 #import "CountlyConnectionManager.h"
 #import "CountlyEvent.h"
 #import "CountlyUserDetails.h"
 #import "CountlyDeviceInfo.h"
 #import "CountlyCrashReporter.h"
-#import "CountlyAPMNetworkLog.h"
-#import "CountlyAPM.h"
 #import "CountlyConfig.h"
 #import "CountlyViewTracking.h"
 #import "CountlyStarRating.h"
@@ -108,6 +105,9 @@ void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
 @end
 #endif
 
+@interface CLYDelegateInterceptor : NSObject
+@property (nonatomic, weak) id originalDelegate;
+@end
 
 @interface NSString (Countly)
 - (NSString *)cly_URLEscaped;

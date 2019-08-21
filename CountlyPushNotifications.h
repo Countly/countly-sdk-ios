@@ -9,7 +9,7 @@
 @interface CountlyPushNotifications : NSObject
 
 @property (nonatomic) BOOL isEnabledOnInitialConfig;
-@property (nonatomic) BOOL isTestDevice;
+@property (nonatomic) NSString* pushTestMode;
 @property (nonatomic) BOOL sendPushTokenAlways;
 @property (nonatomic) BOOL doNotShowAlertForNotifications;
 @property (nonatomic) NSNotification* launchNotification;

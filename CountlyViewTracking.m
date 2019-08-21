@@ -19,6 +19,11 @@ NSString* const kCountlyVTKeyName     = @"name";
 NSString* const kCountlyVTKeySegment  = @"segment";
 NSString* const kCountlyVTKeyVisit    = @"visit";
 NSString* const kCountlyVTKeyStart    = @"start";
+NSString* const kCountlyVTKeyBounce   = @"bounce";
+NSString* const kCountlyVTKeyExit     = @"exit";
+NSString* const kCountlyVTKeyView     = @"view";
+NSString* const kCountlyVTKeyDomain   = @"domain";
+NSString* const kCountlyVTKeyDur      = @"dur";
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 @interface UIViewController (CountlyViewTracking)
@@ -94,7 +99,12 @@ NSString* const kCountlyVTKeyStart    = @"start";
 
 - (void)startView:(NSString *)viewName
 {
-    if (!viewName)
+    [self startView:viewName customSegmentation:nil];
+}
+
+- (void)startView:(NSString *)viewName customSegmentation:(NSDictionary *)customSegmentation
+{
+    if (!viewName.length)
         return;
 
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
@@ -115,6 +125,13 @@ NSString* const kCountlyVTKeyStart    = @"start";
 
     if (!self.lastView)
         segmentation[kCountlyVTKeyStart] = @1;
+
+    if (customSegmentation)
+    {
+        NSMutableDictionary* mutableCustomSegmentation = customSegmentation.mutableCopy;
+        [mutableCustomSegmentation removeObjectsForKeys:self.reservedViewTrackingSegmentationKeys];
+        [segmentation addEntriesFromDictionary:mutableCustomSegmentation];
+    }
 
     [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventView segmentation:segmentation];
 
@@ -216,6 +233,9 @@ NSString* const kCountlyVTKeyStart    = @"start";
 
 - (void)addExceptionForAutoViewTracking:(NSString *)exception
 {
+    if (!exception.length)
+        return;
+
     if (![self.exceptionViewControllers containsObject:exception])
         [self.exceptionViewControllers addObject:exception];
 }
@@ -244,6 +264,25 @@ NSString* const kCountlyVTKeyStart    = @"start";
 }
 
 #endif
+
+- (NSArray *)reservedViewTrackingSegmentationKeys
+{
+    NSArray* reservedViewTrackingSegmentationKeys =
+    @[
+        kCountlyVTKeyName,
+        kCountlyVTKeySegment,
+        kCountlyVTKeyVisit,
+        kCountlyVTKeyStart,
+        kCountlyVTKeyBounce,
+        kCountlyVTKeyExit,
+        kCountlyVTKeyView,
+        kCountlyVTKeyDomain,
+        kCountlyVTKeyDur
+    ];
+
+    return reservedViewTrackingSegmentationKeys;
+}
+
 @end
 
 #pragma mark -

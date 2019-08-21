@@ -32,10 +32,23 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Sets new device ID to be persistently stored and used in following requests.
+ * @discussion Value passed for @c deviceID parameter has to be a non-zero length valid string, otherwise default device ID will be used instead.
+ * @discussion If value passed for @c deviceID parameter is exactly same to the current device ID, method call is ignored.
+ * @discussion When passing @c CLYTemporaryDeviceID for @c deviceID parameter, argument for @c onServer parameter does not matter.
+ * @discussion When setting a new device ID while the current device ID is @c CLYTemporaryDeviceID, argument for @c onServer parameter does not matter.
  * @param deviceID New device ID
  * @param onServer If set, data on Countly Server will be merged automatically, otherwise device will be counted as a new device
  */
 - (void)setNewDeviceID:(NSString * _Nullable)deviceID onServer:(BOOL)onServer;
+
+/**
+ * Sets new app key to be used in following requests.
+ * @discussion Before switching to new app key, this method suspends Countly and resumes immediately after.
+ * @discussion Requests already queued previously will keep using the old app key.
+ * @discussion New app key needs to be a non-zero length string, otherwise it is ignored.
+ * @param newAppKey New app key
+ */
+- (void)setNewAppKey:(NSString *)newAppKey;
 
 /**
  * Sets the value of the custom HTTP header field to be sent with every request if @c customHeaderFieldName is set on initial configuration.
@@ -44,6 +57,13 @@ NS_ASSUME_NONNULL_BEGIN
  * @param customHeaderFieldValue Custom header field value
  */
 - (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue;
+
+/**
+ * Flushes request and event queues.
+ * @discussion Flushes persistenly stored request queue and events recorded but not converted to a request so far.
+ * @discussion Started timed events will not be affected.
+ */
+- (void)flushQueues;
 
 /**
  * Starts session and sends @c begin_session request with default metrics for manual session handling.
@@ -145,34 +165,34 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Records event with given key.
- * @param key Event key
+ * @param key Event key, a non-zero length valid string
  */
 - (void)recordEvent:(NSString *)key;
 
 /**
  * Records event with given key and count.
- * @param key Event key
+ * @param key Event key, a non-zero length valid string
  * @param count Count of event occurrences
  */
 - (void)recordEvent:(NSString *)key count:(NSUInteger)count;
 
 /**
  * Records event with given key and sum.
- * @param key Event key
+ * @param key Event key, a non-zero length valid string
  * @param sum Sum of any specific value for event
  */
 - (void)recordEvent:(NSString *)key sum:(double)sum;
 
 /**
  * Records event with given key and duration.
- * @param key Event key
+ * @param key Event key, a non-zero length valid string
  * @param duration Duration of event in seconds
  */
 - (void)recordEvent:(NSString *)key duration:(NSTimeInterval)duration;
 
 /**
  * Records event with given key, count and sum.
- * @param key Event key
+ * @param key Event key, a non-zero length valid string
  * @param count Count of event occurrences
  * @param sum Sum of any specific value for event
  */
@@ -180,66 +200,81 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Records event with given key and segmentation.
- * @param key Event key
+ * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
+ * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
+ * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
+ * @param key Event key, a non-zero length valid string
  * @param segmentation Segmentation key-value pairs of event
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary<NSString *, NSString *> * _Nullable)segmentation;
 
 /**
  * Records event with given key, segmentation and count.
- * @param key Event key
+ * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
+ * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
+ * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
+ * @param key Event key, a non-zero length valid string
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary<NSString *, NSString *> * _Nullable)segmentation count:(NSUInteger)count;
 
 /**
  * Records event with given key, segmentation, count and sum.
- * @param key Event key
+ * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
+ * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
+ * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
+ * @param key Event key, a non-zero length valid string
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
  * @param sum Sum of any specific value for event
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary<NSString *, NSString *> * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
 
 /**
  * Records event with given key, segmentation, count, sum and duration.
- * @param key Event key
+ * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
+ * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
+ * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
+ * @param key Event key, a non-zero length valid string
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
  * @param sum Sum of any specific value for event
  * @param duration Duration of event in seconds
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary<NSString *, NSString *> * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
 
 /**
  * Starts a timed event with given key to be ended later. Duration of timed event will be calculated on ending.
  * @discussion Trying to start an event with already started key will have no effect.
- * @param key Event key
+ * @param key Event key, a non-zero length valid string
  */
 - (void)startEvent:(NSString *)key;
 
 /**
  * Ends a previously started timed event with given key.
  * @discussion Trying to end an event with already ended (or not yet started) key will have no effect.
- * @param key Event key
+ * @param key Event key, a non-zero length valid string
  */
 - (void)endEvent:(NSString *)key;
 
 /**
  * Ends a previously started timed event with given key, segmentation, count and sum.
  * @discussion Trying to end an event with already ended (or not yet started) key will have no effect.
- * @param key Event key
+ * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
+ * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
+ * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
+ * @param key Event key, a non-zero length valid string
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
  * @param sum Sum of any specific value for event
  */
-- (void)endEvent:(NSString *)key segmentation:(NSDictionary * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
+- (void)endEvent:(NSString *)key segmentation:(NSDictionary<NSString *, NSString *> * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
 
 /**
  * Cancels a previously started timed event with given key.
  * @discussion Trying to cancel an event with already cancelled (or ended or not yet started) key will have no effect.
- * @param key Event key
+ * @param key Event key, a non-zero length valid string
  */
 - (void)cancelEvent:(NSString *)key;
 
@@ -265,8 +300,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Records action event for a manually presented push notification with custom action buttons.
- * @discussion If a push notification with custom action buttons is handled and presented manually using custom UI, user's action needs to be reported manually.
- * @discussion With this convenience method user's action can be reported passing push notification dictionary and clicked button index.
+ * @discussion If a push notification with custom action buttons is handled and presented manually using custom UI, user's action needs to be recorded manually.
+ * @discussion With this convenience method user's action can be recorded passing push notification dictionary and clicked button index.
  * @discussion Button index should be @c 0 for default action, @c 1 for the first action button and @c 2 for the second action button.
  * @param userInfo Manually presented push notification dictionary
  * @param buttonIndex Index of custom action button user clicked
@@ -337,22 +372,22 @@ NS_ASSUME_NONNULL_BEGIN
 #if TARGET_OS_IOS
 /**
  * Records a handled exception manually.
- * @param exception Exception to be reported
+ * @param exception Exception to be recorded
  */
 - (void)recordHandledException:(NSException *)exception;
 
 /**
  * Records a handled exception and given stack trace manually.
- * @param exception Exception to be reported
- * @param stackTrace Stack trace to be reported
+ * @param exception Exception to be recorded
+ * @param stackTrace Stack trace to be recorded
  */
 - (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace;
 
 /**
  * Records an unhandled exception and given stack trace manually.
  * @discussion For recording non-native level fatal exceptions, where the app keeps running at native level and can recover.
- * @param exception Exception to be reported
- * @param stackTrace Stack trace to be reported
+ * @param exception Exception to be recorded
+ * @param stackTrace Stack trace to be recorded
  */
 - (void)recordUnhandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace;
 
@@ -374,45 +409,33 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 
-#pragma mark - APM
-
-/**
- * Adds exception URL for APM.
- * @discussion Added URLs (with or without specific path) will be ignored by APM.
- * @discussion Adding an already added URL again will have no effect.
- * @param exceptionURL Exception URL to be added
- */
-- (void)addExceptionForAPM:(NSString *)exceptionURL;
-
-/**
- * Removes exception URL for APM.
- * @discussion Removing an already removed (or not yet added) URL again will have no effect.
- * @param exceptionURL Exception URL to be removed
- */
-- (void)removeExceptionForAPM:(NSString *)exceptionURL;
-
-
-
 #pragma mark - View Tracking
 
 /**
  * Records a visited view with given name.
  * @discussion Total duration of the view will be calculated on next @c recordView: call.
  * @discussion If AutoViewTracking feature is enabled on initial configuration, this method does not need to be called manually.
- * @param viewName Name of the view visited
+ * @param viewName Name of the view visited, a non-zero length valid string
  */
 - (void)recordView:(NSString *)viewName;
 
 /**
- * @c reportView: method is deprecated. Please use @c recordView: method instead.
- * @discussion Calling this method will have no effect.
+ * Records a visited view with given name and custom segmentation.
+ * @discussion This is an extendened version of @c recordView: method.
+ * @discussion If segmentation has any of Countly reserved keys, they will be ignored:
+ * @discussion @c name, @c segment, @c visit, @c start, @c bounce, @c exit, @c view, @c domain, @c dur
+ * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
+ * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
+ * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
+ * @param viewName Name of the view visited, a non-zero length valid string
+ * @param segmentation Custom segmentation key-value pairs
  */
-- (void)reportView:(NSString *)viewName DEPRECATED_MSG_ATTRIBUTE("Use 'recordView:' method instead!");
+- (void)recordView:(NSString *)viewName segmentation:(NSDictionary<NSString *, NSString *> *)segmentation;
 
 #if TARGET_OS_IOS
 /**
  * Adds exception for AutoViewTracking.
- * @discussion @c UIViewControllers with specified title or class name will be ignored by AutoViewTracking and their appearances and disappearances will not be reported.
+ * @discussion @c UIViewControllers with specified title or class name will be ignored by AutoViewTracking and their appearances and disappearances will not be recorded.
  * @discussion Adding an already added @c UIViewController title or subclass name again will have no effect.
  * @param exception @c UIViewController title or subclass name to be added as exception
  */
@@ -471,7 +494,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Shows star-rating dialog manually and executes completion block after user's action.
  * @discussion Completion block has a single NSInteger parameter that indicates 1 to 5 star-rating given by user.
- * @discussion If user dismissed dialog without giving a rating, this value will be 0 and it will not be reported to Countly Server.
+ * @discussion If user dismissed dialog without giving a rating, this value will be 0 and it will not be sent to Countly Server.
  * @param completion A block object to be executed when user gives a star-rating or dismisses dialog without rating
  */
 - (void)askForStarRating:(void(^)(NSInteger rating))completion;
@@ -482,6 +505,10 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion If the feedback widget with given ID is available, it will be modally presented.
  * @discussion Otherwise, @c completionHandler will be called with an @c NSError.
  * @discussion @c completionHandler will also be called with @c nil when feedback widget is dismissed by user.
+ * @discussion Calls to this method will be ignored and @c completionHandler will not be executed if:
+ * @discussion - Consent for @c CLYConsentStarRating is not given, while @c requiresConsent flag is set on initial configuration.
+ * @discussion - Current device ID is @c CLYTemporaryDeviceID.
+ * @discussion - @c widgetID is not a non-zero length valid string.
  * @param widgetID ID of the feedback widget created on Countly Server.
  * @param completionHandler A completion handler block to be executed when feedback widget is dismissed by user or there is an error.
  */
@@ -504,6 +531,9 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Manually updates all locally stored remote config values by fetching latest values from Countly Server, and executes completion handler.
  * @discussion @c completionHandler has an @c NSError parameter that will be either @ nil or an @c NSError object, depending on result.
+ * @discussion Calls to this method will be ignored and @c completionHandler will not be executed if:
+ * @discussion - There is not any consent given, while @c requiresConsent flag is set on initial configuration.
+ * @discussion - Current device ID is @c CLYTemporaryDeviceID.
  * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure.
  */
 - (void)updateRemoteConfigWithCompletionHandler:(void (^)(NSError * error))completionHandler;
@@ -511,6 +541,9 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Manually updates locally stored remote config values only for specified keys, by fetching latest values from Countly Server, and executes completion handler.
  * @discussion @c completionHandler has an @c NSError parameter that will be either @ nil or an @c NSError object, depending on result.
+ * @discussion Calls to this method will be ignored and @c completionHandler will not be executed if:
+ * @discussion - There is not any consent given, while @c requiresConsent flag is set on initial configuration.
+ * @discussion - Current device ID is @c CLYTemporaryDeviceID.
  * @param keys An array of remote config keys to update
  * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure
  */
@@ -519,6 +552,9 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Manually updates locally stored remote config values except for specified keys, by fetching latest values from Countly Server, and executes completion handler.
  * @discussion @c completionHandler has an @c NSError parameter that will be either @ nil or an @c NSError object, depending on result.
+ * @discussion Calls to this method will be ignored and @c completionHandler will not be executed if:
+ * @discussion - There is not any consent given, while @c requiresConsent flag is set on initial configuration.
+ * @discussion - Current device ID is @c CLYTemporaryDeviceID.
  * @param omitKeys An array of remote config keys to omit from updating
  * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure
  */

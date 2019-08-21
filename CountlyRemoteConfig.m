@@ -52,6 +52,9 @@ NSString* const kCountlyRCKeyMetrics            = @"metrics";
     if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
         return;
 
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+        return;
+
     COUNTLY_LOG(@"Fetching remote config on start...");
 
     [self fetchRemoteConfigForKeys:nil omitKeys:nil completionHandler:^(NSDictionary *remoteConfig, NSError *error)
@@ -73,9 +76,12 @@ NSString* const kCountlyRCKeyMetrics            = @"metrics";
     }];
 }
 
-- (void)updateRemoteConfigForForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler
+- (void)updateRemoteConfigForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler
 {
     if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
+        return;
+
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
         return;
 
     COUNTLY_LOG(@"Fetching remote config manually...");

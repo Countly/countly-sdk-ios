@@ -238,6 +238,9 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     if (!CountlyConsentManager.sharedInstance.consentForStarRating)
         return;
 
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+        return;
+
     if (!widgetID.length)
         return;
 
