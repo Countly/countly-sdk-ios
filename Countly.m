@@ -141,7 +141,11 @@
 //    if ([config.features containsObject:CLYAPM])
 //        [CountlyAPM.sharedInstance startAPM];
 
-    timer = [NSTimer scheduledTimerWithTimeInterval:config.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
+    timer = [NSTimer timerWithTimeInterval:config.updateSessionPeriod
+                                    target:self
+                                  selector:@selector(onTimer:)
+                                  userInfo:nil
+                                   repeats:YES];
     [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
 
     [CountlyCommon.sharedInstance startAppleWatchMatching];
