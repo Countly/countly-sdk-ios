@@ -1,3 +1,5 @@
+#!/usr/bash
+
 # countly_dsym_uploader.sh
 #
 # This code is provided under the MIT License.
@@ -16,6 +18,8 @@
 
 HOST="$1";
 APPKEY="$2";
+CUSTOM_DSYM_PATH="${3}"
+
 
 # Common functions
 countly_log () { echo "[Countly] $1"; }
@@ -30,16 +34,68 @@ countly_usage () {
 
 countly_fail () { countly_log "$1"; exit 0; }
 
+countly_upload() {
+	BUILD_UUIDS="${1}"
+	HOST="${2}"
+	APPKEY="${3}"
+	DSYM_ZIP_PATH="${4}"
+
+	# Preparing for upload
+	ENDPOINT="/i/crash_symbols/upload_symbol"
+	QUERY="?platform=ios&app_key=${APPKEY}&build=${BUILD_UUIDS}"
+	URL="$HOST$ENDPOINT${QUERY}"
+	countly_log "Uploading to $URL"
+
+
+	# Uploading to server using curl
+	UPLOAD_RESULT=$(curl -s -F "symbols=@${DSYM_ZIP_PATH}" "${URL}")
+	if [ $? -eq 0 ] && [ "$UPLOAD_RESULT" == "{\"result\":\"Success\"}" ]; then
+	    countly_log "dSYM upload succesfully completed."
+	else
+	    countly_fail "dSYM upload failed!"
+	fi
+}
+
+countly_zip() {
+	DSYM_PATH="${1}"
+	DSYM_FILENAME="${2}"
+
+	if [ ! -d "${DSYM_PATH}" ]; then
+	    countly_fail "${DSYM_PATH} does not exist!"
+	fi
+
+	pushd "${DSYM_PATH}"
+
+	if [ ! -d "${DSYM_FILENAME}" ]; then
+		countly_fail "${DSYM_FILENAME} does not exist!"
+		popd
+	fi
+
+	# Extracting Build UUIDs from DSYM using dwarfdump
+	BUILD_UUIDS=$(xcrun dwarfdump --uuid "${DSYM_FILENAME}" | awk '{print $2}' | xargs | sed 's/ /,/g')
+	if [ $? -eq 0 ]; then
+	    countly_log "Extracted Build UUIDs: $BUILD_UUIDS"
+	else
+	    countly_fail "Extracting Build UUIDs failed!"
+	fi
+
+
+	# Creating archive of DSYM folder using zip
+	DSYM_ZIP_NAME="$(date +%s)_$(basename "${DSYM_FILENAME}").zip"
+	DSYM_ZIP_PATH="/tmp/${DSYM_ZIP_NAME}"
+	zip -rq "${DSYM_ZIP_PATH}" "${DSYM_FILENAME}"
+
+	if [ $? -eq 0 ]; then
+	    countly_log "Created archive at ${DSYM_ZIP_PATH}"
+	else
+	    countly_fail "Creating archive failed!"
+	fi
+
+	popd
+}
+
 
 # Pre-checks
-if [ "$#" -ne 2 ]; then
-    countly_fail "Provide host and app key for automatic dSYM upload!"
-fi
-
-if [ ! "$DWARF_DSYM_FOLDER_PATH" ] || [ ! "$DWARF_DSYM_FILE_NAME" ]; then
-    countly_fail "Xcode Environment Variables are missing!"
-fi
-
 if [[ -z $HOST ]]; then
 	countly_usage
 	countly_fail "Did not provide a Count.ly host to which to upload dSYMs."
@@ -50,50 +106,27 @@ if [[ -z $APPKEY ]]; then
 	countly_fail "Did not provide an App Key for your dSYMs."
 fi
 
-DSYM_PATH="${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}";
-if [ ! -d "${DSYM_PATH}" ]; then
-    countly_fail "$DWARF_DSYM_FILE_NAME does not exist!"
-fi
 
+# create the zip archive for upload
+if [[ -z $CUSTOM_DSYM_PATH ]]; then
+	if [ ! "$DWARF_DSYM_FOLDER_PATH" ] || [ ! "$DWARF_DSYM_FILE_NAME" ]; then
+	    countly_fail "Xcode Environment Variables are missing!"
+	fi
 
-# Extracting Build UUIDs from DSYM using dwarfdump
-BUILD_UUIDS=$(xcrun dwarfdump --uuid "${DSYM_PATH}" | awk '{print $2}' | xargs | sed 's/ /,/g')
-if [ $? -eq 0 ]; then
-    countly_log "Extracted Build UUIDs: $BUILD_UUIDS"
+	countly_zip "${DWARF_DSYM_FOLDER_PATH}" "${DWARF_DSYM_FILE_NAME}"
 else
-    countly_fail "Extracting Build UUIDs failed!"
+	DSYM_PATH=$(dirname "${CUSTOM_DSYM_PATH}")
+	DSYM_FILENAME=$(basename "${CUSTOM_DSYM_PATH}")
+	countly_zip "${DSYM_PATH}" "${DSYM_FILENAME}"
 fi
 
 
-# Creating archive of DSYM folder using zip
-DSYM_ZIP_PATH="/tmp/$(date +%s)_${DWARF_DSYM_FILE_NAME}.zip"
-pushd "${DWARF_DSYM_FOLDER_PATH}" > /dev/null
-zip -rq "${DSYM_ZIP_PATH}" "${DWARF_DSYM_FILE_NAME}"
-popd > /dev/null
-if [ $? -eq 0 ]; then
-    countly_log "Created archive at $DSYM_ZIP_PATH"
-else
-    countly_fail "Creating archive failed!"
-fi
-
-
-# Preparing for upload
-ENDPOINT="/i/crash_symbols/upload_symbol"
-QUERY="?platform=ios&app_key=${APPKEY}&build=${BUILD_UUIDS}"
-URL="$HOST$ENDPOINT${QUERY}"
-countly_log "Uploading to $URL"
-
-
-# Uploading to server using curl
-UPLOAD_RESULT=$(curl -s -F "symbols=@${DSYM_ZIP_PATH}" "${URL}")
-if [ $? -eq 0 ] && [ "$UPLOAD_RESULT" == "{\"result\":\"Success\"}" ]; then
-    countly_log "dSYM upload succesfully completed."
-else
-    countly_fail "dSYM upload failed!"
-fi
+# upload
+countly_upload "${BUILD_UUIDS}" "${HOST}" "${APPKEY}" "${DSYM_ZIP_PATH}"
 
 
 # Removing artifacts
 rm "${DSYM_ZIP_PATH}"
+
 
 exit 0
