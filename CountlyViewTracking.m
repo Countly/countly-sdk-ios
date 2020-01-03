@@ -156,7 +156,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         self.accumulatedTime = 0;
         [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventView segmentation:segmentation count:1 sum:0 duration:duration timestamp:self.lastViewStartTime];
 
-        COUNTLY_LOG(@"View tracking ended: %@ duration: %f", self.lastView, duration);
+        COUNTLY_LOG(@"View tracking ended: %@ duration: %.17g", self.lastView, duration);
     }
 }
 
