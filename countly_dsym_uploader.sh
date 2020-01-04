@@ -52,9 +52,9 @@ if [[ -z $APPKEY ]]; then
 fi
 
 if [[ -z $CUSTOM_DSYM_PATH ]]; then
-    if [ ! "$DWARF_DSYM_FOLDER_PATH" ] || [ ! "$DWARF_DSYM_FILE_NAME" ]; then
+    if [ ! "${DWARF_DSYM_FOLDER_PATH}" ] || [ ! "${DWARF_DSYM_FILE_NAME}" ]; then
         countly_usage
-        countly_fail "Custom dSYM path not specified and Xcode Environment Variables are missing! "
+        countly_fail "Custom dSYM path not specified and Xcode Environment Variables are missing!"
     fi
 
     DSYM_FOLDER_PATH=${DWARF_DSYM_FOLDER_PATH}
@@ -73,7 +73,7 @@ fi
 # Extracting Build UUIDs from DSYM using dwarfdump
 BUILD_UUIDS=$(xcrun dwarfdump --uuid "${DSYM_PATH}" | awk '{print $2}' | xargs | sed 's/ /,/g')
 if [ $? -eq 0 ]; then
-    countly_log "Extracted Build UUIDs: $BUILD_UUIDS"
+    countly_log "Extracted Build UUIDs: ${BUILD_UUIDS}"
 else
     countly_fail "Extracting Build UUIDs failed!"
 fi
@@ -94,16 +94,16 @@ fi
 # Preparing for upload
 ENDPOINT="/i/crash_symbols/upload_symbol"
 QUERY="?platform=ios&app_key=${APPKEY}&build=${BUILD_UUIDS}"
-URL="$HOST$ENDPOINT${QUERY}"
-countly_log "Uploading to $URL"
+URL="${HOST}${ENDPOINT}${QUERY}"
+countly_log "Uploading to ${URL}"
 
 
 # Uploading to server using curl
 UPLOAD_RESULT=$(curl -s -F "symbols=@${DSYM_ZIP_PATH}" "${URL}")
-if [ $? -eq 0 ] && [ "$UPLOAD_RESULT" == "{\"result\":\"Success\"}" ]; then
+if [ $? -eq 0 ] && [ "${UPLOAD_RESULT}" == "{\"result\":\"Success\"}" ]; then
     countly_log "dSYM upload succesfully completed."
 else
-    countly_fail "dSYM upload failed!"
+    countly_fail "dSYM upload failed! ${UPLOAD_RESULT}"
 fi
 
 
