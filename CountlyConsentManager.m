@@ -266,7 +266,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 {
     _consentForCrashReporting = consentForCrashReporting;
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     if (consentForCrashReporting)
     {
         COUNTLY_LOG(@"Consent for CrashReporting is given.");
