@@ -39,7 +39,6 @@
 + (unsigned long long)totalDisk;
 + (NSInteger)batteryLevel;
 + (NSString *)orientation;
-+ (NSString *)OpenGLESversion;
 + (BOOL)isJailbroken;
 + (BOOL)isInBackground;
 @end

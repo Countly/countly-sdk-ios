@@ -395,26 +395,6 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 }
 
 
-+ (NSString *)OpenGLESversion
-{
-#if TARGET_OS_IOS
-    EAGLContext *aContext;
-
-    aContext = [EAGLContext.alloc initWithAPI:kEAGLRenderingAPIOpenGLES3];
-    if (aContext)
-        return @"3.0";
-
-    aContext = [EAGLContext.alloc initWithAPI:kEAGLRenderingAPIOpenGLES2];
-    if (aContext)
-        return @"2.0";
-
-    return @"1.0";
-#else
-    return @"1.0";
-#endif
-}
-
-
 + (BOOL)isJailbroken
 {
     FILE *f = fopen("/bin/bash", "r");
