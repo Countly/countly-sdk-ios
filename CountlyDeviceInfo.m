@@ -405,7 +405,7 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
 + (BOOL)isInBackground
 {
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     return UIApplication.sharedApplication.applicationState == UIApplicationStateBackground;
 #else
     return NO;
