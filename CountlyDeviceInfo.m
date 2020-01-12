@@ -171,15 +171,12 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
 + (NSString *)resolution
 {
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     CGRect bounds = UIScreen.mainScreen.bounds;
     CGFloat scale = UIScreen.mainScreen.scale;
 #elif TARGET_OS_WATCH
     CGRect bounds = WKInterfaceDevice.currentDevice.screenBounds;
     CGFloat scale = WKInterfaceDevice.currentDevice.screenScale;
-#elif TARGET_OS_TV
-    CGRect bounds = UIScreen.mainScreen.bounds;
-    CGFloat scale = UIScreen.mainScreen.scale;
 #else
     NSRect bounds = NSScreen.mainScreen.frame;
     CGFloat scale = NSScreen.mainScreen.backingScaleFactor;
@@ -189,12 +186,10 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
 + (NSString *)density
 {
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     CGFloat scale = UIScreen.mainScreen.scale;
 #elif TARGET_OS_WATCH
     CGFloat scale = WKInterfaceDevice.currentDevice.screenScale;
-#elif TARGET_OS_TV
-    CGFloat scale = UIScreen.mainScreen.scale;
 #else
     CGFloat scale = NSScreen.mainScreen.backingScaleFactor;
 #endif
