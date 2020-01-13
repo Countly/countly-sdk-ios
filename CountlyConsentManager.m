@@ -289,7 +289,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 {
     _consentForPushNotifications = consentForPushNotifications;
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_OSX)
     if (consentForPushNotifications)
     {
         COUNTLY_LOG(@"Consent for PushNotifications is given.");
