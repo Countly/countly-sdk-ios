@@ -369,7 +369,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 #pragma mark - Crash Reporting
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_TV)
 /**
  * Records a handled exception manually.
  * @param exception Exception to be recorded

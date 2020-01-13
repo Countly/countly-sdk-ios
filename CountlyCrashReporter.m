@@ -31,7 +31,6 @@ NSString* const kCountlyCRKeyDiskTotal         = @"_disk_total";
 NSString* const kCountlyCRKeyBattery           = @"_bat";
 NSString* const kCountlyCRKeyOrientation       = @"_orientation";
 NSString* const kCountlyCRKeyOnline            = @"_online";
-NSString* const kCountlyCRKeyOpenGL            = @"_opengl";
 NSString* const kCountlyCRKeyRoot              = @"_root";
 NSString* const kCountlyCRKeyBackground        = @"_background";
 NSString* const kCountlyCRKeyRun               = @"_run";
@@ -52,7 +51,7 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 
 @implementation CountlyCrashReporter
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_TV)
 
 + (instancetype)sharedInstance
 {
@@ -165,7 +164,6 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     crashReport[kCountlyCRKeyBattery] = @(CountlyDeviceInfo.batteryLevel);
     crashReport[kCountlyCRKeyOrientation] = CountlyDeviceInfo.orientation;
     crashReport[kCountlyCRKeyOnline] = @((CountlyDeviceInfo.connectionType) ? 1 : 0 );
-    crashReport[kCountlyCRKeyOpenGL] = CountlyDeviceInfo.OpenGLESversion;
     crashReport[kCountlyCRKeyRoot] = @(CountlyDeviceInfo.isJailbroken);
     crashReport[kCountlyCRKeyBackground] = @(CountlyDeviceInfo.isInBackground);
     crashReport[kCountlyCRKeyRun] = @(CountlyCommon.sharedInstance.timeSinceLaunch);

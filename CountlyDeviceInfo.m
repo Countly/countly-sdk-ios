@@ -129,6 +129,8 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
         else
             architecture = @"armv7";
     }
+#elif TARGET_OS_TV
+    architecture = @"arm64";
 #endif
     return architecture;
 }
@@ -169,15 +171,12 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
 + (NSString *)resolution
 {
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     CGRect bounds = UIScreen.mainScreen.bounds;
     CGFloat scale = UIScreen.mainScreen.scale;
 #elif TARGET_OS_WATCH
     CGRect bounds = WKInterfaceDevice.currentDevice.screenBounds;
     CGFloat scale = WKInterfaceDevice.currentDevice.screenScale;
-#elif TARGET_OS_TV
-    CGRect bounds = (CGRect){0,0,1920,1080};
-    CGFloat scale = 1.0;
 #else
     NSRect bounds = NSScreen.mainScreen.frame;
     CGFloat scale = NSScreen.mainScreen.backingScaleFactor;
@@ -187,12 +186,10 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
 + (NSString *)density
 {
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     CGFloat scale = UIScreen.mainScreen.scale;
 #elif TARGET_OS_WATCH
     CGFloat scale = WKInterfaceDevice.currentDevice.screenScale;
-#elif TARGET_OS_TV
-    CGFloat scale = 1.0;
 #else
     CGFloat scale = NSScreen.mainScreen.backingScaleFactor;
 #endif
@@ -387,29 +384,9 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     NSArray *orientations = @[@"Unknown", @"Portrait", @"PortraitUpsideDown", @"LandscapeLeft", @"LandscapeRight", @"FaceUp", @"FaceDown"];
     return orientations[UIDevice.currentDevice.orientation];
 #else
-    return @"Unknown";
+    return nil;
 #endif
 
-}
-
-
-+ (NSString *)OpenGLESversion
-{
-#if TARGET_OS_IOS
-    EAGLContext *aContext;
-
-    aContext = [EAGLContext.alloc initWithAPI:kEAGLRenderingAPIOpenGLES3];
-    if (aContext)
-        return @"3.0";
-
-    aContext = [EAGLContext.alloc initWithAPI:kEAGLRenderingAPIOpenGLES2];
-    if (aContext)
-        return @"2.0";
-
-    return @"1.0";
-#else
-    return @"1.0";
-#endif
 }
 
 
@@ -423,7 +400,7 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
 + (BOOL)isInBackground
 {
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     return UIApplication.sharedApplication.applicationState == UIApplicationStateBackground;
 #else
     return NO;

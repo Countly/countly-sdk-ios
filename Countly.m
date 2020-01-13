@@ -107,14 +107,6 @@
     CountlyLocationManager.sharedInstance.ISOCountryCode = config.ISOCountryCode;
     CountlyLocationManager.sharedInstance.IP = config.IP;
     [CountlyLocationManager.sharedInstance sendLocationInfo];
-
-    CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
-    CountlyCrashReporter.sharedInstance.crashLogLimit = MAX(1, config.crashLogLimit);
-    if ([config.features containsObject:CLYCrashReporting])
-    {
-        CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;
-        [CountlyCrashReporter.sharedInstance startCrashReporting];
-    }
 #endif
 
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
@@ -130,6 +122,14 @@
 #endif
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
+    CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
+    CountlyCrashReporter.sharedInstance.crashLogLimit = MAX(1, config.crashLogLimit);
+    if ([config.features containsObject:CLYCrashReporting])
+    {
+        CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;
+        [CountlyCrashReporter.sharedInstance startCrashReporting];
+    }
+
     if ([config.features containsObject:CLYAutoViewTracking])
     {
         CountlyViewTracking.sharedInstance.isEnabledOnInitialConfig = YES;
@@ -591,7 +591,7 @@
 
 #pragma mark - Crash Reporting
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_TV)
 - (void)recordHandledException:(NSException *)exception
 {
     [CountlyCrashReporter.sharedInstance recordException:exception withStackTrace:nil isFatal:NO];

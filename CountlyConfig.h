@@ -14,6 +14,7 @@ extern NSString* const CLYPushNotifications;
 extern NSString* const CLYCrashReporting;
 extern NSString* const CLYAutoViewTracking;
 #elif TARGET_OS_TV
+extern NSString* const CLYCrashReporting;
 extern NSString* const CLYAutoViewTracking;
 #elif TARGET_OS_OSX
 extern NSString* const CLYPushNotifications;
