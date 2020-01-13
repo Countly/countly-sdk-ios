@@ -65,7 +65,7 @@ else
 fi
 
 DSYM_PATH="${DSYM_FOLDER_PATH}/${DSYM_FILE_NAME}";
-if [ ! -d $DSYM_PATH ]; then
+if [[ ! -d $DSYM_PATH ]]; then
     countly_fail "dSYM path ${DSYM_PATH} does not exist!"
 fi
 
