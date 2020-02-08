@@ -95,6 +95,8 @@ void CountlyPrint(NSString *stringToPrint);
 
 - (void)startAppleWatchMatching;
 - (void)startAttribution;
+
+- (void)observeDeviceOrientationChanges;
 @end
 
 

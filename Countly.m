@@ -150,6 +150,8 @@
     CountlyRemoteConfig.sharedInstance.remoteConfigCompletionHandler = config.remoteConfigCompletionHandler;
     [CountlyRemoteConfig.sharedInstance startRemoteConfig];
 
+    [CountlyCommon.sharedInstance observeDeviceOrientationChanges];
+
     [CountlyConnectionManager.sharedInstance proceedOnQueue];
 }
 
