@@ -62,13 +62,16 @@ void CountlyInternalLog(NSString *format, ...)
     va_list args;
     va_start(args, format);
 
-    NSString* logFormat = [NSString stringWithFormat:@"[Countly] %@", format];
-    NSString* logString = [NSString.alloc initWithFormat:logFormat arguments:args];
-    NSLog(@"%@", logString);
+    NSString* logString = [NSString.alloc initWithFormat:format arguments:args];
+    CountlyPrint(logString);
 
     va_end(args);
 }
 
+void CountlyPrint(NSString *stringToPrint)
+{
+    NSLog(@"[Countly] %@", stringToPrint);
+}
 
 #pragma mark - Time/Date related methods
 - (NSInteger)hourOfDay
