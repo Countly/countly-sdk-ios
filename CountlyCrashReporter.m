@@ -205,7 +205,14 @@ void CountlySignalHandler(int signalCode)
 
     NSMutableArray *backtrace = [NSMutableArray arrayWithCapacity:frameCount];
     for (NSInteger i = 1; i < frameCount; i++)
-        [backtrace addObject:[NSString stringWithUTF8String:lines[i]]];
+    {
+        if (lines[i] != NULL)
+        {
+            NSString *line = [NSString stringWithUTF8String:lines[i]];
+            if (line)
+                [backtrace addObject:line];
+        }
+    }
 
     free(lines);
 
