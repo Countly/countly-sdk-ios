@@ -40,7 +40,10 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
+    {
+        CountlyPrint(@"SDK should be started first!");
         return nil;
+    }
 
     static CountlyConsentManager* s_sharedInstance = nil;
     static dispatch_once_t onceToken;

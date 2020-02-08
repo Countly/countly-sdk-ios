@@ -25,7 +25,10 @@ NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersi
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
+    {
+        CountlyPrint(@"SDK should be started first!");
         return nil;
+    }
 
     static CountlyPersistency* s_sharedInstance = nil;
     static dispatch_once_t onceToken;

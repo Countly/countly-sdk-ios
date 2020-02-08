@@ -36,7 +36,10 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
+    {
+        CountlyPrint(@"SDK should be started first!");
         return nil;
+    }
 
     static CountlyViewTracking* s_sharedInstance = nil;
     static dispatch_once_t onceToken;

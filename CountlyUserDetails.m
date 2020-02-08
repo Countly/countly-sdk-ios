@@ -170,7 +170,10 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 - (void)save
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
+    {
+        CountlyPrint(@"SDK should be started first!");
         return;
+    }
 
     if (!CountlyConsentManager.sharedInstance.consentForUserDetails)
         return;
