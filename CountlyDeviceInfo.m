@@ -15,6 +15,8 @@
 #if TARGET_OS_IOS
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import <CoreTelephony/CTCarrier.h>
+#elif TARGET_OS_OSX
+#import <IOKit/ps/IOPowerSources.h>
 #endif
 
 NSString* const kCountlyMetricKeyDevice             = @"_device";
@@ -131,6 +133,8 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     }
 #elif TARGET_OS_TV
     architecture = @"arm64";
+#elif TARGET_OS_OSX
+    architecture = @"x86_64";
 #endif
     return architecture;
 }
@@ -373,6 +377,16 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     {
         return 100;
     }
+#elif TARGET_OS_OSX
+    CFTypeRef sourcesInfo = IOPSCopyPowerSourcesInfo();
+    NSArray *sources = (__bridge NSArray*)IOPSCopyPowerSourcesList(sourcesInfo);
+    NSDictionary *source = sources.firstObject;
+    if (!source)
+        return 100;
+
+    NSInteger currentLevel = ((NSNumber *)(source[@kIOPSCurrentCapacityKey])).integerValue;
+    NSInteger maxLevel = ((NSNumber *)(source[@kIOPSMaxCapacityKey])).integerValue;
+    return (currentLevel / (float)maxLevel) * 100;
 #else
     return 100;
 #endif

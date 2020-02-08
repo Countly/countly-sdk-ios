@@ -18,6 +18,7 @@
     NSString* const CLYAutoViewTracking = @"CLYAutoViewTracking";
 #elif TARGET_OS_OSX
     NSString* const CLYPushNotifications = @"CLYPushNotifications";
+    NSString* const CLYCrashReporting = @"CLYCrashReporting";
 #endif
 
 
