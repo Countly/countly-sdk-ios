@@ -7,7 +7,7 @@
 #import <Foundation/Foundation.h>
 
 @interface CountlyCrashReporter : NSObject
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_OSX)
 @property (nonatomic) BOOL isEnabledOnInitialConfig;
 @property (nonatomic) NSDictionary<NSString *, NSString *>* crashSegmentation;
 @property (nonatomic) NSUInteger crashLogLimit;
