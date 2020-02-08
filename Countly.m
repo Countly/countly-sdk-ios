@@ -593,7 +593,7 @@
 
 #pragma mark - Crash Reporting
 
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_OSX)
 - (void)recordHandledException:(NSException *)exception
 {
     [CountlyCrashReporter.sharedInstance recordException:exception withStackTrace:nil isFatal:NO];
