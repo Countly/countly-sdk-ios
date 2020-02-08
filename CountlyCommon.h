@@ -23,8 +23,10 @@
 
 #if DEBUG
 #define COUNTLY_LOG(fmt, ...) CountlyInternalLog(fmt, ##__VA_ARGS__)
+//#define COUNTLY_PRINT(string) CountlyPrint(string)
 #else
 #define COUNTLY_LOG(...)
+//#define COUNTLY_PRINT(string)
 #endif
 
 #if TARGET_OS_IOS
@@ -74,6 +76,7 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 @property (nonatomic) BOOL manualSessionHandling;
 
 void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
+void CountlyPrint(NSString *stringToPrint);
 
 + (instancetype)sharedInstance;
 - (NSInteger)hourOfDay;
