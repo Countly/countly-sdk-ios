@@ -313,3 +313,36 @@ void CountlySignalHandler(int signalCode)
 }
 #endif
 @end
+
+
+
+#if (TARGET_OS_OSX)
+@implementation CLYExceptionHandlingApplication
+
+- (void)reportException:(NSException *)exception
+{
+    [super reportException:exception];
+
+    //NOTE: Custom UncaughtExceptionHandler is called with an irrelevant stack trace, not the original crash call stack trace.
+    //NOTE: And system's own UncaughtExceptionHandler handles the exception by just printing it to the Console.
+    //NOTE: So, we intercept the exception here and record manually.
+    [CountlyCrashReporter.sharedInstance recordException:exception withStackTrace:nil isFatal:NO];
+}
+
+- (void)sendEvent:(NSEvent *)theEvent
+{
+    //NOTE: Exceptions caused by UI related events (which run on main thread by default) seem to not trigger reportException: method.
+    //NOTE: So, we execute sendEvent: in a try-catch block to catch them.
+
+    @try
+    {
+        [super sendEvent:theEvent];
+    }
+    @catch (NSException *exception)
+    {
+        [self reportException:exception];
+    }
+}
+
+@end
+#endif

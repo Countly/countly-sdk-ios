@@ -19,3 +19,11 @@
 - (void)log:(NSString *)log;
 #endif
 @end
+
+
+#if (TARGET_OS_OSX)
+#import <Cocoa/Cocoa.h>
+//NOTE: Due to some macOS innerworkings limitations, NSPrincipalClass in the app's Info.plist file needs to be set as CLYExceptionHandlingApplication.
+@interface CLYExceptionHandlingApplication : NSApplication
+@end
+#endif
