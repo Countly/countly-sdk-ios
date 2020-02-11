@@ -187,15 +187,10 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     if (CountlyCrashReporter.sharedInstance.customCrashLogs)
         crashReport[kCountlyCRKeyLogs] = [CountlyCrashReporter.sharedInstance.customCrashLogs componentsJoinedByString:@"\n"];
 
-    if (!isAutoDetect)
-    {
-        [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:NO];
-        return;
-    }
+    [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:isAutoDetect];
 
-    [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:YES];
-
-    [CountlyCrashReporter.sharedInstance stopCrashReporting];
+    if (isAutoDetect)
+        [CountlyCrashReporter.sharedInstance stopCrashReporting];
 }
 
 void CountlySignalHandler(int signalCode)
