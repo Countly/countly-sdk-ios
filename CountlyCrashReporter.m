@@ -197,7 +197,13 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
 
     //NOTE: Do not send crash report if it is matching optional regex filter.
     if (!matchesFilter)
+    {
         [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:isAutoDetect];
+    }
+    else
+    {
+        COUNTLY_LOG(@"Crash matches filter and it will not be processed.");
+    }
 
     if (isAutoDetect)
         [CountlyCrashReporter.sharedInstance stopCrashReporting];
