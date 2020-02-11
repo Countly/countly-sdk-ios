@@ -139,14 +139,16 @@ void CountlyUncaughtExceptionHandler(NSException *exception)
 
 void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDetect)
 {
-    NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
-
     const NSInteger kCLYMebibit = 1048576;
+
     NSArray* stackTrace = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
     if (!stackTrace)
         stackTrace = exception.callStackSymbols;
 
-    crashReport[kCountlyCRKeyError] = [stackTrace componentsJoinedByString:@"\n"];
+    NSString* stackTraceJoined = [stackTrace componentsJoinedByString:@"\n"];
+
+    NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
+    crashReport[kCountlyCRKeyError] = stackTraceJoined;
     crashReport[kCountlyCRKeyBinaryImages] = [CountlyCrashReporter.sharedInstance binaryImagesForStackTrace:stackTrace];
     crashReport[kCountlyCRKeyOS] = CountlyDeviceInfo.osName;
     crashReport[kCountlyCRKeyOSVersion] = CountlyDeviceInfo.osVersion;
