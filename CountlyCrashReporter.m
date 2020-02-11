@@ -147,6 +147,14 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
 
     NSString* stackTraceJoined = [stackTrace componentsJoinedByString:@"\n"];
 
+    BOOL matchesFilter = NO;
+    if (CountlyCrashReporter.sharedInstance.crashFilter)
+    {
+        matchesFilter = [CountlyCrashReporter.sharedInstance isMatchingFilter:stackTraceJoined] ||
+                        [CountlyCrashReporter.sharedInstance isMatchingFilter:exception.description] ||
+                        [CountlyCrashReporter.sharedInstance isMatchingFilter:exception.name];
+    }
+
     NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
     crashReport[kCountlyCRKeyError] = stackTraceJoined;
     crashReport[kCountlyCRKeyBinaryImages] = [CountlyCrashReporter.sharedInstance binaryImagesForStackTrace:stackTrace];
@@ -187,7 +195,9 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     if (CountlyCrashReporter.sharedInstance.customCrashLogs)
         crashReport[kCountlyCRKeyLogs] = [CountlyCrashReporter.sharedInstance.customCrashLogs componentsJoinedByString:@"\n"];
 
-    [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:isAutoDetect];
+    //NOTE: Do not send crash report if it is matching optional regex filter.
+    if (!matchesFilter)
+        [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:isAutoDetect];
 
     if (isAutoDetect)
         [CountlyCrashReporter.sharedInstance stopCrashReporting];
@@ -318,6 +328,20 @@ void CountlySignalHandler(int signalCode)
 
     return [NSDictionary dictionaryWithDictionary:binaryImages];
 }
+
+- (BOOL)isMatchingFilter:(NSString *)string
+{
+    if (!self.crashFilter)
+        return NO;
+
+    NSUInteger numberOfMatches = [self.crashFilter numberOfMatchesInString:string options:0 range:(NSRange){0, string.length}];
+
+    if (numberOfMatches == 0)
+        return NO;
+
+    return YES;
+}
+
 #endif
 @end
 
