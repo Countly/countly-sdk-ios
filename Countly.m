@@ -124,6 +124,7 @@
 #if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_OSX)
     CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
     CountlyCrashReporter.sharedInstance.crashLogLimit = MAX(1, config.crashLogLimit);
+    CountlyCrashReporter.sharedInstance.crashFilter = config.crashFilter;
     if ([config.features containsObject:CLYCrashReporting])
     {
         CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;

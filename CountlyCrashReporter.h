@@ -11,6 +11,7 @@
 @property (nonatomic) BOOL isEnabledOnInitialConfig;
 @property (nonatomic) NSDictionary<NSString *, NSString *>* crashSegmentation;
 @property (nonatomic) NSUInteger crashLogLimit;
+@property (nonatomic) NSRegularExpression* crashFilter;
 
 + (instancetype)sharedInstance;
 - (void)startCrashReporting;
