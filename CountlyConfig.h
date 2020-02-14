@@ -13,6 +13,8 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString* const CLYPushNotifications;
 extern NSString* const CLYCrashReporting;
 extern NSString* const CLYAutoViewTracking;
+#elif TARGET_OS_WATCH
+extern NSString* const CLYCrashReporting;
 #elif TARGET_OS_TV
 extern NSString* const CLYCrashReporting;
 extern NSString* const CLYAutoViewTracking;
