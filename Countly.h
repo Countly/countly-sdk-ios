@@ -369,7 +369,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 #pragma mark - Crash Reporting
-#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_OSX)
+
 /**
  * Records a handled exception manually.
  * @param exception Exception to be recorded
@@ -404,8 +404,6 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Calling this method will have no effect.
  */
 - (void)crashLog:(NSString *)format, ... NS_FORMAT_FUNCTION(1,2) DEPRECATED_MSG_ATTRIBUTE("Use 'recordCrashLog:' method instead!");
-
-#endif
 
 
 
