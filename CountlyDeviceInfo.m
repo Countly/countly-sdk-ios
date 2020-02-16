@@ -402,7 +402,9 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 {
 #if TARGET_OS_IOS
     NSArray *orientations = @[@"Unknown", @"Portrait", @"PortraitUpsideDown", @"LandscapeLeft", @"LandscapeRight", @"FaceUp", @"FaceDown"];
-    return orientations[UIDevice.currentDevice.orientation];
+    UIDeviceOrientation orientation = UIDevice.currentDevice.orientation;
+    if (orientation >= 0 && orientation < orientations.count)
+        return orientations[orientation];
 #elif TARGET_OS_WATCH
     if (@available(watchOS 3.0, *))
     {
@@ -411,13 +413,9 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
         if (orientation >= 0 && orientation < orientations.count)
             return orientations[orientation];
     }
-    return nil;
-#else
-    return nil;
 #endif
-
+    return nil;
 }
-
 
 + (BOOL)isJailbroken
 {
