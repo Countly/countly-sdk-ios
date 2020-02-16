@@ -93,7 +93,15 @@ fi
 
 # Preparing for upload
 ENDPOINT="/i/crash_symbols/upload_symbol"
-QUERY="?platform=ios&app_key=${APPKEY}&build=${BUILD_UUIDS}"
+
+PLATFORM="ios" #This value is common for all iOS/iPadOS/watchOS/tvOS/macOS
+
+EPN=${EFFECTIVE_PLATFORM_NAME:1}
+if [[ -z $EPN ]]; then
+EPN="macos"
+fi
+
+QUERY="?platform=${PLATFORM}&epn=${EPN}&app_key=${APPKEY}&build=${BUILD_UUIDS}"
 URL="${HOST}${ENDPOINT}${QUERY}"
 countly_log "Uploading to ${URL}"
 
