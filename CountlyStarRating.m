@@ -210,12 +210,10 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
     if (rating != 0)
     {
-        NSDictionary* segmentation =
-        @{
-            kCountlySRKeyPlatform: CountlyDeviceInfo.osName,
-            kCountlySRKeyAppVersion: CountlyDeviceInfo.appVersion,
-            kCountlySRKeyRating: @(rating)
-        };
+        NSMutableDictionary* segmentation = NSMutableDictionary.new;
+        segmentation[kCountlySRKeyPlatform] = CountlyDeviceInfo.osName;
+        segmentation[kCountlySRKeyAppVersion] = CountlyDeviceInfo.appVersion;
+        segmentation[kCountlySRKeyRating] =  @(rating);
 
         [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventStarRating segmentation:segmentation];
     }
