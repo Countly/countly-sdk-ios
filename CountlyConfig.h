@@ -239,8 +239,9 @@ extern NSString* const CLYPushTestModeTestFlightOrAdHoc;
 @property (nonatomic) BOOL manualSessionHandling;
 
 /**
- * For enabling automatic handling of Apple Watch related features.
- * @discussion If set, Apple Watch related features such as parent device matching, pairing status, and watch app installing status will be handled automatically. Required for using Countly on Apple Watch apps.
+ * For enabling automatic handling of Apple Watch related features for iOS apps with a watchOS counterpart app.
+ * @discussion If set on both iOS and watchOS app, Apple Watch related features such as parent device matching, pairing status, and watch app installing status will be handled automatically.
+ * @discussion This flag should not be set on independent watchOS apps.
  */
 @property (nonatomic) BOOL enableAppleWatch;
 
