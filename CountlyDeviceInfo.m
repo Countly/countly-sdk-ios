@@ -359,12 +359,14 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
 + (unsigned long long)freeDisk
 {
-    return [[NSFileManager.defaultManager attributesOfFileSystemForPath:NSHomeDirectory() error:nil][NSFileSystemFreeSize] longLongValue];
+     NSDictionary *homeDirectory = [NSFileManager.defaultManager attributesOfFileSystemForPath:NSHomeDirectory() error:nil];
+    return [homeDirectory[NSFileSystemFreeSize] longLongValue];
 }
 
 + (unsigned long long)totalDisk
 {
-    return [[NSFileManager.defaultManager attributesOfFileSystemForPath:NSHomeDirectory() error:nil][NSFileSystemSize] longLongValue];
+    NSDictionary *homeDirectory = [NSFileManager.defaultManager attributesOfFileSystemForPath:NSHomeDirectory() error:nil];
+    return [homeDirectory[NSFileSystemSize] longLongValue];
 }
 
 + (NSInteger)batteryLevel
