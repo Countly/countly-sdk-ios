@@ -121,7 +121,6 @@
     }
 #endif
 
-#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_OSX)
     CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
     CountlyCrashReporter.sharedInstance.crashLogLimit = MAX(1, config.crashLogLimit);
     CountlyCrashReporter.sharedInstance.crashFilter = config.crashFilter;
@@ -130,7 +129,6 @@
         CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;
         [CountlyCrashReporter.sharedInstance startCrashReporting];
     }
-#endif
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if ([config.features containsObject:CLYAutoViewTracking])
@@ -605,7 +603,6 @@
 
 #pragma mark - Crash Reporting
 
-#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_OSX)
 - (void)recordHandledException:(NSException *)exception
 {
     [CountlyCrashReporter.sharedInstance recordException:exception withStackTrace:nil isFatal:NO];
@@ -630,7 +627,6 @@
 {
 
 }
-#endif
 
 
 

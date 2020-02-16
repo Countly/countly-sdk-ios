@@ -51,8 +51,6 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 
 @implementation CountlyCrashReporter
 
-#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_OSX)
-
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
@@ -348,7 +346,6 @@ void CountlySignalHandler(int signalCode)
     return YES;
 }
 
-#endif
 @end
 
 
