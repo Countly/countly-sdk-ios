@@ -112,13 +112,11 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 {
     NSString* architecture = nil;
 
-#if TARGET_OS_IOS
-    size_t size;
     cpu_type_t type;
-
-    size = sizeof(type);
+    size_t size = sizeof(type);
     sysctlbyname("hw.cputype", &type, &size, NULL, 0);
 
+#if TARGET_OS_IOS
     if (type == CPU_TYPE_ARM64)
         architecture = @"arm64";
     else if (type == CPU_TYPE_ARM)
@@ -131,6 +129,11 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
         else
             architecture = @"armv7";
     }
+#elif TARGET_OS_WATCH
+    if (type == CPU_TYPE_ARM64_32)
+        architecture = @"arm64_32";
+    else
+        architecture = @"armv7k";
 #elif TARGET_OS_TV
     architecture = @"arm64";
 #elif TARGET_OS_OSX
