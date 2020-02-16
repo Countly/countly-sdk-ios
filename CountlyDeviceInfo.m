@@ -157,12 +157,10 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
 + (NSString *)osVersion
 {
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     return UIDevice.currentDevice.systemVersion;
 #elif TARGET_OS_WATCH
     return WKInterfaceDevice.currentDevice.systemVersion;
-#elif TARGET_OS_TV
-    return UIDevice.currentDevice.systemVersion;
 #else
     return [NSDictionary dictionaryWithContentsOfFile:@"/System/Library/CoreServices/SystemVersion.plist"][@"ProductVersion"];
 #endif
