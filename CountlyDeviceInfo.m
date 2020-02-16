@@ -137,9 +137,11 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     return @"watchOS";
 #elif TARGET_OS_TV
     return @"tvOS";
-#else
+#elif TARGET_OS_OSX
     return @"macOS";
 #endif
+
+    return nil;
 }
 
 + (NSString *)osVersion
@@ -148,9 +150,11 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     return UIDevice.currentDevice.systemVersion;
 #elif TARGET_OS_WATCH
     return WKInterfaceDevice.currentDevice.systemVersion;
-#else
+#elif TARGET_OS_OSX
     return [NSDictionary dictionaryWithContentsOfFile:@"/System/Library/CoreServices/SystemVersion.plist"][@"ProductVersion"];
 #endif
+
+    return nil;
 }
 
 + (NSString *)carrier
@@ -170,10 +174,13 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 #elif TARGET_OS_WATCH
     CGRect bounds = WKInterfaceDevice.currentDevice.screenBounds;
     CGFloat scale = WKInterfaceDevice.currentDevice.screenScale;
-#else
+#elif TARGET_OS_OSX
     NSRect bounds = NSScreen.mainScreen.frame;
     CGFloat scale = NSScreen.mainScreen.backingScaleFactor;
+#else
+    return nil;
 #endif
+
     return [NSString stringWithFormat:@"%gx%g", bounds.size.width * scale, bounds.size.height * scale];
 }
 
@@ -183,9 +190,12 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     CGFloat scale = UIScreen.mainScreen.scale;
 #elif TARGET_OS_WATCH
     CGFloat scale = WKInterfaceDevice.currentDevice.screenScale;
-#else
+#elif TARGET_OS_OSX
     CGFloat scale = NSScreen.mainScreen.backingScaleFactor;
+#else
+    return nil;
 #endif
+
     return [NSString stringWithFormat:@"@%dx", (int)scale];
 }
 
@@ -378,9 +388,9 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     NSInteger currentLevel = ((NSNumber *)(source[@kIOPSCurrentCapacityKey])).integerValue;
     NSInteger maxLevel = ((NSNumber *)(source[@kIOPSMaxCapacityKey])).integerValue;
     return (currentLevel / (float)maxLevel) * 100;
-#else
-    return 100;
 #endif
+
+    return 100;
 }
 
 + (NSString *)orientation
@@ -399,6 +409,7 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
             return orientations[orientation];
     }
 #endif
+
     return nil;
 }
 
