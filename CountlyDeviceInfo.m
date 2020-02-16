@@ -173,6 +173,7 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 #if TARGET_OS_IOS
     return CountlyDeviceInfo.sharedInstance.networkInfo.subscriberCellularProvider.carrierName;
 #endif
+    //NOTE: it is not possible to get carrier info on Apple Watches as CoreTelephony is not available.
     return nil;
 }
 
