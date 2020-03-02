@@ -269,7 +269,7 @@ extern NSString* const CLYPushTestModeTestFlightOrAdHoc;
 @property (nonatomic) NSUInteger crashLogLimit;
 
 /**
- * Rregular expression used for filtering crash reports and preventing them from being sent to Countly Server.
+ * Regular expression used for filtering crash reports and preventing them from being sent to Countly Server.
  * @discussion If a crash's name, description or any line of stack trace matches given regular expression, it will not be sent to Countly Server.
  */
 @property (nonatomic) NSRegularExpression* crashFilter;
