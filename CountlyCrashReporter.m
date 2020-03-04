@@ -168,10 +168,14 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 
     NSString* reportText = [PLCrashReportTextFormatter stringValueForCrashReport:report withTextFormat:PLCrashReportTextFormatiOS];
 
-    //TODO: send crash report here
+    //TODO: add custom crash segmentation
+    //TODO: add custom crash logs
+    NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
+    crashReport[kCountlyCRKeyError] = reportText;
+
+    [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:NO];
 
     [self.crashReporter purgePendingCrashReport];
-
 }
 
 #endif
