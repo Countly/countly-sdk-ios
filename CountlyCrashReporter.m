@@ -8,6 +8,13 @@
 #import <mach-o/dyld.h>
 #include <execinfo.h>
 
+#if __has_include(<CrashReporter/CrashReporter.h>)
+    #define COUNTLY_PLCRASHREPORTER_EXISTS true
+    #import <CrashReporter/CrashReporter.h>
+#else
+
+#endif
+
 NSString* const kCountlyExceptionUserInfoBacktraceKey = @"kCountlyExceptionUserInfoBacktraceKey";
 
 NSString* const kCountlyCRKeyBinaryImages      = @"_binary_images";
@@ -85,6 +92,16 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 
     if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
         return;
+
+    if (self.shouldUsePLCrashReporter)
+    {
+#ifdef COUNTLY_PLCRASHREPORTER_EXISTS
+        //TODO: setup PLCrashReporter here
+#else
+        [NSException raise:@"CountlyPLCrashReporterDependencyNotFoundException" format:@"PLCrashReporter dependency can not be found in Project"];
+#endif
+        return;
+    }
 
     NSSetUncaughtExceptionHandler(&CountlyUncaughtExceptionHandler);
     signal(SIGABRT, CountlySignalHandler);
