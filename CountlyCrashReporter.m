@@ -172,6 +172,8 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
     //TODO: add custom crash logs
     NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
     crashReport[kCountlyCRKeyError] = reportText;
+    crashReport[kCountlyCRKeyOS] = CountlyDeviceInfo.osName;
+    crashReport[kCountlyCRKeyAppVersion] = report.applicationInfo.applicationVersion;
 
     [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:NO];
 
