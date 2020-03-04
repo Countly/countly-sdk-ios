@@ -43,6 +43,7 @@ NSString* const kCountlyCRKeyBackground        = @"_background";
 NSString* const kCountlyCRKeyRun               = @"_run";
 NSString* const kCountlyCRKeyCustom            = @"_custom";
 NSString* const kCountlyCRKeyLogs              = @"_logs";
+NSString* const kCountlyCRKeyPLCrash           = @"_plcrash";
 NSString* const kCountlyCRKeySignalCode        = @"signal_code";
 NSString* const kCountlyCRKeyImageLoadAddress  = @"la";
 NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
@@ -174,7 +175,7 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
     crashReport[kCountlyCRKeyError] = reportText;
     crashReport[kCountlyCRKeyOS] = CountlyDeviceInfo.osName;
     crashReport[kCountlyCRKeyAppVersion] = report.applicationInfo.applicationVersion;
-
+    crashReport[kCountlyCRKeyPLCrash] = @YES;
     [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:NO];
 
     [self.crashReporter purgePendingCrashReport];
