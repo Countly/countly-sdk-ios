@@ -274,6 +274,13 @@ extern NSString* const CLYPushTestModeTestFlightOrAdHoc;
  */
 @property (nonatomic) NSRegularExpression* crashFilter;
 
+/**
+ * For using PLCrashReporter instead of defult crash handling mechanism.
+ * @discussion If set, SDK will be using PLCrashReporter dependecy for creating crash reports.
+ * @discussion PLCrashReporter option is available only for iOS apps.
+ */
+@property (nonatomic) BOOL shouldUsePLCrashReporter;
+
 #pragma mark -
 
 /**
