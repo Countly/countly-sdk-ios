@@ -139,7 +139,8 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 
 - (void)startPLCrashReporter
 {
-    PLCrashReporterConfig* config = [PLCrashReporterConfig.alloc initWithSignalHandlerType:PLCrashReporterSignalHandlerTypeBSD symbolicationStrategy:PLCrashReporterSymbolicationStrategyNone];
+    PLCrashReporterSignalHandlerType type = self.shouldUseMachSignalHandler ? PLCrashReporterSignalHandlerTypeMach : PLCrashReporterSignalHandlerTypeBSD;
+    PLCrashReporterConfig* config = [PLCrashReporterConfig.alloc initWithSignalHandlerType:type symbolicationStrategy:PLCrashReporterSymbolicationStrategyNone];
 
     self.crashReporter = [PLCrashReporter.alloc initWithConfiguration:config];
 

@@ -282,6 +282,16 @@ extern NSString* const CLYPushTestModeTestFlightOrAdHoc;
  */
 @property (nonatomic) BOOL shouldUsePLCrashReporter;
 
+/**
+ * For using Mach type signal handler with PLCrashReporter.
+ * @discussion PLCrashReporter has two different signal handling implementations with different traits:
+ * @discussion 1) BSD: PLCrashReporterSignalHandlerTypeBSD
+ * @discussion 2) Mach: PLCrashReporterSignalHandlerTypeMach
+ * @discussion For more information about PLCrashReporter please see: https://github.com/microsoft/plcrashreporter
+ * @discussion By default, BSD type will be used.
+ */
+@property (nonatomic) BOOL shouldUseMachSignalHandler;
+
 #pragma mark -
 
 /**

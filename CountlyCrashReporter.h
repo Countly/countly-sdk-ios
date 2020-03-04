@@ -12,6 +12,7 @@
 @property (nonatomic) NSUInteger crashLogLimit;
 @property (nonatomic) NSRegularExpression* crashFilter;
 @property (nonatomic) BOOL shouldUsePLCrashReporter;
+@property (nonatomic) BOOL shouldUseMachSignalHandler;
 
 + (instancetype)sharedInstance;
 - (void)startCrashReporting;
