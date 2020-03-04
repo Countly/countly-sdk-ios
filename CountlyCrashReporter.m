@@ -53,6 +53,9 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 @property (nonatomic) NSDateFormatter* dateFormatter;
 @property (nonatomic) NSString* buildUUID;
 @property (nonatomic) NSString* executableName;
+#ifdef COUNTLY_PLCRASHREPORTER_EXISTS
+@property (nonatomic) PLCrashReporter* crashReporter;
+#endif
 @end
 
 
@@ -96,7 +99,7 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
     if (self.shouldUsePLCrashReporter)
     {
 #ifdef COUNTLY_PLCRASHREPORTER_EXISTS
-        //TODO: setup PLCrashReporter here
+        [self startPLCrashReporter];
 #else
         [NSException raise:@"CountlyPLCrashReporterDependencyNotFoundException" format:@"PLCrashReporter dependency can not be found in Project"];
 #endif
@@ -131,6 +134,47 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
     self.customCrashLogs = nil;
 }
 
+#ifdef COUNTLY_PLCRASHREPORTER_EXISTS
+
+- (void)startPLCrashReporter
+{
+    PLCrashReporterConfig* config = [PLCrashReporterConfig.alloc initWithSignalHandlerType:PLCrashReporterSignalHandlerTypeBSD symbolicationStrategy:PLCrashReporterSymbolicationStrategyNone];
+
+    self.crashReporter = [PLCrashReporter.alloc initWithConfiguration:config];
+
+    if (self.crashReporter.hasPendingCrashReport)
+        [self handlePendingCrashReport];
+
+    [self.crashReporter enableCrashReporter];
+}
+
+- (void)handlePendingCrashReport
+{
+    NSError *error;
+
+    NSData* crashData = [self.crashReporter loadPendingCrashReportDataAndReturnError:&error];
+    if (!crashData)
+    {
+        COUNTLY_LOG(@"Could not load crash report data: %@", error);
+        return;
+    }
+
+    PLCrashReport *report = [PLCrashReport.alloc initWithData:crashData error:&error];
+    if (!report)
+    {
+        COUNTLY_LOG(@"Could not initialize crash report using data %@", error);
+        return;
+    }
+
+    NSString* reportText = [PLCrashReportTextFormatter stringValueForCrashReport:report withTextFormat:PLCrashReportTextFormatiOS];
+
+    //TODO: send crash report here
+
+    [self.crashReporter purgePendingCrashReport];
+
+}
+
+#endif
 
 - (void)recordException:(NSException *)exception withStackTrace:(NSArray *)stackTrace isFatal:(BOOL)isFatal
 {
