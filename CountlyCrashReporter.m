@@ -314,10 +314,19 @@ void CountlySignalHandler(int signalCode)
         log = [log substringToIndex:kCountlyCustomCrashLogLengthLimit];
 
     NSString* logWithDateTime = [NSString stringWithFormat:@"<%@> %@",[self.dateFormatter stringFromDate:NSDate.date], log];
-    [self.customCrashLogs addObject:logWithDateTime];
 
-    if (self.customCrashLogs.count > self.crashLogLimit)
-        [self.customCrashLogs removeObjectAtIndex:0];
+    if (self.shouldUsePLCrashReporter)
+    {
+        [CountlyPersistency.sharedInstance writeCustomCrashLogToFile:logWithDateTime];
+        //TODO: delete file after crash report is handled by PL
+    }
+    else
+    {
+        [self.customCrashLogs addObject:logWithDateTime];
+
+        if (self.customCrashLogs.count > self.crashLogLimit)
+            [self.customCrashLogs removeObjectAtIndex:0];
+    }
 }
 
 - (NSDictionary *)binaryImagesForStackTrace:(NSArray *)stackTrace

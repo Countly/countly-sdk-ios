@@ -198,6 +198,39 @@ NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersi
 
 #pragma mark ---
 
+- (void)writeCustomCrashLogToFile:(NSString *)log
+{
+    NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
+
+    static NSURL* crashLogFileURL = nil;
+
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        crashLogFileURL = [[self storageDirectoryURL] URLByAppendingPathComponent:kCountlyCustomCrashLogFileName];
+    });
+
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
+    {
+        NSString* line = [NSString stringWithFormat:@"%@\n", log];
+        NSFileHandle* fileHandle = [NSFileHandle fileHandleForWritingAtPath:crashLogFileURL.path];
+        if (fileHandle)
+        {
+            [fileHandle seekToEndOfFile];
+            [fileHandle writeData:[line dataUsingEncoding:NSUTF8StringEncoding]];
+            [fileHandle closeFile];
+        }
+        else
+        {
+            NSError* error = nil;
+            [line writeToFile:crashLogFileURL.path atomically:YES encoding:NSUTF8StringEncoding error:&error];
+            if (error){ COUNTLY_LOG(@"Crash Log File can not be created: \n%@", error); }
+        }
+    });
+}
+
+#pragma mark ---
+
 - (NSURL *)storageDirectoryURL
 {
     static NSURL* URL = nil;

@@ -26,6 +26,8 @@
 - (CountlyEvent *)timedEventForKey:(NSString *)key;
 - (void)clearAllTimedEvents;
 
+- (void)writeCustomCrashLogToFile:(NSString *)log;
+
 - (void)saveToFile;
 - (void)saveToFileSync;
 
