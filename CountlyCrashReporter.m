@@ -178,8 +178,7 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
     crashReport[kCountlyCRKeyCustom] = [CountlyPersistency.sharedInstance customCrashLogsFromFile];
     [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:NO];
 
-    //TODO: delete custom crash logs file after crash report is handled by PL
-
+    [CountlyPersistency.sharedInstance deleteCustomCrashLogFile];
     [self.crashReporter purgePendingCrashReport];
 }
 
