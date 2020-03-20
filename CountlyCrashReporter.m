@@ -170,7 +170,6 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 
     NSString* reportText = [PLCrashReportTextFormatter stringValueForCrashReport:report withTextFormat:PLCrashReportTextFormatiOS];
 
-    //TODO: add custom crash segmentation
     //TODO: add custom crash logs
     NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
     crashReport[kCountlyCRKeyError] = reportText;
