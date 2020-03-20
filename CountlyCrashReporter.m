@@ -170,13 +170,15 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 
     NSString* reportText = [PLCrashReportTextFormatter stringValueForCrashReport:report withTextFormat:PLCrashReportTextFormatiOS];
 
-    //TODO: add custom crash logs
     NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
     crashReport[kCountlyCRKeyError] = reportText;
     crashReport[kCountlyCRKeyOS] = CountlyDeviceInfo.osName;
     crashReport[kCountlyCRKeyAppVersion] = report.applicationInfo.applicationVersion;
     crashReport[kCountlyCRKeyPLCrash] = @YES;
+    crashReport[kCountlyCRKeyCustom] = [CountlyPersistency.sharedInstance customCrashLogsFromFile];
     [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:NO];
+
+    //TODO: delete custom crash logs file after crash report is handled by PL
 
     [self.crashReporter purgePendingCrashReport];
 }
@@ -317,7 +319,6 @@ void CountlySignalHandler(int signalCode)
     if (self.shouldUsePLCrashReporter)
     {
         [CountlyPersistency.sharedInstance writeCustomCrashLogToFile:logWithDateTime];
-        //TODO: delete file after crash report is handled by PL
     }
     else
     {
