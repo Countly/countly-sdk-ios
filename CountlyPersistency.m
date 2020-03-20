@@ -243,6 +243,14 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
     return storedCustomCrashLogs;
 }
 
+- (void)deleteCustomCrashLogFile
+{
+    NSURL* crashLogFileURL = [[self storageDirectoryURL] URLByAppendingPathComponent:kCountlyCustomCrashLogFileName];
+    NSError* error = nil;
+    [NSFileManager.defaultManager removeItemAtURL:crashLogFileURL error:&error];
+    if (error){ COUNTLY_LOG(@"Crash Log File can not be deleted: \n%@", error); }
+}
+
 #pragma mark ---
 
 - (NSURL *)storageDirectoryURL
