@@ -27,6 +27,7 @@
 - (void)clearAllTimedEvents;
 
 - (void)writeCustomCrashLogToFile:(NSString *)log;
+- (NSString *)customCrashLogsFromFile;
 
 - (void)saveToFile;
 - (void)saveToFileSync;

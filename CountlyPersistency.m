@@ -22,6 +22,8 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 NSString* const kCountlyNotificationPermissionKey = @"kCountlyNotificationPermissionKey";
 NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersistencyKey";
 
+NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
+
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
@@ -200,8 +202,6 @@ NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersi
 
 - (void)writeCustomCrashLogToFile:(NSString *)log
 {
-    NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
-
     static NSURL* crashLogFileURL = nil;
 
     static dispatch_once_t onceToken;
@@ -227,6 +227,20 @@ NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersi
             if (error){ COUNTLY_LOG(@"Crash Log File can not be created: \n%@", error); }
         }
     });
+}
+
+- (NSString *)customCrashLogsFromFile
+{
+    NSURL* crashLogFileURL = [[self storageDirectoryURL] URLByAppendingPathComponent:kCountlyCustomCrashLogFileName];
+    NSData* readData = [NSData dataWithContentsOfURL:crashLogFileURL];
+
+    NSString* storedCustomCrashLogs = nil;
+    if (readData)
+    {
+        storedCustomCrashLogs = [NSString.alloc initWithData:readData encoding:NSUTF8StringEncoding];
+    }
+
+    return storedCustomCrashLogs;
 }
 
 #pragma mark ---
