@@ -198,11 +198,9 @@ NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersi
 
 #pragma mark ---
 
-- (NSURL *)storageFileURL
+- (NSURL *)storageDirectoryURL
 {
-    NSString* const kCountlyPersistencyFileName = @"Countly.dat";
-
-    static NSURL *url = nil;
+    static NSURL* URL = nil;
 
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
@@ -212,23 +210,36 @@ NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersi
 #else
         NSSearchPathDirectory directory = NSApplicationSupportDirectory;
 #endif
-        url = [[NSFileManager.defaultManager URLsForDirectory:directory inDomains:NSUserDomainMask] lastObject];
+        URL = [[NSFileManager.defaultManager URLsForDirectory:directory inDomains:NSUserDomainMask] lastObject];
 
 #if TARGET_OS_OSX
-        url = [url URLByAppendingPathComponent:NSBundle.mainBundle.bundleIdentifier];
+        URL = [URL URLByAppendingPathComponent:NSBundle.mainBundle.bundleIdentifier];
 #endif
         NSError *error = nil;
 
-        if (![NSFileManager.defaultManager fileExistsAtPath:url.path])
+        if (![NSFileManager.defaultManager fileExistsAtPath:URL.path])
         {
-            [NSFileManager.defaultManager createDirectoryAtURL:url withIntermediateDirectories:YES attributes:nil error:&error];
+            [NSFileManager.defaultManager createDirectoryAtURL:URL withIntermediateDirectories:YES attributes:nil error:&error];
             if (error){ COUNTLY_LOG(@"Application Support directory can not be created: \n%@", error); }
         }
-
-        url = [url URLByAppendingPathComponent:kCountlyPersistencyFileName];
     });
 
-    return url;
+    return URL;
+}
+
+- (NSURL *)storageFileURL
+{
+    NSString* const kCountlyPersistencyFileName = @"Countly.dat";
+
+    static NSURL* URL = nil;
+
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        URL = [[self storageDirectoryURL] URLByAppendingPathComponent:kCountlyPersistencyFileName];
+    });
+
+    return URL;
 }
 
 - (void)saveToFile
