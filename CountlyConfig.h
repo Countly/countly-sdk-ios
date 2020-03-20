@@ -276,7 +276,7 @@ extern NSString* const CLYPushTestModeTestFlightOrAdHoc;
 
 /**
  * For using PLCrashReporter instead of default crash handling mechanism.
- * @discussion If set, SDK will be using PLCrashReporter dependecy for creating crash reports.
+ * @discussion If set, SDK will be using PLCrashReporter (1.5.1) dependecy for creating crash reports.
  * @discussion PLCrashReporter option is available only for iOS apps.
  * @discussion For more information about PLCrashReporter please see: https://github.com/microsoft/plcrashreporter
  */
