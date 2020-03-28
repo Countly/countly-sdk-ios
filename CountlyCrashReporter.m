@@ -146,6 +146,8 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 
     if (self.crashReporter.hasPendingCrashReport)
         [self handlePendingCrashReport];
+    else
+        [CountlyPersistency.sharedInstance deleteCustomCrashLogFile];
 
     [self.crashReporter enableCrashReporter];
 }
