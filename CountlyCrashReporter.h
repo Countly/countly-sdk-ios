@@ -13,6 +13,7 @@
 @property (nonatomic) NSRegularExpression* crashFilter;
 @property (nonatomic) BOOL shouldUsePLCrashReporter;
 @property (nonatomic) BOOL shouldUseMachSignalHandler;
+@property (nonatomic, copy) void (^crashOccuredOnPreviousSessionCallback)(NSDictionary * crashReport);
 
 + (instancetype)sharedInstance;
 - (void)startCrashReporting;

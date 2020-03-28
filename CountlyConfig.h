@@ -292,6 +292,13 @@ extern NSString* const CLYPushTestModeTestFlightOrAdHoc;
  */
 @property (nonatomic) BOOL shouldUseMachSignalHandler;
 
+/**
+ * Callback block to be executed when the app is launched again following a crash which is detected by PLCrashReporter on the previous session.
+ * @discussion It has an @c NSDictionary parameter that represents crash report object.
+ * @discussion If @c shouldUsePLCrashReporter flag is not set on initial config, it will never be executed.
+ */
+@property (nonatomic, copy) void (^crashOccuredOnPreviousSessionCallback)(NSDictionary * crashReport);
+
 #pragma mark -
 
 /**

@@ -178,6 +178,10 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
     crashReport[kCountlyCRKeyAppVersion] = report.applicationInfo.applicationVersion;
     crashReport[kCountlyCRKeyPLCrash] = @YES;
     crashReport[kCountlyCRKeyCustom] = [CountlyPersistency.sharedInstance customCrashLogsFromFile];
+
+    if (self.crashOccuredOnPreviousSessionCallback)
+        self.crashOccuredOnPreviousSessionCallback(crashReport);
+
     [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:NO];
 
     [CountlyPersistency.sharedInstance deleteCustomCrashLogFile];
