@@ -182,7 +182,11 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
     if (self.crashOccuredOnPreviousSessionCallback)
         self.crashOccuredOnPreviousSessionCallback(crashReport);
 
-    [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:NO];
+    //NOTE: if shouldSendCrashReportCallback is not set, or set and returns YES, send crash report
+    if (!self.shouldSendCrashReportCallback || self.shouldSendCrashReportCallback(crashReport))
+    {
+        [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:NO];
+    }
 
     [CountlyPersistency.sharedInstance deleteCustomCrashLogFile];
     [self.crashReporter purgePendingCrashReport];

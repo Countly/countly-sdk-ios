@@ -299,6 +299,15 @@ extern NSString* const CLYPushTestModeTestFlightOrAdHoc;
  */
 @property (nonatomic, copy) void (^crashOccuredOnPreviousSessionCallback)(NSDictionary * crashReport);
 
+/**
+ * Callback block to decide whether the crash report detected by PLCrashReporter should be sent to Countly Server or not.
+ * @discussion If not set, crash report will be sent to Countly Server by default.
+ * @discussion If set, crash report will be sent to Countly Server only if `YES` is returned.
+ * @discussion It has an @c NSDictionary parameter that represents crash report object.
+ * @discussion If @c shouldUsePLCrashReporter flag is not set on initial config, it will never be executed.
+ */
+@property (nonatomic, copy) BOOL (^shouldSendCrashReportCallback)(NSDictionary * crashReport);
+
 #pragma mark -
 
 /**
