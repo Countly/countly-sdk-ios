@@ -182,8 +182,19 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
     if (self.crashOccuredOnPreviousSessionCallback)
         self.crashOccuredOnPreviousSessionCallback(crashReport);
 
-    //NOTE: if shouldSendCrashReportCallback is not set, or set and returns YES, send crash report
-    if (!self.shouldSendCrashReportCallback || self.shouldSendCrashReportCallback(crashReport))
+    BOOL shouldSend = YES;
+    if (self.shouldSendCrashReportCallback)
+    {
+        COUNTLY_LOG(@"shouldSendCrashReportCallback is set, asking it if the report should be sent or not.");
+        shouldSend = self.shouldSendCrashReportCallback(crashReport);
+
+        if (shouldSend)
+            COUNTLY_LOG(@"shouldSendCrashReportCallback returned YES, sending the report.");
+        else
+            COUNTLY_LOG(@"shouldSendCrashReportCallback returned NO, not sending the report.");
+    }
+
+    if (shouldSend)
     {
         [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:NO];
     }
