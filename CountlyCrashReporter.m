@@ -8,6 +8,13 @@
 #import <mach-o/dyld.h>
 #include <execinfo.h>
 
+#if __has_include(<CrashReporter/CrashReporter.h>)
+    #define COUNTLY_PLCRASHREPORTER_EXISTS true
+    #import <CrashReporter/CrashReporter.h>
+#else
+
+#endif
+
 NSString* const kCountlyExceptionUserInfoBacktraceKey = @"kCountlyExceptionUserInfoBacktraceKey";
 
 NSString* const kCountlyCRKeyBinaryImages      = @"_binary_images";
@@ -36,6 +43,7 @@ NSString* const kCountlyCRKeyBackground        = @"_background";
 NSString* const kCountlyCRKeyRun               = @"_run";
 NSString* const kCountlyCRKeyCustom            = @"_custom";
 NSString* const kCountlyCRKeyLogs              = @"_logs";
+NSString* const kCountlyCRKeyPLCrash           = @"_plcrash";
 NSString* const kCountlyCRKeySignalCode        = @"signal_code";
 NSString* const kCountlyCRKeyImageLoadAddress  = @"la";
 NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
@@ -46,6 +54,9 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 @property (nonatomic) NSDateFormatter* dateFormatter;
 @property (nonatomic) NSString* buildUUID;
 @property (nonatomic) NSString* executableName;
+#ifdef COUNTLY_PLCRASHREPORTER_EXISTS
+@property (nonatomic) PLCrashReporter* crashReporter;
+#endif
 @end
 
 
@@ -86,6 +97,16 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
     if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
         return;
 
+    if (self.shouldUsePLCrashReporter)
+    {
+#ifdef COUNTLY_PLCRASHREPORTER_EXISTS
+        [self startPLCrashReporter];
+#else
+        [NSException raise:@"CountlyPLCrashReporterDependencyNotFoundException" format:@"PLCrashReporter dependency can not be found in Project"];
+#endif
+        return;
+    }
+
     NSSetUncaughtExceptionHandler(&CountlyUncaughtExceptionHandler);
     signal(SIGABRT, CountlySignalHandler);
     signal(SIGILL, CountlySignalHandler);
@@ -114,6 +135,75 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
     self.customCrashLogs = nil;
 }
 
+#ifdef COUNTLY_PLCRASHREPORTER_EXISTS
+
+- (void)startPLCrashReporter
+{
+    PLCrashReporterSignalHandlerType type = self.shouldUseMachSignalHandler ? PLCrashReporterSignalHandlerTypeMach : PLCrashReporterSignalHandlerTypeBSD;
+    PLCrashReporterConfig* config = [PLCrashReporterConfig.alloc initWithSignalHandlerType:type symbolicationStrategy:PLCrashReporterSymbolicationStrategyNone];
+
+    self.crashReporter = [PLCrashReporter.alloc initWithConfiguration:config];
+
+    if (self.crashReporter.hasPendingCrashReport)
+        [self handlePendingCrashReport];
+    else
+        [CountlyPersistency.sharedInstance deleteCustomCrashLogFile];
+
+    [self.crashReporter enableCrashReporter];
+}
+
+- (void)handlePendingCrashReport
+{
+    NSError *error;
+
+    NSData* crashData = [self.crashReporter loadPendingCrashReportDataAndReturnError:&error];
+    if (!crashData)
+    {
+        COUNTLY_LOG(@"Could not load crash report data: %@", error);
+        return;
+    }
+
+    PLCrashReport *report = [PLCrashReport.alloc initWithData:crashData error:&error];
+    if (!report)
+    {
+        COUNTLY_LOG(@"Could not initialize crash report using data %@", error);
+        return;
+    }
+
+    NSString* reportText = [PLCrashReportTextFormatter stringValueForCrashReport:report withTextFormat:PLCrashReportTextFormatiOS];
+
+    NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
+    crashReport[kCountlyCRKeyError] = reportText;
+    crashReport[kCountlyCRKeyOS] = CountlyDeviceInfo.osName;
+    crashReport[kCountlyCRKeyAppVersion] = report.applicationInfo.applicationVersion;
+    crashReport[kCountlyCRKeyPLCrash] = @YES;
+    crashReport[kCountlyCRKeyCustom] = [CountlyPersistency.sharedInstance customCrashLogsFromFile];
+
+    if (self.crashOccuredOnPreviousSessionCallback)
+        self.crashOccuredOnPreviousSessionCallback(crashReport);
+
+    BOOL shouldSend = YES;
+    if (self.shouldSendCrashReportCallback)
+    {
+        COUNTLY_LOG(@"shouldSendCrashReportCallback is set, asking it if the report should be sent or not.");
+        shouldSend = self.shouldSendCrashReportCallback(crashReport);
+
+        if (shouldSend)
+            COUNTLY_LOG(@"shouldSendCrashReportCallback returned YES, sending the report.");
+        else
+            COUNTLY_LOG(@"shouldSendCrashReportCallback returned NO, not sending the report.");
+    }
+
+    if (shouldSend)
+    {
+        [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:NO];
+    }
+
+    [CountlyPersistency.sharedInstance deleteCustomCrashLogFile];
+    [self.crashReporter purgePendingCrashReport];
+}
+
+#endif
 
 - (void)recordException:(NSException *)exception withStackTrace:(NSArray *)stackTrace isFatal:(BOOL)isFatal
 {
@@ -245,10 +335,18 @@ void CountlySignalHandler(int signalCode)
         log = [log substringToIndex:kCountlyCustomCrashLogLengthLimit];
 
     NSString* logWithDateTime = [NSString stringWithFormat:@"<%@> %@",[self.dateFormatter stringFromDate:NSDate.date], log];
-    [self.customCrashLogs addObject:logWithDateTime];
 
-    if (self.customCrashLogs.count > self.crashLogLimit)
-        [self.customCrashLogs removeObjectAtIndex:0];
+    if (self.shouldUsePLCrashReporter)
+    {
+        [CountlyPersistency.sharedInstance writeCustomCrashLogToFile:logWithDateTime];
+    }
+    else
+    {
+        [self.customCrashLogs addObject:logWithDateTime];
+
+        if (self.customCrashLogs.count > self.crashLogLimit)
+            [self.customCrashLogs removeObjectAtIndex:0];
+    }
 }
 
 - (NSDictionary *)binaryImagesForStackTrace:(NSArray *)stackTrace

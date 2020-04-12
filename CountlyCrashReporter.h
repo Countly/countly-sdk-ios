@@ -11,6 +11,10 @@
 @property (nonatomic) NSDictionary<NSString *, NSString *>* crashSegmentation;
 @property (nonatomic) NSUInteger crashLogLimit;
 @property (nonatomic) NSRegularExpression* crashFilter;
+@property (nonatomic) BOOL shouldUsePLCrashReporter;
+@property (nonatomic) BOOL shouldUseMachSignalHandler;
+@property (nonatomic, copy) void (^crashOccuredOnPreviousSessionCallback)(NSDictionary * crashReport);
+@property (nonatomic, copy) BOOL (^shouldSendCrashReportCallback)(NSDictionary * crashReport);
 
 + (instancetype)sharedInstance;
 - (void)startCrashReporting;

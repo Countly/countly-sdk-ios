@@ -124,6 +124,10 @@
     CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
     CountlyCrashReporter.sharedInstance.crashLogLimit = MAX(1, config.crashLogLimit);
     CountlyCrashReporter.sharedInstance.crashFilter = config.crashFilter;
+    CountlyCrashReporter.sharedInstance.shouldUsePLCrashReporter = config.shouldUsePLCrashReporter;
+    CountlyCrashReporter.sharedInstance.shouldUseMachSignalHandler = config.shouldUseMachSignalHandler;
+    CountlyCrashReporter.sharedInstance.crashOccuredOnPreviousSessionCallback = config.crashOccuredOnPreviousSessionCallback;
+    CountlyCrashReporter.sharedInstance.shouldSendCrashReportCallback = config.shouldSendCrashReportCallback;
     if ([config.features containsObject:CLYCrashReporting])
     {
         CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;

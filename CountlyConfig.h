@@ -274,6 +274,40 @@ extern NSString* const CLYPushTestModeTestFlightOrAdHoc;
  */
 @property (nonatomic) NSRegularExpression* crashFilter;
 
+/**
+ * For using PLCrashReporter instead of default crash handling mechanism.
+ * @discussion If set, SDK will be using PLCrashReporter (1.5.1) dependecy for creating crash reports.
+ * @discussion PLCrashReporter option is available only for iOS apps.
+ * @discussion For more information about PLCrashReporter please see: https://github.com/microsoft/plcrashreporter
+ */
+@property (nonatomic) BOOL shouldUsePLCrashReporter;
+
+/**
+ * For using Mach type signal handler with PLCrashReporter.
+ * @discussion PLCrashReporter has two different signal handling implementations with different traits:
+ * @discussion 1) BSD: PLCrashReporterSignalHandlerTypeBSD
+ * @discussion 2) Mach: PLCrashReporterSignalHandlerTypeMach
+ * @discussion For more information about PLCrashReporter please see: https://github.com/microsoft/plcrashreporter
+ * @discussion By default, BSD type will be used.
+ */
+@property (nonatomic) BOOL shouldUseMachSignalHandler;
+
+/**
+ * Callback block to be executed when the app is launched again following a crash which is detected by PLCrashReporter on the previous session.
+ * @discussion It has an @c NSDictionary parameter that represents crash report object.
+ * @discussion If @c shouldUsePLCrashReporter flag is not set on initial config, it will never be executed.
+ */
+@property (nonatomic, copy) void (^crashOccuredOnPreviousSessionCallback)(NSDictionary * crashReport);
+
+/**
+ * Callback block to decide whether the crash report detected by PLCrashReporter should be sent to Countly Server or not.
+ * @discussion If not set, crash report will be sent to Countly Server by default.
+ * @discussion If set, crash report will be sent to Countly Server only if `YES` is returned.
+ * @discussion It has an @c NSDictionary parameter that represents crash report object.
+ * @discussion If @c shouldUsePLCrashReporter flag is not set on initial config, it will never be executed.
+ */
+@property (nonatomic, copy) BOOL (^shouldSendCrashReportCallback)(NSDictionary * crashReport);
+
 #pragma mark -
 
 /**
