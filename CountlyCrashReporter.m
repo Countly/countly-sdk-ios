@@ -16,6 +16,7 @@
 #endif
 
 NSString* const kCountlyExceptionUserInfoBacktraceKey = @"kCountlyExceptionUserInfoBacktraceKey";
+NSString* const kCountlyExceptionUserInfoSignalCodeKey = @"kCountlyExceptionUserInfoSignalCodeKey";
 
 NSString* const kCountlyCRKeyBinaryImages      = @"_binary_images";
 NSString* const kCountlyCRKeyOS                = @"_os";
@@ -44,7 +45,6 @@ NSString* const kCountlyCRKeyRun               = @"_run";
 NSString* const kCountlyCRKeyCustom            = @"_custom";
 NSString* const kCountlyCRKeyLogs              = @"_logs";
 NSString* const kCountlyCRKeyPLCrash           = @"_plcrash";
-NSString* const kCountlyCRKeySignalCode        = @"signal_code";
 NSString* const kCountlyCRKeyImageLoadAddress  = @"la";
 NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 
@@ -281,6 +281,7 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
 
     NSMutableDictionary* userInfo = exception.userInfo.mutableCopy;
     [userInfo removeObjectForKey:kCountlyExceptionUserInfoBacktraceKey];
+    [userInfo removeObjectForKey:kCountlyExceptionUserInfoSignalCodeKey];
     [custom addEntriesFromDictionary:userInfo];
 
     if (custom.allKeys.count)
@@ -323,7 +324,7 @@ void CountlySignalHandler(int signalCode)
 
     free(lines);
 
-    NSDictionary *userInfo = @{kCountlyCRKeySignalCode: @(signalCode), kCountlyExceptionUserInfoBacktraceKey: backtrace};
+    NSDictionary *userInfo = @{kCountlyExceptionUserInfoSignalCodeKey: @(signalCode), kCountlyExceptionUserInfoBacktraceKey: backtrace};
     NSString *reason = [NSString stringWithFormat:@"App terminated by SIG%@", [NSString stringWithUTF8String:sys_signame[signalCode]].uppercaseString];
     NSException *e = [NSException exceptionWithName:@"Fatal Signal" reason:reason userInfo:userInfo];
 
