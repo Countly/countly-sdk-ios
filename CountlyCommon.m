@@ -33,7 +33,7 @@ NSString* const kCountlyOrientationKeyMode = @"mode";
 #endif
 @end
 
-NSString* const kCountlySDKVersion = @"19.08";
+NSString* const kCountlySDKVersion = @"20.04";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
