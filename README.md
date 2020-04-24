@@ -1,7 +1,7 @@
 # Countly iOS SDK
 
 ## What's Countly?
-[Countly](http://count.ly) is an innovative, real-time, open source mobile & [web analytics](http://count.ly/web-analytics), [rich push notifications](http://count.ly/push-notifications) and [crash reporting](http://count.ly/crash-reports) platform powering more than 2500 web sites and 14000 mobile applications as of 2017 Q3. It collects data from mobile phones, tablets, smart watches and other internet-connected devices, and visualizes this information to analyze application usage and end-user behavior.
+[Countly](http://count.ly) is an innovative, real-time, open source mobile & [web analytics](http://count.ly/web-analytics), [rich push notifications](http://count.ly/push-notifications) and [crash reporting](http://count.ly/crash-reports) platform powering more than 5000 web sites and 18000 mobile applications as of 2020. It collects data from mobile phones, tablets, smart watches and other internet-connected devices, and visualizes this information to analyze application usage and end-user behavior.
 
 There are two parts of Countly: the server that collects and analyzes data, and an SDK (mobile, web or desktop) that sends this data. Both parts are open source with different licensing terms.
 
