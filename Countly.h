@@ -112,7 +112,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion If @c requiresConsent flag is not set on initial configuration, calling this method will have no effect.
  * @param featureName Feature name to give consent to
  */
-- (void)giveConsentForFeature:(NSString *)featureName;
+- (void)giveConsentForFeature:(CLYConsent)featureName;
 
 /**
  * Grants consent to given features and starts them.
@@ -120,7 +120,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Inner workings of @c giveConsentForFeature: method applies for this method as well.
  * @param features Array of feature names to give consent to
  */
-- (void)giveConsentForFeatures:(NSArray *)features;
+- (void)giveConsentForFeatures:(NSArray<CLYConsent> *)features;
 
 /**
  * Grants consent to all features and starts them.
@@ -136,7 +136,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion If @c requiresConsent flag is not set on initial configuration, calling this method will have no effect.
  * @param featureName Feature name to cancel consent to
  */
-- (void)cancelConsentForFeature:(NSString *)featureName;
+- (void)cancelConsentForFeature:(CLYConsent)featureName;
 
 /**
  * Cancels consent to given features and stops them.
@@ -144,7 +144,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Inner workings of @c cancelConsentForFeature: method applies for this method as well.
  * @param features Array of feature names to cancel consent to
  */
-- (void)cancelConsentForFeatures:(NSArray *)features;
+- (void)cancelConsentForFeatures:(NSArray<CLYConsent> *)features;
 
 /**
  * Cancels consent to all features and stops them.
