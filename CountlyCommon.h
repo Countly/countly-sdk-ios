@@ -23,10 +23,8 @@
 
 #if DEBUG
 #define COUNTLY_LOG(fmt, ...) CountlyInternalLog(fmt, ##__VA_ARGS__)
-//#define COUNTLY_PRINT(string) CountlyPrint(string)
 #else
 #define COUNTLY_LOG(...)
-//#define COUNTLY_PRINT(string)
 #endif
 
 #if (TARGET_OS_IOS)
