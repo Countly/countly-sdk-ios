@@ -374,7 +374,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 {
     _consentForStarRating = consentForStarRating;
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
     if (consentForStarRating)
     {
         COUNTLY_LOG(@"Consent for StarRating is given.");

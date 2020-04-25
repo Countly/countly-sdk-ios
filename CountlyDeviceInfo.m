@@ -12,10 +12,10 @@
 #include <sys/types.h>
 #include <sys/sysctl.h>
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import <CoreTelephony/CTCarrier.h>
-#elif TARGET_OS_OSX
+#elif (TARGET_OS_OSX)
 #import <IOKit/ps/IOPowerSources.h>
 #endif
 
@@ -30,7 +30,7 @@ NSString* const kCountlyMetricKeyLocale             = @"_locale";
 NSString* const kCountlyMetricKeyHasWatch           = @"_has_watch";
 NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
 @interface CountlyDeviceInfo ()
 @property (nonatomic) CTTelephonyNetworkInfo* networkInfo;
 @end
@@ -51,7 +51,7 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     if (self = [super init])
     {
         self.deviceID = [CountlyPersistency.sharedInstance retrieveDeviceID];
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
         self.networkInfo = CTTelephonyNetworkInfo.new;
 #endif
     }
@@ -94,7 +94,7 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
 + (NSString *)device
 {
-#if TARGET_OS_OSX
+#if (TARGET_OS_OSX)
     char *modelKey = "hw.model";
 #else
     char *modelKey = "hw.machine";
@@ -131,13 +131,13 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
 + (NSString *)osName
 {
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
     return @"iOS";
-#elif TARGET_OS_WATCH
+#elif (TARGET_OS_WATCH)
     return @"watchOS";
-#elif TARGET_OS_TV
+#elif (TARGET_OS_TV)
     return @"tvOS";
-#elif TARGET_OS_OSX
+#elif (TARGET_OS_OSX)
     return @"macOS";
 #endif
 
@@ -148,9 +148,9 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 {
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     return UIDevice.currentDevice.systemVersion;
-#elif TARGET_OS_WATCH
+#elif (TARGET_OS_WATCH)
     return WKInterfaceDevice.currentDevice.systemVersion;
-#elif TARGET_OS_OSX
+#elif (TARGET_OS_OSX)
     return [NSDictionary dictionaryWithContentsOfFile:@"/System/Library/CoreServices/SystemVersion.plist"][@"ProductVersion"];
 #endif
 
@@ -159,7 +159,7 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
 + (NSString *)carrier
 {
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
     return CountlyDeviceInfo.sharedInstance.networkInfo.subscriberCellularProvider.carrierName;
 #endif
     //NOTE: it is not possible to get carrier info on Apple Watches as CoreTelephony is not available.
@@ -171,10 +171,10 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     CGRect bounds = UIScreen.mainScreen.bounds;
     CGFloat scale = UIScreen.mainScreen.scale;
-#elif TARGET_OS_WATCH
+#elif (TARGET_OS_WATCH)
     CGRect bounds = WKInterfaceDevice.currentDevice.screenBounds;
     CGFloat scale = WKInterfaceDevice.currentDevice.screenScale;
-#elif TARGET_OS_OSX
+#elif (TARGET_OS_OSX)
     NSRect bounds = NSScreen.mainScreen.frame;
     CGFloat scale = NSScreen.mainScreen.backingScaleFactor;
 #else
@@ -188,9 +188,9 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 {
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     CGFloat scale = UIScreen.mainScreen.scale;
-#elif TARGET_OS_WATCH
+#elif (TARGET_OS_WATCH)
     CGFloat scale = WKInterfaceDevice.currentDevice.screenScale;
-#elif TARGET_OS_OSX
+#elif (TARGET_OS_OSX)
     CGFloat scale = NSScreen.mainScreen.backingScaleFactor;
 #else
     return nil;
@@ -214,7 +214,7 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     return [NSBundle.mainBundle objectForInfoDictionaryKey:(NSString*)kCFBundleVersionKey];
 }
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
 + (NSInteger)hasWatch
 {
     if (@available(iOS 9.0, *))
@@ -248,7 +248,7 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     metricsDictionary[kCountlyMetricKeyDensity] = CountlyDeviceInfo.density;
     metricsDictionary[kCountlyMetricKeyLocale] = CountlyDeviceInfo.locale;
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
     if (CountlyCommon.sharedInstance.enableAppleWatch)
     {
         if (CountlyConsentManager.sharedInstance.consentForAppleWatch)
@@ -294,7 +294,7 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
                     {
                         connType = CLYConnectionCellNetwork;
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
                         NSDictionary* connectionTypes =
                         @{
                             CTRadioAccessTechnologyGPRS: @(CLYConnectionCellNetwork2G),
@@ -366,10 +366,10 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
 + (NSInteger)batteryLevel
 {
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
     UIDevice.currentDevice.batteryMonitoringEnabled = YES;
     return abs((int)(UIDevice.currentDevice.batteryLevel * 100));
-#elif TARGET_OS_WATCH
+#elif (TARGET_OS_WATCH)
     if (@available(watchOS 4.0, *))
     {
         return abs((int)(WKInterfaceDevice.currentDevice.batteryLevel * 100));
@@ -378,7 +378,7 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     {
         return 100;
     }
-#elif TARGET_OS_OSX
+#elif (TARGET_OS_OSX)
     CFTypeRef sourcesInfo = IOPSCopyPowerSourcesInfo();
     NSArray *sources = (__bridge NSArray*)IOPSCopyPowerSourcesList(sourcesInfo);
     NSDictionary *source = sources.firstObject;
@@ -395,12 +395,12 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
 + (NSString *)orientation
 {
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
     NSArray *orientations = @[@"Unknown", @"Portrait", @"PortraitUpsideDown", @"LandscapeLeft", @"LandscapeRight", @"FaceUp", @"FaceDown"];
     UIDeviceOrientation orientation = UIDevice.currentDevice.orientation;
     if (orientation >= 0 && orientation < orientations.count)
         return orientations[orientation];
-#elif TARGET_OS_WATCH
+#elif (TARGET_OS_WATCH)
     if (@available(watchOS 3.0, *))
     {
         NSArray *orientations = @[@"CrownLeft", @"CrownRight"];

@@ -29,7 +29,7 @@
 //#define COUNTLY_PRINT(string)
 #endif
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
 #import <UIKit/UIKit.h>
 #ifndef COUNTLY_EXCLUDE_IDFA
 #import <AdSupport/ASIdentifierManager.h>
@@ -37,19 +37,19 @@
 #import "WatchConnectivity/WatchConnectivity.h"
 #endif
 
-#if TARGET_OS_WATCH
+#if (TARGET_OS_WATCH)
 #import <WatchKit/WatchKit.h>
 #import "WatchConnectivity/WatchConnectivity.h"
 #endif
 
-#if TARGET_OS_TV
+#if (TARGET_OS_TV)
 #import <UIKit/UIKit.h>
 #ifndef COUNTLY_EXCLUDE_IDFA
 #import <AdSupport/ASIdentifierManager.h>
 #endif
 #endif
 
-#if TARGET_OS_OSX
+#if (TARGET_OS_OSX)
 #import <AppKit/AppKit.h>
 #endif
 
@@ -100,7 +100,7 @@ void CountlyPrint(NSString *stringToPrint);
 @end
 
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
 @interface CLYInternalViewController : UIViewController
 @end
 

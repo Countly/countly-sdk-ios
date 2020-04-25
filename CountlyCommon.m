@@ -139,7 +139,7 @@ void CountlyPrint(NSString *stringToPrint)
     }
 #endif
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
     if (@available(iOS 9.0, *))
     {
         if (WCSession.defaultSession.paired && WCSession.defaultSession.watchAppInstalled)
@@ -298,7 +298,7 @@ void CountlyPrint(NSString *stringToPrint)
 
 
 #pragma mark - Internal ViewController
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
 @implementation CLYInternalViewController : UIViewController
 
 @end
@@ -360,7 +360,7 @@ void CountlyPrint(NSString *stringToPrint)
 #pragma mark - Watch Delegate Proxy
 @implementation CLYWCSessionDelegateInterceptor
 
-#if TARGET_OS_WATCH
+#if (TARGET_OS_WATCH)
 - (void)session:(WCSession *)session didReceiveUserInfo:(NSDictionary<NSString *, id> *)userInfo
 {
     COUNTLY_LOG(@"Watch received user info: \n%@", userInfo);

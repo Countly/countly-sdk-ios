@@ -264,14 +264,14 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-#if TARGET_OS_TV
+#if (TARGET_OS_TV)
         NSSearchPathDirectory directory = NSCachesDirectory;
 #else
         NSSearchPathDirectory directory = NSApplicationSupportDirectory;
 #endif
         URL = [[NSFileManager.defaultManager URLsForDirectory:directory inDomains:NSUserDomainMask] lastObject];
 
-#if TARGET_OS_OSX
+#if (TARGET_OS_OSX)
         URL = [URL URLByAppendingPathComponent:NSBundle.mainBundle.bundleIdentifier];
 #endif
         NSError *error = nil;

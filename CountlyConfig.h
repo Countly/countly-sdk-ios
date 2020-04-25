@@ -9,16 +9,16 @@
 NS_ASSUME_NONNULL_BEGIN
 
 //NOTE: Countly features
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
 extern NSString* const CLYPushNotifications;
 extern NSString* const CLYCrashReporting;
 extern NSString* const CLYAutoViewTracking;
-#elif TARGET_OS_WATCH
+#elif (TARGET_OS_WATCH)
 extern NSString* const CLYCrashReporting;
-#elif TARGET_OS_TV
+#elif (TARGET_OS_TV)
 extern NSString* const CLYCrashReporting;
 extern NSString* const CLYAutoViewTracking;
-#elif TARGET_OS_OSX
+#elif (TARGET_OS_OSX)
 extern NSString* const CLYPushNotifications;
 extern NSString* const CLYCrashReporting;
 #endif

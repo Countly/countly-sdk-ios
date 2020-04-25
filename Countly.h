@@ -86,7 +86,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)endSession;
 
-#if TARGET_OS_WATCH
+#if (TARGET_OS_WATCH)
 /**
  * Suspends Countly, adds recorded events to request queue and ends current session.
  * @discussion This method needs to be called manually only on @c watchOS, on other platforms it will be called automatically.
@@ -430,7 +430,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)recordView:(NSString *)viewName segmentation:(NSDictionary<NSString *, NSString *> *)segmentation;
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
 /**
  * Adds exception for AutoViewTracking.
  * @discussion @c UIViewControllers with specified title or class name will be ignored by AutoViewTracking and their appearances and disappearances will not be recorded.
@@ -488,7 +488,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 #pragma mark - Star Rating
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
 /**
  * Shows star-rating dialog manually and executes completion block after user's action.
  * @discussion Completion block has a single NSInteger parameter that indicates 1 to 5 star-rating given by user.

@@ -9,16 +9,16 @@
 @implementation CountlyConfig
 
 //NOTE: Countly features
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
     NSString* const CLYPushNotifications = @"CLYPushNotifications";
     NSString* const CLYCrashReporting = @"CLYCrashReporting";
     NSString* const CLYAutoViewTracking = @"CLYAutoViewTracking";
-#elif TARGET_OS_WATCH
+#elif (TARGET_OS_WATCH)
     NSString* const CLYCrashReporting = @"CLYCrashReporting";
-#elif TARGET_OS_TV
+#elif (TARGET_OS_TV)
     NSString* const CLYCrashReporting = @"CLYCrashReporting";
     NSString* const CLYAutoViewTracking = @"CLYAutoViewTracking";
-#elif TARGET_OS_OSX
+#elif (TARGET_OS_OSX)
     NSString* const CLYPushNotifications = @"CLYPushNotifications";
     NSString* const CLYCrashReporting = @"CLYCrashReporting";
 #endif
@@ -37,7 +37,7 @@ NSString* const CLYOpenUDID = CLYDefaultDeviceID;
 {
     if (self = [super init])
     {
-#if TARGET_OS_WATCH
+#if (TARGET_OS_WATCH)
         self.updateSessionPeriod = 20.0;
         self.eventSendThreshold = 3;
 #else

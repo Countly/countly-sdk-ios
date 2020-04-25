@@ -6,7 +6,7 @@
 
 #import <Foundation/Foundation.h>
 
-#if TARGET_OS_TV
+#if (TARGET_OS_TV)
 #import <UIKit/UIKit.h>
 #endif
 
