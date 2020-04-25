@@ -62,6 +62,16 @@ NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
     return self;
 }
 
+
+- (BOOL)hasStarted
+{
+    if (!_hasStarted)
+        CountlyPrint(@"SDK should be started first!");
+
+    return _hasStarted;
+}
+
+
 void CountlyInternalLog(NSString *format, ...)
 {
     if (!CountlyCommon.sharedInstance.enableDebug)
