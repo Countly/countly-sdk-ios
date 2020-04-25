@@ -9,18 +9,19 @@
 NS_ASSUME_NONNULL_BEGIN
 
 //NOTE: Countly features
+typedef NSString* CLYFeature NS_EXTENSIBLE_STRING_ENUM;
 #if (TARGET_OS_IOS)
-extern NSString* const CLYPushNotifications;
-extern NSString* const CLYCrashReporting;
-extern NSString* const CLYAutoViewTracking;
+extern CLYFeature const CLYPushNotifications;
+extern CLYFeature const CLYCrashReporting;
+extern CLYFeature const CLYAutoViewTracking;
 #elif (TARGET_OS_WATCH)
-extern NSString* const CLYCrashReporting;
+extern CLYFeature const CLYCrashReporting;
 #elif (TARGET_OS_TV)
-extern NSString* const CLYCrashReporting;
-extern NSString* const CLYAutoViewTracking;
+extern CLYFeature const CLYCrashReporting;
+extern CLYFeature const CLYAutoViewTracking;
 #elif (TARGET_OS_OSX)
-extern NSString* const CLYPushNotifications;
-extern NSString* const CLYCrashReporting;
+extern CLYFeature const CLYPushNotifications;
+extern CLYFeature const CLYCrashReporting;
 #endif
 
 
@@ -91,12 +92,21 @@ extern NSString* const CLYPushTestModeTestFlightOrAdHoc;
 
 /**
  * For specifying which features Countly will start with.
- * @discussion Available features:
- * @discussion @c CLYPushNotifications for push notifications,
- * @discussion @c CLYCrashReporting for crash reporting,
- * @discussion @c CLYAutoViewTracking for auto view tracking and
+ * @discussion Available features for each platform:
+ * @discussion @b iOS:
+ * @discussion @c CLYPushNotifications for push notifications
+ * @discussion @c CLYCrashReporting for crash reporting
+ * @discussion @c CLYAutoViewTracking for auto view tracking
+ * @discussion @b watchOS:
+ * @discussion @c CLYCrashReporting for crash reporting
+ * @discussion @b tvOS:
+ * @discussion @c CLYCrashReporting for crash reporting
+ * @discussion @c CLYAutoViewTracking for auto view tracking
+ * @discussion @b macOS:
+ * @discussion @c CLYPushNotifications for push notifications
+ * @discussion @c CLYCrashReporting for crash reporting
  */
-@property (nonatomic, copy) NSArray* features;
+@property (nonatomic, copy) NSArray<CLYFeature>* features;
 
 #pragma mark -
 

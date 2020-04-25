@@ -10,17 +10,17 @@
 
 //NOTE: Countly features
 #if (TARGET_OS_IOS)
-    NSString* const CLYPushNotifications = @"CLYPushNotifications";
-    NSString* const CLYCrashReporting = @"CLYCrashReporting";
-    NSString* const CLYAutoViewTracking = @"CLYAutoViewTracking";
+CLYFeature const CLYPushNotifications   = @"CLYPushNotifications";
+CLYFeature const CLYCrashReporting      = @"CLYCrashReporting";
+CLYFeature const CLYAutoViewTracking    = @"CLYAutoViewTracking";
 #elif (TARGET_OS_WATCH)
-    NSString* const CLYCrashReporting = @"CLYCrashReporting";
+CLYFeature const CLYCrashReporting      = @"CLYCrashReporting";
 #elif (TARGET_OS_TV)
-    NSString* const CLYCrashReporting = @"CLYCrashReporting";
-    NSString* const CLYAutoViewTracking = @"CLYAutoViewTracking";
+CLYFeature const CLYCrashReporting      = @"CLYCrashReporting";
+CLYFeature const CLYAutoViewTracking    = @"CLYAutoViewTracking";
 #elif (TARGET_OS_OSX)
-    NSString* const CLYPushNotifications = @"CLYPushNotifications";
-    NSString* const CLYCrashReporting = @"CLYCrashReporting";
+CLYFeature const CLYPushNotifications   = @"CLYPushNotifications";
+CLYFeature const CLYCrashReporting      = @"CLYCrashReporting";
 #endif
 
 
