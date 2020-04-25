@@ -118,6 +118,7 @@
 #endif
 
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
     if ([config.features containsObject:CLYPushNotifications])
     {
         CountlyPushNotifications.sharedInstance.isEnabledOnInitialConfig = YES;
@@ -127,6 +128,7 @@
         CountlyPushNotifications.sharedInstance.launchNotification = config.launchNotification;
         [CountlyPushNotifications.sharedInstance startPushNotifications];
     }
+#endif
 #endif
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
@@ -536,6 +538,7 @@
 
 #pragma mark - Push Notifications
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
 
 - (void)askForNotificationPermission
 {
@@ -561,6 +564,7 @@
 {
     [CountlyPushNotifications.sharedInstance clearToken];
 }
+#endif
 #endif
 
 

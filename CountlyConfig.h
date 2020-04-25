@@ -10,13 +10,17 @@ NS_ASSUME_NONNULL_BEGIN
 
 //NOTE: Countly features
 #if TARGET_OS_IOS
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
 extern NSString* const CLYPushNotifications;
+#endif
 extern NSString* const CLYCrashReporting;
 extern NSString* const CLYAutoViewTracking;
 #elif TARGET_OS_TV
 extern NSString* const CLYAutoViewTracking;
 #elif TARGET_OS_OSX
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
 extern NSString* const CLYPushNotifications;
+#endif
 #endif
 
 
@@ -48,7 +52,9 @@ extern NSString* const CLYConsentSessions;
 extern NSString* const CLYConsentEvents;
 extern NSString* const CLYConsentUserDetails;
 extern NSString* const CLYConsentCrashReporting;
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
 extern NSString* const CLYConsentPushNotifications;
+#endif
 extern NSString* const CLYConsentLocation;
 extern NSString* const CLYConsentViewTracking;
 extern NSString* const CLYConsentAttribution;
@@ -56,8 +62,10 @@ extern NSString* const CLYConsentStarRating;
 extern NSString* const CLYConsentAppleWatch;
 
 //NOTE: Push Notification Test Modes
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
 extern NSString* const CLYPushTestModeDevelopment;
 extern NSString* const CLYPushTestModeTestFlightOrAdHoc;
+#endif
 
 @interface CountlyConfig : NSObject
 
@@ -104,6 +112,7 @@ extern NSString* const CLYPushTestModeTestFlightOrAdHoc;
 
 #pragma mark -
 
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
 /**
  * @c isTestDevice property is deprecated. Please use @c pushTestMode property instead.
  * @discussion Using this property will have no effect.
@@ -137,6 +146,7 @@ extern NSString* const CLYPushTestModeTestFlightOrAdHoc;
  * @discussion Needs to be set in @c applicationDidFinishLaunching: method of macOS apps that uses @c CLYPushNotifications feature, in order to handle app launches by push notification click.
  */
 @property (nonatomic) NSNotification* launchNotification;
+#endif
 
 #pragma mark -
 

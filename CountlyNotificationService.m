@@ -6,6 +6,7 @@
 
 #import "CountlyNotificationService.h"
 
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
 #if DEBUG
 #define COUNTLY_EXT_LOG(fmt, ...) NSLog([@"%@ " stringByAppendingString:fmt], @"[CountlyNSE]", ##__VA_ARGS__)
 #else
@@ -124,3 +125,4 @@ NSString* const kCountlyPNKeyActionButtonURL    = @"l";
 }
 #endif
 @end
+#endif

@@ -10,13 +10,17 @@
 
 //NOTE: Countly features
 #if TARGET_OS_IOS
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
     NSString* const CLYPushNotifications = @"CLYPushNotifications";
+#endif
     NSString* const CLYCrashReporting = @"CLYCrashReporting";
     NSString* const CLYAutoViewTracking = @"CLYAutoViewTracking";
 #elif TARGET_OS_TV
     NSString* const CLYAutoViewTracking = @"CLYAutoViewTracking";
 #elif TARGET_OS_OSX
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
     NSString* const CLYPushNotifications = @"CLYPushNotifications";
+#endif
 #endif
 
 

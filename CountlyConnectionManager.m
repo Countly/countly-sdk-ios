@@ -32,9 +32,11 @@ NSString* const kCountlyQSKeySessionBegin     = @"begin_session";
 NSString* const kCountlyQSKeySessionDuration  = @"session_duration";
 NSString* const kCountlyQSKeySessionEnd       = @"end_session";
 
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
 NSString* const kCountlyQSKeyPushTokenSession = @"token_session";
 NSString* const kCountlyQSKeyPushTokeniOS     = @"ios_token";
 NSString* const kCountlyQSKeyPushTestMode     = @"test_mode";
+#endif
 
 NSString* const kCountlyQSKeyLocation         = @"location";
 NSString* const kCountlyQSKeyLocationCity     = @"city";
@@ -245,6 +247,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 #pragma mark ---
 
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
 - (void)sendPushToken:(NSString *)token
 {
     NSInteger testMode = 0; //NOTE: default is 0: Production - not test mode
@@ -263,6 +266,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     [self proceedOnQueue];
 }
+#endif
 
 - (void)sendLocationInfo
 {

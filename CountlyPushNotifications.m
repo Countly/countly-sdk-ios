@@ -6,6 +6,7 @@
 
 #import "CountlyCommon.h"
 
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
 NSString* const kCountlyReservedEventPushAction = @"[CLY]_push_action";
 NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
@@ -565,3 +566,4 @@ NSString* const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFlightOr
 
 @end
 #pragma GCC diagnostic pop
+#endif

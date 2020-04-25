@@ -9,7 +9,9 @@
 #import "CountlyUserDetails.h"
 #import "CountlyConfig.h"
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
 #import <UserNotifications/UserNotifications.h>
+#endif
 #endif
 
 NS_ASSUME_NONNULL_BEGIN
@@ -282,6 +284,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - Push Notification
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
 /**
  * Shows default system dialog that asks for user's permission to display notifications.
  * @discussion A unified convenience method that handles asking for notification permission on both iOS10 and older iOS versions with badge, sound and alert notification types.
@@ -321,7 +324,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)clearPushNotificationToken;
 #endif
-
+#endif
 
 
 #pragma mark - Location

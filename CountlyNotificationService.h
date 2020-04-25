@@ -6,6 +6,7 @@
 
 #import <Foundation/Foundation.h>
 
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
 #if TARGET_OS_IOS
 #import <UserNotifications/UserNotifications.h>
 #endif
@@ -31,3 +32,4 @@ extern NSString* const kCountlyPNKeyActionButtonURL;
 NS_ASSUME_NONNULL_END
 
 @end
+#endif

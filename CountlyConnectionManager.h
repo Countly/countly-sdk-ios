@@ -30,7 +30,9 @@ extern NSString* const kCountlyQSKeyDeviceID;
 - (void)endSession;
 
 - (void)sendEvents;
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
 - (void)sendPushToken:(NSString *)token;
+#endif
 - (void)sendLocationInfo;
 - (void)sendUserDetails:(NSString *)userDetails;
 - (void)sendCrashReport:(NSString *)report immediately:(BOOL)immediately;

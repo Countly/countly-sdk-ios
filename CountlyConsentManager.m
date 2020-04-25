@@ -10,7 +10,9 @@ NSString* const CLYConsentSessions             = @"sessions";
 NSString* const CLYConsentEvents               = @"events";
 NSString* const CLYConsentUserDetails          = @"users";
 NSString* const CLYConsentCrashReporting       = @"crashes";
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
 NSString* const CLYConsentPushNotifications    = @"push";
+#endif
 NSString* const CLYConsentLocation             = @"location";
 NSString* const CLYConsentViewTracking         = @"views";
 NSString* const CLYConsentAttribution          = @"attribution";
@@ -28,7 +30,9 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 @synthesize consentForEvents = _consentForEvents;
 @synthesize consentForUserDetails = _consentForUserDetails;
 @synthesize consentForCrashReporting = _consentForCrashReporting;
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
 @synthesize consentForPushNotifications = _consentForPushNotifications;
+#endif
 @synthesize consentForLocation = _consentForLocation;
 @synthesize consentForViewTracking = _consentForViewTracking;
 @synthesize consentForAttribution = _consentForAttribution;
@@ -89,8 +93,10 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     if ([features containsObject:CLYConsentCrashReporting] && !self.consentForCrashReporting)
         self.consentForCrashReporting = YES;
 
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
     if ([features containsObject:CLYConsentPushNotifications] && !self.consentForPushNotifications)
         self.consentForPushNotifications = YES;
+#endif
 
     if ([features containsObject:CLYConsentLocation] && !self.consentForLocation)
         self.consentForLocation = YES;
@@ -134,8 +140,10 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     if ([features containsObject:CLYConsentCrashReporting] && self.consentForCrashReporting)
         self.consentForCrashReporting = NO;
 
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
     if ([features containsObject:CLYConsentPushNotifications] && self.consentForPushNotifications)
         self.consentForPushNotifications = NO;
+#endif
 
     if ([features containsObject:CLYConsentLocation] && self.consentForLocation)
         self.consentForLocation = NO;
@@ -174,7 +182,9 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
         CLYConsentEvents,
         CLYConsentUserDetails,
         CLYConsentCrashReporting,
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
         CLYConsentPushNotifications,
+#endif
         CLYConsentLocation,
         CLYConsentViewTracking,
         CLYConsentAttribution,
@@ -191,7 +201,9 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     self.consentForEvents ||
     self.consentForUserDetails ||
     self.consentForCrashReporting ||
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
     self.consentForPushNotifications ||
+#endif
     self.consentForLocation ||
     self.consentForViewTracking ||
     self.consentForAttribution ||
@@ -284,7 +296,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     self.consentChanges[CLYConsentCrashReporting] = @(consentForCrashReporting);
 }
 
-
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
 - (void)setConsentForPushNotifications:(BOOL)consentForPushNotifications
 {
     _consentForPushNotifications = consentForPushNotifications;
@@ -306,7 +318,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 
     self.consentChanges[CLYConsentPushNotifications] = @(consentForPushNotifications);
 }
-
+#endif
 
 - (void)setConsentForLocation:(BOOL)consentForLocation
 {
@@ -447,7 +459,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
     return _consentForCrashReporting;
 }
 
-
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
 - (BOOL)consentForPushNotifications
 {
     if (!self.requiresConsent)
@@ -455,7 +467,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 
     return _consentForPushNotifications;
 }
-
+#endif
 
 - (BOOL)consentForLocation
 {

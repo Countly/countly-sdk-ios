@@ -6,6 +6,7 @@
 
 #import <Foundation/Foundation.h>
 
+#ifndef COUNTLY_EXCLUDE_USERNOTIFICATIONS
 @interface CountlyPushNotifications : NSObject
 
 @property (nonatomic) BOOL isEnabledOnInitialConfig;
@@ -25,3 +26,4 @@
 - (void)clearToken;
 #endif
 @end
+#endif
