@@ -1,4 +1,4 @@
-#!/usr/bash
+#!/bin/bash
 
 # countly_dsym_uploader.sh
 #
@@ -10,7 +10,7 @@
 # For your target, go to `Build Phases` tab and choose `New Run Script Phase` after clicking plus (+) button.
 # Add these two lines:
 #
-# COUNTLY_DSYM_UPLOADER=$(/usr/bin/find $SRCROOT -name "countly_dsym_uploader.sh" | head -n 1)
+# COUNTLY_DSYM_UPLOADER=$(find $SRCROOT -name "countly_dsym_uploader.sh" | head -n 1)
 # sh "$COUNTLY_DSYM_UPLOADER" "https://YOUR_COUNTLY_SERVER" "YOUR_APP_KEY"
 #
 # or if you're using CocoaPods just add this one line:
