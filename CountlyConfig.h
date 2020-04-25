@@ -62,8 +62,9 @@ extern CLYConsent const CLYConsentStarRating;
 extern CLYConsent const CLYConsentAppleWatch;
 
 //NOTE: Push Notification Test Modes
-extern NSString* const CLYPushTestModeDevelopment;
-extern NSString* const CLYPushTestModeTestFlightOrAdHoc;
+typedef NSString* CLYPushTestMode NS_EXTENSIBLE_STRING_ENUM;
+extern CLYPushTestMode const CLYPushTestModeDevelopment;
+extern CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc;
 
 @interface CountlyConfig : NSObject
 
@@ -133,7 +134,7 @@ extern NSString* const CLYPushTestModeTestFlightOrAdHoc;
  * @discussion If set, Test Users mark should be selected on Create Push Notification screen of Countly Server to send push notifications.
  * @discussion If not set, Countly Server will use Production APNs by default.
  */
-@property (nonatomic) NSString* pushTestMode;
+@property (nonatomic) CLYPushTestMode pushTestMode;
 
 /**
  * For sending push tokens to Countly Server even for users who have not granted permission to display notifications.
