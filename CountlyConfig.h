@@ -49,16 +49,17 @@ extern NSString* const CLYIDFA DEPRECATED_MSG_ATTRIBUTE("Please use CLYDefaultDe
 extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Please use CLYDefaultDeviceID instead!");
 
 //NOTE: Available consents
-extern NSString* const CLYConsentSessions;
-extern NSString* const CLYConsentEvents;
-extern NSString* const CLYConsentUserDetails;
-extern NSString* const CLYConsentCrashReporting;
-extern NSString* const CLYConsentPushNotifications;
-extern NSString* const CLYConsentLocation;
-extern NSString* const CLYConsentViewTracking;
-extern NSString* const CLYConsentAttribution;
-extern NSString* const CLYConsentStarRating;
-extern NSString* const CLYConsentAppleWatch;
+typedef NSString* CLYConsent NS_EXTENSIBLE_STRING_ENUM;
+extern CLYConsent const CLYConsentSessions;
+extern CLYConsent const CLYConsentEvents;
+extern CLYConsent const CLYConsentUserDetails;
+extern CLYConsent const CLYConsentCrashReporting;
+extern CLYConsent const CLYConsentPushNotifications;
+extern CLYConsent const CLYConsentLocation;
+extern CLYConsent const CLYConsentViewTracking;
+extern CLYConsent const CLYConsentAttribution;
+extern CLYConsent const CLYConsentStarRating;
+extern CLYConsent const CLYConsentAppleWatch;
 
 //NOTE: Push Notification Test Modes
 extern NSString* const CLYPushTestModeDevelopment;
