@@ -1,5 +1,11 @@
 # Countly iOS SDK
 
+[![Platform](https://img.shields.io/cocoapods/p/Countly.svg?style=flat)](https://support.count.ly/hc/en-us/articles/360037753511-iOS-watchOS-tvOS-macOS#supported-system-versions)
+[![GitHub license](https://img.shields.io/badge/license-MIT-lightgrey.svg)](https://github.com/Countly/countly-sdk-ios/blob/master/LICENSE.md) 
+[![GitHub release](https://img.shields.io/github/release/Countly/countly-sdk-ios.svg)](https://github.com/Countly/countly-sdk-ios/releases)
+[![CocoaPods Compatible](https://img.shields.io/cocoapods/v/Countly.svg)](https://support.count.ly/hc/en-us/articles/360037753511-iOS-watchOS-tvOS-macOS#cocoapods)
+[![Carthage Compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)](https://support.count.ly/hc/en-us/articles/360037753511-iOS-watchOS-tvOS-macOS#carthage)
+
 ## What's Countly?
 [Countly](http://count.ly) is an innovative, real-time, open source mobile & [web analytics](http://count.ly/web-analytics), [rich push notifications](http://count.ly/push-notifications) and [crash reporting](http://count.ly/crash-reports) platform powering more than 2500 web sites and 14000 mobile applications as of 2017 Q3. It collects data from mobile phones, tablets, smart watches and other internet-connected devices, and visualizes this information to analyze application usage and end-user behavior.
 
