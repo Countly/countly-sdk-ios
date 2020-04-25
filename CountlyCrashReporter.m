@@ -65,10 +65,7 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
-    {
-        CountlyPrint(@"SDK should be started first!");
         return nil;
-    }
 
     static CountlyCrashReporter *s_sharedInstance = nil;
     static dispatch_once_t onceToken;

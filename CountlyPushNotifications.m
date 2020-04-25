@@ -36,10 +36,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
-    {
-        CountlyPrint(@"SDK should be started first!");
         return nil;
-    }
 
     static CountlyPushNotifications* s_sharedInstance;
     static dispatch_once_t onceToken;

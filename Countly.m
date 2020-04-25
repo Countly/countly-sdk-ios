@@ -161,10 +161,7 @@
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
-    {
-        CountlyPrint(@"SDK should be started first!");
         return;
-    }
 
     if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
         return;
@@ -281,10 +278,7 @@
 - (void)suspend
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
-    {
-        CountlyPrint(@"SDK should be started first!");
         return;
-    }
 
     if (isSuspended)
         return;
@@ -306,10 +300,7 @@
 - (void)resume
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
-    {
-        CountlyPrint(@"SDK should be started first!");
         return;
-    }
 
 #if (TARGET_OS_WATCH)
     //NOTE: Skip first time to prevent double begin session because of applicationDidBecomeActive call on launch of watchOS apps
