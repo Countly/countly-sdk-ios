@@ -7,7 +7,7 @@
 [![Carthage Compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)](https://support.count.ly/hc/en-us/articles/360037753511-iOS-watchOS-tvOS-macOS#carthage)
 
 ## What's Countly?
-[Countly](https://count.ly) is an innovative, real-time, open source [mobile](https://count.ly/mobile-analytics) & [web analytics](https://count.ly/web-analytics), [rich push notifications](https://count.ly/plugins/rich-push-notifications) and [crash reporting](https://count.ly/plugins/crash-analytics) platform powering more than 2500 web sites and 14000 mobile applications as of 2017 Q3.  
+[Countly](https://count.ly) is an innovative, real-time, open source [mobile](https://count.ly/mobile-analytics) & [web analytics](https://count.ly/web-analytics), [rich push notifications](https://count.ly/plugins/rich-push-notifications) and [crash reporting](https://count.ly/plugins/crash-analytics) platform powering more than 5000 web sites and 18000 mobile applications as of 2020.  
 It collects data from mobile phones, tablets, smart watches and other internet-connected devices, and visualizes this information to analyze application usage and end-user behavior.
 
 ## About this SDK
