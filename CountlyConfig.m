@@ -9,14 +9,18 @@
 @implementation CountlyConfig
 
 //NOTE: Countly features
-#if TARGET_OS_IOS
-    NSString* const CLYPushNotifications = @"CLYPushNotifications";
-    NSString* const CLYCrashReporting = @"CLYCrashReporting";
-    NSString* const CLYAutoViewTracking = @"CLYAutoViewTracking";
-#elif TARGET_OS_TV
-    NSString* const CLYAutoViewTracking = @"CLYAutoViewTracking";
-#elif TARGET_OS_OSX
-    NSString* const CLYPushNotifications = @"CLYPushNotifications";
+#if (TARGET_OS_IOS)
+CLYFeature const CLYPushNotifications   = @"CLYPushNotifications";
+CLYFeature const CLYCrashReporting      = @"CLYCrashReporting";
+CLYFeature const CLYAutoViewTracking    = @"CLYAutoViewTracking";
+#elif (TARGET_OS_WATCH)
+CLYFeature const CLYCrashReporting      = @"CLYCrashReporting";
+#elif (TARGET_OS_TV)
+CLYFeature const CLYCrashReporting      = @"CLYCrashReporting";
+CLYFeature const CLYAutoViewTracking    = @"CLYAutoViewTracking";
+#elif (TARGET_OS_OSX)
+CLYFeature const CLYPushNotifications   = @"CLYPushNotifications";
+CLYFeature const CLYCrashReporting      = @"CLYCrashReporting";
 #endif
 
 
@@ -33,10 +37,9 @@ NSString* const CLYOpenUDID = CLYDefaultDeviceID;
 {
     if (self = [super init])
     {
-#if TARGET_OS_WATCH
+#if (TARGET_OS_WATCH)
         self.updateSessionPeriod = 20.0;
         self.eventSendThreshold = 3;
-        self.enableAppleWatch = YES;
 #else
         self.updateSessionPeriod = 60.0;
         self.eventSendThreshold = 10;

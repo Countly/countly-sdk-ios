@@ -22,6 +22,8 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 NSString* const kCountlyNotificationPermissionKey = @"kCountlyNotificationPermissionKey";
 NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersistencyKey";
 
+NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
+
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
@@ -195,37 +197,105 @@ NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersi
 
 #pragma mark ---
 
-- (NSURL *)storageFileURL
+- (void)writeCustomCrashLogToFile:(NSString *)log
 {
-    NSString* const kCountlyPersistencyFileName = @"Countly.dat";
-
-    static NSURL *url = nil;
+    static NSURL* crashLogFileURL = nil;
 
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^
     {
-#if TARGET_OS_TV
+        crashLogFileURL = [[self storageDirectoryURL] URLByAppendingPathComponent:kCountlyCustomCrashLogFileName];
+    });
+
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^
+    {
+        NSString* line = [NSString stringWithFormat:@"%@\n", log];
+        NSFileHandle* fileHandle = [NSFileHandle fileHandleForWritingAtPath:crashLogFileURL.path];
+        if (fileHandle)
+        {
+            [fileHandle seekToEndOfFile];
+            [fileHandle writeData:[line dataUsingEncoding:NSUTF8StringEncoding]];
+            [fileHandle closeFile];
+        }
+        else
+        {
+            NSError* error = nil;
+            [line writeToFile:crashLogFileURL.path atomically:YES encoding:NSUTF8StringEncoding error:&error];
+            if (error){ COUNTLY_LOG(@"Crash Log File can not be created: \n%@", error); }
+        }
+    });
+}
+
+- (NSString *)customCrashLogsFromFile
+{
+    NSURL* crashLogFileURL = [[self storageDirectoryURL] URLByAppendingPathComponent:kCountlyCustomCrashLogFileName];
+    NSData* readData = [NSData dataWithContentsOfURL:crashLogFileURL];
+
+    NSString* storedCustomCrashLogs = nil;
+    if (readData)
+    {
+        storedCustomCrashLogs = [NSString.alloc initWithData:readData encoding:NSUTF8StringEncoding];
+    }
+
+    return storedCustomCrashLogs;
+}
+
+- (void)deleteCustomCrashLogFile
+{
+    NSURL* crashLogFileURL = [[self storageDirectoryURL] URLByAppendingPathComponent:kCountlyCustomCrashLogFileName];
+    NSError* error = nil;
+    if ([NSFileManager.defaultManager fileExistsAtPath:crashLogFileURL.path])
+    {
+        COUNTLY_LOG(@"Detected Crash Log File and deleting it.");
+        [NSFileManager.defaultManager removeItemAtURL:crashLogFileURL error:&error];
+        if (error){ COUNTLY_LOG(@"Crash Log File can not be deleted: \n%@", error); }
+    }
+}
+
+#pragma mark ---
+
+- (NSURL *)storageDirectoryURL
+{
+    static NSURL* URL = nil;
+
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+#if (TARGET_OS_TV)
         NSSearchPathDirectory directory = NSCachesDirectory;
 #else
         NSSearchPathDirectory directory = NSApplicationSupportDirectory;
 #endif
-        url = [[NSFileManager.defaultManager URLsForDirectory:directory inDomains:NSUserDomainMask] lastObject];
+        URL = [[NSFileManager.defaultManager URLsForDirectory:directory inDomains:NSUserDomainMask] lastObject];
 
-#if TARGET_OS_OSX
-        url = [url URLByAppendingPathComponent:NSBundle.mainBundle.bundleIdentifier];
+#if (TARGET_OS_OSX)
+        URL = [URL URLByAppendingPathComponent:NSBundle.mainBundle.bundleIdentifier];
 #endif
         NSError *error = nil;
 
-        if (![NSFileManager.defaultManager fileExistsAtPath:url.path])
+        if (![NSFileManager.defaultManager fileExistsAtPath:URL.path])
         {
-            [NSFileManager.defaultManager createDirectoryAtURL:url withIntermediateDirectories:YES attributes:nil error:&error];
+            [NSFileManager.defaultManager createDirectoryAtURL:URL withIntermediateDirectories:YES attributes:nil error:&error];
             if (error){ COUNTLY_LOG(@"Application Support directory can not be created: \n%@", error); }
         }
-
-        url = [url URLByAppendingPathComponent:kCountlyPersistencyFileName];
     });
 
-    return url;
+    return URL;
+}
+
+- (NSURL *)storageFileURL
+{
+    NSString* const kCountlyPersistencyFileName = @"Countly.dat";
+
+    static NSURL* URL = nil;
+
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^
+    {
+        URL = [[self storageDirectoryURL] URLByAppendingPathComponent:kCountlyPersistencyFileName];
+    });
+
+    return URL;
 }
 
 - (void)saveToFile

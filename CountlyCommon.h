@@ -27,7 +27,7 @@
 #define COUNTLY_LOG(...)
 #endif
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
 #import <UIKit/UIKit.h>
 #ifndef COUNTLY_EXCLUDE_IDFA
 #import <AdSupport/ASIdentifierManager.h>
@@ -35,19 +35,19 @@
 #import "WatchConnectivity/WatchConnectivity.h"
 #endif
 
-#if TARGET_OS_WATCH
+#if (TARGET_OS_WATCH)
 #import <WatchKit/WatchKit.h>
 #import "WatchConnectivity/WatchConnectivity.h"
 #endif
 
-#if TARGET_OS_TV
+#if (TARGET_OS_TV)
 #import <UIKit/UIKit.h>
 #ifndef COUNTLY_EXCLUDE_IDFA
 #import <AdSupport/ASIdentifierManager.h>
 #endif
 #endif
 
-#if TARGET_OS_OSX
+#if (TARGET_OS_OSX)
 #import <AppKit/AppKit.h>
 #endif
 
@@ -74,6 +74,7 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 @property (nonatomic) BOOL manualSessionHandling;
 
 void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
+void CountlyPrint(NSString *stringToPrint);
 
 + (instancetype)sharedInstance;
 - (NSInteger)hourOfDay;
@@ -92,10 +93,12 @@ void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
 
 - (void)startAppleWatchMatching;
 - (void)startAttribution;
+
+- (void)observeDeviceOrientationChanges;
 @end
 
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
 @interface CLYInternalViewController : UIViewController
 @end
 

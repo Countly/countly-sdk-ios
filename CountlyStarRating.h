@@ -7,7 +7,7 @@
 #import <Foundation/Foundation.h>
 
 @interface CountlyStarRating : NSObject
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
 + (instancetype)sharedInstance;
 
 - (void)showDialog:(void(^)(NSInteger rating))completion;

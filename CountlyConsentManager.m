@@ -6,16 +6,16 @@
 
 #import "CountlyCommon.h"
 
-NSString* const CLYConsentSessions             = @"sessions";
-NSString* const CLYConsentEvents               = @"events";
-NSString* const CLYConsentUserDetails          = @"users";
-NSString* const CLYConsentCrashReporting       = @"crashes";
-NSString* const CLYConsentPushNotifications    = @"push";
-NSString* const CLYConsentLocation             = @"location";
-NSString* const CLYConsentViewTracking         = @"views";
-NSString* const CLYConsentAttribution          = @"attribution";
-NSString* const CLYConsentStarRating           = @"star-rating";
-NSString* const CLYConsentAppleWatch           = @"accessory-devices";
+CLYConsent const CLYConsentSessions             = @"sessions";
+CLYConsent const CLYConsentEvents               = @"events";
+CLYConsent const CLYConsentUserDetails          = @"users";
+CLYConsent const CLYConsentCrashReporting       = @"crashes";
+CLYConsent const CLYConsentPushNotifications    = @"push";
+CLYConsent const CLYConsentLocation             = @"location";
+CLYConsent const CLYConsentViewTracking         = @"views";
+CLYConsent const CLYConsentAttribution          = @"attribution";
+CLYConsent const CLYConsentStarRating           = @"star-rating";
+CLYConsent const CLYConsentAppleWatch           = @"accessory-devices";
 
 
 @interface CountlyConsentManager ()
@@ -266,7 +266,6 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 {
     _consentForCrashReporting = consentForCrashReporting;
 
-#if TARGET_OS_IOS
     if (consentForCrashReporting)
     {
         COUNTLY_LOG(@"Consent for CrashReporting is given.");
@@ -279,7 +278,6 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 
         [CountlyCrashReporter.sharedInstance stopCrashReporting];
     }
-#endif
 
     self.consentChanges[CLYConsentCrashReporting] = @(consentForCrashReporting);
 }
@@ -289,7 +287,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 {
     _consentForPushNotifications = consentForPushNotifications;
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS || TARGET_OS_OSX)
     if (consentForPushNotifications)
     {
         COUNTLY_LOG(@"Consent for PushNotifications is given.");
@@ -373,7 +371,7 @@ NSString* const CLYConsentAppleWatch           = @"accessory-devices";
 {
     _consentForStarRating = consentForStarRating;
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
     if (consentForStarRating)
     {
         COUNTLY_LOG(@"Consent for StarRating is given.");

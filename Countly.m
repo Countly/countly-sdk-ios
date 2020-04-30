@@ -42,7 +42,7 @@
                                                selector:@selector(willTerminateCallBack:)
                                                    name:UIApplicationWillTerminateNotification
                                                  object:nil];
-#elif TARGET_OS_OSX
+#elif (TARGET_OS_OSX)
         [NSNotificationCenter.defaultCenter addObserver:self
                                                selector:@selector(willTerminateCallBack:)
                                                    name:NSApplicationWillTerminateNotification
@@ -95,7 +95,7 @@
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
     CountlyStarRating.sharedInstance.message = config.starRatingMessage;
     CountlyStarRating.sharedInstance.sessionCount = config.starRatingSessionCount;
     CountlyStarRating.sharedInstance.disableAskingForEachAppVersion = config.starRatingDisableAskingForEachAppVersion;
@@ -107,14 +107,6 @@
     CountlyLocationManager.sharedInstance.ISOCountryCode = config.ISOCountryCode;
     CountlyLocationManager.sharedInstance.IP = config.IP;
     [CountlyLocationManager.sharedInstance sendLocationInfo];
-
-    CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
-    CountlyCrashReporter.sharedInstance.crashLogLimit = MAX(1, config.crashLogLimit);
-    if ([config.features containsObject:CLYCrashReporting])
-    {
-        CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;
-        [CountlyCrashReporter.sharedInstance startCrashReporting];
-    }
 #endif
 
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
@@ -129,6 +121,19 @@
     }
 #endif
 
+    CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
+    CountlyCrashReporter.sharedInstance.crashLogLimit = MAX(1, config.crashLogLimit);
+    CountlyCrashReporter.sharedInstance.crashFilter = config.crashFilter;
+    CountlyCrashReporter.sharedInstance.shouldUsePLCrashReporter = config.shouldUsePLCrashReporter;
+    CountlyCrashReporter.sharedInstance.shouldUseMachSignalHandler = config.shouldUseMachSignalHandler;
+    CountlyCrashReporter.sharedInstance.crashOccuredOnPreviousSessionCallback = config.crashOccuredOnPreviousSessionCallback;
+    CountlyCrashReporter.sharedInstance.shouldSendCrashReportCallback = config.shouldSendCrashReportCallback;
+    if ([config.features containsObject:CLYCrashReporting])
+    {
+        CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;
+        [CountlyCrashReporter.sharedInstance startCrashReporting];
+    }
+
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if ([config.features containsObject:CLYAutoViewTracking])
     {
@@ -137,7 +142,7 @@
     }
 #endif
 
-    timer = [NSTimer scheduledTimerWithTimeInterval:config.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
+    timer = [NSTimer timerWithTimeInterval:config.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
     [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
 
     [CountlyCommon.sharedInstance startAppleWatchMatching];
@@ -147,6 +152,8 @@
     CountlyRemoteConfig.sharedInstance.isEnabledOnInitialConfig = config.enableRemoteConfig;
     CountlyRemoteConfig.sharedInstance.remoteConfigCompletionHandler = config.remoteConfigCompletionHandler;
     [CountlyRemoteConfig.sharedInstance startRemoteConfig];
+
+    [CountlyCommon.sharedInstance observeDeviceOrientationChanges];
 
     [CountlyConnectionManager.sharedInstance proceedOnQueue];
 }
@@ -295,7 +302,7 @@
     if (!CountlyCommon.sharedInstance.hasStarted)
         return;
 
-#if TARGET_OS_WATCH
+#if (TARGET_OS_WATCH)
     //NOTE: Skip first time to prevent double begin session because of applicationDidBecomeActive call on launch of watchOS apps
     static BOOL isFirstCall = YES;
 
@@ -591,7 +598,6 @@
 
 #pragma mark - Crash Reporting
 
-#if TARGET_OS_IOS
 - (void)recordHandledException:(NSException *)exception
 {
     [CountlyCrashReporter.sharedInstance recordException:exception withStackTrace:nil isFatal:NO];
@@ -616,7 +622,6 @@
 {
 
 }
-#endif
 
 
 
@@ -632,7 +637,7 @@
     [CountlyViewTracking.sharedInstance startView:viewName customSegmentation:segmentation];
 }
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
 - (void)addExceptionForAutoViewTracking:(NSString *)exception
 {
     [CountlyViewTracking.sharedInstance addExceptionForAutoViewTracking:exception.copy];
@@ -676,7 +681,7 @@
 
 
 #pragma mark - Star Rating
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
 
 - (void)askForStarRating:(void(^)(NSInteger rating))completion
 {

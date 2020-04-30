@@ -9,14 +9,19 @@
 NS_ASSUME_NONNULL_BEGIN
 
 //NOTE: Countly features
-#if TARGET_OS_IOS
-extern NSString* const CLYPushNotifications;
-extern NSString* const CLYCrashReporting;
-extern NSString* const CLYAutoViewTracking;
-#elif TARGET_OS_TV
-extern NSString* const CLYAutoViewTracking;
-#elif TARGET_OS_OSX
-extern NSString* const CLYPushNotifications;
+typedef NSString* CLYFeature NS_EXTENSIBLE_STRING_ENUM;
+#if (TARGET_OS_IOS)
+extern CLYFeature const CLYPushNotifications;
+extern CLYFeature const CLYCrashReporting;
+extern CLYFeature const CLYAutoViewTracking;
+#elif (TARGET_OS_WATCH)
+extern CLYFeature const CLYCrashReporting;
+#elif (TARGET_OS_TV)
+extern CLYFeature const CLYCrashReporting;
+extern CLYFeature const CLYAutoViewTracking;
+#elif (TARGET_OS_OSX)
+extern CLYFeature const CLYPushNotifications;
+extern CLYFeature const CLYCrashReporting;
 #endif
 
 
@@ -44,20 +49,22 @@ extern NSString* const CLYIDFA DEPRECATED_MSG_ATTRIBUTE("Please use CLYDefaultDe
 extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Please use CLYDefaultDeviceID instead!");
 
 //NOTE: Available consents
-extern NSString* const CLYConsentSessions;
-extern NSString* const CLYConsentEvents;
-extern NSString* const CLYConsentUserDetails;
-extern NSString* const CLYConsentCrashReporting;
-extern NSString* const CLYConsentPushNotifications;
-extern NSString* const CLYConsentLocation;
-extern NSString* const CLYConsentViewTracking;
-extern NSString* const CLYConsentAttribution;
-extern NSString* const CLYConsentStarRating;
-extern NSString* const CLYConsentAppleWatch;
+typedef NSString* CLYConsent NS_EXTENSIBLE_STRING_ENUM;
+extern CLYConsent const CLYConsentSessions;
+extern CLYConsent const CLYConsentEvents;
+extern CLYConsent const CLYConsentUserDetails;
+extern CLYConsent const CLYConsentCrashReporting;
+extern CLYConsent const CLYConsentPushNotifications;
+extern CLYConsent const CLYConsentLocation;
+extern CLYConsent const CLYConsentViewTracking;
+extern CLYConsent const CLYConsentAttribution;
+extern CLYConsent const CLYConsentStarRating;
+extern CLYConsent const CLYConsentAppleWatch;
 
 //NOTE: Push Notification Test Modes
-extern NSString* const CLYPushTestModeDevelopment;
-extern NSString* const CLYPushTestModeTestFlightOrAdHoc;
+typedef NSString* CLYPushTestMode NS_EXTENSIBLE_STRING_ENUM;
+extern CLYPushTestMode const CLYPushTestModeDevelopment;
+extern CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc;
 
 @interface CountlyConfig : NSObject
 
@@ -87,12 +94,21 @@ extern NSString* const CLYPushTestModeTestFlightOrAdHoc;
 
 /**
  * For specifying which features Countly will start with.
- * @discussion Available features:
- * @discussion @c CLYPushNotifications for push notifications,
- * @discussion @c CLYCrashReporting for crash reporting,
- * @discussion @c CLYAutoViewTracking for auto view tracking and
+ * @discussion Available features for each platform:
+ * @discussion @b iOS:
+ * @discussion @c CLYPushNotifications for push notifications
+ * @discussion @c CLYCrashReporting for crash reporting
+ * @discussion @c CLYAutoViewTracking for auto view tracking
+ * @discussion @b watchOS:
+ * @discussion @c CLYCrashReporting for crash reporting
+ * @discussion @b tvOS:
+ * @discussion @c CLYCrashReporting for crash reporting
+ * @discussion @c CLYAutoViewTracking for auto view tracking
+ * @discussion @b macOS:
+ * @discussion @c CLYPushNotifications for push notifications
+ * @discussion @c CLYCrashReporting for crash reporting
  */
-@property (nonatomic, copy) NSArray* features;
+@property (nonatomic, copy) NSArray<CLYFeature>* features;
 
 #pragma mark -
 
@@ -118,7 +134,7 @@ extern NSString* const CLYPushTestModeTestFlightOrAdHoc;
  * @discussion If set, Test Users mark should be selected on Create Push Notification screen of Countly Server to send push notifications.
  * @discussion If not set, Countly Server will use Production APNs by default.
  */
-@property (nonatomic) NSString* pushTestMode;
+@property (nonatomic) CLYPushTestMode pushTestMode;
 
 /**
  * For sending push tokens to Countly Server even for users who have not granted permission to display notifications.
@@ -235,8 +251,9 @@ extern NSString* const CLYPushTestModeTestFlightOrAdHoc;
 @property (nonatomic) BOOL manualSessionHandling;
 
 /**
- * For enabling automatic handling of Apple Watch related features.
- * @discussion If set, Apple Watch related features such as parent device matching, pairing status, and watch app installing status will be handled automatically. Required for using Countly on Apple Watch apps.
+ * For enabling automatic handling of Apple Watch related features for iOS apps with a watchOS counterpart app.
+ * @discussion If set on both iOS and watchOS app, Apple Watch related features such as parent device matching, pairing status, and watch app installing status will be handled automatically.
+ * @discussion This flag should not be set on independent watchOS apps.
  */
 @property (nonatomic) BOOL enableAppleWatch;
 
@@ -262,6 +279,46 @@ extern NSString* const CLYPushTestModeTestFlightOrAdHoc;
  * @discussion If not set, it will be 100 by default.
  */
 @property (nonatomic) NSUInteger crashLogLimit;
+
+/**
+ * Regular expression used for filtering crash reports and preventing them from being sent to Countly Server.
+ * @discussion If a crash's name, description or any line of stack trace matches given regular expression, it will not be sent to Countly Server.
+ */
+@property (nonatomic) NSRegularExpression* crashFilter;
+
+/**
+ * For using PLCrashReporter instead of default crash handling mechanism.
+ * @discussion If set, SDK will be using PLCrashReporter (1.5.1) dependecy for creating crash reports.
+ * @discussion PLCrashReporter option is available only for iOS apps.
+ * @discussion For more information about PLCrashReporter please see: https://github.com/microsoft/plcrashreporter
+ */
+@property (nonatomic) BOOL shouldUsePLCrashReporter;
+
+/**
+ * For using Mach type signal handler with PLCrashReporter.
+ * @discussion PLCrashReporter has two different signal handling implementations with different traits:
+ * @discussion 1) BSD: PLCrashReporterSignalHandlerTypeBSD
+ * @discussion 2) Mach: PLCrashReporterSignalHandlerTypeMach
+ * @discussion For more information about PLCrashReporter please see: https://github.com/microsoft/plcrashreporter
+ * @discussion By default, BSD type will be used.
+ */
+@property (nonatomic) BOOL shouldUseMachSignalHandler;
+
+/**
+ * Callback block to be executed when the app is launched again following a crash which is detected by PLCrashReporter on the previous session.
+ * @discussion It has an @c NSDictionary parameter that represents crash report object.
+ * @discussion If @c shouldUsePLCrashReporter flag is not set on initial config, it will never be executed.
+ */
+@property (nonatomic, copy) void (^crashOccuredOnPreviousSessionCallback)(NSDictionary * crashReport);
+
+/**
+ * Callback block to decide whether the crash report detected by PLCrashReporter should be sent to Countly Server or not.
+ * @discussion If not set, crash report will be sent to Countly Server by default.
+ * @discussion If set, crash report will be sent to Countly Server only if `YES` is returned.
+ * @discussion It has an @c NSDictionary parameter that represents crash report object.
+ * @discussion If @c shouldUsePLCrashReporter flag is not set on initial config, it will never be executed.
+ */
+@property (nonatomic, copy) BOOL (^shouldSendCrashReportCallback)(NSDictionary * crashReport);
 
 #pragma mark -
 

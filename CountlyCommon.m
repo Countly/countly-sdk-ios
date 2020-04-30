@@ -7,6 +7,9 @@
 #import "CountlyCommon.h"
 #include <CommonCrypto/CommonDigest.h>
 
+NSString* const kCountlyReservedEventOrientation = @"[CLY]_orientation";
+NSString* const kCountlyOrientationKeyMode = @"mode";
+
 @interface CLYWCSessionDelegateInterceptor : CLYDelegateInterceptor
 @end
 
@@ -17,6 +20,11 @@
     NSTimeInterval startTime;
 }
 @property long long lastTimestamp;
+
+#if (TARGET_OS_IOS)
+@property (nonatomic) NSString* lastInterfaceOrientation;
+#endif
+
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 @property (nonatomic) UIBackgroundTaskIdentifier bgTask;
 #endif
@@ -25,7 +33,7 @@
 #endif
 @end
 
-NSString* const kCountlySDKVersion = @"19.08";
+NSString* const kCountlySDKVersion = @"20.04";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
@@ -54,6 +62,16 @@ NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
     return self;
 }
 
+
+- (BOOL)hasStarted
+{
+    if (!_hasStarted)
+        CountlyPrint(@"SDK should be started first!");
+
+    return _hasStarted;
+}
+
+
 void CountlyInternalLog(NSString *format, ...)
 {
     if (!CountlyCommon.sharedInstance.enableDebug)
@@ -62,13 +80,16 @@ void CountlyInternalLog(NSString *format, ...)
     va_list args;
     va_start(args, format);
 
-    NSString* logFormat = [NSString stringWithFormat:@"[Countly] %@", format];
-    NSString* logString = [NSString.alloc initWithFormat:logFormat arguments:args];
-    NSLog(@"%@", logString);
+    NSString* logString = [NSString.alloc initWithFormat:format arguments:args];
+    CountlyPrint(logString);
 
     va_end(args);
 }
 
+void CountlyPrint(NSString *stringToPrint)
+{
+    NSLog(@"[Countly] %@", stringToPrint);
+}
 
 #pragma mark - Time/Date related methods
 - (NSInteger)hourOfDay
@@ -128,7 +149,7 @@ void CountlyInternalLog(NSString *format, ...)
     }
 #endif
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
     if (@available(iOS 9.0, *))
     {
         if (WCSession.defaultSession.paired && WCSession.defaultSession.watchAppInstalled)
@@ -165,6 +186,61 @@ void CountlyInternalLog(NSString *format, ...)
         return;
 
     [CountlyConnectionManager.sharedInstance sendAttribution:[attribution cly_JSONify]];
+}
+
+#pragma mark - Orientation
+
+- (void)observeDeviceOrientationChanges
+{
+#if (TARGET_OS_IOS)
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(deviceOrientationDidChange:) name:UIDeviceOrientationDidChangeNotification object:nil];
+#endif
+}
+
+- (void)deviceOrientationDidChange:(NSNotification *)notification
+{
+    COUNTLY_LOG(@"Device orientation changed.");
+    //NOTE: Delay is needed for interface orientation change animation to complete. Otherwise old interface orientation value is returned.
+    [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(recordOrientation) object:nil];
+    [self performSelector:@selector(recordOrientation) withObject:nil afterDelay:0.5];
+}
+
+- (void)recordOrientation
+{
+#if (TARGET_OS_IOS)
+    UIInterfaceOrientation interfaceOrientation = UIInterfaceOrientationUnknown;
+    if (@available(iOS 13.0, *))
+    {
+        interfaceOrientation = UIApplication.sharedApplication.keyWindow.windowScene.interfaceOrientation;
+    }
+    else
+    {
+        interfaceOrientation = UIApplication.sharedApplication.statusBarOrientation;
+    }
+
+    NSString* mode = nil;
+    if (UIInterfaceOrientationIsPortrait(interfaceOrientation))
+        mode = @"portrait";
+    else if (UIInterfaceOrientationIsLandscape(interfaceOrientation))
+        mode = @"landscape";
+
+    if (!mode)
+    {
+        COUNTLY_LOG(@"Interface orientation is not landscape or portrait.");
+        return;
+    }
+
+    if ([mode isEqualToString:self.lastInterfaceOrientation])
+    {
+        COUNTLY_LOG(@"Interface orientation is still same: %@", self.lastInterfaceOrientation);
+        return;
+    }
+
+    COUNTLY_LOG(@"Interface orientation is now: %@", mode);
+    self.lastInterfaceOrientation = mode;
+
+    [Countly.sharedInstance recordEvent:kCountlyReservedEventOrientation segmentation:@{kCountlyOrientationKeyMode: mode}];
+#endif
 }
 
 #pragma mark - Others
@@ -232,7 +308,7 @@ void CountlyInternalLog(NSString *format, ...)
 
 
 #pragma mark - Internal ViewController
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
 @implementation CLYInternalViewController : UIViewController
 
 @end
@@ -294,7 +370,7 @@ void CountlyInternalLog(NSString *format, ...)
 #pragma mark - Watch Delegate Proxy
 @implementation CLYWCSessionDelegateInterceptor
 
-#if TARGET_OS_WATCH
+#if (TARGET_OS_WATCH)
 - (void)session:(WCSession *)session didReceiveUserInfo:(NSDictionary<NSString *, id> *)userInfo
 {
     COUNTLY_LOG(@"Watch received user info: \n%@", userInfo);

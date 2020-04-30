@@ -5,12 +5,12 @@
 // Please visit www.count.ly for more information.
 
 #import "CountlyCommon.h"
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
 #import <WebKit/WebKit.h>
 #endif
 
 @interface CountlyStarRating ()
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
 @property (nonatomic) UIAlertController* alertController;
 @property (nonatomic, copy) void (^ratingCompletion)(NSInteger);
 #endif
@@ -40,7 +40,7 @@ NSString* const kCountlyWidgetEndpoint      = @"/widget";
 const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 @implementation CountlyStarRating
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
 {
     UIButton* btn_star[5];
 }
@@ -207,12 +207,10 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
     if (rating != 0)
     {
-        NSDictionary* segmentation =
-        @{
-            kCountlySRKeyPlatform: CountlyDeviceInfo.osName,
-            kCountlySRKeyAppVersion: CountlyDeviceInfo.appVersion,
-            kCountlySRKeyRating: @(rating)
-        };
+        NSMutableDictionary* segmentation = NSMutableDictionary.new;
+        segmentation[kCountlySRKeyPlatform] = CountlyDeviceInfo.osName;
+        segmentation[kCountlySRKeyAppVersion] = CountlyDeviceInfo.appVersion;
+        segmentation[kCountlySRKeyRating] =  @(rating);
 
         [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventStarRating segmentation:segmentation];
     }

@@ -166,7 +166,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         else
         {
             COUNTLY_LOG(@"Request <%p> failed!\nError: %@", request, error);
-#if TARGET_OS_WATCH
+#if (TARGET_OS_WATCH)
             [CountlyPersistency.sharedInstance saveToFile];
 #endif
         }
@@ -442,7 +442,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (NSData *)pictureUploadDataForRequest:(NSString *)requestString
 {
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
     NSString* localPicturePath = nil;
     NSString* tempURLString = [@"http://example.com/path?" stringByAppendingString:requestString];
     NSURLComponents* URLComponents = [NSURLComponents componentsWithString:tempURLString];

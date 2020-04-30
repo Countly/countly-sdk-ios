@@ -25,7 +25,7 @@ NSString* const kCountlyPNKeyActionButtonTitle  = @"t";
 NSString* const kCountlyPNKeyActionButtonURL    = @"l";
 
 @implementation CountlyNotificationService
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
 + (void)didReceiveNotificationRequest:(UNNotificationRequest *)request withContentHandler:(void (^)(UNNotificationContent *))contentHandler
 {
     COUNTLY_EXT_LOG(@"didReceiveNotificationRequest:withContentHandler:");
@@ -74,7 +74,12 @@ NSString* const kCountlyPNKeyActionButtonURL    = @"l";
     {
         COUNTLY_EXT_LOG(@"No attachment specified in Countly payload.");
         COUNTLY_EXT_LOG(@"Handling of notification finished.");
-        contentHandler(bestAttemptContent);
+
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.01 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
+        {
+            contentHandler(bestAttemptContent);
+        });
+
         return;
     }
 

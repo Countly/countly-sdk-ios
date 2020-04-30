@@ -86,7 +86,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)endSession;
 
-#if TARGET_OS_WATCH
+#if (TARGET_OS_WATCH)
 /**
  * Suspends Countly, adds recorded events to request queue and ends current session.
  * @discussion This method needs to be called manually only on @c watchOS, on other platforms it will be called automatically.
@@ -112,7 +112,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion If @c requiresConsent flag is not set on initial configuration, calling this method will have no effect.
  * @param featureName Feature name to give consent to
  */
-- (void)giveConsentForFeature:(NSString *)featureName;
+- (void)giveConsentForFeature:(CLYConsent)featureName;
 
 /**
  * Grants consent to given features and starts them.
@@ -120,7 +120,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Inner workings of @c giveConsentForFeature: method applies for this method as well.
  * @param features Array of feature names to give consent to
  */
-- (void)giveConsentForFeatures:(NSArray *)features;
+- (void)giveConsentForFeatures:(NSArray<CLYConsent> *)features;
 
 /**
  * Grants consent to all features and starts them.
@@ -136,7 +136,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion If @c requiresConsent flag is not set on initial configuration, calling this method will have no effect.
  * @param featureName Feature name to cancel consent to
  */
-- (void)cancelConsentForFeature:(NSString *)featureName;
+- (void)cancelConsentForFeature:(CLYConsent)featureName;
 
 /**
  * Cancels consent to given features and stops them.
@@ -144,7 +144,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Inner workings of @c cancelConsentForFeature: method applies for this method as well.
  * @param features Array of feature names to cancel consent to
  */
-- (void)cancelConsentForFeatures:(NSArray *)features;
+- (void)cancelConsentForFeatures:(NSArray<CLYConsent> *)features;
 
 /**
  * Cancels consent to all features and stops them.
@@ -369,7 +369,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 #pragma mark - Crash Reporting
-#if TARGET_OS_IOS
+
 /**
  * Records a handled exception manually.
  * @param exception Exception to be recorded
@@ -405,8 +405,6 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)crashLog:(NSString *)format, ... NS_FORMAT_FUNCTION(1,2) DEPRECATED_MSG_ATTRIBUTE("Use 'recordCrashLog:' method instead!");
 
-#endif
-
 
 
 #pragma mark - View Tracking
@@ -432,7 +430,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)recordView:(NSString *)viewName segmentation:(NSDictionary<NSString *, NSString *> *)segmentation;
 
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
 /**
  * Adds exception for AutoViewTracking.
  * @discussion @c UIViewControllers with specified title or class name will be ignored by AutoViewTracking and their appearances and disappearances will not be recorded.
@@ -490,7 +488,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 #pragma mark - Star Rating
-#if TARGET_OS_IOS
+#if (TARGET_OS_IOS)
 /**
  * Shows star-rating dialog manually and executes completion block after user's action.
  * @discussion Completion block has a single NSInteger parameter that indicates 1 to 5 star-rating given by user.

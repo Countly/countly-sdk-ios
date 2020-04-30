@@ -1,3 +1,28 @@
+## 20.04
+- Added crash reporting feature for tvOS
+- Added crash reporting feature for macOS
+- Added crash reporting feature for watchOS
+- Added optional crash reporting dependency PLCrashReporter for iOS 
+- Added UI orientation tracking 
+- Added crash filtering with regex
+- Updated dSYM uploader script for accepting custom dSYM paths
+- Updated enableAppleWatch flag default value for independent watchOS apps
+- Fixed push notification consent method for macOS targets
+- Fixed not appearing rich push notification buttons for some cases 
+- Discarded OpenGL ES version info in crash reports 
+
+- Other various improvements
+    - Deleted an unnecessary UIKit import
+    - Added precaution for possible nil lines in backtrace
+    - Added precaution for possible nil OS name value
+    - Replaced scheduledTimerWithTimeInterval call with timerWithTimeInterval (thanks @mt-rpranata)
+    - Updated architerture method for crash reports
+    - Updated CocoaPods podspec for core subspec approach
+    - Updated feature, consent and push test mode specifiers as NSString typedefs
+    - Updated HeaderDocs, internal logs, inline notes and pragma marks 
+
+
+
 ## 19.08
 - Added temporary device ID mode
 - Added support for Carthage
