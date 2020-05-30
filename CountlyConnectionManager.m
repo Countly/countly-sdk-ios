@@ -279,13 +279,13 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     if (location)
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocation, location];
 
-   if (city)
+    if (city.length)
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationCity, city];
 
-    if (ISOCountryCode)
+    if (ISOCountryCode.length)
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationCountry, ISOCountryCode];
 
-    if (IP)
+    if (IP.length)
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationIP, IP];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
