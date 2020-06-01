@@ -242,8 +242,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     if (!widgetID.length)
         return;
 
-    NSURL* widgetCheckURL = [self widgetCheckURL:widgetID];
-    NSURLRequest* feedbackWidgetCheckRequest = [NSURLRequest requestWithURL:widgetCheckURL];
+    NSURLRequest* feedbackWidgetCheckRequest = [self widgetCheckURLRequest:widgetID];
     NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:feedbackWidgetCheckRequest completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
         NSDictionary* widgetInfo = nil;
@@ -322,7 +321,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     [CountlyCommon.sharedInstance tryPresentingViewController:webVC];
 }
 
-- (NSURL *)widgetCheckURL:(NSString *)widgetID
+- (NSURLRequest *)widgetCheckURLRequest:(NSString *)widgetID
 {
     NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
 
@@ -330,12 +329,24 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
 
-    NSString* URLString = [NSString stringWithFormat:@"%@%@%@%@?%@",
-                           CountlyConnectionManager.sharedInstance.host,
-                           kCountlyOutputEndpoint, kCountlyFeedbackEndpoint, kCountlyWidgetEndpoint,
-                           queryString];
+    NSString* serverOutputFeedbackWidgetEndpoint = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"%@%@%@",
+                                                    kCountlyOutputEndpoint,
+                                                    kCountlyFeedbackEndpoint,
+                                                    kCountlyWidgetEndpoint];
 
-    return [NSURL URLWithString:URLString];
+    if (CountlyConnectionManager.sharedInstance.alwaysUsePOST)
+    {
+        NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverOutputFeedbackWidgetEndpoint]];
+        request.HTTPMethod = @"POST";
+        request.HTTPBody = [queryString cly_dataUTF8];
+        return  request.copy;
+    }
+    else
+    {
+        NSString* withQueryString = [serverOutputFeedbackWidgetEndpoint stringByAppendingFormat:@"?%@", queryString];
+        NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:withQueryString]];
+        return request;
+    }    
 }
 
 - (NSURL *)widgetDisplayURL:(NSString *)widgetID
