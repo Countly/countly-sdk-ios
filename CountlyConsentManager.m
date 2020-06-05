@@ -16,6 +16,7 @@ CLYConsent const CLYConsentViewTracking         = @"views";
 CLYConsent const CLYConsentAttribution          = @"attribution";
 CLYConsent const CLYConsentStarRating           = @"star-rating";
 CLYConsent const CLYConsentAppleWatch           = @"accessory-devices";
+CLYConsent const CLYConsentPerformanceMonitoring = @"performance-monitoring";
 
 
 @interface CountlyConsentManager ()
@@ -34,6 +35,7 @@ CLYConsent const CLYConsentAppleWatch           = @"accessory-devices";
 @synthesize consentForAttribution = _consentForAttribution;
 @synthesize consentForStarRating = _consentForStarRating;
 @synthesize consentForAppleWatch = _consentForAppleWatch;
+@synthesize consentForPerformanceMonitoring = _consentForPerformanceMonitoring;
 
 #pragma mark -
 
@@ -107,6 +109,9 @@ CLYConsent const CLYConsentAppleWatch           = @"accessory-devices";
     if ([features containsObject:CLYConsentAppleWatch] && !self.consentForAppleWatch)
         self.consentForAppleWatch = YES;
 
+    if ([features containsObject:CLYConsentPerformanceMonitoring] && !self.consentForPerformanceMonitoring)
+        self.consentForPerformanceMonitoring = YES;
+
     [self sendConsentChanges];
 }
 
@@ -151,6 +156,9 @@ CLYConsent const CLYConsentAppleWatch           = @"accessory-devices";
 
     if ([features containsObject:CLYConsentAppleWatch] && self.consentForAppleWatch)
         self.consentForAppleWatch = NO;
+
+    if ([features containsObject:CLYConsentPerformanceMonitoring] && self.consentForPerformanceMonitoring)
+        self.consentForPerformanceMonitoring = NO;
 
     [self sendConsentChanges];
 }
@@ -408,6 +416,25 @@ CLYConsent const CLYConsentAppleWatch           = @"accessory-devices";
     self.consentChanges[CLYConsentAppleWatch] = @(consentForAppleWatch);
 }
 
+
+- (void)setConsentForPerformanceMonitoring:(BOOL)consentForPerformanceMonitoring
+{
+    _consentForPerformanceMonitoring = consentForPerformanceMonitoring;
+
+#if (TARGET_OS_IOS)
+    if (consentForPerformanceMonitoring)
+    {
+        COUNTLY_LOG(@"Consent for PerformanceMonitoring is given.");
+    }
+    else
+    {
+        COUNTLY_LOG(@"Consent for PerformanceMonitoring is cancelled.");
+    }
+#endif
+
+    self.consentChanges[CLYConsentPerformanceMonitoring] = @(consentForPerformanceMonitoring);
+}
+
 #pragma mark -
 
 - (BOOL)consentForSessions
@@ -497,6 +524,15 @@ CLYConsent const CLYConsentAppleWatch           = @"accessory-devices";
       return YES;
 
     return _consentForAppleWatch;
+}
+
+
+- (BOOL)consentForPerformanceMonitoring
+{
+    if (!self.requiresConsent)
+        return YES;
+
+    return _consentForPerformanceMonitoring;
 }
 
 @end
