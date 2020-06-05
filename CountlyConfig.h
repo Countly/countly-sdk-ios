@@ -399,6 +399,13 @@ extern CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc;
  */
 @property (nonatomic, copy) void (^remoteConfigCompletionHandler)(NSError * _Nullable error);
 
+#pragma mark -
+
+/**
+ * For enabling automatic performance monitoring.
+ * @discussion If set, Performance Monitoring feature will be started automatically on SDK start.
+ */
+@property (nonatomic) BOOL enablePerformanceMonitoring;
 NS_ASSUME_NONNULL_END
 
 @end
