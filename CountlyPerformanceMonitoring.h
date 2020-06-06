@@ -12,4 +12,12 @@
 + (instancetype)sharedInstance;
 
 - (void)startPerformanceMonitoring;
+
+- (void)recordNetworkTrace:(NSString *)traceName
+        requestPayloadSize:(NSInteger)requestPayloadSize
+       responsePayloadSize:(NSInteger)responsePayloadSize
+        responseStatusCode:(NSInteger)responseStatusCode
+                 startTime:(long long)startTime
+                   endTime:(long long)endTime;
+
 @end

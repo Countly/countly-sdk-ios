@@ -7,6 +7,18 @@
 #import "CountlyCommon.h"
 
 
+NSString* const kCountlyPMKeyType                   = @"type";
+NSString* const kCountlyPMKeyNetwork                = @"network";
+NSString* const kCountlyPMKeyName                   = @"name";
+NSString* const kCountlyPMKeyAPMMetrics             = @"apm_metrics";
+NSString* const kCountlyPMKeyResponseTime           = @"response_time";
+NSString* const kCountlyPMKeyResponsePayloadSize    = @"response_payload_size";
+NSString* const kCountlyPMKeyResponseCode           = @"response_code";
+NSString* const kCountlyPMKeyRequestPayloadSize     = @"request_payload_size";
+NSString* const kCountlyPMKeyStartTime              = @"stz";
+NSString* const kCountlyPMKeyEndTime                = @"etz";
+
+
 @interface CountlyPerformanceMonitoring ()
 
 @end
@@ -49,6 +61,38 @@
         return;
 
     COUNTLY_LOG(@"Starting performance monitoring...");
+}
+
+#pragma mark ---
+
+- (void)recordNetworkTrace:(NSString *)traceName
+        requestPayloadSize:(NSInteger)requestPayloadSize
+       responsePayloadSize:(NSInteger)responsePayloadSize
+        responseStatusCode:(NSInteger)responseStatusCode
+                 startTime:(long long)startTime
+                   endTime:(long long)endTime
+{
+    if (!traceName.length)
+        return;
+
+    NSDictionary* metrics =
+    @{
+        kCountlyPMKeyRequestPayloadSize: @(requestPayloadSize),
+        kCountlyPMKeyResponseTime: @(endTime - startTime),
+        kCountlyPMKeyResponseCode: @(responseStatusCode),
+        kCountlyPMKeyResponsePayloadSize: @(responsePayloadSize),
+    };
+
+    NSDictionary* trace =
+    @{
+        kCountlyPMKeyType: kCountlyPMKeyNetwork,
+        kCountlyPMKeyName: traceName,
+        kCountlyPMKeyAPMMetrics: metrics,
+        kCountlyPMKeyStartTime: @(startTime),
+        kCountlyPMKeyEndTime: @(endTime),
+    };
+
+    [CountlyConnectionManager.sharedInstance sendPerformanceMonitoringTrace:[trace cly_JSONify]];
 }
 
 @end
