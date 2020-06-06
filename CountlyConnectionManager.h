@@ -35,6 +35,7 @@ extern NSString* const kCountlyQSKeyDeviceID;
 - (void)sendParentDeviceID:(NSString *)parentDeviceID;
 - (void)sendAttribution:(NSString *)attribution;
 - (void)sendConsentChanges:(NSString *)consentChanges;
+- (void)sendPerformanceMonitoringTrace:(NSString *)trace;
 
 - (void)proceedOnQueue;
 

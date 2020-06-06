@@ -48,6 +48,7 @@ NSString* const kCountlyQSKeyCrash            = @"crash";
 NSString* const kCountlyQSKeyChecksum256      = @"checksum256";
 NSString* const kCountlyQSKeyAttributionID    = @"aid";
 NSString* const kCountlyQSKeyConsent          = @"consent";
+NSString* const kCountlyQSKeyAPM              = @"apm";
 
 NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 NSString* const kCountlyInputEndpoint = @"/i";
@@ -409,6 +410,16 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
                              kCountlyQSKeyConsent, consentChanges];
+
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
+
+    [self proceedOnQueue];
+}
+
+- (void)sendPerformanceMonitoringTrace:(NSString *)trace
+{
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
+                             kCountlyQSKeyAPM, trace];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
