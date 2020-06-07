@@ -16,7 +16,7 @@ CLYConsent const CLYConsentViewTracking         = @"views";
 CLYConsent const CLYConsentAttribution          = @"attribution";
 CLYConsent const CLYConsentStarRating           = @"star-rating";
 CLYConsent const CLYConsentAppleWatch           = @"accessory-devices";
-CLYConsent const CLYConsentPerformanceMonitoring = @"performance-monitoring";
+CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
 
 
 @interface CountlyConsentManager ()
