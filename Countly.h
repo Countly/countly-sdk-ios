@@ -558,6 +558,24 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)updateRemoteConfigExceptForKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler;
 
+
+
+#pragma mark - Performance Monitoring
+
+/**
+ * Manually records a network trace for performance monitoring.
+ * @discussion A network trace is a collection of measured information about a network request.
+ * @discussion When a network request is completed, a network trace can be recorded manually to be analyzed in Performance Monitoring feature.
+ * @discussion Trace name needs to be a non-zero length string, otherwise it is ignored.
+ * @param traceName Trace name, a non-zero length valid string
+ * @param requestPayloadSize Size of the request's payload in bytes
+ * @param responsePayloadSize Size of the recevied response's payload in bytes
+ * @param responseStatusCode HTTP status code of the received response
+ * @param startTime UNIX time stamp in milliseconds for the starting time of the request
+ * @param endTime UNIX time stamp in milliseconds for the ending time of the request
+ */
+- (void)recordNetworkTrace:(NSString *)traceName requestPayloadSize:(NSInteger)requestPayloadSize responsePayloadSize:(NSInteger)responsePayloadSize responseStatusCode:(NSInteger)responseStatusCode startTime:(long long)startTime endTime:(long long)endTime;
+
 NS_ASSUME_NONNULL_END
 
 @end
