@@ -20,4 +20,8 @@
                  startTime:(long long)startTime
                    endTime:(long long)endTime;
 
+- (void)startCustomTrace:(NSString *)traceName;
+- (void)endCustomTrace:(NSString *)traceName segmentation:(NSDictionary *)segmentation;
+- (void)cancelCustomTrace:(NSString *)traceName;
+
 @end

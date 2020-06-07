@@ -98,4 +98,31 @@ NSString* const kCountlyPMKeyEndTime                = @"etz";
     [CountlyConnectionManager.sharedInstance sendPerformanceMonitoringTrace:[trace cly_JSONify]];
 }
 
+- (void)startCustomTrace:(NSString *)traceName
+{
+    if (!CountlyConsentManager.sharedInstance.consentForPerformanceMonitoring)
+        return;
+
+    if (!traceName.length)
+        return;
+}
+
+- (void)endCustomTrace:(NSString *)traceName segmentation:(NSDictionary *)segmentation
+{
+    if (!CountlyConsentManager.sharedInstance.consentForPerformanceMonitoring)
+        return;
+
+    if (!traceName.length)
+        return;
+}
+
+- (void)cancelCustomTrace:(NSString *)traceName
+{
+    if (!CountlyConsentManager.sharedInstance.consentForPerformanceMonitoring)
+        return;
+
+    if (!traceName.length)
+        return;
+}
+
 @end
