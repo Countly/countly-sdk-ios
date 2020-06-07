@@ -72,6 +72,9 @@ NSString* const kCountlyPMKeyEndTime                = @"etz";
                  startTime:(long long)startTime
                    endTime:(long long)endTime
 {
+    if (!CountlyConsentManager.sharedInstance.consentForPerformanceMonitoring)
+        return;
+
     if (!traceName.length)
         return;
 
