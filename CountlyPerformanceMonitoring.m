@@ -16,6 +16,7 @@ NSString* const kCountlyPMKeyResponseTime           = @"response_time";
 NSString* const kCountlyPMKeyResponsePayloadSize    = @"response_payload_size";
 NSString* const kCountlyPMKeyResponseCode           = @"response_code";
 NSString* const kCountlyPMKeyRequestPayloadSize     = @"request_payload_size";
+NSString* const kCountlyPMKeyDuration               = @"duration";
 NSString* const kCountlyPMKeyStartTime              = @"stz";
 NSString* const kCountlyPMKeyEndTime                = @"etz";
 
@@ -144,11 +145,17 @@ NSString* const kCountlyPMKeyEndTime                = @"etz";
 
     NSNumber* endTime = @((long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000));
 
+    NSMutableDictionary* mutableMetrics = metrics.mutableCopy;
+    if (!mutableMetrics)
+        mutableMetrics = NSMutableDictionary.new;
+
+    mutableMetrics[kCountlyPMKeyDuration] = @(endTime.longLongValue - startTime.longLongValue);
+
     NSDictionary* trace =
     @{
         kCountlyPMKeyType: kCountlyPMKeyDevice,
         kCountlyPMKeyName: traceName,
-        kCountlyPMKeyAPMMetrics: metrics,
+        kCountlyPMKeyAPMMetrics: mutableMetrics,
         kCountlyPMKeyStartTime: startTime,
         kCountlyPMKeyEndTime: endTime,
     };
