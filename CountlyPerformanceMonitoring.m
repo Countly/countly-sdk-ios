@@ -20,7 +20,7 @@ NSString* const kCountlyPMKeyEndTime                = @"etz";
 
 
 @interface CountlyPerformanceMonitoring ()
-
+@property (nonatomic) NSMutableDictionary* startedCustomTraces;
 @end
 
 
@@ -41,7 +41,7 @@ NSString* const kCountlyPMKeyEndTime                = @"etz";
 {
     if (self = [super init])
     {
-
+        self.startedCustomTraces = NSMutableDictionary.new;
     }
 
     return self;
@@ -105,6 +105,18 @@ NSString* const kCountlyPMKeyEndTime                = @"etz";
 
     if (!traceName.length)
         return;
+
+    @synchronized (self.startedCustomTraces)
+    {
+        if (self.startedCustomTraces[traceName])
+        {
+            COUNTLY_LOG(@"Custom trace with name '%@' already started!", traceName);
+            return;
+        }
+
+        NSNumber* startTime = @((long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000));
+        self.startedCustomTraces[traceName] = startTime;
+    }
 }
 
 - (void)endCustomTrace:(NSString *)traceName segmentation:(NSDictionary *)segmentation
@@ -114,6 +126,33 @@ NSString* const kCountlyPMKeyEndTime                = @"etz";
 
     if (!traceName.length)
         return;
+
+    NSNumber* startTime = nil;
+
+    @synchronized (self.startedCustomTraces)
+    {
+        startTime = self.startedCustomTraces[traceName];
+        [self.startedCustomTraces removeObjectForKey:traceName];
+    }
+
+    if (!startTime)
+    {
+        COUNTLY_LOG(@"Custom trace with name '%@' not started yet or cancelled/ended before!", traceName);
+        return;
+    }
+
+    NSNumber* endTime = @((long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000));
+
+    NSDictionary* trace =
+    @{
+        kCountlyPMKeyType: kCountlyPMKeyNetwork,
+        kCountlyPMKeyName: traceName,
+        kCountlyPMKeyAPMMetrics: segmentation,
+        kCountlyPMKeyStartTime: startTime,
+        kCountlyPMKeyEndTime: endTime,
+    };
+
+    [CountlyConnectionManager.sharedInstance sendPerformanceMonitoringTrace:[trace cly_JSONify]];
 }
 
 - (void)cancelCustomTrace:(NSString *)traceName
