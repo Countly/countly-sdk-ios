@@ -119,7 +119,7 @@ NSString* const kCountlyPMKeyEndTime                = @"etz";
     }
 }
 
-- (void)endCustomTrace:(NSString *)traceName segmentation:(NSDictionary *)segmentation
+- (void)endCustomTrace:(NSString *)traceName metrics:(NSDictionary *)metrics
 {
     if (!CountlyConsentManager.sharedInstance.consentForPerformanceMonitoring)
         return;
@@ -147,7 +147,7 @@ NSString* const kCountlyPMKeyEndTime                = @"etz";
     @{
         kCountlyPMKeyType: kCountlyPMKeyNetwork,
         kCountlyPMKeyName: traceName,
-        kCountlyPMKeyAPMMetrics: segmentation,
+        kCountlyPMKeyAPMMetrics: metrics,
         kCountlyPMKeyStartTime: startTime,
         kCountlyPMKeyEndTime: endTime,
     };

@@ -21,7 +21,7 @@
                    endTime:(long long)endTime;
 
 - (void)startCustomTrace:(NSString *)traceName;
-- (void)endCustomTrace:(NSString *)traceName segmentation:(NSDictionary *)segmentation;
+- (void)endCustomTrace:(NSString *)traceName metrics:(NSDictionary *)metrics;
 - (void)cancelCustomTrace:(NSString *)traceName;
 
 @end
