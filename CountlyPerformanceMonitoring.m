@@ -9,6 +9,7 @@
 
 NSString* const kCountlyPMKeyType                   = @"type";
 NSString* const kCountlyPMKeyNetwork                = @"network";
+NSString* const kCountlyPMKeyDevice                 = @"device";
 NSString* const kCountlyPMKeyName                   = @"name";
 NSString* const kCountlyPMKeyAPMMetrics             = @"apm_metrics";
 NSString* const kCountlyPMKeyResponseTime           = @"response_time";
@@ -145,7 +146,7 @@ NSString* const kCountlyPMKeyEndTime                = @"etz";
 
     NSDictionary* trace =
     @{
-        kCountlyPMKeyType: kCountlyPMKeyNetwork,
+        kCountlyPMKeyType: kCountlyPMKeyDevice,
         kCountlyPMKeyName: traceName,
         kCountlyPMKeyAPMMetrics: metrics,
         kCountlyPMKeyStartTime: startTime,
