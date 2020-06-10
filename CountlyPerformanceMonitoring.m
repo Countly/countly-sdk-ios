@@ -170,6 +170,22 @@ NSString* const kCountlyPMKeyEndTime                = @"etz";
 
     if (!traceName.length)
         return;
+
+    NSNumber* startTime = nil;
+
+    @synchronized (self.startedCustomTraces)
+    {
+        startTime = self.startedCustomTraces[traceName];
+        [self.startedCustomTraces removeObjectForKey:traceName];
+    }
+
+    if (!startTime)
+    {
+        COUNTLY_LOG(@"Custom trace with name '%@' not started yet or cancelled/ended before!", traceName);
+        return;
+    }
+
+    COUNTLY_LOG(@"Custom trace with name '%@' cancelled!", traceName);
 }
 
 @end
