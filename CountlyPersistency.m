@@ -315,7 +315,9 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
         saveData = [NSKeyedArchiver archivedDataWithRootObject:@{kCountlyQueuedRequestsPersistencyKey: self.queuedRequests}];
     }
 
-    [saveData writeToFile:[self storageFileURL].path atomically:YES];
+    BOOL writeResult = [saveData writeToFile:[self storageFileURL].path atomically:YES];
+    COUNTLY_LOG(@"Result of writing data to file %d", writeResult);
+
     [CountlyCommon.sharedInstance finishBackgroundTask];
 }
 
