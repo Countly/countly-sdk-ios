@@ -576,6 +576,29 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)recordNetworkTrace:(NSString *)traceName requestPayloadSize:(NSInteger)requestPayloadSize responsePayloadSize:(NSInteger)responsePayloadSize responseStatusCode:(NSInteger)responseStatusCode startTime:(long long)startTime endTime:(long long)endTime;
 
+/**
+ * Starts a performance monitoring custom trace with given name to be ended later.
+ * @discussion Duration of custom trace will be calculated on ending.
+ * @discussion Trying to start a custom trace with already started name will have no effect.
+ * @param traceName Trace name, a non-zero length valid string
+ */
+- (void)startCustomTrace:(NSString *)traceName;
+
+/**
+ * Ends a previously started performance monitoring custom trace with given name and metrics.
+ * @discussion Trying to end a custom trace with already ended (or not yet started) name will have no effect.
+ * @param traceName Trace name, a non-zero length valid string
+ * @param metrics Metrics key-value pairs
+ */
+- (void)endCustomTrace:(NSString *)traceName metrics:(NSDictionary * _Nullable)metrics;
+
+/**
+ * Cancels a previously started performance monitoring custom trace with given name.
+ * @discussion Trying to cancel a custom trace with already cancelled (or ended or not yet started) name will have no effect.
+ * @param traceName Trace name, a non-zero length valid string
+ */
+- (void)cancelCustomTrace:(NSString *)traceName;
+
 NS_ASSUME_NONNULL_END
 
 @end

@@ -734,4 +734,19 @@
     [CountlyPerformanceMonitoring.sharedInstance recordNetworkTrace:traceName requestPayloadSize:requestPayloadSize responsePayloadSize:responsePayloadSize responseStatusCode:responseStatusCode startTime:startTime endTime:endTime];
 }
 
+- (void)startCustomTrace:(NSString *)traceName
+{
+    [CountlyPerformanceMonitoring.sharedInstance startCustomTrace:traceName];
+}
+
+- (void)endCustomTrace:(NSString *)traceName metrics:(NSDictionary * _Nullable)metrics
+{
+    [CountlyPerformanceMonitoring.sharedInstance endCustomTrace:traceName metrics:metrics];
+}
+
+- (void)cancelCustomTrace:(NSString *)traceName
+{
+    [CountlyPerformanceMonitoring.sharedInstance cancelCustomTrace:traceName];
+}
+
 @end
