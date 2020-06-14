@@ -58,10 +58,7 @@ NSString* const kCountlyPMKeyEndTime                = @"etz";
 
     if (!CountlyConsentManager.sharedInstance.consentForPerformanceMonitoring)
         return;
-
-    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
-        return;
-
+    
     COUNTLY_LOG(@"Starting performance monitoring...");
 }
 
