@@ -116,6 +116,8 @@ NSString* const kCountlyPMKeyEndTime                = @"etz";
         NSNumber* startTime = @((long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000));
         self.startedCustomTraces[traceName] = startTime;
     }
+    
+    COUNTLY_LOG(@"Custom trace with name '%@' just started!", traceName);
 }
 
 - (void)endCustomTrace:(NSString *)traceName metrics:(NSDictionary *)metrics
@@ -146,7 +148,8 @@ NSString* const kCountlyPMKeyEndTime                = @"etz";
     if (!mutableMetrics)
         mutableMetrics = NSMutableDictionary.new;
 
-    mutableMetrics[kCountlyPMKeyDuration] = @(endTime.longLongValue - startTime.longLongValue);
+    long long duration = endTime.longLongValue - startTime.longLongValue;
+    mutableMetrics[kCountlyPMKeyDuration] = @(duration);
 
     NSDictionary* trace =
     @{
@@ -158,6 +161,8 @@ NSString* const kCountlyPMKeyEndTime                = @"etz";
     };
 
     [CountlyConnectionManager.sharedInstance sendPerformanceMonitoringTrace:[trace cly_JSONify]];
+    
+    COUNTLY_LOG(@"Custom trace with name '%@' just ended with duration %lld ms.", traceName, duration);
 }
 
 - (void)cancelCustomTrace:(NSString *)traceName
