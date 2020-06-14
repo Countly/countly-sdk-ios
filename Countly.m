@@ -346,7 +346,11 @@
 
     [CountlyViewTracking.sharedInstance endView];
 
-    [self suspend];
+    [CountlyConnectionManager.sharedInstance sendEvents];
+
+    [CountlyPerformanceMonitoring.sharedInstance endBackgroundTrace];
+
+    [CountlyPersistency.sharedInstance saveToFileSync];
 }
 
 - (void)dealloc
