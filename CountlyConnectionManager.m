@@ -93,6 +93,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return;
     }
 
+    if (self.isTerminating)
+    {
+        COUNTLY_LOG(@"Proceeding on queue is aborted: Application is terminating!");
+        return;
+    }
+
     if (self.customHeaderFieldName && !self.customHeaderFieldValue)
     {
         COUNTLY_LOG(@"Proceeding on queue is aborted: customHeaderFieldName specified on config, but customHeaderFieldValue not set yet!");

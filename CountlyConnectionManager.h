@@ -20,6 +20,8 @@ extern NSString* const kCountlyQSKeyDeviceID;
 @property (nonatomic) BOOL alwaysUsePOST;
 @property (nonatomic) NSURLSessionConfiguration* URLSessionConfiguration;
 
+@property (nonatomic) BOOL isTerminating;
+
 + (instancetype)sharedInstance;
 
 - (void)beginSession;

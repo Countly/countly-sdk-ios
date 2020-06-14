@@ -342,6 +342,8 @@
 {
     COUNTLY_LOG(@"App will terminate.");
 
+    CountlyConnectionManager.sharedInstance.isTerminating = YES;
+
     [CountlyViewTracking.sharedInstance endView];
 
     [self suspend];
