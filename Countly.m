@@ -152,6 +152,9 @@
     CountlyRemoteConfig.sharedInstance.isEnabledOnInitialConfig = config.enableRemoteConfig;
     CountlyRemoteConfig.sharedInstance.remoteConfigCompletionHandler = config.remoteConfigCompletionHandler;
     [CountlyRemoteConfig.sharedInstance startRemoteConfig];
+    
+    CountlyPerformanceMonitoring.sharedInstance.isEnabledOnInitialConfig = config.enablePerformanceMonitoring;
+    [CountlyPerformanceMonitoring.sharedInstance startPerformanceMonitoring];
 
     [CountlyCommon.sharedInstance observeDeviceOrientationChanges];
 
