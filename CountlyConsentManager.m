@@ -425,6 +425,8 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
     if (consentForPerformanceMonitoring)
     {
         COUNTLY_LOG(@"Consent for PerformanceMonitoring is given.");
+        
+        [CountlyPerformanceMonitoring.sharedInstance startPerformanceMonitoring];
     }
     else
     {
