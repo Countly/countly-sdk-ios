@@ -19,6 +19,8 @@ NSString* const kCountlyPMKeyRequestPayloadSize     = @"request_payload_size";
 NSString* const kCountlyPMKeyDuration               = @"duration";
 NSString* const kCountlyPMKeyStartTime              = @"stz";
 NSString* const kCountlyPMKeyEndTime                = @"etz";
+NSString* const kCountlyPMKeyAppInForeground        = @"app_in_foreground";
+NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
 
 
 @interface CountlyPerformanceMonitoring ()
@@ -60,6 +62,46 @@ NSString* const kCountlyPMKeyEndTime                = @"etz";
         return;
     
     COUNTLY_LOG(@"Starting performance monitoring...");
+
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(applicationDidBecomeActive:) name:UIApplicationDidBecomeActiveNotification object:nil];
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(applicationWillResignActive:) name:UIApplicationWillResignActiveNotification object:nil];
+}
+
+- (void)applicationDidBecomeActive:(NSNotification *)notification
+{
+    COUNTLY_LOG(@"applicationDidBecomeActive: (Performance Monitoring)");
+    [self startForegroundTrace];
+    
+}
+
+- (void)applicationWillResignActive:(NSNotification *)notification
+{
+    COUNTLY_LOG(@"applicationWillResignActive: (Performance Monitoring)");
+    [self startBackgroundTrace];
+}
+
+- (void)startForegroundTrace
+{
+    [self endBackgroundTrace];
+
+    [self startCustomTrace:kCountlyPMKeyAppInForeground];
+}
+
+- (void)endForegroundTrace
+{
+    [self endCustomTrace:kCountlyPMKeyAppInForeground metrics:nil];
+}
+
+- (void)startBackgroundTrace
+{
+    [self endForegroundTrace];
+
+    [self startCustomTrace:kCountlyPMKeyAppInBackground];
+}
+
+- (void)endBackgroundTrace
+{
+    [self endCustomTrace:kCountlyPMKeyAppInBackground metrics:nil];
 }
 
 #pragma mark ---
