@@ -316,7 +316,7 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
     }
 
     BOOL writeResult = [saveData writeToFile:[self storageFileURL].path atomically:YES];
-    COUNTLY_LOG(@"Result of writing data to file %d", writeResult);
+    COUNTLY_LOG(@"Result of writing data to file: %d", writeResult);
 
     [CountlyCommon.sharedInstance finishBackgroundTask];
 }
