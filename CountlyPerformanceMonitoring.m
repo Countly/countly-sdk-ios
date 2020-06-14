@@ -202,9 +202,9 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
         kCountlyPMKeyEndTime: endTime,
     };
 
-    [CountlyConnectionManager.sharedInstance sendPerformanceMonitoringTrace:[trace cly_JSONify]];
-    
     COUNTLY_LOG(@"Custom trace with name '%@' just ended with duration %lld ms.", traceName, duration);
+
+    [CountlyConnectionManager.sharedInstance sendPerformanceMonitoringTrace:[trace cly_JSONify]];    
 }
 
 - (void)cancelCustomTrace:(NSString *)traceName
