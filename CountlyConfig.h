@@ -60,6 +60,7 @@ extern CLYConsent const CLYConsentViewTracking;
 extern CLYConsent const CLYConsentAttribution;
 extern CLYConsent const CLYConsentStarRating;
 extern CLYConsent const CLYConsentAppleWatch;
+extern CLYConsent const CLYConsentPerformanceMonitoring;
 
 //NOTE: Push Notification Test Modes
 typedef NSString* CLYPushTestMode NS_EXTENSIBLE_STRING_ENUM;
