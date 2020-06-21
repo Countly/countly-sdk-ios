@@ -270,7 +270,7 @@ extern CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc;
  * For using custom crash segmentation with @c CLYCrashReporting feature.
  * @discussion Crash segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
  * @discussion Custom objects in crash segmentation will cause crash report not to be sent to Countly Server.
- * @discussion Nested values in crash segmentation will be ignored by Counly Server.
+ * @discussion Nested values in crash segmentation will be ignored by Countly Server.
  */
 @property (nonatomic, copy) NSDictionary<NSString *, NSString *>* crashSegmentation;
 
@@ -289,7 +289,7 @@ extern CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc;
 
 /**
  * For using PLCrashReporter instead of default crash handling mechanism.
- * @discussion If set, SDK will be using PLCrashReporter (1.5.1) dependecy for creating crash reports.
+ * @discussion If set, SDK will be using PLCrashReporter (1.5.1) dependency for creating crash reports.
  * @discussion PLCrashReporter option is available only for iOS apps.
  * @discussion For more information about PLCrashReporter please see: https://github.com/microsoft/plcrashreporter
  */
