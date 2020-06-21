@@ -188,6 +188,7 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
         CLYConsentAttribution,
         CLYConsentStarRating,
         CLYConsentAppleWatch,
+        CLYConsentPerformanceMonitoring,
     ];
 }
 
@@ -204,7 +205,8 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
     self.consentForViewTracking ||
     self.consentForAttribution ||
     self.consentForStarRating ||
-    self.consentForAppleWatch;
+    self.consentForAppleWatch ||
+    self.consentForPerformanceMonitoring;
 }
 
 
