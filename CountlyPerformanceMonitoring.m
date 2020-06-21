@@ -26,6 +26,7 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
 
 @interface CountlyPerformanceMonitoring ()
 @property (nonatomic) NSMutableDictionary* startedCustomTraces;
+@property (nonatomic) BOOL hasAlreadyRecordedAppStartDurationTrace;
 @end
 
 
@@ -114,6 +115,12 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
     if (!CountlyConsentManager.sharedInstance.consentForPerformanceMonitoring)
         return;
 
+    if (self.hasAlreadyRecordedAppStartDurationTrace)
+    {
+        COUNTLY_LOG(@"App start duration trace can be recorded once per app launch. So, it will not be recorded this time!");
+        return;
+    }
+
     long long appLoadDuration = endTime - startTime;
 
     COUNTLY_LOG(@"App is loaded and displayed its first view in %lld milliseconds.", appLoadDuration);
@@ -133,6 +140,8 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
     };
 
     [CountlyConnectionManager.sharedInstance sendPerformanceMonitoringTrace:[trace cly_JSONify]];
+
+    self.hasAlreadyRecordedAppStartDurationTrace = YES;
 }
 
 - (void)recordNetworkTrace:(NSString *)traceName
