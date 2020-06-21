@@ -110,7 +110,7 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
 
 #pragma mark ---
 
-- (void)recordAppLoadDurationWithStartTime:(long long)startTime endTime:(long long)endTime
+- (void)recordAppStartDurationTraceWithStartTime:(long long)startTime endTime:(long long)endTime
 {
     if (!CountlyConsentManager.sharedInstance.consentForPerformanceMonitoring)
         return;
@@ -121,13 +121,13 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
         return;
     }
 
-    long long appLoadDuration = endTime - startTime;
+    long long appStartDuration = endTime - startTime;
 
-    COUNTLY_LOG(@"App is loaded and displayed its first view in %lld milliseconds.", appLoadDuration);
+    COUNTLY_LOG(@"App is loaded and displayed its first view in %lld milliseconds.", appStartDuration);
 
     NSDictionary* metrics =
     @{
-        kCountlyPMKeyDuration: @(appLoadDuration),
+        kCountlyPMKeyDuration: @(appStartDuration),
     };
 
     NSDictionary* trace =
