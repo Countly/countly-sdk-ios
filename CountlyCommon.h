@@ -20,6 +20,7 @@
 #import "CountlyConsentManager.h"
 #import "CountlyLocationManager.h"
 #import "CountlyRemoteConfig.h"
+#import "CountlyPerformanceMonitoring.h"
 
 #if DEBUG
 #define COUNTLY_LOG(fmt, ...) CountlyInternalLog(fmt, ##__VA_ARGS__)

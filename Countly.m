@@ -15,7 +15,16 @@
 }
 @end
 
+long long appLoadStartTime;
+
 @implementation Countly
+
++ (void)load
+{
+    [super load];
+
+    appLoadStartTime = floor(NSDate.date.timeIntervalSince1970 * 1000);
+}
 
 + (instancetype)sharedInstance
 {
@@ -152,6 +161,9 @@
     CountlyRemoteConfig.sharedInstance.isEnabledOnInitialConfig = config.enableRemoteConfig;
     CountlyRemoteConfig.sharedInstance.remoteConfigCompletionHandler = config.remoteConfigCompletionHandler;
     [CountlyRemoteConfig.sharedInstance startRemoteConfig];
+    
+    CountlyPerformanceMonitoring.sharedInstance.isEnabledOnInitialConfig = config.enablePerformanceMonitoring;
+    [CountlyPerformanceMonitoring.sharedInstance startPerformanceMonitoring];
 
     [CountlyCommon.sharedInstance observeDeviceOrientationChanges];
 
@@ -339,9 +351,15 @@
 {
     COUNTLY_LOG(@"App will terminate.");
 
+    CountlyConnectionManager.sharedInstance.isTerminating = YES;
+
     [CountlyViewTracking.sharedInstance endView];
 
-    [self suspend];
+    [CountlyConnectionManager.sharedInstance sendEvents];
+
+    [CountlyPerformanceMonitoring.sharedInstance endBackgroundTrace];
+
+    [CountlyPersistency.sharedInstance saveToFileSync];
 }
 
 - (void)dealloc
@@ -725,5 +743,35 @@
     [CountlyRemoteConfig.sharedInstance updateRemoteConfigForKeys:nil omitKeys:omitKeys completionHandler:completionHandler];
 }
 
+
+
+#pragma mark - Performance Monitoring
+
+- (void)recordNetworkTrace:(NSString *)traceName requestPayloadSize:(NSInteger)requestPayloadSize responsePayloadSize:(NSInteger)responsePayloadSize responseStatusCode:(NSInteger)responseStatusCode startTime:(long long)startTime endTime:(long long)endTime
+{
+    [CountlyPerformanceMonitoring.sharedInstance recordNetworkTrace:traceName requestPayloadSize:requestPayloadSize responsePayloadSize:responsePayloadSize responseStatusCode:responseStatusCode startTime:startTime endTime:endTime];
+}
+
+- (void)startCustomTrace:(NSString *)traceName
+{
+    [CountlyPerformanceMonitoring.sharedInstance startCustomTrace:traceName];
+}
+
+- (void)endCustomTrace:(NSString *)traceName metrics:(NSDictionary * _Nullable)metrics
+{
+    [CountlyPerformanceMonitoring.sharedInstance endCustomTrace:traceName metrics:metrics];
+}
+
+- (void)cancelCustomTrace:(NSString *)traceName
+{
+    [CountlyPerformanceMonitoring.sharedInstance cancelCustomTrace:traceName];
+}
+
+- (void)appLoadingFinished
+{
+    long long appLoadEndTime = floor(NSDate.date.timeIntervalSince1970 * 1000);
+
+    [CountlyPerformanceMonitoring.sharedInstance recordAppStartDurationTraceWithStartTime:appLoadStartTime endTime:appLoadEndTime];
+}
 
 @end

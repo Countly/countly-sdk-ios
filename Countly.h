@@ -558,6 +558,56 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)updateRemoteConfigExceptForKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler;
 
+
+
+#pragma mark - Performance Monitoring
+
+/**
+ * Manually records a network trace for performance monitoring.
+ * @discussion A network trace is a collection of measured information about a network request.
+ * @discussion When a network request is completed, a network trace can be recorded manually to be analyzed in Performance Monitoring feature.
+ * @discussion Trace name needs to be a non-zero length string, otherwise it is ignored.
+ * @param traceName Trace name, a non-zero length valid string
+ * @param requestPayloadSize Size of the request's payload in bytes
+ * @param responsePayloadSize Size of the recevied response's payload in bytes
+ * @param responseStatusCode HTTP status code of the received response
+ * @param startTime UNIX time stamp in milliseconds for the starting time of the request
+ * @param endTime UNIX time stamp in milliseconds for the ending time of the request
+ */
+- (void)recordNetworkTrace:(NSString *)traceName requestPayloadSize:(NSInteger)requestPayloadSize responsePayloadSize:(NSInteger)responsePayloadSize responseStatusCode:(NSInteger)responseStatusCode startTime:(long long)startTime endTime:(long long)endTime;
+
+/**
+ * Starts a performance monitoring custom trace with given name to be ended later.
+ * @discussion Duration of custom trace will be calculated on ending.
+ * @discussion Trying to start a custom trace with already started name will have no effect.
+ * @param traceName Trace name, a non-zero length valid string
+ */
+- (void)startCustomTrace:(NSString *)traceName;
+
+/**
+ * Ends a previously started performance monitoring custom trace with given name and metrics.
+ * @discussion Trying to end a custom trace with already ended (or not yet started) name will have no effect.
+ * @param traceName Trace name, a non-zero length valid string
+ * @param metrics Metrics key-value pairs
+ */
+- (void)endCustomTrace:(NSString *)traceName metrics:(NSDictionary * _Nullable)metrics;
+
+/**
+ * Cancels a previously started performance monitoring custom trace with given name.
+ * @discussion Trying to cancel a custom trace with already cancelled (or ended or not yet started) name will have no effect.
+ * @param traceName Trace name, a non-zero length valid string
+ */
+- (void)cancelCustomTrace:(NSString *)traceName;
+
+/**
+ * Calculates and records app launch time for performance monitoring.
+ * @discussion This method should be called when the app is loaded and displayed its first user facing view successfully.
+ * @discussion e.g. @c viewDidAppear: method of the root view controller or whatever place is suitable for the app's flow.
+ * @discussion Time passed since the app started to launch will be automatically calculated and recorded for performance monitoring.
+ * @discussion App launch time can be recorded only once per app launch. So, second and following calls to this method will be ignored.
+ */
+- (void)appLoadingFinished;
+
 NS_ASSUME_NONNULL_END
 
 @end

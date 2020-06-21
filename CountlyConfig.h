@@ -60,6 +60,7 @@ extern CLYConsent const CLYConsentViewTracking;
 extern CLYConsent const CLYConsentAttribution;
 extern CLYConsent const CLYConsentStarRating;
 extern CLYConsent const CLYConsentAppleWatch;
+extern CLYConsent const CLYConsentPerformanceMonitoring;
 
 //NOTE: Push Notification Test Modes
 typedef NSString* CLYPushTestMode NS_EXTENSIBLE_STRING_ENUM;
@@ -399,6 +400,13 @@ extern CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc;
  */
 @property (nonatomic, copy) void (^remoteConfigCompletionHandler)(NSError * _Nullable error);
 
+#pragma mark -
+
+/**
+ * For enabling automatic performance monitoring.
+ * @discussion If set, Performance Monitoring feature will be started automatically on SDK start.
+ */
+@property (nonatomic) BOOL enablePerformanceMonitoring;
 NS_ASSUME_NONNULL_END
 
 @end
