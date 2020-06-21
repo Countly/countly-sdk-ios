@@ -19,6 +19,7 @@ NSString* const kCountlyPMKeyRequestPayloadSize     = @"request_payload_size";
 NSString* const kCountlyPMKeyDuration               = @"duration";
 NSString* const kCountlyPMKeyStartTime              = @"stz";
 NSString* const kCountlyPMKeyEndTime                = @"etz";
+NSString* const kCountlyPMKeyAppStart               = @"app_start";
 NSString* const kCountlyPMKeyAppInForeground        = @"app_in_foreground";
 NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
 
@@ -67,6 +68,8 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(applicationWillResignActive:) name:UIApplicationWillResignActiveNotification object:nil];
 }
 
+#pragma mark ---
+
 - (void)applicationDidBecomeActive:(NSNotification *)notification
 {
     COUNTLY_LOG(@"applicationDidBecomeActive: (Performance Monitoring)");
@@ -105,6 +108,32 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
 }
 
 #pragma mark ---
+
+- (void)recordAppLoadDurationWithStartTime:(long long)startTime endTime:(long long)endTime
+{
+    if (!CountlyConsentManager.sharedInstance.consentForPerformanceMonitoring)
+        return;
+
+    long long appLoadDuration = endTime - startTime;
+
+    COUNTLY_LOG(@"App is loaded and displayed its first view in %lld milliseconds.", appLoadDuration);
+
+    NSDictionary* metrics =
+    @{
+        kCountlyPMKeyDuration: @(appLoadDuration),
+    };
+
+    NSDictionary* trace =
+    @{
+        kCountlyPMKeyType: kCountlyPMKeyDevice,
+        kCountlyPMKeyName: kCountlyPMKeyAppStart,
+        kCountlyPMKeyAPMMetrics: metrics,
+        kCountlyPMKeyStartTime: @(startTime),
+        kCountlyPMKeyEndTime: @(endTime),
+    };
+
+    [CountlyConnectionManager.sharedInstance sendPerformanceMonitoringTrace:[trace cly_JSONify]];
+}
 
 - (void)recordNetworkTrace:(NSString *)traceName
         requestPayloadSize:(NSInteger)requestPayloadSize

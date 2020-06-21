@@ -12,6 +12,7 @@
 + (instancetype)sharedInstance;
 
 - (void)startPerformanceMonitoring;
+- (void)recordAppLoadDurationWithStartTime:(long long)startTime endTime:(long long)endTime;
 - (void)endBackgroundTrace;
 
 - (void)recordNetworkTrace:(NSString *)traceName
