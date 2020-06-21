@@ -79,6 +79,11 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
     if (!features.count)
         return;
 
+    //NOTE: Due to some legacy Countly Server location info problems, giving consent for location should be the first.
+    //NOTE: Otherwise, if location consent is given after sessions consent, begin_session request will be sent with an empty string as location.
+    if ([features containsObject:CLYConsentLocation] && !self.consentForLocation)
+        self.consentForLocation = YES;
+
     if ([features containsObject:CLYConsentSessions] && !self.consentForSessions)
         self.consentForSessions = YES;
 
@@ -93,9 +98,6 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
 
     if ([features containsObject:CLYConsentPushNotifications] && !self.consentForPushNotifications)
         self.consentForPushNotifications = YES;
-
-    if ([features containsObject:CLYConsentLocation] && !self.consentForLocation)
-        self.consentForLocation = YES;
 
     if ([features containsObject:CLYConsentViewTracking] && !self.consentForViewTracking)
         self.consentForViewTracking = YES;
