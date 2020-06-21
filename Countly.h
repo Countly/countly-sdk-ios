@@ -599,6 +599,15 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)cancelCustomTrace:(NSString *)traceName;
 
+/**
+ * Calculates and records app launch time for performance monitoring.
+ * @discussion This method should be called when the app is loaded and displayed its first user facing view successfully.
+ * @discussion e.g. @c viewDidAppear: method of the root view controller or whatever place is suitable for the app's flow.
+ * @discussion Time passed since the app started to launch will be automatically calculated and recorded for performance monitoring.
+ * @discussion App launch time can be recorded only once per app launch. So, second and following calls to this method will be ignored.
+ */
+- (void)appLoadingFinished;
+
 NS_ASSUME_NONNULL_END
 
 @end

@@ -15,7 +15,16 @@
 }
 @end
 
+long long appLoadStartTime;
+
 @implementation Countly
+
++ (void)load
+{
+    [super load];
+
+    appLoadStartTime = floor(NSDate.date.timeIntervalSince1970 * 1000);
+}
 
 + (instancetype)sharedInstance
 {
@@ -756,6 +765,13 @@
 - (void)cancelCustomTrace:(NSString *)traceName
 {
     [CountlyPerformanceMonitoring.sharedInstance cancelCustomTrace:traceName];
+}
+
+- (void)appLoadingFinished
+{
+    long long appLoadEndTime = floor(NSDate.date.timeIntervalSince1970 * 1000);
+
+    [CountlyPerformanceMonitoring.sharedInstance recordAppStartDurationTraceWithStartTime:appLoadStartTime endTime:appLoadEndTime];
 }
 
 @end
