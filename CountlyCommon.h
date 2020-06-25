@@ -96,6 +96,8 @@ void CountlyPrint(NSString *stringToPrint);
 - (void)startAttribution;
 
 - (void)observeDeviceOrientationChanges;
+
+- (BOOL)hasStarted_;
 @end
 
 

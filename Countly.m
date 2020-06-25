@@ -66,7 +66,7 @@ long long appLoadStartTime;
 
 - (void)startWithConfig:(CountlyConfig *)config
 {
-    if (CountlyCommon.sharedInstance.hasStarted)
+    if (CountlyCommon.sharedInstance.hasStarted_)
         return;
 
     CountlyCommon.sharedInstance.hasStarted = YES;

@@ -71,6 +71,11 @@ NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
     return _hasStarted;
 }
 
+//NOTE: This is an equivalent of hasStarted, but without internal logging.
+- (BOOL)hasStarted_
+{
+    return _hasStarted;
+}
 
 void CountlyInternalLog(NSString *format, ...)
 {
