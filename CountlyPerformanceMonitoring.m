@@ -65,8 +65,16 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
     
     COUNTLY_LOG(@"Starting performance monitoring...");
 
-    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(applicationDidBecomeActive:) name:UIApplicationDidBecomeActiveNotification object:nil];
-    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(applicationWillResignActive:) name:UIApplicationWillResignActiveNotification object:nil];
+#if (TARGET_OS_OSX)
+    NSNotificationName didBecomeActiveNotificationName = NSApplicationDidBecomeActiveNotification;
+    NSNotificationName willResignActiveNotificationName = NSApplicationWillResignActiveNotification;
+#else
+    NSNotificationName didBecomeActiveNotificationName = UIApplicationDidBecomeActiveNotification;
+    NSNotificationName willResignActiveNotificationName = UIApplicationWillResignActiveNotification;
+#endif
+
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(applicationDidBecomeActive:) name:didBecomeActiveNotificationName object:nil];
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(applicationWillResignActive:) name:willResignActiveNotificationName object:nil];
 }
 
 #pragma mark ---
