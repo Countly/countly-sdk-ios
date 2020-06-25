@@ -304,13 +304,16 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
     {
         COUNTLY_LOG(@"Consent for PushNotifications is given.");
 
+#ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
         [CountlyPushNotifications.sharedInstance startPushNotifications];
+#endif
     }
     else
     {
         COUNTLY_LOG(@"Consent for PushNotifications is cancelled.");
-
+#ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
         [CountlyPushNotifications.sharedInstance stopPushNotifications];
+#endif
     }
 #endif
 

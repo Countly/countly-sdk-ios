@@ -119,6 +119,7 @@ long long appLoadStartTime;
 #endif
 
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
+#ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
     if ([config.features containsObject:CLYPushNotifications])
     {
         CountlyPushNotifications.sharedInstance.isEnabledOnInitialConfig = YES;
@@ -128,6 +129,7 @@ long long appLoadStartTime;
         CountlyPushNotifications.sharedInstance.launchNotification = config.launchNotification;
         [CountlyPushNotifications.sharedInstance startPushNotifications];
     }
+#endif
 #endif
 
     CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
@@ -561,6 +563,7 @@ long long appLoadStartTime;
 
 #pragma mark - Push Notifications
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
+#ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
 
 - (void)askForNotificationPermission
 {
@@ -586,6 +589,7 @@ long long appLoadStartTime;
 {
     [CountlyPushNotifications.sharedInstance clearToken];
 }
+#endif
 #endif
 
 

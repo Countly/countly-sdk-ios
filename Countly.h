@@ -282,6 +282,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - Push Notification
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
+#ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
 /**
  * Shows default system dialog that asks for user's permission to display notifications.
  * @discussion A unified convenience method that handles asking for notification permission on both iOS10 and older iOS versions with badge, sound and alert notification types.
@@ -320,6 +321,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Can be used to clear push notification token for current device ID, before the current user logs out and device ID changes, without waiting for the app to be restarted.
  */
 - (void)clearPushNotificationToken;
+#endif
 #endif
 
 

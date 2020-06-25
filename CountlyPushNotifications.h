@@ -7,7 +7,7 @@
 #import <Foundation/Foundation.h>
 
 @interface CountlyPushNotifications : NSObject
-
+#ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
 @property (nonatomic) BOOL isEnabledOnInitialConfig;
 @property (nonatomic) NSString* pushTestMode;
 @property (nonatomic) BOOL sendPushTokenAlways;
@@ -23,5 +23,6 @@
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
 - (void)sendToken;
 - (void)clearToken;
+#endif
 #endif
 @end

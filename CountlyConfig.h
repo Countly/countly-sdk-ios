@@ -11,7 +11,9 @@ NS_ASSUME_NONNULL_BEGIN
 //NOTE: Countly features
 typedef NSString* CLYFeature NS_EXTENSIBLE_STRING_ENUM;
 #if (TARGET_OS_IOS)
+#ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
 extern CLYFeature const CLYPushNotifications;
+#endif
 extern CLYFeature const CLYCrashReporting;
 extern CLYFeature const CLYAutoViewTracking;
 #elif (TARGET_OS_WATCH)
@@ -20,7 +22,9 @@ extern CLYFeature const CLYCrashReporting;
 extern CLYFeature const CLYCrashReporting;
 extern CLYFeature const CLYAutoViewTracking;
 #elif (TARGET_OS_OSX)
+#ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
 extern CLYFeature const CLYPushNotifications;
+#endif
 extern CLYFeature const CLYCrashReporting;
 #endif
 

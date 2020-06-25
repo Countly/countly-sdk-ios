@@ -33,6 +33,8 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
 @implementation CountlyPushNotifications
 
+#ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
+
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
@@ -562,6 +564,6 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
     [self Countly_application:application didReceiveRemoteNotification:userInfo];
 }
 #endif
-
+#endif
 @end
 #pragma GCC diagnostic pop

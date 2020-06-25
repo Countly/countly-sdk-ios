@@ -254,6 +254,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)sendPushToken:(NSString *)token
 {
+#ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
     NSInteger testMode = 0; //NOTE: default is 0: Production - not test mode
 
     if ([CountlyPushNotifications.sharedInstance.pushTestMode isEqualToString:CLYPushTestModeDevelopment])
@@ -269,6 +270,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
     [self proceedOnQueue];
+#endif
 }
 
 - (void)sendLocationInfo
