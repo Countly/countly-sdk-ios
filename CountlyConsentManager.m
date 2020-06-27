@@ -438,6 +438,8 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
     else
     {
         COUNTLY_LOG(@"Consent for PerformanceMonitoring is cancelled.");
+
+        [CountlyPerformanceMonitoring.sharedInstance stopPerformanceMonitoring];
     }
 #endif
 

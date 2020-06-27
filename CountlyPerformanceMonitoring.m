@@ -74,6 +74,17 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
 #endif
 }
 
+- (void)stopPerformanceMonitoring
+{
+#if (TARGET_OS_OSX)
+    [NSNotificationCenter.defaultCenter removeObserver:self name:NSApplicationDidBecomeActiveNotification object:nil];
+    [NSNotificationCenter.defaultCenter removeObserver:self name:NSApplicationWillResignActiveNotification object:nil];
+#elif (TARGET_OS_IOS  || TARGET_OS_TV)
+    [NSNotificationCenter.defaultCenter removeObserver:self name:UIApplicationDidBecomeActiveNotification object:nil];
+    [NSNotificationCenter.defaultCenter removeObserver:self name:UIApplicationWillResignActiveNotification object:nil];
+#endif
+}
+
 #pragma mark ---
 
 - (void)applicationDidBecomeActive:(NSNotification *)notification

@@ -12,6 +12,7 @@
 + (instancetype)sharedInstance;
 
 - (void)startPerformanceMonitoring;
+- (void)stopPerformanceMonitoring;
 - (void)recordAppStartDurationTraceWithStartTime:(long long)startTime endTime:(long long)endTime;
 - (void)endBackgroundTrace;
 
