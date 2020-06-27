@@ -48,10 +48,6 @@
 #endif
 #endif
 
-#if (TARGET_OS_OSX)
-#import <AppKit/AppKit.h>
-#endif
-
 #import <objc/runtime.h>
 
 extern NSString* const kCountlySDKVersion;
