@@ -72,6 +72,11 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(applicationDidBecomeActive:) name:UIApplicationDidBecomeActiveNotification object:nil];
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(applicationWillResignActive:) name:UIApplicationWillResignActiveNotification object:nil];
 #endif
+
+    if (CountlyDeviceInfo.isInBackground)
+        [self startBackgroundTrace];
+    else
+        [self startForegroundTrace];
 }
 
 - (void)stopPerformanceMonitoring
