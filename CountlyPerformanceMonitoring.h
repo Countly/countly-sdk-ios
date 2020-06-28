@@ -26,5 +26,6 @@
 - (void)startCustomTrace:(NSString *)traceName;
 - (void)endCustomTrace:(NSString *)traceName metrics:(NSDictionary *)metrics;
 - (void)cancelCustomTrace:(NSString *)traceName;
+- (void)clearAllCustomTraces;
 
 @end

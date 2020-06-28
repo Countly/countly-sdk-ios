@@ -83,6 +83,8 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
     [NSNotificationCenter.defaultCenter removeObserver:self name:UIApplicationDidBecomeActiveNotification object:nil];
     [NSNotificationCenter.defaultCenter removeObserver:self name:UIApplicationWillResignActiveNotification object:nil];
 #endif
+
+    [self clearAllCustomTraces];
 }
 
 #pragma mark ---
@@ -286,4 +288,11 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
     COUNTLY_LOG(@"Custom trace with name '%@' cancelled!", traceName);
 }
 
+- (void)clearAllCustomTraces
+{
+    @synchronized (self.startedCustomTraces)
+    {
+        [self.startedCustomTraces removeAllObjects];
+    }
+}
 @end
