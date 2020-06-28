@@ -773,6 +773,11 @@ long long appLoadStartTime;
     [CountlyPerformanceMonitoring.sharedInstance cancelCustomTrace:traceName];
 }
 
+- (void)clearAllCustomTraces
+{
+    [CountlyPerformanceMonitoring.sharedInstance clearAllCustomTraces];
+}
+
 - (void)appLoadingFinished
 {
     long long appLoadEndTime = floor(NSDate.date.timeIntervalSince1970 * 1000);

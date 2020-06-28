@@ -602,6 +602,14 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)cancelCustomTrace:(NSString *)traceName;
 
 /**
+ * Clears all previously started performance monitoring custom traces.
+ * @discussion All previously started performance monitoring custom traces are automatically cleaned when:
+ * @discussion - Consent for @c CLYConsentPerformanceMonitoring is cancelled
+ * @discussion - A new app key is set using @c setNewAppKey: method
+ */
+- (void)clearAllCustomTraces;
+
+/**
  * Calculates and records app launch time for performance monitoring.
  * @discussion This method should be called when the app is loaded and displayed its first user facing view successfully.
  * @discussion e.g. @c viewDidAppear: method of the root view controller or whatever place is suitable for the app's flow.
