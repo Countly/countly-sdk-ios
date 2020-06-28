@@ -18,6 +18,7 @@
     - Deleted some unnecessary imports
     - Updated HeaderDocs, internal logs, inline notes and pragma marks 
     - Added missing frameworks to CocoaPods podspec
+    - Added ability to override SDK name and version for bridge SDKs
 
 
 
