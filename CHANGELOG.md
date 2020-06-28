@@ -6,7 +6,7 @@
     - Automatic app foreground time trace
     - Automatic app background time trace
     - Consent handling for Application Performance Monitoring
-- Added `COUNTLY_EXCLUDE_PUSHNOTIFICATIONS` flag to disable push notifications altogether in order to avoid App Store Connect warnings
+- Added `COUNTLY_EXCLUDE_PUSHNOTIFICATIONS` flag to disable push notifications altogether in order to avoid App Store Connect warnings (thanks @grundleborg)
 - Fixed an incorrect internal logging on SDK start
 - Fixed location consent order to avoid some legacy Countly Server issue with location info being unavailable even after giving consent
 - Improved `UIApplicationWillTerminateNotification` behaviour
