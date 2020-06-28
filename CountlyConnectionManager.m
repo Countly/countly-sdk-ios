@@ -445,8 +445,8 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
                                         kCountlyQSKeyTimeHourOfDay, (int)CountlyCommon.sharedInstance.hourOfDay,
                                         kCountlyQSKeyTimeDayOfWeek, (int)CountlyCommon.sharedInstance.dayOfWeek,
                                         kCountlyQSKeyTimeZone, (int)CountlyCommon.sharedInstance.timeZone,
-                                        kCountlyQSKeySDKVersion, kCountlySDKVersion,
-                                        kCountlyQSKeySDKName, kCountlySDKName];
+                                        kCountlyQSKeySDKVersion, CountlyCommon.sharedInstance.SDKVersion,
+                                        kCountlyQSKeySDKName, CountlyCommon.sharedInstance.SDKName];
 }
 
 - (NSInteger)sessionLengthInSeconds

@@ -50,9 +50,6 @@
 
 #import <objc/runtime.h>
 
-extern NSString* const kCountlySDKVersion;
-extern NSString* const kCountlySDKName;
-
 extern NSString* const kCountlyErrorDomain;
 
 NS_ERROR_ENUM(kCountlyErrorDomain)
@@ -63,6 +60,9 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 };
 
 @interface CountlyCommon : NSObject
+
+@property (nonatomic, copy) NSString* SDKVersion;
+@property (nonatomic, copy) NSString* SDKName;
 
 @property (nonatomic) BOOL hasStarted;
 @property (nonatomic) BOOL enableDebug;

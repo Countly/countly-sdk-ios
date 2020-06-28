@@ -57,6 +57,9 @@ NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
     {
         gregorianCalendar = [NSCalendar.alloc initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
         startTime = NSDate.date.timeIntervalSince1970;
+
+        self.SDKVersion = kCountlySDKVersion;
+        self.SDKName = kCountlySDKName;
     }
 
     return self;
