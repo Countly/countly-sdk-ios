@@ -239,6 +239,8 @@ long long appLoadStartTime;
 
     [self suspend];
 
+    [CountlyPerformanceMonitoring.sharedInstance clearAllCustomTraces];
+
     CountlyConnectionManager.sharedInstance.appKey = newAppKey;
 
     [self resume];
