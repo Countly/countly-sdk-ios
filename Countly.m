@@ -15,7 +15,16 @@
 }
 @end
 
+long long appLoadStartTime;
+
 @implementation Countly
+
++ (void)load
+{
+    [super load];
+
+    appLoadStartTime = floor(NSDate.date.timeIntervalSince1970 * 1000);
+}
 
 + (instancetype)sharedInstance
 {
@@ -57,7 +66,7 @@
 
 - (void)startWithConfig:(CountlyConfig *)config
 {
-    if (CountlyCommon.sharedInstance.hasStarted)
+    if (CountlyCommon.sharedInstance.hasStarted_)
         return;
 
     CountlyCommon.sharedInstance.hasStarted = YES;
@@ -70,7 +79,7 @@
     if (!config.host.length || [config.host isEqualToString:@"https://YOUR_COUNTLY_SERVER"])
         [NSException raise:@"CountlyHostNotSetException" format:@"host property on CountlyConfig object is not set"];
 
-    COUNTLY_LOG(@"Initializing with %@ SDK v%@", kCountlySDKName, kCountlySDKVersion);
+    COUNTLY_LOG(@"Initializing with %@ SDK v%@", CountlyCommon.sharedInstance.SDKName, CountlyCommon.sharedInstance.SDKVersion);
 
     if (!CountlyDeviceInfo.sharedInstance.deviceID || config.resetStoredDeviceID)
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:config.deviceID];
@@ -110,6 +119,7 @@
 #endif
 
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
+#ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
     if ([config.features containsObject:CLYPushNotifications])
     {
         CountlyPushNotifications.sharedInstance.isEnabledOnInitialConfig = YES;
@@ -119,6 +129,7 @@
         CountlyPushNotifications.sharedInstance.launchNotification = config.launchNotification;
         [CountlyPushNotifications.sharedInstance startPushNotifications];
     }
+#endif
 #endif
 
     CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
@@ -152,6 +163,9 @@
     CountlyRemoteConfig.sharedInstance.isEnabledOnInitialConfig = config.enableRemoteConfig;
     CountlyRemoteConfig.sharedInstance.remoteConfigCompletionHandler = config.remoteConfigCompletionHandler;
     [CountlyRemoteConfig.sharedInstance startRemoteConfig];
+    
+    CountlyPerformanceMonitoring.sharedInstance.isEnabledOnInitialConfig = config.enablePerformanceMonitoring;
+    [CountlyPerformanceMonitoring.sharedInstance startPerformanceMonitoring];
 
     [CountlyCommon.sharedInstance observeDeviceOrientationChanges];
 
@@ -224,6 +238,8 @@
         return;
 
     [self suspend];
+
+    [CountlyPerformanceMonitoring.sharedInstance clearAllCustomTraces];
 
     CountlyConnectionManager.sharedInstance.appKey = newAppKey;
 
@@ -339,9 +355,15 @@
 {
     COUNTLY_LOG(@"App will terminate.");
 
+    CountlyConnectionManager.sharedInstance.isTerminating = YES;
+
     [CountlyViewTracking.sharedInstance endView];
 
-    [self suspend];
+    [CountlyConnectionManager.sharedInstance sendEvents];
+
+    [CountlyPerformanceMonitoring.sharedInstance endBackgroundTrace];
+
+    [CountlyPersistency.sharedInstance saveToFileSync];
 }
 
 - (void)dealloc
@@ -543,6 +565,7 @@
 
 #pragma mark - Push Notifications
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
+#ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
 
 - (void)askForNotificationPermission
 {
@@ -569,6 +592,7 @@
     [CountlyPushNotifications.sharedInstance clearToken];
 }
 #endif
+#endif
 
 
 
@@ -581,11 +605,17 @@
 
 - (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode
 {
+    if (!city.length && !ISOCountryCode.length)
+        return;
+
     [CountlyLocationManager.sharedInstance recordLocationInfo:kCLLocationCoordinate2DInvalid city:city ISOCountryCode:ISOCountryCode andIP:nil];
 }
 
 - (void)recordIP:(NSString *)IP
 {
+    if (!IP.length)
+        return;
+
     [CountlyLocationManager.sharedInstance recordLocationInfo:kCLLocationCoordinate2DInvalid city:nil ISOCountryCode:nil andIP:IP];
 }
 
@@ -719,5 +749,40 @@
     [CountlyRemoteConfig.sharedInstance updateRemoteConfigForKeys:nil omitKeys:omitKeys completionHandler:completionHandler];
 }
 
+
+
+#pragma mark - Performance Monitoring
+
+- (void)recordNetworkTrace:(NSString *)traceName requestPayloadSize:(NSInteger)requestPayloadSize responsePayloadSize:(NSInteger)responsePayloadSize responseStatusCode:(NSInteger)responseStatusCode startTime:(long long)startTime endTime:(long long)endTime
+{
+    [CountlyPerformanceMonitoring.sharedInstance recordNetworkTrace:traceName requestPayloadSize:requestPayloadSize responsePayloadSize:responsePayloadSize responseStatusCode:responseStatusCode startTime:startTime endTime:endTime];
+}
+
+- (void)startCustomTrace:(NSString *)traceName
+{
+    [CountlyPerformanceMonitoring.sharedInstance startCustomTrace:traceName];
+}
+
+- (void)endCustomTrace:(NSString *)traceName metrics:(NSDictionary * _Nullable)metrics
+{
+    [CountlyPerformanceMonitoring.sharedInstance endCustomTrace:traceName metrics:metrics];
+}
+
+- (void)cancelCustomTrace:(NSString *)traceName
+{
+    [CountlyPerformanceMonitoring.sharedInstance cancelCustomTrace:traceName];
+}
+
+- (void)clearAllCustomTraces
+{
+    [CountlyPerformanceMonitoring.sharedInstance clearAllCustomTraces];
+}
+
+- (void)appLoadingFinished
+{
+    long long appLoadEndTime = floor(NSDate.date.timeIntervalSince1970 * 1000);
+
+    [CountlyPerformanceMonitoring.sharedInstance recordAppStartDurationTraceWithStartTime:appLoadStartTime endTime:appLoadEndTime];
+}
 
 @end

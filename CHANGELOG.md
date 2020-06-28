@@ -1,3 +1,27 @@
+## 20.04.1
+- Added Application Performance Monitoring (Phase 1)
+    - Manual network traces
+    - Manual custom traces
+    - Semi-automatic app start time trace
+    - Automatic app foreground time trace
+    - Automatic app background time trace
+    - Consent handling for Application Performance Monitoring
+- Added `COUNTLY_EXCLUDE_PUSHNOTIFICATIONS` flag to disable push notifications altogether in order to avoid App Store Connect warnings (thanks @grundleborg)
+- Fixed an incorrect internal logging on SDK start
+- Fixed location consent order to avoid some legacy Countly Server issue with location info being unavailable even after giving consent
+- Improved `UIApplicationWillTerminateNotification` behaviour
+- Prevented recording empty string as `city`, `ISOCountryCode` and `IP` for location info
+- Applied `alwaysUsePOST` flag to feedback widget check requests
+- Applied `alwaysUsePOST` flag to remote config requests
+
+- Other various improvements
+    - Deleted some unnecessary imports
+    - Updated HeaderDocs, internal logs, inline notes and pragma marks 
+    - Added missing frameworks to CocoaPods podspec
+    - Added ability to override SDK name and version for bridge SDKs
+
+
+
 ## 20.04
 - Added crash reporting feature for tvOS
 - Added crash reporting feature for macOS

@@ -48,6 +48,7 @@ NSString* const kCountlyQSKeyCrash            = @"crash";
 NSString* const kCountlyQSKeyChecksum256      = @"checksum256";
 NSString* const kCountlyQSKeyAttributionID    = @"aid";
 NSString* const kCountlyQSKeyConsent          = @"consent";
+NSString* const kCountlyQSKeyAPM              = @"apm";
 
 NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 NSString* const kCountlyInputEndpoint = @"/i";
@@ -89,6 +90,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     if (isCrashing)
     {
         COUNTLY_LOG(@"Proceeding on queue is aborted: Application is crashing!");
+        return;
+    }
+
+    if (self.isTerminating)
+    {
+        COUNTLY_LOG(@"Proceeding on queue is aborted: Application is terminating!");
         return;
     }
 
@@ -247,6 +254,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)sendPushToken:(NSString *)token
 {
+#ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
     NSInteger testMode = 0; //NOTE: default is 0: Production - not test mode
 
     if ([CountlyPushNotifications.sharedInstance.pushTestMode isEqualToString:CLYPushTestModeDevelopment])
@@ -262,6 +270,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
     [self proceedOnQueue];
+#endif
 }
 
 - (void)sendLocationInfo
@@ -279,13 +288,13 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     if (location)
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocation, location];
 
-   if (city)
+    if (city.length)
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationCity, city];
 
-    if (ISOCountryCode)
+    if (ISOCountryCode.length)
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationCountry, ISOCountryCode];
 
-    if (IP)
+    if (IP.length)
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationIP, IP];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
@@ -415,6 +424,16 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     [self proceedOnQueue];
 }
 
+- (void)sendPerformanceMonitoringTrace:(NSString *)trace
+{
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
+                             kCountlyQSKeyAPM, trace];
+
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
+
+    [self proceedOnQueue];
+}
+
 #pragma mark ---
 
 - (NSString *)queryEssentials
@@ -426,8 +445,8 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
                                         kCountlyQSKeyTimeHourOfDay, (int)CountlyCommon.sharedInstance.hourOfDay,
                                         kCountlyQSKeyTimeDayOfWeek, (int)CountlyCommon.sharedInstance.dayOfWeek,
                                         kCountlyQSKeyTimeZone, (int)CountlyCommon.sharedInstance.timeZone,
-                                        kCountlyQSKeySDKVersion, kCountlySDKVersion,
-                                        kCountlyQSKeySDKName, kCountlySDKName];
+                                        kCountlyQSKeySDKVersion, CountlyCommon.sharedInstance.SDKVersion,
+                                        kCountlyQSKeySDKName, CountlyCommon.sharedInstance.SDKName];
 }
 
 - (NSInteger)sessionLengthInSeconds

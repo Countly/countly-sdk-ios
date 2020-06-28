@@ -33,7 +33,7 @@ NSString* const kCountlyOrientationKeyMode = @"mode";
 #endif
 @end
 
-NSString* const kCountlySDKVersion = @"20.04";
+NSString* const kCountlySDKVersion = @"20.04.1";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
@@ -57,6 +57,9 @@ NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
     {
         gregorianCalendar = [NSCalendar.alloc initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
         startTime = NSDate.date.timeIntervalSince1970;
+
+        self.SDKVersion = kCountlySDKVersion;
+        self.SDKName = kCountlySDKName;
     }
 
     return self;
@@ -71,6 +74,11 @@ NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
     return _hasStarted;
 }
 
+//NOTE: This is an equivalent of hasStarted, but without internal logging.
+- (BOOL)hasStarted_
+{
+    return _hasStarted;
+}
 
 void CountlyInternalLog(NSString *format, ...)
 {
@@ -199,7 +207,6 @@ void CountlyPrint(NSString *stringToPrint)
 
 - (void)deviceOrientationDidChange:(NSNotification *)notification
 {
-    COUNTLY_LOG(@"Device orientation changed.");
     //NOTE: Delay is needed for interface orientation change animation to complete. Otherwise old interface orientation value is returned.
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(recordOrientation) object:nil];
     [self performSelector:@selector(recordOrientation) withObject:nil afterDelay:0.5];

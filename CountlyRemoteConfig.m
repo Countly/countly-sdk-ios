@@ -133,9 +133,7 @@ NSString* const kCountlyRCKeyMetrics            = @"metrics";
     if (!completionHandler)
         return;
 
-    NSURL* remoteConfigURL = [self remoteConfigURLForKeys:keys omitKeys:omitKeys];
-
-    NSURLRequest* request = [NSURLRequest requestWithURL:remoteConfigURL];
+    NSURLRequest* request = [self remoteConfigRequestForKeys:keys omitKeys:omitKeys];
     NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
         NSDictionary* remoteConfig = nil;
@@ -180,7 +178,7 @@ NSString* const kCountlyRCKeyMetrics            = @"metrics";
     COUNTLY_LOG(@"Remote Config Request <%p> started:\n[%@] %@", (id)request, request.HTTPMethod, request.URL.absoluteString);
 }
 
-- (NSURL *)remoteConfigURLForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys
+- (NSURLRequest *)remoteConfigRequestForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys
 {
     NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
 
@@ -202,12 +200,23 @@ NSString* const kCountlyRCKeyMetrics            = @"metrics";
 
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
 
-    NSString* URLString = [NSString stringWithFormat:@"%@%@%@?%@",
-                           CountlyConnectionManager.sharedInstance.host,
-                           kCountlyRCOutputEndpoint, kCountlyRCSDKEndpoint,
-                           queryString];
+    NSString* serverOutputSDKEndpoint = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"%@%@",
+                                         kCountlyRCOutputEndpoint,
+                                         kCountlyRCSDKEndpoint];
 
-    return [NSURL URLWithString:URLString];
+    if (CountlyConnectionManager.sharedInstance.alwaysUsePOST)
+    {
+        NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverOutputSDKEndpoint]];
+        request.HTTPMethod = @"POST";
+        request.HTTPBody = [queryString cly_dataUTF8];
+        return  request.copy;
+    }
+    else
+    {
+        NSString* withQueryString = [serverOutputSDKEndpoint stringByAppendingFormat:@"?%@", queryString];
+        NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:withQueryString]];
+        return request;
+    }
 }
 
 @end

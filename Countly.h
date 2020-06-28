@@ -60,7 +60,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Flushes request and event queues.
- * @discussion Flushes persistenly stored request queue and events recorded but not converted to a request so far.
+ * @discussion Flushes persistently stored request queue and events recorded but not converted to a request so far.
  * @discussion Started timed events will not be affected.
  */
 - (void)flushQueues;
@@ -202,7 +202,7 @@ NS_ASSUME_NONNULL_BEGIN
  * Records event with given key and segmentation.
  * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
  * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
- * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
+ * @discussion Nested values in segmentation will be ignored by Countly Server event segmentation section.
  * @param key Event key, a non-zero length valid string
  * @param segmentation Segmentation key-value pairs of event
  */
@@ -212,7 +212,7 @@ NS_ASSUME_NONNULL_BEGIN
  * Records event with given key, segmentation and count.
  * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
  * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
- * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
+ * @discussion Nested values in segmentation will be ignored by Countly Server event segmentation section.
  * @param key Event key, a non-zero length valid string
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
@@ -223,7 +223,7 @@ NS_ASSUME_NONNULL_BEGIN
  * Records event with given key, segmentation, count and sum.
  * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
  * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
- * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
+ * @discussion Nested values in segmentation will be ignored by Countly Server event segmentation section.
  * @param key Event key, a non-zero length valid string
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
@@ -235,7 +235,7 @@ NS_ASSUME_NONNULL_BEGIN
  * Records event with given key, segmentation, count, sum and duration.
  * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
  * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
- * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
+ * @discussion Nested values in segmentation will be ignored by Countly Server event segmentation section.
  * @param key Event key, a non-zero length valid string
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
@@ -263,7 +263,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Trying to end an event with already ended (or not yet started) key will have no effect.
  * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
  * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
- * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
+ * @discussion Nested values in segmentation will be ignored by Countly Server event segmentation section.
  * @param key Event key, a non-zero length valid string
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
@@ -282,6 +282,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 #pragma mark - Push Notification
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
+#ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
 /**
  * Shows default system dialog that asks for user's permission to display notifications.
  * @discussion A unified convenience method that handles asking for notification permission on both iOS10 and older iOS versions with badge, sound and alert notification types.
@@ -321,6 +322,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)clearPushNotificationToken;
 #endif
+#endif
 
 
 
@@ -355,7 +357,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)recordIP:(NSString *)IP;
 
 /**
- * Disables geo-location based push notifications by clearing all exsisting location info.
+ * Disables geo-location based push notifications by clearing all existing location info.
  * @discussion Once disabled, geo-location based push notifications can be enabled again by calling @c recordLocation: or @c recordCity:andISOCountryCode: or @c recordIP: method.
  */
 - (void)disableLocationInfo;
@@ -400,7 +402,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * @c crashLog: method is deprecated. Please use @c recordCrashLog: method instead.
- * @discussion Be advised, parameter type chenged to plain @c NSString from string format, for better Swift compatibility.
+ * @discussion Be advised, parameter type changed to plain @c NSString from string format, for better Swift compatibility.
  * @discussion Calling this method will have no effect.
  */
 - (void)crashLog:(NSString *)format, ... NS_FORMAT_FUNCTION(1,2) DEPRECATED_MSG_ATTRIBUTE("Use 'recordCrashLog:' method instead!");
@@ -419,12 +421,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Records a visited view with given name and custom segmentation.
- * @discussion This is an extendened version of @c recordView: method.
+ * @discussion This is an extended version of @c recordView: method.
  * @discussion If segmentation has any of Countly reserved keys, they will be ignored:
  * @discussion @c name, @c segment, @c visit, @c start, @c bounce, @c exit, @c view, @c domain, @c dur
  * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
  * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
- * @discussion Nested values in segmentation will be ignored by Counly Server event segmentation section.
+ * @discussion Nested values in segmentation will be ignored by Countly Server event segmentation section.
  * @param viewName Name of the view visited, a non-zero length valid string
  * @param segmentation Custom segmentation key-value pairs
  */
@@ -557,6 +559,64 @@ NS_ASSUME_NONNULL_BEGIN
  * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure
  */
 - (void)updateRemoteConfigExceptForKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler;
+
+
+
+#pragma mark - Performance Monitoring
+
+/**
+ * Manually records a network trace for performance monitoring.
+ * @discussion A network trace is a collection of measured information about a network request.
+ * @discussion When a network request is completed, a network trace can be recorded manually to be analyzed in Performance Monitoring feature.
+ * @discussion Trace name needs to be a non-zero length string, otherwise it is ignored.
+ * @param traceName Trace name, a non-zero length valid string
+ * @param requestPayloadSize Size of the request's payload in bytes
+ * @param responsePayloadSize Size of the received response's payload in bytes
+ * @param responseStatusCode HTTP status code of the received response
+ * @param startTime UNIX time stamp in milliseconds for the starting time of the request
+ * @param endTime UNIX time stamp in milliseconds for the ending time of the request
+ */
+- (void)recordNetworkTrace:(NSString *)traceName requestPayloadSize:(NSInteger)requestPayloadSize responsePayloadSize:(NSInteger)responsePayloadSize responseStatusCode:(NSInteger)responseStatusCode startTime:(long long)startTime endTime:(long long)endTime;
+
+/**
+ * Starts a performance monitoring custom trace with given name to be ended later.
+ * @discussion Duration of custom trace will be calculated on ending.
+ * @discussion Trying to start a custom trace with already started name will have no effect.
+ * @param traceName Trace name, a non-zero length valid string
+ */
+- (void)startCustomTrace:(NSString *)traceName;
+
+/**
+ * Ends a previously started performance monitoring custom trace with given name and metrics.
+ * @discussion Trying to end a custom trace with already ended (or not yet started) name will have no effect.
+ * @param traceName Trace name, a non-zero length valid string
+ * @param metrics Metrics key-value pairs
+ */
+- (void)endCustomTrace:(NSString *)traceName metrics:(NSDictionary * _Nullable)metrics;
+
+/**
+ * Cancels a previously started performance monitoring custom trace with given name.
+ * @discussion Trying to cancel a custom trace with already cancelled (or ended or not yet started) name will have no effect.
+ * @param traceName Trace name, a non-zero length valid string
+ */
+- (void)cancelCustomTrace:(NSString *)traceName;
+
+/**
+ * Clears all previously started performance monitoring custom traces.
+ * @discussion All previously started performance monitoring custom traces are automatically cleaned when:
+ * @discussion - Consent for @c CLYConsentPerformanceMonitoring is cancelled
+ * @discussion - A new app key is set using @c setNewAppKey: method
+ */
+- (void)clearAllCustomTraces;
+
+/**
+ * Calculates and records app launch time for performance monitoring.
+ * @discussion This method should be called when the app is loaded and displayed its first user facing view successfully.
+ * @discussion e.g. @c viewDidAppear: method of the root view controller or whatever place is suitable for the app's flow.
+ * @discussion Time passed since the app started to launch will be automatically calculated and recorded for performance monitoring.
+ * @discussion App launch time can be recorded only once per app launch. So, second and following calls to this method will be ignored.
+ */
+- (void)appLoadingFinished;
 
 NS_ASSUME_NONNULL_END
 

@@ -11,7 +11,9 @@ NS_ASSUME_NONNULL_BEGIN
 //NOTE: Countly features
 typedef NSString* CLYFeature NS_EXTENSIBLE_STRING_ENUM;
 #if (TARGET_OS_IOS)
+#ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
 extern CLYFeature const CLYPushNotifications;
+#endif
 extern CLYFeature const CLYCrashReporting;
 extern CLYFeature const CLYAutoViewTracking;
 #elif (TARGET_OS_WATCH)
@@ -20,7 +22,9 @@ extern CLYFeature const CLYCrashReporting;
 extern CLYFeature const CLYCrashReporting;
 extern CLYFeature const CLYAutoViewTracking;
 #elif (TARGET_OS_OSX)
+#ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
 extern CLYFeature const CLYPushNotifications;
+#endif
 extern CLYFeature const CLYCrashReporting;
 #endif
 
@@ -60,6 +64,7 @@ extern CLYConsent const CLYConsentViewTracking;
 extern CLYConsent const CLYConsentAttribution;
 extern CLYConsent const CLYConsentStarRating;
 extern CLYConsent const CLYConsentAppleWatch;
+extern CLYConsent const CLYConsentPerformanceMonitoring;
 
 //NOTE: Push Notification Test Modes
 typedef NSString* CLYPushTestMode NS_EXTENSIBLE_STRING_ENUM;
@@ -269,7 +274,7 @@ extern CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc;
  * For using custom crash segmentation with @c CLYCrashReporting feature.
  * @discussion Crash segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
  * @discussion Custom objects in crash segmentation will cause crash report not to be sent to Countly Server.
- * @discussion Nested values in crash segmentation will be ignored by Counly Server.
+ * @discussion Nested values in crash segmentation will be ignored by Countly Server.
  */
 @property (nonatomic, copy) NSDictionary<NSString *, NSString *>* crashSegmentation;
 
@@ -288,7 +293,7 @@ extern CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc;
 
 /**
  * For using PLCrashReporter instead of default crash handling mechanism.
- * @discussion If set, SDK will be using PLCrashReporter (1.5.1) dependecy for creating crash reports.
+ * @discussion If set, SDK will be using PLCrashReporter (1.5.1) dependency for creating crash reports.
  * @discussion PLCrashReporter option is available only for iOS apps.
  * @discussion For more information about PLCrashReporter please see: https://github.com/microsoft/plcrashreporter
  */
@@ -399,6 +404,13 @@ extern CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc;
  */
 @property (nonatomic, copy) void (^remoteConfigCompletionHandler)(NSError * _Nullable error);
 
+#pragma mark -
+
+/**
+ * For enabling automatic performance monitoring.
+ * @discussion If set, Performance Monitoring feature will be started automatically on SDK start.
+ */
+@property (nonatomic) BOOL enablePerformanceMonitoring;
 NS_ASSUME_NONNULL_END
 
 @end

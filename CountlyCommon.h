@@ -20,6 +20,7 @@
 #import "CountlyConsentManager.h"
 #import "CountlyLocationManager.h"
 #import "CountlyRemoteConfig.h"
+#import "CountlyPerformanceMonitoring.h"
 
 #if DEBUG
 #define COUNTLY_LOG(fmt, ...) CountlyInternalLog(fmt, ##__VA_ARGS__)
@@ -47,14 +48,7 @@
 #endif
 #endif
 
-#if (TARGET_OS_OSX)
-#import <AppKit/AppKit.h>
-#endif
-
 #import <objc/runtime.h>
-
-extern NSString* const kCountlySDKVersion;
-extern NSString* const kCountlySDKName;
 
 extern NSString* const kCountlyErrorDomain;
 
@@ -66,6 +60,9 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 };
 
 @interface CountlyCommon : NSObject
+
+@property (nonatomic, copy) NSString* SDKVersion;
+@property (nonatomic, copy) NSString* SDKName;
 
 @property (nonatomic) BOOL hasStarted;
 @property (nonatomic) BOOL enableDebug;
@@ -95,6 +92,8 @@ void CountlyPrint(NSString *stringToPrint);
 - (void)startAttribution;
 
 - (void)observeDeviceOrientationChanges;
+
+- (BOOL)hasStarted_;
 @end
 
 
