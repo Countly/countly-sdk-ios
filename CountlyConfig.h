@@ -131,6 +131,15 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
 #pragma mark -
 
 /**
+ * For overriding default metrics (or adding extra ones) sent with @c begin_session requests.
+ * @discussion Custom metrics should be an @c NSDictionary, with keys and values are both @c NSString 's only.
+ * @discussion For overriding default metrics, keys should be @c CLYMetricKey 's.
+ */
+@property (nonatomic, copy) NSDictionary<NSString *, NSString *>* customMetrics;
+
+#pragma mark -
+
+/**
  * For limiting features based on user consent.
  * @discussion If set, SDK will wait for explicit consent to be given for features to work.
  */

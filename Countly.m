@@ -101,6 +101,8 @@ long long appLoadStartTime;
     CountlyCommon.sharedInstance.enableAppleWatch = config.enableAppleWatch;
     CountlyCommon.sharedInstance.enableAttribution = config.enableAttribution;
 
+    CountlyDeviceInfo.sharedInstance.customMetrics = config.customMetrics;
+
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
 
