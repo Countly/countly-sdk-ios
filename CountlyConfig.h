@@ -71,6 +71,19 @@ typedef NSString* CLYPushTestMode NS_EXTENSIBLE_STRING_ENUM;
 extern CLYPushTestMode const CLYPushTestModeDevelopment;
 extern CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc;
 
+//NOTE: Default metrics
+typedef NSString* CLYMetricKey NS_EXTENSIBLE_STRING_ENUM;
+extern CLYMetricKey const CLYMetricKeyDevice;
+extern CLYMetricKey const CLYMetricKeyOS;
+extern CLYMetricKey const CLYMetricKeyOSVersion;
+extern CLYMetricKey const CLYMetricKeyAppVersion;
+extern CLYMetricKey const CLYMetricKeyCarrier;
+extern CLYMetricKey const CLYMetricKeyResolution;
+extern CLYMetricKey const CLYMetricKeyDensity;
+extern CLYMetricKey const CLYMetricKeyLocale;
+extern CLYMetricKey const CLYMetricKeyHasWatch;
+extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
+
 @interface CountlyConfig : NSObject
 
 /**

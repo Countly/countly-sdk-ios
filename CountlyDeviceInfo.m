@@ -19,16 +19,16 @@
 #import <IOKit/ps/IOPowerSources.h>
 #endif
 
-NSString* const kCountlyMetricKeyDevice             = @"_device";
-NSString* const kCountlyMetricKeyOS                 = @"_os";
-NSString* const kCountlyMetricKeyOSVersion          = @"_os_version";
-NSString* const kCountlyMetricKeyAppVersion         = @"_app_version";
-NSString* const kCountlyMetricKeyCarrier            = @"_carrier";
-NSString* const kCountlyMetricKeyResolution         = @"_resolution";
-NSString* const kCountlyMetricKeyDensity            = @"_density";
-NSString* const kCountlyMetricKeyLocale             = @"_locale";
-NSString* const kCountlyMetricKeyHasWatch           = @"_has_watch";
-NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
+CLYMetricKey const CLYMetricKeyDevice             = @"_device";
+CLYMetricKey const CLYMetricKeyOS                 = @"_os";
+CLYMetricKey const CLYMetricKeyOSVersion          = @"_os_version";
+CLYMetricKey const CLYMetricKeyAppVersion         = @"_app_version";
+CLYMetricKey const CLYMetricKeyCarrier            = @"_carrier";
+CLYMetricKey const CLYMetricKeyResolution         = @"_resolution";
+CLYMetricKey const CLYMetricKeyDensity            = @"_density";
+CLYMetricKey const CLYMetricKeyLocale             = @"_locale";
+CLYMetricKey const CLYMetricKeyHasWatch           = @"_has_watch";
+CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
 #if (TARGET_OS_IOS)
 @interface CountlyDeviceInfo ()
@@ -235,26 +235,26 @@ NSString* const kCountlyMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 + (NSString *)metrics
 {
     NSMutableDictionary* metricsDictionary = NSMutableDictionary.new;
-    metricsDictionary[kCountlyMetricKeyDevice] = CountlyDeviceInfo.device;
-    metricsDictionary[kCountlyMetricKeyOS] = CountlyDeviceInfo.osName;
-    metricsDictionary[kCountlyMetricKeyOSVersion] = CountlyDeviceInfo.osVersion;
-    metricsDictionary[kCountlyMetricKeyAppVersion] = CountlyDeviceInfo.appVersion;
+    metricsDictionary[CLYMetricKeyDevice] = CountlyDeviceInfo.device;
+    metricsDictionary[CLYMetricKeyOS] = CountlyDeviceInfo.osName;
+    metricsDictionary[CLYMetricKeyOSVersion] = CountlyDeviceInfo.osVersion;
+    metricsDictionary[CLYMetricKeyAppVersion] = CountlyDeviceInfo.appVersion;
 
     NSString *carrier = CountlyDeviceInfo.carrier;
     if (carrier)
-        metricsDictionary[kCountlyMetricKeyCarrier] = carrier;
+        metricsDictionary[CLYMetricKeyCarrier] = carrier;
 
-    metricsDictionary[kCountlyMetricKeyResolution] = CountlyDeviceInfo.resolution;
-    metricsDictionary[kCountlyMetricKeyDensity] = CountlyDeviceInfo.density;
-    metricsDictionary[kCountlyMetricKeyLocale] = CountlyDeviceInfo.locale;
+    metricsDictionary[CLYMetricKeyResolution] = CountlyDeviceInfo.resolution;
+    metricsDictionary[CLYMetricKeyDensity] = CountlyDeviceInfo.density;
+    metricsDictionary[CLYMetricKeyLocale] = CountlyDeviceInfo.locale;
 
 #if (TARGET_OS_IOS)
     if (CountlyCommon.sharedInstance.enableAppleWatch)
     {
         if (CountlyConsentManager.sharedInstance.consentForAppleWatch)
         {
-            metricsDictionary[kCountlyMetricKeyHasWatch] = @(CountlyDeviceInfo.hasWatch);
-            metricsDictionary[kCountlyMetricKeyInstalledWatchApp] = @(CountlyDeviceInfo.installedWatchApp);
+            metricsDictionary[CLYMetricKeyHasWatch] = @(CountlyDeviceInfo.hasWatch);
+            metricsDictionary[CLYMetricKeyInstalledWatchApp] = @(CountlyDeviceInfo.installedWatchApp);
         }
     }
 #endif
