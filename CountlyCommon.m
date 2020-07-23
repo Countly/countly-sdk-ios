@@ -183,7 +183,7 @@ void CountlyPrint(NSString *stringToPrint)
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 #ifndef COUNTLY_EXCLUDE_IDFA
-    if (ASIdentifierManager.sharedManager.advertisingTrackingEnabled)
+    if (!ASIdentifierManager.sharedManager.advertisingTrackingEnabled)
     {
         attribution = @{kCountlyAttributionIDFAKey: ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString};
     }
