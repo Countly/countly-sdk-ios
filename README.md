@@ -11,7 +11,9 @@
 It collects data from mobile phones, tablets, smart watches and other internet-connected devices, and visualizes this information to analyze application usage and end-user behavior.
 
 ## About this SDK
-This repository includes Countly iOS SDK with watchOS, tvOS & macOS support.  
+This repository includes Countly iOS SDK with watchOS, tvOS & macOS support.
+The minimum deployment targets are `iOS 8.0`,  `watchOS 2.0`, `tvOS 9.0` , `macOS 10.10`, and it requires `Xcode 11.0+`.
+
 See [Countly iOS SDK documentation](https://support.count.ly/hc/en-us/articles/360037753511-iOS-watchOS-tvOS-macOS)  for integration and details.
 
 ## Sample iOS Application
