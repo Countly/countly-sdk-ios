@@ -418,7 +418,10 @@ NSString* CountlyJSONFromObject(id object)
 
     NSError *error = nil;
     NSData *data = [NSJSONSerialization dataWithJSONObject:object options:0 error:&error];
-    if (error){ COUNTLY_LOG(@"JSON can not be created: \n%@", error); }
+    if (error)
+    {
+        COUNTLY_LOG(@"JSON can not be created: \n%@", error);
+    }
 
     return [data cly_stringUTF8];
 }
