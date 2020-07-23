@@ -221,7 +221,10 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
         {
             NSError* error = nil;
             [line writeToFile:crashLogFileURL.path atomically:YES encoding:NSUTF8StringEncoding error:&error];
-            if (error){ COUNTLY_LOG(@"Crash Log File can not be created: \n%@", error); }
+            if (error)
+            {
+                COUNTLY_LOG(@"Crash Log File can not be created: \n%@", error);
+            }
         }
     });
 }
@@ -248,7 +251,10 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
     {
         COUNTLY_LOG(@"Detected Crash Log File and deleting it.");
         [NSFileManager.defaultManager removeItemAtURL:crashLogFileURL error:&error];
-        if (error){ COUNTLY_LOG(@"Crash Log File can not be deleted: \n%@", error); }
+        if (error)
+        {
+            COUNTLY_LOG(@"Crash Log File can not be deleted: \n%@", error);
+        }
     }
 }
 
@@ -276,7 +282,10 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
         if (![NSFileManager.defaultManager fileExistsAtPath:URL.path])
         {
             [NSFileManager.defaultManager createDirectoryAtURL:URL withIntermediateDirectories:YES attributes:nil error:&error];
-            if (error){ COUNTLY_LOG(@"Application Support directory can not be created: \n%@", error); }
+            if (error)
+            {
+                COUNTLY_LOG(@"Application Support directory can not be created: \n%@", error);
+            }
         }
     });
 

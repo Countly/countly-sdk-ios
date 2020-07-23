@@ -9,6 +9,7 @@
 @interface CountlyDeviceInfo : NSObject
 
 @property (nonatomic) NSString *deviceID;
+@property (nonatomic) NSDictionary<NSString *, NSString *>* customMetrics;
 
 + (instancetype)sharedInstance;
 - (void)initializeDeviceID:(NSString *)deviceID;

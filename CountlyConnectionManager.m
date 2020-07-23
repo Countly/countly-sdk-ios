@@ -604,7 +604,13 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     }
     else
     {
-        COUNTLY_LOG(@"Pinned certificate check is failed! Cancelling request.");
+        if (!isLocalAndServerCertMatch)
+            COUNTLY_LOG(@"Pinned certificate and server certificate does not match!");
+
+        if (!isServerCertValid)
+            COUNTLY_LOG(@"Server certificate is not valid! SecTrustEvaluate result is: %u", serverTrustResult);
+
+        COUNTLY_LOG(@"Pinned certificate check failed! Cancelling request.");
         completionHandler(NSURLSessionAuthChallengeCancelAuthenticationChallenge, NULL);
     }
 

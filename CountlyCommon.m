@@ -33,7 +33,7 @@ NSString* const kCountlyOrientationKeyMode = @"mode";
 #endif
 @end
 
-NSString* const kCountlySDKVersion = @"20.04.1";
+NSString* const kCountlySDKVersion = @"20.04.2";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
@@ -183,7 +183,7 @@ void CountlyPrint(NSString *stringToPrint)
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 #ifndef COUNTLY_EXCLUDE_IDFA
-    if (ASIdentifierManager.sharedManager.advertisingTrackingEnabled)
+    if (!ASIdentifierManager.sharedManager.advertisingTrackingEnabled)
     {
         attribution = @{kCountlyAttributionIDFAKey: ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString};
     }
@@ -418,7 +418,10 @@ NSString* CountlyJSONFromObject(id object)
 
     NSError *error = nil;
     NSData *data = [NSJSONSerialization dataWithJSONObject:object options:0 error:&error];
-    if (error){ COUNTLY_LOG(@"JSON can not be created: \n%@", error); }
+    if (error)
+    {
+        COUNTLY_LOG(@"JSON can not be created: \n%@", error);
+    }
 
     return [data cly_stringUTF8];
 }
