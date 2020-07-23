@@ -40,20 +40,20 @@ long long appLoadStartTime;
     {
 #if (TARGET_OS_IOS  || TARGET_OS_TV)
         [NSNotificationCenter.defaultCenter addObserver:self
-                                               selector:@selector(didEnterBackgroundCallBack:)
+                                               selector:@selector(applicationDidEnterBackground:)
                                                    name:UIApplicationDidEnterBackgroundNotification
                                                  object:nil];
         [NSNotificationCenter.defaultCenter addObserver:self
-                                               selector:@selector(willEnterForegroundCallBack:)
+                                               selector:@selector(applicationWillEnterForeground:)
                                                    name:UIApplicationWillEnterForegroundNotification
                                                  object:nil];
         [NSNotificationCenter.defaultCenter addObserver:self
-                                               selector:@selector(willTerminateCallBack:)
+                                               selector:@selector(applicationWillTerminate:)
                                                    name:UIApplicationWillTerminateNotification
                                                  object:nil];
 #elif (TARGET_OS_OSX)
         [NSNotificationCenter.defaultCenter addObserver:self
-                                               selector:@selector(willTerminateCallBack:)
+                                               selector:@selector(applicationWillTerminate:)
                                                    name:NSApplicationWillTerminateNotification
                                                  object:nil];
 #endif
@@ -340,19 +340,19 @@ long long appLoadStartTime;
 
 #pragma mark ---
 
-- (void)didEnterBackgroundCallBack:(NSNotification *)notification
+- (void)applicationDidEnterBackground:(NSNotification *)notification
 {
     COUNTLY_LOG(@"App did enter background.");
     [self suspend];
 }
 
-- (void)willEnterForegroundCallBack:(NSNotification *)notification
+- (void)applicationWillEnterForeground:(NSNotification *)notification
 {
     COUNTLY_LOG(@"App will enter foreground.");
     [self resume];
 }
 
-- (void)willTerminateCallBack:(NSNotification *)notification
+- (void)applicationWillTerminate:(NSNotification *)notification
 {
     COUNTLY_LOG(@"App will terminate.");
 
