@@ -1,3 +1,14 @@
+## 20.04.2
+- Implemented overriding default metrics and adding custom ones 
+- Fixed advertising tracking enabled check
+
+- Other various improvements
+  - Improved internal logs for pinned certificate check
+  - Refactored extra slash check using `hasSuffix:` method
+  - Renamed some app life cycle observing methods for clarity
+
+
+
 ## 20.04.1
 - Added Application Performance Monitoring (Phase 1)
     - Manual network traces
