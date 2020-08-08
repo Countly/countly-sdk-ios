@@ -161,7 +161,7 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
  * @discussion If set, Test Users mark should be selected on Create Push Notification screen of Countly Server to send push notifications.
  * @discussion If not set, Countly Server will use Production APNs by default.
  */
-@property (nonatomic) CLYPushTestMode pushTestMode;
+@property (nonatomic, copy) CLYPushTestMode pushTestMode;
 
 /**
  * For sending push tokens to Countly Server even for users who have not granted permission to display notifications.
@@ -179,7 +179,7 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
  * For handling push notifications for macOS apps on launch.
  * @discussion Needs to be set in @c applicationDidFinishLaunching: method of macOS apps that use @c CLYPushNotifications feature, in order to handle app launches by push notification click.
  */
-@property (nonatomic) NSNotification* launchNotification;
+@property (nonatomic, copy) NSNotification* launchNotification;
 
 #pragma mark -
 
@@ -311,7 +311,7 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
  * Regular expression used for filtering crash reports and preventing them from being sent to Countly Server.
  * @discussion If a crash's name, description or any line of stack trace matches given regular expression, it will not be sent to Countly Server.
  */
-@property (nonatomic) NSRegularExpression* crashFilter;
+@property (nonatomic, copy) NSRegularExpression* crashFilter;
 
 /**
  * For using PLCrashReporter instead of default crash handling mechanism.
