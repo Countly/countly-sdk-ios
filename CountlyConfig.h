@@ -177,7 +177,7 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
 
 /**
  * For handling push notifications for macOS apps on launch.
- * @discussion Needs to be set in @c applicationDidFinishLaunching: method of macOS apps that uses @c CLYPushNotifications feature, in order to handle app launches by push notification click.
+ * @discussion Needs to be set in @c applicationDidFinishLaunching: method of macOS apps that use @c CLYPushNotifications feature, in order to handle app launches by push notification click.
  */
 @property (nonatomic) NSNotification* launchNotification;
 
