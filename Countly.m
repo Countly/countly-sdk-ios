@@ -118,6 +118,10 @@ long long appLoadStartTime;
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
 
+    //NOTE: If there is no consent for sessions, location info should be sent separately, as it cannot be sent with begin_session request.
+    if (!CountlyConsentManager.sharedInstance.consentForSessions)
+        [CountlyLocationManager.sharedInstance sendLocationInfo];
+
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
     if ([config.features containsObject:CLYPushNotifications])
