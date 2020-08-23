@@ -199,7 +199,15 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
                              kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
 
     if (!CountlyConsentManager.sharedInstance.consentForLocation || CountlyLocationManager.sharedInstance.isLocationInfoDisabled)
+    {
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocation, @""];
+    }
+    else
+    {
+        NSString* locationRelatedInfoQueryString = [self locationRelatedInfoQueryString];
+        if (locationRelatedInfoQueryString.length)
+            queryString = [queryString stringByAppendingString:locationRelatedInfoQueryString];
+    }
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
