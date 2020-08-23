@@ -275,27 +275,14 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)sendLocationInfo
 {
-    NSString* location = CountlyLocationManager.sharedInstance.location.cly_URLEscaped;
-    NSString* city = CountlyLocationManager.sharedInstance.city.cly_URLEscaped;
-    NSString* ISOCountryCode = CountlyLocationManager.sharedInstance.ISOCountryCode.cly_URLEscaped;
-    NSString* IP = CountlyLocationManager.sharedInstance.IP.cly_URLEscaped;
+    NSString* locationRelatedInfoQueryString = [self locationRelatedInfoQueryString];
 
-    if (!(location || city || ISOCountryCode || IP))
+    if (!locationRelatedInfoQueryString.length)
         return;
 
     NSString* queryString = [self queryEssentials];
 
-    if (location)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocation, location];
-
-    if (city.length)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationCity, city];
-
-    if (ISOCountryCode.length)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationCountry, ISOCountryCode];
-
-    if (IP.length)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationIP, IP];
+    queryString = [queryString stringByAppendingString:locationRelatedInfoQueryString];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -447,6 +434,32 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
                                         kCountlyQSKeyTimeZone, (int)CountlyCommon.sharedInstance.timeZone,
                                         kCountlyQSKeySDKVersion, CountlyCommon.sharedInstance.SDKVersion,
                                         kCountlyQSKeySDKName, CountlyCommon.sharedInstance.SDKName];
+}
+
+- (NSString *)locationRelatedInfoQueryString
+{
+    NSString* location = CountlyLocationManager.sharedInstance.location.cly_URLEscaped;
+    NSString* city = CountlyLocationManager.sharedInstance.city.cly_URLEscaped;
+    NSString* ISOCountryCode = CountlyLocationManager.sharedInstance.ISOCountryCode.cly_URLEscaped;
+    NSString* IP = CountlyLocationManager.sharedInstance.IP.cly_URLEscaped;
+
+    NSMutableString* locationInfoQueryString = NSMutableString.new;
+
+    //NOTE: For `location` itself, we do not check for length as we do for other location related infos here.
+    //NOTE: Because we need a case where `location` is an empty string. This is a server requirement to disable IP based location inferring.
+    if (location)
+        [locationInfoQueryString appendFormat:@"&%@=%@", kCountlyQSKeyLocation, location];
+
+    if (city.length)
+        [locationInfoQueryString appendFormat:@"&%@=%@", kCountlyQSKeyLocationCity, city];
+
+    if (ISOCountryCode.length)
+        [locationInfoQueryString appendFormat:@"&%@=%@", kCountlyQSKeyLocationCountry, ISOCountryCode];
+
+    if (IP.length)
+        [locationInfoQueryString appendFormat:@"&%@=%@", kCountlyQSKeyLocationIP, IP];
+
+    return locationInfoQueryString.copy;
 }
 
 - (NSInteger)sessionLengthInSeconds
