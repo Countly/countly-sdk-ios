@@ -102,9 +102,6 @@ long long appLoadStartTime;
 
     CountlyDeviceInfo.sharedInstance.customMetrics = config.customMetrics;
 
-    if (!CountlyCommon.sharedInstance.manualSessionHandling)
-        [CountlyConnectionManager.sharedInstance beginSession];
-
 #if (TARGET_OS_IOS)
     CountlyStarRating.sharedInstance.message = config.starRatingMessage;
     CountlyStarRating.sharedInstance.sessionCount = config.starRatingSessionCount;
@@ -117,6 +114,9 @@ long long appLoadStartTime;
     CountlyLocationManager.sharedInstance.ISOCountryCode = config.ISOCountryCode;
     CountlyLocationManager.sharedInstance.IP = config.IP;
 #endif
+
+    if (!CountlyCommon.sharedInstance.manualSessionHandling)
+        [CountlyConnectionManager.sharedInstance beginSession];
 
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
