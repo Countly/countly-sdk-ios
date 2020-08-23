@@ -173,25 +173,13 @@ void CountlyPrint(NSString *stringToPrint)
 
 - (void)startAttribution
 {
-    if (!self.enableAttribution)
+    if (!self.attributionID.length)
         return;
 
     if (!CountlyConsentManager.sharedInstance.consentForAttribution)
         return;
 
-    NSDictionary* attribution = nil;
-
-#if (TARGET_OS_IOS || TARGET_OS_TV)
-#ifndef COUNTLY_EXCLUDE_IDFA
-    if (!ASIdentifierManager.sharedManager.advertisingTrackingEnabled)
-    {
-        attribution = @{kCountlyAttributionIDFAKey: ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString};
-    }
-#endif
-#endif
-
-    if (!attribution)
-        return;
+    NSDictionary* attribution = @{kCountlyAttributionIDFAKey: self.attributionID};;
 
     [CountlyConnectionManager.sharedInstance sendAttribution:[attribution cly_JSONify]];
 }

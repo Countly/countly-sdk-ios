@@ -67,7 +67,7 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 @property (nonatomic) BOOL hasStarted;
 @property (nonatomic) BOOL enableDebug;
 @property (nonatomic) BOOL enableAppleWatch;
-@property (nonatomic) BOOL enableAttribution;
+@property (nonatomic, copy) NSString* attributionID;
 @property (nonatomic) BOOL manualSessionHandling;
 
 void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
