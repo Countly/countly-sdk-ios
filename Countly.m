@@ -98,7 +98,6 @@ long long appLoadStartTime;
 
     CountlyCommon.sharedInstance.manualSessionHandling = config.manualSessionHandling;
     CountlyCommon.sharedInstance.enableAppleWatch = config.enableAppleWatch;
-    CountlyCommon.sharedInstance.enableAttribution = config.enableAttribution;
 
     CountlyDeviceInfo.sharedInstance.customMetrics = config.customMetrics;
 

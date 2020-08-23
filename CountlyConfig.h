@@ -285,10 +285,10 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
 @property (nonatomic) BOOL enableAppleWatch;
 
 /**
- * For enabling campaign attribution.
- * @discussion If set, IDFA (Identifier For Advertising) will be sent with @c begin_session request, unless user has limited ad tracking.
- */
-@property (nonatomic) BOOL enableAttribution;
+* @c enableAttribution property is deprecated. Please use @c recordAttribution method instead.
+* @discussion Using this property will have no effect.
+*/
+@property (nonatomic) BOOL enableAttribution DEPRECATED_MSG_ATTRIBUTE("Use 'recordAttribution' method instead!");
 
 #pragma mark -
 
