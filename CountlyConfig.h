@@ -315,7 +315,7 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
 
 /**
  * For using PLCrashReporter instead of default crash handling mechanism.
- * @discussion If set, SDK will be using PLCrashReporter (1.5.1) dependency for creating crash reports.
+ * @discussion If set, SDK will be using PLCrashReporter (1.x.x series) dependency for creating crash reports.
  * @discussion PLCrashReporter option is available only for iOS apps.
  * @discussion For more information about PLCrashReporter please see: https://github.com/microsoft/plcrashreporter
  */

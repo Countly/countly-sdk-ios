@@ -30,7 +30,7 @@ Pod::Spec.new do |s|
   s.subspec 'PL' do |pl|
     pl.platform = :ios
     pl.dependency 'Countly/Core'
-    pl.dependency 'PLCrashReporter', '1.5.1'
+    pl.dependency 'PLCrashReporter', '~> 1'
 
     # It is not possible to set static_framework attribute on subspecs.
     # So, we have to set it on main spec.
