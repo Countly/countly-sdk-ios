@@ -116,7 +116,6 @@ long long appLoadStartTime;
     CountlyLocationManager.sharedInstance.city = config.city;
     CountlyLocationManager.sharedInstance.ISOCountryCode = config.ISOCountryCode;
     CountlyLocationManager.sharedInstance.IP = config.IP;
-    [CountlyLocationManager.sharedInstance sendLocationInfo];
 #endif
 
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
