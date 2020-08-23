@@ -605,7 +605,7 @@ long long appLoadStartTime;
 
 - (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode
 {
-    if (!city.length && !ISOCountryCode.length)
+    if (!city.length || !ISOCountryCode.length)
         return;
 
     [CountlyLocationManager.sharedInstance recordLocationInfo:kCLLocationCoordinate2DInvalid city:city ISOCountryCode:ISOCountryCode andIP:nil];
