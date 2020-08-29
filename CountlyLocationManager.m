@@ -50,9 +50,9 @@
     else
         self.location = nil;
 
-    self.city = city;
-    self.ISOCountryCode = ISOCountryCode;
-    self.IP = IP;
+    self.city = city.length ? city : nil;
+    self.ISOCountryCode = ISOCountryCode.length ? ISOCountryCode : nil;
+    self.IP = IP.length ? IP : nil;
 
     if ((self.location || self.city || self.ISOCountryCode || self.IP))
         self.isLocationInfoDisabled = NO;
