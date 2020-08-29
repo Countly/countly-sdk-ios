@@ -604,11 +604,15 @@ long long appLoadStartTime;
 
 - (void)recordLocation:(CLLocationCoordinate2D)location
 {
+    COUNTLY_LOG(@"recordLocation: method is deprecated. Please use recordLocation:city:countryCode:IP: method instead.");
+
     [CountlyLocationManager.sharedInstance recordLocationInfo:location city:nil ISOCountryCode:nil andIP:nil];
 }
 
 - (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode
 {
+    COUNTLY_LOG(@"recordCity:andISOCountryCode: method is deprecated. Please use recordLocation:city:countryCode:IP: method instead.");
+
     if (!city.length || !ISOCountryCode.length)
         return;
 
@@ -617,6 +621,8 @@ long long appLoadStartTime;
 
 - (void)recordIP:(NSString *)IP
 {
+    COUNTLY_LOG(@"recordIP: method is deprecated. Please use recordLocation:city:countryCode:IP: method instead.");
+
     if (!IP.length)
         return;
 

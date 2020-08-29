@@ -335,7 +335,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion This method overrides @c location property specified on initial configuration, and sends an immediate request.
  * @param location User's location with latitude and longitude
  */
-- (void)recordLocation:(CLLocationCoordinate2D)location;
+- (void)recordLocation:(CLLocationCoordinate2D)location DEPRECATED_MSG_ATTRIBUTE("Use 'recordLocation:city:countryCode:IP:' method instead!");
 
 /**
  * Records user's city and country info to be used for geo-location based push notifications and advanced user segmentation.
@@ -345,7 +345,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param city User's city
  * @param ISOCountryCode User's ISO country code in ISO 3166-1 alpha-2 format
  */
-- (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode;
+- (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode DEPRECATED_MSG_ATTRIBUTE("Use 'recordLocation:city:countryCode:IP:' method instead!");
 
 /**
  * Records user's IP address to be used for geo-location based push notifications and advanced user segmentation.
@@ -354,7 +354,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion This method overrides @c IP property specified on initial configuration, and sends an immediate request.
  * @param IP User's explicit IP address
  */
-- (void)recordIP:(NSString *)IP;
+- (void)recordIP:(NSString *)IP DEPRECATED_MSG_ATTRIBUTE("Use 'recordLocation:city:countryCode:IP:' method instead!");
 
 /**
  * Disables geo-location based push notifications by clearing all existing location info.
