@@ -618,7 +618,7 @@ long long appLoadStartTime;
 {
     COUNTLY_LOG(@"recordCity:andISOCountryCode: method is deprecated. Please use recordLocation:city:countryCode:IP: method instead.");
 
-    if (!city.length || !ISOCountryCode.length)
+    if (!city.length && !ISOCountryCode.length)
         return;
 
     [CountlyLocationManager.sharedInstance recordLocationInfo:kCLLocationCoordinate2DInvalid city:city ISOCountryCode:ISOCountryCode andIP:nil];
