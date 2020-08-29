@@ -602,6 +602,11 @@ long long appLoadStartTime;
 
 #pragma mark - Location
 
+- (void)recordLocation:(CLLocationCoordinate2D)location city:(NSString * _Nullable)city countryCode:(NSString * _Nullable)ISOCountryCode IP:(NSString * _Nullable)IP
+{
+    [CountlyLocationManager.sharedInstance recordLocationInfo:location city:city ISOCountryCode:ISOCountryCode andIP:IP];
+}
+
 - (void)recordLocation:(CLLocationCoordinate2D)location
 {
     COUNTLY_LOG(@"recordLocation: method is deprecated. Please use recordLocation:city:countryCode:IP: method instead.");

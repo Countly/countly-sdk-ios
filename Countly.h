@@ -329,6 +329,21 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - Location
 
 /**
+ * Records user's location, city, country and IP address to be used for geo-location based push notifications and advanced user segmentation.
+ * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location.
+ * @discussion If the app uses Core Location services and granted permission, a location with better accuracy can be provided using this method.
+ * @discussion If the app has information about user's city and/or country, these information can be provided using this method.
+ * @discussion If the app needs to explicitly specify the IP address due to network requirements, it can be provided using this method.
+ * @discussion This method overrides all location related properties specified on initial configuration or on a previous call to this method, and sends an immediate request.
+ * @discussion City and country code information should be provided together. If one of them is missing while the other one is present, there will be a warning logged.
+ * @param location User's location with latitude and longitude
+ * @param city User's city
+ * @param countryCode User's country code in ISO 3166-1 alpha-2 format
+ * @param IP User's explicit IP address
+ */
+- (void)recordLocation:(CLLocationCoordinate2D)location city:(NSString * _Nullable)city countryCode:(NSString * _Nullable)countryCode IP:(NSString * _Nullable)IP;
+
+/**
  * Records user's location info to be used for geo-location based push notifications and advanced user segmentation.
  * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location.
  * @discussion If the app uses Core Location services and granted permission, a location with better accuracy can be provided using this method.
