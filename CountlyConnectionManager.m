@@ -288,9 +288,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     if (!locationRelatedInfoQueryString.length)
         return;
 
-    NSString* queryString = [self queryEssentials];
-
-    queryString = [queryString stringByAppendingString:locationRelatedInfoQueryString];
+    NSString* queryString = [[self queryEssentials] stringByAppendingString:locationRelatedInfoQueryString];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
