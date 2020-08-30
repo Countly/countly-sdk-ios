@@ -47,6 +47,7 @@ NSString* const kCountlyQSKeyUserDetails      = @"user_details";
 NSString* const kCountlyQSKeyCrash            = @"crash";
 NSString* const kCountlyQSKeyChecksum256      = @"checksum256";
 NSString* const kCountlyQSKeyAttributionID    = @"aid";
+NSString* const kCountlyQSKeyIDFA             = @"idfa";
 NSString* const kCountlyQSKeyConsent          = @"consent";
 NSString* const kCountlyQSKeyAPM              = @"apm";
 
@@ -390,10 +391,13 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     [self proceedOnQueue];
 }
 
-- (void)sendAttribution:(NSString *)attribution
+- (void)sendAttribution
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
-                             kCountlyQSKeyAttributionID, attribution];
+    NSString * attributionQueryString = [self attributionQueryString];
+    if (!attributionQueryString)
+        return;
+
+    NSString* queryString = [[self queryEssentials] stringByAppendingString:attributionQueryString];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -476,6 +480,16 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     int sessionLengthInSeconds = (int)unsentSessionLength;
     unsentSessionLength -= sessionLengthInSeconds;
     return sessionLengthInSeconds;
+}
+
+- (NSString *)attributionQueryString
+{
+    if (!CountlyCommon.sharedInstance.attributionID)
+        return nil;
+
+    NSDictionary* attribution = @{kCountlyQSKeyIDFA: CountlyCommon.sharedInstance.attributionID};;
+
+    return [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyAttributionID, [attribution cly_JSONify]];
 }
 
 - (NSData *)pictureUploadDataForRequest:(NSString *)requestString

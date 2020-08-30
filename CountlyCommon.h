@@ -30,9 +30,6 @@
 
 #if (TARGET_OS_IOS)
 #import <UIKit/UIKit.h>
-#ifndef COUNTLY_EXCLUDE_IDFA
-#import <AdSupport/ASIdentifierManager.h>
-#endif
 #import "WatchConnectivity/WatchConnectivity.h"
 #endif
 
@@ -43,9 +40,6 @@
 
 #if (TARGET_OS_TV)
 #import <UIKit/UIKit.h>
-#ifndef COUNTLY_EXCLUDE_IDFA
-#import <AdSupport/ASIdentifierManager.h>
-#endif
 #endif
 
 #import <objc/runtime.h>
@@ -67,7 +61,7 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 @property (nonatomic) BOOL hasStarted;
 @property (nonatomic) BOOL enableDebug;
 @property (nonatomic) BOOL enableAppleWatch;
-@property (nonatomic) BOOL enableAttribution;
+@property (nonatomic, copy) NSString* attributionID;
 @property (nonatomic) BOOL manualSessionHandling;
 
 void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
