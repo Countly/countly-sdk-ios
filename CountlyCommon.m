@@ -33,11 +33,10 @@ NSString* const kCountlyOrientationKeyMode = @"mode";
 #endif
 @end
 
-NSString* const kCountlySDKVersion = @"20.04.2";
+NSString* const kCountlySDKVersion = @"20.04.3";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
-NSString* const kCountlyAttributionIDFAKey = @"idfa";
 
 NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
 
@@ -167,33 +166,6 @@ void CountlyPrint(NSString *stringToPrint)
         }
     }
 #endif
-}
-
-#pragma mark - Attribution
-
-- (void)startAttribution
-{
-    if (!self.enableAttribution)
-        return;
-
-    if (!CountlyConsentManager.sharedInstance.consentForAttribution)
-        return;
-
-    NSDictionary* attribution = nil;
-
-#if (TARGET_OS_IOS || TARGET_OS_TV)
-#ifndef COUNTLY_EXCLUDE_IDFA
-    if (!ASIdentifierManager.sharedManager.advertisingTrackingEnabled)
-    {
-        attribution = @{kCountlyAttributionIDFAKey: ASIdentifierManager.sharedManager.advertisingIdentifier.UUIDString};
-    }
-#endif
-#endif
-
-    if (!attribution)
-        return;
-
-    [CountlyConnectionManager.sharedInstance sendAttribution:[attribution cly_JSONify]];
 }
 
 #pragma mark - Orientation

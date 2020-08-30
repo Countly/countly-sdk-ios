@@ -1,3 +1,21 @@
+## 20.04.3
+- Deprecated `recordLocation:`, `recordCity:andISOCountryCode:`, `recordIP:` methods
+- Added new combined `recordLocation:city:ISOCountryCode:IP:` method for recording location related info
+- Deprecated `enableAttribution` initial config flag
+- Added `attributionID` initial config property
+- Added `recordAttributionID:` method 
+- Discarded IDFA usage on optional attribution feature
+- Discarded `COUNTLY_EXCLUDE_IDFA` preprocessor flag
+- Updated `PLCrashReporter` subspec dependency version specifier as `~> 1`
+
+- Other various improvements
+  - Updated HeaderDocs, internal logs, inline notes and pragma marks
+  - Updated some initial config property modifiers as `copy`
+  - Treated empty string `city`, `ISOCountryCode` and `IP` values as `nil`
+  - Added warnings for the cases where `city` and `ISOCountryCode` code are not set as a pair
+
+
+
 ## 20.04.2
 - Implemented overriding default metrics and adding custom ones 
 - Fixed advertising tracking enabled check

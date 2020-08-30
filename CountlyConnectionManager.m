@@ -47,6 +47,7 @@ NSString* const kCountlyQSKeyUserDetails      = @"user_details";
 NSString* const kCountlyQSKeyCrash            = @"crash";
 NSString* const kCountlyQSKeyChecksum256      = @"checksum256";
 NSString* const kCountlyQSKeyAttributionID    = @"aid";
+NSString* const kCountlyQSKeyIDFA             = @"idfa";
 NSString* const kCountlyQSKeyConsent          = @"consent";
 NSString* const kCountlyQSKeyAPM              = @"apm";
 
@@ -198,8 +199,13 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
                              kCountlyQSKeySessionBegin, @"1",
                              kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
 
-    if (!CountlyConsentManager.sharedInstance.consentForLocation || CountlyLocationManager.sharedInstance.isLocationInfoDisabled)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocation, @""];
+    NSString* locationRelatedInfoQueryString = [self locationRelatedInfoQueryString];
+    if (locationRelatedInfoQueryString)
+        queryString = [queryString stringByAppendingString:locationRelatedInfoQueryString];
+
+    NSString* attributionQueryString = [self attributionQueryString];
+    if (attributionQueryString)
+        queryString = [queryString stringByAppendingString:attributionQueryString];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -275,27 +281,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)sendLocationInfo
 {
-    NSString* location = CountlyLocationManager.sharedInstance.location.cly_URLEscaped;
-    NSString* city = CountlyLocationManager.sharedInstance.city.cly_URLEscaped;
-    NSString* ISOCountryCode = CountlyLocationManager.sharedInstance.ISOCountryCode.cly_URLEscaped;
-    NSString* IP = CountlyLocationManager.sharedInstance.IP.cly_URLEscaped;
+    NSString* locationRelatedInfoQueryString = [self locationRelatedInfoQueryString];
 
-    if (!(location || city || ISOCountryCode || IP))
+    if (!locationRelatedInfoQueryString)
         return;
 
-    NSString* queryString = [self queryEssentials];
-
-    if (location)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocation, location];
-
-    if (city.length)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationCity, city];
-
-    if (ISOCountryCode.length)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationCountry, ISOCountryCode];
-
-    if (IP.length)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationIP, IP];
+    NSString* queryString = [[self queryEssentials] stringByAppendingString:locationRelatedInfoQueryString];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -404,10 +395,13 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     [self proceedOnQueue];
 }
 
-- (void)sendAttribution:(NSString *)attribution
+- (void)sendAttribution
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
-                             kCountlyQSKeyAttributionID, attribution];
+    NSString * attributionQueryString = [self attributionQueryString];
+    if (!attributionQueryString)
+        return;
+
+    NSString* queryString = [[self queryEssentials] stringByAppendingString:attributionQueryString];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -449,14 +443,50 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
                                         kCountlyQSKeySDKName, CountlyCommon.sharedInstance.SDKName];
 }
 
-- (NSInteger)sessionLengthInSeconds
+- (NSString *)locationRelatedInfoQueryString
 {
-    NSTimeInterval currentTime = NSDate.date.timeIntervalSince1970;
-    unsentSessionLength += (currentTime - lastSessionStartTime);
-    lastSessionStartTime = currentTime;
-    int sessionLengthInSeconds = (int)unsentSessionLength;
-    unsentSessionLength -= sessionLengthInSeconds;
-    return sessionLengthInSeconds;
+    if (!CountlyConsentManager.sharedInstance.consentForLocation || CountlyLocationManager.sharedInstance.isLocationInfoDisabled)
+    {
+        //NOTE: Return empty string for location. This is a server requirement to disable IP based location inferring.
+        return [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyLocation, @""];
+    }
+
+    NSString* location = CountlyLocationManager.sharedInstance.location.cly_URLEscaped;
+    NSString* city = CountlyLocationManager.sharedInstance.city.cly_URLEscaped;
+    NSString* ISOCountryCode = CountlyLocationManager.sharedInstance.ISOCountryCode.cly_URLEscaped;
+    NSString* IP = CountlyLocationManager.sharedInstance.IP.cly_URLEscaped;
+
+    NSMutableString* locationInfoQueryString = NSMutableString.new;
+
+    if (location)
+        [locationInfoQueryString appendFormat:@"&%@=%@", kCountlyQSKeyLocation, location];
+
+    if (city)
+        [locationInfoQueryString appendFormat:@"&%@=%@", kCountlyQSKeyLocationCity, city];
+
+    if (ISOCountryCode)
+        [locationInfoQueryString appendFormat:@"&%@=%@", kCountlyQSKeyLocationCountry, ISOCountryCode];
+
+    if (IP)
+        [locationInfoQueryString appendFormat:@"&%@=%@", kCountlyQSKeyLocationIP, IP];
+
+    if (locationInfoQueryString.length)
+        return locationInfoQueryString.copy;
+
+    return nil;
+}
+
+- (NSString *)attributionQueryString
+{
+    if (!CountlyConsentManager.sharedInstance.consentForAttribution)
+        return nil;
+
+    if (!CountlyCommon.sharedInstance.attributionID)
+        return nil;
+
+    NSDictionary* attribution = @{kCountlyQSKeyIDFA: CountlyCommon.sharedInstance.attributionID};
+
+    return [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyAttributionID, [attribution cly_JSONify]];
 }
 
 - (NSData *)pictureUploadDataForRequest:(NSString *)requestString
@@ -544,6 +574,16 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     NSInteger code = ((NSHTTPURLResponse*)response).statusCode;
 
     return (code >= 200 && code < 300);
+}
+
+- (NSInteger)sessionLengthInSeconds
+{
+    NSTimeInterval currentTime = NSDate.date.timeIntervalSince1970;
+    unsentSessionLength += (currentTime - lastSessionStartTime);
+    lastSessionStartTime = currentTime;
+    int sessionLengthInSeconds = (int)unsentSessionLength;
+    unsentSessionLength -= sessionLengthInSeconds;
+    return sessionLengthInSeconds;
 }
 
 #pragma mark ---

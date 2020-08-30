@@ -371,7 +371,7 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
     {
         COUNTLY_LOG(@"Consent for Attribution is given.");
 
-        [CountlyCommon.sharedInstance startAttribution];
+        [CountlyConnectionManager.sharedInstance sendAttribution];
     }
     else
     {

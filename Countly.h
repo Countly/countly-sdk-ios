@@ -329,13 +329,28 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - Location
 
 /**
+ * Records user's location, city, country and IP address to be used for geo-location based push notifications and advanced user segmentation.
+ * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location.
+ * @discussion If the app uses Core Location services and granted permission, a location with better accuracy can be provided using this method.
+ * @discussion If the app has information about user's city and/or country, these information can be provided using this method.
+ * @discussion If the app needs to explicitly specify the IP address due to network requirements, it can be provided using this method.
+ * @discussion This method overrides all location related properties specified on initial configuration or on a previous call to this method, and sends an immediate request.
+ * @discussion City and country code information should be provided together. If one of them is missing while the other one is present, there will be a warning logged.
+ * @param location User's location with latitude and longitude
+ * @param city User's city
+ * @param ISOCountryCode User's country code in ISO 3166-1 alpha-2 format
+ * @param IP User's explicit IP address
+ */
+- (void)recordLocation:(CLLocationCoordinate2D)location city:(NSString * _Nullable)city ISOCountryCode:(NSString * _Nullable)ISOCountryCode IP:(NSString * _Nullable)IP;
+
+/**
  * Records user's location info to be used for geo-location based push notifications and advanced user segmentation.
  * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location.
  * @discussion If the app uses Core Location services and granted permission, a location with better accuracy can be provided using this method.
  * @discussion This method overrides @c location property specified on initial configuration, and sends an immediate request.
  * @param location User's location with latitude and longitude
  */
-- (void)recordLocation:(CLLocationCoordinate2D)location;
+- (void)recordLocation:(CLLocationCoordinate2D)location DEPRECATED_MSG_ATTRIBUTE("Use 'recordLocation:city:ISOCountryCode:IP:' method instead!");
 
 /**
  * Records user's city and country info to be used for geo-location based push notifications and advanced user segmentation.
@@ -345,7 +360,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param city User's city
  * @param ISOCountryCode User's ISO country code in ISO 3166-1 alpha-2 format
  */
-- (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode;
+- (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode DEPRECATED_MSG_ATTRIBUTE("Use 'recordLocation:city:ISOCountryCode:IP:' method instead!");
 
 /**
  * Records user's IP address to be used for geo-location based push notifications and advanced user segmentation.
@@ -354,7 +369,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion This method overrides @c IP property specified on initial configuration, and sends an immediate request.
  * @param IP User's explicit IP address
  */
-- (void)recordIP:(NSString *)IP;
+- (void)recordIP:(NSString *)IP DEPRECATED_MSG_ATTRIBUTE("Use 'recordLocation:city:ISOCountryCode:IP:' method instead!");
 
 /**
  * Disables geo-location based push notifications by clearing all existing location info.
@@ -515,6 +530,18 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler;
 
 #endif
+
+
+
+#pragma mark - Attribution
+
+/**
+ * Records attribution ID (IDFA) for campaign attribution.
+ * @discussion This method overrides @c attributionID property specified on initial configuration, and sends an immediate request.
+ * @discussion Also, this attribution ID will be sent with all @c begin_session requests.
+ * @param attributionID Attribution ID (IDFA)
+ */
+- (void)recordAttributionID:(NSString *)attributionID;
 
 
 

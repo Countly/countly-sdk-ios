@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name = 'Countly'
-  s.version = '20.04.2'
+  s.version = '20.04.3'
   s.license = { :type => 'MIT', :file => 'LICENSE.md' }
   s.summary  = 'Countly is an innovative, real-time, open source mobile analytics platform.'
   s.homepage = 'https://github.com/Countly/countly-sdk-ios'
@@ -30,7 +30,7 @@ Pod::Spec.new do |s|
   s.subspec 'PL' do |pl|
     pl.platform = :ios
     pl.dependency 'Countly/Core'
-    pl.dependency 'PLCrashReporter', '1.5.1'
+    pl.dependency 'PLCrashReporter', '~> 1'
 
     # It is not possible to set static_framework attribute on subspecs.
     # So, we have to set it on main spec.

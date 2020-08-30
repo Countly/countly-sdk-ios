@@ -33,8 +33,8 @@ extern CLYFeature const CLYCrashReporting;
 /**
  * Can be used as device ID to switch back to default device ID, if a custom device ID is set before.
  * @discussion It can be used as @c deviceID on initial configuration, or passed as an argument for @c deviceID parameter on @c setNewDeviceID:onServer: method.
- * @discussion On iOS and tvOS, it will be identifierForVendor.
- * @discussion On watchOS and macOS, it will be a persistently stored random NSUUID string.
+ * @discussion On iOS and tvOS, default device ID is Identifier For Vendor (IDFV).
+ * @discussion On watchOS and macOS, default device ID is a persistently stored random NSUUID string.
  */
 extern NSString* const CLYDefaultDeviceID;
 
@@ -151,7 +151,7 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
  * @c isTestDevice property is deprecated. Please use @c pushTestMode property instead.
  * @discussion Using this property will have no effect.
  */
-@property (nonatomic) BOOL isTestDevice DEPRECATED_MSG_ATTRIBUTE("Use 'pushTestMode' property instead!");;
+@property (nonatomic) BOOL isTestDevice DEPRECATED_MSG_ATTRIBUTE("Use 'pushTestMode' property instead!");
 
 /**
  * For specifying which test mode Countly Server should use for sending push notifications.
@@ -161,7 +161,7 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
  * @discussion If set, Test Users mark should be selected on Create Push Notification screen of Countly Server to send push notifications.
  * @discussion If not set, Countly Server will use Production APNs by default.
  */
-@property (nonatomic) CLYPushTestMode pushTestMode;
+@property (nonatomic, copy) CLYPushTestMode pushTestMode;
 
 /**
  * For sending push tokens to Countly Server even for users who have not granted permission to display notifications.
@@ -177,9 +177,9 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
 
 /**
  * For handling push notifications for macOS apps on launch.
- * @discussion Needs to be set in @c applicationDidFinishLaunching: method of macOS apps that uses @c CLYPushNotifications feature, in order to handle app launches by push notification click.
+ * @discussion Needs to be set in @c applicationDidFinishLaunching: method of macOS apps that use @c CLYPushNotifications feature, in order to handle app launches by push notification click.
  */
-@property (nonatomic) NSNotification* launchNotification;
+@property (nonatomic, copy) NSNotification* launchNotification;
 
 #pragma mark -
 
@@ -214,9 +214,10 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
 #pragma mark -
 
 /**
- * @discussion Custom or system generated device ID.
- * @discussion If not set, Identifier For Vendor (IDFV) will be used by default on iOS.
- * @discussion If not set, a random NSUUID will be used by default on watchOS, tvOS and macOS.
+ * @discussion Custom device ID.
+ * @discussion If not set, default device ID will be used.
+ * @discussion On iOS and tvOS, default device ID is Identifier For Vendor (IDFV).
+ * @discussion On watchOS and macOS, default device ID is a persistently stored random NSUUID string.
  * @discussion Once set, device ID will be stored persistently and will not change even if another device ID is set on next start, unless @c resetStoredDeviceID flag is set.
  */
 @property (nonatomic, copy) NSString* deviceID;
@@ -284,11 +285,19 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
  */
 @property (nonatomic) BOOL enableAppleWatch;
 
+#pragma mark -
+
 /**
- * For enabling campaign attribution.
- * @discussion If set, IDFA (Identifier For Advertising) will be sent with @c begin_session request, unless user has limited ad tracking.
+ * For specifying attribution ID (IDFA) for campaign attribution.
+ * @discussion If set, this attribution ID will be sent with all @c begin_session requests.
  */
-@property (nonatomic) BOOL enableAttribution;
+@property (nonatomic, copy) NSString* attributionID;
+
+/**
+ * @c enableAttribution property is deprecated. Please use @c recordAttributionID method instead.
+ * @discussion Using this property will have no effect.
+ */
+@property (nonatomic) BOOL enableAttribution DEPRECATED_MSG_ATTRIBUTE("Use 'attributionID' property instead!");
 
 #pragma mark -
 
@@ -311,11 +320,11 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
  * Regular expression used for filtering crash reports and preventing them from being sent to Countly Server.
  * @discussion If a crash's name, description or any line of stack trace matches given regular expression, it will not be sent to Countly Server.
  */
-@property (nonatomic) NSRegularExpression* crashFilter;
+@property (nonatomic, copy) NSRegularExpression* crashFilter;
 
 /**
  * For using PLCrashReporter instead of default crash handling mechanism.
- * @discussion If set, SDK will be using PLCrashReporter (1.5.1) dependency for creating crash reports.
+ * @discussion If set, SDK will be using PLCrashReporter (1.x.x series) dependency for creating crash reports.
  * @discussion PLCrashReporter option is available only for iOS apps.
  * @discussion For more information about PLCrashReporter please see: https://github.com/microsoft/plcrashreporter
  */
