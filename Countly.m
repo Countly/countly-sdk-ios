@@ -117,9 +117,12 @@ long long appLoadStartTime;
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
 
-    //NOTE: If there is no consent for sessions, location info should be sent separately, as it cannot be sent with begin_session request.
+    //NOTE: If there is no consent for sessions, location info and attribution should be sent separately, as they cannot be sent with begin_session request.
     if (!CountlyConsentManager.sharedInstance.consentForSessions)
+    {
         [CountlyLocationManager.sharedInstance sendLocationInfo];
+        [CountlyConnectionManager.sharedInstance sendAttribution];
+    }
 
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
@@ -160,8 +163,6 @@ long long appLoadStartTime;
     [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
 
     [CountlyCommon.sharedInstance startAppleWatchMatching];
-
-    [CountlyCommon.sharedInstance startAttribution];
 
     CountlyRemoteConfig.sharedInstance.isEnabledOnInitialConfig = config.enableRemoteConfig;
     CountlyRemoteConfig.sharedInstance.remoteConfigCompletionHandler = config.remoteConfigCompletionHandler;

@@ -168,19 +168,6 @@ void CountlyPrint(NSString *stringToPrint)
 #endif
 }
 
-#pragma mark - Attribution
-
-- (void)startAttribution
-{
-    if (!self.attributionID.length)
-        return;
-
-    if (!CountlyConsentManager.sharedInstance.consentForAttribution)
-        return;
-
-    [CountlyConnectionManager.sharedInstance sendAttribution];
-}
-
 #pragma mark - Orientation
 
 - (void)observeDeviceOrientationChanges
