@@ -47,6 +47,7 @@ NSString* const kCountlyQSKeyUserDetails      = @"user_details";
 NSString* const kCountlyQSKeyCrash            = @"crash";
 NSString* const kCountlyQSKeyChecksum256      = @"checksum256";
 NSString* const kCountlyQSKeyAttributionID    = @"aid";
+NSString* const kCountlyQSKeyIDFA             = @"idfa";
 NSString* const kCountlyQSKeyConsent          = @"consent";
 NSString* const kCountlyQSKeyAPM              = @"apm";
 
@@ -404,10 +405,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     [self proceedOnQueue];
 }
 
-- (void)sendAttribution:(NSString *)attribution
+- (void)sendAttribution
 {
+    NSDictionary* attribution = @{kCountlyQSKeyIDFA: CountlyCommon.sharedInstance.attributionID};;
+
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
-                             kCountlyQSKeyAttributionID, attribution];
+                             kCountlyQSKeyAttributionID, [attribution cly_JSONify]];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 

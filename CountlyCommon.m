@@ -37,7 +37,6 @@ NSString* const kCountlySDKVersion = @"20.04.3";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
-NSString* const kCountlyAttributionIDFAKey = @"idfa";
 
 NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
 
@@ -179,9 +178,7 @@ void CountlyPrint(NSString *stringToPrint)
     if (!CountlyConsentManager.sharedInstance.consentForAttribution)
         return;
 
-    NSDictionary* attribution = @{kCountlyAttributionIDFAKey: self.attributionID};;
-
-    [CountlyConnectionManager.sharedInstance sendAttribution:[attribution cly_JSONify]];
+    [CountlyConnectionManager.sharedInstance sendAttribution];
 }
 
 #pragma mark - Orientation
