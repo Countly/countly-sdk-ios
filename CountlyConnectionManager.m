@@ -476,16 +476,6 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     return nil;
 }
 
-- (NSInteger)sessionLengthInSeconds
-{
-    NSTimeInterval currentTime = NSDate.date.timeIntervalSince1970;
-    unsentSessionLength += (currentTime - lastSessionStartTime);
-    lastSessionStartTime = currentTime;
-    int sessionLengthInSeconds = (int)unsentSessionLength;
-    unsentSessionLength -= sessionLengthInSeconds;
-    return sessionLengthInSeconds;
-}
-
 - (NSString *)attributionQueryString
 {
     if (!CountlyConsentManager.sharedInstance.consentForAttribution)
@@ -584,6 +574,16 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     NSInteger code = ((NSHTTPURLResponse*)response).statusCode;
 
     return (code >= 200 && code < 300);
+}
+
+- (NSInteger)sessionLengthInSeconds
+{
+    NSTimeInterval currentTime = NSDate.date.timeIntervalSince1970;
+    unsentSessionLength += (currentTime - lastSessionStartTime);
+    lastSessionStartTime = currentTime;
+    int sessionLengthInSeconds = (int)unsentSessionLength;
+    unsentSessionLength -= sessionLengthInSeconds;
+    return sessionLengthInSeconds;
 }
 
 #pragma mark ---
