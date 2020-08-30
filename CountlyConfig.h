@@ -284,11 +284,19 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
  */
 @property (nonatomic) BOOL enableAppleWatch;
 
+#pragma mark -
+
 /**
-* @c enableAttribution property is deprecated. Please use @c recordAttribution method instead.
-* @discussion Using this property will have no effect.
-*/
-@property (nonatomic) BOOL enableAttribution DEPRECATED_MSG_ATTRIBUTE("Use 'recordAttribution' method instead!");
+ * For campaign attribution.
+ * @discussion If set, this attribution identifier will be sent with all @c begin_session requests.
+ */
+@property (nonatomic, copy) NSString* attributionID;
+
+/**
+ * @c enableAttribution property is deprecated. Please use @c recordAttributionID method instead.
+ * @discussion Using this property will have no effect.
+ */
+@property (nonatomic) BOOL enableAttribution DEPRECATED_MSG_ATTRIBUTE("Use 'attributionID' property instead!");
 
 #pragma mark -
 
