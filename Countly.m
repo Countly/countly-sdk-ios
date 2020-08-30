@@ -102,9 +102,6 @@ long long appLoadStartTime;
 
     CountlyDeviceInfo.sharedInstance.customMetrics = config.customMetrics;
 
-    if (!CountlyCommon.sharedInstance.manualSessionHandling)
-        [CountlyConnectionManager.sharedInstance beginSession];
-
 #if (TARGET_OS_IOS)
     CountlyStarRating.sharedInstance.message = config.starRatingMessage;
     CountlyStarRating.sharedInstance.sessionCount = config.starRatingSessionCount;
@@ -112,12 +109,15 @@ long long appLoadStartTime;
     CountlyStarRating.sharedInstance.ratingCompletionForAutoAsk = config.starRatingCompletion;
     [CountlyStarRating.sharedInstance checkForAutoAsk];
 
-    CountlyLocationManager.sharedInstance.location = CLLocationCoordinate2DIsValid(config.location) ? [NSString stringWithFormat:@"%f,%f", config.location.latitude, config.location.longitude] : nil;
-    CountlyLocationManager.sharedInstance.city = config.city;
-    CountlyLocationManager.sharedInstance.ISOCountryCode = config.ISOCountryCode;
-    CountlyLocationManager.sharedInstance.IP = config.IP;
-    [CountlyLocationManager.sharedInstance sendLocationInfo];
+    [CountlyLocationManager.sharedInstance updateLocation:config.location city:config.city ISOCountryCode:config.ISOCountryCode IP:config.IP];
 #endif
+
+    if (!CountlyCommon.sharedInstance.manualSessionHandling)
+        [CountlyConnectionManager.sharedInstance beginSession];
+
+    //NOTE: If there is no consent for sessions, location info should be sent separately, as it cannot be sent with begin_session request.
+    if (!CountlyConsentManager.sharedInstance.consentForSessions)
+        [CountlyLocationManager.sharedInstance sendLocationInfo];
 
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
@@ -599,25 +599,36 @@ long long appLoadStartTime;
 
 #pragma mark - Location
 
+- (void)recordLocation:(CLLocationCoordinate2D)location city:(NSString * _Nullable)city ISOCountryCode:(NSString * _Nullable)ISOCountryCode IP:(NSString * _Nullable)IP
+{
+    [CountlyLocationManager.sharedInstance recordLocation:location city:city ISOCountryCode:ISOCountryCode IP:IP];
+}
+
 - (void)recordLocation:(CLLocationCoordinate2D)location
 {
-    [CountlyLocationManager.sharedInstance recordLocationInfo:location city:nil ISOCountryCode:nil andIP:nil];
+    COUNTLY_LOG(@"recordLocation: method is deprecated. Please use recordLocation:city:countryCode:IP: method instead.");
+
+    [CountlyLocationManager.sharedInstance recordLocation:location city:nil ISOCountryCode:nil IP:nil];
 }
 
 - (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode
 {
+    COUNTLY_LOG(@"recordCity:andISOCountryCode: method is deprecated. Please use recordLocation:city:countryCode:IP: method instead.");
+
     if (!city.length && !ISOCountryCode.length)
         return;
 
-    [CountlyLocationManager.sharedInstance recordLocationInfo:kCLLocationCoordinate2DInvalid city:city ISOCountryCode:ISOCountryCode andIP:nil];
+    [CountlyLocationManager.sharedInstance recordLocation:kCLLocationCoordinate2DInvalid city:city ISOCountryCode:ISOCountryCode IP:nil];
 }
 
 - (void)recordIP:(NSString *)IP
 {
+    COUNTLY_LOG(@"recordIP: method is deprecated. Please use recordLocation:city:countryCode:IP: method instead.");
+
     if (!IP.length)
         return;
 
-    [CountlyLocationManager.sharedInstance recordLocationInfo:kCLLocationCoordinate2DInvalid city:nil ISOCountryCode:nil andIP:IP];
+    [CountlyLocationManager.sharedInstance recordLocation:kCLLocationCoordinate2DInvalid city:nil ISOCountryCode:nil IP:IP];
 }
 
 - (void)disableLocationInfo

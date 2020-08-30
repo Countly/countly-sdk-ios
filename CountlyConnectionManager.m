@@ -198,8 +198,9 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
                              kCountlyQSKeySessionBegin, @"1",
                              kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
 
-    if (!CountlyConsentManager.sharedInstance.consentForLocation || CountlyLocationManager.sharedInstance.isLocationInfoDisabled)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocation, @""];
+    NSString* locationRelatedInfoQueryString = [self locationRelatedInfoQueryString];
+    if (locationRelatedInfoQueryString)
+        queryString = [queryString stringByAppendingString:locationRelatedInfoQueryString];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -275,27 +276,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)sendLocationInfo
 {
-    NSString* location = CountlyLocationManager.sharedInstance.location.cly_URLEscaped;
-    NSString* city = CountlyLocationManager.sharedInstance.city.cly_URLEscaped;
-    NSString* ISOCountryCode = CountlyLocationManager.sharedInstance.ISOCountryCode.cly_URLEscaped;
-    NSString* IP = CountlyLocationManager.sharedInstance.IP.cly_URLEscaped;
+    NSString* locationRelatedInfoQueryString = [self locationRelatedInfoQueryString];
 
-    if (!(location || city || ISOCountryCode || IP))
+    if (!locationRelatedInfoQueryString)
         return;
 
-    NSString* queryString = [self queryEssentials];
-
-    if (location)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocation, location];
-
-    if (city.length)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationCity, city];
-
-    if (ISOCountryCode.length)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationCountry, ISOCountryCode];
-
-    if (IP.length)
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocationIP, IP];
+    NSString* queryString = [[self queryEssentials] stringByAppendingString:locationRelatedInfoQueryString];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -447,6 +433,39 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
                                         kCountlyQSKeyTimeZone, (int)CountlyCommon.sharedInstance.timeZone,
                                         kCountlyQSKeySDKVersion, CountlyCommon.sharedInstance.SDKVersion,
                                         kCountlyQSKeySDKName, CountlyCommon.sharedInstance.SDKName];
+}
+
+- (NSString *)locationRelatedInfoQueryString
+{
+    if (!CountlyConsentManager.sharedInstance.consentForLocation || CountlyLocationManager.sharedInstance.isLocationInfoDisabled)
+    {
+        //NOTE: Return empty string for location. This is a server requirement to disable IP based location inferring.
+        return [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyLocation, @""];
+    }
+
+    NSString* location = CountlyLocationManager.sharedInstance.location.cly_URLEscaped;
+    NSString* city = CountlyLocationManager.sharedInstance.city.cly_URLEscaped;
+    NSString* ISOCountryCode = CountlyLocationManager.sharedInstance.ISOCountryCode.cly_URLEscaped;
+    NSString* IP = CountlyLocationManager.sharedInstance.IP.cly_URLEscaped;
+
+    NSMutableString* locationInfoQueryString = NSMutableString.new;
+
+    if (location)
+        [locationInfoQueryString appendFormat:@"&%@=%@", kCountlyQSKeyLocation, location];
+
+    if (city)
+        [locationInfoQueryString appendFormat:@"&%@=%@", kCountlyQSKeyLocationCity, city];
+
+    if (ISOCountryCode)
+        [locationInfoQueryString appendFormat:@"&%@=%@", kCountlyQSKeyLocationCountry, ISOCountryCode];
+
+    if (IP)
+        [locationInfoQueryString appendFormat:@"&%@=%@", kCountlyQSKeyLocationIP, IP];
+
+    if (locationInfoQueryString.length)
+        return locationInfoQueryString.copy;
+
+    return nil;
 }
 
 - (NSInteger)sessionLengthInSeconds

@@ -32,30 +32,44 @@
 
 #pragma mark ---
 
-- (void)sendLocationInfo
+- (void)recordLocation:(CLLocationCoordinate2D)location city:(NSString *)city ISOCountryCode:(NSString *)ISOCountryCode IP:(NSString *)IP
 {
     if (!CountlyConsentManager.sharedInstance.consentForLocation)
         return;
+
+    [self updateLocation:location city:city ISOCountryCode:ISOCountryCode IP:IP];
 
     [CountlyConnectionManager.sharedInstance sendLocationInfo];
 }
 
-- (void)recordLocationInfo:(CLLocationCoordinate2D)location city:(NSString *)city ISOCountryCode:(NSString *)ISOCountryCode andIP:(NSString *)IP
+- (void)updateLocation:(CLLocationCoordinate2D)location city:(NSString *)city ISOCountryCode:(NSString *)ISOCountryCode IP:(NSString *)IP
 {
-    if (!CountlyConsentManager.sharedInstance.consentForLocation)
-        return;
-
     if (CLLocationCoordinate2DIsValid(location))
         self.location = [NSString stringWithFormat:@"%f,%f", location.latitude, location.longitude];
     else
         self.location = nil;
 
-    self.city = city;
-    self.ISOCountryCode = ISOCountryCode;
-    self.IP = IP;
+    self.city = city.length ? city : nil;
+    self.ISOCountryCode = ISOCountryCode.length ? ISOCountryCode : nil;
+    self.IP = IP.length ? IP : nil;
+
+    if (self.city && !self.ISOCountryCode)
+    {
+        COUNTLY_LOG(@"City and Country Code should be set as a pair. Country Code is missing while City is set!");
+    }
+    else if (self.ISOCountryCode && !self.city)
+    {
+        COUNTLY_LOG(@"City and Country Code should be set as a pair. City is missing while Country Code is set!");
+    }
 
     if ((self.location || self.city || self.ISOCountryCode || self.IP))
         self.isLocationInfoDisabled = NO;
+}
+
+- (void)sendLocationInfo
+{
+    if (!CountlyConsentManager.sharedInstance.consentForLocation)
+        return;
 
     [CountlyConnectionManager.sharedInstance sendLocationInfo];
 }
@@ -67,8 +81,7 @@
 
     self.isLocationInfoDisabled = YES;
 
-    //NOTE: Set location to empty string, as Countly Server needs it for disabling geo-location
-    self.location = @"";
+    self.location = nil;
     self.city = nil;
     self.ISOCountryCode = nil;
     self.IP = nil;
