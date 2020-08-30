@@ -76,8 +76,7 @@
 
     self.isLocationInfoDisabled = YES;
 
-    //NOTE: Set location to empty string, as Countly Server needs it for disabling geo-location
-    self.location = @"";
+    self.location = nil;
     self.city = nil;
     self.ISOCountryCode = nil;
     self.IP = nil;

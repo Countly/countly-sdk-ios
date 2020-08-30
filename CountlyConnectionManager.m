@@ -278,7 +278,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 {
     NSString* locationRelatedInfoQueryString = [self locationRelatedInfoQueryString];
 
-    if (!locationRelatedInfoQueryString.length)
+    if (!locationRelatedInfoQueryString)
         return;
 
     NSString* queryString = [[self queryEssentials] stringByAppendingString:locationRelatedInfoQueryString];
@@ -439,6 +439,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 {
     if (!CountlyConsentManager.sharedInstance.consentForLocation || CountlyLocationManager.sharedInstance.isLocationInfoDisabled)
     {
+        //NOTE: Return empty string for location. This is a server requirement to disable IP based location inferring.
         return [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyLocation, @""];
     }
 
@@ -449,18 +450,16 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     NSMutableString* locationInfoQueryString = NSMutableString.new;
 
-    //NOTE: For `location` itself, we do not check for length as we do for other location related infos here.
-    //NOTE: Because we need a case where `location` is an empty string. This is a server requirement to disable IP based location inferring.
     if (location)
         [locationInfoQueryString appendFormat:@"&%@=%@", kCountlyQSKeyLocation, location];
 
-    if (city.length)
+    if (city)
         [locationInfoQueryString appendFormat:@"&%@=%@", kCountlyQSKeyLocationCity, city];
 
-    if (ISOCountryCode.length)
+    if (ISOCountryCode)
         [locationInfoQueryString appendFormat:@"&%@=%@", kCountlyQSKeyLocationCountry, ISOCountryCode];
 
-    if (IP.length)
+    if (IP)
         [locationInfoQueryString appendFormat:@"&%@=%@", kCountlyQSKeyLocationIP, IP];
 
     if (locationInfoQueryString.length)
