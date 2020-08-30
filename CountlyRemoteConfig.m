@@ -186,11 +186,11 @@ NSString* const kCountlyRCKeyMetrics            = @"metrics";
 
     if (keys)
     {
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyKeys, keys.cly_JSONify];
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyKeys, [keys cly_JSONify]];
     }
     else if (omitKeys)
     {
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyOmitKeys, omitKeys.cly_JSONify];
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyOmitKeys, [omitKeys cly_JSONify]];
     }
 
     if (CountlyConsentManager.sharedInstance.consentForSessions)
