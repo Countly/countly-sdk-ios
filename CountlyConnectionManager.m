@@ -203,6 +203,10 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     if (locationRelatedInfoQueryString)
         queryString = [queryString stringByAppendingString:locationRelatedInfoQueryString];
 
+    NSString* attributionQueryString = [self attributionQueryString];
+    if (attributionQueryString)
+        queryString = [queryString stringByAppendingString:attributionQueryString];
+
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
     [self proceedOnQueue];
@@ -484,6 +488,9 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (NSString *)attributionQueryString
 {
+    if (!CountlyConsentManager.sharedInstance.consentForAttribution)
+        return nil;
+
     if (!CountlyCommon.sharedInstance.attributionID)
         return nil;
 
