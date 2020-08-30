@@ -599,7 +599,7 @@ long long appLoadStartTime;
 
 #pragma mark - Location
 
-- (void)recordLocation:(CLLocationCoordinate2D)location city:(NSString * _Nullable)city countryCode:(NSString * _Nullable)ISOCountryCode IP:(NSString * _Nullable)IP
+- (void)recordLocation:(CLLocationCoordinate2D)location city:(NSString * _Nullable)city ISOCountryCode:(NSString * _Nullable)ISOCountryCode IP:(NSString * _Nullable)IP
 {
     [CountlyLocationManager.sharedInstance recordLocationInfo:location city:city ISOCountryCode:ISOCountryCode andIP:IP];
 }
