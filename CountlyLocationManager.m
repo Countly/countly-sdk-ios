@@ -45,6 +45,14 @@
     if (!CountlyConsentManager.sharedInstance.consentForLocation)
         return;
 
+    [self updateLocation:location city:city ISOCountryCode:ISOCountryCode IP:IP];
+
+    [CountlyConnectionManager.sharedInstance sendLocationInfo];
+}
+
+
+- (void)updateLocation:(CLLocationCoordinate2D)location city:(NSString *)city ISOCountryCode:(NSString *)ISOCountryCode IP:(NSString *)IP
+{
     if (CLLocationCoordinate2DIsValid(location))
         self.location = [NSString stringWithFormat:@"%f,%f", location.latitude, location.longitude];
     else
@@ -65,8 +73,6 @@
 
     if ((self.location || self.city || self.ISOCountryCode || self.IP))
         self.isLocationInfoDisabled = NO;
-
-    [CountlyConnectionManager.sharedInstance sendLocationInfo];
 }
 
 - (void)disableLocationInfo

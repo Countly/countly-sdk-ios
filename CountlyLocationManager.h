@@ -15,6 +15,7 @@
 + (instancetype)sharedInstance;
 
 - (void)sendLocationInfo;
+- (void)updateLocation:(CLLocationCoordinate2D)location city:(NSString *)city ISOCountryCode:(NSString *)ISOCountryCode IP:(NSString *)IP;
 - (void)recordLocationInfo:(CLLocationCoordinate2D)location city:(NSString *)city ISOCountryCode:(NSString *)ISOCountryCode andIP:(NSString *)IP;
 - (void)disableLocationInfo;
 

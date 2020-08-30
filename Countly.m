@@ -109,10 +109,7 @@ long long appLoadStartTime;
     CountlyStarRating.sharedInstance.ratingCompletionForAutoAsk = config.starRatingCompletion;
     [CountlyStarRating.sharedInstance checkForAutoAsk];
 
-    CountlyLocationManager.sharedInstance.location = CLLocationCoordinate2DIsValid(config.location) ? [NSString stringWithFormat:@"%f,%f", config.location.latitude, config.location.longitude] : nil;
-    CountlyLocationManager.sharedInstance.city = config.city;
-    CountlyLocationManager.sharedInstance.ISOCountryCode = config.ISOCountryCode;
-    CountlyLocationManager.sharedInstance.IP = config.IP;
+    [CountlyLocationManager.sharedInstance updateLocation:config.location city:config.city ISOCountryCode:config.ISOCountryCode IP:config.IP];
 #endif
 
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
