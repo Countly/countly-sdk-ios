@@ -198,16 +198,9 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
                              kCountlyQSKeySessionBegin, @"1",
                              kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
 
-    if (!CountlyConsentManager.sharedInstance.consentForLocation || CountlyLocationManager.sharedInstance.isLocationInfoDisabled)
-    {
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyLocation, @""];
-    }
-    else
-    {
-        NSString* locationRelatedInfoQueryString = [self locationRelatedInfoQueryString];
-        if (locationRelatedInfoQueryString.length)
-            queryString = [queryString stringByAppendingString:locationRelatedInfoQueryString];
-    }
+    NSString* locationRelatedInfoQueryString = [self locationRelatedInfoQueryString];
+    if (locationRelatedInfoQueryString)
+        queryString = [queryString stringByAppendingString:locationRelatedInfoQueryString];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -444,6 +437,11 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (NSString *)locationRelatedInfoQueryString
 {
+    if (!CountlyConsentManager.sharedInstance.consentForLocation || CountlyLocationManager.sharedInstance.isLocationInfoDisabled)
+    {
+        return [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyLocation, @""];
+    }
+
     NSString* location = CountlyLocationManager.sharedInstance.location.cly_URLEscaped;
     NSString* city = CountlyLocationManager.sharedInstance.city.cly_URLEscaped;
     NSString* ISOCountryCode = CountlyLocationManager.sharedInstance.ISOCountryCode.cly_URLEscaped;
@@ -465,7 +463,10 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     if (IP.length)
         [locationInfoQueryString appendFormat:@"&%@=%@", kCountlyQSKeyLocationIP, IP];
 
-    return locationInfoQueryString.copy;
+    if (locationInfoQueryString.length)
+        return locationInfoQueryString.copy;
+
+    return nil;
 }
 
 - (NSInteger)sessionLengthInSeconds
