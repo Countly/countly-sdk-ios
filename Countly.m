@@ -97,7 +97,10 @@ long long appLoadStartTime;
     CountlyPersistency.sharedInstance.storedRequestsLimit = MAX(1, config.storedRequestsLimit);
 
     CountlyCommon.sharedInstance.manualSessionHandling = config.manualSessionHandling;
+
     CountlyCommon.sharedInstance.enableAppleWatch = config.enableAppleWatch;
+
+    CountlyCommon.sharedInstance.attributionID = config.attributionID;
 
     CountlyDeviceInfo.sharedInstance.customMetrics = config.customMetrics;
 
