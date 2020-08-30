@@ -484,7 +484,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     if (!CountlyCommon.sharedInstance.attributionID)
         return nil;
 
-    NSDictionary* attribution = @{kCountlyQSKeyIDFA: CountlyCommon.sharedInstance.attributionID};;
+    NSDictionary* attribution = @{kCountlyQSKeyIDFA: CountlyCommon.sharedInstance.attributionID};
 
     return [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyAttributionID, [attribution cly_JSONify]];
 }

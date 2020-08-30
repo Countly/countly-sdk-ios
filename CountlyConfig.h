@@ -151,7 +151,7 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
  * @c isTestDevice property is deprecated. Please use @c pushTestMode property instead.
  * @discussion Using this property will have no effect.
  */
-@property (nonatomic) BOOL isTestDevice DEPRECATED_MSG_ATTRIBUTE("Use 'pushTestMode' property instead!");;
+@property (nonatomic) BOOL isTestDevice DEPRECATED_MSG_ATTRIBUTE("Use 'pushTestMode' property instead!");
 
 /**
  * For specifying which test mode Countly Server should use for sending push notifications.
