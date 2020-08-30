@@ -533,6 +533,18 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 
+#pragma mark - Attribution
+
+/**
+ * Records attribution ID (IDFA) for campaign attribution.
+ * @discussion This method overrides @c attributionID property specified on initial configuration, and sends an immediate request.
+ * @discussion Also, this attribution ID will be sent with all @c begin_session requests.
+ * @param attributionID Attribution ID (IDFA)
+ */
+- (void)recordAttributionID:(NSString *)attributionID;
+
+
+
 #pragma mark - Remote Config
 /**
  * Returns last retrieved remote config value for given key, if exists.

@@ -742,6 +742,20 @@ long long appLoadStartTime;
 
 
 
+#pragma mark - Attribution
+
+- (void)recordAttributionID:(NSString *)attributionID
+{
+    if (!CountlyConsentManager.sharedInstance.consentForAttribution)
+        return;
+
+    CountlyCommon.sharedInstance.attributionID = attributionID;
+
+    [CountlyConnectionManager.sharedInstance sendAttribution];
+}
+
+
+
 #pragma mark - Remote Config
 
 - (id)remoteConfigValueForKey:(NSString *)key
