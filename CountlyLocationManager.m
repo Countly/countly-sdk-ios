@@ -32,14 +32,6 @@
 
 #pragma mark ---
 
-- (void)sendLocationInfo
-{
-    if (!CountlyConsentManager.sharedInstance.consentForLocation)
-        return;
-
-    [CountlyConnectionManager.sharedInstance sendLocationInfo];
-}
-
 - (void)recordLocationInfo:(CLLocationCoordinate2D)location city:(NSString *)city ISOCountryCode:(NSString *)ISOCountryCode andIP:(NSString *)IP
 {
     if (!CountlyConsentManager.sharedInstance.consentForLocation)
@@ -49,7 +41,6 @@
 
     [CountlyConnectionManager.sharedInstance sendLocationInfo];
 }
-
 
 - (void)updateLocation:(CLLocationCoordinate2D)location city:(NSString *)city ISOCountryCode:(NSString *)ISOCountryCode IP:(NSString *)IP
 {
@@ -73,6 +64,14 @@
 
     if ((self.location || self.city || self.ISOCountryCode || self.IP))
         self.isLocationInfoDisabled = NO;
+}
+
+- (void)sendLocationInfo
+{
+    if (!CountlyConsentManager.sharedInstance.consentForLocation)
+        return;
+
+    [CountlyConnectionManager.sharedInstance sendLocationInfo];
 }
 
 - (void)disableLocationInfo
