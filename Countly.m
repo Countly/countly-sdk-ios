@@ -601,14 +601,14 @@ long long appLoadStartTime;
 
 - (void)recordLocation:(CLLocationCoordinate2D)location city:(NSString * _Nullable)city ISOCountryCode:(NSString * _Nullable)ISOCountryCode IP:(NSString * _Nullable)IP
 {
-    [CountlyLocationManager.sharedInstance recordLocationInfo:location city:city ISOCountryCode:ISOCountryCode andIP:IP];
+    [CountlyLocationManager.sharedInstance recordLocation:location city:city ISOCountryCode:ISOCountryCode IP:IP];
 }
 
 - (void)recordLocation:(CLLocationCoordinate2D)location
 {
     COUNTLY_LOG(@"recordLocation: method is deprecated. Please use recordLocation:city:countryCode:IP: method instead.");
 
-    [CountlyLocationManager.sharedInstance recordLocationInfo:location city:nil ISOCountryCode:nil andIP:nil];
+    [CountlyLocationManager.sharedInstance recordLocation:location city:nil ISOCountryCode:nil IP:nil];
 }
 
 - (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode
@@ -618,7 +618,7 @@ long long appLoadStartTime;
     if (!city.length && !ISOCountryCode.length)
         return;
 
-    [CountlyLocationManager.sharedInstance recordLocationInfo:kCLLocationCoordinate2DInvalid city:city ISOCountryCode:ISOCountryCode andIP:nil];
+    [CountlyLocationManager.sharedInstance recordLocation:kCLLocationCoordinate2DInvalid city:city ISOCountryCode:ISOCountryCode IP:nil];
 }
 
 - (void)recordIP:(NSString *)IP
@@ -628,7 +628,7 @@ long long appLoadStartTime;
     if (!IP.length)
         return;
 
-    [CountlyLocationManager.sharedInstance recordLocationInfo:kCLLocationCoordinate2DInvalid city:nil ISOCountryCode:nil andIP:IP];
+    [CountlyLocationManager.sharedInstance recordLocation:kCLLocationCoordinate2DInvalid city:nil ISOCountryCode:nil IP:IP];
 }
 
 - (void)disableLocationInfo

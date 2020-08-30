@@ -32,7 +32,7 @@
 
 #pragma mark ---
 
-- (void)recordLocationInfo:(CLLocationCoordinate2D)location city:(NSString *)city ISOCountryCode:(NSString *)ISOCountryCode andIP:(NSString *)IP
+- (void)recordLocation:(CLLocationCoordinate2D)location city:(NSString *)city ISOCountryCode:(NSString *)ISOCountryCode IP:(NSString *)IP
 {
     if (!CountlyConsentManager.sharedInstance.consentForLocation)
         return;
