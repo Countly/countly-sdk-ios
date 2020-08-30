@@ -287,8 +287,8 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
 #pragma mark -
 
 /**
- * For campaign attribution.
- * @discussion If set, this attribution identifier will be sent with all @c begin_session requests.
+ * For specifying attribution ID (IDFA) for campaign attribution.
+ * @discussion If set, this attribution ID will be sent with all @c begin_session requests.
  */
 @property (nonatomic, copy) NSString* attributionID;
 
