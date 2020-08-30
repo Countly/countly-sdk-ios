@@ -33,8 +33,8 @@ extern CLYFeature const CLYCrashReporting;
 /**
  * Can be used as device ID to switch back to default device ID, if a custom device ID is set before.
  * @discussion It can be used as @c deviceID on initial configuration, or passed as an argument for @c deviceID parameter on @c setNewDeviceID:onServer: method.
- * @discussion On iOS and tvOS, it will be identifierForVendor.
- * @discussion On watchOS and macOS, it will be a persistently stored random NSUUID string.
+ * @discussion On iOS and tvOS, default device ID is Identifier For Vendor (IDFV).
+ * @discussion On watchOS and macOS, default device ID is a persistently stored random NSUUID string.
  */
 extern NSString* const CLYDefaultDeviceID;
 
@@ -214,9 +214,10 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
 #pragma mark -
 
 /**
- * @discussion Custom or system generated device ID.
- * @discussion If not set, Identifier For Vendor (IDFV) will be used by default on iOS.
- * @discussion If not set, a random NSUUID will be used by default on watchOS, tvOS and macOS.
+ * @discussion Custom device ID.
+ * @discussion If not set, default device ID will be used.
+ * @discussion On iOS and tvOS, default device ID is Identifier For Vendor (IDFV).
+ * @discussion On watchOS and macOS, default device ID is a persistently stored random NSUUID string.
  * @discussion Once set, device ID will be stored persistently and will not change even if another device ID is set on next start, unless @c resetStoredDeviceID flag is set.
  */
 @property (nonatomic, copy) NSString* deviceID;
