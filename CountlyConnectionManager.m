@@ -493,23 +493,16 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 {
 #if (TARGET_OS_IOS)
     NSString* localPicturePath = nil;
-    NSString* tempURLString = [@"http://example.com/path?" stringByAppendingString:requestString];
-    NSURLComponents* URLComponents = [NSURLComponents componentsWithString:tempURLString];
-    for (NSURLQueryItem* queryItem in URLComponents.queryItems)
-    {
-        if ([queryItem.name isEqualToString:kCountlyQSKeyUserDetails])
-        {
-            NSString* unescapedValue = [queryItem.value stringByRemovingPercentEncoding];
-            if (!unescapedValue)
-                return nil;
 
-            NSDictionary* pathDictionary = [NSJSONSerialization JSONObjectWithData:[unescapedValue cly_dataUTF8] options:0 error:nil];
-            localPicturePath = pathDictionary[kCountlyLocalPicturePath];
-            break;
-        }
-    }
+    NSString* userDetails = [requestString cly_valueForQueryStringKey:kCountlyQSKeyUserDetails];
+    NSString* unescapedUserDetails = [userDetails stringByRemovingPercentEncoding];
+    if (!unescapedUserDetails)
+        return nil;
 
-    if (!localPicturePath || !localPicturePath.length)
+    NSDictionary* pathDictionary = [NSJSONSerialization JSONObjectWithData:[unescapedUserDetails cly_dataUTF8] options:0 error:nil];
+    localPicturePath = pathDictionary[kCountlyLocalPicturePath];
+
+    if (!localPicturePath.length)
         return nil;
 
     COUNTLY_LOG(@"Local picture path successfully extracted from query string: %@", localPicturePath);
