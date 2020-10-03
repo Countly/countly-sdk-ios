@@ -130,7 +130,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     NSString* fullRequestURL = [serverInputEndpoint stringByAppendingFormat:@"?%@", queryString];
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:fullRequestURL]];
 
-    NSData* pictureUploadData = [self pictureUploadDataForRequest:queryString];
+    NSData* pictureUploadData = [self pictureUploadDataForQueryString:queryString];
     if (pictureUploadData)
     {
         NSString *contentType = [@"multipart/form-data; boundary=" stringByAppendingString:kCountlyUploadBoundary];
@@ -489,12 +489,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     return [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyAttributionID, [attribution cly_JSONify]];
 }
 
-- (NSData *)pictureUploadDataForRequest:(NSString *)requestString
+- (NSData *)pictureUploadDataForQueryString:(NSString *)queryString
 {
 #if (TARGET_OS_IOS)
     NSString* localPicturePath = nil;
 
-    NSString* userDetails = [requestString cly_valueForQueryStringKey:kCountlyQSKeyUserDetails];
+    NSString* userDetails = [queryString cly_valueForQueryStringKey:kCountlyQSKeyUserDetails];
     NSString* unescapedUserDetails = [userDetails stringByRemovingPercentEncoding];
     if (!unescapedUserDetails)
         return nil;
