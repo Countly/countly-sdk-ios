@@ -422,6 +422,21 @@ NSString* CountlyJSONFromObject(id object)
 {
     return [self dataUsingEncoding:NSUTF8StringEncoding];
 }
+
+- (NSString *)cly_valueForQueryStringKey:(NSString *)key
+{
+    NSString* tempURLString = [@"http://example.com/path?" stringByAppendingString:self];
+    NSURLComponents* URLComponents = [NSURLComponents componentsWithString:tempURLString];
+    for (NSURLQueryItem* queryItem in URLComponents.queryItems)
+    {
+        if ([queryItem.name isEqualToString:key])
+        {
+            return queryItem.value;
+        }
+    }
+
+    return nil;
+}
 @end
 
 @implementation NSArray (Countly)
