@@ -106,6 +106,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return;
     }
 
+    if (CountlyPersistency.sharedInstance.isQueueBeingModified)
+    {
+        COUNTLY_LOG(@"Proceeding on queue is aborted: Queue is being modified!");
+        return;
+    }
+
     NSString* firstItemInQueue = [CountlyPersistency.sharedInstance firstItemInQueue];
     if (!firstItemInQueue)
     {

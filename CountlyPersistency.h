@@ -55,4 +55,5 @@
 
 @property (nonatomic) NSUInteger eventSendThreshold;
 @property (nonatomic) NSUInteger storedRequestsLimit;
+@property (nonatomic, readonly) BOOL isQueueBeingModified;
 @end

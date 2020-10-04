@@ -10,6 +10,7 @@
 @property (nonatomic) NSMutableArray* queuedRequests;
 @property (nonatomic) NSMutableArray* recordedEvents;
 @property (nonatomic) NSMutableDictionary* startedEvents;
+@property (nonatomic) BOOL isQueueBeingModified;
 @end
 
 @implementation CountlyPersistency
@@ -124,6 +125,8 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 {
     @synchronized (self)
     {
+        self.isQueueBeingModified = YES;
+
         [self.queuedRequests.copy enumerateObjectsUsingBlock:^(NSString* queryString, NSUInteger idx, BOOL* stop)
         {
             NSString* appKeyInQueryString = [queryString cly_valueForQueryStringKey:kCountlyQSKeyAppKey];
@@ -138,6 +141,8 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
                 self.queuedRequests[idx] = replacedQueryString;
             }
         }];
+
+        self.isQueueBeingModified = NO;
     }
 }
 
