@@ -135,8 +135,8 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
             {
                 COUNTLY_LOG(@"Detected a request with a different app key in queue and replaced it with current app key.");
 
-                NSString* currentAppKeyQueryString = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyAppKey, CountlyConnectionManager.sharedInstance.appKey.cly_URLEscaped];
-                NSString* differentAppKeyQueryString = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyAppKey, appKeyInQueryString];
+                NSString* currentAppKeyQueryString = [NSString stringWithFormat:@"%@=%@", kCountlyQSKeyAppKey, CountlyConnectionManager.sharedInstance.appKey.cly_URLEscaped];
+                NSString* differentAppKeyQueryString = [NSString stringWithFormat:@"%@=%@", kCountlyQSKeyAppKey, appKeyInQueryString];
                 NSString * replacedQueryString = [queryString stringByReplacingOccurrencesOfString:differentAppKeyQueryString withString:currentAppKeyQueryString];
                 self.queuedRequests[idx] = replacedQueryString;
             }
