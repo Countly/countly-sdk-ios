@@ -146,6 +146,31 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
     }
 }
 
+- (void)removeDifferentAppKeysFromQueue
+{
+    @synchronized (self)
+    {
+        self.isQueueBeingModified = YES;
+
+        NSPredicate* predicate = [NSPredicate predicateWithBlock:^BOOL(NSString* queryString, NSDictionary<NSString *, id> * bindings)
+        {
+            NSString* appKeyInQueryString = [queryString cly_valueForQueryStringKey:kCountlyQSKeyAppKey];
+
+            BOOL isSameAppKey = [appKeyInQueryString isEqualToString:CountlyConnectionManager.sharedInstance.appKey.cly_URLEscaped];
+            if (!isSameAppKey)
+            {
+                COUNTLY_LOG(@"Detected a request with a different app key (%@) in queue and removed it.", appKeyInQueryString);
+            }
+
+            return isSameAppKey;
+        }];
+
+        [self.queuedRequests filterUsingPredicate:predicate];
+
+        self.isQueueBeingModified = NO;
+    }
+}
+
 #pragma mark ---
 
 - (void)recordEvent:(CountlyEvent *)event
