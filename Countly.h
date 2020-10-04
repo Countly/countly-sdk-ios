@@ -66,6 +66,20 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)flushQueues;
 
 /**
+ * Replaces all requests with a different app key with the current app key.
+ * @discussion In request queue, if there are any request whose app key is different than the current app key,
+ * @discussion these requests' app key will be replaced with the current app key.
+ */
+- (void)replaceAllAppKeysInQueueWithCurrentAppKey;
+
+/**
+ * Removes all requests with a different app key in request queue.
+ * @discussion In request queue, if there are any request whose app key is different than the current app key,
+ * @discussion these requests will be removed from request queue.
+ */
+- (void)removeDifferentAppKeysFromQueue;
+
+/**
  * Starts session and sends @c begin_session request with default metrics for manual session handling.
  * @discussion This method needs to be called for starting a session only if @c manualSessionHandling flag is set on initial configuration.
  * @discussion Otherwise; sessions will be handled automatically by default, and calling this method will have no effect.
