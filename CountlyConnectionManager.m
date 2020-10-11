@@ -106,6 +106,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return;
     }
 
+    if (CountlyPersistency.sharedInstance.isQueueBeingModified)
+    {
+        COUNTLY_LOG(@"Proceeding on queue is aborted: Queue is being modified!");
+        return;
+    }
+
     NSString* firstItemInQueue = [CountlyPersistency.sharedInstance firstItemInQueue];
     if (!firstItemInQueue)
     {
@@ -130,7 +136,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     NSString* fullRequestURL = [serverInputEndpoint stringByAppendingFormat:@"?%@", queryString];
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:fullRequestURL]];
 
-    NSData* pictureUploadData = [self pictureUploadDataForRequest:queryString];
+    NSData* pictureUploadData = [self pictureUploadDataForQueryString:queryString];
     if (pictureUploadData)
     {
         NSString *contentType = [@"multipart/form-data; boundary=" stringByAppendingString:kCountlyUploadBoundary];
@@ -489,27 +495,20 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     return [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyAttributionID, [attribution cly_JSONify]];
 }
 
-- (NSData *)pictureUploadDataForRequest:(NSString *)requestString
+- (NSData *)pictureUploadDataForQueryString:(NSString *)queryString
 {
 #if (TARGET_OS_IOS)
     NSString* localPicturePath = nil;
-    NSString* tempURLString = [@"http://example.com/path?" stringByAppendingString:requestString];
-    NSURLComponents* URLComponents = [NSURLComponents componentsWithString:tempURLString];
-    for (NSURLQueryItem* queryItem in URLComponents.queryItems)
-    {
-        if ([queryItem.name isEqualToString:kCountlyQSKeyUserDetails])
-        {
-            NSString* unescapedValue = [queryItem.value stringByRemovingPercentEncoding];
-            if (!unescapedValue)
-                return nil;
 
-            NSDictionary* pathDictionary = [NSJSONSerialization JSONObjectWithData:[unescapedValue cly_dataUTF8] options:0 error:nil];
-            localPicturePath = pathDictionary[kCountlyLocalPicturePath];
-            break;
-        }
-    }
+    NSString* userDetails = [queryString cly_valueForQueryStringKey:kCountlyQSKeyUserDetails];
+    NSString* unescapedUserDetails = [userDetails stringByRemovingPercentEncoding];
+    if (!unescapedUserDetails)
+        return nil;
 
-    if (!localPicturePath || !localPicturePath.length)
+    NSDictionary* pathDictionary = [NSJSONSerialization JSONObjectWithData:[unescapedUserDetails cly_dataUTF8] options:0 error:nil];
+    localPicturePath = pathDictionary[kCountlyLocalPicturePath];
+
+    if (!localPicturePath.length)
         return nil;
 
     COUNTLY_LOG(@"Local picture path successfully extracted from query string: %@", localPicturePath);

@@ -7,6 +7,7 @@
 #import <Foundation/Foundation.h>
 
 extern NSString* const kCountlyQSKeyDeviceID;
+extern NSString* const kCountlyQSKeyAppKey;
 
 @interface CountlyConnectionManager : NSObject <NSURLSessionDelegate>
 

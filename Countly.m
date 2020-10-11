@@ -262,6 +262,16 @@ long long appLoadStartTime;
     [CountlyPersistency.sharedInstance flushQueue];
 }
 
+- (void)replaceAllAppKeysInQueueWithCurrentAppKey
+{
+    [CountlyPersistency.sharedInstance replaceAllAppKeysInQueueWithCurrentAppKey];
+}
+
+- (void)removeDifferentAppKeysFromQueue
+{
+    [CountlyPersistency.sharedInstance removeDifferentAppKeysFromQueue];
+}
+
 #pragma mark ---
 
 - (void)beginSession

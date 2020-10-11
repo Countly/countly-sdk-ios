@@ -10,6 +10,7 @@
 @property (nonatomic) NSMutableArray* queuedRequests;
 @property (nonatomic) NSMutableArray* recordedEvents;
 @property (nonatomic) NSMutableDictionary* startedEvents;
+@property (nonatomic) BOOL isQueueBeingModified;
 @end
 
 @implementation CountlyPersistency
@@ -117,6 +118,56 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
                 self.queuedRequests[idx] = replacedQueryString;
             }
         }];
+    }
+}
+
+- (void)replaceAllAppKeysInQueueWithCurrentAppKey
+{
+    @synchronized (self)
+    {
+        self.isQueueBeingModified = YES;
+
+        [self.queuedRequests.copy enumerateObjectsUsingBlock:^(NSString* queryString, NSUInteger idx, BOOL* stop)
+        {
+            NSString* appKeyInQueryString = [queryString cly_valueForQueryStringKey:kCountlyQSKeyAppKey];
+
+            if (![appKeyInQueryString isEqualToString:CountlyConnectionManager.sharedInstance.appKey.cly_URLEscaped])
+            {
+                COUNTLY_LOG(@"Detected a request with a different app key (%@) in queue and replaced it with current app key.", appKeyInQueryString);
+
+                NSString* currentAppKeyQueryString = [NSString stringWithFormat:@"%@=%@", kCountlyQSKeyAppKey, CountlyConnectionManager.sharedInstance.appKey.cly_URLEscaped];
+                NSString* differentAppKeyQueryString = [NSString stringWithFormat:@"%@=%@", kCountlyQSKeyAppKey, appKeyInQueryString];
+                NSString * replacedQueryString = [queryString stringByReplacingOccurrencesOfString:differentAppKeyQueryString withString:currentAppKeyQueryString];
+                self.queuedRequests[idx] = replacedQueryString;
+            }
+        }];
+
+        self.isQueueBeingModified = NO;
+    }
+}
+
+- (void)removeDifferentAppKeysFromQueue
+{
+    @synchronized (self)
+    {
+        self.isQueueBeingModified = YES;
+
+        NSPredicate* predicate = [NSPredicate predicateWithBlock:^BOOL(NSString* queryString, NSDictionary<NSString *, id> * bindings)
+        {
+            NSString* appKeyInQueryString = [queryString cly_valueForQueryStringKey:kCountlyQSKeyAppKey];
+
+            BOOL isSameAppKey = [appKeyInQueryString isEqualToString:CountlyConnectionManager.sharedInstance.appKey.cly_URLEscaped];
+            if (!isSameAppKey)
+            {
+                COUNTLY_LOG(@"Detected a request with a different app key (%@) in queue and removed it.", appKeyInQueryString);
+            }
+
+            return isSameAppKey;
+        }];
+
+        [self.queuedRequests filterUsingPredicate:predicate];
+
+        self.isQueueBeingModified = NO;
     }
 }
 

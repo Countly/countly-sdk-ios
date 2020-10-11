@@ -17,6 +17,8 @@
 - (NSString *)firstItemInQueue;
 - (void)flushQueue;
 - (void)replaceAllTemporaryDeviceIDsInQueueWithDeviceID:(NSString *)deviceID;
+- (void)replaceAllAppKeysInQueueWithCurrentAppKey;
+- (void)removeDifferentAppKeysFromQueue;
 
 - (void)recordEvent:(CountlyEvent *)event;
 - (NSString *)serializedRecordedEvents;
@@ -54,4 +56,5 @@
 
 @property (nonatomic) NSUInteger eventSendThreshold;
 @property (nonatomic) NSUInteger storedRequestsLimit;
+@property (nonatomic, readonly) BOOL isQueueBeingModified;
 @end

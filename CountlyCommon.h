@@ -108,6 +108,7 @@ void CountlyPrint(NSString *stringToPrint);
 - (NSString *)cly_URLEscaped;
 - (NSString *)cly_SHA256;
 - (NSData *)cly_dataUTF8;
+- (NSString *)cly_valueForQueryStringKey:(NSString *)key;
 @end
 
 @interface NSArray (Countly)
