@@ -5,6 +5,7 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
+#import <CoreLocation/CoreLocation.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
