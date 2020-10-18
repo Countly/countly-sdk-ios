@@ -339,7 +339,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Records push notification token to Countly Server for current device ID.
- * @discussion Can be used to re-send push notification token for current device ID, after a new user logs in and device ID changes, without waiting for the app to be restarted.
+ * @discussion Can be used to re-send push notification token for current device ID, without waiting for the app to be restarted.
+ * @discussion For cases like a new user logs in and device ID changes, or a new app key is set.
  * @discussion In general, push notification token is handled automatically and this method does not need to be called manually.
  */
 - (void)recordPushNotificationToken;
