@@ -730,7 +730,7 @@ long long appLoadStartTime;
 
 - (void)userLoggedOut
 {
-    [self setNewDeviceID:nil onServer:NO];
+    [self setNewDeviceID:CLYDefaultDeviceID onServer:NO];
 }
 
 
