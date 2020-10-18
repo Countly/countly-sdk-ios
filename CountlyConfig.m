@@ -28,6 +28,12 @@ CLYFeature const CLYCrashReporting      = @"CLYCrashReporting";
 NSString* const CLYDefaultDeviceID = @""; //NOTE: It will be overridden to default device ID mechanism, depending on platform.
 NSString* const CLYTemporaryDeviceID = @"CLYTemporaryDeviceID";
 
+//NOTE: Device ID Types
+CLYDeviceIDType const CLYDeviceIDTypeCustom     = @"CLYDeviceIDTypeCustom";
+CLYDeviceIDType const CLYDeviceIDTypeTemporary  = @"CLYDeviceIDTypeTemporary";
+CLYDeviceIDType const CLYDeviceIDTypeIDFV       = @"CLYDeviceIDTypeIDFV";
+CLYDeviceIDType const CLYDeviceIDTypeNSUUID     = @"CLYDeviceIDTypeNSUUID";
+
 //NOTE: Legacy device ID options. They will fallback to default device ID.
 NSString* const CLYIDFA = CLYDefaultDeviceID;
 NSString* const CLYIDFV = CLYDefaultDeviceID;

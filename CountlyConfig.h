@@ -47,6 +47,13 @@ extern NSString* const CLYDefaultDeviceID;
  */
 extern NSString* const CLYTemporaryDeviceID;
 
+//NOTE: Device ID Types
+typedef NSString* CLYDeviceIDType NS_EXTENSIBLE_STRING_ENUM;
+extern CLYDeviceIDType const CLYDeviceIDTypeCustom;
+extern CLYDeviceIDType const CLYDeviceIDTypeTemporary;
+extern CLYDeviceIDType const CLYDeviceIDTypeIDFV;
+extern CLYDeviceIDType const CLYDeviceIDTypeNSUUID;
+
 //NOTE: Legacy device ID options
 extern NSString* const CLYIDFV DEPRECATED_MSG_ATTRIBUTE("Please use CLYDefaultDeviceID instead!");
 extern NSString* const CLYIDFA DEPRECATED_MSG_ATTRIBUTE("Please use CLYDefaultDeviceID instead!");
