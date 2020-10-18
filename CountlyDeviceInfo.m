@@ -20,6 +20,7 @@
 #endif
 
 CLYMetricKey const CLYMetricKeyDevice             = @"_device";
+CLYMetricKey const CLYMetricKeyDeviceType         = @"_device_type";
 CLYMetricKey const CLYMetricKeyOS                 = @"_os";
 CLYMetricKey const CLYMetricKeyOSVersion          = @"_os_version";
 CLYMetricKey const CLYMetricKeyAppVersion         = @"_app_version";
@@ -106,6 +107,24 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     NSString *modelString = @(model);
     free(model);
     return modelString;
+}
+
++ (NSString *)deviceType
+{
+#if (TARGET_OS_IOS)
+    if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
+        return @"tablet";
+
+    return @"mobile";
+#elif (TARGET_OS_WATCH)
+    return @"wearable";
+#elif (TARGET_OS_TV)
+    return @"smarttv";
+#elif (TARGET_OS_OSX)
+    return @"desktop";
+#endif
+
+    return nil;
 }
 
 + (NSString *)architecture
@@ -236,6 +255,7 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 {
     NSMutableDictionary* metricsDictionary = NSMutableDictionary.new;
     metricsDictionary[CLYMetricKeyDevice] = CountlyDeviceInfo.device;
+    metricsDictionary[CLYMetricKeyDeviceType] = CountlyDeviceInfo.deviceType;
     metricsDictionary[CLYMetricKeyOS] = CountlyDeviceInfo.osName;
     metricsDictionary[CLYMetricKeyOSVersion] = CountlyDeviceInfo.osVersion;
     metricsDictionary[CLYMetricKeyAppVersion] = CountlyDeviceInfo.appVersion;
