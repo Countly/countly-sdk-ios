@@ -178,6 +178,9 @@ long long appLoadStartTime;
     [CountlyCommon.sharedInstance observeDeviceOrientationChanges];
 
     [CountlyConnectionManager.sharedInstance proceedOnQueue];
+
+    if (config.consents)
+        [self giveConsentForFeatures:config.consents];
 }
 
 - (void)setNewAppKey:(NSString *)newAppKey

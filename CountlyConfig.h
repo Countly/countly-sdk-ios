@@ -152,6 +152,12 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
  */
 @property (nonatomic) BOOL requiresConsent;
 
+/**
+ * For granting consents to features and starting them.
+ * @discussion This should be an array of feature names to give consent to.
+ * @discussion Just like in @c giveConsentForFeatures: method.
+ */
+@property (nonatomic, copy) NSArray<CLYConsent>* consents;
 #pragma mark -
 
 /**
