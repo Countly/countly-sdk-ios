@@ -176,66 +176,6 @@ long long appLoadStartTime;
     [CountlyConnectionManager.sharedInstance proceedOnQueue];
 }
 
-- (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer
-{
-    if (!CountlyCommon.sharedInstance.hasStarted)
-        return;
-
-    if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
-        return;
-
-    deviceID = [CountlyDeviceInfo.sharedInstance ensafeDeviceID:deviceID];
-
-    if ([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
-    {
-        COUNTLY_LOG(@"Attempted to set the same device ID again. So, setting new device ID is aborted.");
-        return;
-    }
-
-    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
-    {
-        COUNTLY_LOG(@"Going out of CLYTemporaryDeviceID mode and switching back to normal mode.");
-
-        [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
-
-        [CountlyPersistency.sharedInstance replaceAllTemporaryDeviceIDsInQueueWithDeviceID:deviceID];
-
-        [CountlyConnectionManager.sharedInstance proceedOnQueue];
-
-        [CountlyRemoteConfig.sharedInstance startRemoteConfig];
-
-        return;
-    }
-
-    if ([deviceID isEqualToString:CLYTemporaryDeviceID] && onServer)
-    {
-        COUNTLY_LOG(@"Attempted to set device ID as CLYTemporaryDeviceID with onServer option. So, onServer value is overridden as NO.");
-        onServer = NO;
-    }
-
-    if (onServer)
-    {
-        NSString* oldDeviceID = CountlyDeviceInfo.sharedInstance.deviceID;
-
-        [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
-
-        [CountlyConnectionManager.sharedInstance sendOldDeviceID:oldDeviceID];
-    }
-    else
-    {
-        [self suspend];
-
-        [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
-
-        [self resume];
-
-        [CountlyPersistency.sharedInstance clearAllTimedEvents];
-    }
-
-    [CountlyRemoteConfig.sharedInstance clearCachedRemoteConfig];
-    [CountlyRemoteConfig.sharedInstance startRemoteConfig];
-}
-
 - (void)setNewAppKey:(NSString *)newAppKey
 {
     if (!newAppKey.length)
@@ -393,6 +333,75 @@ long long appLoadStartTime;
 
 
 
+#pragma mark - Device ID
+
+- (NSString *)deviceID
+{
+    return CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped;
+}
+
+- (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer
+{
+    if (!CountlyCommon.sharedInstance.hasStarted)
+        return;
+
+    if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
+        return;
+
+    deviceID = [CountlyDeviceInfo.sharedInstance ensafeDeviceID:deviceID];
+
+    if ([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
+    {
+        COUNTLY_LOG(@"Attempted to set the same device ID again. So, setting new device ID is aborted.");
+        return;
+    }
+
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+    {
+        COUNTLY_LOG(@"Going out of CLYTemporaryDeviceID mode and switching back to normal mode.");
+
+        [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
+
+        [CountlyPersistency.sharedInstance replaceAllTemporaryDeviceIDsInQueueWithDeviceID:deviceID];
+
+        [CountlyConnectionManager.sharedInstance proceedOnQueue];
+
+        [CountlyRemoteConfig.sharedInstance startRemoteConfig];
+
+        return;
+    }
+
+    if ([deviceID isEqualToString:CLYTemporaryDeviceID] && onServer)
+    {
+        COUNTLY_LOG(@"Attempted to set device ID as CLYTemporaryDeviceID with onServer option. So, onServer value is overridden as NO.");
+        onServer = NO;
+    }
+
+    if (onServer)
+    {
+        NSString* oldDeviceID = CountlyDeviceInfo.sharedInstance.deviceID;
+
+        [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
+
+        [CountlyConnectionManager.sharedInstance sendOldDeviceID:oldDeviceID];
+    }
+    else
+    {
+        [self suspend];
+
+        [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
+
+        [self resume];
+
+        [CountlyPersistency.sharedInstance clearAllTimedEvents];
+    }
+
+    [CountlyRemoteConfig.sharedInstance clearCachedRemoteConfig];
+    [CountlyRemoteConfig.sharedInstance startRemoteConfig];
+}
+
+
+
 #pragma mark - Consents
 - (void)giveConsentForFeature:(NSString *)featureName
 {
@@ -428,11 +437,6 @@ long long appLoadStartTime;
 - (void)cancelConsentForAllFeatures
 {
     [CountlyConsentManager.sharedInstance cancelConsentForAllFeatures];
-}
-
-- (NSString *)deviceID
-{
-    return CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped;
 }
 
 

@@ -31,17 +31,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)startWithConfig:(CountlyConfig *)config;
 
 /**
- * Sets new device ID to be persistently stored and used in following requests.
- * @discussion Value passed for @c deviceID parameter has to be a non-zero length valid string, otherwise default device ID will be used instead.
- * @discussion If value passed for @c deviceID parameter is exactly same to the current device ID, method call is ignored.
- * @discussion When passing @c CLYTemporaryDeviceID for @c deviceID parameter, argument for @c onServer parameter does not matter.
- * @discussion When setting a new device ID while the current device ID is @c CLYTemporaryDeviceID, argument for @c onServer parameter does not matter.
- * @param deviceID New device ID
- * @param onServer If set, data on Countly Server will be merged automatically, otherwise device will be counted as a new device
- */
-- (void)setNewDeviceID:(NSString * _Nullable)deviceID onServer:(BOOL)onServer;
-
-/**
  * Sets new app key to be used in following requests.
  * @discussion Before switching to new app key, this method suspends Countly and resumes immediately after.
  * @discussion Requests already queued previously will keep using the old app key.
@@ -116,6 +105,27 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 
+#pragma mark - Device ID
+
+/**
+ * Returns current device ID being used for tracking.
+ * @discussion Device ID can be used for handling data export and/or removal requests as part of data privacy compliance.
+ */
+- (NSString *)deviceID;
+
+/**
+ * Sets new device ID to be persistently stored and used in following requests.
+ * @discussion Value passed for @c deviceID parameter has to be a non-zero length valid string, otherwise default device ID will be used instead.
+ * @discussion If value passed for @c deviceID parameter is exactly same to the current device ID, method call is ignored.
+ * @discussion When passing @c CLYTemporaryDeviceID for @c deviceID parameter, argument for @c onServer parameter does not matter.
+ * @discussion When setting a new device ID while the current device ID is @c CLYTemporaryDeviceID, argument for @c onServer parameter does not matter.
+ * @param deviceID New device ID
+ * @param onServer If set, data on Countly Server will be merged automatically, otherwise device will be counted as a new device
+ */
+- (void)setNewDeviceID:(NSString * _Nullable)deviceID onServer:(BOOL)onServer;
+
+
+
 #pragma mark - Consents
 
 /**
@@ -166,12 +176,6 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Inner workings of @c cancelConsentForFeature: method applies for this method as well.
  */
 - (void)cancelConsentForAllFeatures;
-
-/**
- * Returns current device ID being used for tracking.
- * @discussion Device ID can be used for handling data export and/or removal requests as part of data privacy compliance.
- */
-- (NSString *)deviceID;
 
 
 
