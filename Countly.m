@@ -340,6 +340,21 @@ long long appLoadStartTime;
     return CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped;
 }
 
+- (CLYDeviceIDType)deviceIDType
+{
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+        return CLYDeviceIDTypeTemporary;
+
+    if ([CountlyPersistency.sharedInstance retrieveIsCustomDeviceID])
+        return CLYDeviceIDTypeCustom;
+
+#if (TARGET_OS_IOS || TARGET_OS_TV)
+    return CLYDeviceIDTypeIDFV;
+#else
+    return CLYDeviceIDTypeNSUUID;
+#endif
+}
+
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer
 {
     if (!CountlyCommon.sharedInstance.hasStarted)

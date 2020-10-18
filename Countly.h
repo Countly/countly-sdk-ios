@@ -114,6 +114,16 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)deviceID;
 
 /**
+ * Returns current device ID type.
+ * @discussion Device ID type can be one of the following:
+ * @discussion @c CLYDeviceIDTypeCustom : Custom device ID set by app developer.
+ * @discussion @c CLYDeviceIDTypeTemporary : Temporary device ID. See @c CLYTemporaryDeviceID for details.
+ * @discussion @c CLYDeviceIDTypeIDFV : Default device ID type used by the SDK on iOS and tvOS.
+ * @discussion @c CLYDeviceIDTypeNSUUID  : Default device ID type used by the SDK on watchOS and macOS.
+ */
+- (CLYDeviceIDType)deviceIDType;
+
+/**
  * Sets new device ID to be persistently stored and used in following requests.
  * @discussion Value passed for @c deviceID parameter has to be a non-zero length valid string, otherwise default device ID will be used instead.
  * @discussion If value passed for @c deviceID parameter is exactly same to the current device ID, method call is ignored.
