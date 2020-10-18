@@ -82,7 +82,11 @@ long long appLoadStartTime;
     COUNTLY_LOG(@"Initializing with %@ SDK v%@", CountlyCommon.sharedInstance.SDKName, CountlyCommon.sharedInstance.SDKVersion);
 
     if (!CountlyDeviceInfo.sharedInstance.deviceID || config.resetStoredDeviceID)
+    {
+        [self storeCustomDeviceIDState:config.deviceID];
+
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:config.deviceID];
+    }
 
     CountlyConnectionManager.sharedInstance.appKey = config.appKey;
     CountlyConnectionManager.sharedInstance.host = [config.host hasSuffix:@"/"] ? [config.host substringToIndex:config.host.length - 1] : config.host;
@@ -363,6 +367,8 @@ long long appLoadStartTime;
     if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
         return;
 
+    [self storeCustomDeviceIDState:deviceID];
+
     deviceID = [CountlyDeviceInfo.sharedInstance ensafeDeviceID:deviceID];
 
     if ([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
@@ -415,7 +421,11 @@ long long appLoadStartTime;
     [CountlyRemoteConfig.sharedInstance startRemoteConfig];
 }
 
-
+- (void)storeCustomDeviceIDState:(NSString *)deviceID
+{
+    BOOL isCustomDeviceID = deviceID.length && ![deviceID isEqualToString:CLYTemporaryDeviceID];
+    [CountlyPersistency.sharedInstance storeIsCustomDeviceID:isCustomDeviceID];
+}
 
 #pragma mark - Consents
 - (void)giveConsentForFeature:(NSString *)featureName
