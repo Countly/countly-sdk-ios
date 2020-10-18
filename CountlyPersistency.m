@@ -21,6 +21,7 @@ NSString* const kCountlyStoredNSUUIDKey = @"kCountlyStoredNSUUIDKey";
 NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKey";
 NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 NSString* const kCountlyNotificationPermissionKey = @"kCountlyNotificationPermissionKey";
+NSString* const kCountlyIsCustomDeviceIDKey = @"kCountlyIsCustomDeviceIDKey";
 NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersistencyKey";
 
 NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
@@ -456,6 +457,18 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 - (void)storeNotificationPermission:(BOOL)allowed
 {
     [NSUserDefaults.standardUserDefaults setBool:allowed forKey:kCountlyNotificationPermissionKey];
+    [NSUserDefaults.standardUserDefaults synchronize];
+}
+
+- (BOOL)retrieveIsCustomDeviceID
+{
+    return [NSUserDefaults.standardUserDefaults boolForKey:kCountlyIsCustomDeviceIDKey];
+
+}
+
+- (void)storeIsCustomDeviceID:(BOOL)isCustomDeviceID
+{
+    [NSUserDefaults.standardUserDefaults setBool:isCustomDeviceID forKey:kCountlyIsCustomDeviceIDKey];
     [NSUserDefaults.standardUserDefaults synchronize];
 }
 

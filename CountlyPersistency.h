@@ -50,6 +50,8 @@
 - (BOOL)retrieveNotificationPermission;
 - (void)storeNotificationPermission:(BOOL)allowed;
 
+- (BOOL)retrieveIsCustomDeviceID;
+- (void)storeIsCustomDeviceID:(BOOL)isCustomDeviceID;
 
 - (NSDictionary *)retrieveRemoteConfig;
 - (void)storeRemoteConfig:(NSDictionary *)remoteConfig;
