@@ -311,6 +311,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)sendCrashReport:(NSString *)report immediately:(BOOL)immediately;
 {
+    if (!report)
+    {
+        COUNTLY_LOG(@"Crash report is nil. Converting to JSON may have failed due to custom objects in initial config's crashSegmentation property.");
+        return;
+    }
+
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
                              kCountlyQSKeyCrash, report];
 
