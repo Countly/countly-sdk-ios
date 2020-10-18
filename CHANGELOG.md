@@ -1,3 +1,17 @@
+## 20.10.0
+- Added a method to replace all app keys in queue with the current app key (`replaceAllAppKeysInQueueWithCurrentAppKey` method)
+- Addeda method to remove all different app keys from the queue ( `removeDifferentAppKeysFromQueue` method)
+- Added a method to check device ID type (`deviceIDType` method)
+- Added precaution and warning for `nil` crash report case
+- Added `consents` initial config property
+- Added device type metric
+
+- Other various improvements
+  - Refactored picture upload data extraction
+  - Updated HeaderDocs, internal logs, inline notes and pragma marks
+  
+
+
 ## 20.04.3
 - Deprecated `recordLocation:`, `recordCity:andISOCountryCode:`, `recordIP:` methods
 - Added new combined `recordLocation:city:ISOCountryCode:IP:` method for recording location related info
