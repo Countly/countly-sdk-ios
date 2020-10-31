@@ -109,11 +109,11 @@ long long appLoadStartTime;
     CountlyDeviceInfo.sharedInstance.customMetrics = config.customMetrics;
 
 #if (TARGET_OS_IOS)
-    CountlyStarRating.sharedInstance.message = config.starRatingMessage;
-    CountlyStarRating.sharedInstance.sessionCount = config.starRatingSessionCount;
-    CountlyStarRating.sharedInstance.disableAskingForEachAppVersion = config.starRatingDisableAskingForEachAppVersion;
-    CountlyStarRating.sharedInstance.ratingCompletionForAutoAsk = config.starRatingCompletion;
-    [CountlyStarRating.sharedInstance checkForAutoAsk];
+    CountlyFeedbacks.sharedInstance.message = config.starRatingMessage;
+    CountlyFeedbacks.sharedInstance.sessionCount = config.starRatingSessionCount;
+    CountlyFeedbacks.sharedInstance.disableAskingForEachAppVersion = config.starRatingDisableAskingForEachAppVersion;
+    CountlyFeedbacks.sharedInstance.ratingCompletionForAutoAsk = config.starRatingCompletion;
+    [CountlyFeedbacks.sharedInstance checkForStarRatingAutoAsk];
 
     [CountlyLocationManager.sharedInstance updateLocation:config.location city:config.city ISOCountryCode:config.ISOCountryCode IP:config.IP];
 #endif
@@ -772,12 +772,12 @@ long long appLoadStartTime;
 
 - (void)askForStarRating:(void(^)(NSInteger rating))completion
 {
-    [CountlyStarRating.sharedInstance showDialog:completion];
+    [CountlyFeedbacks.sharedInstance showDialog:completion];
 }
 
 - (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
 {
-    [CountlyStarRating.sharedInstance checkFeedbackWidgetWithID:widgetID completionHandler:completionHandler];
+    [CountlyFeedbacks.sharedInstance checkFeedbackWidgetWithID:widgetID completionHandler:completionHandler];
 }
 
 #endif

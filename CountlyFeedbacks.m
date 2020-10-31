@@ -1,4 +1,4 @@
-// CountlyStarRating.m
+// CountlyFeedbacks.m
 //
 // This code is provided under the MIT License.
 //
@@ -9,7 +9,7 @@
 #import <WebKit/WebKit.h>
 #endif
 
-@interface CountlyStarRating ()
+@interface CountlyFeedbacks ()
 #if (TARGET_OS_IOS)
 @property (nonatomic) UIAlertController* alertController;
 @property (nonatomic, copy) void (^ratingCompletion)(NSInteger);
@@ -20,26 +20,19 @@ NSString* const kCountlyReservedEventStarRating = @"[CLY]_star_rating";
 NSString* const kCountlyStarRatingStatusSessionCountKey = @"kCountlyStarRatingStatusSessionCountKey";
 NSString* const kCountlyStarRatingStatusHasEverAskedAutomatically = @"kCountlyStarRatingStatusHasEverAskedAutomatically";
 
-NSString* const kCountlySRKeyAppKey         = @"app_key";
-NSString* const kCountlySRKeyPlatform       = @"platform";
-NSString* const kCountlySRKeyAppVersion     = @"app_version";
-NSString* const kCountlySRKeyRating         = @"rating";
-NSString* const kCountlySRKeyWidgetID       = @"widget_id";
-NSString* const kCountlySRKeyDeviceID       = @"device_id";
-NSString* const kCountlySRKeySDKVersion     = @"sdk_version";
-NSString* const kCountlySRKeySDKName        = @"sdk_name";
-NSString* const kCountlySRKeyID             = @"_id";
-NSString* const kCountlySRKeyTargetDevices  = @"target_devices";
-NSString* const kCountlySRKeyPhone          = @"phone";
-NSString* const kCountlySRKeyTablet         = @"tablet";
-
-NSString* const kCountlyOutputEndpoint      = @"/o";
-NSString* const kCountlyFeedbackEndpoint    = @"/feedback";
-NSString* const kCountlyWidgetEndpoint      = @"/widget";
+NSString* const kCountlyFBKeyPlatform       = @"platform";
+NSString* const kCountlyFBKeyAppVersion     = @"app_version";
+NSString* const kCountlyFBKeyRating         = @"rating";
+NSString* const kCountlyFBKeyWidgetID       = @"widget_id";
+NSString* const kCountlyFBKeyID             = @"_id";
+NSString* const kCountlyFBKeyTargetDevices  = @"target_devices";
+NSString* const kCountlyFBKeyPhone          = @"phone";
+NSString* const kCountlyFBKeyTablet         = @"tablet";
+NSString* const kCountlyFBKeyFeedback       = @"feedback";
 
 const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
-@implementation CountlyStarRating
+@implementation CountlyFeedbacks
 #if (TARGET_OS_IOS)
 {
     UIButton* btn_star[5];
@@ -50,7 +43,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     if (!CountlyCommon.sharedInstance.hasStarted)
         return nil;
 
-    static CountlyStarRating* s_sharedInstance = nil;
+    static CountlyFeedbacks* s_sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
     return s_sharedInstance;
@@ -120,7 +113,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     [CountlyCommon.sharedInstance tryPresentingViewController:self.alertController];
 }
 
-- (void)checkForAutoAsk
+- (void)checkForStarRatingAutoAsk
 {
     if (!self.sessionCount)
         return;
@@ -208,9 +201,9 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     if (rating != 0)
     {
         NSMutableDictionary* segmentation = NSMutableDictionary.new;
-        segmentation[kCountlySRKeyPlatform] = CountlyDeviceInfo.osName;
-        segmentation[kCountlySRKeyAppVersion] = CountlyDeviceInfo.appVersion;
-        segmentation[kCountlySRKeyRating] =  @(rating);
+        segmentation[kCountlyFBKeyPlatform] = CountlyDeviceInfo.osName;
+        segmentation[kCountlyFBKeyAppVersion] = CountlyDeviceInfo.appVersion;
+        segmentation[kCountlyFBKeyRating] =  @(rating);
 
         [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventStarRating segmentation:segmentation];
     }
@@ -229,7 +222,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     return [UIColor colorWithWhite:178/255.0 alpha:1];
 }
 
-#pragma mark - Feedback Widget
+#pragma mark - Feedbacks (Ratings) (Legacy Feedback Widget)
 
 - (void)checkFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
 {
@@ -256,7 +249,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         {
             NSMutableDictionary* userInfo = widgetInfo.mutableCopy;
 
-            if (![widgetInfo[kCountlySRKeyID] isEqualToString:widgetID])
+            if (![widgetInfo[kCountlyFBKeyID] isEqualToString:widgetID])
             {
                 userInfo[NSLocalizedDescriptionKey] = [NSString stringWithFormat:@"Feedback widget with ID %@ is not available.", widgetID];
                 error = [NSError errorWithDomain:kCountlyErrorDomain code:CLYErrorFeedbackWidgetNotAvailable userInfo:userInfo];
@@ -325,14 +318,14 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 {
     NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
 
-    queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlySRKeyWidgetID, widgetID];
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyFBKeyWidgetID, widgetID];
 
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
 
     NSString* serverOutputFeedbackWidgetEndpoint = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"%@%@%@",
-                                                    kCountlyOutputEndpoint,
-                                                    kCountlyFeedbackEndpoint,
-                                                    kCountlyWidgetEndpoint];
+                                                    kCountlyEndpointO,
+                                                    kCountlyEndpointFeedback,
+                                                    kCountlyEndpointWidget];
 
     if (CountlyConnectionManager.sharedInstance.alwaysUsePOST)
     {
@@ -354,14 +347,14 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
 
     queryString = [queryString stringByAppendingFormat:@"&%@=%@&%@=%@",
-                   kCountlySRKeyWidgetID, widgetID,
-                   kCountlySRKeyAppVersion, CountlyDeviceInfo.appVersion];
+                   kCountlyFBKeyWidgetID, widgetID,
+                   kCountlyFBKeyAppVersion, CountlyDeviceInfo.appVersion];
 
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
 
     NSString* URLString = [NSString stringWithFormat:@"%@%@?%@",
                            CountlyConnectionManager.sharedInstance.host,
-                           kCountlyFeedbackEndpoint,
+                           kCountlyEndpointFeedback,
                            queryString];
 
     return [NSURL URLWithString:URLString];
@@ -371,8 +364,8 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 {
     BOOL isTablet = UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad;
     BOOL isPhone = UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone;
-    BOOL isTabletTargeted = [widgetInfo[kCountlySRKeyTargetDevices][kCountlySRKeyTablet] boolValue];
-    BOOL isPhoneTargeted = [widgetInfo[kCountlySRKeyTargetDevices][kCountlySRKeyPhone] boolValue];
+    BOOL isTabletTargeted = [widgetInfo[kCountlyFBKeyTargetDevices][kCountlyFBKeyTablet] boolValue];
+    BOOL isPhoneTargeted = [widgetInfo[kCountlyFBKeyTargetDevices][kCountlyFBKeyPhone] boolValue];
 
     return ((isTablet && isTabletTargeted) || (isPhone && isPhoneTargeted));
 }

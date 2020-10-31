@@ -14,7 +14,7 @@
 #import "CountlyCrashReporter.h"
 #import "CountlyConfig.h"
 #import "CountlyViewTracking.h"
-#import "CountlyStarRating.h"
+#import "CountlyFeedbacks.h"
 #import "CountlyPushNotifications.h"
 #import "CountlyNotificationService.h"
 #import "CountlyConsentManager.h"
@@ -51,6 +51,7 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
     CLYErrorFeedbackWidgetNotAvailable = 10001,
     CLYErrorFeedbackWidgetNotTargetedForDevice = 10002,
     CLYErrorRemoteConfigGeneralAPIError = 10011,
+    CLYErrorFeedbacksGeneralAPIError = 10012,
 };
 
 @interface CountlyCommon : NSObject

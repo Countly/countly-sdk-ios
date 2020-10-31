@@ -534,7 +534,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 
-#pragma mark - Star Rating
+#pragma mark - Feedbacks
 #if (TARGET_OS_IOS)
 /**
  * Shows star-rating dialog manually and executes completion block after user's action.
