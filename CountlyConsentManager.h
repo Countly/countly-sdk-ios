@@ -21,6 +21,7 @@
 @property (nonatomic, readonly) BOOL consentForStarRating;
 @property (nonatomic, readonly) BOOL consentForAppleWatch;
 @property (nonatomic, readonly) BOOL consentForPerformanceMonitoring;
+@property (nonatomic, readonly) BOOL consentForFeedback;
 
 + (instancetype)sharedInstance;
 - (void)giveConsentForFeatures:(NSArray *)features;

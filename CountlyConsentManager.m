@@ -17,6 +17,7 @@ CLYConsent const CLYConsentAttribution          = @"attribution";
 CLYConsent const CLYConsentStarRating           = @"star-rating";
 CLYConsent const CLYConsentAppleWatch           = @"accessory-devices";
 CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
+CLYConsent const CLYConsentFeedback             = @"feedback";
 
 
 @interface CountlyConsentManager ()
@@ -36,6 +37,7 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
 @synthesize consentForStarRating = _consentForStarRating;
 @synthesize consentForAppleWatch = _consentForAppleWatch;
 @synthesize consentForPerformanceMonitoring = _consentForPerformanceMonitoring;
+@synthesize consentForFeedback = _consentForFeedback;
 
 #pragma mark -
 
@@ -114,6 +116,9 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
     if ([features containsObject:CLYConsentPerformanceMonitoring] && !self.consentForPerformanceMonitoring)
         self.consentForPerformanceMonitoring = YES;
 
+    if ([features containsObject:CLYConsentFeedback] && !self.consentForFeedback)
+        self.consentForFeedback = YES;
+
     [self sendConsentChanges];
 }
 
@@ -162,6 +167,9 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
     if ([features containsObject:CLYConsentPerformanceMonitoring] && self.consentForPerformanceMonitoring)
         self.consentForPerformanceMonitoring = NO;
 
+    if ([features containsObject:CLYConsentFeedback] && self.consentForFeedback)
+        self.consentForFeedback = NO;
+
     [self sendConsentChanges];
 }
 
@@ -191,6 +199,7 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
         CLYConsentStarRating,
         CLYConsentAppleWatch,
         CLYConsentPerformanceMonitoring,
+        CLYConsentFeedback,
     ];
 }
 
@@ -208,7 +217,8 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
     self.consentForAttribution ||
     self.consentForStarRating ||
     self.consentForAppleWatch ||
-    self.consentForPerformanceMonitoring;
+    self.consentForPerformanceMonitoring ||
+    self.consentForFeedback;
 }
 
 
@@ -446,6 +456,24 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
     self.consentChanges[CLYConsentPerformanceMonitoring] = @(consentForPerformanceMonitoring);
 }
 
+- (void)setConsentForFeedback:(BOOL)consentForFeedback
+{
+    _consentForFeedback = consentForFeedback;
+
+#if (TARGET_OS_IOS)
+    if (consentForFeedback)
+    {
+        COUNTLY_LOG(@"Consent for Feedback is given.");
+    }
+    else
+    {
+        COUNTLY_LOG(@"Consent for Feedback is cancelled.");
+    }
+#endif
+
+    self.consentChanges[CLYConsentFeedback] = @(consentForFeedback);
+}
+
 #pragma mark -
 
 - (BOOL)consentForSessions
@@ -544,6 +572,14 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
         return YES;
 
     return _consentForPerformanceMonitoring;
+}
+
+- (BOOL)consentForFeedback
+{
+    if (!self.requiresConsent)
+        return YES;
+
+    return _consentForFeedback;
 }
 
 @end
