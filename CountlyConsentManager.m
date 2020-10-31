@@ -442,6 +442,8 @@ CLYConsent const CLYConsentFeedback             = @"feedback";
     if (consentForFeedback)
     {
         COUNTLY_LOG(@"Consent for Feedback is given.");
+
+        [CountlyFeedbacks.sharedInstance checkForStarRatingAutoAsk];
     }
     else
     {
