@@ -12,6 +12,7 @@
     NSTimeInterval lastSessionStartTime;
     BOOL isCrashing;
 }
+@property (nonatomic) NSURLSession* URLSession;
 @end
 
 NSString* const kCountlyQSKeyAppKey           = @"app_key";
@@ -156,7 +157,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     request.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
 
-    self.connection = [[self URLSession] dataTaskWithRequest:request completionHandler:^(NSData * data, NSURLResponse * response, NSError * error)
+    self.connection = [self.URLSession dataTaskWithRequest:request completionHandler:^(NSData * data, NSURLResponse * response, NSError * error)
     {
         self.connection = nil;
 
@@ -365,7 +366,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 
-    [[[self URLSession] dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError*  error)
+    [[self.URLSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError*  error)
     {
         if (error || ![self isRequestSuccessful:response])
         {
@@ -595,13 +596,20 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (NSURLSession *)URLSession
 {
-    if (self.pinnedCertificates)
+    if (!_URLSession)
     {
-        COUNTLY_LOG(@"%d pinned certificate(s) specified in config.", (int)self.pinnedCertificates.count);
-        return [NSURLSession sessionWithConfiguration:self.URLSessionConfiguration delegate:self delegateQueue:nil];
+        if (self.pinnedCertificates)
+        {
+            COUNTLY_LOG(@"%d pinned certificate(s) specified in config.", (int)self.pinnedCertificates.count);
+            _URLSession = [NSURLSession sessionWithConfiguration:self.URLSessionConfiguration delegate:self delegateQueue:nil];
+        }
+        else
+        {
+            _URLSession = [NSURLSession sessionWithConfiguration:self.URLSessionConfiguration];
+        }
     }
 
-    return [NSURLSession sessionWithConfiguration:self.URLSessionConfiguration];
+    return _URLSession;
 }
 
 - (void)URLSession:(NSURLSession *)session didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential *))completionHandler
