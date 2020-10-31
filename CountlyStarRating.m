@@ -87,7 +87,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 - (void)showDialog:(void(^)(NSInteger rating))completion
 {
-    if (!CountlyConsentManager.sharedInstance.consentForStarRating)
+    if (!CountlyConsentManager.sharedInstance.consentForFeedback)
         return;
 
     self.ratingCompletion = completion;
@@ -125,7 +125,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     if (!self.sessionCount)
         return;
 
-    if (!CountlyConsentManager.sharedInstance.consentForStarRating)
+    if (!CountlyConsentManager.sharedInstance.consentForFeedback)
         return;
 
     NSMutableDictionary* status = [CountlyPersistency.sharedInstance retrieveStarRatingStatus].mutableCopy;
@@ -233,7 +233,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 - (void)checkFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
 {
-    if (!CountlyConsentManager.sharedInstance.consentForStarRating)
+    if (!CountlyConsentManager.sharedInstance.consentForFeedback)
         return;
 
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)

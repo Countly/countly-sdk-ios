@@ -34,7 +34,6 @@ CLYConsent const CLYConsentFeedback             = @"feedback";
 @synthesize consentForLocation = _consentForLocation;
 @synthesize consentForViewTracking = _consentForViewTracking;
 @synthesize consentForAttribution = _consentForAttribution;
-@synthesize consentForStarRating = _consentForStarRating;
 @synthesize consentForAppleWatch = _consentForAppleWatch;
 @synthesize consentForPerformanceMonitoring = _consentForPerformanceMonitoring;
 @synthesize consentForFeedback = _consentForFeedback;
@@ -107,16 +106,13 @@ CLYConsent const CLYConsentFeedback             = @"feedback";
     if ([features containsObject:CLYConsentAttribution] && !self.consentForAttribution)
         self.consentForAttribution = YES;
 
-    if ([features containsObject:CLYConsentStarRating] && !self.consentForStarRating)
-        self.consentForStarRating = YES;
-
     if ([features containsObject:CLYConsentAppleWatch] && !self.consentForAppleWatch)
         self.consentForAppleWatch = YES;
 
     if ([features containsObject:CLYConsentPerformanceMonitoring] && !self.consentForPerformanceMonitoring)
         self.consentForPerformanceMonitoring = YES;
 
-    if ([features containsObject:CLYConsentFeedback] && !self.consentForFeedback)
+    if ([self containsFeedbackOrStarRating:features] && !self.consentForFeedback)
         self.consentForFeedback = YES;
 
     [self sendConsentChanges];
@@ -158,16 +154,13 @@ CLYConsent const CLYConsentFeedback             = @"feedback";
     if ([features containsObject:CLYConsentAttribution] && self.consentForAttribution)
         self.consentForAttribution = NO;
 
-    if ([features containsObject:CLYConsentStarRating] && self.consentForStarRating)
-        self.consentForStarRating = NO;
-
     if ([features containsObject:CLYConsentAppleWatch] && self.consentForAppleWatch)
         self.consentForAppleWatch = NO;
 
     if ([features containsObject:CLYConsentPerformanceMonitoring] && self.consentForPerformanceMonitoring)
         self.consentForPerformanceMonitoring = NO;
 
-    if ([features containsObject:CLYConsentFeedback] && self.consentForFeedback)
+    if ([self containsFeedbackOrStarRating:features] && self.consentForFeedback)
         self.consentForFeedback = NO;
 
     [self sendConsentChanges];
@@ -196,7 +189,6 @@ CLYConsent const CLYConsentFeedback             = @"feedback";
         CLYConsentLocation,
         CLYConsentViewTracking,
         CLYConsentAttribution,
-        CLYConsentStarRating,
         CLYConsentAppleWatch,
         CLYConsentPerformanceMonitoring,
         CLYConsentFeedback,
@@ -215,12 +207,19 @@ CLYConsent const CLYConsentFeedback             = @"feedback";
     self.consentForLocation ||
     self.consentForViewTracking ||
     self.consentForAttribution ||
-    self.consentForStarRating ||
     self.consentForAppleWatch ||
     self.consentForPerformanceMonitoring ||
     self.consentForFeedback;
 }
 
+- (BOOL)containsFeedbackOrStarRating:(NSArray *)features
+{
+    //NOTE: StarRating consent is merged into new Feedback consent.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    return [features containsObject:CLYConsentFeedback] || [features containsObject:CLYConsentStarRating];
+#pragma GCC diagnostic pop
+}
 
 #pragma mark -
 
@@ -392,27 +391,6 @@ CLYConsent const CLYConsentFeedback             = @"feedback";
 }
 
 
-- (void)setConsentForStarRating:(BOOL)consentForStarRating
-{
-    _consentForStarRating = consentForStarRating;
-
-#if (TARGET_OS_IOS)
-    if (consentForStarRating)
-    {
-        COUNTLY_LOG(@"Consent for StarRating is given.");
-
-        [CountlyStarRating.sharedInstance checkForAutoAsk];
-    }
-    else
-    {
-        COUNTLY_LOG(@"Consent for StarRating is cancelled.");
-    }
-#endif
-
-    self.consentChanges[CLYConsentStarRating] = @(consentForStarRating);
-}
-
-
 - (void)setConsentForAppleWatch:(BOOL)consentForAppleWatch
 {
     _consentForAppleWatch = consentForAppleWatch;
@@ -545,15 +523,6 @@ CLYConsent const CLYConsentFeedback             = @"feedback";
       return YES;
 
     return _consentForAttribution;
-}
-
-
-- (BOOL)consentForStarRating
-{
-    if (!self.requiresConsent)
-      return YES;
-
-    return _consentForStarRating;
 }
 
 
