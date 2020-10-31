@@ -52,8 +52,16 @@ NSString* const kCountlyQSKeyIDFA             = @"idfa";
 NSString* const kCountlyQSKeyConsent          = @"consent";
 NSString* const kCountlyQSKeyAPM              = @"apm";
 
+NSString* const kCountlyQSKeyMethod           = @"method";
+
 NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
-NSString* const kCountlyInputEndpoint = @"/i";
+
+NSString* const kCountlyEndpointI = @"/i"; //NOTE: input endpoint
+NSString* const kCountlyEndpointO = @"/o"; //NOTE: output endpoint
+NSString* const kCountlyEndpointSDK = @"/sdk";
+NSString* const kCountlyEndpointFeedback = @"/feedback";
+NSString* const kCountlyEndpointWidget = @"/widget";
+
 const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 @implementation CountlyConnectionManager : NSObject
@@ -133,7 +141,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     queryString = [self appendChecksum:queryString];
 
-    NSString* serverInputEndpoint = [self.host stringByAppendingString:kCountlyInputEndpoint];
+    NSString* serverInputEndpoint = [self.host stringByAppendingString:kCountlyEndpointI];
     NSString* fullRequestURL = [serverInputEndpoint stringByAppendingFormat:@"?%@", queryString];
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:fullRequestURL]];
 
@@ -356,7 +364,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     [CountlyPersistency.sharedInstance saveToFileSync];
 
-    NSString* serverInputEndpoint = [self.host stringByAppendingString:kCountlyInputEndpoint];
+    NSString* serverInputEndpoint = [self.host stringByAppendingString:kCountlyEndpointI];
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverInputEndpoint]];
     request.HTTPMethod = @"POST";
     request.HTTPBody = [[self appendChecksum:queryString] cly_dataUTF8];

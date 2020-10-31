@@ -8,6 +8,7 @@
 #import <CoreLocation/CoreLocation.h>
 #import "CountlyUserDetails.h"
 #import "CountlyConfig.h"
+#import "CountlyFeedbackWidget.h"
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 #import <UserNotifications/UserNotifications.h>
 #endif
@@ -534,7 +535,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 
-#pragma mark - Star Rating
+#pragma mark - Feedbacks
 #if (TARGET_OS_IOS)
 /**
  * Shows star-rating dialog manually and executes completion block after user's action.
@@ -558,6 +559,17 @@ NS_ASSUME_NONNULL_BEGIN
  * @param completionHandler A completion handler block to be executed when feedback widget is dismissed by user or there is an error.
  */
 - (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler;
+
+/**
+ * Fetches a list of available feedback widgets.
+ * @discussion When feedback widgets are fetched succesfully, @c completionHandler will be exeuted with an array of @c CountlyFeedbackWidget objects.
+ * @discussion Otherwise, @c completionHandler will be executed with an @c NSError.
+ * @discussion Calls to this method will be ignored and @c completionHandler will not be executed if:
+ * @discussion - Consent for @c CLYConsentFeedback is not given, while @c requiresConsent flag is set on initial configuration.
+ * @discussion - Current device ID is @c CLYTemporaryDeviceID.
+ * @param completionHandler A completion handler block to be executed when list is fetched successfully or there is an error.
+ */
+- (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> *feedbackWidgets, NSError *error))completionHandler;
 
 #endif
 

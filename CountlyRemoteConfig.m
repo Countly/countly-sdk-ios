@@ -6,10 +6,6 @@
 
 #import "CountlyCommon.h"
 
-NSString* const kCountlyRCOutputEndpoint        = @"/o";
-NSString* const kCountlyRCSDKEndpoint           = @"/sdk";
-
-NSString* const kCountlyRCKeyMethod             = @"method";
 NSString* const kCountlyRCKeyFetchRemoteConfig  = @"fetch_remote_config";
 NSString* const kCountlyRCKeyKeys               = @"keys";
 NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
@@ -182,7 +178,7 @@ NSString* const kCountlyRCKeyMetrics            = @"metrics";
 {
     NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
 
-    queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyMethod, kCountlyRCKeyFetchRemoteConfig];
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMethod, kCountlyRCKeyFetchRemoteConfig];
 
     if (keys)
     {
@@ -201,8 +197,8 @@ NSString* const kCountlyRCKeyMetrics            = @"metrics";
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
 
     NSString* serverOutputSDKEndpoint = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"%@%@",
-                                         kCountlyRCOutputEndpoint,
-                                         kCountlyRCSDKEndpoint];
+                                         kCountlyEndpointO,
+                                         kCountlyEndpointSDK];
 
     if (CountlyConnectionManager.sharedInstance.alwaysUsePOST)
     {
