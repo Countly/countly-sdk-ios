@@ -9,6 +9,12 @@
 #import <WebKit/WebKit.h>
 #endif
 
+@interface CountlyFeedbackWidget ()
++ (CountlyFeedbackWidget *)createWithDictionary:(NSDictionary *)dictionary;
+@end
+
+
+
 @interface CountlyFeedbacks ()
 #if (TARGET_OS_IOS)
 @property (nonatomic) UIAlertController* alertController;
@@ -368,6 +374,96 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     BOOL isPhoneTargeted = [widgetInfo[kCountlyFBKeyTargetDevices][kCountlyFBKeyPhone] boolValue];
 
     return ((isTablet && isTabletTargeted) || (isPhone && isPhoneTargeted));
+}
+
+#pragma mark - Feedbacks (Surveys, NPS)
+
+- (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> *feedbackWidgets, NSError *error))completionHandler
+{
+    if (!CountlyConsentManager.sharedInstance.consentForFeedback)
+        return;
+
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+        return;
+
+    NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:[self feedbacksRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    {
+        NSDictionary* feedbacksResponse = nil;
+
+        if (!error)
+        {
+            feedbacksResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+        }
+
+        NSArray* rawFeedbackObjects = feedbacksResponse[@"result"];
+
+        if (!error)
+        {
+            if (((NSHTTPURLResponse*)response).statusCode != 200)
+            {
+                NSMutableDictionary* userInfo = rawFeedbackObjects.mutableCopy;
+                userInfo[NSLocalizedDescriptionKey] = @"Feedbacks general API error";
+                error = [NSError errorWithDomain:kCountlyErrorDomain code:CLYErrorFeedbacksGeneralAPIError userInfo:userInfo];
+            }
+        }
+
+        if (error)
+        {
+            dispatch_async(dispatch_get_main_queue(), ^
+            {
+                if (completionHandler)
+                    completionHandler(nil, error);
+            });
+
+            return;
+        }
+
+        NSMutableArray* feedbacks = NSMutableArray.new;
+        for (NSDictionary * feedbackDict in rawFeedbackObjects)
+        {
+            CountlyFeedbackWidget *feedback = [CountlyFeedbackWidget createWithDictionary:feedbackDict];
+            if (feedback)
+                [feedbacks addObject:feedback];
+        }
+
+        dispatch_async(dispatch_get_main_queue(), ^
+        {
+            if (completionHandler)
+                completionHandler([NSArray arrayWithArray:feedbacks], nil);
+        });
+    }];
+
+    [task resume];
+}
+
+- (NSURLRequest *)feedbacksRequest
+{
+    NSString* queryString = [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%@&%@=%@&%@=%@",
+        kCountlyQSKeyMethod, kCountlyFBKeyFeedback,
+        kCountlyQSKeyAppKey, CountlyConnectionManager.sharedInstance.appKey.cly_URLEscaped,
+        kCountlyQSKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped,
+        kCountlyQSKeySDKName, CountlyCommon.sharedInstance.SDKName,
+        kCountlyQSKeySDKVersion, CountlyCommon.sharedInstance.SDKVersion];
+
+    queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
+
+    NSMutableString* URL = CountlyConnectionManager.sharedInstance.host.mutableCopy;
+    [URL appendString:kCountlyEndpointO];
+    [URL appendString:kCountlyEndpointSDK];
+
+    if (CountlyConnectionManager.sharedInstance.alwaysUsePOST)
+    {
+        NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:URL]];
+        request.HTTPMethod = @"POST";
+        request.HTTPBody = [queryString cly_dataUTF8];
+        return  request.copy;
+    }
+    else
+    {
+        [URL appendFormat:@"?%@", queryString];
+        NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:URL]];
+        return request;
+    }
 }
 
 #endif

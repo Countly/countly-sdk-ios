@@ -6,6 +6,8 @@
 
 #import <Foundation/Foundation.h>
 
+@class CountlyFeedbackWidget;
+
 extern NSString* const kCountlyFBKeyPlatform;
 extern NSString* const kCountlyFBKeyAppVersion;
 extern NSString* const kCountlyFBKeyWidgetID;
@@ -18,6 +20,8 @@ extern NSString* const kCountlyFBKeyID;
 - (void)showDialog:(void(^)(NSInteger rating))completion;
 - (void)checkFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler;
 - (void)checkForStarRatingAutoAsk;
+
+- (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> *feedbackWidgets, NSError *error))completionHandler;
 
 @property (nonatomic) NSString* message;
 @property (nonatomic) NSString* dismissButtonTitle;

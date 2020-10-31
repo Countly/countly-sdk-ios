@@ -15,6 +15,7 @@
 #import "CountlyConfig.h"
 #import "CountlyViewTracking.h"
 #import "CountlyFeedbacks.h"
+#import "CountlyFeedbackWidget.h"
 #import "CountlyPushNotifications.h"
 #import "CountlyNotificationService.h"
 #import "CountlyConsentManager.h"
