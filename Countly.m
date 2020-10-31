@@ -780,6 +780,11 @@ long long appLoadStartTime;
     [CountlyFeedbacks.sharedInstance checkFeedbackWidgetWithID:widgetID completionHandler:completionHandler];
 }
 
+- (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> *feedbackWidgets, NSError * error))completionHandler
+{
+    [CountlyFeedbacks.sharedInstance getFeedbackWidgets:completionHandler];
+}
+
 #endif
 
 
