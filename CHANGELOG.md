@@ -1,4 +1,4 @@
-## 20.10.0
+## 20.11.0
 - Added a method to replace all app keys in queue with the current app key (`replaceAllAppKeysInQueueWithCurrentAppKey` method)
 - Addeda method to remove all different app keys from the queue ( `removeDifferentAppKeysFromQueue` method)
 - Added a method to check device ID type (`deviceIDType` method)
