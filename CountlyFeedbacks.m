@@ -294,6 +294,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     webVC.modalPresentationStyle = UIModalPresentationCustom;
 
     WKWebView* webView = [WKWebView.alloc initWithFrame:webVC.view.bounds];
+    webView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [webVC.view addSubview:webView];
     NSURL* widgetDisplayURL = [self widgetDisplayURL:widgetID];
     [webView loadRequest:[NSURLRequest requestWithURL:widgetDisplayURL]];
