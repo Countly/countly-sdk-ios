@@ -99,6 +99,8 @@ void CountlyPrint(NSString *stringToPrint);
 @interface CLYButton : UIButton
 @property (nonatomic, copy) void (^onClick)(id sender);
 + (CLYButton *)dismissAlertButton;
+- (void)positionToTopRight;
+- (void)positionToTopRightConsideringStatusBar;
 @end
 #endif
 

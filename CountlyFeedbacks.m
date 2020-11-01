@@ -102,6 +102,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         }];
     };
     [self.alertController.view addSubview:dismissButton];
+    [dismissButton positionToTopRight];
 
     CLYInternalViewController* cvc = CLYInternalViewController.new;
     [cvc setPreferredContentSize:(CGSize){kCountlyStarRatingButtonSize * 5, kCountlyStarRatingButtonSize * 1.5}];
@@ -311,12 +312,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         }];
     };
     [webVC.view addSubview:dismissButton];
-
-    CGPoint center = dismissButton.center;
-    center.y += 20; //NOTE: adjust dismiss button position for status bar
-    if (webVC.view.bounds.size.height == 812 || webVC.view.bounds.size.height == 896)
-        center.y += 24; //NOTE: adjust dismiss button position for iPhone X type of devices
-    dismissButton.center = center;
+    [dismissButton positionToTopRightConsideringStatusBar];
 
     [CountlyCommon.sharedInstance tryPresentingViewController:webVC];
 }

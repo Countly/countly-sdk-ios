@@ -61,12 +61,7 @@ NSString* const kCountlyFBKeyClosed         = @"closed";
         [self recordReservedEventForDismissing];
     };
     [webVC.view addSubview:dismissButton];
-
-    CGPoint center = dismissButton.center;
-    center.y += 20; //NOTE: adjust dismiss button position for status bar
-    if (webVC.view.bounds.size.height == 812 || webVC.view.bounds.size.height == 896)
-        center.y += 24; //NOTE: adjust dismiss button position for iPhone X type of devices
-    dismissButton.center = center;
+    [dismissButton positionToTopRightConsideringStatusBar];
 
     [CountlyCommon.sharedInstance tryPresentingViewController:webVC];
 }

@@ -298,6 +298,10 @@ void CountlyPrint(NSString *stringToPrint)
 
 @implementation CLYButton : UIButton
 
+const CGFloat kCountlyDismissButtonSize = 30.0;
+const CGFloat kCountlyDismissButtonMargin = 10.0;
+const CGFloat kCountlyDismissButtonStandardStatusBarHeight = 20.0;
+
 - (instancetype)initWithFrame:(CGRect)frame
 {
     if (self = [super initWithFrame:frame])
@@ -316,10 +320,8 @@ void CountlyPrint(NSString *stringToPrint)
 
 + (CLYButton *)dismissAlertButton
 {
-    const CGFloat kCountlyDismissButtonSize = 30.0;
-    const CGFloat kCountlyDismissButtonMargin = 10.0;
     CLYButton* dismissButton = [CLYButton buttonWithType:UIButtonTypeCustom];
-    dismissButton.frame = (CGRect){UIScreen.mainScreen.bounds.size.width - kCountlyDismissButtonSize - kCountlyDismissButtonMargin, kCountlyDismissButtonMargin, kCountlyDismissButtonSize, kCountlyDismissButtonSize};
+    dismissButton.frame = (CGRect){CGPointZero, kCountlyDismissButtonSize, kCountlyDismissButtonSize};
     [dismissButton setTitle:@"✕" forState:UIControlStateNormal];
     [dismissButton setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
     dismissButton.backgroundColor = [UIColor.blackColor colorWithAlphaComponent:0.5];
@@ -329,6 +331,45 @@ void CountlyPrint(NSString *stringToPrint)
     dismissButton.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleBottomMargin;
 
     return dismissButton;
+}
+
+- (void)positionToTopRight
+{
+    [self positionToTopRight:NO];
+}
+
+- (void)positionToTopRightConsideringStatusBar
+{
+    [self positionToTopRight:YES];
+}
+
+- (void)positionToTopRight:(BOOL)shouldConsiderStatusBar
+{
+    CGRect rect = self.frame;
+    rect.origin.x = self.superview.bounds.size.width - self.bounds.size.width - kCountlyDismissButtonMargin;
+    rect.origin.y = kCountlyDismissButtonMargin;
+
+    if (shouldConsiderStatusBar)
+    {
+        if (@available(iOS 11.0, *))
+        {
+            CGFloat top = UIApplication.sharedApplication.keyWindow.safeAreaInsets.top;
+            if (top)
+            {
+                rect.origin.y += top;
+            }
+            else
+            {
+                rect.origin.y += kCountlyDismissButtonStandardStatusBarHeight;
+            }
+        }
+        else
+        {
+            rect.origin.y += kCountlyDismissButtonStandardStatusBarHeight;
+        }
+    }
+
+    self.frame = rect;
 }
 
 @end
