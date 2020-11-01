@@ -211,14 +211,17 @@ void CountlyPrint(NSString *stringToPrint)
 
     if ([mode isEqualToString:self.lastInterfaceOrientation])
     {
-        COUNTLY_LOG(@"Interface orientation is still same: %@", self.lastInterfaceOrientation);
+//      COUNTLY_LOG(@"Interface orientation is still same: %@", self.lastInterfaceOrientation);
         return;
     }
 
     COUNTLY_LOG(@"Interface orientation is now: %@", mode);
     self.lastInterfaceOrientation = mode;
 
-    [Countly.sharedInstance recordEvent:kCountlyReservedEventOrientation segmentation:@{kCountlyOrientationKeyMode: mode}];
+    if (!CountlyConsentManager.sharedInstance.consentForUserDetails)
+        return;
+
+    [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventOrientation segmentation:@{kCountlyOrientationKeyMode: mode}];
 #endif
 }
 
