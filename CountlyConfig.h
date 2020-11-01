@@ -175,9 +175,9 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
  * @discussion - @c CLYPushTestModeDevelopment: For development/debug builds signed with a development provisioning profile. Countly Server will send push notifications to Sandbox APNs.
  * @discussion - @c CLYPushTestModeTestFlightOrAdHoc: For TestFlight or AdHoc builds signed with a distribution provisioning profile. Countly Server will send push notifications to Production APNs.
  * @discussion If set, Test Users mark should be selected on Create Push Notification screen of Countly Server to send push notifications.
- * @discussion If not set, Countly Server will use Production APNs by default.
+ * @discussion If not set (or set to @c nil ), Countly Server will use Production APNs by default.
  */
-@property (nonatomic, copy) CLYPushTestMode pushTestMode;
+@property (nonatomic, copy) CLYPushTestMode _Nullable pushTestMode;
 
 /**
  * For sending push tokens to Countly Server even for users who have not granted permission to display notifications.
