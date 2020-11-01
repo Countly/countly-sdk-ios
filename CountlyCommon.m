@@ -321,7 +321,11 @@ void CountlyPrint(NSString *stringToPrint)
     CLYButton* dismissButton = [CLYButton buttonWithType:UIButtonTypeCustom];
     dismissButton.frame = (CGRect){UIScreen.mainScreen.bounds.size.width - kCountlyDismissButtonSize - kCountlyDismissButtonMargin, kCountlyDismissButtonMargin, kCountlyDismissButtonSize, kCountlyDismissButtonSize};
     [dismissButton setTitle:@"✕" forState:UIControlStateNormal];
-    [dismissButton setTitleColor:UIColor.grayColor forState:UIControlStateNormal];
+    [dismissButton setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
+    dismissButton.backgroundColor = [UIColor.blackColor colorWithAlphaComponent:0.5];
+    dismissButton.layer.cornerRadius = dismissButton.bounds.size.width * 0.5;
+    dismissButton.layer.borderColor = [UIColor.blackColor colorWithAlphaComponent:0.7].CGColor;
+    dismissButton.layer.borderWidth = 1.0;
     dismissButton.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleBottomMargin;
 
     return dismissButton;
