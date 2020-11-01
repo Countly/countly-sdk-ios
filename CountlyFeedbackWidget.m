@@ -45,6 +45,7 @@ NSString* const kCountlyFBKeyClosed         = @"closed";
     webVC.modalPresentationStyle = UIModalPresentationCustom;
 
     WKWebView* webView = [WKWebView.alloc initWithFrame:webVC.view.bounds];
+    webView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [webVC.view addSubview:webView];
     NSURLRequest* request = [self displayRequest];
     [webView loadRequest:request];
