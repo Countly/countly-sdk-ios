@@ -9,7 +9,6 @@
 NSString* const kCountlyRCKeyFetchRemoteConfig  = @"fetch_remote_config";
 NSString* const kCountlyRCKeyKeys               = @"keys";
 NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
-NSString* const kCountlyRCKeyMetrics            = @"metrics";
 
 @interface CountlyRemoteConfig ()
 @property (nonatomic) NSDictionary* cachedRemoteConfig;
@@ -191,7 +190,7 @@ NSString* const kCountlyRCKeyMetrics            = @"metrics";
 
     if (CountlyConsentManager.sharedInstance.consentForSessions)
     {
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyMetrics, [CountlyDeviceInfo metrics]];
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
     }
 
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
