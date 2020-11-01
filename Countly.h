@@ -549,12 +549,14 @@ NS_ASSUME_NONNULL_BEGIN
  * Presents feedback widget with given ID in a WKWebView placed in a UIViewController.
  * @discussion First, the availability of the feedback widget will be checked asynchronously.
  * @discussion If the feedback widget with given ID is available, it will be modally presented.
- * @discussion Otherwise, @c completionHandler will be called with an @c NSError.
- * @discussion @c completionHandler will also be called with @c nil when feedback widget is dismissed by user.
+ * @discussion Otherwise, @c completionHandler will be executed with an @c NSError.
+ * @discussion @c completionHandler will also be executed with @c nil when feedback widget is dismissed by user.
  * @discussion Calls to this method will be ignored and @c completionHandler will not be executed if:
- * @discussion - Consent for @c CLYConsentStarRating is not given, while @c requiresConsent flag is set on initial configuration.
+ * @discussion - Consent for @c CLYConsentFeedback is not given, while @c requiresConsent flag is set on initial configuration.
  * @discussion - Current device ID is @c CLYTemporaryDeviceID.
  * @discussion - @c widgetID is not a non-zero length valid string.
+ * @discussion This is a legacy method for presenting Rating type feedback widgets only.
+ * @discussion Passing widget ID's of Survey or NPS type feedback widgets will not work.
  * @param widgetID ID of the feedback widget created on Countly Server.
  * @param completionHandler A completion handler block to be executed when feedback widget is dismissed by user or there is an error.
  */
