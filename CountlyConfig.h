@@ -74,6 +74,7 @@ extern CLYConsent const CLYConsentStarRating DEPRECATED_MSG_ATTRIBUTE("Please us
 extern CLYConsent const CLYConsentAppleWatch;
 extern CLYConsent const CLYConsentPerformanceMonitoring;
 extern CLYConsent const CLYConsentFeedback;
+extern CLYConsent const CLYConsentRemoteConfig;
 
 //NOTE: Push Notification Test Modes
 typedef NSString* CLYPushTestMode NS_EXTENSIBLE_STRING_ENUM;

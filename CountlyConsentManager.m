@@ -18,6 +18,7 @@ CLYConsent const CLYConsentStarRating           = @"star-rating";
 CLYConsent const CLYConsentAppleWatch           = @"accessory-devices";
 CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
 CLYConsent const CLYConsentFeedback             = @"feedback";
+CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 
 
 @interface CountlyConsentManager ()
@@ -37,6 +38,7 @@ CLYConsent const CLYConsentFeedback             = @"feedback";
 @synthesize consentForAppleWatch = _consentForAppleWatch;
 @synthesize consentForPerformanceMonitoring = _consentForPerformanceMonitoring;
 @synthesize consentForFeedback = _consentForFeedback;
+@synthesize consentForRemoteConfig = _consentForRemoteConfig;
 
 #pragma mark -
 
@@ -115,6 +117,9 @@ CLYConsent const CLYConsentFeedback             = @"feedback";
     if ([self containsFeedbackOrStarRating:features] && !self.consentForFeedback)
         self.consentForFeedback = YES;
 
+    if ([features containsObject:CLYConsentRemoteConfig] && !self.consentForRemoteConfig)
+        self.consentForRemoteConfig = YES;
+
     [self sendConsentChanges];
 }
 
@@ -163,6 +168,9 @@ CLYConsent const CLYConsentFeedback             = @"feedback";
     if ([self containsFeedbackOrStarRating:features] && self.consentForFeedback)
         self.consentForFeedback = NO;
 
+    if ([features containsObject:CLYConsentRemoteConfig] && self.consentForRemoteConfig)
+        self.consentForRemoteConfig = NO;
+
     [self sendConsentChanges];
 }
 
@@ -209,7 +217,8 @@ CLYConsent const CLYConsentFeedback             = @"feedback";
     self.consentForAttribution ||
     self.consentForAppleWatch ||
     self.consentForPerformanceMonitoring ||
-    self.consentForFeedback;
+    self.consentForFeedback ||
+    self.consentForRemoteConfig;
 }
 
 - (BOOL)containsFeedbackOrStarRating:(NSArray *)features
@@ -454,6 +463,22 @@ CLYConsent const CLYConsentFeedback             = @"feedback";
     self.consentChanges[CLYConsentFeedback] = @(consentForFeedback);
 }
 
+- (void)setConsentForRemoteConfig:(BOOL)consentForRemoteConfig
+{
+    _consentForRemoteConfig = consentForRemoteConfig;
+
+    if (consentForRemoteConfig)
+    {
+        COUNTLY_LOG(@"Consent for RemoteConfig is given.");
+    }
+    else
+    {
+        COUNTLY_LOG(@"Consent for RemoteConfig is cancelled.");
+    }
+
+    self.consentChanges[CLYConsentRemoteConfig] = @(consentForRemoteConfig);
+}
+
 #pragma mark -
 
 - (BOOL)consentForSessions
@@ -551,6 +576,14 @@ CLYConsent const CLYConsentFeedback             = @"feedback";
         return YES;
 
     return _consentForFeedback;
+}
+
+- (BOOL)consentForRemoteConfig
+{
+    if (!self.requiresConsent)
+      return YES;
+
+    return _consentForRemoteConfig;
 }
 
 @end
