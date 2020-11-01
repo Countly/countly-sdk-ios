@@ -44,7 +44,7 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
     if (!self.isEnabledOnInitialConfig)
         return;
 
-    if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
+    if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
         return;
 
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
@@ -73,7 +73,7 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
 
 - (void)updateRemoteConfigForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler
 {
-    if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
+    if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
         return;
 
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)

@@ -470,6 +470,8 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     if (consentForRemoteConfig)
     {
         COUNTLY_LOG(@"Consent for RemoteConfig is given.");
+
+        [CountlyRemoteConfig.sharedInstance startRemoteConfig];
     }
     else
     {
