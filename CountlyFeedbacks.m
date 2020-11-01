@@ -388,20 +388,18 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
     NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:[self feedbacksRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
-        NSDictionary* feedbacksResponse = nil;
+        NSDictionary *feedbacksResponse = nil;
 
         if (!error)
         {
             feedbacksResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
         }
 
-        NSArray* rawFeedbackObjects = feedbacksResponse[@"result"];
-
         if (!error)
         {
             if (((NSHTTPURLResponse*)response).statusCode != 200)
             {
-                NSMutableDictionary* userInfo = rawFeedbackObjects.mutableCopy;
+                NSMutableDictionary* userInfo = feedbacksResponse.mutableCopy;
                 userInfo[NSLocalizedDescriptionKey] = @"Feedbacks general API error";
                 error = [NSError errorWithDomain:kCountlyErrorDomain code:CLYErrorFeedbacksGeneralAPIError userInfo:userInfo];
             }
@@ -419,6 +417,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         }
 
         NSMutableArray* feedbacks = NSMutableArray.new;
+        NSArray* rawFeedbackObjects = feedbacksResponse[@"result"];
         for (NSDictionary * feedbackDict in rawFeedbackObjects)
         {
             CountlyFeedbackWidget *feedback = [CountlyFeedbackWidget createWithDictionary:feedbackDict];
