@@ -19,7 +19,7 @@ Pod::Spec.new do |s|
     core.source_files = '*.{h,m}'
     core.public_header_files = 'Countly.h', 'CountlyUserDetails.h', 'CountlyConfig.h', 'CountlyFeedbackWidget.h'
     core.preserve_path = 'countly_dsym_uploader.sh'
-    core.ios.frameworks = ['Foundation', 'UIKit', 'UserNotifications', 'CoreLocation', 'WebKit', 'CoreTelephony', 'AdSupport', 'WatchConnectivity']
+    core.ios.frameworks = ['Foundation', 'UIKit', 'UserNotifications', 'CoreLocation', 'WebKit', 'CoreTelephony', 'WatchConnectivity']
   end
 
   s.subspec 'NotificationService' do |ns|
