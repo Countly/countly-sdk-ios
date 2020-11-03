@@ -17,6 +17,8 @@
 - (NSString *)firstItemInQueue;
 - (void)flushQueue;
 - (void)replaceAllTemporaryDeviceIDsInQueueWithDeviceID:(NSString *)deviceID;
+- (void)replaceAllAppKeysInQueueWithCurrentAppKey;
+- (void)removeDifferentAppKeysFromQueue;
 
 - (void)recordEvent:(CountlyEvent *)event;
 - (NSString *)serializedRecordedEvents;
@@ -48,10 +50,13 @@
 - (BOOL)retrieveNotificationPermission;
 - (void)storeNotificationPermission:(BOOL)allowed;
 
+- (BOOL)retrieveIsCustomDeviceID;
+- (void)storeIsCustomDeviceID:(BOOL)isCustomDeviceID;
 
 - (NSDictionary *)retrieveRemoteConfig;
 - (void)storeRemoteConfig:(NSDictionary *)remoteConfig;
 
 @property (nonatomic) NSUInteger eventSendThreshold;
 @property (nonatomic) NSUInteger storedRequestsLimit;
+@property (nonatomic, readonly) BOOL isQueueBeingModified;
 @end

@@ -17,6 +17,8 @@ CLYConsent const CLYConsentAttribution          = @"attribution";
 CLYConsent const CLYConsentStarRating           = @"star-rating";
 CLYConsent const CLYConsentAppleWatch           = @"accessory-devices";
 CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
+CLYConsent const CLYConsentFeedback             = @"feedback";
+CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 
 
 @interface CountlyConsentManager ()
@@ -33,9 +35,10 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
 @synthesize consentForLocation = _consentForLocation;
 @synthesize consentForViewTracking = _consentForViewTracking;
 @synthesize consentForAttribution = _consentForAttribution;
-@synthesize consentForStarRating = _consentForStarRating;
 @synthesize consentForAppleWatch = _consentForAppleWatch;
 @synthesize consentForPerformanceMonitoring = _consentForPerformanceMonitoring;
+@synthesize consentForFeedback = _consentForFeedback;
+@synthesize consentForRemoteConfig = _consentForRemoteConfig;
 
 #pragma mark -
 
@@ -105,14 +108,17 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
     if ([features containsObject:CLYConsentAttribution] && !self.consentForAttribution)
         self.consentForAttribution = YES;
 
-    if ([features containsObject:CLYConsentStarRating] && !self.consentForStarRating)
-        self.consentForStarRating = YES;
-
     if ([features containsObject:CLYConsentAppleWatch] && !self.consentForAppleWatch)
         self.consentForAppleWatch = YES;
 
     if ([features containsObject:CLYConsentPerformanceMonitoring] && !self.consentForPerformanceMonitoring)
         self.consentForPerformanceMonitoring = YES;
+
+    if ([self containsFeedbackOrStarRating:features] && !self.consentForFeedback)
+        self.consentForFeedback = YES;
+
+    if ([features containsObject:CLYConsentRemoteConfig] && !self.consentForRemoteConfig)
+        self.consentForRemoteConfig = YES;
 
     [self sendConsentChanges];
 }
@@ -153,14 +159,17 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
     if ([features containsObject:CLYConsentAttribution] && self.consentForAttribution)
         self.consentForAttribution = NO;
 
-    if ([features containsObject:CLYConsentStarRating] && self.consentForStarRating)
-        self.consentForStarRating = NO;
-
     if ([features containsObject:CLYConsentAppleWatch] && self.consentForAppleWatch)
         self.consentForAppleWatch = NO;
 
     if ([features containsObject:CLYConsentPerformanceMonitoring] && self.consentForPerformanceMonitoring)
         self.consentForPerformanceMonitoring = NO;
+
+    if ([self containsFeedbackOrStarRating:features] && self.consentForFeedback)
+        self.consentForFeedback = NO;
+
+    if ([features containsObject:CLYConsentRemoteConfig] && self.consentForRemoteConfig)
+        self.consentForRemoteConfig = NO;
 
     [self sendConsentChanges];
 }
@@ -188,9 +197,9 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
         CLYConsentLocation,
         CLYConsentViewTracking,
         CLYConsentAttribution,
-        CLYConsentStarRating,
         CLYConsentAppleWatch,
         CLYConsentPerformanceMonitoring,
+        CLYConsentFeedback,
     ];
 }
 
@@ -206,11 +215,20 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
     self.consentForLocation ||
     self.consentForViewTracking ||
     self.consentForAttribution ||
-    self.consentForStarRating ||
     self.consentForAppleWatch ||
-    self.consentForPerformanceMonitoring;
+    self.consentForPerformanceMonitoring ||
+    self.consentForFeedback ||
+    self.consentForRemoteConfig;
 }
 
+- (BOOL)containsFeedbackOrStarRating:(NSArray *)features
+{
+    //NOTE: StarRating consent is merged into new Feedback consent.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    return [features containsObject:CLYConsentFeedback] || [features containsObject:CLYConsentStarRating];
+#pragma GCC diagnostic pop
+}
 
 #pragma mark -
 
@@ -382,27 +400,6 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
 }
 
 
-- (void)setConsentForStarRating:(BOOL)consentForStarRating
-{
-    _consentForStarRating = consentForStarRating;
-
-#if (TARGET_OS_IOS)
-    if (consentForStarRating)
-    {
-        COUNTLY_LOG(@"Consent for StarRating is given.");
-
-        [CountlyStarRating.sharedInstance checkForAutoAsk];
-    }
-    else
-    {
-        COUNTLY_LOG(@"Consent for StarRating is cancelled.");
-    }
-#endif
-
-    self.consentChanges[CLYConsentStarRating] = @(consentForStarRating);
-}
-
-
 - (void)setConsentForAppleWatch:(BOOL)consentForAppleWatch
 {
     _consentForAppleWatch = consentForAppleWatch;
@@ -444,6 +441,44 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
 #endif
 
     self.consentChanges[CLYConsentPerformanceMonitoring] = @(consentForPerformanceMonitoring);
+}
+
+- (void)setConsentForFeedback:(BOOL)consentForFeedback
+{
+    _consentForFeedback = consentForFeedback;
+
+#if (TARGET_OS_IOS)
+    if (consentForFeedback)
+    {
+        COUNTLY_LOG(@"Consent for Feedback is given.");
+
+        [CountlyFeedbacks.sharedInstance checkForStarRatingAutoAsk];
+    }
+    else
+    {
+        COUNTLY_LOG(@"Consent for Feedback is cancelled.");
+    }
+#endif
+
+    self.consentChanges[CLYConsentFeedback] = @(consentForFeedback);
+}
+
+- (void)setConsentForRemoteConfig:(BOOL)consentForRemoteConfig
+{
+    _consentForRemoteConfig = consentForRemoteConfig;
+
+    if (consentForRemoteConfig)
+    {
+        COUNTLY_LOG(@"Consent for RemoteConfig is given.");
+
+        [CountlyRemoteConfig.sharedInstance startRemoteConfig];
+    }
+    else
+    {
+        COUNTLY_LOG(@"Consent for RemoteConfig is cancelled.");
+    }
+
+    self.consentChanges[CLYConsentRemoteConfig] = @(consentForRemoteConfig);
 }
 
 #pragma mark -
@@ -520,15 +555,6 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
 }
 
 
-- (BOOL)consentForStarRating
-{
-    if (!self.requiresConsent)
-      return YES;
-
-    return _consentForStarRating;
-}
-
-
 - (BOOL)consentForAppleWatch
 {
     if (!self.requiresConsent)
@@ -544,6 +570,22 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
         return YES;
 
     return _consentForPerformanceMonitoring;
+}
+
+- (BOOL)consentForFeedback
+{
+    if (!self.requiresConsent)
+        return YES;
+
+    return _consentForFeedback;
+}
+
+- (BOOL)consentForRemoteConfig
+{
+    if (!self.requiresConsent)
+      return YES;
+
+    return _consentForRemoteConfig;
 }
 
 @end

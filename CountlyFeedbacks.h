@@ -1,4 +1,4 @@
-// CountlyStarRating.h
+// CountlyFeedbacks.h
 //
 // This code is provided under the MIT License.
 //
@@ -6,13 +6,22 @@
 
 #import <Foundation/Foundation.h>
 
-@interface CountlyStarRating : NSObject
+@class CountlyFeedbackWidget;
+
+extern NSString* const kCountlyFBKeyPlatform;
+extern NSString* const kCountlyFBKeyAppVersion;
+extern NSString* const kCountlyFBKeyWidgetID;
+extern NSString* const kCountlyFBKeyID;
+
+@interface CountlyFeedbacks : NSObject
 #if (TARGET_OS_IOS)
 + (instancetype)sharedInstance;
 
 - (void)showDialog:(void(^)(NSInteger rating))completion;
 - (void)checkFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler;
-- (void)checkForAutoAsk;
+- (void)checkForStarRatingAutoAsk;
+
+- (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> *feedbackWidgets, NSError *error))completionHandler;
 
 @property (nonatomic) NSString* message;
 @property (nonatomic) NSString* dismissButtonTitle;

@@ -6,14 +6,9 @@
 
 #import "CountlyCommon.h"
 
-NSString* const kCountlyRCOutputEndpoint        = @"/o";
-NSString* const kCountlyRCSDKEndpoint           = @"/sdk";
-
-NSString* const kCountlyRCKeyMethod             = @"method";
 NSString* const kCountlyRCKeyFetchRemoteConfig  = @"fetch_remote_config";
 NSString* const kCountlyRCKeyKeys               = @"keys";
 NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
-NSString* const kCountlyRCKeyMetrics            = @"metrics";
 
 @interface CountlyRemoteConfig ()
 @property (nonatomic) NSDictionary* cachedRemoteConfig;
@@ -49,7 +44,7 @@ NSString* const kCountlyRCKeyMetrics            = @"metrics";
     if (!self.isEnabledOnInitialConfig)
         return;
 
-    if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
+    if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
         return;
 
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
@@ -78,7 +73,7 @@ NSString* const kCountlyRCKeyMetrics            = @"metrics";
 
 - (void)updateRemoteConfigForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler
 {
-    if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
+    if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
         return;
 
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
@@ -182,7 +177,7 @@ NSString* const kCountlyRCKeyMetrics            = @"metrics";
 {
     NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
 
-    queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyMethod, kCountlyRCKeyFetchRemoteConfig];
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMethod, kCountlyRCKeyFetchRemoteConfig];
 
     if (keys)
     {
@@ -195,14 +190,14 @@ NSString* const kCountlyRCKeyMetrics            = @"metrics";
 
     if (CountlyConsentManager.sharedInstance.consentForSessions)
     {
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyMetrics, [CountlyDeviceInfo metrics]];
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
     }
 
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
 
     NSString* serverOutputSDKEndpoint = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"%@%@",
-                                         kCountlyRCOutputEndpoint,
-                                         kCountlyRCSDKEndpoint];
+                                         kCountlyEndpointO,
+                                         kCountlyEndpointSDK];
 
     if (CountlyConnectionManager.sharedInstance.alwaysUsePOST)
     {

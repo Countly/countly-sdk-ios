@@ -33,7 +33,7 @@ NSString* const kCountlyOrientationKeyMode = @"mode";
 #endif
 @end
 
-NSString* const kCountlySDKVersion = @"20.04.3";
+NSString* const kCountlySDKVersion = @"20.11.0";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
@@ -211,14 +211,17 @@ void CountlyPrint(NSString *stringToPrint)
 
     if ([mode isEqualToString:self.lastInterfaceOrientation])
     {
-        COUNTLY_LOG(@"Interface orientation is still same: %@", self.lastInterfaceOrientation);
+//      COUNTLY_LOG(@"Interface orientation is still same: %@", self.lastInterfaceOrientation);
         return;
     }
 
     COUNTLY_LOG(@"Interface orientation is now: %@", mode);
     self.lastInterfaceOrientation = mode;
 
-    [Countly.sharedInstance recordEvent:kCountlyReservedEventOrientation segmentation:@{kCountlyOrientationKeyMode: mode}];
+    if (!CountlyConsentManager.sharedInstance.consentForUserDetails)
+        return;
+
+    [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventOrientation segmentation:@{kCountlyOrientationKeyMode: mode}];
 #endif
 }
 
@@ -295,6 +298,10 @@ void CountlyPrint(NSString *stringToPrint)
 
 @implementation CLYButton : UIButton
 
+const CGFloat kCountlyDismissButtonSize = 30.0;
+const CGFloat kCountlyDismissButtonMargin = 10.0;
+const CGFloat kCountlyDismissButtonStandardStatusBarHeight = 20.0;
+
 - (instancetype)initWithFrame:(CGRect)frame
 {
     if (self = [super initWithFrame:frame])
@@ -313,15 +320,56 @@ void CountlyPrint(NSString *stringToPrint)
 
 + (CLYButton *)dismissAlertButton
 {
-    const CGFloat kCountlyDismissButtonSize = 30.0;
-    const CGFloat kCountlyDismissButtonMargin = 10.0;
     CLYButton* dismissButton = [CLYButton buttonWithType:UIButtonTypeCustom];
-    dismissButton.frame = (CGRect){UIScreen.mainScreen.bounds.size.width - kCountlyDismissButtonSize - kCountlyDismissButtonMargin, kCountlyDismissButtonMargin, kCountlyDismissButtonSize, kCountlyDismissButtonSize};
+    dismissButton.frame = (CGRect){CGPointZero, kCountlyDismissButtonSize, kCountlyDismissButtonSize};
     [dismissButton setTitle:@"✕" forState:UIControlStateNormal];
-    [dismissButton setTitleColor:UIColor.grayColor forState:UIControlStateNormal];
+    [dismissButton setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
+    dismissButton.backgroundColor = [UIColor.blackColor colorWithAlphaComponent:0.5];
+    dismissButton.layer.cornerRadius = dismissButton.bounds.size.width * 0.5;
+    dismissButton.layer.borderColor = [UIColor.blackColor colorWithAlphaComponent:0.7].CGColor;
+    dismissButton.layer.borderWidth = 1.0;
     dismissButton.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleBottomMargin;
 
     return dismissButton;
+}
+
+- (void)positionToTopRight
+{
+    [self positionToTopRight:NO];
+}
+
+- (void)positionToTopRightConsideringStatusBar
+{
+    [self positionToTopRight:YES];
+}
+
+- (void)positionToTopRight:(BOOL)shouldConsiderStatusBar
+{
+    CGRect rect = self.frame;
+    rect.origin.x = self.superview.bounds.size.width - self.bounds.size.width - kCountlyDismissButtonMargin;
+    rect.origin.y = kCountlyDismissButtonMargin;
+
+    if (shouldConsiderStatusBar)
+    {
+        if (@available(iOS 11.0, *))
+        {
+            CGFloat top = UIApplication.sharedApplication.keyWindow.safeAreaInsets.top;
+            if (top)
+            {
+                rect.origin.y += top;
+            }
+            else
+            {
+                rect.origin.y += kCountlyDismissButtonStandardStatusBarHeight;
+            }
+        }
+        else
+        {
+            rect.origin.y += kCountlyDismissButtonStandardStatusBarHeight;
+        }
+    }
+
+    self.frame = rect;
 }
 
 @end
@@ -421,6 +469,21 @@ NSString* CountlyJSONFromObject(id object)
 - (NSData *)cly_dataUTF8
 {
     return [self dataUsingEncoding:NSUTF8StringEncoding];
+}
+
+- (NSString *)cly_valueForQueryStringKey:(NSString *)key
+{
+    NSString* tempURLString = [@"http://example.com/path?" stringByAppendingString:self];
+    NSURLComponents* URLComponents = [NSURLComponents componentsWithString:tempURLString];
+    for (NSURLQueryItem* queryItem in URLComponents.queryItems)
+    {
+        if ([queryItem.name isEqualToString:key])
+        {
+            return queryItem.value;
+        }
+    }
+
+    return nil;
 }
 @end
 

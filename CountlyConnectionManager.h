@@ -6,7 +6,18 @@
 
 #import <Foundation/Foundation.h>
 
+extern NSString* const kCountlyQSKeyAppKey;
 extern NSString* const kCountlyQSKeyDeviceID;
+extern NSString* const kCountlyQSKeySDKVersion;
+extern NSString* const kCountlyQSKeySDKName;
+extern NSString* const kCountlyQSKeyMethod;
+extern NSString* const kCountlyQSKeyMetrics;
+
+extern NSString* const kCountlyEndpointI;
+extern NSString* const kCountlyEndpointO;
+extern NSString* const kCountlyEndpointSDK;
+extern NSString* const kCountlyEndpointFeedback;
+extern NSString* const kCountlyEndpointWidget;
 
 @interface CountlyConnectionManager : NSObject <NSURLSessionDelegate>
 

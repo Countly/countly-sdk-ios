@@ -1,3 +1,29 @@
+## 20.11.0
+- Added Surveys and NPS feedback widgets
+- Added Swift Package Manager support
+- Added `replaceAllAppKeysInQueueWithCurrentAppKey` method to replace all app keys in queue with the current app key
+- Added `removeDifferentAppKeysFromQueue` method to remove all different app keys from the queue
+- Added `deviceIDType` method to be able to check device ID type
+- Added precaution and warning for `nil` crash report case
+- Added `consents` initial config property
+- Added device type metric
+- Updated dismiss button design
+- Fixed web view autoresizing mask for legacy feedback widgets
+- Fixed a missing `CoreLocation` framework import
+- Fixed unnecessary recreation of `NSURLSession` instances
+- Fixed dismiss button layout
+- Changed interface orientation change event consent from `Events` to `UserDetails`
+- Changed remote config consent from `Any` to `RemoteConfig`
+- Marked `pushTestMode` initial config property as `_Nullable`
+
+- Other various improvements
+  - Refactored picture upload data extraction
+  - Suppressed an internal log for interface orientation change
+  - Updated some constant key declarations for common use
+  - Updated HeaderDocs, internal logs, inline notes and pragma marks
+  
+
+
 ## 20.04.3
 - Deprecated `recordLocation:`, `recordCity:andISOCountryCode:`, `recordIP:` methods
 - Added new combined `recordLocation:city:ISOCountryCode:IP:` method for recording location related info

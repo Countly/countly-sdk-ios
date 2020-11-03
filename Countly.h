@@ -8,6 +8,7 @@
 #import <CoreLocation/CoreLocation.h>
 #import "CountlyUserDetails.h"
 #import "CountlyConfig.h"
+#import "CountlyFeedbackWidget.h"
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 #import <UserNotifications/UserNotifications.h>
 #endif
@@ -31,21 +32,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)startWithConfig:(CountlyConfig *)config;
 
 /**
- * Sets new device ID to be persistently stored and used in following requests.
- * @discussion Value passed for @c deviceID parameter has to be a non-zero length valid string, otherwise default device ID will be used instead.
- * @discussion If value passed for @c deviceID parameter is exactly same to the current device ID, method call is ignored.
- * @discussion When passing @c CLYTemporaryDeviceID for @c deviceID parameter, argument for @c onServer parameter does not matter.
- * @discussion When setting a new device ID while the current device ID is @c CLYTemporaryDeviceID, argument for @c onServer parameter does not matter.
- * @param deviceID New device ID
- * @param onServer If set, data on Countly Server will be merged automatically, otherwise device will be counted as a new device
- */
-- (void)setNewDeviceID:(NSString * _Nullable)deviceID onServer:(BOOL)onServer;
-
-/**
  * Sets new app key to be used in following requests.
  * @discussion Before switching to new app key, this method suspends Countly and resumes immediately after.
  * @discussion Requests already queued previously will keep using the old app key.
  * @discussion New app key needs to be a non-zero length string, otherwise it is ignored.
+ * @discussion @c recordPushNotificationToken and @c updateRemoteConfigWithCompletionHandler: methods may need to be called again after app key change.
  * @param newAppKey New app key
  */
 - (void)setNewAppKey:(NSString *)newAppKey;
@@ -64,6 +55,20 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Started timed events will not be affected.
  */
 - (void)flushQueues;
+
+/**
+ * Replaces all requests with a different app key with the current app key.
+ * @discussion In request queue, if there are any request whose app key is different than the current app key,
+ * @discussion these requests' app key will be replaced with the current app key.
+ */
+- (void)replaceAllAppKeysInQueueWithCurrentAppKey;
+
+/**
+ * Removes all requests with a different app key in request queue.
+ * @discussion In request queue, if there are any request whose app key is different than the current app key,
+ * @discussion these requests will be removed from request queue.
+ */
+- (void)removeDifferentAppKeysFromQueue;
 
 /**
  * Starts session and sends @c begin_session request with default metrics for manual session handling.
@@ -99,6 +104,37 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)resume;
 #endif
+
+
+
+#pragma mark - Device ID
+
+/**
+ * Returns current device ID being used for tracking.
+ * @discussion Device ID can be used for handling data export and/or removal requests as part of data privacy compliance.
+ */
+- (NSString *)deviceID;
+
+/**
+ * Returns current device ID type.
+ * @discussion Device ID type can be one of the following:
+ * @discussion @c CLYDeviceIDTypeCustom : Custom device ID set by app developer.
+ * @discussion @c CLYDeviceIDTypeTemporary : Temporary device ID. See @c CLYTemporaryDeviceID for details.
+ * @discussion @c CLYDeviceIDTypeIDFV : Default device ID type used by the SDK on iOS and tvOS.
+ * @discussion @c CLYDeviceIDTypeNSUUID  : Default device ID type used by the SDK on watchOS and macOS.
+ */
+- (CLYDeviceIDType)deviceIDType;
+
+/**
+ * Sets new device ID to be persistently stored and used in following requests.
+ * @discussion Value passed for @c deviceID parameter has to be a non-zero length valid string, otherwise default device ID will be used instead.
+ * @discussion If value passed for @c deviceID parameter is exactly same to the current device ID, method call is ignored.
+ * @discussion When passing @c CLYTemporaryDeviceID for @c deviceID parameter, argument for @c onServer parameter does not matter.
+ * @discussion When setting a new device ID while the current device ID is @c CLYTemporaryDeviceID, argument for @c onServer parameter does not matter.
+ * @param deviceID New device ID
+ * @param onServer If set, data on Countly Server will be merged automatically, otherwise device will be counted as a new device
+ */
+- (void)setNewDeviceID:(NSString * _Nullable)deviceID onServer:(BOOL)onServer;
 
 
 
@@ -152,12 +188,6 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Inner workings of @c cancelConsentForFeature: method applies for this method as well.
  */
 - (void)cancelConsentForAllFeatures;
-
-/**
- * Returns current device ID being used for tracking.
- * @discussion Device ID can be used for handling data export and/or removal requests as part of data privacy compliance.
- */
-- (NSString *)deviceID;
 
 
 
@@ -311,7 +341,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Records push notification token to Countly Server for current device ID.
- * @discussion Can be used to re-send push notification token for current device ID, after a new user logs in and device ID changes, without waiting for the app to be restarted.
+ * @discussion Can be used to re-send push notification token for current device ID, without waiting for the app to be restarted.
+ * @discussion For cases like a new user logs in and device ID changes, or a new app key is set.
  * @discussion In general, push notification token is handled automatically and this method does not need to be called manually.
  */
 - (void)recordPushNotificationToken;
@@ -504,7 +535,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 
-#pragma mark - Star Rating
+#pragma mark - Feedbacks
 #if (TARGET_OS_IOS)
 /**
  * Shows star-rating dialog manually and executes completion block after user's action.
@@ -518,16 +549,29 @@ NS_ASSUME_NONNULL_BEGIN
  * Presents feedback widget with given ID in a WKWebView placed in a UIViewController.
  * @discussion First, the availability of the feedback widget will be checked asynchronously.
  * @discussion If the feedback widget with given ID is available, it will be modally presented.
- * @discussion Otherwise, @c completionHandler will be called with an @c NSError.
- * @discussion @c completionHandler will also be called with @c nil when feedback widget is dismissed by user.
+ * @discussion Otherwise, @c completionHandler will be executed with an @c NSError.
+ * @discussion @c completionHandler will also be executed with @c nil when feedback widget is dismissed by user.
  * @discussion Calls to this method will be ignored and @c completionHandler will not be executed if:
- * @discussion - Consent for @c CLYConsentStarRating is not given, while @c requiresConsent flag is set on initial configuration.
+ * @discussion - Consent for @c CLYConsentFeedback is not given, while @c requiresConsent flag is set on initial configuration.
  * @discussion - Current device ID is @c CLYTemporaryDeviceID.
  * @discussion - @c widgetID is not a non-zero length valid string.
+ * @discussion This is a legacy method for presenting Rating type feedback widgets only.
+ * @discussion Passing widget ID's of Survey or NPS type feedback widgets will not work.
  * @param widgetID ID of the feedback widget created on Countly Server.
  * @param completionHandler A completion handler block to be executed when feedback widget is dismissed by user or there is an error.
  */
 - (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler;
+
+/**
+ * Fetches a list of available feedback widgets.
+ * @discussion When feedback widgets are fetched succesfully, @c completionHandler will be exeuted with an array of @c CountlyFeedbackWidget objects.
+ * @discussion Otherwise, @c completionHandler will be executed with an @c NSError.
+ * @discussion Calls to this method will be ignored and @c completionHandler will not be executed if:
+ * @discussion - Consent for @c CLYConsentFeedback is not given, while @c requiresConsent flag is set on initial configuration.
+ * @discussion - Current device ID is @c CLYTemporaryDeviceID.
+ * @param completionHandler A completion handler block to be executed when list is fetched successfully or there is an error.
+ */
+- (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> *feedbackWidgets, NSError *error))completionHandler;
 
 #endif
 

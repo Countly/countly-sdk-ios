@@ -82,7 +82,11 @@ long long appLoadStartTime;
     COUNTLY_LOG(@"Initializing with %@ SDK v%@", CountlyCommon.sharedInstance.SDKName, CountlyCommon.sharedInstance.SDKVersion);
 
     if (!CountlyDeviceInfo.sharedInstance.deviceID || config.resetStoredDeviceID)
+    {
+        [self storeCustomDeviceIDState:config.deviceID];
+
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:config.deviceID];
+    }
 
     CountlyConnectionManager.sharedInstance.appKey = config.appKey;
     CountlyConnectionManager.sharedInstance.host = [config.host hasSuffix:@"/"] ? [config.host substringToIndex:config.host.length - 1] : config.host;
@@ -105,11 +109,11 @@ long long appLoadStartTime;
     CountlyDeviceInfo.sharedInstance.customMetrics = config.customMetrics;
 
 #if (TARGET_OS_IOS)
-    CountlyStarRating.sharedInstance.message = config.starRatingMessage;
-    CountlyStarRating.sharedInstance.sessionCount = config.starRatingSessionCount;
-    CountlyStarRating.sharedInstance.disableAskingForEachAppVersion = config.starRatingDisableAskingForEachAppVersion;
-    CountlyStarRating.sharedInstance.ratingCompletionForAutoAsk = config.starRatingCompletion;
-    [CountlyStarRating.sharedInstance checkForAutoAsk];
+    CountlyFeedbacks.sharedInstance.message = config.starRatingMessage;
+    CountlyFeedbacks.sharedInstance.sessionCount = config.starRatingSessionCount;
+    CountlyFeedbacks.sharedInstance.disableAskingForEachAppVersion = config.starRatingDisableAskingForEachAppVersion;
+    CountlyFeedbacks.sharedInstance.ratingCompletionForAutoAsk = config.starRatingCompletion;
+    [CountlyFeedbacks.sharedInstance checkForStarRatingAutoAsk];
 
     [CountlyLocationManager.sharedInstance updateLocation:config.location city:config.city ISOCountryCode:config.ISOCountryCode IP:config.IP];
 #endif
@@ -174,66 +178,9 @@ long long appLoadStartTime;
     [CountlyCommon.sharedInstance observeDeviceOrientationChanges];
 
     [CountlyConnectionManager.sharedInstance proceedOnQueue];
-}
 
-- (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer
-{
-    if (!CountlyCommon.sharedInstance.hasStarted)
-        return;
-
-    if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
-        return;
-
-    deviceID = [CountlyDeviceInfo.sharedInstance ensafeDeviceID:deviceID];
-
-    if ([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
-    {
-        COUNTLY_LOG(@"Attempted to set the same device ID again. So, setting new device ID is aborted.");
-        return;
-    }
-
-    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
-    {
-        COUNTLY_LOG(@"Going out of CLYTemporaryDeviceID mode and switching back to normal mode.");
-
-        [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
-
-        [CountlyPersistency.sharedInstance replaceAllTemporaryDeviceIDsInQueueWithDeviceID:deviceID];
-
-        [CountlyConnectionManager.sharedInstance proceedOnQueue];
-
-        [CountlyRemoteConfig.sharedInstance startRemoteConfig];
-
-        return;
-    }
-
-    if ([deviceID isEqualToString:CLYTemporaryDeviceID] && onServer)
-    {
-        COUNTLY_LOG(@"Attempted to set device ID as CLYTemporaryDeviceID with onServer option. So, onServer value is overridden as NO.");
-        onServer = NO;
-    }
-
-    if (onServer)
-    {
-        NSString* oldDeviceID = CountlyDeviceInfo.sharedInstance.deviceID;
-
-        [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
-
-        [CountlyConnectionManager.sharedInstance sendOldDeviceID:oldDeviceID];
-    }
-    else
-    {
-        [self suspend];
-
-        [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
-
-        [self resume];
-
-        [CountlyPersistency.sharedInstance clearAllTimedEvents];
-    }
-
-    [CountlyRemoteConfig.sharedInstance clearCachedRemoteConfig];
-    [CountlyRemoteConfig.sharedInstance startRemoteConfig];
+    if (config.consents)
+        [self giveConsentForFeatures:config.consents];
 }
 
 - (void)setNewAppKey:(NSString *)newAppKey
@@ -260,6 +207,16 @@ long long appLoadStartTime;
 {
     [CountlyPersistency.sharedInstance flushEvents];
     [CountlyPersistency.sharedInstance flushQueue];
+}
+
+- (void)replaceAllAppKeysInQueueWithCurrentAppKey
+{
+    [CountlyPersistency.sharedInstance replaceAllAppKeysInQueueWithCurrentAppKey];
+}
+
+- (void)removeDifferentAppKeysFromQueue
+{
+    [CountlyPersistency.sharedInstance removeDifferentAppKeysFromQueue];
 }
 
 #pragma mark ---
@@ -383,6 +340,96 @@ long long appLoadStartTime;
 
 
 
+#pragma mark - Device ID
+
+- (NSString *)deviceID
+{
+    return CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped;
+}
+
+- (CLYDeviceIDType)deviceIDType
+{
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+        return CLYDeviceIDTypeTemporary;
+
+    if ([CountlyPersistency.sharedInstance retrieveIsCustomDeviceID])
+        return CLYDeviceIDTypeCustom;
+
+#if (TARGET_OS_IOS || TARGET_OS_TV)
+    return CLYDeviceIDTypeIDFV;
+#else
+    return CLYDeviceIDTypeNSUUID;
+#endif
+}
+
+- (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer
+{
+    if (!CountlyCommon.sharedInstance.hasStarted)
+        return;
+
+    if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
+        return;
+
+    [self storeCustomDeviceIDState:deviceID];
+
+    deviceID = [CountlyDeviceInfo.sharedInstance ensafeDeviceID:deviceID];
+
+    if ([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
+    {
+        COUNTLY_LOG(@"Attempted to set the same device ID again. So, setting new device ID is aborted.");
+        return;
+    }
+
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+    {
+        COUNTLY_LOG(@"Going out of CLYTemporaryDeviceID mode and switching back to normal mode.");
+
+        [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
+
+        [CountlyPersistency.sharedInstance replaceAllTemporaryDeviceIDsInQueueWithDeviceID:deviceID];
+
+        [CountlyConnectionManager.sharedInstance proceedOnQueue];
+
+        [CountlyRemoteConfig.sharedInstance startRemoteConfig];
+
+        return;
+    }
+
+    if ([deviceID isEqualToString:CLYTemporaryDeviceID] && onServer)
+    {
+        COUNTLY_LOG(@"Attempted to set device ID as CLYTemporaryDeviceID with onServer option. So, onServer value is overridden as NO.");
+        onServer = NO;
+    }
+
+    if (onServer)
+    {
+        NSString* oldDeviceID = CountlyDeviceInfo.sharedInstance.deviceID;
+
+        [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
+
+        [CountlyConnectionManager.sharedInstance sendOldDeviceID:oldDeviceID];
+    }
+    else
+    {
+        [self suspend];
+
+        [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
+
+        [self resume];
+
+        [CountlyPersistency.sharedInstance clearAllTimedEvents];
+    }
+
+    [CountlyRemoteConfig.sharedInstance clearCachedRemoteConfig];
+    [CountlyRemoteConfig.sharedInstance startRemoteConfig];
+}
+
+- (void)storeCustomDeviceIDState:(NSString *)deviceID
+{
+    BOOL isCustomDeviceID = deviceID.length && ![deviceID isEqualToString:CLYTemporaryDeviceID];
+    [CountlyPersistency.sharedInstance storeIsCustomDeviceID:isCustomDeviceID];
+}
+
 #pragma mark - Consents
 - (void)giveConsentForFeature:(NSString *)featureName
 {
@@ -418,11 +465,6 @@ long long appLoadStartTime;
 - (void)cancelConsentForAllFeatures
 {
     [CountlyConsentManager.sharedInstance cancelConsentForAllFeatures];
-}
-
-- (NSString *)deviceID
-{
-    return CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped;
 }
 
 
@@ -720,7 +762,7 @@ long long appLoadStartTime;
 
 - (void)userLoggedOut
 {
-    [self setNewDeviceID:nil onServer:NO];
+    [self setNewDeviceID:CLYDefaultDeviceID onServer:NO];
 }
 
 
@@ -730,12 +772,17 @@ long long appLoadStartTime;
 
 - (void)askForStarRating:(void(^)(NSInteger rating))completion
 {
-    [CountlyStarRating.sharedInstance showDialog:completion];
+    [CountlyFeedbacks.sharedInstance showDialog:completion];
 }
 
 - (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
 {
-    [CountlyStarRating.sharedInstance checkFeedbackWidgetWithID:widgetID completionHandler:completionHandler];
+    [CountlyFeedbacks.sharedInstance checkFeedbackWidgetWithID:widgetID completionHandler:completionHandler];
+}
+
+- (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> *feedbackWidgets, NSError * error))completionHandler
+{
+    [CountlyFeedbacks.sharedInstance getFeedbackWidgets:completionHandler];
 }
 
 #endif

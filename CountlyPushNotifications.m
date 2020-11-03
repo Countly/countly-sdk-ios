@@ -337,7 +337,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
         }];
     };
     [alertController.view addSubview:dismissButton];
-
+    [dismissButton positionToTopRight];
 
     NSArray* buttons = countlyPayload[kCountlyPNKeyButtons];
     [buttons enumerateObjectsUsingBlock:^(NSDictionary* button, NSUInteger idx, BOOL * stop)

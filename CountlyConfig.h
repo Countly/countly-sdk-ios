@@ -5,6 +5,7 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
+#import <CoreLocation/CoreLocation.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -47,6 +48,13 @@ extern NSString* const CLYDefaultDeviceID;
  */
 extern NSString* const CLYTemporaryDeviceID;
 
+//NOTE: Device ID Types
+typedef NSString* CLYDeviceIDType NS_EXTENSIBLE_STRING_ENUM;
+extern CLYDeviceIDType const CLYDeviceIDTypeCustom;
+extern CLYDeviceIDType const CLYDeviceIDTypeTemporary;
+extern CLYDeviceIDType const CLYDeviceIDTypeIDFV;
+extern CLYDeviceIDType const CLYDeviceIDTypeNSUUID;
+
 //NOTE: Legacy device ID options
 extern NSString* const CLYIDFV DEPRECATED_MSG_ATTRIBUTE("Please use CLYDefaultDeviceID instead!");
 extern NSString* const CLYIDFA DEPRECATED_MSG_ATTRIBUTE("Please use CLYDefaultDeviceID instead!");
@@ -62,9 +70,11 @@ extern CLYConsent const CLYConsentPushNotifications;
 extern CLYConsent const CLYConsentLocation;
 extern CLYConsent const CLYConsentViewTracking;
 extern CLYConsent const CLYConsentAttribution;
-extern CLYConsent const CLYConsentStarRating;
+extern CLYConsent const CLYConsentStarRating DEPRECATED_MSG_ATTRIBUTE("Please use CLYConsentFeedback instead!");
 extern CLYConsent const CLYConsentAppleWatch;
 extern CLYConsent const CLYConsentPerformanceMonitoring;
+extern CLYConsent const CLYConsentFeedback;
+extern CLYConsent const CLYConsentRemoteConfig;
 
 //NOTE: Push Notification Test Modes
 typedef NSString* CLYPushTestMode NS_EXTENSIBLE_STRING_ENUM;
@@ -74,6 +84,7 @@ extern CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc;
 //NOTE: Default metrics
 typedef NSString* CLYMetricKey NS_EXTENSIBLE_STRING_ENUM;
 extern CLYMetricKey const CLYMetricKeyDevice;
+extern CLYMetricKey const CLYMetricKeyDeviceType;
 extern CLYMetricKey const CLYMetricKeyOS;
 extern CLYMetricKey const CLYMetricKeyOSVersion;
 extern CLYMetricKey const CLYMetricKeyAppVersion;
@@ -145,6 +156,12 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
  */
 @property (nonatomic) BOOL requiresConsent;
 
+/**
+ * For granting consents to features and starting them.
+ * @discussion This should be an array of feature names to give consent to.
+ * @discussion Just like in @c giveConsentForFeatures: method.
+ */
+@property (nonatomic, copy) NSArray<CLYConsent>* consents;
 #pragma mark -
 
 /**
@@ -159,9 +176,9 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
  * @discussion - @c CLYPushTestModeDevelopment: For development/debug builds signed with a development provisioning profile. Countly Server will send push notifications to Sandbox APNs.
  * @discussion - @c CLYPushTestModeTestFlightOrAdHoc: For TestFlight or AdHoc builds signed with a distribution provisioning profile. Countly Server will send push notifications to Production APNs.
  * @discussion If set, Test Users mark should be selected on Create Push Notification screen of Countly Server to send push notifications.
- * @discussion If not set, Countly Server will use Production APNs by default.
+ * @discussion If not set (or set to @c nil ), Countly Server will use Production APNs by default.
  */
-@property (nonatomic, copy) CLYPushTestMode pushTestMode;
+@property (nonatomic, copy) CLYPushTestMode _Nullable pushTestMode;
 
 /**
  * For sending push tokens to Countly Server even for users who have not granted permission to display notifications.

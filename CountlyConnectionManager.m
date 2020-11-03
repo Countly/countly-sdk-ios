@@ -12,6 +12,7 @@
     NSTimeInterval lastSessionStartTime;
     BOOL isCrashing;
 }
+@property (nonatomic) NSURLSession* URLSession;
 @end
 
 NSString* const kCountlyQSKeyAppKey           = @"app_key";
@@ -51,8 +52,16 @@ NSString* const kCountlyQSKeyIDFA             = @"idfa";
 NSString* const kCountlyQSKeyConsent          = @"consent";
 NSString* const kCountlyQSKeyAPM              = @"apm";
 
+NSString* const kCountlyQSKeyMethod           = @"method";
+
 NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
-NSString* const kCountlyInputEndpoint = @"/i";
+
+NSString* const kCountlyEndpointI = @"/i"; //NOTE: input endpoint
+NSString* const kCountlyEndpointO = @"/o"; //NOTE: output endpoint
+NSString* const kCountlyEndpointSDK = @"/sdk";
+NSString* const kCountlyEndpointFeedback = @"/feedback";
+NSString* const kCountlyEndpointWidget = @"/widget";
+
 const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 @implementation CountlyConnectionManager : NSObject
@@ -106,6 +115,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return;
     }
 
+    if (CountlyPersistency.sharedInstance.isQueueBeingModified)
+    {
+        COUNTLY_LOG(@"Proceeding on queue is aborted: Queue is being modified!");
+        return;
+    }
+
     NSString* firstItemInQueue = [CountlyPersistency.sharedInstance firstItemInQueue];
     if (!firstItemInQueue)
     {
@@ -126,11 +141,11 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     queryString = [self appendChecksum:queryString];
 
-    NSString* serverInputEndpoint = [self.host stringByAppendingString:kCountlyInputEndpoint];
+    NSString* serverInputEndpoint = [self.host stringByAppendingString:kCountlyEndpointI];
     NSString* fullRequestURL = [serverInputEndpoint stringByAppendingFormat:@"?%@", queryString];
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:fullRequestURL]];
 
-    NSData* pictureUploadData = [self pictureUploadDataForRequest:queryString];
+    NSData* pictureUploadData = [self pictureUploadDataForQueryString:queryString];
     if (pictureUploadData)
     {
         NSString *contentType = [@"multipart/form-data; boundary=" stringByAppendingString:kCountlyUploadBoundary];
@@ -150,7 +165,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     request.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
 
-    self.connection = [[self URLSession] dataTaskWithRequest:request completionHandler:^(NSData * data, NSURLResponse * response, NSError * error)
+    self.connection = [self.URLSession dataTaskWithRequest:request completionHandler:^(NSData * data, NSURLResponse * response, NSError * error)
     {
         self.connection = nil;
 
@@ -305,6 +320,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)sendCrashReport:(NSString *)report immediately:(BOOL)immediately;
 {
+    if (!report)
+    {
+        COUNTLY_LOG(@"Crash report is nil. Converting to JSON may have failed due to custom objects in initial config's crashSegmentation property.");
+        return;
+    }
+
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
                              kCountlyQSKeyCrash, report];
 
@@ -343,7 +364,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     [CountlyPersistency.sharedInstance saveToFileSync];
 
-    NSString* serverInputEndpoint = [self.host stringByAppendingString:kCountlyInputEndpoint];
+    NSString* serverInputEndpoint = [self.host stringByAppendingString:kCountlyEndpointI];
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverInputEndpoint]];
     request.HTTPMethod = @"POST";
     request.HTTPBody = [[self appendChecksum:queryString] cly_dataUTF8];
@@ -353,7 +374,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 
-    [[[self URLSession] dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError*  error)
+    [[self.URLSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError*  error)
     {
         if (error || ![self isRequestSuccessful:response])
         {
@@ -489,27 +510,20 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     return [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyAttributionID, [attribution cly_JSONify]];
 }
 
-- (NSData *)pictureUploadDataForRequest:(NSString *)requestString
+- (NSData *)pictureUploadDataForQueryString:(NSString *)queryString
 {
 #if (TARGET_OS_IOS)
     NSString* localPicturePath = nil;
-    NSString* tempURLString = [@"http://example.com/path?" stringByAppendingString:requestString];
-    NSURLComponents* URLComponents = [NSURLComponents componentsWithString:tempURLString];
-    for (NSURLQueryItem* queryItem in URLComponents.queryItems)
-    {
-        if ([queryItem.name isEqualToString:kCountlyQSKeyUserDetails])
-        {
-            NSString* unescapedValue = [queryItem.value stringByRemovingPercentEncoding];
-            if (!unescapedValue)
-                return nil;
 
-            NSDictionary* pathDictionary = [NSJSONSerialization JSONObjectWithData:[unescapedValue cly_dataUTF8] options:0 error:nil];
-            localPicturePath = pathDictionary[kCountlyLocalPicturePath];
-            break;
-        }
-    }
+    NSString* userDetails = [queryString cly_valueForQueryStringKey:kCountlyQSKeyUserDetails];
+    NSString* unescapedUserDetails = [userDetails stringByRemovingPercentEncoding];
+    if (!unescapedUserDetails)
+        return nil;
 
-    if (!localPicturePath || !localPicturePath.length)
+    NSDictionary* pathDictionary = [NSJSONSerialization JSONObjectWithData:[unescapedUserDetails cly_dataUTF8] options:0 error:nil];
+    localPicturePath = pathDictionary[kCountlyLocalPicturePath];
+
+    if (!localPicturePath.length)
         return nil;
 
     COUNTLY_LOG(@"Local picture path successfully extracted from query string: %@", localPicturePath);
@@ -590,13 +604,20 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (NSURLSession *)URLSession
 {
-    if (self.pinnedCertificates)
+    if (!_URLSession)
     {
-        COUNTLY_LOG(@"%d pinned certificate(s) specified in config.", (int)self.pinnedCertificates.count);
-        return [NSURLSession sessionWithConfiguration:self.URLSessionConfiguration delegate:self delegateQueue:nil];
+        if (self.pinnedCertificates)
+        {
+            COUNTLY_LOG(@"%d pinned certificate(s) specified in config.", (int)self.pinnedCertificates.count);
+            _URLSession = [NSURLSession sessionWithConfiguration:self.URLSessionConfiguration delegate:self delegateQueue:nil];
+        }
+        else
+        {
+            _URLSession = [NSURLSession sessionWithConfiguration:self.URLSessionConfiguration];
+        }
     }
 
-    return [NSURLSession sessionWithConfiguration:self.URLSessionConfiguration];
+    return _URLSession;
 }
 
 - (void)URLSession:(NSURLSession *)session didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential *))completionHandler

@@ -14,7 +14,8 @@
 #import "CountlyCrashReporter.h"
 #import "CountlyConfig.h"
 #import "CountlyViewTracking.h"
-#import "CountlyStarRating.h"
+#import "CountlyFeedbacks.h"
+#import "CountlyFeedbackWidget.h"
 #import "CountlyPushNotifications.h"
 #import "CountlyNotificationService.h"
 #import "CountlyConsentManager.h"
@@ -51,6 +52,7 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
     CLYErrorFeedbackWidgetNotAvailable = 10001,
     CLYErrorFeedbackWidgetNotTargetedForDevice = 10002,
     CLYErrorRemoteConfigGeneralAPIError = 10011,
+    CLYErrorFeedbacksGeneralAPIError = 10012,
 };
 
 @interface CountlyCommon : NSObject
@@ -97,6 +99,8 @@ void CountlyPrint(NSString *stringToPrint);
 @interface CLYButton : UIButton
 @property (nonatomic, copy) void (^onClick)(id sender);
 + (CLYButton *)dismissAlertButton;
+- (void)positionToTopRight;
+- (void)positionToTopRightConsideringStatusBar;
 @end
 #endif
 
@@ -108,6 +112,7 @@ void CountlyPrint(NSString *stringToPrint);
 - (NSString *)cly_URLEscaped;
 - (NSString *)cly_SHA256;
 - (NSData *)cly_dataUTF8;
+- (NSString *)cly_valueForQueryStringKey:(NSString *)key;
 @end
 
 @interface NSArray (Countly)
