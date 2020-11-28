@@ -1,3 +1,5 @@
+## 20.11.1
+
 ## 20.11.0
 - Added Surveys and NPS feedback widgets
 - Added Swift Package Manager support
