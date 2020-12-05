@@ -71,6 +71,7 @@ long long appLoadStartTime;
 
     CountlyCommon.sharedInstance.hasStarted = YES;
     CountlyCommon.sharedInstance.enableDebug = config.enableDebug;
+    CountlyCommon.sharedInstance.loggerDelegate = config.loggerDelegate;
     CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
 
     if (!config.appKey.length || [config.appKey isEqualToString:@"YOUR_APP_KEY"])
