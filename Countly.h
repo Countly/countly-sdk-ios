@@ -327,7 +327,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param options Bitwise combination of notification types (badge, sound or alert) the app wants to display
  * @param completionHandler A completion handler block to be executed when user answers notification permission dialog
  */
-- (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler API_AVAILABLE(ios(10.0), macos(10.14));
+- (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * __nullable error))completionHandler API_AVAILABLE(ios(10.0), macos(10.14));
 
 /**
  * Records action event for a manually presented push notification with custom action buttons.
@@ -560,7 +560,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param widgetID ID of the feedback widget created on Countly Server.
  * @param completionHandler A completion handler block to be executed when feedback widget is dismissed by user or there is an error.
  */
-- (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler;
+- (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * __nullable error))completionHandler;
 
 /**
  * Fetches a list of available feedback widgets.
@@ -571,7 +571,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion - Current device ID is @c CLYTemporaryDeviceID.
  * @param completionHandler A completion handler block to be executed when list is fetched successfully or there is an error.
  */
-- (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> *feedbackWidgets, NSError *error))completionHandler;
+- (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> * __nullable feedbackWidgets, NSError * __nullable error))completionHandler;
 
 #endif
 
@@ -607,7 +607,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion - Current device ID is @c CLYTemporaryDeviceID.
  * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure.
  */
-- (void)updateRemoteConfigWithCompletionHandler:(void (^)(NSError * error))completionHandler;
+- (void)updateRemoteConfigWithCompletionHandler:(void (^)(NSError * __nullable error))completionHandler;
 
 /**
  * Manually updates locally stored remote config values only for specified keys, by fetching latest values from Countly Server, and executes completion handler.
@@ -618,7 +618,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param keys An array of remote config keys to update
  * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure
  */
-- (void)updateRemoteConfigOnlyForKeys:(NSArray *)keys completionHandler:(void (^)(NSError * error))completionHandler;
+- (void)updateRemoteConfigOnlyForKeys:(NSArray *)keys completionHandler:(void (^)(NSError * __nullable error))completionHandler;
 
 /**
  * Manually updates locally stored remote config values except for specified keys, by fetching latest values from Countly Server, and executes completion handler.
@@ -629,7 +629,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param omitKeys An array of remote config keys to omit from updating
  * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure
  */
-- (void)updateRemoteConfigExceptForKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler;
+- (void)updateRemoteConfigExceptForKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * __nullable error))completionHandler;
 
 
 
