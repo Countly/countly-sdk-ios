@@ -1,4 +1,7 @@
 ## 20.11.1
+- Added `loggerDelegate` initial config property for receiving internal logs on production builds
+- Fixed manual view tracking state clean up when view tracking consent is cancelled
+- Updated CountlyFeedbackWidget.h as public header file in Xcode project file for Carthage 
 
 ## 20.11.0
 - Added Surveys and NPS feedback widgets
