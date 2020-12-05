@@ -564,7 +564,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Fetches a list of available feedback widgets.
- * @discussion When feedback widgets are fetched succesfully, @c completionHandler will be exeuted with an array of @c CountlyFeedbackWidget objects.
+ * @discussion When feedback widgets are fetched successfully, @c completionHandler will be executed with an array of @c CountlyFeedbackWidget objects.
  * @discussion Otherwise, @c completionHandler will be executed with an @c NSError.
  * @discussion Calls to this method will be ignored and @c completionHandler will not be executed if:
  * @discussion - Consent for @c CLYConsentFeedback is not given, while @c requiresConsent flag is set on initial configuration.
