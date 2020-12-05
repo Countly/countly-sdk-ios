@@ -40,6 +40,9 @@ NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTran
 
 NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
 
+NSString* const kCountlyInternalLogPrefix = @"[Countly] ";
+
+
 @implementation CountlyCommon
 
 + (instancetype)sharedInstance
@@ -81,21 +84,31 @@ NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
 
 void CountlyInternalLog(NSString *format, ...)
 {
-    if (!CountlyCommon.sharedInstance.enableDebug)
+    if (!CountlyCommon.sharedInstance.enableDebug && !CountlyCommon.sharedInstance.loggerDelegate)
         return;
 
     va_list args;
     va_start(args, format);
 
     NSString* logString = [NSString.alloc initWithFormat:format arguments:args];
-    CountlyPrint(logString);
+
+#if DEBUG
+    if (CountlyCommon.sharedInstance.enableDebug)
+        CountlyPrint(logString);
+#endif
+
+    if (CountlyCommon.sharedInstance.loggerDelegate)
+    {
+        NSString* logStringWithPrefix = [NSString stringWithFormat:@"%@%@", kCountlyInternalLogPrefix, logString];
+        [CountlyCommon.sharedInstance.loggerDelegate internalLog:logStringWithPrefix];
+    }
 
     va_end(args);
 }
 
 void CountlyPrint(NSString *stringToPrint)
 {
-    NSLog(@"[Countly] %@", stringToPrint);
+    NSLog(@"%@%@", kCountlyInternalLogPrefix, stringToPrint);
 }
 
 #pragma mark - Time/Date related methods
