@@ -202,9 +202,6 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)stopAutoViewTracking
 {
-    if (!self.isEnabledOnInitialConfig)
-        return;
-
     self.isAutoViewTrackingActive = NO;
 
     self.lastView = nil;

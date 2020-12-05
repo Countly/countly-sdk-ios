@@ -23,11 +23,7 @@
 #import "CountlyRemoteConfig.h"
 #import "CountlyPerformanceMonitoring.h"
 
-#if DEBUG
 #define COUNTLY_LOG(fmt, ...) CountlyInternalLog(fmt, ##__VA_ARGS__)
-#else
-#define COUNTLY_LOG(...)
-#endif
 
 #if (TARGET_OS_IOS)
 #import <UIKit/UIKit.h>
@@ -62,6 +58,7 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 
 @property (nonatomic) BOOL hasStarted;
 @property (nonatomic) BOOL enableDebug;
+@property (nonatomic, weak) id <CountlyLoggerDelegate> loggerDelegate;
 @property (nonatomic) BOOL enableAppleWatch;
 @property (nonatomic, copy) NSString* attributionID;
 @property (nonatomic) BOOL manualSessionHandling;

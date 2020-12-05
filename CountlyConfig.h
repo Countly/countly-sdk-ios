@@ -95,6 +95,13 @@ extern CLYMetricKey const CLYMetricKeyLocale;
 extern CLYMetricKey const CLYMetricKeyHasWatch;
 extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
 
+
+@protocol CountlyLoggerDelegate<NSObject>
+@required
+- (void)internalLog:(NSString *)log;
+@end
+
+
 @interface CountlyConfig : NSObject
 
 /**
@@ -118,6 +125,13 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
  * @discussion If set, SDK will print internal logs to console for debugging. Internal logging works only for Development environment where @c DEBUG flag is set in Build Settings.
  */
 @property (nonatomic) BOOL enableDebug;
+
+/**
+ * For receiving SDK's internal logs even in production builds.
+ * @discussion If set, SDK will forward its internal logs to this delegate object regardless of @c enableDebug initial config value.
+ * @discussion @c internalLog: method declared as @c required in @c CountlyLoggerDelegate protocol will be called with log @c NSString.
+ */
+@property (nonatomic, weak) id <CountlyLoggerDelegate> loggerDelegate;
 
 #pragma mark -
 
