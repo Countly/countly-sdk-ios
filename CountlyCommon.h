@@ -23,11 +23,7 @@
 #import "CountlyRemoteConfig.h"
 #import "CountlyPerformanceMonitoring.h"
 
-#if DEBUG
 #define COUNTLY_LOG(fmt, ...) CountlyInternalLog(fmt, ##__VA_ARGS__)
-#else
-#define COUNTLY_LOG(...)
-#endif
 
 #if (TARGET_OS_IOS)
 #import <UIKit/UIKit.h>
