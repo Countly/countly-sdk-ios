@@ -6,9 +6,9 @@
 [![CocoaPods Compatible](https://img.shields.io/cocoapods/v/Countly.svg)](https://support.count.ly/hc/en-us/articles/360037753511-iOS-watchOS-tvOS-macOS#cocoapods)
 [![Carthage Compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)](https://support.count.ly/hc/en-us/articles/360037753511-iOS-watchOS-tvOS-macOS#carthage)
 
-## What's Countly?
-[Countly](https://count.ly) is an innovative, real-time, open source [mobile](https://count.ly/mobile-analytics) & [web analytics](https://count.ly/web-analytics), [rich push notifications](https://count.ly/plugins/rich-push-notifications) and [crash reporting](https://count.ly/plugins/crash-analytics) platform powering more than 5000 web sites and 18000 mobile applications as of 2020.  
-It collects data from mobile phones, tablets, smart watches and other internet-connected devices, and visualizes this information to analyze application usage and end-user behavior.
+## What is Countly?
+[Countly](http://count.ly) is a product analytics solution and innovation enabler that helps teams track product performance and customer journey and behavior across [mobile](https://count.ly/mobile-analytics), [web](http://count.ly/web-analytics), and [desktop](https://count.ly/desktop-analytics) applications. [Ensuring privacy by design](https://count.ly/your-data-your-rules), Countly allows you to innovate and enhance your products to provide personalized and customized customer experiences, and meet key business and revenue goals.
+Track, measure, and take action - all without leaving Countly.
 
 ## About this SDK
 This repository includes Countly iOS SDK with watchOS, tvOS & macOS support.
