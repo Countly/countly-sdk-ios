@@ -239,14 +239,14 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 
     if (consentForSessions)
     {
-        COUNTLY_LOG(@"Consent for Session is given.");
+        CLY_LOG_D(@"Consent for Session is given.");
 
         if (!CountlyCommon.sharedInstance.manualSessionHandling)
             [CountlyConnectionManager.sharedInstance beginSession];
     }
     else
     {
-        COUNTLY_LOG(@"Consent for Session is cancelled.");
+        CLY_LOG_D(@"Consent for Session is cancelled.");
     }
 
     self.consentChanges[CLYConsentSessions] = @(consentForSessions);
@@ -259,11 +259,11 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 
     if (consentForEvents)
     {
-        COUNTLY_LOG(@"Consent for Events is given.");
+        CLY_LOG_D(@"Consent for Events is given.");
     }
     else
     {
-        COUNTLY_LOG(@"Consent for Events is cancelled.");
+        CLY_LOG_D(@"Consent for Events is cancelled.");
 
         [CountlyConnectionManager.sharedInstance sendEvents];
         [CountlyPersistency.sharedInstance clearAllTimedEvents];
@@ -279,11 +279,11 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 
     if (consentForUserDetails)
     {
-        COUNTLY_LOG(@"Consent for UserDetails is given.");
+        CLY_LOG_D(@"Consent for UserDetails is given.");
     }
     else
     {
-        COUNTLY_LOG(@"Consent for UserDetails is cancelled.");
+        CLY_LOG_D(@"Consent for UserDetails is cancelled.");
 
         [CountlyUserDetails.sharedInstance clearUserDetails];
     }
@@ -298,13 +298,13 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 
     if (consentForCrashReporting)
     {
-        COUNTLY_LOG(@"Consent for CrashReporting is given.");
+        CLY_LOG_D(@"Consent for CrashReporting is given.");
 
         [CountlyCrashReporter.sharedInstance startCrashReporting];
     }
     else
     {
-        COUNTLY_LOG(@"Consent for CrashReporting is cancelled.");
+        CLY_LOG_D(@"Consent for CrashReporting is cancelled.");
 
         [CountlyCrashReporter.sharedInstance stopCrashReporting];
     }
@@ -320,7 +320,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
     if (consentForPushNotifications)
     {
-        COUNTLY_LOG(@"Consent for PushNotifications is given.");
+        CLY_LOG_D(@"Consent for PushNotifications is given.");
 
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
         [CountlyPushNotifications.sharedInstance startPushNotifications];
@@ -328,7 +328,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     }
     else
     {
-        COUNTLY_LOG(@"Consent for PushNotifications is cancelled.");
+        CLY_LOG_D(@"Consent for PushNotifications is cancelled.");
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
         [CountlyPushNotifications.sharedInstance stopPushNotifications];
 #endif
@@ -345,13 +345,13 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 
     if (consentForLocation)
     {
-        COUNTLY_LOG(@"Consent for Location is given.");
+        CLY_LOG_D(@"Consent for Location is given.");
 
         [CountlyLocationManager.sharedInstance sendLocationInfo];
     }
     else
     {
-        COUNTLY_LOG(@"Consent for Location is cancelled.");
+        CLY_LOG_D(@"Consent for Location is cancelled.");
     }
 
     self.consentChanges[CLYConsentLocation] = @(consentForLocation);
@@ -365,13 +365,13 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (consentForViewTracking)
     {
-        COUNTLY_LOG(@"Consent for ViewTracking is given.");
+        CLY_LOG_D(@"Consent for ViewTracking is given.");
 
         [CountlyViewTracking.sharedInstance startAutoViewTracking];
     }
     else
     {
-        COUNTLY_LOG(@"Consent for ViewTracking is cancelled.");
+        CLY_LOG_D(@"Consent for ViewTracking is cancelled.");
 
         [CountlyViewTracking.sharedInstance stopAutoViewTracking];
     }
@@ -387,13 +387,13 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 
     if (consentForAttribution)
     {
-        COUNTLY_LOG(@"Consent for Attribution is given.");
+        CLY_LOG_D(@"Consent for Attribution is given.");
 
         [CountlyConnectionManager.sharedInstance sendAttribution];
     }
     else
     {
-        COUNTLY_LOG(@"Consent for Attribution is cancelled.");
+        CLY_LOG_D(@"Consent for Attribution is cancelled.");
     }
 
     self.consentChanges[CLYConsentAttribution] = @(consentForAttribution);
@@ -407,13 +407,13 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 #if (TARGET_OS_IOS || TARGET_OS_WATCH)
     if (consentForAppleWatch)
     {
-        COUNTLY_LOG(@"Consent for AppleWatch is given.");
+        CLY_LOG_D(@"Consent for AppleWatch is given.");
 
         [CountlyCommon.sharedInstance startAppleWatchMatching];
     }
     else
     {
-        COUNTLY_LOG(@"Consent for AppleWatch is cancelled.");
+        CLY_LOG_D(@"Consent for AppleWatch is cancelled.");
     }
 #endif
 
@@ -428,13 +428,13 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 #if (TARGET_OS_IOS)
     if (consentForPerformanceMonitoring)
     {
-        COUNTLY_LOG(@"Consent for PerformanceMonitoring is given.");
+        CLY_LOG_D(@"Consent for PerformanceMonitoring is given.");
         
         [CountlyPerformanceMonitoring.sharedInstance startPerformanceMonitoring];
     }
     else
     {
-        COUNTLY_LOG(@"Consent for PerformanceMonitoring is cancelled.");
+        CLY_LOG_D(@"Consent for PerformanceMonitoring is cancelled.");
 
         [CountlyPerformanceMonitoring.sharedInstance stopPerformanceMonitoring];
     }
@@ -450,13 +450,13 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 #if (TARGET_OS_IOS)
     if (consentForFeedback)
     {
-        COUNTLY_LOG(@"Consent for Feedback is given.");
+        CLY_LOG_D(@"Consent for Feedback is given.");
 
         [CountlyFeedbacks.sharedInstance checkForStarRatingAutoAsk];
     }
     else
     {
-        COUNTLY_LOG(@"Consent for Feedback is cancelled.");
+        CLY_LOG_D(@"Consent for Feedback is cancelled.");
     }
 #endif
 
@@ -469,13 +469,13 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 
     if (consentForRemoteConfig)
     {
-        COUNTLY_LOG(@"Consent for RemoteConfig is given.");
+        CLY_LOG_D(@"Consent for RemoteConfig is given.");
 
         [CountlyRemoteConfig.sharedInstance startRemoteConfig];
     }
     else
     {
-        COUNTLY_LOG(@"Consent for RemoteConfig is cancelled.");
+        CLY_LOG_D(@"Consent for RemoteConfig is cancelled.");
     }
 
     self.consentChanges[CLYConsentRemoteConfig] = @(consentForRemoteConfig);

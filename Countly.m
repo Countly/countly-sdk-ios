@@ -80,7 +80,7 @@ long long appLoadStartTime;
     if (!config.host.length || [config.host isEqualToString:@"https://YOUR_COUNTLY_SERVER"])
         [NSException raise:@"CountlyHostNotSetException" format:@"host property on CountlyConfig object is not set"];
 
-    COUNTLY_LOG(@"Initializing with %@ SDK v%@", CountlyCommon.sharedInstance.SDKName, CountlyCommon.sharedInstance.SDKVersion);
+    CLY_LOG_I(@"Initializing with %@ SDK v%@", CountlyCommon.sharedInstance.SDKName, CountlyCommon.sharedInstance.SDKVersion);
 
     if (!CountlyDeviceInfo.sharedInstance.deviceID || config.resetStoredDeviceID)
     {
@@ -261,7 +261,7 @@ long long appLoadStartTime;
     if (isSuspended)
         return;
 
-    COUNTLY_LOG(@"Suspending...");
+    CLY_LOG_D(@"Suspending...");
 
     isSuspended = YES;
 
@@ -303,19 +303,19 @@ long long appLoadStartTime;
 
 - (void)applicationDidEnterBackground:(NSNotification *)notification
 {
-    COUNTLY_LOG(@"App did enter background.");
+    CLY_LOG_D(@"App did enter background.");
     [self suspend];
 }
 
 - (void)applicationWillEnterForeground:(NSNotification *)notification
 {
-    COUNTLY_LOG(@"App will enter foreground.");
+    CLY_LOG_D(@"App will enter foreground.");
     [self resume];
 }
 
 - (void)applicationWillTerminate:(NSNotification *)notification
 {
-    COUNTLY_LOG(@"App will terminate.");
+    CLY_LOG_D(@"App will terminate.");
 
     CountlyConnectionManager.sharedInstance.isTerminating = YES;
 
@@ -377,13 +377,13 @@ long long appLoadStartTime;
 
     if ([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
     {
-        COUNTLY_LOG(@"Attempted to set the same device ID again. So, setting new device ID is aborted.");
+        CLY_LOG_W(@"Attempted to set the same device ID again. So, setting new device ID is aborted.");
         return;
     }
 
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
     {
-        COUNTLY_LOG(@"Going out of CLYTemporaryDeviceID mode and switching back to normal mode.");
+        CLY_LOG_I(@"Going out of CLYTemporaryDeviceID mode and switching back to normal mode.");
 
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
 
@@ -398,7 +398,7 @@ long long appLoadStartTime;
 
     if ([deviceID isEqualToString:CLYTemporaryDeviceID] && onServer)
     {
-        COUNTLY_LOG(@"Attempted to set device ID as CLYTemporaryDeviceID with onServer option. So, onServer value is overridden as NO.");
+        CLY_LOG_W(@"Attempted to set device ID as CLYTemporaryDeviceID with onServer option. So, onServer value is overridden as NO.");
         onServer = NO;
     }
 
@@ -581,7 +581,7 @@ long long appLoadStartTime;
 
     if (!event)
     {
-        COUNTLY_LOG(@"Event with key '%@' not started yet or cancelled/ended before!", key);
+        CLY_LOG_W(@"Event with key '%@' not started yet or cancelled/ended before!", key);
         return;
     }
 
@@ -602,11 +602,11 @@ long long appLoadStartTime;
 
     if (!event)
     {
-        COUNTLY_LOG(@"Event with key '%@' not started yet or cancelled/ended before!", key);
+        CLY_LOG_W(@"Event with key '%@' not started yet or cancelled/ended before!", key);
         return;
     }
 
-    COUNTLY_LOG(@"Event with key '%@' cancelled!", key);
+    CLY_LOG_D(@"Event with key '%@' cancelled!", key);
 }
 
 
@@ -652,14 +652,14 @@ long long appLoadStartTime;
 
 - (void)recordLocation:(CLLocationCoordinate2D)location
 {
-    COUNTLY_LOG(@"recordLocation: method is deprecated. Please use recordLocation:city:countryCode:IP: method instead.");
+    CLY_LOG_W(@"recordLocation: method is deprecated. Please use recordLocation:city:countryCode:IP: method instead.");
 
     [CountlyLocationManager.sharedInstance recordLocation:location city:nil ISOCountryCode:nil IP:nil];
 }
 
 - (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode
 {
-    COUNTLY_LOG(@"recordCity:andISOCountryCode: method is deprecated. Please use recordLocation:city:countryCode:IP: method instead.");
+    CLY_LOG_W(@"recordCity:andISOCountryCode: method is deprecated. Please use recordLocation:city:countryCode:IP: method instead.");
 
     if (!city.length && !ISOCountryCode.length)
         return;
@@ -669,7 +669,7 @@ long long appLoadStartTime;
 
 - (void)recordIP:(NSString *)IP
 {
-    COUNTLY_LOG(@"recordIP: method is deprecated. Please use recordLocation:city:countryCode:IP: method instead.");
+    CLY_LOG_W(@"recordIP: method is deprecated. Please use recordLocation:city:countryCode:IP: method instead.");
 
     if (!IP.length)
         return;

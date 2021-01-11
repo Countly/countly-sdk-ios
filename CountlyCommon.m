@@ -175,7 +175,7 @@ void CountlyPrint(NSString *stringToPrint)
         if (WCSession.defaultSession.paired && WCSession.defaultSession.watchAppInstalled)
         {
             [WCSession.defaultSession transferUserInfo:@{kCountlyParentDeviceIDTransferKey: CountlyDeviceInfo.sharedInstance.deviceID}];
-            COUNTLY_LOG(@"Transferring parent device ID %@ ...", CountlyDeviceInfo.sharedInstance.deviceID);
+            CLY_LOG_D(@"Transferring parent device ID %@ ...", CountlyDeviceInfo.sharedInstance.deviceID);
         }
     }
 #endif
@@ -218,17 +218,17 @@ void CountlyPrint(NSString *stringToPrint)
 
     if (!mode)
     {
-        COUNTLY_LOG(@"Interface orientation is not landscape or portrait.");
+        CLY_LOG_D(@"Interface orientation is not landscape or portrait.");
         return;
     }
 
     if ([mode isEqualToString:self.lastInterfaceOrientation])
     {
-//      COUNTLY_LOG(@"Interface orientation is still same: %@", self.lastInterfaceOrientation);
+//      CLY_LOG_D(@"Interface orientation is still same: %@", self.lastInterfaceOrientation);
         return;
     }
 
-    COUNTLY_LOG(@"Interface orientation is now: %@", mode);
+    CLY_LOG_D(@"Interface orientation is now: %@", mode);
     self.lastInterfaceOrientation = mode;
 
     if (!CountlyConsentManager.sharedInstance.consentForUserDetails)
@@ -413,7 +413,7 @@ const CGFloat kCountlyDismissButtonStandardStatusBarHeight = 20.0;
 #if (TARGET_OS_WATCH)
 - (void)session:(WCSession *)session didReceiveUserInfo:(NSDictionary<NSString *, id> *)userInfo
 {
-    COUNTLY_LOG(@"Watch received user info: \n%@", userInfo);
+    CLY_LOG_D(@"Watch received user info: \n%@", userInfo);
 
     NSString* parentDeviceID = userInfo[kCountlyParentDeviceIDTransferKey];
 
@@ -421,14 +421,14 @@ const CGFloat kCountlyDismissButtonStandardStatusBarHeight = 20.0;
     {
         [CountlyConnectionManager.sharedInstance sendParentDeviceID:parentDeviceID];
 
-        COUNTLY_LOG(@"Parent device ID %@ added to queue.", parentDeviceID);
+        CLY_LOG_D(@"Parent device ID %@ added to queue.", parentDeviceID);
 
         [CountlyPersistency.sharedInstance storeWatchParentDeviceID:parentDeviceID];
     }
 
     if ([self.originalDelegate respondsToSelector:@selector(session:didReceiveUserInfo:)])
     {
-        COUNTLY_LOG(@"Forwarding WCSession user info to original delegate.");
+        CLY_LOG_D(@"Forwarding WCSession user info to original delegate.");
 
         [self.originalDelegate session:session didReceiveUserInfo:userInfo];
     }
@@ -445,7 +445,7 @@ NSString* CountlyJSONFromObject(id object)
 
     if (![NSJSONSerialization isValidJSONObject:object])
     {
-        COUNTLY_LOG(@"Object is not valid for converting to JSON!");
+        CLY_LOG_W(@"Object is not valid for converting to JSON!");
         return nil;
     }
 
@@ -453,7 +453,7 @@ NSString* CountlyJSONFromObject(id object)
     NSData *data = [NSJSONSerialization dataWithJSONObject:object options:0 error:&error];
     if (error)
     {
-        COUNTLY_LOG(@"JSON can not be created: \n%@", error);
+        CLY_LOG_W(@"JSON can not be created: \n%@", error);
     }
 
     return [data cly_stringUTF8];

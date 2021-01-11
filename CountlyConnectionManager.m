@@ -89,49 +89,49 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)proceedOnQueue
 {
-    COUNTLY_LOG(@"Proceeding on queue...");
+    CLY_LOG_D(@"Proceeding on queue...");
 
     if (self.connection)
     {
-        COUNTLY_LOG(@"Proceeding on queue is aborted: Already has a request in process!");
+        CLY_LOG_D(@"Proceeding on queue is aborted: Already has a request in process!");
         return;
     }
 
     if (isCrashing)
     {
-        COUNTLY_LOG(@"Proceeding on queue is aborted: Application is crashing!");
+        CLY_LOG_D(@"Proceeding on queue is aborted: Application is crashing!");
         return;
     }
 
     if (self.isTerminating)
     {
-        COUNTLY_LOG(@"Proceeding on queue is aborted: Application is terminating!");
+        CLY_LOG_D(@"Proceeding on queue is aborted: Application is terminating!");
         return;
     }
 
     if (self.customHeaderFieldName && !self.customHeaderFieldValue)
     {
-        COUNTLY_LOG(@"Proceeding on queue is aborted: customHeaderFieldName specified on config, but customHeaderFieldValue not set yet!");
+        CLY_LOG_D(@"Proceeding on queue is aborted: customHeaderFieldName specified on config, but customHeaderFieldValue not set yet!");
         return;
     }
 
     if (CountlyPersistency.sharedInstance.isQueueBeingModified)
     {
-        COUNTLY_LOG(@"Proceeding on queue is aborted: Queue is being modified!");
+        CLY_LOG_D(@"Proceeding on queue is aborted: Queue is being modified!");
         return;
     }
 
     NSString* firstItemInQueue = [CountlyPersistency.sharedInstance firstItemInQueue];
     if (!firstItemInQueue)
     {
-        COUNTLY_LOG(@"Queue is empty. All requests are processed.");
+        CLY_LOG_D(@"Queue is empty. All requests are processed.");
         return;
     }
 
     NSString* temporaryDeviceIDQueryString = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, CLYTemporaryDeviceID];
     if ([firstItemInQueue containsString:temporaryDeviceIDQueryString])
     {
-        COUNTLY_LOG(@"Proceeding on queue is aborted: Device ID in request is CLYTemporaryDeviceID!");
+        CLY_LOG_D(@"Proceeding on queue is aborted: Device ID in request is CLYTemporaryDeviceID!");
         return;
     }
 
@@ -173,7 +173,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         {
             if ([self isRequestSuccessful:response])
             {
-                COUNTLY_LOG(@"Request <%p> successfully completed.", request);
+                CLY_LOG_D(@"Request <%p> successfully completed.", request);
 
                 [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
 
@@ -183,12 +183,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
             }
             else
             {
-                COUNTLY_LOG(@"Request <%p> failed!\nServer reply: %@", request, [data cly_stringUTF8]);
+                CLY_LOG_D(@"Request <%p> failed!\nServer reply: %@", request, [data cly_stringUTF8]);
             }
         }
         else
         {
-            COUNTLY_LOG(@"Request <%p> failed!\nError: %@", request, error);
+            CLY_LOG_D(@"Request <%p> failed!\nError: %@", request, error);
 #if (TARGET_OS_WATCH)
             [CountlyPersistency.sharedInstance saveToFile];
 #endif
@@ -197,7 +197,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     [self.connection resume];
 
-    COUNTLY_LOG(@"Request <%p> started:\n[%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, request.HTTPBody ? ([request.HTTPBody cly_stringUTF8] ?: @"Picture uploading...") : @"");
+    CLY_LOG_D(@"Request <%p> started:\n[%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, request.HTTPBody ? ([request.HTTPBody cly_stringUTF8] ?: @"Picture uploading...") : @"");
 }
 
 #pragma mark ---
@@ -322,7 +322,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 {
     if (!report)
     {
-        COUNTLY_LOG(@"Crash report is nil. Converting to JSON may have failed due to custom objects in initial config's crashSegmentation property.");
+        CLY_LOG_W(@"Crash report is nil. Converting to JSON may have failed due to custom objects in initial config's crashSegmentation property.");
         return;
     }
 
@@ -346,7 +346,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     if (self.customHeaderFieldName && !self.customHeaderFieldValue)
     {
-        COUNTLY_LOG(@"customHeaderFieldName specified on config, but customHeaderFieldValue not set! Crash report stored to be sent later!");
+        CLY_LOG_D(@"customHeaderFieldName specified on config, but customHeaderFieldValue not set! Crash report stored to be sent later!");
 
         [CountlyPersistency.sharedInstance addToQueue:queryString];
         [CountlyPersistency.sharedInstance saveToFileSync];
@@ -355,7 +355,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
     {
-        COUNTLY_LOG(@"Device ID is set as CLYTemporaryDeviceID! Crash report stored to be sent later!");
+        CLY_LOG_D(@"Device ID is set as CLYTemporaryDeviceID! Crash report stored to be sent later!");
 
         [CountlyPersistency.sharedInstance addToQueue:queryString];
         [CountlyPersistency.sharedInstance saveToFileSync];
@@ -378,20 +378,20 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     {
         if (error || ![self isRequestSuccessful:response])
         {
-            COUNTLY_LOG(@"Crash Report Request <%p> failed!\n%@: %@", request, error ? @"Error" : @"Server reply", error ?: [data cly_stringUTF8]);
+            CLY_LOG_D(@"Crash Report Request <%p> failed!\n%@: %@", request, error ? @"Error" : @"Server reply", error ?: [data cly_stringUTF8]);
             [CountlyPersistency.sharedInstance addToQueue:queryString];
             [CountlyPersistency.sharedInstance saveToFileSync];
         }
         else
         {
-            COUNTLY_LOG(@"Crash Report Request <%p> successfully completed.", request);
+            CLY_LOG_D(@"Crash Report Request <%p> successfully completed.", request);
         }
 
         dispatch_semaphore_signal(semaphore);
 
     }] resume];
 
-    COUNTLY_LOG(@"Crash Report Request <%p> started:\n[%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, [request.HTTPBody cly_stringUTF8]);
+    CLY_LOG_D(@"Crash Report Request <%p> started:\n[%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, [request.HTTPBody cly_stringUTF8]);
 
     dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
 }
@@ -526,7 +526,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     if (!localPicturePath.length)
         return nil;
 
-    COUNTLY_LOG(@"Local picture path successfully extracted from query string: %@", localPicturePath);
+    CLY_LOG_D(@"Local picture path successfully extracted from query string: %@", localPicturePath);
 
     NSArray* allowedFileTypes = @[@"gif", @"png", @"jpg", @"jpeg"];
     NSString* fileExt = localPicturePath.pathExtension.lowercaseString;
@@ -539,11 +539,11 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     if (!imageData)
     {
-        COUNTLY_LOG(@"Local picture data can not be read!");
+        CLY_LOG_W(@"Local picture data can not be read!");
         return nil;
     }
 
-    COUNTLY_LOG(@"Local picture data read successfully.");
+    CLY_LOG_D(@"Local picture data read successfully.");
 
     //NOTE: Overcome failing PNG file upload if data is directly read from disk
     if (fileExtIndex == 1)
@@ -608,7 +608,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     {
         if (self.pinnedCertificates)
         {
-            COUNTLY_LOG(@"%d pinned certificate(s) specified in config.", (int)self.pinnedCertificates.count);
+            CLY_LOG_D(@"%d pinned certificate(s) specified in config.", (int)self.pinnedCertificates.count);
             _URLSession = [NSURLSession sessionWithConfiguration:self.URLSessionConfiguration delegate:self delegateQueue:nil];
         }
         else
@@ -644,7 +644,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
         if (serverKey != NULL && localKey != NULL && [(__bridge id)serverKey isEqual:(__bridge id)localKey])
         {
-            COUNTLY_LOG(@"Pinned certificate and server certificate match.");
+            CLY_LOG_D(@"Pinned certificate and server certificate match.");
 
             isLocalAndServerCertMatch = YES;
             CFRelease(localKey);
@@ -660,18 +660,18 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     if (isLocalAndServerCertMatch && isServerCertValid)
     {
-        COUNTLY_LOG(@"Pinned certificate check is successful. Proceeding with request.");
+        CLY_LOG_D(@"Pinned certificate check is successful. Proceeding with request.");
         completionHandler(NSURLSessionAuthChallengeUseCredential, [NSURLCredential credentialForTrust:serverTrust]);
     }
     else
     {
         if (!isLocalAndServerCertMatch)
-            COUNTLY_LOG(@"Pinned certificate and server certificate does not match!");
+            CLY_LOG_W(@"Pinned certificate and server certificate does not match!");
 
         if (!isServerCertValid)
-            COUNTLY_LOG(@"Server certificate is not valid! SecTrustEvaluate result is: %u", serverTrustResult);
+            CLY_LOG_W(@"Server certificate is not valid! SecTrustEvaluate result is: %u", serverTrustResult);
 
-        COUNTLY_LOG(@"Pinned certificate check failed! Cancelling request.");
+        CLY_LOG_D(@"Pinned certificate check failed! Cancelling request.");
         completionHandler(NSURLSessionAuthChallengeCancelAuthenticationChallenge, NULL);
     }
 

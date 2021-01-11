@@ -50,20 +50,20 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
         return;
 
-    COUNTLY_LOG(@"Fetching remote config on start...");
+    CLY_LOG_D(@"Fetching remote config on start...");
 
     [self fetchRemoteConfigForKeys:nil omitKeys:nil completionHandler:^(NSDictionary *remoteConfig, NSError *error)
     {
         if (!error)
         {
-            COUNTLY_LOG(@"Fetching remote config on start is successful. \n%@", remoteConfig);
+            CLY_LOG_D(@"Fetching remote config on start is successful. \n%@", remoteConfig);
 
             self.cachedRemoteConfig = remoteConfig;
             [CountlyPersistency.sharedInstance storeRemoteConfig:self.cachedRemoteConfig];
         }
         else
         {
-            COUNTLY_LOG(@"Fetching remote config on start failed: %@", error);
+            CLY_LOG_W(@"Fetching remote config on start failed: %@", error);
         }
 
         if (self.remoteConfigCompletionHandler)
@@ -79,13 +79,13 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
         return;
 
-    COUNTLY_LOG(@"Fetching remote config manually...");
+    CLY_LOG_D(@"Fetching remote config manually...");
 
     [self fetchRemoteConfigForKeys:keys omitKeys:omitKeys completionHandler:^(NSDictionary *remoteConfig, NSError *error)
     {
         if (!error)
         {
-            COUNTLY_LOG(@"Fetching remote config manually is successful. \n%@", remoteConfig);
+            CLY_LOG_D(@"Fetching remote config manually is successful. \n%@", remoteConfig);
 
             if (!keys && !omitKeys)
             {
@@ -102,7 +102,7 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
         }
         else
         {
-            COUNTLY_LOG(@"Fetching remote config manually failed: %@", error);
+            CLY_LOG_W(@"Fetching remote config manually failed: %@", error);
         }
 
         if (completionHandler)
@@ -150,7 +150,7 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
 
         if (error)
         {
-            COUNTLY_LOG(@"Remote Config Request <%p> failed!\nError: %@", request, error);
+            CLY_LOG_D(@"Remote Config Request <%p> failed!\nError: %@", request, error);
 
             dispatch_async(dispatch_get_main_queue(), ^
             {
@@ -160,7 +160,7 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
             return;
         }
 
-        COUNTLY_LOG(@"Remote Config Request <%p> successfully completed.", request);
+        CLY_LOG_D(@"Remote Config Request <%p> successfully completed.", request);
 
         dispatch_async(dispatch_get_main_queue(), ^
         {
@@ -170,7 +170,7 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
 
     [task resume];
 
-    COUNTLY_LOG(@"Remote Config Request <%p> started:\n[%@] %@", (id)request, request.HTTPMethod, request.URL.absoluteString);
+    CLY_LOG_D(@"Remote Config Request <%p> started:\n[%@] %@", (id)request, request.HTTPMethod, request.URL.absoluteString);
 }
 
 - (NSURLRequest *)remoteConfigRequestForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys

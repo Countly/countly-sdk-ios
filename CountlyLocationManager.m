@@ -55,11 +55,11 @@
 
     if (self.city && !self.ISOCountryCode)
     {
-        COUNTLY_LOG(@"City and Country Code should be set as a pair. Country Code is missing while City is set!");
+        CLY_LOG_W(@"City and Country Code should be set as a pair. Country Code is missing while City is set!");
     }
     else if (self.ISOCountryCode && !self.city)
     {
-        COUNTLY_LOG(@"City and Country Code should be set as a pair. City is missing while Country Code is set!");
+        CLY_LOG_W(@"City and Country Code should be set as a pair. City is missing while Country Code is set!");
     }
 
     if ((self.location || self.city || self.ISOCountryCode || self.IP))

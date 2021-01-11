@@ -114,7 +114,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
     [self endView];
 
-    COUNTLY_LOG(@"View tracking started: %@", viewName);
+    CLY_LOG_D(@"View tracking started: %@", viewName);
 
     NSMutableDictionary* segmentation = NSMutableDictionary.new;
     segmentation[kCountlyVTKeyName] = viewName;
@@ -152,7 +152,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         self.accumulatedTime = 0;
         [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventView segmentation:segmentation count:1 sum:0 duration:duration timestamp:self.lastViewStartTime];
 
-        COUNTLY_LOG(@"View tracking ended: %@ duration: %.17g", self.lastView, duration);
+        CLY_LOG_D(@"View tracking ended: %@ duration: %.17g", self.lastView, duration);
     }
 }
 

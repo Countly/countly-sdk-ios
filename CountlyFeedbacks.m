@@ -114,7 +114,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     }
     @catch (NSException* exception)
     {
-        COUNTLY_LOG(@"UIAlertController's contentViewController can not be set: \n%@", exception);
+        CLY_LOG_W(@"UIAlertController's contentViewController can not be set: \n%@", exception);
     }
 
     [CountlyCommon.sharedInstance tryPresentingViewController:self.alertController];
@@ -139,7 +139,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
     if (self.sessionCount == sessionCountSoFar)
     {
-        COUNTLY_LOG(@"Asking for star-rating as session count reached specified limit %d ...", (int)self.sessionCount);
+        CLY_LOG_D(@"Asking for star-rating as session count reached specified limit %d ...", (int)self.sessionCount);
 
         [self showDialog:self.ratingCompletionForAutoAsk];
 

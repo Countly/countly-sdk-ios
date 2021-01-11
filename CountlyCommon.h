@@ -23,7 +23,11 @@
 #import "CountlyRemoteConfig.h"
 #import "CountlyPerformanceMonitoring.h"
 
-#define COUNTLY_LOG(level, fmt, ...) CountlyInternalLog(level, fmt, ##__VA_ARGS__)
+#define CLY_LOG_E(fmt, ...) CountlyInternalLog(CLYInternalLogLevelError, fmt, ##__VA_ARGS__)
+#define CLY_LOG_W(fmt, ...) CountlyInternalLog(CLYInternalLogLevelWarning, fmt, ##__VA_ARGS__)
+#define CLY_LOG_I(fmt, ...) CountlyInternalLog(CLYInternalLogLevelInfo, fmt, ##__VA_ARGS__)
+#define CLY_LOG_D(fmt, ...) CountlyInternalLog(CLYInternalLogLevelDebug, fmt, ##__VA_ARGS__)
+#define CLY_LOG_V(fmt, ...) CountlyInternalLog(CLYInternalLogLevelVerbose, fmt, ##__VA_ARGS__)
 
 #if (TARGET_OS_IOS)
 #import <UIKit/UIKit.h>
