@@ -96,6 +96,18 @@ extern CLYMetricKey const CLYMetricKeyHasWatch;
 extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
 
 
+//NOTE: Internal log levels
+typedef enum : NSUInteger
+{
+    CLYInternalLogLevelNone,
+    CLYInternalLogLevelError,
+    CLYInternalLogLevelWarning,
+    CLYInternalLogLevelInfo,
+    CLYInternalLogLevelDebug,
+    CLYInternalLogLevelVerbose
+} CLYInternalLogLevel;
+
+
 @protocol CountlyLoggerDelegate<NSObject>
 @required
 - (void)internalLog:(NSString *)log;
