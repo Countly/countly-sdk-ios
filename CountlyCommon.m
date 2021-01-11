@@ -115,7 +115,7 @@ void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...)
     if (CountlyCommon.sharedInstance.loggerDelegate)
     {
         NSString* logStringWithPrefix = [NSString stringWithFormat:@"%@%@", kCountlyInternalLogPrefix, logString];
-        [CountlyCommon.sharedInstance.loggerDelegate internalLog:logStringWithPrefix];
+        [CountlyCommon.sharedInstance.loggerDelegate internalLog:logStringWithPrefix withLevel:level];
     }
 
     va_end(args);

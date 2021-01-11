@@ -109,8 +109,9 @@ typedef enum : NSUInteger
 
 
 @protocol CountlyLoggerDelegate<NSObject>
+- (void)internalLog:(NSString *)log DEPRECATED_MSG_ATTRIBUTE("Use 'internalLog:withLevel:' method instead!");
 @required
-- (void)internalLog:(NSString *)log;
+- (void)internalLog:(NSString *)log withLevel:(CLYInternalLogLevel)level;
 @end
 
 
@@ -141,7 +142,7 @@ typedef enum : NSUInteger
 /**
  * For receiving SDK's internal logs even in production builds.
  * @discussion If set, SDK will forward its internal logs to this delegate object regardless of @c enableDebug initial config value.
- * @discussion @c internalLog: method declared as @c required in @c CountlyLoggerDelegate protocol will be called with log @c NSString.
+ * @discussion @c internalLog:withLevel: method declared as @c required in @c CountlyLoggerDelegate protocol will be called with log @c NSString.
  */
 @property (nonatomic, weak) id <CountlyLoggerDelegate> loggerDelegate;
 
