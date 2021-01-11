@@ -92,6 +92,18 @@ void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...)
 
     NSString* logString = [NSString.alloc initWithFormat:format arguments:args];
 
+    NSArray<NSString *> *logLevelPrefixes =
+    @[
+        @"None",
+        @"Error",
+        @"Warning",
+        @"Info",
+        @"Debug",
+        @"Verbose",
+    ];
+
+    logString = [NSString stringWithFormat:@"[%@] %@", logLevelPrefixes[level], logString];
+
 #if DEBUG
     if (CountlyCommon.sharedInstance.enableDebug)
         CountlyPrint(logString);
