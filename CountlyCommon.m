@@ -239,7 +239,7 @@ void CountlyPrint(NSString *stringToPrint)
 
     if ([mode isEqualToString:self.lastInterfaceOrientation])
     {
-//      CLY_LOG_D(@"Interface orientation is still same: %@", self.lastInterfaceOrientation);
+        CLY_LOG_V(@"Interface orientation is still same: %@", self.lastInterfaceOrientation);
         return;
     }
 
