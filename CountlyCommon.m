@@ -82,7 +82,7 @@ NSString* const kCountlyInternalLogPrefix = @"[Countly] ";
     return _hasStarted;
 }
 
-void CountlyInternalLog(NSString *format, ...)
+void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...)
 {
     if (!CountlyCommon.sharedInstance.enableDebug && !CountlyCommon.sharedInstance.loggerDelegate)
         return;

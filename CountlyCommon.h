@@ -23,7 +23,7 @@
 #import "CountlyRemoteConfig.h"
 #import "CountlyPerformanceMonitoring.h"
 
-#define COUNTLY_LOG(fmt, ...) CountlyInternalLog(fmt, ##__VA_ARGS__)
+#define COUNTLY_LOG(level, fmt, ...) CountlyInternalLog(level, fmt, ##__VA_ARGS__)
 
 #if (TARGET_OS_IOS)
 #import <UIKit/UIKit.h>
@@ -63,7 +63,7 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 @property (nonatomic, copy) NSString* attributionID;
 @property (nonatomic) BOOL manualSessionHandling;
 
-void CountlyInternalLog(NSString *format, ...) NS_FORMAT_FUNCTION(1,2);
+void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...) NS_FORMAT_FUNCTION(2, 3);
 void CountlyPrint(NSString *stringToPrint);
 
 + (instancetype)sharedInstance;
