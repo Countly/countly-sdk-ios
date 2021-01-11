@@ -87,6 +87,9 @@ void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...)
     if (!CountlyCommon.sharedInstance.enableDebug && !CountlyCommon.sharedInstance.loggerDelegate)
         return;
 
+    if (level > CountlyCommon.sharedInstance.internalLogLevel)
+        return;
+
     va_list args;
     va_start(args, format);
 

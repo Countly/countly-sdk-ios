@@ -63,6 +63,7 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 @property (nonatomic) BOOL hasStarted;
 @property (nonatomic) BOOL enableDebug;
 @property (nonatomic, weak) id <CountlyLoggerDelegate> loggerDelegate;
+@property (nonatomic) CLYInternalLogLevel internalLogLevel;
 @property (nonatomic) BOOL enableAppleWatch;
 @property (nonatomic, copy) NSString* attributionID;
 @property (nonatomic) BOOL manualSessionHandling;

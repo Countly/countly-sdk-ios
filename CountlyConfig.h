@@ -145,6 +145,12 @@ typedef enum : NSUInteger
  */
 @property (nonatomic, weak) id <CountlyLoggerDelegate> loggerDelegate;
 
+/**
+ * For deciding which level SDK's internal logs should be printed at.
+ * @discussion Default value is @c CLYInternalLogLevelDebug.
+ */
+@property (nonatomic) CLYInternalLogLevel internalLogLevel;
+
 #pragma mark -
 
 /**
