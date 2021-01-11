@@ -533,7 +533,10 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     NSInteger fileExtIndex = [allowedFileTypes indexOfObject:fileExt];
 
     if (fileExtIndex == NSNotFound)
+    {
+        CLY_LOG_W(@"Unsupported file extension for picture upload: %@", fileExt);
         return nil;
+    }
 
     NSData* imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:localPicturePath]];
 
