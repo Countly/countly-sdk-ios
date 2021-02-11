@@ -109,9 +109,9 @@ typedef enum : NSUInteger
 
 
 @protocol CountlyLoggerDelegate<NSObject>
-- (void)internalLog:(NSString *)log DEPRECATED_MSG_ATTRIBUTE("Use 'internalLog:withLevel:' method instead!");
-@required
 - (void)internalLog:(NSString *)log withLevel:(CLYInternalLogLevel)level;
+@optional
+- (void)internalLog:(NSString *)log DEPRECATED_MSG_ATTRIBUTE("Use 'internalLog:withLevel:' method instead!");
 @end
 
 
