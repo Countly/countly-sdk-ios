@@ -306,7 +306,10 @@ NSString* const kCountlyVTKeyDur      = @"dur";
                       [NSStringFromClass(self.class) isEqualToString:exception];
 
         if (isException)
+        {
+            CLY_LOG_V(@"%@ is an exceptional view, so it will be ignored for view tracking.", viewTitle);
             break;
+        }
     }
 
     if (!isException)
