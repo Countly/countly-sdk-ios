@@ -56,6 +56,8 @@ NSString* const CLYOpenUDID = CLYDefaultDeviceID;
         self.location = kCLLocationCoordinate2DInvalid;
 
         self.URLSessionConfiguration = NSURLSessionConfiguration.defaultSessionConfiguration;
+
+        self.internalLogLevel = CLYInternalLogLevelDebug;
     }
 
     return self;

@@ -96,9 +96,22 @@ extern CLYMetricKey const CLYMetricKeyHasWatch;
 extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
 
 
+//NOTE: Internal log levels
+typedef enum : NSUInteger
+{
+    CLYInternalLogLevelNone,
+    CLYInternalLogLevelError,
+    CLYInternalLogLevelWarning,
+    CLYInternalLogLevelInfo,
+    CLYInternalLogLevelDebug,
+    CLYInternalLogLevelVerbose
+} CLYInternalLogLevel;
+
+
 @protocol CountlyLoggerDelegate<NSObject>
-@required
-- (void)internalLog:(NSString *)log;
+- (void)internalLog:(NSString *)log withLevel:(CLYInternalLogLevel)level;
+@optional
+- (void)internalLog:(NSString *)log DEPRECATED_MSG_ATTRIBUTE("Use 'internalLog:withLevel:' method instead!");
 @end
 
 
@@ -129,9 +142,15 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
 /**
  * For receiving SDK's internal logs even in production builds.
  * @discussion If set, SDK will forward its internal logs to this delegate object regardless of @c enableDebug initial config value.
- * @discussion @c internalLog: method declared as @c required in @c CountlyLoggerDelegate protocol will be called with log @c NSString.
+ * @discussion @c internalLog:withLevel: method declared as @c required in @c CountlyLoggerDelegate protocol will be called with log @c NSString.
  */
 @property (nonatomic, weak) id <CountlyLoggerDelegate> loggerDelegate;
+
+/**
+ * For deciding which level SDK's internal logs should be printed at.
+ * @discussion Default value is @c CLYInternalLogLevelDebug.
+ */
+@property (nonatomic) CLYInternalLogLevel internalLogLevel;
 
 #pragma mark -
 

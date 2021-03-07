@@ -359,7 +359,7 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     }
     @catch (NSException *exception)
     {
-        COUNTLY_LOG(@"Connection type can not be retrieved: \n%@", exception);
+        CLY_LOG_W(@"Connection type can not be retrieved: \n%@", exception);
     }
 
     return connType;

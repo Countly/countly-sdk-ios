@@ -246,18 +246,18 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
     if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
         return;
 
-    COUNTLY_LOG(@"Handling remote notification %@", notification);
+    CLY_LOG_D(@"Handling remote notification %@", notification);
 
     NSDictionary* countlyPayload = notification[kCountlyPNKeyCountlyPayload];
     NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
 
     if (!notificationID)
     {
-        COUNTLY_LOG(@"Countly payload not found in notification dictionary!");
+        CLY_LOG_D(@"Countly payload not found in notification dictionary!");
         return;
     }
 
-    COUNTLY_LOG(@"Countly Push Notification ID: %@", notificationID);
+    CLY_LOG_D(@"Countly Push Notification ID: %@", notificationID);
 #endif
 
 #if (TARGET_OS_OSX)
@@ -268,14 +268,14 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 #if (TARGET_OS_IOS)
     if (self.doNotShowAlertForNotifications)
     {
-        COUNTLY_LOG(@"doNotShowAlertForNotifications flag is set!");
+        CLY_LOG_D(@"doNotShowAlertForNotifications flag is set!");
         return;
     }
 
     if (@available(iOS 10.0, *))
     {
         //NOTE: On iOS10+ when a silent notification (content-available: 1) with `alert` key arrives, do not show alert here, as it is shown in UN framework delegate method
-        COUNTLY_LOG(@"A silent notification (content-available: 1) with `alert` key on iOS10+.");
+        CLY_LOG_W(@"A silent notification (content-available: 1) with `alert` key on iOS10+.");
         return;
     }
 
@@ -296,7 +296,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
     if (!message && !title)
     {
-        COUNTLY_LOG(@"Title and Message are both not found in notification dictionary!");
+        CLY_LOG_W(@"Title and Message are both not found in notification dictionary!");
         return;
     }
 
@@ -411,8 +411,8 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler API_AVAILABLE(ios(10.0), macos(10.14))
 {
-    COUNTLY_LOG(@"userNotificationCenter:willPresentNotification:withCompletionHandler:");
-    COUNTLY_LOG(@"%@", notification.request.content.userInfo.description);
+    CLY_LOG_D(@"userNotificationCenter:willPresentNotification:withCompletionHandler:");
+    CLY_LOG_D(@"%@", notification.request.content.userInfo.description);
 
     if (!self.doNotShowAlertForNotifications)
     {
@@ -433,8 +433,8 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void (^)(void))completionHandler API_AVAILABLE(ios(10.0), macos(10.14))
 {
-    COUNTLY_LOG(@"userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:");
-    COUNTLY_LOG(@"%@", response.notification.request.content.userInfo.description);
+    CLY_LOG_D(@"userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:");
+    CLY_LOG_D(@"%@", response.notification.request.content.userInfo.description);
 
     if (CountlyConsentManager.sharedInstance.consentForPushNotifications)
     {
@@ -446,7 +446,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
             NSInteger buttonIndex = 0;
             NSString* URL = nil;
 
-            COUNTLY_LOG(@"Action Identifier: %@", response.actionIdentifier);
+            CLY_LOG_D(@"Action Identifier: %@", response.actionIdentifier);
 
             if ([response.actionIdentifier isEqualToString:UNNotificationDefaultActionIdentifier])
             {
@@ -504,7 +504,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 - (void)Countly_application:(CLYApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken
 {
-    COUNTLY_LOG(@"App didRegisterForRemoteNotificationsWithDeviceToken: %@", deviceToken);
+    CLY_LOG_D(@"App didRegisterForRemoteNotificationsWithDeviceToken: %@", deviceToken);
 
     const char* bytes = [deviceToken bytes];
     NSMutableString *token = NSMutableString.new;
@@ -520,7 +520,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
 - (void)Countly_application:(CLYApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error
 {
-    COUNTLY_LOG(@"App didFailToRegisterForRemoteNotificationsWithError: %@", error);
+    CLY_LOG_D(@"App didFailToRegisterForRemoteNotificationsWithError: %@", error);
 
     CountlyPushNotifications.sharedInstance.token = kCountlyTokenError;
 
@@ -533,7 +533,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 #if (TARGET_OS_IOS)
 - (void)Countly_application:(UIApplication *)application didRegisterUserNotificationSettings:(UIUserNotificationSettings *)notificationSettings
 {
-    COUNTLY_LOG(@"App didRegisterUserNotificationSettings: %@", notificationSettings);
+    CLY_LOG_D(@"App didRegisterUserNotificationSettings: %@", notificationSettings);
 
     [CountlyPushNotifications.sharedInstance sendToken];
 
@@ -547,7 +547,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
 - (void)Countly_application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler;
 {
-    COUNTLY_LOG(@"App didReceiveRemoteNotification:fetchCompletionHandler");
+    CLY_LOG_D(@"App didReceiveRemoteNotification:fetchCompletionHandler");
 
     [CountlyPushNotifications.sharedInstance handleNotification:userInfo];
 
@@ -557,7 +557,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 #elif (TARGET_OS_OSX)
 - (void)Countly_application:(NSApplication *)application didReceiveRemoteNotification:(NSDictionary<NSString *,id> *)userInfo
 {
-    COUNTLY_LOG(@"App didReceiveRemoteNotification:");
+    CLY_LOG_D(@"App didReceiveRemoteNotification:");
 
     [CountlyPushNotifications.sharedInstance handleNotification:userInfo];
 
