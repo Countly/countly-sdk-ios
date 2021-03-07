@@ -301,7 +301,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
     for (NSString* exception in CountlyViewTracking.sharedInstance.exceptionViewControllers)
     {
-        isException = [self.title isEqualToString:exception] ||
+        isException = [viewTitle isEqualToString:exception] ||
                       [self isKindOfClass:NSClassFromString(exception)] ||
                       [NSStringFromClass(self.class) isEqualToString:exception];
 
