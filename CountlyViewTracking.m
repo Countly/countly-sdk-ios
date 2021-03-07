@@ -251,6 +251,9 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         title = [viewController.navigationItem.titleView isKindOfClass:UILabel.class] ? ((UILabel *)viewController.navigationItem.titleView).text : nil;
 
     if (!title)
+        title = viewController.navigationItem.title;
+
+    if (!title)
         title = NSStringFromClass(viewController.class);
 
     return title;
