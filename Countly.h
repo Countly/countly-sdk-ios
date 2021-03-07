@@ -478,7 +478,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)recordView:(NSString *)viewName segmentation:(NSDictionary<NSString *, NSString *> *)segmentation;
 
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
 /**
  * Adds exception for AutoViewTracking.
  * @discussion @c UIViewControllers with specified title or class name will be ignored by AutoViewTracking and their appearances and disappearances will not be recorded.
