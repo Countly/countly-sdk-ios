@@ -114,11 +114,17 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 - (void)setOnce:(NSString *)key value:(NSString *)value
 {
+    if (!value)
+        return;
+
     self.modifications[key] = @{kCountlyUDKeyModifierSetOnce: value.copy};
 }
 
 - (void)setOnce:(NSString *)key numberValue:(NSNumber *)value
 {
+    if (!value)
+        return;
+
     self.modifications[key] = @{kCountlyUDKeyModifierSetOnce: value.copy};
 }
 
@@ -139,31 +145,49 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 - (void)incrementBy:(NSString *)key value:(NSNumber *)value
 {
+    if (!value)
+        return;
+
     self.modifications[key] = @{kCountlyUDKeyModifierIncrement: value};
 }
 
 - (void)multiply:(NSString *)key value:(NSNumber *)value
 {
+    if (!value)
+        return;
+
     self.modifications[key] = @{kCountlyUDKeyModifierMultiply: value};
 }
 
 - (void)max:(NSString *)key value:(NSNumber *)value
 {
+    if (!value)
+        return;
+
     self.modifications[key] = @{kCountlyUDKeyModifierMax: value};
 }
 
 - (void)min:(NSString *)key value:(NSNumber *)value
 {
+    if (!value)
+        return;
+
     self.modifications[key] = @{kCountlyUDKeyModifierMin: value};
 }
 
 - (void)push:(NSString *)key value:(NSString *)value
 {
+    if (!value)
+        return;
+
     self.modifications[key] = @{kCountlyUDKeyModifierPush: value.copy};
 }
 
 - (void)push:(NSString *)key numberValue:(NSNumber *)value;
 {
+    if (!value)
+        return;
+
     self.modifications[key] = @{kCountlyUDKeyModifierPush: value.copy};
 }
 
@@ -174,16 +198,25 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 - (void)push:(NSString *)key values:(NSArray *)value
 {
+    if (!value)
+        return;
+
     self.modifications[key] = @{kCountlyUDKeyModifierPush: value.copy};
 }
 
 - (void)pushUnique:(NSString *)key value:(NSString *)value
 {
+    if (!value)
+        return;
+
     self.modifications[key] = @{kCountlyUDKeyModifierAddToSet: value.copy};
 }
 
 - (void)pushUnique:(NSString *)key numberValue:(NSNumber *)value
 {
+    if (!value)
+        return;
+
     self.modifications[key] = @{kCountlyUDKeyModifierAddToSet: value.copy};
 }
 
@@ -194,16 +227,25 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 - (void)pushUnique:(NSString *)key values:(NSArray *)value
 {
+    if (!value)
+        return;
+
     self.modifications[key] = @{kCountlyUDKeyModifierAddToSet: value.copy};
 }
 
 - (void)pull:(NSString *)key value:(NSString *)value
 {
+    if (!value)
+        return;
+
     self.modifications[key] = @{kCountlyUDKeyModifierPull: value.copy};
 }
 
 - (void)pull:(NSString *)key numberValue:(NSNumber *)value
 {
+    if (!value)
+        return;
+
     self.modifications[key] = @{kCountlyUDKeyModifierPull: value.copy};
 }
 
@@ -214,6 +256,9 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 - (void)pull:(NSString *)key values:(NSArray *)value
 {
+    if (!value)
+        return;
+
     self.modifications[key] = @{kCountlyUDKeyModifierPull: value.copy};
 }
 
