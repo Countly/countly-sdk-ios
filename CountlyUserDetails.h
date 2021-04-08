@@ -303,6 +303,14 @@ extern NSString* const kCountlyLocalPicturePath;
 - (void)pull:(NSString *)key numberValue:(NSNumber *)value;
 
 /**
+ * Custom user details property modifier for removing specified boolean value from the array for specified key.
+ * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
+ * @param key Key for custom property of array type
+ * @param value Boolean value to be removed from the array
+ */
+- (void)pull:(NSString *)key boolValue:(BOOL)value;
+
+/**
  * Custom user details property modifier for removing specified values from the array for specified key.
  * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
  * @param key Key for custom property of array type

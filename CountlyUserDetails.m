@@ -207,6 +207,11 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     self.modifications[key] = @{kCountlyUDKeyModifierPull: value.copy};
 }
 
+- (void)pull:(NSString *)key boolValue:(BOOL)value
+{
+    self.modifications[key] = @{kCountlyUDKeyModifierPull: @(value)};
+}
+
 - (void)pull:(NSString *)key values:(NSArray *)value
 {
     self.modifications[key] = @{kCountlyUDKeyModifierPull: value.copy};
