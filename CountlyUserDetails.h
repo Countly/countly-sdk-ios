@@ -156,9 +156,17 @@ extern NSString* const kCountlyLocalPicturePath;
  * Custom user details property modifier for setting a key-value pair if not set before.
  * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
  * @param key Key for custom property key-value pair
- * @param value Value for custom property key-value pair
+ * @param value String value for custom property key-value pair
  */
 - (void)setOnce:(NSString *)key value:(NSString *)value;
+
+/**
+ * Custom user details property modifier for setting a key-value pair if not set before.
+ * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
+ * @param key Key for custom property key-value pair
+ * @param value Number value for custom property key-value pair
+ */
+- (void)setOnce:(NSString *)key numberValue:(NSNumber *)value;
 
 /**
  * Custom user details property modifier for unsetting a key-value pair.

@@ -117,6 +117,11 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     self.modifications[key] = @{kCountlyUDKeyModifierSetOnce: value.copy};
 }
 
+- (void)setOnce:(NSString *)key numberValue:(NSNumber *)value
+{
+    self.modifications[key] = @{kCountlyUDKeyModifierSetOnce: value.copy};
+}
+
 - (void)unSet:(NSString *)key
 {
     self.modifications[key] = NSNull.null;
