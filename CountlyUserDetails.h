@@ -223,12 +223,20 @@ extern NSString* const kCountlyLocalPicturePath;
 - (void)min:(NSString *)key value:(NSNumber *)value;
 
 /**
- * Custom user details property modifier for adding specified value to the array for specified key.
+ * Custom user details property modifier for adding specified string value to the array for specified key.
  * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
  * @param key Key for custom property of array type
- * @param value Value to be added to the array
+ * @param value String value to be added to the array
  */
 - (void)push:(NSString *)key value:(NSString *)value;
+
+/**
+ * Custom user details property modifier for adding specified number value to the array for specified key.
+ * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
+ * @param key Key for custom property of array type
+ * @param value Number value to be added to the array
+ */
+- (void)push:(NSString *)key numberValue:(NSNumber *)value;
 
 /**
  * Custom user details property modifier for adding specified values to the array for specified key.
