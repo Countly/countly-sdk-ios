@@ -271,6 +271,14 @@ extern NSString* const kCountlyLocalPicturePath;
 - (void)pushUnique:(NSString *)key numberValue:(NSNumber *)value;
 
 /**
+ * Custom user details property modifier for adding specified boolean value to the array for specified key, if it does not exist.
+ * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
+ * @param key Key for custom property of array type
+ * @param value Boolean value to be added to the array
+ */
+- (void)pushUnique:(NSString *)key boolValue:(BOOL)value;
+
+/**
  * Custom user details property modifier for adding specified values to the array for specified key, if they do not exist.
  * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
  * @param key Key for custom property of array type
