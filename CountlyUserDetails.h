@@ -287,12 +287,20 @@ extern NSString* const kCountlyLocalPicturePath;
 - (void)pushUnique:(NSString *)key values:(NSArray *)value;
 
 /**
- * Custom user details property modifier for removing specified value from the array for specified key.
+ * Custom user details property modifier for removing specified string value from the array for specified key.
  * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
  * @param key Key for custom property of array type
- * @param value Value to be removed from the array
+ * @param value String value to be removed from the array
  */
 - (void)pull:(NSString *)key value:(NSString *)value;
+
+/**
+ * Custom user details property modifier for removing specified number value from the array for specified key.
+ * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
+ * @param key Key for custom property of array type
+ * @param value Number value to be removed from the array
+ */
+- (void)pull:(NSString *)key numberValue:(NSNumber *)value;
 
 /**
  * Custom user details property modifier for removing specified values from the array for specified key.
