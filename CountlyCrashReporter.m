@@ -135,7 +135,7 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
     signal(SIGTRAP, SIG_DFL);
 #endif
 
-    self.customCrashLogs = nil;
+    [self clearCrashLogs];
 }
 
 #ifdef COUNTLY_PLCRASHREPORTER_EXISTS
@@ -350,6 +350,18 @@ void CountlySignalHandler(int signalCode)
 
         if (self.customCrashLogs.count > self.crashLogLimit)
             [self.customCrashLogs removeObjectAtIndex:0];
+    }
+}
+
+- (void)clearCrashLogs
+{
+    if (self.shouldUsePLCrashReporter)
+    {
+        [CountlyPersistency.sharedInstance deleteCustomCrashLogFile];
+    }
+    else
+    {
+        [self.customCrashLogs removeAllObjects];
     }
 }
 
