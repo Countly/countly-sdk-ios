@@ -780,6 +780,11 @@ long long appLoadStartTime;
     [CountlyCrashReporter.sharedInstance log:log];
 }
 
+- (void)clearCrashLogs
+{
+    [CountlyCrashReporter.sharedInstance clearCrashLogs];
+}
+
 - (void)crashLog:(NSString *)format, ...
 {
 
