@@ -25,6 +25,7 @@ Pod::Spec.new do |s|
   s.subspec 'NotificationService' do |ns|
     ns.source_files = 'CountlyNotificationService.{m,h}'
     ns.ios.deployment_target = '10.0'
+    ns.ios.frameworks = ['Foundation', 'UserNotifications']
   end
 
   s.subspec 'PL' do |pl|
