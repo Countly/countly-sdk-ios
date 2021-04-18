@@ -171,7 +171,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
         if (!error)
         {
-            if ([self isRequestSuccessful:response])
+            if ([self isRequestSuccessful:response data:data])
             {
                 CLY_LOG_D(@"Request <%p> successfully completed.", request);
 
@@ -376,7 +376,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     [[self.URLSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError*  error)
     {
-        if (error || ![self isRequestSuccessful:response])
+        if (error || ![self isRequestSuccessful:response data:data])
         {
             CLY_LOG_D(@"Crash Report Request <%p> failed!\n%@: %@", request, error ? @"Error" : @"Server reply", error ?: [data cly_stringUTF8]);
             [CountlyPersistency.sharedInstance addToQueue:queryString];
@@ -583,14 +583,41 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     return queryString;
 }
 
-- (BOOL)isRequestSuccessful:(NSURLResponse *)response
+- (BOOL)isRequestSuccessful:(NSURLResponse *)response data:(NSData *)data 
 {
     if (!response)
         return NO;
 
     NSInteger code = ((NSHTTPURLResponse*)response).statusCode;
 
-    return (code >= 200 && code < 300);
+    if (code >= 200 && code < 300)
+    {
+        NSError* error = nil;
+        NSDictionary* serverReply = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error]; 
+
+        if (error)
+        {
+            CLY_LOG_W(@"Server reply is not a valid JSON!");
+            return NO;
+        }
+        
+        NSString* result = serverReply[@"result"];
+        if ([result isEqualToString:@"Success"])
+        {
+            CLY_LOG_V(@"Value for `result` key in server reply is `Success`.");
+            return YES;            
+        }
+        else
+        {
+            CLY_LOG_V(@"Value for `result` key in server reply is not `Success`.");
+            return NO;
+        }
+    }
+    else
+    {
+        CLY_LOG_V(@"HTTP status code is not 2XX series.");
+        return NO;        
+    }
 }
 
 - (NSInteger)sessionLengthInSeconds
