@@ -34,6 +34,7 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 #if (TARGET_OS_IOS)
 @interface CountlyDeviceInfo ()
 @property (nonatomic) CTTelephonyNetworkInfo* networkInfo;
+@property (nonatomic) BOOL isInBackground;
 @end
 #endif
 
@@ -55,9 +56,35 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 #if (TARGET_OS_IOS)
         self.networkInfo = CTTelephonyNetworkInfo.new;
 #endif
+
+#if (TARGET_OS_IOS || TARGET_OS_TV)
+        self.isInBackground = (UIApplication.sharedApplication.applicationState == UIApplicationStateBackground);
+
+        [NSNotificationCenter.defaultCenter addObserver:self
+                                               selector:@selector(applicationDidEnterBackground:)
+                                                   name:UIApplicationDidEnterBackgroundNotification
+                                                 object:nil];
+
+        [NSNotificationCenter.defaultCenter addObserver:self
+                                               selector:@selector(applicationWillEnterForeground:)
+                                                   name:UIApplicationWillEnterForegroundNotification
+                                                 object:nil];
+#endif
     }
 
     return self;
+}
+
+//NOTE: Using this flag instead of a direct call to UIApplication's applicationState method
+//      in order to avoid making a UI call on a non-main thread at the moment of a crash.
+- (void)applicationDidEnterBackground:(NSNotification *)notification
+{
+    self.isInBackground = YES;
+}
+
+- (void)applicationWillEnterForeground:(NSNotification *)notification
+{
+    self.isInBackground = NO;
 }
 
 - (void)initializeDeviceID:(NSString *)deviceID
@@ -452,11 +479,7 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
 + (BOOL)isInBackground
 {
-#if (TARGET_OS_IOS || TARGET_OS_TV)
-    return UIApplication.sharedApplication.applicationState == UIApplicationStateBackground;
-#else
-    return NO;
-#endif
+    return CountlyDeviceInfo.sharedInstance.isInBackground;
 }
 
 @end
