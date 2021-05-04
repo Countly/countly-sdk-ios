@@ -409,7 +409,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     }] resume];
 
-    CLY_LOG_D(@"Crash Report Request <%p> started:\n[%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, [request.HTTPBody cly_stringUTF8]);
+    [self logRequest:request];
 
     dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
 }
