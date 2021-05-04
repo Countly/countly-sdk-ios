@@ -197,7 +197,25 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     [self.connection resume];
 
-    CLY_LOG_D(@"Request <%p> started:\n[%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, request.HTTPBody ? ([request.HTTPBody cly_stringUTF8] ?: @"Picture uploading...") : @"");
+    [self logRequest:request];
+}
+
+- (void)logRequest:(NSURLRequest *)request
+{
+    NSString* bodyAsString = @"";
+    NSInteger sentSize = request.URL.absoluteString.length;
+
+    if (request.HTTPBody)
+    {
+        bodyAsString = [request.HTTPBody cly_stringUTF8];
+        if (!bodyAsString)
+            bodyAsString = @"Picture uploading...";
+
+        sentSize += request.HTTPBody.length;
+    }
+
+    CLY_LOG_D(@"Request <%p> started:\n[%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, bodyAsString);
+    CLY_LOG_V(@"Approximate sent data size for request <%p> is %ld bytes.", (id)request, (long)sentSize);
 }
 
 #pragma mark ---
