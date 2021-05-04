@@ -169,6 +169,8 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     {
         self.connection = nil;
 
+        CLY_LOG_V(@"Approximate received data size for request <%p> is %ld bytes.", (id)request, (long)data.length);
+
         if (!error)
         {
             if ([self isRequestSuccessful:response data:data])
