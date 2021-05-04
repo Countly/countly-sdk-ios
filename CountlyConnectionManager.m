@@ -396,13 +396,13 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     {
         if (error || ![self isRequestSuccessful:response data:data])
         {
-            CLY_LOG_D(@"Crash Report Request <%p> failed!\n%@: %@", request, error ? @"Error" : @"Server reply", error ?: [data cly_stringUTF8]);
+            CLY_LOG_D(@"Request <%p> failed!\n%@: %@", request, error ? @"Error" : @"Server reply", error ?: [data cly_stringUTF8]);
             [CountlyPersistency.sharedInstance addToQueue:queryString];
             [CountlyPersistency.sharedInstance saveToFileSync];
         }
         else
         {
-            CLY_LOG_D(@"Crash Report Request <%p> successfully completed.", request);
+            CLY_LOG_D(@"Request <%p> successfully completed.", request);
         }
 
         dispatch_semaphore_signal(semaphore);
