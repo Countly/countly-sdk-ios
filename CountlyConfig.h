@@ -363,6 +363,7 @@ typedef enum : NSUInteger
  * Crash log limit is used for limiting the number of crash logs to be stored on the device.
  * @discussion If number of stored crash logs reaches @c crashLogLimit, SDK will start to drop oldest crash log while appending the newest one.
  * @discussion If not set, it will be 100 by default.
+ * @discussion If @c shouldUsePLCrashReporter flag is set on initial config, this limit will not be applied.
  */
 @property (nonatomic) NSUInteger crashLogLimit;
 
