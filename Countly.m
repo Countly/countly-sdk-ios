@@ -943,7 +943,7 @@ long long appLoadStartTime;
 
 - (void)recordNetworkTrace:(NSString *)traceName requestPayloadSize:(NSInteger)requestPayloadSize responsePayloadSize:(NSInteger)responsePayloadSize responseStatusCode:(NSInteger)responseStatusCode startTime:(long long)startTime endTime:(long long)endTime
 {
-    CLY_LOG_I(@"%s %@ %ld %ld %ld %lld %lld", __FUNCTION__, traceName, requestPayloadSize, responsePayloadSize, responseStatusCode, startTime, endTime);
+    CLY_LOG_I(@"%s %@ %ld %ld %ld %lld %lld", __FUNCTION__, traceName, (long)requestPayloadSize, (long)responsePayloadSize, (long)responseStatusCode, startTime, endTime);
 
     [CountlyPerformanceMonitoring.sharedInstance recordNetworkTrace:traceName requestPayloadSize:requestPayloadSize responsePayloadSize:responsePayloadSize responseStatusCode:responseStatusCode startTime:startTime endTime:endTime];
 }
