@@ -45,11 +45,10 @@ NSString* const CLYOpenUDID = CLYDefaultDeviceID;
     {
 #if (TARGET_OS_WATCH)
         self.updateSessionPeriod = 20.0;
-        self.eventSendThreshold = 3;
 #else
         self.updateSessionPeriod = 60.0;
-        self.eventSendThreshold = 10;
 #endif
+        self.eventSendThreshold = 100;
         self.storedRequestsLimit = 1000;
         self.crashLogLimit = 100;
 

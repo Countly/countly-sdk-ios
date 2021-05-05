@@ -302,7 +302,7 @@ typedef enum : NSUInteger
 
 /**
  * Event send threshold is used for sending queued events to Countly Server when number of recorded events reaches to it, without waiting for next update session defined by @c updateSessionPeriod.
- * @discussion If not set, it will be 10 for @c iOS, @c tvOS & @c macOS, and 3 for @c watchOS by default.
+ * @discussion If not set, it will be 100 by default.
  */
 @property (nonatomic) NSUInteger eventSendThreshold;
 
