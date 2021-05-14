@@ -33,14 +33,14 @@ CLYMetricKey const CLYMetricKeyLocale             = @"_locale";
 CLYMetricKey const CLYMetricKeyHasWatch           = @"_has_watch";
 CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
-#if (TARGET_OS_IOS)
 @interface CountlyDeviceInfo ()
+@property (nonatomic) BOOL isInBackground;
+#if (TARGET_OS_IOS)
 #if (!TARGET_OS_MACCATALYST)
 @property (nonatomic) CTTelephonyNetworkInfo* networkInfo;
 #endif
-@property (nonatomic) BOOL isInBackground;
-@end
 #endif
+@end
 
 @implementation CountlyDeviceInfo
 
