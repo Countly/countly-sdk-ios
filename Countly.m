@@ -808,7 +808,7 @@ long long appLoadStartTime;
     [CountlyViewTracking.sharedInstance startView:viewName customSegmentation:segmentation];
 }
 
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
 - (void)addExceptionForAutoViewTracking:(NSString *)exception
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, exception);
