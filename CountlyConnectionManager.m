@@ -169,6 +169,8 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     {
         self.connection = nil;
 
+        CLY_LOG_V(@"Approximate received data size for request <%p> is %ld bytes.", (id)request, (long)data.length);
+
         if (!error)
         {
             if ([self isRequestSuccessful:response data:data])
@@ -197,7 +199,25 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     [self.connection resume];
 
-    CLY_LOG_D(@"Request <%p> started:\n[%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, request.HTTPBody ? ([request.HTTPBody cly_stringUTF8] ?: @"Picture uploading...") : @"");
+    [self logRequest:request];
+}
+
+- (void)logRequest:(NSURLRequest *)request
+{
+    NSString* bodyAsString = @"";
+    NSInteger sentSize = request.URL.absoluteString.length;
+
+    if (request.HTTPBody)
+    {
+        bodyAsString = [request.HTTPBody cly_stringUTF8];
+        if (!bodyAsString)
+            bodyAsString = @"Picture uploading...";
+
+        sentSize += request.HTTPBody.length;
+    }
+
+    CLY_LOG_D(@"Request <%p> started:\n[%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, bodyAsString);
+    CLY_LOG_V(@"Approximate sent data size for request <%p> is %ld bytes.", (id)request, (long)sentSize);
 }
 
 #pragma mark ---
@@ -378,20 +398,20 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     {
         if (error || ![self isRequestSuccessful:response data:data])
         {
-            CLY_LOG_D(@"Crash Report Request <%p> failed!\n%@: %@", request, error ? @"Error" : @"Server reply", error ?: [data cly_stringUTF8]);
+            CLY_LOG_D(@"Request <%p> failed!\n%@: %@", request, error ? @"Error" : @"Server reply", error ?: [data cly_stringUTF8]);
             [CountlyPersistency.sharedInstance addToQueue:queryString];
             [CountlyPersistency.sharedInstance saveToFileSync];
         }
         else
         {
-            CLY_LOG_D(@"Crash Report Request <%p> successfully completed.", request);
+            CLY_LOG_D(@"Request <%p> successfully completed.", request);
         }
 
         dispatch_semaphore_signal(semaphore);
 
     }] resume];
 
-    CLY_LOG_D(@"Crash Report Request <%p> started:\n[%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, [request.HTTPBody cly_stringUTF8]);
+    [self logRequest:request];
 
     dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
 }
