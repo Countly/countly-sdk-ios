@@ -13,8 +13,10 @@
 #include <sys/sysctl.h>
 
 #if (TARGET_OS_IOS)
+#if (!TARGET_OS_MACCATALYST)
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import <CoreTelephony/CTCarrier.h>
+#endif
 #elif (TARGET_OS_OSX)
 #import <IOKit/ps/IOPowerSources.h>
 #endif
@@ -33,7 +35,9 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
 #if (TARGET_OS_IOS)
 @interface CountlyDeviceInfo ()
+#if (!TARGET_OS_MACCATALYST)
 @property (nonatomic) CTTelephonyNetworkInfo* networkInfo;
+#endif
 @property (nonatomic) BOOL isInBackground;
 @end
 #endif
@@ -54,7 +58,9 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     {
         self.deviceID = [CountlyPersistency.sharedInstance retrieveDeviceID];
 #if (TARGET_OS_IOS)
+#if (!TARGET_OS_MACCATALYST)
         self.networkInfo = CTTelephonyNetworkInfo.new;
+#endif
 #endif
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
@@ -206,7 +212,9 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 + (NSString *)carrier
 {
 #if (TARGET_OS_IOS)
+#if (!TARGET_OS_MACCATALYST)
     return CountlyDeviceInfo.sharedInstance.networkInfo.subscriberCellularProvider.carrierName;
+#endif
 #endif
     //NOTE: it is not possible to get carrier info on Apple Watches as CoreTelephony is not available.
     return nil;
@@ -351,6 +359,7 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
                         connType = CLYConnectionCellNetwork;
 
 #if (TARGET_OS_IOS)
+#if (!TARGET_OS_MACCATALYST)
                         NSDictionary* connectionTypes =
                         @{
                             CTRadioAccessTechnologyGPRS: @(CLYConnectionCellNetwork2G),
@@ -369,6 +378,7 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
                         NSString* radioAccessTech = CountlyDeviceInfo.sharedInstance.networkInfo.currentRadioAccessTechnology;
                         if (connectionTypes[radioAccessTech])
                             connType = [connectionTypes[radioAccessTech] integerValue];
+#endif
 #endif
                     }
                     else if ([[NSString stringWithUTF8String:i->ifa_name] isEqualToString:@"en0"])
