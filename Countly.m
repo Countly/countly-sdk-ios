@@ -71,6 +71,7 @@ long long appLoadStartTime;
 
     CountlyCommon.sharedInstance.hasStarted = YES;
     CountlyCommon.sharedInstance.enableDebug = config.enableDebug;
+	CountlyCommon.sharedInstance.ignoreTrustExceptions = config.ignoreTrustExceptions;
     CountlyCommon.sharedInstance.loggerDelegate = config.loggerDelegate;
     CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
 

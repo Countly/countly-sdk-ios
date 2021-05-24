@@ -653,8 +653,14 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
         if (localKey) CFRelease(localKey);
     }
-
-    SecTrustResultType serverTrustResult;
+	
+#if DEBUG
+	if (CountlyCommon.sharedInstance.ignoreTrustExceptions) {
+		SecTrustSetExceptions(serverTrust, SecTrustCopyExceptions(serverTrust));
+	}
+#endif
+	
+	SecTrustResultType serverTrustResult;
     SecTrustEvaluate(serverTrust, &serverTrustResult);
     BOOL isServerCertValid = (serverTrustResult == kSecTrustResultUnspecified || serverTrustResult == kSecTrustResultProceed);
 
