@@ -20,6 +20,12 @@ extern CLYFeedbackWidgetType const CLYFeedbackWidgetTypeNPS;
 @property (nonatomic, readonly) NSString* ID;
 @property (nonatomic, readonly) NSString* name;
 
+
+/**
+ * Modally presents the feedback widget above the top visible view controller.
+ * @discussion Calls to this method will be ignored if consent for @c CLYConsentFeedback is not given
+ * while @c requiresConsent flag is set on initial configuration.
+ */
 - (void)present;
 
 #endif
