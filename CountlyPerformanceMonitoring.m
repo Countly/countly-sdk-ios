@@ -180,6 +180,12 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
     if (!traceName.length)
         return;
 
+    if (traceName.length > CountlyCommon.sharedInstance.maxKeyLength)
+    {
+        CLY_LOG_W(@"Network trace name length is more than the limit (%ld)! So, it will be truncated: %@.", (long)CountlyCommon.sharedInstance.maxKeyLength, traceName);
+        traceName = [traceName substringToIndex:CountlyCommon.sharedInstance.maxKeyLength];
+    }
+
     NSDictionary* metrics =
     @{
         kCountlyPMKeyRequestPayloadSize: @(requestPayloadSize),
@@ -243,6 +249,12 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
     {
         CLY_LOG_W(@"Custom trace with name '%@' not started yet or cancelled/ended before!", traceName);
         return;
+    }
+
+    if (traceName.length > CountlyCommon.sharedInstance.maxKeyLength)
+    {
+        CLY_LOG_W(@"Custom trace name length is more than the limit (%ld)! So, it will be truncated: %@.", (long)CountlyCommon.sharedInstance.maxKeyLength, traceName);
+        traceName = [traceName substringToIndex:CountlyCommon.sharedInstance.maxKeyLength];
     }
 
     NSNumber* endTime = @((long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000));
