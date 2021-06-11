@@ -53,6 +53,7 @@ NSString* const CLYOpenUDID = CLYDefaultDeviceID;
         self.crashLogLimit = 100;
 
         self.maxKeyLength = 128;
+        self.maxValueLength = 256;
 
         self.location = kCLLocationCoordinate2DInvalid;
 

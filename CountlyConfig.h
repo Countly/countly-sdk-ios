@@ -331,6 +331,19 @@ typedef enum : NSUInteger
 @property (nonatomic) NSUInteger maxKeyLength;
 
 /**
+ * Limit for the length of values in all key-value pairs.
+ * @discussion It affects:
+ * @discussion - segmentation values
+ * @discussion - APM custom trace metric values
+ * @discussion - custom crash logs
+ * @discussion - custom metric values
+ * @discussion - custom user property values
+ * @discussion Values longer than this limit will be truncated.
+ * @discussion If not set, it will be 256 chars by default.
+ */
+@property (nonatomic) NSUInteger maxValueLength;
+
+/**
  * For sending all requests using HTTP POST method.
  * @discussion If set, all requests will be sent using HTTP POST method. Otherwise; only the requests with a file upload or data size more than 2048 bytes will be sent using HTTP POST method.
  */

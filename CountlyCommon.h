@@ -69,6 +69,7 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 @property (nonatomic) BOOL manualSessionHandling;
 
 @property (nonatomic) NSUInteger maxKeyLength;
+@property (nonatomic) NSUInteger maxValueLength;
 
 void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...) NS_FORMAT_FUNCTION(2, 3);
 void CountlyPrint(NSString *stringToPrint);
