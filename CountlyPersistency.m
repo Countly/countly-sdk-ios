@@ -179,18 +179,7 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
     @synchronized (self.recordedEvents)
     {
         event.key = [event.key cly_truncatedKey:@"Event key"];
-
-        NSMutableDictionary* truncatedSegmentation = event.segmentation.mutableCopy;
-        [event.segmentation enumerateKeysAndObjectsUsingBlock:^(NSString * key, id obj, BOOL * stop)
-        {
-            NSString* truncatedKey = [key cly_truncatedKey:@"Segmentation key"];
-            if (![truncatedKey isEqualToString:key])
-            {
-                truncatedSegmentation[truncatedKey] = obj;
-                [truncatedSegmentation removeObjectForKey:key];
-            }
-        }];
-        event.segmentation = truncatedSegmentation;
+        event.segmentation = [event.segmentation cly_truncatedKeys:@"Segmentation key"];
 
         [self.recordedEvents addObject:event];
 
