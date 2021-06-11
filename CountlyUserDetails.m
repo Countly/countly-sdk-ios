@@ -70,6 +70,25 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
         userDictionary[kCountlyUDKeyPicture] = self.pictureURL;
     if (self.birthYear)
         userDictionary[kCountlyUDKeyBirthyear] = self.birthYear;
+
+    if ([self.custom isKindOfClass:NSDictionary.class])
+    {
+        NSMutableDictionary* truncatedCustom = ((NSDictionary *)self.custom).mutableCopy;
+
+        [((NSDictionary *)self.custom) enumerateKeysAndObjectsUsingBlock:^(NSString * key, id obj, BOOL * stop)
+        {
+            if (key.length > CountlyCommon.sharedInstance.maxKeyLength)
+            {
+                CLY_LOG_W(@"User details custom dictionary key length is more than the limit (%ld)! So, it will be truncated: %@.", (long)CountlyCommon.sharedInstance.maxKeyLength, key);
+                NSString* truncatedKey = [key substringToIndex:CountlyCommon.sharedInstance.maxKeyLength];
+                truncatedCustom[truncatedKey] = obj;
+                [truncatedCustom removeObjectForKey:key];
+            }
+        }];
+
+        self.custom = truncatedCustom;
+    }
+
     if (self.custom)
         userDictionary[kCountlyUDKeyCustom] = self.custom;
 
