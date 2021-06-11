@@ -249,6 +249,18 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
 
     traceName = [traceName cly_truncatedKey:@"Custom trace name"];
 
+    NSMutableDictionary* truncatedMetrics = metrics.mutableCopy;
+    [metrics enumerateKeysAndObjectsUsingBlock:^(NSString * key, id obj, BOOL * stop)
+    {
+        NSString* truncatedKey = [key cly_truncatedKey:@"Custom trace metric key"];
+        if (![truncatedKey isEqualToString:key])
+        {
+            truncatedMetrics[truncatedKey] = obj;
+            [truncatedMetrics removeObjectForKey:key];
+        }
+    }];
+    metrics = truncatedMetrics;
+
     NSNumber* endTime = @((long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000));
 
     NSMutableDictionary* mutableMetrics = metrics.mutableCopy;
