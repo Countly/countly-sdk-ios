@@ -316,7 +316,15 @@ typedef enum : NSUInteger
 
 /**
  * Limit for the length of all string keys.
- * @discussion It affects event names, view names, APM network and custom trace names, segmentation keys, custom metric keys and custom user property keys.
+ * @discussion It affects:
+ * @discussion - event names
+ * @discussion - view names
+ * @discussion - APM network trace names
+ * @discussion - APM custom trace names
+ * @discussion - APM custom trace metric keys
+ * @discussion - segmentation keys
+ * @discussion - custom metric keys
+ * @discussion - custom user property keys
  * @discussion Keys longer than this limit will be truncated.
  * @discussion If not set, it will be 128 chars by default.
  */
