@@ -539,6 +539,23 @@ NSString* CountlyJSONFromObject(id object)
 {
     return [CountlyJSONFromObject(self) cly_URLEscaped];
 }
+
+- (NSDictionary *)cly_truncatedKeys:(NSString *)explanation
+{
+    NSMutableDictionary* truncatedDict = self.mutableCopy;
+    [self enumerateKeysAndObjectsUsingBlock:^(NSString * key, id obj, BOOL * stop)
+    {
+        NSString* truncatedKey = [key cly_truncatedKey:explanation];
+        if (![truncatedKey isEqualToString:key])
+        {
+            truncatedDict[truncatedKey] = obj;
+            [truncatedDict removeObjectForKey:key];
+        }
+    }];
+
+    return truncatedDict.copy;
+}
+
 @end
 
 @implementation NSData (Countly)
