@@ -315,6 +315,14 @@ typedef enum : NSUInteger
 @property (nonatomic) NSUInteger storedRequestsLimit;
 
 /**
+ * Limit for the length of all string keys.
+ * @discussion It affects event names, view names, segmentation keys, network trace name (APM), custom trace name (APM), and custom user property keys.
+ * @discussion Keys longer than this limit will be truncated.
+ * @discussion If not set, it will be 128 chars by default.
+ */
+@property (nonatomic) NSUInteger maxKeyLength;
+
+/**
  * For sending all requests using HTTP POST method.
  * @discussion If set, all requests will be sent using HTTP POST method. Otherwise; only the requests with a file upload or data size more than 2048 bytes will be sent using HTTP POST method.
  */
