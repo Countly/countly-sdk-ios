@@ -178,6 +178,12 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 {
     @synchronized (self.recordedEvents)
     {
+        if (event.key.length > CountlyCommon.sharedInstance.maxKeyLength)
+        {
+            CLY_LOG_W(@"Event key length is more than the limit (%ld)! So, it will be truncated: %@.", (long)CountlyCommon.sharedInstance.maxKeyLength, event.key);
+            event.key = [event.key substringToIndex:CountlyCommon.sharedInstance.maxKeyLength];
+        }
+
         [self.recordedEvents addObject:event];
 
         if (self.recordedEvents.count >= self.eventSendThreshold)
