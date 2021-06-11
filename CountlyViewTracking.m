@@ -116,6 +116,12 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
     CLY_LOG_D(@"View tracking started: %@", viewName);
 
+    if (viewName.length > CountlyCommon.sharedInstance.maxKeyLength)
+    {
+        CLY_LOG_W(@"View name length is more than the limit (%ld)! So, it will be truncated: %@.", (long)CountlyCommon.sharedInstance.maxKeyLength, viewName);
+        viewName = [viewName substringToIndex:CountlyCommon.sharedInstance.maxKeyLength];
+    }
+
     NSMutableDictionary* segmentation = NSMutableDictionary.new;
     segmentation[kCountlyVTKeyName] = viewName;
     segmentation[kCountlyVTKeySegment] = CountlyDeviceInfo.osName;
