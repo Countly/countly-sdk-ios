@@ -184,6 +184,19 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
             event.key = [event.key substringToIndex:CountlyCommon.sharedInstance.maxKeyLength];
         }
 
+        NSMutableDictionary* truncatedSegmentation = event.segmentation.mutableCopy;
+        [event.segmentation enumerateKeysAndObjectsUsingBlock:^(NSString * key, id obj, BOOL * stop)
+        {
+            if (key.length > CountlyCommon.sharedInstance.maxKeyLength)
+            {
+                CLY_LOG_W(@"Segmentation key length is more than the limit (%ld)! So, it will be truncated: %@.", (long)CountlyCommon.sharedInstance.maxKeyLength, key);
+                NSString* truncatedKey = [key substringToIndex:CountlyCommon.sharedInstance.maxKeyLength];
+                truncatedSegmentation[truncatedKey] = obj;
+                [truncatedSegmentation removeObjectForKey:key];
+            }
+        }];
+        event.segmentation = truncatedSegmentation;
+
         [self.recordedEvents addObject:event];
 
         if (self.recordedEvents.count >= self.eventSendThreshold)
