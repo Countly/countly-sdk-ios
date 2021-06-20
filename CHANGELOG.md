@@ -1,3 +1,5 @@
+## 20.11.2
+
 ## 20.11.1
 - Added `loggerDelegate` initial config property for receiving internal logs on production builds
 - Fixed manual view tracking state clean up when view tracking consent is cancelled
