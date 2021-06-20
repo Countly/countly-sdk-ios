@@ -447,6 +447,13 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)recordCrashLog:(NSString *)log;
 
 /**
+ * Clears all custom crash logs.
+ * @discussion Custom crash logs recorded using @c recordCrashLog: method so far will be cleared.
+ */
+- (void)clearCrashLogs;
+
+
+/**
  * @c crashLog: method is deprecated. Please use @c recordCrashLog: method instead.
  * @discussion Be advised, parameter type changed to plain @c NSString from string format, for better Swift compatibility.
  * @discussion Calling this method will have no effect.
@@ -478,7 +485,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)recordView:(NSString *)viewName segmentation:(NSDictionary<NSString *, NSString *> *)segmentation;
 
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
 /**
  * Adds exception for AutoViewTracking.
  * @discussion @c UIViewControllers with specified title or class name will be ignored by AutoViewTracking and their appearances and disappearances will not be recorded.

@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name = 'Countly'
-  s.version = '20.11.1'
+  s.version = '20.11.2'
   s.license = { :type => 'MIT', :file => 'LICENSE.md' }
   s.summary  = 'Countly is an innovative, real-time, open source mobile analytics platform.'
   s.homepage = 'https://github.com/Countly/countly-sdk-ios'
@@ -25,6 +25,7 @@ Pod::Spec.new do |s|
   s.subspec 'NotificationService' do |ns|
     ns.source_files = 'CountlyNotificationService.{m,h}'
     ns.ios.deployment_target = '10.0'
+    ns.ios.frameworks = ['Foundation', 'UserNotifications']
   end
 
   s.subspec 'PL' do |pl|

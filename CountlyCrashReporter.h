@@ -21,6 +21,7 @@
 - (void)stopCrashReporting;
 - (void)recordException:(NSException *)exception withStackTrace:(NSArray *)stackTrace isFatal:(BOOL)isFatal;
 - (void)log:(NSString *)log;
+- (void)clearCrashLogs;
 @end
 
 

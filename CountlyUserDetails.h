@@ -129,20 +129,52 @@ extern NSString* const kCountlyLocalPicturePath;
 #pragma mark -
 
 /**
- * Custom user details property modifier for setting a key-value pair.
+ * Custom user details property modifier for setting a key-value pair where the value is a string.
  * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
  * @param key Key for custom property key-value pair
- * @param value Value for custom property key-value pair
+ * @param value String value for custom property key-value pair
  */
 - (void)set:(NSString *)key value:(NSString *)value;
+
+/**
+ * Custom user details property modifier for setting a key-value pair where the value is a number.
+ * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
+ * @param key Key for custom property key-value pair
+ * @param value Number value for custom property key-value pair
+ */
+- (void)set:(NSString *)key numberValue:(NSNumber *)value;
+
+/**
+ * Custom user details property modifier for setting a key-value pair where the value is a boolean.
+ * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
+ * @param key Key for custom property key-value pair
+ * @param value Boolean value for custom property key-value pair
+ */
+- (void)set:(NSString *)key boolValue:(BOOL)value;
 
 /**
  * Custom user details property modifier for setting a key-value pair if not set before.
  * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
  * @param key Key for custom property key-value pair
- * @param value Value for custom property key-value pair
+ * @param value String value for custom property key-value pair
  */
 - (void)setOnce:(NSString *)key value:(NSString *)value;
+
+/**
+ * Custom user details property modifier for setting a key-value pair if not set before.
+ * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
+ * @param key Key for custom property key-value pair
+ * @param value Number value for custom property key-value pair
+ */
+- (void)setOnce:(NSString *)key numberValue:(NSNumber *)value;
+
+/**
+ * Custom user details property modifier for setting a key-value pair if not set before.
+ * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
+ * @param key Key for custom property key-value pair
+ * @param value Boolean value for custom property key-value pair
+ */
+- (void)setOnce:(NSString *)key boolValue:(BOOL)value;
 
 /**
  * Custom user details property modifier for unsetting a key-value pair.
@@ -191,12 +223,28 @@ extern NSString* const kCountlyLocalPicturePath;
 - (void)min:(NSString *)key value:(NSNumber *)value;
 
 /**
- * Custom user details property modifier for adding specified value to the array for specified key.
+ * Custom user details property modifier for adding specified string value to the array for specified key.
  * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
  * @param key Key for custom property of array type
- * @param value Value to be added to the array
+ * @param value String value to be added to the array
  */
 - (void)push:(NSString *)key value:(NSString *)value;
+
+/**
+ * Custom user details property modifier for adding specified number value to the array for specified key.
+ * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
+ * @param key Key for custom property of array type
+ * @param value Number value to be added to the array
+ */
+- (void)push:(NSString *)key numberValue:(NSNumber *)value;
+
+/**
+ * Custom user details property modifier for adding specified boolean value to the array for specified key.
+ * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
+ * @param key Key for custom property of array type
+ * @param value Boolean value to be added to the array
+ */
+- (void)push:(NSString *)key boolValue:(BOOL)value;
 
 /**
  * Custom user details property modifier for adding specified values to the array for specified key.
@@ -207,12 +255,28 @@ extern NSString* const kCountlyLocalPicturePath;
 - (void)push:(NSString *)key values:(NSArray *)value;
 
 /**
- * Custom user details property modifier for adding specified value to the array for specified key, if it does not exist.
+ * Custom user details property modifier for adding specified string value to the array for specified key, if it does not exist.
  * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
  * @param key Key for custom property of array type
- * @param value Value to be added to the array
+ * @param value String value to be added to the array
  */
 - (void)pushUnique:(NSString *)key value:(NSString *)value;
+
+/**
+ * Custom user details property modifier for adding specified number value to the array for specified key, if it does not exist.
+ * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
+ * @param key Key for custom property of array type
+ * @param value Number value to be added to the array
+ */
+- (void)pushUnique:(NSString *)key numberValue:(NSNumber *)value;
+
+/**
+ * Custom user details property modifier for adding specified boolean value to the array for specified key, if it does not exist.
+ * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
+ * @param key Key for custom property of array type
+ * @param value Boolean value to be added to the array
+ */
+- (void)pushUnique:(NSString *)key boolValue:(BOOL)value;
 
 /**
  * Custom user details property modifier for adding specified values to the array for specified key, if they do not exist.
@@ -223,12 +287,28 @@ extern NSString* const kCountlyLocalPicturePath;
 - (void)pushUnique:(NSString *)key values:(NSArray *)value;
 
 /**
- * Custom user details property modifier for removing specified value from the array for specified key.
+ * Custom user details property modifier for removing specified string value from the array for specified key.
  * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
  * @param key Key for custom property of array type
- * @param value Value to be removed from the array
+ * @param value String value to be removed from the array
  */
 - (void)pull:(NSString *)key value:(NSString *)value;
+
+/**
+ * Custom user details property modifier for removing specified number value from the array for specified key.
+ * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
+ * @param key Key for custom property of array type
+ * @param value Number value to be removed from the array
+ */
+- (void)pull:(NSString *)key numberValue:(NSNumber *)value;
+
+/**
+ * Custom user details property modifier for removing specified boolean value from the array for specified key.
+ * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
+ * @param key Key for custom property of array type
+ * @param value Boolean value to be removed from the array
+ */
+- (void)pull:(NSString *)key boolValue:(BOOL)value;
 
 /**
  * Custom user details property modifier for removing specified values from the array for specified key.

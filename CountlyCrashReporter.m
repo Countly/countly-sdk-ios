@@ -135,7 +135,7 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
     signal(SIGTRAP, SIG_DFL);
 #endif
 
-    self.customCrashLogs = nil;
+    [self clearCrashLogs];
 }
 
 #ifdef COUNTLY_PLCRASHREPORTER_EXISTS
@@ -162,14 +162,14 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
     NSData* crashData = [self.crashReporter loadPendingCrashReportDataAndReturnError:&error];
     if (!crashData)
     {
-        COUNTLY_LOG(@"Could not load crash report data: %@", error);
+        CLY_LOG_W(@"Could not load crash report data: %@", error);
         return;
     }
 
     PLCrashReport *report = [PLCrashReport.alloc initWithData:crashData error:&error];
     if (!report)
     {
-        COUNTLY_LOG(@"Could not initialize crash report using data %@", error);
+        CLY_LOG_W(@"Could not initialize crash report using data %@", error);
         return;
     }
 
@@ -188,13 +188,13 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
     BOOL shouldSend = YES;
     if (self.shouldSendCrashReportCallback)
     {
-        COUNTLY_LOG(@"shouldSendCrashReportCallback is set, asking it if the report should be sent or not.");
+        CLY_LOG_D(@"shouldSendCrashReportCallback is set, asking it if the report should be sent or not.");
         shouldSend = self.shouldSendCrashReportCallback(crashReport);
 
         if (shouldSend)
-            COUNTLY_LOG(@"shouldSendCrashReportCallback returned YES, sending the report.");
+            CLY_LOG_D(@"shouldSendCrashReportCallback returned YES, sending the report.");
         else
-            COUNTLY_LOG(@"shouldSendCrashReportCallback returned NO, not sending the report.");
+            CLY_LOG_D(@"shouldSendCrashReportCallback returned NO, not sending the report.");
     }
 
     if (shouldSend)
@@ -294,7 +294,7 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     }
     else
     {
-        COUNTLY_LOG(@"Crash matches filter and it will not be processed.");
+        CLY_LOG_D(@"Crash matches filter and it will not be processed.");
     }
 
     if (isAutoDetect)
@@ -353,6 +353,18 @@ void CountlySignalHandler(int signalCode)
     }
 }
 
+- (void)clearCrashLogs
+{
+    if (self.shouldUsePLCrashReporter)
+    {
+        [CountlyPersistency.sharedInstance deleteCustomCrashLogFile];
+    }
+    else
+    {
+        [self.customCrashLogs removeAllObjects];
+    }
+}
+
 - (NSDictionary *)binaryImagesForStackTrace:(NSArray *)stackTrace
 {
     NSMutableSet* binaryImagesInStack = NSMutableSet.new;
@@ -376,7 +388,7 @@ void CountlySignalHandler(int signalCode)
         const char* imageNameChar = _dyld_get_image_name(i);
         if (imageNameChar == NULL)
         {
-            COUNTLY_LOG(@"Image Name can not be retrieved!");
+            CLY_LOG_W(@"Image Name can not be retrieved!");
             continue;
         }
 
@@ -384,16 +396,16 @@ void CountlySignalHandler(int signalCode)
 
         if (![binaryImagesInStack containsObject:imageName])
         {
-            //NOTE: Image Name is not in the stack trace, so it will be ignored!
+            CLY_LOG_V(@"Image Name is not in the stack trace, so it will be ignored!\n%@", imageName);
             continue;
         }
 
-        COUNTLY_LOG(@"Image Name is in the stack trace, so it will be used!\n%@", imageName);
+        CLY_LOG_D(@"Image Name is in the stack trace, so it will be used!\n%@", imageName);
 
         const struct mach_header* imageHeader = _dyld_get_image_header(i);
         if (imageHeader == NULL)
         {
-            COUNTLY_LOG(@"Image Header can not be retrieved!");
+            CLY_LOG_W(@"Image Header can not be retrieved!");
             continue;
         }
 
@@ -416,7 +428,7 @@ void CountlySignalHandler(int signalCode)
 
         if (!imageUUID)
         {
-            COUNTLY_LOG(@"Image UUID can not be retrieved!");
+            CLY_LOG_W(@"Image UUID can not be retrieved!");
             continue;
         }
 

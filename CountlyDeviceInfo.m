@@ -13,8 +13,10 @@
 #include <sys/sysctl.h>
 
 #if (TARGET_OS_IOS)
+#if (!TARGET_OS_MACCATALYST)
 #import <CoreTelephony/CTTelephonyNetworkInfo.h>
 #import <CoreTelephony/CTCarrier.h>
+#endif
 #elif (TARGET_OS_OSX)
 #import <IOKit/ps/IOPowerSources.h>
 #endif
@@ -31,11 +33,14 @@ CLYMetricKey const CLYMetricKeyLocale             = @"_locale";
 CLYMetricKey const CLYMetricKeyHasWatch           = @"_has_watch";
 CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
-#if (TARGET_OS_IOS)
 @interface CountlyDeviceInfo ()
+@property (nonatomic) BOOL isInBackground;
+#if (TARGET_OS_IOS)
+#if (!TARGET_OS_MACCATALYST)
 @property (nonatomic) CTTelephonyNetworkInfo* networkInfo;
-@end
 #endif
+#endif
+@end
 
 @implementation CountlyDeviceInfo
 
@@ -53,11 +58,39 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     {
         self.deviceID = [CountlyPersistency.sharedInstance retrieveDeviceID];
 #if (TARGET_OS_IOS)
+#if (!TARGET_OS_MACCATALYST)
         self.networkInfo = CTTelephonyNetworkInfo.new;
+#endif
+#endif
+
+#if (TARGET_OS_IOS || TARGET_OS_TV)
+        self.isInBackground = (UIApplication.sharedApplication.applicationState == UIApplicationStateBackground);
+
+        [NSNotificationCenter.defaultCenter addObserver:self
+                                               selector:@selector(applicationDidEnterBackground:)
+                                                   name:UIApplicationDidEnterBackgroundNotification
+                                                 object:nil];
+
+        [NSNotificationCenter.defaultCenter addObserver:self
+                                               selector:@selector(applicationWillEnterForeground:)
+                                                   name:UIApplicationWillEnterForegroundNotification
+                                                 object:nil];
 #endif
     }
 
     return self;
+}
+
+//NOTE: Using this flag instead of a direct call to UIApplication's applicationState method
+//      in order to avoid making a UI call on a non-main thread at the moment of a crash.
+- (void)applicationDidEnterBackground:(NSNotification *)notification
+{
+    self.isInBackground = YES;
+}
+
+- (void)applicationWillEnterForeground:(NSNotification *)notification
+{
+    self.isInBackground = NO;
 }
 
 - (void)initializeDeviceID:(NSString *)deviceID
@@ -112,10 +145,14 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 + (NSString *)deviceType
 {
 #if (TARGET_OS_IOS)
+#if (TARGET_OS_MACCATALYST)
+    return @"desktop";
+#else
     if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
         return @"tablet";
 
     return @"mobile";
+#endif
 #elif (TARGET_OS_WATCH)
     return @"wearable";
 #elif (TARGET_OS_TV)
@@ -179,7 +216,9 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 + (NSString *)carrier
 {
 #if (TARGET_OS_IOS)
+#if (!TARGET_OS_MACCATALYST)
     return CountlyDeviceInfo.sharedInstance.networkInfo.subscriberCellularProvider.carrierName;
+#endif
 #endif
     //NOTE: it is not possible to get carrier info on Apple Watches as CoreTelephony is not available.
     return nil;
@@ -324,6 +363,7 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
                         connType = CLYConnectionCellNetwork;
 
 #if (TARGET_OS_IOS)
+#if (!TARGET_OS_MACCATALYST)
                         NSDictionary* connectionTypes =
                         @{
                             CTRadioAccessTechnologyGPRS: @(CLYConnectionCellNetwork2G),
@@ -343,6 +383,7 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
                         if (connectionTypes[radioAccessTech])
                             connType = [connectionTypes[radioAccessTech] integerValue];
 #endif
+#endif
                     }
                     else if ([[NSString stringWithUTF8String:i->ifa_name] isEqualToString:@"en0"])
                     {
@@ -359,7 +400,7 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     }
     @catch (NSException *exception)
     {
-        COUNTLY_LOG(@"Connection type can not be retrieved: \n%@", exception);
+        CLY_LOG_W(@"Connection type can not be retrieved: \n%@", exception);
     }
 
     return connType;
@@ -452,11 +493,7 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
 + (BOOL)isInBackground
 {
-#if (TARGET_OS_IOS || TARGET_OS_TV)
-    return UIApplication.sharedApplication.applicationState == UIApplicationStateBackground;
-#else
-    return NO;
-#endif
+    return CountlyDeviceInfo.sharedInstance.isInBackground;
 }
 
 @end

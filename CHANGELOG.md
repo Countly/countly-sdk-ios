@@ -1,3 +1,28 @@
+## 20.11.2
+- Added configurable internal log levels
+- Added internal logs for approximate received and sent data size for requests
+- Added numbers and boolean value types for custom user details methods
+- Added `clearCrashLogs` method for clearing custom crash logs (breadcrumbs)
+- Added `navigationItem`'s title as a view title fallback for view tracking 
+- Added Mac Catalyst support
+- Added selector precaution for `CountlyLoggerDelegate` method call
+- Added precautions for nil values in custom user details methods
+- Updated request successful check to consider response object
+- Updated default `eventSendThreshold` as 100
+- Fixed `UIApplicationState` usage for crashes occured on non-main thread
+- Fixed clearing custom crash logs
+- Fixed missing frameworks for `ns` subspec in `podspec` file 
+- Fixed CountlyLoggerDelegate methods optionality
+- Fixed view tracking exception view checking
+- Fixed adding and removing view tracking exceptions on tvOS
+- Fixed cast warnings for an APM method internal log
+
+- Other various improvements
+  - Updated HeaderDocs, internal logs, inline notes and pragma marks
+  - Updated Countly project settings for Xcode 12.4
+
+
+
 ## 20.11.1
 - Added `loggerDelegate` initial config property for receiving internal logs on production builds
 - Fixed manual view tracking state clean up when view tracking consent is cancelled

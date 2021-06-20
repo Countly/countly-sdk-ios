@@ -114,7 +114,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
     [self endView];
 
-    COUNTLY_LOG(@"View tracking started: %@", viewName);
+    CLY_LOG_D(@"View tracking started: %@", viewName);
 
     NSMutableDictionary* segmentation = NSMutableDictionary.new;
     segmentation[kCountlyVTKeyName] = viewName;
@@ -152,7 +152,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         self.accumulatedTime = 0;
         [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventView segmentation:segmentation count:1 sum:0 duration:duration timestamp:self.lastViewStartTime];
 
-        COUNTLY_LOG(@"View tracking ended: %@ duration: %.17g", self.lastView, duration);
+        CLY_LOG_D(@"View tracking ended: %@ duration: %.17g", self.lastView, duration);
     }
 }
 
@@ -251,6 +251,9 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         title = [viewController.navigationItem.titleView isKindOfClass:UILabel.class] ? ((UILabel *)viewController.navigationItem.titleView).text : nil;
 
     if (!title)
+        title = viewController.navigationItem.title;
+
+    if (!title)
         title = NSStringFromClass(viewController.class);
 
     return title;
@@ -301,12 +304,15 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
     for (NSString* exception in CountlyViewTracking.sharedInstance.exceptionViewControllers)
     {
-        isException = [self.title isEqualToString:exception] ||
+        isException = [viewTitle isEqualToString:exception] ||
                       [self isKindOfClass:NSClassFromString(exception)] ||
                       [NSStringFromClass(self.class) isEqualToString:exception];
 
         if (isException)
+        {
+            CLY_LOG_V(@"%@ is an exceptional view, so it will be ignored for view tracking.", viewTitle);
             break;
+        }
     }
 
     if (!isException)

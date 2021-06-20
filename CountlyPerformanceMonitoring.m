@@ -63,7 +63,7 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
     if (!CountlyConsentManager.sharedInstance.consentForPerformanceMonitoring)
         return;
     
-    COUNTLY_LOG(@"Starting performance monitoring...");
+    CLY_LOG_D(@"Starting performance monitoring...");
 
 #if (TARGET_OS_OSX)
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(applicationDidBecomeActive:) name:NSApplicationDidBecomeActiveNotification object:nil];
@@ -96,14 +96,14 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
 
 - (void)applicationDidBecomeActive:(NSNotification *)notification
 {
-    COUNTLY_LOG(@"applicationDidBecomeActive: (Performance Monitoring)");
+    CLY_LOG_D(@"applicationDidBecomeActive: (Performance Monitoring)");
     [self startForegroundTrace];
     
 }
 
 - (void)applicationWillResignActive:(NSNotification *)notification
 {
-    COUNTLY_LOG(@"applicationWillResignActive: (Performance Monitoring)");
+    CLY_LOG_D(@"applicationWillResignActive: (Performance Monitoring)");
     [self startBackgroundTrace];
 }
 
@@ -140,13 +140,13 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
 
     if (self.hasAlreadyRecordedAppStartDurationTrace)
     {
-        COUNTLY_LOG(@"App start duration trace can be recorded once per app launch. So, it will not be recorded this time!");
+        CLY_LOG_W(@"App start duration trace can be recorded once per app launch. So, it will not be recorded this time!");
         return;
     }
 
     long long appStartDuration = endTime - startTime;
 
-    COUNTLY_LOG(@"App is loaded and displayed its first view in %lld milliseconds.", appStartDuration);
+    CLY_LOG_D(@"App is loaded and displayed its first view in %lld milliseconds.", appStartDuration);
 
     NSDictionary* metrics =
     @{
@@ -212,7 +212,7 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
     {
         if (self.startedCustomTraces[traceName])
         {
-            COUNTLY_LOG(@"Custom trace with name '%@' already started!", traceName);
+            CLY_LOG_W(@"Custom trace with name '%@' already started!", traceName);
             return;
         }
 
@@ -220,7 +220,7 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
         self.startedCustomTraces[traceName] = startTime;
     }
     
-    COUNTLY_LOG(@"Custom trace with name '%@' just started!", traceName);
+    CLY_LOG_D(@"Custom trace with name '%@' just started!", traceName);
 }
 
 - (void)endCustomTrace:(NSString *)traceName metrics:(NSDictionary *)metrics
@@ -241,7 +241,7 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
 
     if (!startTime)
     {
-        COUNTLY_LOG(@"Custom trace with name '%@' not started yet or cancelled/ended before!", traceName);
+        CLY_LOG_W(@"Custom trace with name '%@' not started yet or cancelled/ended before!", traceName);
         return;
     }
 
@@ -263,7 +263,7 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
         kCountlyPMKeyEndTime: endTime,
     };
 
-    COUNTLY_LOG(@"Custom trace with name '%@' just ended with duration %lld ms.", traceName, duration);
+    CLY_LOG_D(@"Custom trace with name '%@' just ended with duration %lld ms.", traceName, duration);
 
     [CountlyConnectionManager.sharedInstance sendPerformanceMonitoringTrace:[trace cly_JSONify]];    
 }
@@ -286,11 +286,11 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
 
     if (!startTime)
     {
-        COUNTLY_LOG(@"Custom trace with name '%@' not started yet or cancelled/ended before!", traceName);
+        CLY_LOG_W(@"Custom trace with name '%@' not started yet or cancelled/ended before!", traceName);
         return;
     }
 
-    COUNTLY_LOG(@"Custom trace with name '%@' cancelled!", traceName);
+    CLY_LOG_D(@"Custom trace with name '%@' cancelled!", traceName);
 }
 
 - (void)clearAllCustomTraces
