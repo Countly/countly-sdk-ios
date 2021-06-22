@@ -58,7 +58,7 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 
 @property (nonatomic) BOOL hasStarted;
 @property (nonatomic) BOOL enableDebug;
-@property (nonatomic) BOOL ignoreTrustExceptions;
+@property (nonatomic) BOOL shouldIgnoreTrustCheck;
 @property (nonatomic, weak) id <CountlyLoggerDelegate> loggerDelegate;
 @property (nonatomic) BOOL enableAppleWatch;
 @property (nonatomic, copy) NSString* attributionID;

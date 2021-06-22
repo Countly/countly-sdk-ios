@@ -130,7 +130,7 @@ extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
  * For ignoring all SSL trust exceptions
  * @discussion If set, all SSL trust exceptions will be ignoring. Works only in DEBUG mode
  */
-@property (nonatomic) BOOL ignoreTrustExceptions;
+@property (nonatomic) BOOL shouldIgnoreTrustCheck;
 
 /**
  * For receiving SDK's internal logs even in production builds.
