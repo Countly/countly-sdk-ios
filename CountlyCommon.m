@@ -525,6 +525,18 @@ NSString* CountlyJSONFromObject(id object)
     return self;
 }
 
+- (NSString *)cly_truncatedValue:(NSString *)explanation
+{
+    if (self.length > CountlyCommon.sharedInstance.maxValueLength)
+    {
+        CLY_LOG_W(@"%@ length is more than the limit (%ld)! So, it will be truncated: %@.", explanation, (long)CountlyCommon.sharedInstance.maxValueLength, self);
+        return [self substringToIndex:CountlyCommon.sharedInstance.maxValueLength];
+    }
+
+    return self;
+}
+
+
 @end
 
 @implementation NSArray (Countly)
@@ -550,6 +562,15 @@ NSString* CountlyJSONFromObject(id object)
         {
             truncatedDict[truncatedKey] = obj;
             [truncatedDict removeObjectForKey:key];
+        }
+
+        if ([obj isKindOfClass:NSString.class])
+        {
+            NSString* truncatedValue = [obj cly_truncatedValue:explanation];
+            if (![truncatedValue isEqualToString:obj])
+            {
+                truncatedDict[truncatedKey] = truncatedValue;
+            }
         }
     }];
 
