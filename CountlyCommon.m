@@ -557,7 +557,7 @@ NSString* CountlyJSONFromObject(id object)
     NSMutableDictionary* truncatedDict = self.mutableCopy;
     [self enumerateKeysAndObjectsUsingBlock:^(NSString * key, id obj, BOOL * stop)
     {
-        NSString* truncatedKey = [key cly_truncatedKey:explanation];
+        NSString* truncatedKey = [key cly_truncatedKey:[explanation stringByAppendingString:@" key"]];
         if (![truncatedKey isEqualToString:key])
         {
             truncatedDict[truncatedKey] = obj;
@@ -566,7 +566,7 @@ NSString* CountlyJSONFromObject(id object)
 
         if ([obj isKindOfClass:NSString.class])
         {
-            NSString* truncatedValue = [obj cly_truncatedValue:explanation];
+            NSString* truncatedValue = [obj cly_truncatedValue:[explanation stringByAppendingString:@" value"]];
             if (![truncatedValue isEqualToString:obj])
             {
                 truncatedDict[truncatedKey] = truncatedValue;

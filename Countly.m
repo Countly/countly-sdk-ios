@@ -111,7 +111,7 @@ long long appLoadStartTime;
 
     CountlyCommon.sharedInstance.attributionID = config.attributionID;
 
-    CountlyDeviceInfo.sharedInstance.customMetrics = [config.customMetrics cly_truncated:@"Custom metric key"];
+    CountlyDeviceInfo.sharedInstance.customMetrics = [config.customMetrics cly_truncated:@"Custom metric"];
 
 #if (TARGET_OS_IOS)
     CountlyFeedbacks.sharedInstance.message = config.starRatingMessage;
