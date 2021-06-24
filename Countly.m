@@ -75,6 +75,7 @@ long long appLoadStartTime;
     CountlyCommon.sharedInstance.internalLogLevel = config.internalLogLevel;
     CountlyCommon.sharedInstance.maxKeyLength = config.maxKeyLength;
     CountlyCommon.sharedInstance.maxValueLength = config.maxValueLength;
+    CountlyCommon.sharedInstance.maxSegmentationValues = config.maxSegmentationValues;
 
     CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
 

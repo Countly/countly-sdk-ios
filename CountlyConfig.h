@@ -344,6 +344,14 @@ typedef enum : NSUInteger
 @property (nonatomic) NSUInteger maxValueLength;
 
 /**
+ * Limit for the number of key-value pairs in segmentations.
+ * @discussion If there are more key-value pairs than this limit, some of them will be removed.
+ * @discussion As obviously there is no order among the keys of an NSDictionary, it is not defined which ones will be removed.
+ * @discussion If not set, it will be 30 by default.
+ */
+@property (nonatomic) NSUInteger maxSegmentationValues;
+
+/**
  * For sending all requests using HTTP POST method.
  * @discussion If set, all requests will be sent using HTTP POST method. Otherwise; only the requests with a file upload or data size more than 2048 bytes will be sent using HTTP POST method.
  */

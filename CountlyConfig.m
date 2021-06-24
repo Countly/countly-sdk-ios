@@ -54,6 +54,7 @@ NSString* const CLYOpenUDID = CLYDefaultDeviceID;
 
         self.maxKeyLength = 128;
         self.maxValueLength = 256;
+        self.maxSegmentationValues = 30;
 
         self.location = kCLLocationCoordinate2DInvalid;
 
