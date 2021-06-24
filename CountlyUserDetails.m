@@ -55,17 +55,17 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 {
     NSMutableDictionary* userDictionary = NSMutableDictionary.new;
     if (self.name)
-        userDictionary[kCountlyUDKeyName] = self.name;
+        userDictionary[kCountlyUDKeyName] = [(NSString *)self.name cly_truncatedValue:@"User details name"];
     if (self.username)
-        userDictionary[kCountlyUDKeyUsername] = self.username;
+        userDictionary[kCountlyUDKeyUsername] = [(NSString *)self.username cly_truncatedValue:@"User details username"];
     if (self.email)
-        userDictionary[kCountlyUDKeyEmail] = self.email;
+        userDictionary[kCountlyUDKeyEmail] = [(NSString *)self.email cly_truncatedValue:@"User details email"];
     if (self.organization)
-        userDictionary[kCountlyUDKeyOrganization] = self.organization;
+        userDictionary[kCountlyUDKeyOrganization] = [(NSString *)self.organization cly_truncatedValue:@"User details organization"];
     if (self.phone)
-        userDictionary[kCountlyUDKeyPhone] = self.phone;
+        userDictionary[kCountlyUDKeyPhone] = [(NSString *)self.phone cly_truncatedValue:@"User details phone"];
     if (self.gender)
-        userDictionary[kCountlyUDKeyGender] = self.gender;
+        userDictionary[kCountlyUDKeyGender] = [(NSString *)self.gender cly_truncatedValue:@"User details gender"];
     if (self.pictureURL)
         userDictionary[kCountlyUDKeyPicture] = self.pictureURL;
     if (self.birthYear)

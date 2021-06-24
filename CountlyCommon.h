@@ -119,6 +119,7 @@ void CountlyPrint(NSString *stringToPrint);
 - (NSData *)cly_dataUTF8;
 - (NSString *)cly_valueForQueryStringKey:(NSString *)key;
 - (NSString *)cly_truncatedKey:(NSString *)explanation;
+- (NSString *)cly_truncatedValue:(NSString *)explanation;
 @end
 
 @interface NSArray (Countly)
