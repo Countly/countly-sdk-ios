@@ -536,7 +536,6 @@ NSString* CountlyJSONFromObject(id object)
     return self;
 }
 
-
 @end
 
 @implementation NSArray (Countly)
@@ -575,6 +574,24 @@ NSString* CountlyJSONFromObject(id object)
     }];
 
     return truncatedDict.copy;
+}
+
+- (NSDictionary *)cly_limited:(NSString *)explanation
+{
+    NSArray* allKeys = self.allKeys;
+
+    if (allKeys.count <= CountlyCommon.sharedInstance.maxSegmentationValues)
+        return self;
+
+    CLY_LOG_W(@"Number of key-value pairs in %@ is more than the limit (%ld)! So, some of them will be removed.", explanation, (long)CountlyCommon.sharedInstance.maxSegmentationValues);
+
+    NSMutableArray* excessKeys = allKeys.mutableCopy;
+    [excessKeys removeObjectsInRange:(NSRange){0, CountlyCommon.sharedInstance.maxSegmentationValues}];
+
+    NSMutableDictionary* limitedDict = self.mutableCopy;
+    [limitedDict removeObjectsForKeys:excessKeys];
+
+    return limitedDict;
 }
 
 @end
