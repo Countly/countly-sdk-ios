@@ -583,10 +583,10 @@ NSString* CountlyJSONFromObject(id object)
     if (allKeys.count <= CountlyCommon.sharedInstance.maxSegmentationValues)
         return self;
 
-    CLY_LOG_W(@"Number of key-value pairs in %@ is more than the limit (%ld)! So, some of them will be removed.", explanation, (long)CountlyCommon.sharedInstance.maxSegmentationValues);
-
     NSMutableArray* excessKeys = allKeys.mutableCopy;
     [excessKeys removeObjectsInRange:(NSRange){0, CountlyCommon.sharedInstance.maxSegmentationValues}];
+
+    CLY_LOG_W(@"Number of key-value pairs in %@ is more than the limit (%ld)! So, some of them will be removed:\n %@", explanation, (long)CountlyCommon.sharedInstance.maxSegmentationValues, [excessKeys description]);
 
     NSMutableDictionary* limitedDict = self.mutableCopy;
     [limitedDict removeObjectsForKeys:excessKeys];
