@@ -591,7 +591,7 @@ NSString* CountlyJSONFromObject(id object)
     NSMutableDictionary* limitedDict = self.mutableCopy;
     [limitedDict removeObjectsForKeys:excessKeys];
 
-    return limitedDict;
+    return limitedDict.copy;
 }
 
 @end
