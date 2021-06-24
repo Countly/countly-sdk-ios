@@ -179,7 +179,7 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
     @synchronized (self.recordedEvents)
     {
         event.key = [event.key cly_truncatedKey:@"Event key"];
-        event.segmentation = [event.segmentation cly_truncatedKeys:@"Segmentation key"];
+        event.segmentation = [event.segmentation cly_truncated:@"Segmentation key"];
 
         [self.recordedEvents addObject:event];
 

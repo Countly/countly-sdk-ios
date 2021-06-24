@@ -248,7 +248,7 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
     }
 
     traceName = [traceName cly_truncatedKey:@"Custom trace name"];
-    metrics = [metrics cly_truncatedKeys:@"Custom trace metric key"];
+    metrics = [metrics cly_truncated:@"Custom trace metric key"];
 
     NSNumber* endTime = @((long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000));
 

@@ -127,7 +127,7 @@ void CountlyPrint(NSString *stringToPrint);
 
 @interface NSDictionary (Countly)
 - (NSString *)cly_JSONify;
-- (NSDictionary *)cly_truncatedKeys:(NSString *)explanation;
+- (NSDictionary *)cly_truncated:(NSString *)explanation;
 @end
 
 @interface NSData (Countly)
