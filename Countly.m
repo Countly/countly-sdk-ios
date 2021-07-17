@@ -133,14 +133,14 @@ long long appLoadStartTime;
 
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
-    if ([config.features containsObject:CLYPushNotifications])
+    if ([config.features containsObject:CLYPushNotifications] && ![[[NSBundle mainBundle] bundlePath] hasSuffix:@".appex"])
     {
         CountlyPushNotifications.sharedInstance.isEnabledOnInitialConfig = YES;
         CountlyPushNotifications.sharedInstance.pushTestMode = config.pushTestMode;
         CountlyPushNotifications.sharedInstance.sendPushTokenAlways = config.sendPushTokenAlways;
         CountlyPushNotifications.sharedInstance.doNotShowAlertForNotifications = config.doNotShowAlertForNotifications;
         CountlyPushNotifications.sharedInstance.launchNotification = config.launchNotification;
-        [CountlyPushNotifications.sharedInstance startPushNotifications];
+        [CountlyPushNotifications.sharedInstance performSelector:@selector(startPushNotifications)];
     }
 #endif
 #endif

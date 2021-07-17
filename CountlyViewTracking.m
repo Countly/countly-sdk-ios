@@ -182,9 +182,11 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
     [self swizzleViewTrackingMethods];
 
-    UIViewController* topVC = CountlyCommon.sharedInstance.topViewController;
-    NSString* viewTitle = [CountlyViewTracking.sharedInstance titleForViewController:topVC];
-    [self startView:viewTitle];
+    if (![[[NSBundle mainBundle] bundlePath] hasSuffix:@".appex"]) {
+        UIViewController* topVC = [CountlyCommon.sharedInstance performSelector:@selector(topViewController)];
+        NSString* viewTitle = [CountlyViewTracking.sharedInstance titleForViewController:topVC];
+        [self startView:viewTitle];
+    }
 }
 
 - (void)swizzleViewTrackingMethods

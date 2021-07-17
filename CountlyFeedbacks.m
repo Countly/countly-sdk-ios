@@ -287,7 +287,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     [task resume];
 }
 
-- (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
+- (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.")
 {
     __block CLYInternalViewController* webVC = CLYInternalViewController.new;
     webVC.view.backgroundColor = UIColor.whiteColor;

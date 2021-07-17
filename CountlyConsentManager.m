@@ -323,14 +323,18 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
         CLY_LOG_D(@"Consent for PushNotifications is given.");
 
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
-        [CountlyPushNotifications.sharedInstance startPushNotifications];
+        if (![[[NSBundle mainBundle] bundlePath] hasSuffix:@".appex"]) {
+            [CountlyPushNotifications.sharedInstance performSelector:@selector(startPushNotifications)];
+        }
 #endif
     }
     else
     {
         CLY_LOG_D(@"Consent for PushNotifications is cancelled.");
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
-        [CountlyPushNotifications.sharedInstance stopPushNotifications];
+        if (![[[NSBundle mainBundle] bundlePath] hasSuffix:@".appex"]) {
+            [CountlyPushNotifications.sharedInstance performSelector:@selector(stopPushNotifications)];
+        }
 #endif
     }
 #endif

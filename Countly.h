@@ -317,7 +317,7 @@ NS_ASSUME_NONNULL_BEGIN
  * Shows default system dialog that asks for user's permission to display notifications.
  * @discussion A unified convenience method that handles asking for notification permission on both iOS10 and older iOS versions with badge, sound and alert notification types.
  */
-- (void)askForNotificationPermission;
+- (void)askForNotificationPermission NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.");
 
 /**
  * Shows default system dialog that asks for user's permission to display notifications with given options and completion handler.
@@ -327,7 +327,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param options Bitwise combination of notification types (badge, sound or alert) the app wants to display
  * @param completionHandler A completion handler block to be executed when user answers notification permission dialog
  */
-- (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * __nullable error))completionHandler API_AVAILABLE(ios(10.0), macos(10.14));
+- (void)askForNotificationPermissionWithOptions:(UNAuthorizationOptions)options completionHandler:(void (^)(BOOL granted, NSError * __nullable error))completionHandler API_AVAILABLE(ios(10.0), macos(10.14)) NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.");
 
 /**
  * Records action event for a manually presented push notification with custom action buttons.
@@ -337,7 +337,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param userInfo Manually presented push notification dictionary
  * @param buttonIndex Index of custom action button user clicked
  */
-- (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
+- (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.");
 
 /**
  * Records push notification token to Countly Server for current device ID.
@@ -345,13 +345,13 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion For cases like a new user logs in and device ID changes, or a new app key is set.
  * @discussion In general, push notification token is handled automatically and this method does not need to be called manually.
  */
-- (void)recordPushNotificationToken;
+- (void)recordPushNotificationToken NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.");
 
 /**
  * Clears push notification token on Countly Server for current device ID.
  * @discussion Can be used to clear push notification token for current device ID, before the current user logs out and device ID changes, without waiting for the app to be restarted.
  */
-- (void)clearPushNotificationToken;
+- (void)clearPushNotificationToken NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.");
 #endif
 #endif
 
@@ -550,7 +550,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion If user dismissed dialog without giving a rating, this value will be 0 and it will not be sent to Countly Server.
  * @param completion A block object to be executed when user gives a star-rating or dismisses dialog without rating
  */
-- (void)askForStarRating:(void(^)(NSInteger rating))completion;
+- (void)askForStarRating:(void(^)(NSInteger rating))completion NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.");
 
 /**
  * Presents feedback widget with given ID in a WKWebView placed in a UIViewController.

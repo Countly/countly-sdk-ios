@@ -135,7 +135,9 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return;
     }
 
-    [CountlyCommon.sharedInstance startBackgroundTask];
+    if (![[[NSBundle mainBundle] bundlePath] hasSuffix:@".appex"]) {
+        [CountlyCommon.sharedInstance performSelector:@selector(startBackgroundTask)];
+    }
 
     NSString* queryString = firstItemInQueue;
 

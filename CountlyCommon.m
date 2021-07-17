@@ -216,13 +216,15 @@ void CountlyPrint(NSString *stringToPrint)
 {
 #if (TARGET_OS_IOS)
     UIInterfaceOrientation interfaceOrientation = UIInterfaceOrientationUnknown;
-    if (@available(iOS 13.0, *))
-    {
-        interfaceOrientation = UIApplication.sharedApplication.keyWindow.windowScene.interfaceOrientation;
-    }
-    else
-    {
-        interfaceOrientation = UIApplication.sharedApplication.statusBarOrientation;
+    if (![[[NSBundle mainBundle] bundlePath] hasSuffix:@".appex"]) {
+        if (@available(iOS 13.0, *))
+        {
+            interfaceOrientation = ((UIApplication *)[UIApplication performSelector:@selector(sharedApplication)]).keyWindow.windowScene.interfaceOrientation;
+        }
+        else
+        {
+            interfaceOrientation = ((UIApplication *)[UIApplication performSelector:@selector(sharedApplication)]).statusBarOrientation;
+        }
     }
 
     NSString* mode = nil;
@@ -377,11 +379,11 @@ const CGFloat kCountlyDismissButtonStandardStatusBarHeight = 20.0;
     rect.origin.x = self.superview.bounds.size.width - self.bounds.size.width - kCountlyDismissButtonMargin;
     rect.origin.y = kCountlyDismissButtonMargin;
 
-    if (shouldConsiderStatusBar)
+    if (shouldConsiderStatusBar && ![[[NSBundle mainBundle] bundlePath] hasSuffix:@".appex"])
     {
         if (@available(iOS 11.0, *))
         {
-            CGFloat top = UIApplication.sharedApplication.keyWindow.safeAreaInsets.top;
+            CGFloat top = ((UIApplication *)[UIApplication performSelector:@selector(sharedApplication)]).keyWindow.safeAreaInsets.top;
             if (top)
             {
                 rect.origin.y += top;
