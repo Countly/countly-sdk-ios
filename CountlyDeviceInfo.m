@@ -64,7 +64,9 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 #endif
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
-        self.isInBackground = (UIApplication.sharedApplication.applicationState == UIApplicationStateBackground);
+        if (![[[NSBundle mainBundle] bundlePath] hasSuffix:@".appex"]) {
+            self.isInBackground = (((UIApplication *)[UIApplication performSelector:@selector(sharedApplication)]).applicationState == UIApplicationStateBackground);
+        }
 
         [NSNotificationCenter.defaultCenter addObserver:self
                                                selector:@selector(applicationDidEnterBackground:)

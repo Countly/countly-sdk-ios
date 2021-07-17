@@ -26,7 +26,7 @@ extern CLYFeedbackWidgetType const CLYFeedbackWidgetTypeNPS;
  * @discussion Calls to this method will be ignored if consent for @c CLYConsentFeedback is not given
  * while @c requiresConsent flag is set on initial configuration.
  */
-- (void)present;
+- (void)present NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.");
 
 #endif
 @end

@@ -384,7 +384,9 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 
 #pragma clang diagnostic pop
 
-    [CountlyCommon.sharedInstance finishBackgroundTask];
+    if (![[[NSBundle mainBundle] bundlePath] hasSuffix:@".appex"]) {
+        [CountlyCommon.sharedInstance performSelector:@selector(finishBackgroundTask)];
+    }
 }
 
 #pragma mark ---

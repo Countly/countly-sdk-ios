@@ -78,12 +78,12 @@ void CountlyPrint(NSString *stringToPrint);
 - (NSInteger)timeSinceLaunch;
 - (NSTimeInterval)uniqueTimestamp;
 
-- (void)startBackgroundTask;
-- (void)finishBackgroundTask;
+- (void)startBackgroundTask NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.");
+- (void)finishBackgroundTask NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.");
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
-- (UIViewController *)topViewController;
-- (void)tryPresentingViewController:(UIViewController *)viewController;
+- (UIViewController *)topViewController NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.");
+- (void)tryPresentingViewController:(UIViewController *)viewController NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.");
 #endif
 
 - (void)startAppleWatchMatching;

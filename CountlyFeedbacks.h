@@ -17,7 +17,7 @@ extern NSString* const kCountlyFBKeyID;
 #if (TARGET_OS_IOS)
 + (instancetype)sharedInstance;
 
-- (void)showDialog:(void(^)(NSInteger rating))completion;
+- (void)showDialog:(void(^)(NSInteger rating))completion NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.");
 - (void)checkFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler;
 - (void)checkForStarRatingAutoAsk;
 

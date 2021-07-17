@@ -100,7 +100,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
     [CLYApplication.sharedApplication unregisterForRemoteNotifications];
 }
 
-- (void)swizzlePushNotificationMethods
+- (void)swizzlePushNotificationMethods NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.")
 {
     static BOOL alreadySwizzled;
     if (alreadySwizzled)
@@ -240,7 +240,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
     [CountlyConnectionManager.sharedInstance sendPushToken:@""];
 }
 
-- (void)handleNotification:(NSDictionary *)notification
+- (void)handleNotification:(NSDictionary *)notification NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.")
 {
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
     if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
@@ -367,7 +367,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 #endif
 }
 
-- (void)openURL:(NSString *)URLString
+- (void)openURL:(NSString *)URLString NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.")
 {
     if (!URLString)
         return;
@@ -409,7 +409,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
 #pragma mark ---
 
-- (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler API_AVAILABLE(ios(10.0), macos(10.14))
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler API_AVAILABLE(ios(10.0), macos(10.14)) NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.")
 {
     CLY_LOG_D(@"userNotificationCenter:willPresentNotification:withCompletionHandler:");
     CLY_LOG_D(@"%@", notification.request.content.userInfo.description);
@@ -431,7 +431,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
         completionHandler(UNNotificationPresentationOptionNone);
 }
 
-- (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void (^)(void))completionHandler API_AVAILABLE(ios(10.0), macos(10.14))
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void (^)(void))completionHandler API_AVAILABLE(ios(10.0), macos(10.14)) NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.")
 {
     CLY_LOG_D(@"userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:");
     CLY_LOG_D(@"%@", response.notification.request.content.userInfo.description);
@@ -472,7 +472,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
         completionHandler();
 }
 
-- (void)userNotificationCenter:(UNUserNotificationCenter *)center openSettingsForNotification:(UNNotification *)notification API_AVAILABLE(ios(12.0), macos(10.14))
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center openSettingsForNotification:(UNNotification *)notification API_AVAILABLE(ios(12.0), macos(10.14)) NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.")
 {
     if (@available(iOS 12.0, macOS 10.14, *))
     {
@@ -502,7 +502,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
 @implementation NSObject (CountlyPushNotifications)
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
-- (void)Countly_application:(CLYApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken
+- (void)Countly_application:(CLYApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.")
 {
     CLY_LOG_D(@"App didRegisterForRemoteNotificationsWithDeviceToken: %@", deviceToken);
 
@@ -518,7 +518,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
     [self Countly_application:application didRegisterForRemoteNotificationsWithDeviceToken:deviceToken];
 }
 
-- (void)Countly_application:(CLYApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error
+- (void)Countly_application:(CLYApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.")
 {
     CLY_LOG_D(@"App didFailToRegisterForRemoteNotificationsWithError: %@", error);
 
@@ -531,7 +531,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 #endif
 
 #if (TARGET_OS_IOS)
-- (void)Countly_application:(UIApplication *)application didRegisterUserNotificationSettings:(UIUserNotificationSettings *)notificationSettings
+- (void)Countly_application:(UIApplication *)application didRegisterUserNotificationSettings:(UIUserNotificationSettings *)notificationSettings NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.")
 {
     CLY_LOG_D(@"App didRegisterUserNotificationSettings: %@", notificationSettings);
 
@@ -545,7 +545,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
     [self Countly_application:application didRegisterUserNotificationSettings:notificationSettings];
 }
 
-- (void)Countly_application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler;
+- (void)Countly_application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.")
 {
     CLY_LOG_D(@"App didReceiveRemoteNotification:fetchCompletionHandler");
 
@@ -555,7 +555,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 }
 
 #elif (TARGET_OS_OSX)
-- (void)Countly_application:(NSApplication *)application didReceiveRemoteNotification:(NSDictionary<NSString *,id> *)userInfo
+- (void)Countly_application:(NSApplication *)application didReceiveRemoteNotification:(NSDictionary<NSString *,id> *)userInfo NS_EXTENSION_UNAVAILABLE_IOS("Only available from application containers.")
 {
     CLY_LOG_D(@"App didReceiveRemoteNotification:");
 
