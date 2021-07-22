@@ -67,8 +67,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
     if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
         return;
 
-    if (@available(iOS 10.0, macOS 10.14, *))
-        UNUserNotificationCenter.currentNotificationCenter.delegate = self;
+    UNUserNotificationCenter.currentNotificationCenter.delegate = self;
 
     [self swizzlePushNotificationMethods];
 
@@ -77,12 +76,9 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 #elif (TARGET_OS_OSX)
     [NSApplication.sharedApplication registerForRemoteNotificationTypes:NSRemoteNotificationTypeBadge | NSRemoteNotificationTypeAlert | NSRemoteNotificationTypeSound];
 
-    if (@available(macOS 10.14, *))
-    {
-        UNNotificationResponse* notificationResponse = self.launchNotification.userInfo[NSApplicationLaunchUserNotificationKey];
-        if (notificationResponse)
-            [self userNotificationCenter:UNUserNotificationCenter.currentNotificationCenter didReceiveNotificationResponse:notificationResponse withCompletionHandler:^{}];
-    }
+    UNNotificationResponse* notificationResponse = self.launchNotification.userInfo[NSApplicationLaunchUserNotificationKey];
+    if (notificationResponse)
+        [self userNotificationCenter:UNUserNotificationCenter.currentNotificationCenter didReceiveNotificationResponse:notificationResponse withCompletionHandler:^{}];
 #endif
 }
 
@@ -91,11 +87,8 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
     if (!self.isEnabledOnInitialConfig)
         return;
 
-    if (@available(iOS 10.0, macOS 10.14, *))
-    {
-        if (UNUserNotificationCenter.currentNotificationCenter.delegate == self)
-            UNUserNotificationCenter.currentNotificationCenter.delegate = nil;
-    }
+    if (UNUserNotificationCenter.currentNotificationCenter.delegate == self)
+        UNUserNotificationCenter.currentNotificationCenter.delegate = nil;
 
     [CLYApplication.sharedApplication unregisterForRemoteNotifications];
 }
@@ -146,32 +139,16 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
     if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
         return;
 
-    if (@available(iOS 10.0, macOS 10.14, *))
+    if (options == 0)
+        options = UNAuthorizationOptionBadge | UNAuthorizationOptionSound | UNAuthorizationOptionAlert;
+
+    [UNUserNotificationCenter.currentNotificationCenter requestAuthorizationWithOptions:options completionHandler:^(BOOL granted, NSError* error)
     {
-        if (options == 0)
-            options = UNAuthorizationOptionBadge | UNAuthorizationOptionSound | UNAuthorizationOptionAlert;
+        if (completionHandler)
+            completionHandler(granted, error);
 
-        [UNUserNotificationCenter.currentNotificationCenter requestAuthorizationWithOptions:options completionHandler:^(BOOL granted, NSError* error)
-        {
-            if (completionHandler)
-                completionHandler(granted, error);
-
-            [self sendToken];
-        }];
-    }
-#if (TARGET_OS_IOS)
-    else
-    {
-        self.permissionCompletion = completionHandler;
-
-        if (options == 0)
-            options = UIUserNotificationTypeBadge | UIUserNotificationTypeSound | UIUserNotificationTypeAlert;
-
-        UIUserNotificationType userNotificationTypes = (UIUserNotificationType)options;
-        UIUserNotificationSettings* settings = [UIUserNotificationSettings settingsForTypes:userNotificationTypes categories:nil];
-        [UIApplication.sharedApplication registerUserNotificationSettings:settings];
-    }
-#endif
+        [self sendToken];
+    }];
 }
 
 - (void)sendToken
@@ -196,32 +173,15 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
     BOOL hasNotificationPermissionBefore = [CountlyPersistency.sharedInstance retrieveNotificationPermission];
 
-    if (@available(iOS 10.0, macOS 10.14, *))
+    [UNUserNotificationCenter.currentNotificationCenter getNotificationSettingsWithCompletionHandler:^(UNNotificationSettings* settings)
     {
-        [UNUserNotificationCenter.currentNotificationCenter getNotificationSettingsWithCompletionHandler:^(UNNotificationSettings* settings)
+        BOOL hasProvisionalPermission = NO;
+        if (@available(iOS 12.0, *))
         {
-            BOOL hasProvisionalPermission = NO;
-            if (@available(iOS 12.0, *))
-            {
-                hasProvisionalPermission = settings.authorizationStatus == UNAuthorizationStatusProvisional;
-            }
-        
-            if (settings.authorizationStatus == UNAuthorizationStatusAuthorized || hasProvisionalPermission)
-            {
-                [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
-                [CountlyPersistency.sharedInstance storeNotificationPermission:YES];
-            }
-            else if (hasNotificationPermissionBefore)
-            {
-                [self clearToken];
-                [CountlyPersistency.sharedInstance storeNotificationPermission:NO];
-            }
-        }];
-    }
-#if (TARGET_OS_IOS)
-    else
-    {
-        if (UIApplication.sharedApplication.currentUserNotificationSettings.types != UIUserNotificationTypeNone)
+            hasProvisionalPermission = settings.authorizationStatus == UNAuthorizationStatusProvisional;
+        }
+
+        if (settings.authorizationStatus == UNAuthorizationStatusAuthorized || hasProvisionalPermission)
         {
             [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
             [CountlyPersistency.sharedInstance storeNotificationPermission:YES];
@@ -231,8 +191,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
             [self clearToken];
             [CountlyPersistency.sharedInstance storeNotificationPermission:NO];
         }
-    }
-#endif
+    }];
 }
 
 - (void)clearToken
@@ -263,107 +222,6 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 #if (TARGET_OS_OSX)
     //NOTE: For macOS targets, just record action event.
     [self recordActionEvent:notificationID buttonIndex:0];
-#endif
-
-#if (TARGET_OS_IOS)
-    if (self.doNotShowAlertForNotifications)
-    {
-        CLY_LOG_D(@"doNotShowAlertForNotifications flag is set!");
-        return;
-    }
-
-    if (@available(iOS 10.0, *))
-    {
-        //NOTE: On iOS10+ when a silent notification (content-available: 1) with `alert` key arrives, do not show alert here, as it is shown in UN framework delegate method
-        CLY_LOG_W(@"A silent notification (content-available: 1) with `alert` key on iOS10+.");
-        return;
-    }
-
-    id alert = notification[@"aps"][@"alert"];
-    NSString* message = nil;
-    NSString* title = nil;
-
-    if ([alert isKindOfClass:NSDictionary.class])
-    {
-        message = alert[@"body"];
-        title = alert[@"title"];
-    }
-    else
-    {
-        message = (NSString*)alert;
-        title = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleDisplayName"];
-    }
-
-    if (!message && !title)
-    {
-        CLY_LOG_W(@"Title and Message are both not found in notification dictionary!");
-        return;
-    }
-
-
-    __block UIAlertController* alertController = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
-
-
-    CLYButton* defaultButton = nil;
-    NSString* defaultURL = countlyPayload[kCountlyPNKeyDefaultURL];
-    if (defaultURL)
-    {
-        defaultButton = [CLYButton buttonWithType:UIButtonTypeCustom];
-        defaultButton.frame = alertController.view.bounds;
-        defaultButton.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        defaultButton.onClick = ^(id sender)
-        {
-            [self recordActionEvent:notificationID buttonIndex:0];
-
-            [self openURL:defaultURL];
-
-            [alertController dismissViewControllerAnimated:YES completion:^
-            {
-                alertController = nil;
-            }];
-        };
-        [alertController.view addSubview:defaultButton];
-    }
-
-
-    CLYButton* dismissButton = [CLYButton dismissAlertButton];
-    dismissButton.onClick = ^(id sender)
-    {
-        [self recordActionEvent:notificationID buttonIndex:0];
-
-        [alertController dismissViewControllerAnimated:YES completion:^
-        {
-            alertController = nil;
-        }];
-    };
-    [alertController.view addSubview:dismissButton];
-    [dismissButton positionToTopRight];
-
-    NSArray* buttons = countlyPayload[kCountlyPNKeyButtons];
-    [buttons enumerateObjectsUsingBlock:^(NSDictionary* button, NSUInteger idx, BOOL * stop)
-    {
-        //NOTE: Add space to force buttons to be laid out vertically
-        NSString* actionTitle = [button[kCountlyPNKeyActionButtonTitle] stringByAppendingString:@"                       "];
-        NSString* URL = button[kCountlyPNKeyActionButtonURL];
-
-        UIAlertAction* visit = [UIAlertAction actionWithTitle:actionTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction * action)
-        {
-            [self recordActionEvent:notificationID buttonIndex:idx + 1];
-
-            [self openURL:URL];
-
-            alertController = nil;
-        }];
-
-        [alertController addAction:visit];
-    }];
-
-    [CountlyCommon.sharedInstance tryPresentingViewController:alertController];
-
-    const CGFloat kCountlyActionButtonHeight = 44.0;
-    CGRect tempFrame = defaultButton.frame;
-    tempFrame.size.height -= buttons.count * kCountlyActionButtonHeight;
-    defaultButton.frame = tempFrame;
 #endif
 }
 

@@ -275,18 +275,12 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 #if (TARGET_OS_IOS)
 + (NSInteger)hasWatch
 {
-    if (@available(iOS 9.0, *))
-        return (NSInteger)WCSession.defaultSession.paired;
-
-    return 0;
+    return (NSInteger)WCSession.defaultSession.paired;
 }
 
 + (NSInteger)installedWatchApp
 {
-    if (@available(iOS 9.0, *))
-        return (NSInteger)WCSession.defaultSession.watchAppInstalled;
-
-    return 0;
+    return (NSInteger)WCSession.defaultSession.watchAppInstalled;
 }
 #endif
 
@@ -440,14 +434,7 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     UIDevice.currentDevice.batteryMonitoringEnabled = YES;
     return abs((int)(UIDevice.currentDevice.batteryLevel * 100));
 #elif (TARGET_OS_WATCH)
-    if (@available(watchOS 4.0, *))
-    {
-        return abs((int)(WKInterfaceDevice.currentDevice.batteryLevel * 100));
-    }
-    else
-    {
-        return 100;
-    }
+    return abs((int)(WKInterfaceDevice.currentDevice.batteryLevel * 100));
 #elif (TARGET_OS_OSX)
     CFTypeRef sourcesInfo = IOPSCopyPowerSourcesInfo();
     NSArray *sources = (__bridge NSArray*)IOPSCopyPowerSourcesList(sourcesInfo);
@@ -471,13 +458,10 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     if (orientation >= 0 && orientation < orientations.count)
         return orientations[orientation];
 #elif (TARGET_OS_WATCH)
-    if (@available(watchOS 3.0, *))
-    {
-        NSArray *orientations = @[@"CrownLeft", @"CrownRight"];
-        WKInterfaceDeviceCrownOrientation orientation = WKInterfaceDevice.currentDevice.crownOrientation;
-        if (orientation >= 0 && orientation < orientations.count)
-            return orientations[orientation];
-    }
+    NSArray *orientations = @[@"CrownLeft", @"CrownRight"];
+    WKInterfaceDeviceCrownOrientation orientation = WKInterfaceDevice.currentDevice.crownOrientation;
+    if (orientation >= 0 && orientation < orientations.count)
+        return orientations[orientation];
 #endif
 
     return nil;
