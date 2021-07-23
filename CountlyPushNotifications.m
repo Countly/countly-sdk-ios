@@ -312,6 +312,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
 
 @implementation NSObject (CountlyPushNotifications)
+#if (TARGET_OS_IOS || TARGET_OS_OSX)
 - (void)Countly_application:(CLYApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken
 {
     CLY_LOG_D(@"App didRegisterForRemoteNotificationsWithDeviceToken: %@", deviceToken);
@@ -338,6 +339,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
     [self Countly_application:application didFailToRegisterForRemoteNotificationsWithError:error];
 }
+#endif
 
 #endif
 @end
