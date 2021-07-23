@@ -16,7 +16,6 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 @interface CountlyPushNotifications () <UNUserNotificationCenterDelegate>
 @property (nonatomic) NSString* token;
-@property (nonatomic, copy) void (^permissionCompletion)(BOOL granted, NSError * error);
 #else
 @interface CountlyPushNotifications ()
 #endif
@@ -27,9 +26,6 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 #elif (TARGET_OS_OSX)
     #define CLYApplication NSApplication
 #endif
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 @implementation CountlyPushNotifications
 
@@ -71,11 +67,9 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
     [self swizzlePushNotificationMethods];
 
-#if (TARGET_OS_IOS)
-    [UIApplication.sharedApplication registerForRemoteNotifications];
-#elif (TARGET_OS_OSX)
-    [NSApplication.sharedApplication registerForRemoteNotificationTypes:NSRemoteNotificationTypeBadge | NSRemoteNotificationTypeAlert | NSRemoteNotificationTypeSound];
+    [CLYApplication.sharedApplication registerForRemoteNotifications];
 
+#if (TARGET_OS_OSX)
     UNNotificationResponse* notificationResponse = self.launchNotification.userInfo[NSApplicationLaunchUserNotificationKey];
     if (notificationResponse)
         [self userNotificationCenter:UNUserNotificationCenter.currentNotificationCenter didReceiveNotificationResponse:notificationResponse withCompletionHandler:^{}];
@@ -106,12 +100,6 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
     @[
         @"application:didRegisterForRemoteNotificationsWithDeviceToken:",
         @"application:didFailToRegisterForRemoteNotificationsWithError:",
-#if (TARGET_OS_IOS)
-        @"application:didRegisterUserNotificationSettings:",
-        @"application:didReceiveRemoteNotification:fetchCompletionHandler:",
-#elif (TARGET_OS_OSX)
-        @"application:didReceiveRemoteNotification:",
-#endif
     ];
 
     for (NSString* selectorString in selectors)
@@ -197,32 +185,6 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 - (void)clearToken
 {
     [CountlyConnectionManager.sharedInstance sendPushToken:@""];
-}
-
-- (void)handleNotification:(NSDictionary *)notification
-{
-#if (TARGET_OS_IOS || TARGET_OS_OSX)
-    if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
-        return;
-
-    CLY_LOG_D(@"Handling remote notification %@", notification);
-
-    NSDictionary* countlyPayload = notification[kCountlyPNKeyCountlyPayload];
-    NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
-
-    if (!notificationID)
-    {
-        CLY_LOG_D(@"Countly payload not found in notification dictionary!");
-        return;
-    }
-
-    CLY_LOG_D(@"Countly Push Notification ID: %@", notificationID);
-#endif
-
-#if (TARGET_OS_OSX)
-    //NOTE: For macOS targets, just record action event.
-    [self recordActionEvent:notificationID buttonIndex:0];
-#endif
 }
 
 - (void)openURL:(NSString *)URLString
@@ -345,21 +307,11 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
 - (void)application:(CLYApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken{}
 - (void)application:(CLYApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error{}
-#if (TARGET_OS_IOS)
-- (void)application:(UIApplication *)application didRegisterUserNotificationSettings:(UIUserNotificationSettings *)notificationSettings{}
-- (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler
-{
-    completionHandler(UIBackgroundFetchResultNewData);
-}
-#elif (TARGET_OS_OSX)
-- (void)application:(NSApplication *)application didReceiveRemoteNotification:(NSDictionary<NSString *,id> *)userInfo{}
-#endif
 #endif
 @end
 
 
 @implementation NSObject (CountlyPushNotifications)
-#if (TARGET_OS_IOS || TARGET_OS_OSX)
 - (void)Countly_application:(CLYApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken
 {
     CLY_LOG_D(@"App didRegisterForRemoteNotificationsWithDeviceToken: %@", deviceToken);
@@ -386,42 +338,6 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
     [self Countly_application:application didFailToRegisterForRemoteNotificationsWithError:error];
 }
-#endif
 
-#if (TARGET_OS_IOS)
-- (void)Countly_application:(UIApplication *)application didRegisterUserNotificationSettings:(UIUserNotificationSettings *)notificationSettings
-{
-    CLY_LOG_D(@"App didRegisterUserNotificationSettings: %@", notificationSettings);
-
-    [CountlyPushNotifications.sharedInstance sendToken];
-
-    BOOL granted = UIApplication.sharedApplication.currentUserNotificationSettings.types != UIUserNotificationTypeNone;
-
-    if (CountlyPushNotifications.sharedInstance.permissionCompletion)
-        CountlyPushNotifications.sharedInstance.permissionCompletion(granted, nil);
-
-    [self Countly_application:application didRegisterUserNotificationSettings:notificationSettings];
-}
-
-- (void)Countly_application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler;
-{
-    CLY_LOG_D(@"App didReceiveRemoteNotification:fetchCompletionHandler");
-
-    [CountlyPushNotifications.sharedInstance handleNotification:userInfo];
-
-    [self Countly_application:application didReceiveRemoteNotification:userInfo fetchCompletionHandler:completionHandler];
-}
-
-#elif (TARGET_OS_OSX)
-- (void)Countly_application:(NSApplication *)application didReceiveRemoteNotification:(NSDictionary<NSString *,id> *)userInfo
-{
-    CLY_LOG_D(@"App didReceiveRemoteNotification:");
-
-    [CountlyPushNotifications.sharedInstance handleNotification:userInfo];
-
-    [self Countly_application:application didReceiveRemoteNotification:userInfo];
-}
-#endif
 #endif
 @end
-#pragma GCC diagnostic pop
