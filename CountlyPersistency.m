@@ -45,7 +45,10 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 
         if (readData)
         {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
             NSDictionary* readDict = [NSKeyedUnarchiver unarchiveObjectWithData:readData];
+#pragma GCC diagnostic pop
 
             self.queuedRequests = [readDict[kCountlyQueuedRequestsPersistencyKey] mutableCopy];
         }
@@ -373,7 +376,10 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 
     @synchronized (self)
     {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
         saveData = [NSKeyedArchiver archivedDataWithRootObject:@{kCountlyQueuedRequestsPersistencyKey: self.queuedRequests}];
+#pragma GCC diagnostic pop
     }
 
 #pragma clang diagnostic push
