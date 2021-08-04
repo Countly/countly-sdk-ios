@@ -35,7 +35,8 @@ let package = Package(
                 "LICENSE.md",
                 "README.md",
                 "countly_dsym_uploader.sh",
-                "CHANGELOG.md"
+                "CHANGELOG.md",
+                "SECURITY.md"
             ],
 
             linkerSettings: 
