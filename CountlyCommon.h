@@ -45,6 +45,8 @@
 
 #import <objc/runtime.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 extern NSString* const kCountlyErrorDomain;
 
 NS_ERROR_ENUM(kCountlyErrorDomain)
@@ -137,3 +139,5 @@ void CountlyPrint(NSString *stringToPrint);
 @interface CountlyUserDetails (ClearUserDetails)
 - (void)clearUserDetails;
 @end
+
+NS_ASSUME_NONNULL_END
