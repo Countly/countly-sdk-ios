@@ -382,13 +382,8 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 #pragma GCC diagnostic pop
     }
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-variable"
-
     BOOL writeResult = [saveData writeToFile:[self storageFileURL].path atomically:YES];
     CLY_LOG_D(@"Result of writing data to file: %d", writeResult);
-
-#pragma clang diagnostic pop
 
     [CountlyCommon.sharedInstance finishBackgroundTask];
 }
