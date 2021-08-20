@@ -209,15 +209,11 @@ void CountlyPrint(NSString *stringToPrint)
 - (void)recordOrientation
 {
 #if (TARGET_OS_IOS)
-    UIInterfaceOrientation interfaceOrientation = UIInterfaceOrientationUnknown;
-    if (@available(iOS 13.0, *))
-    {
-        interfaceOrientation = UIApplication.sharedApplication.keyWindow.windowScene.interfaceOrientation;
-    }
-    else
-    {
-        interfaceOrientation = UIApplication.sharedApplication.statusBarOrientation;
-    }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    UIInterfaceOrientation interfaceOrientation = UIApplication.sharedApplication.statusBarOrientation;
+#pragma GCC diagnostic pop
 
     NSString* mode = nil;
     if (UIInterfaceOrientationIsPortrait(interfaceOrientation))
@@ -277,18 +273,21 @@ void CountlyPrint(NSString *stringToPrint)
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 - (UIViewController *)topViewController
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     UIViewController* topVC = UIApplication.sharedApplication.keyWindow.rootViewController;
+#pragma GCC diagnostic pop
 
     while (YES)
     {
         if (topVC.presentedViewController)
             topVC = topVC.presentedViewController;
-         else if ([topVC isKindOfClass:UINavigationController.class])
-             topVC = ((UINavigationController *)topVC).topViewController;
-         else if ([topVC isKindOfClass:UITabBarController.class])
-             topVC = ((UITabBarController *)topVC).selectedViewController;
-         else
-             break;
+        else if ([topVC isKindOfClass:UINavigationController.class])
+            topVC = ((UINavigationController *)topVC).topViewController;
+        else if ([topVC isKindOfClass:UITabBarController.class])
+            topVC = ((UITabBarController *)topVC).selectedViewController;
+        else
+            break;
     }
 
     return topVC;
@@ -375,7 +374,11 @@ const CGFloat kCountlyDismissButtonStandardStatusBarHeight = 20.0;
     {
         if (@available(iOS 11.0, *))
         {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
             CGFloat top = UIApplication.sharedApplication.keyWindow.safeAreaInsets.top;
+#pragma GCC diagnostic pop
+
             if (top)
             {
                 rect.origin.y += top;
