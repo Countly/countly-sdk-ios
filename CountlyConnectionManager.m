@@ -672,22 +672,42 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)URLSession:(NSURLSession *)session didReceiveChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential *))completionHandler
 {
-    SecTrustRef serverTrust = challenge.protectionSpace.serverTrust;
-    SecKeyRef serverKey = SecTrustCopyPublicKey(serverTrust);
     SecPolicyRef policy = SecPolicyCreateSSL(true, (__bridge CFStringRef)challenge.protectionSpace.host);
+    SecTrustRef serverTrust = challenge.protectionSpace.serverTrust;
+    SecKeyRef serverKey = NULL;
+
+    if (@available(iOS 14.0, tvOS 14.0, macOS 11.0, watchOS 7.0, *))
+    {
+        serverKey = SecTrustCopyKey(serverTrust);
+    }
+    else
+    {
+        serverKey = SecTrustCopyKey(serverTrust);
+    }
 
     __block BOOL isLocalAndServerCertMatch = NO;
 
-    for (NSString* certificate in self.pinnedCertificates )
+    for (NSString* certificate in self.pinnedCertificates)
     {
         NSString* localCertPath = [NSBundle.mainBundle pathForResource:certificate ofType:nil];
+
         if (!localCertPath)
            [NSException raise:@"CountlyCertificateNotFoundException" format:@"Bundled certificate can not be found for %@", certificate];
+
         NSData* localCertData = [NSData dataWithContentsOfFile:localCertPath];
         SecCertificateRef localCert = SecCertificateCreateWithData(NULL, (__bridge CFDataRef)localCertData);
         SecTrustRef localTrust = NULL;
         SecTrustCreateWithCertificates(localCert, policy, &localTrust);
-        SecKeyRef localKey = SecTrustCopyPublicKey(localTrust);
+        SecKeyRef localKey = NULL;
+
+        if (@available(iOS 14.0, tvOS 14.0, macOS 11.0, watchOS 7.0, *))
+        {
+            localKey = SecTrustCopyKey(localTrust);
+        }
+        else
+        {
+            localKey = SecTrustCopyKey(localTrust);
+        }
 
         CFRelease(localCert);
         CFRelease(localTrust);
@@ -701,11 +721,15 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
             break;
         }
 
-        if (localKey) CFRelease(localKey);
+        if (localKey)
+            CFRelease(localKey);
     }
 
     SecTrustResultType serverTrustResult;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     SecTrustEvaluate(serverTrust, &serverTrustResult);
+#pragma GCC diagnostic pop
     BOOL isServerCertValid = (serverTrustResult == kSecTrustResultUnspecified || serverTrustResult == kSecTrustResultProceed);
 
     if (isLocalAndServerCertMatch && isServerCertValid)
@@ -725,7 +749,9 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         completionHandler(NSURLSessionAuthChallengeCancelAuthenticationChallenge, NULL);
     }
 
-    if (serverKey) CFRelease(serverKey);
+    if (serverKey)
+        CFRelease(serverKey);
+
     CFRelease(policy);
 }
 
