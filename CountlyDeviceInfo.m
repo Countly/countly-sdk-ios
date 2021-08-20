@@ -148,7 +148,7 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 #if (TARGET_OS_MACCATALYST)
     return @"desktop";
 #else
-    if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
+    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad)
         return @"tablet";
 
     return @"mobile";
