@@ -240,7 +240,21 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
         NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
 
         if (notificationID)
-            completionHandler(UNNotificationPresentationOptionAlert);
+        {
+            UNNotificationPresentationOptions presentationOption = UNNotificationPresentationOptionNone;
+            if (@available(iOS 14.0, tvOS 14.0, macOS 11.0, watchOS 7.0, *))
+            {
+                presentationOption = UNNotificationPresentationOptionList | UNNotificationPresentationOptionBanner;
+            }
+            else
+            {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+                presentationOption = UNNotificationPresentationOptionAlert;
+#pragma GCC diagnostic pop
+            }
+            completionHandler(presentationOption);
+        }
     }
 
     id<UNUserNotificationCenterDelegate> appDelegate = (id<UNUserNotificationCenterDelegate>)CLYApplication.sharedApplication.delegate;
