@@ -217,7 +217,10 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 {
 #if (TARGET_OS_IOS)
 #if (!TARGET_OS_MACCATALYST)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     return CountlyDeviceInfo.sharedInstance.networkInfo.subscriberCellularProvider.carrierName;
+#pragma GCC diagnostic pop
 #endif
 #endif
     //NOTE: it is not possible to get carrier info on Apple Watches as CoreTelephony is not available.
