@@ -330,12 +330,12 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
                                                     kCountlyEndpointFeedback,
                                                     kCountlyEndpointWidget];
 
-    if (CountlyConnectionManager.sharedInstance.alwaysUsePOST)
+    if (queryString.length > kCountlyGETRequestMaxLength || CountlyConnectionManager.sharedInstance.alwaysUsePOST)
     {
         NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverOutputFeedbackWidgetEndpoint]];
         request.HTTPMethod = @"POST";
         request.HTTPBody = [queryString cly_dataUTF8];
-        return  request.copy;
+        return request.copy;
     }
     else
     {
@@ -447,12 +447,12 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     [URL appendString:kCountlyEndpointO];
     [URL appendString:kCountlyEndpointSDK];
 
-    if (CountlyConnectionManager.sharedInstance.alwaysUsePOST)
+    if (queryString.length > kCountlyGETRequestMaxLength || CountlyConnectionManager.sharedInstance.alwaysUsePOST)
     {
         NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:URL]];
         request.HTTPMethod = @"POST";
         request.HTTPBody = [queryString cly_dataUTF8];
-        return  request.copy;
+        return request.copy;
     }
     else
     {
