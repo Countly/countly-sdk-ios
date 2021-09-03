@@ -19,6 +19,8 @@ extern NSString* const kCountlyEndpointSDK;
 extern NSString* const kCountlyEndpointFeedback;
 extern NSString* const kCountlyEndpointWidget;
 
+extern const NSInteger kCountlyGETRequestMaxLength;
+
 @interface CountlyConnectionManager : NSObject <NSURLSessionDelegate>
 
 @property (nonatomic) NSString* appKey;
