@@ -19,7 +19,7 @@ extern CLYFeedbackWidgetType const CLYFeedbackWidgetTypeNPS;
 @property (nonatomic, readonly) CLYFeedbackWidgetType type;
 @property (nonatomic, readonly) NSString* ID;
 @property (nonatomic, readonly) NSString* name;
-
+@property (nonatomic, readonly) NSDictionary* data;
 
 /**
  * Modally presents the feedback widget above the top visible view controller.

@@ -19,6 +19,7 @@ NSString* const kCountlyFBKeyClosed         = @"closed";
 @property (nonatomic) CLYFeedbackWidgetType type;
 @property (nonatomic) NSString* ID;
 @property (nonatomic) NSString* name;
+@property (nonatomic) NSDictionary* data;
 @end
 
 
@@ -94,6 +95,8 @@ NSString* const kCountlyFBKeyClosed         = @"closed";
                 error = [NSError errorWithDomain:kCountlyErrorDomain code:CLYErrorFeedbacksGeneralAPIError userInfo:userInfo];
             }
         }
+
+        self.data = widgetData;
 
         dispatch_async(dispatch_get_main_queue(), ^
         {
