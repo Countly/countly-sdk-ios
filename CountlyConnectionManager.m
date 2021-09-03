@@ -61,6 +61,7 @@ NSString* const kCountlyEndpointO = @"/o"; //NOTE: output endpoint
 NSString* const kCountlyEndpointSDK = @"/sdk";
 NSString* const kCountlyEndpointFeedback = @"/feedback";
 NSString* const kCountlyEndpointWidget = @"/widget";
+NSString* const kCountlyEndpointSurveys = @"/surveys";
 
 const NSInteger kCountlyGETRequestMaxLength = 2048;
 
