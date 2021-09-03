@@ -37,6 +37,15 @@ extern CLYFeedbackWidgetType const CLYFeedbackWidgetTypeNPS;
  */
 - (void)presentWithAppearBlock:(void(^ __nullable)(void))appearBlock andDismissBlock:(void(^ __nullable)(void))dismissBlock;
 
+/**
+ * Fetches feedback widget's data for manual presenting.
+ * @discussion When feedback widget's data is fetched successfully, @c completionHandler will be executed with an @c NSDictionary
+ * @discussion This @c NSDictionary represents the feedback widget's data and can be used for creating custom widget UI.
+ * @discussion Otherwise, @c completionHandler will be executed with an @c NSError.
+ * @param completionHandler A completion handler block to be executed when data is fetched successfully or there is an error.
+ */
+- (void)getWidgetData:(void (^)(NSDictionary * __nullable widgetData, NSError * __nullable error))completionHandler;
+
 #endif
 @end
 

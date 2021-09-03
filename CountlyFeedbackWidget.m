@@ -74,6 +74,70 @@ NSString* const kCountlyFBKeyClosed         = @"closed";
     [CountlyCommon.sharedInstance tryPresentingViewController:webVC withCompletion:appearBlock];
 }
 
+- (void)getWidgetData:(void (^)(NSDictionary * __nullable widgetData, NSError * __nullable error))completionHandler
+{
+    NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:[self dataRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    {
+        NSDictionary *widgetData = nil;
+
+        if (!error)
+        {
+            widgetData = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+        }
+
+        if (!error)
+        {
+            if (((NSHTTPURLResponse*)response).statusCode != 200)
+            {
+                NSMutableDictionary* userInfo = widgetData.mutableCopy;
+                userInfo[NSLocalizedDescriptionKey] = @"Feedbacks general API error";
+                error = [NSError errorWithDomain:kCountlyErrorDomain code:CLYErrorFeedbacksGeneralAPIError userInfo:userInfo];
+            }
+        }
+
+        dispatch_async(dispatch_get_main_queue(), ^
+        {
+            if (completionHandler)
+                completionHandler(widgetData, error);
+        });
+    }];
+
+    [task resume];
+}
+
+- (NSURLRequest *)dataRequest
+{
+    NSString* queryString = [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%@&%@=%@&%@=%@",
+        kCountlyQSKeySDKName, CountlyCommon.sharedInstance.SDKName,
+        kCountlyQSKeySDKVersion, CountlyCommon.sharedInstance.SDKVersion,
+        kCountlyFBKeyAppVersion, CountlyDeviceInfo.appVersion,
+        kCountlyFBKeyPlatform, CountlyDeviceInfo.osName,
+        kCountlyFBKeyWidgetID, self.ID];
+
+    queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
+
+    NSMutableString* URL = CountlyConnectionManager.sharedInstance.host.mutableCopy;
+    [URL appendString:kCountlyEndpointO];
+    [URL appendString:kCountlyEndpointSurveys];
+    NSString* feedbackTypeEndpoint = [@"/" stringByAppendingString:self.type];
+    [URL appendString:feedbackTypeEndpoint];
+    [URL appendString:kCountlyEndpointWidget];
+
+    if (queryString.length > kCountlyGETRequestMaxLength || CountlyConnectionManager.sharedInstance.alwaysUsePOST)
+    {
+        NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:URL]];
+        request.HTTPMethod = @"POST";
+        request.HTTPBody = [queryString cly_dataUTF8];
+        return request.copy;
+    }
+    else
+    {
+        [URL appendFormat:@"?%@", queryString];
+        NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:URL]];
+        return request;
+    }
+}
+
 - (NSURLRequest *)displayRequest
 {
     NSString* queryString = [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%@&%@=%@&%@=%@&%@=%@&%@=%@",
