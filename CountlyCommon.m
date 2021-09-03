@@ -302,11 +302,21 @@ void CountlyPrint(NSString *stringToPrint)
 
 - (void)tryPresentingViewController:(UIViewController *)viewController
 {
+    [self tryPresentingViewController:viewController withCompletion:nil];
+}
+
+- (void)tryPresentingViewController:(UIViewController *)viewController withCompletion:(void (^ __nullable) (void))completion
+{
     UIViewController* topVC = self.topViewController;
 
     if (topVC)
     {
-        [topVC presentViewController:viewController animated:YES completion:nil];
+        [topVC presentViewController:viewController animated:YES completion:^
+        {
+            if (completion)
+                completion();
+        }];
+
         return;
     }
 

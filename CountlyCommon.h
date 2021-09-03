@@ -84,6 +84,7 @@ void CountlyPrint(NSString *stringToPrint);
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 - (UIViewController *)topViewController;
 - (void)tryPresentingViewController:(UIViewController *)viewController;
+- (void)tryPresentingViewController:(UIViewController *)viewController withCompletion:(void (^ __nullable) (void))completion;
 #endif
 
 - (void)startAppleWatchMatching;
