@@ -28,6 +28,15 @@ extern CLYFeedbackWidgetType const CLYFeedbackWidgetTypeNPS;
  */
 - (void)present;
 
+/**
+ * Modally presents the feedback widget above the top visible view controller and executes given blocks.
+ * @param appearBlock Block to be executed when widget is displayed.
+ * @param dismissBlock Block to be executed when widget is dismissed.
+ * @discussion Calls to this method will be ignored if consent for @c CLYConsentFeedback is not given
+ * while @c requiresConsent flag is set on initial configuration.
+ */
+- (void)presentWithAppearBlock:(void(^ __nullable)(void))appearBlock andDismissBlock:(void(^ __nullable)(void))dismissBlock;
+
 #endif
 @end
 

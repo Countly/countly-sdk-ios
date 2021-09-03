@@ -36,6 +36,11 @@ NSString* const kCountlyFBKeyClosed         = @"closed";
 
 - (void)present
 {
+    [self presentWithAppearBlock:nil andDismissBlock:nil];
+}
+
+- (void)presentWithAppearBlock:(void(^ __nullable)(void))appearBlock andDismissBlock:(void(^ __nullable)(void))dismissBlock;
+{
     if (!CountlyConsentManager.sharedInstance.consentForFeedback)
         return;
 
@@ -55,6 +60,9 @@ NSString* const kCountlyFBKeyClosed         = @"closed";
     {
         [webVC dismissViewControllerAnimated:YES completion:^
         {
+            if (dismissBlock)
+                dismissBlock();
+
             webVC = nil;
         }];
 
@@ -63,7 +71,7 @@ NSString* const kCountlyFBKeyClosed         = @"closed";
     [webVC.view addSubview:dismissButton];
     [dismissButton positionToTopRightConsideringStatusBar];
 
-    [CountlyCommon.sharedInstance tryPresentingViewController:webVC];
+    [CountlyCommon.sharedInstance tryPresentingViewController:webVC withCompletion:appearBlock];
 }
 
 - (NSURLRequest *)displayRequest
