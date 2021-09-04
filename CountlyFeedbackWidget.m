@@ -108,6 +108,14 @@ NSString* const kCountlyFBKeyClosed         = @"closed";
     [task resume];
 }
 
+- (void)recordResult:(NSDictionary * __nullable)result
+{
+    if (!result)
+        [self recordReservedEventForDismissing];
+    else
+        [self recordReservedEventWithSegmentation:result];
+}
+
 - (NSURLRequest *)dataRequest
 {
     NSString* queryString = [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%@&%@=%@&%@=%@",

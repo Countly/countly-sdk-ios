@@ -45,6 +45,13 @@ extern CLYFeedbackWidgetType const CLYFeedbackWidgetTypeNPS;
  */
 - (void)getWidgetData:(void (^)(NSDictionary * __nullable widgetData, NSError * __nullable error))completionHandler;
 
+/**
+ * Records manually presented feedback widget's result.
+ * @discussion Calls to this method will be ignored if consent for @c CLYConsentFeedback is not given while @c requiresConsent flag is set on initial configuration.
+ * @param result A dictionary representing result of manually presented feedback widget.
+ */
+- (void)recordResult:(NSDictionary * __nullable)result;
+
 #endif
 @end
 
