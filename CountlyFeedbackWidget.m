@@ -180,6 +180,8 @@ NSString* const kCountlyFBKeyClosed         = @"closed";
     segmentation[kCountlyFBKeyAppVersion] = CountlyDeviceInfo.appVersion;
     segmentation[kCountlyFBKeyWidgetID] = self.ID;
     [Countly.sharedInstance recordReservedEvent:eventName segmentation:segmentation];
+
+    [CountlyConnectionManager.sharedInstance sendEvents];
 }
 
 - (NSString *)description
