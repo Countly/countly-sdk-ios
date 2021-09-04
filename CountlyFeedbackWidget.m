@@ -166,14 +166,18 @@ NSString* const kCountlyFBKeyClosed         = @"closed";
 
 - (void)recordReservedEventForDismissing
 {
+    [self recordReservedEventWithSegmentation:@{kCountlyFBKeyClosed: @1}];
+}
+
+- (void)recordReservedEventWithSegmentation:(NSDictionary *)segm
+{
     if (!CountlyConsentManager.sharedInstance.consentForFeedback)
         return;
 
     NSString* eventName = [kCountlyReservedEventPrefix stringByAppendingString:self.type];
-    NSMutableDictionary* segmentation = NSMutableDictionary.new;
+    NSMutableDictionary* segmentation = segm.mutableCopy;
     segmentation[kCountlyFBKeyPlatform] = CountlyDeviceInfo.osName;
     segmentation[kCountlyFBKeyAppVersion] = CountlyDeviceInfo.appVersion;
-    segmentation[kCountlyFBKeyClosed] =  @1;
     segmentation[kCountlyFBKeyWidgetID] = self.ID;
     [Countly.sharedInstance recordReservedEvent:eventName segmentation:segmentation];
 }
