@@ -30,17 +30,16 @@ extern CLYFeedbackWidgetType const CLYFeedbackWidgetTypeNPS;
 
 /**
  * Modally presents the feedback widget above the top visible view controller and executes given blocks.
+ * @discussion Calls to this method will be ignored if consent for @c CLYConsentFeedback is not given while @c requiresConsent flag is set on initial configuration.
  * @param appearBlock Block to be executed when widget is displayed.
  * @param dismissBlock Block to be executed when widget is dismissed.
- * @discussion Calls to this method will be ignored if consent for @c CLYConsentFeedback is not given
- * while @c requiresConsent flag is set on initial configuration.
  */
 - (void)presentWithAppearBlock:(void(^ __nullable)(void))appearBlock andDismissBlock:(void(^ __nullable)(void))dismissBlock;
 
 /**
- * Fetches feedback widget's data for manual presenting.
+ * Fetches feedback widget's data to be used for manually presenting it.
  * @discussion When feedback widget's data is fetched successfully, @c completionHandler will be executed with an @c NSDictionary
- * @discussion This @c NSDictionary represents the feedback widget's data and can be used for creating custom widget UI.
+ * @discussion This @c NSDictionary represents the feedback widget's data and can be used for creating custom feedback widget UI.
  * @discussion Otherwise, @c completionHandler will be executed with an @c NSError.
  * @param completionHandler A completion handler block to be executed when data is fetched successfully or there is an error.
  */
