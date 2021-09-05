@@ -14,6 +14,7 @@ CLYFeedbackWidgetType const CLYFeedbackWidgetTypeNPS        = @"nps";
 
 NSString* const kCountlyReservedEventPrefix = @"[CLY]_"; //NOTE: This will be used with feedback type.
 NSString* const kCountlyFBKeyClosed         = @"closed";
+NSString* const kCountlyFBKeyShown          = @"shown";
 
 @interface CountlyFeedbackWidget ()
 @property (nonatomic) CLYFeedbackWidgetType type;
@@ -118,11 +119,12 @@ NSString* const kCountlyFBKeyClosed         = @"closed";
 
 - (NSURLRequest *)dataRequest
 {
-    NSString* queryString = [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%@&%@=%@&%@=%@",
+    NSString* queryString = [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%@&%@=%@&%@=%@&%@=%@",
         kCountlyQSKeySDKName, CountlyCommon.sharedInstance.SDKName,
         kCountlyQSKeySDKVersion, CountlyCommon.sharedInstance.SDKVersion,
         kCountlyFBKeyAppVersion, CountlyDeviceInfo.appVersion,
         kCountlyFBKeyPlatform, CountlyDeviceInfo.osName,
+        kCountlyFBKeyShown, @"1",
         kCountlyFBKeyWidgetID, self.ID];
 
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
