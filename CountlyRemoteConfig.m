@@ -204,7 +204,7 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
         NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverOutputSDKEndpoint]];
         request.HTTPMethod = @"POST";
         request.HTTPBody = [queryString cly_dataUTF8];
-        return  request.copy;
+        return request.copy;
     }
     else
     {

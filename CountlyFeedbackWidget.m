@@ -14,11 +14,13 @@ CLYFeedbackWidgetType const CLYFeedbackWidgetTypeNPS        = @"nps";
 
 NSString* const kCountlyReservedEventPrefix = @"[CLY]_"; //NOTE: This will be used with feedback type.
 NSString* const kCountlyFBKeyClosed         = @"closed";
+NSString* const kCountlyFBKeyShown          = @"shown";
 
 @interface CountlyFeedbackWidget ()
 @property (nonatomic) CLYFeedbackWidgetType type;
 @property (nonatomic) NSString* ID;
 @property (nonatomic) NSString* name;
+@property (nonatomic) NSDictionary* data;
 @end
 
 
@@ -35,6 +37,11 @@ NSString* const kCountlyFBKeyClosed         = @"closed";
 }
 
 - (void)present
+{
+    [self presentWithAppearBlock:nil andDismissBlock:nil];
+}
+
+- (void)presentWithAppearBlock:(void(^ __nullable)(void))appearBlock andDismissBlock:(void(^ __nullable)(void))dismissBlock;
 {
     if (!CountlyConsentManager.sharedInstance.consentForFeedback)
         return;
@@ -55,6 +62,9 @@ NSString* const kCountlyFBKeyClosed         = @"closed";
     {
         [webVC dismissViewControllerAnimated:YES completion:^
         {
+            if (dismissBlock)
+                dismissBlock();
+
             webVC = nil;
         }];
 
@@ -63,7 +73,82 @@ NSString* const kCountlyFBKeyClosed         = @"closed";
     [webVC.view addSubview:dismissButton];
     [dismissButton positionToTopRightConsideringStatusBar];
 
-    [CountlyCommon.sharedInstance tryPresentingViewController:webVC];
+    [CountlyCommon.sharedInstance tryPresentingViewController:webVC withCompletion:appearBlock];
+}
+
+- (void)getWidgetData:(void (^)(NSDictionary * __nullable widgetData, NSError * __nullable error))completionHandler
+{
+    NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:[self dataRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    {
+        NSDictionary *widgetData = nil;
+
+        if (!error)
+        {
+            widgetData = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+        }
+
+        if (!error)
+        {
+            if (((NSHTTPURLResponse*)response).statusCode != 200)
+            {
+                NSMutableDictionary* userInfo = widgetData.mutableCopy;
+                userInfo[NSLocalizedDescriptionKey] = @"Feedbacks general API error";
+                error = [NSError errorWithDomain:kCountlyErrorDomain code:CLYErrorFeedbacksGeneralAPIError userInfo:userInfo];
+            }
+        }
+
+        self.data = widgetData;
+
+        dispatch_async(dispatch_get_main_queue(), ^
+        {
+            if (completionHandler)
+                completionHandler(widgetData, error);
+        });
+    }];
+
+    [task resume];
+}
+
+- (void)recordResult:(NSDictionary * __nullable)result
+{
+    if (!result)
+        [self recordReservedEventForDismissing];
+    else
+        [self recordReservedEventWithSegmentation:result];
+}
+
+- (NSURLRequest *)dataRequest
+{
+    NSString* queryString = [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%@&%@=%@&%@=%@&%@=%@",
+        kCountlyQSKeySDKName, CountlyCommon.sharedInstance.SDKName,
+        kCountlyQSKeySDKVersion, CountlyCommon.sharedInstance.SDKVersion,
+        kCountlyFBKeyAppVersion, CountlyDeviceInfo.appVersion,
+        kCountlyFBKeyPlatform, CountlyDeviceInfo.osName,
+        kCountlyFBKeyShown, @"1",
+        kCountlyFBKeyWidgetID, self.ID];
+
+    queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
+
+    NSMutableString* URL = CountlyConnectionManager.sharedInstance.host.mutableCopy;
+    [URL appendString:kCountlyEndpointO];
+    [URL appendString:kCountlyEndpointSurveys];
+    NSString* feedbackTypeEndpoint = [@"/" stringByAppendingString:self.type];
+    [URL appendString:feedbackTypeEndpoint];
+    [URL appendString:kCountlyEndpointWidget];
+
+    if (queryString.length > kCountlyGETRequestMaxLength || CountlyConnectionManager.sharedInstance.alwaysUsePOST)
+    {
+        NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:URL]];
+        request.HTTPMethod = @"POST";
+        request.HTTPBody = [queryString cly_dataUTF8];
+        return request.copy;
+    }
+    else
+    {
+        [URL appendFormat:@"?%@", queryString];
+        NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:URL]];
+        return request;
+    }
 }
 
 - (NSURLRequest *)displayRequest
@@ -91,16 +176,22 @@ NSString* const kCountlyFBKeyClosed         = @"closed";
 
 - (void)recordReservedEventForDismissing
 {
+    [self recordReservedEventWithSegmentation:@{kCountlyFBKeyClosed: @1}];
+}
+
+- (void)recordReservedEventWithSegmentation:(NSDictionary *)segm
+{
     if (!CountlyConsentManager.sharedInstance.consentForFeedback)
         return;
 
     NSString* eventName = [kCountlyReservedEventPrefix stringByAppendingString:self.type];
-    NSMutableDictionary* segmentation = NSMutableDictionary.new;
+    NSMutableDictionary* segmentation = segm.mutableCopy;
     segmentation[kCountlyFBKeyPlatform] = CountlyDeviceInfo.osName;
     segmentation[kCountlyFBKeyAppVersion] = CountlyDeviceInfo.appVersion;
-    segmentation[kCountlyFBKeyClosed] =  @1;
     segmentation[kCountlyFBKeyWidgetID] = self.ID;
     [Countly.sharedInstance recordReservedEvent:eventName segmentation:segmentation];
+
+    [CountlyConnectionManager.sharedInstance sendEvents];
 }
 
 - (NSString *)description

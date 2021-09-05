@@ -33,7 +33,7 @@ NSString* const kCountlyOrientationKeyMode = @"mode";
 #endif
 @end
 
-NSString* const kCountlySDKVersion = @"20.11.2";
+NSString* const kCountlySDKVersion = @"20.11.3";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
@@ -302,15 +302,28 @@ void CountlyPrint(NSString *stringToPrint)
 
 - (void)tryPresentingViewController:(UIViewController *)viewController
 {
+    [self tryPresentingViewController:viewController withCompletion:nil];
+}
+
+- (void)tryPresentingViewController:(UIViewController *)viewController withCompletion:(void (^ __nullable) (void))completion
+{
     UIViewController* topVC = self.topViewController;
 
     if (topVC)
     {
-        [topVC presentViewController:viewController animated:YES completion:nil];
+        [topVC presentViewController:viewController animated:YES completion:^
+        {
+            if (completion)
+                completion();
+        }];
+
         return;
     }
 
-    [self performSelector:@selector(tryPresentingViewController:) withObject:viewController afterDelay:1.0];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
+    {
+        [self tryPresentingViewController:viewController];
+    });
 }
 #endif
 

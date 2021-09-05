@@ -1,3 +1,11 @@
+## 20.11.3
+- Added optional appear and dismiss callbacks for feedback widget presenting
+- Added manually displayed and recorded feedback widgets support
+- Fixed HTTP method check for feedback widget requests
+- Implemented immediately sending of queued events when a widget event is recorded
+
+
+
 ## 20.11.2
 - Added configurable internal log levels
 - Added internal logs for approximate received and sent data size for requests
