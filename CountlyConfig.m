@@ -57,6 +57,8 @@ NSString* const CLYOpenUDID = CLYDefaultDeviceID;
         self.URLSessionConfiguration = NSURLSessionConfiguration.defaultSessionConfiguration;
 
         self.internalLogLevel = CLYInternalLogLevelDebug;
+
+        self.enableOrientationTracking = YES;
     }
 
     return self;

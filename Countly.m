@@ -178,6 +178,7 @@ long long appLoadStartTime;
     CountlyPerformanceMonitoring.sharedInstance.isEnabledOnInitialConfig = config.enablePerformanceMonitoring;
     [CountlyPerformanceMonitoring.sharedInstance startPerformanceMonitoring];
 
+    CountlyCommon.sharedInstance.enableOrientationTracking = config.enableOrientationTracking;
     [CountlyCommon.sharedInstance observeDeviceOrientationChanges];
 
     [CountlyConnectionManager.sharedInstance proceedOnQueue];

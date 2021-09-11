@@ -67,6 +67,8 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 @property (nonatomic) BOOL enableAppleWatch;
 @property (nonatomic, copy) NSString* attributionID;
 @property (nonatomic) BOOL manualSessionHandling;
+@property (nonatomic) BOOL enableOrientationTracking;
+
 
 void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...) NS_FORMAT_FUNCTION(2, 3);
 void CountlyPrint(NSString *stringToPrint);
