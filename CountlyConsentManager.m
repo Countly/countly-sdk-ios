@@ -203,24 +203,6 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     ];
 }
 
-
-- (BOOL)hasAnyConsent
-{
-    return
-    self.consentForSessions ||
-    self.consentForEvents ||
-    self.consentForUserDetails ||
-    self.consentForCrashReporting ||
-    self.consentForPushNotifications ||
-    self.consentForLocation ||
-    self.consentForViewTracking ||
-    self.consentForAttribution ||
-    self.consentForAppleWatch ||
-    self.consentForPerformanceMonitoring ||
-    self.consentForFeedback ||
-    self.consentForRemoteConfig;
-}
-
 - (BOOL)containsFeedbackOrStarRating:(NSArray *)features
 {
     //NOTE: StarRating consent is merged into new Feedback consent.

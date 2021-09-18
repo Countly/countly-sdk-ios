@@ -400,9 +400,6 @@ long long appLoadStartTime;
     if (!CountlyCommon.sharedInstance.hasStarted)
         return;
 
-    if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
-        return;
-
     if (!deviceID.length)
     {
         CLY_LOG_W(@"Passing `CLYDefaultDeviceID` or `nil` or empty string as devie ID is deprecated, and will not be allowed in the future.");
