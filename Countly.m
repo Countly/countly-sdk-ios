@@ -450,6 +450,8 @@ long long appLoadStartTime;
 
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
 
+        [CountlyConsentManager.sharedInstance cancelConsentForAllFeaturesWithoutSendingConsentsRequest];
+
         [self resume];
 
         [CountlyPersistency.sharedInstance clearAllTimedEvents];

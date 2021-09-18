@@ -130,7 +130,19 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 }
 
 
+- (void)cancelConsentForAllFeaturesWithoutSendingConsentsRequest
+{
+    [self cancelConsentForFeatures:[self allFeatures] shouldSkipSendingConsentChanges:YES];
+}
+
+
 - (void)cancelConsentForFeatures:(NSArray *)features
+{
+    [self cancelConsentForFeatures:features shouldSkipSendingConsentChanges:NO];
+}
+
+
+- (void)cancelConsentForFeatures:(NSArray *)features shouldSkipSendingConsentChanges:(BOOL)shouldSkipSendingConsentChanges
 {
     if (!self.requiresConsent)
         return;
@@ -171,7 +183,8 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     if ([features containsObject:CLYConsentRemoteConfig] && self.consentForRemoteConfig)
         self.consentForRemoteConfig = NO;
 
-    [self sendConsentChanges];
+    if (!shouldSkipSendingConsentChanges)
+        [self sendConsentChanges];
 }
 
 
