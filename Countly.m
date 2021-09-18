@@ -403,6 +403,11 @@ long long appLoadStartTime;
     if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
         return;
 
+    if (!deviceID.length)
+    {
+        CLY_LOG_W(@"Passing `CLYDefaultDeviceID` or `nil` or empty string as devie ID is deprecated, and will not be allowed in the future.");
+    }
+    
     [self storeCustomDeviceIDState:deviceID];
 
     deviceID = [CountlyDeviceInfo.sharedInstance ensafeDeviceID:deviceID];
