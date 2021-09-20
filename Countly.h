@@ -42,12 +42,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 /**
- * Sets new app key to be used in following requests.
- * @discussion Before switching to new app key, this method suspends Countly and resumes immediately after.
- * @discussion Requests already queued previously will keep using the old app key.
- * @discussion New app key needs to be a non-zero length string, otherwise it is ignored.
- * @discussion @c recordPushNotificationToken and @c updateRemoteConfigWithCompletionHandler: methods may need to be called again after app key change.
- * @param newAppKey New app key
+ * Sets a new app key to be used in new requests.
+ * @discussion Before switching to the new app key, this method suspends Countly and resumes it immediately after.
+ * @discussion The requests already queued prior to this method call will keep using the old app key.
+ * @discussion The new app key needs to be a non-zero length string, otherwise it is ignored.
+ * @discussion @c recordPushNotificationToken and @c updateRemoteConfigWithCompletionHandler: methods may need to be called again after the app key change.
+ * @param newAppKey The new app key
  */
 - (void)setNewAppKey:(NSString *)newAppKey;
 
