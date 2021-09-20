@@ -205,7 +205,10 @@ long long appLoadStartTime;
     CLY_LOG_I(@"%s %@", __FUNCTION__, newAppKey);
     
     if (!newAppKey.length)
+    {
+        CLY_LOG_W(@"New app key is invalid!");
         return;
+    }
 
     [self suspend];
 
