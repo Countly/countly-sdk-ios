@@ -40,7 +40,6 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)setNewHost:(NSString *)newHost;
 
-
 /**
  * Sets a new app key to be used in new requests.
  * @discussion Before switching to the new app key, this method suspends Countly and resumes it immediately after.
