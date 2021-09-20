@@ -192,7 +192,10 @@ long long appLoadStartTime;
     CLY_LOG_I(@"%s %@", __FUNCTION__, newHost);
 
     if (!newHost.length)
+    {
+        CLY_LOG_W(@"New host is invalid!");
         return;
+    }
 
     CountlyConnectionManager.sharedInstance.host = newHost;
 }
