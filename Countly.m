@@ -92,7 +92,7 @@ long long appLoadStartTime;
     }
 
     CountlyConnectionManager.sharedInstance.appKey = config.appKey;
-    CountlyConnectionManager.sharedInstance.host = [config.host hasSuffix:@"/"] ? [config.host substringToIndex:config.host.length - 1] : config.host;
+    CountlyConnectionManager.sharedInstance.host = config.host;
     CountlyConnectionManager.sharedInstance.alwaysUsePOST = config.alwaysUsePOST;
     CountlyConnectionManager.sharedInstance.pinnedCertificates = config.pinnedCertificates;
     CountlyConnectionManager.sharedInstance.customHeaderFieldName = config.customHeaderFieldName;
