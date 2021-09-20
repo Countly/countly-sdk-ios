@@ -32,6 +32,16 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)startWithConfig:(CountlyConfig *)config;
 
 /**
+ * Sets a new host to be used in requests.
+ * @discussion Requests already queued previously will also be using the new host.
+ * @discussion The new host needs to be a non-zero length string, otherwise it is ignored.
+ * @discussion @c recordPushNotificationToken and @c updateRemoteConfigWithCompletionHandler: methods may need to be called after the host change.
+ * @param newHost The new host
+ */
+- (void)setNewHost:(NSString *)newHost;
+
+
+/**
  * Sets new app key to be used in following requests.
  * @discussion Before switching to new app key, this method suspends Countly and resumes immediately after.
  * @discussion Requests already queued previously will keep using the old app key.

@@ -186,6 +186,17 @@ long long appLoadStartTime;
         [self giveConsentForFeatures:config.consents];
 }
 
+
+- (void)setNewHost:(NSString *)newHost
+{
+    CLY_LOG_I(@"%s %@", __FUNCTION__, newHost);
+
+    if (!newHost.length)
+        return;
+
+    CountlyConnectionManager.sharedInstance.host = newHost;
+}
+
 - (void)setNewAppKey:(NSString *)newAppKey
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, newAppKey);
