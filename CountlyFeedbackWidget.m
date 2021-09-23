@@ -12,7 +12,9 @@
 CLYFeedbackWidgetType const CLYFeedbackWidgetTypeSurvey     = @"survey";
 CLYFeedbackWidgetType const CLYFeedbackWidgetTypeNPS        = @"nps";
 
-NSString* const kCountlyReservedEventPrefix = @"[CLY]_"; //NOTE: This will be used with feedback type.
+NSString* const kCountlyReservedEventSurvey = @"[CLY]_survey";
+NSString* const kCountlyReservedEventNPS    = @"[CLY]_nps";
+
 NSString* const kCountlyFBKeyClosed         = @"closed";
 NSString* const kCountlyFBKeyShown          = @"shown";
 
@@ -184,7 +186,18 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     if (!CountlyConsentManager.sharedInstance.consentForFeedback)
         return;
 
-    NSString* eventName = [kCountlyReservedEventPrefix stringByAppendingString:self.type];
+    NSString* eventName = nil;
+    if ([self.type isEqualToString:CLYFeedbackWidgetTypeSurvey])
+        eventName = kCountlyReservedEventSurvey;
+    else if ([self.type isEqualToString:CLYFeedbackWidgetTypeNPS])
+        eventName = kCountlyReservedEventNPS;
+
+    if (!eventName)
+    {
+        CLY_LOG_W(@"Unsupported feedback widget type! Event will not be recorded/");
+        return;
+    }
+
     NSMutableDictionary* segmentation = segm.mutableCopy;
     segmentation[kCountlyFBKeyPlatform] = CountlyDeviceInfo.osName;
     segmentation[kCountlyFBKeyAppVersion] = CountlyDeviceInfo.appVersion;
