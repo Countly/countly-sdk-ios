@@ -47,6 +47,8 @@
 
 extern NSString* const kCountlyErrorDomain;
 
+extern NSString* const kCountlyReservedEventOrientation;
+
 NS_ERROR_ENUM(kCountlyErrorDomain)
 {
     CLYErrorFeedbackWidgetNotAvailable = 10001,
