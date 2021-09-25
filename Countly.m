@@ -273,9 +273,7 @@ long long appLoadStartTime;
 
 - (void)suspend
 {
-#if (TARGET_OS_WATCH)
     CLY_LOG_I(@"%s", __FUNCTION__);
-#endif
 
     if (!CountlyCommon.sharedInstance.hasStarted)
         return;
@@ -299,9 +297,7 @@ long long appLoadStartTime;
 
 - (void)resume
 {
-#if (TARGET_OS_WATCH)
     CLY_LOG_I(@"%s", __FUNCTION__);
-#endif
 
     if (!CountlyCommon.sharedInstance.hasStarted)
         return;
@@ -323,6 +319,11 @@ long long appLoadStartTime;
     [CountlyViewTracking.sharedInstance resumeView];
 
     isSuspended = NO;
+}
+
+- (BOOL)isRunning
+{
+    return CountlyCommon.sharedInstance.hasStarted && !isSuspended;
 }
 
 #pragma mark ---
@@ -559,7 +560,7 @@ long long appLoadStartTime;
 {
     CLY_LOG_I(@"%s %@ %@ %lu %f %f", __FUNCTION__, key, segmentation, (unsigned long)count, sum, duration);
 
-    if (!CountlyConsentManager.sharedInstance.consentForEvents)
+    if (isSuspended || !CountlyConsentManager.sharedInstance.consentForEvents)
         return;
 
     [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
@@ -603,7 +604,7 @@ long long appLoadStartTime;
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, key);
 
-    if (!CountlyConsentManager.sharedInstance.consentForEvents)
+    if (isSuspended || !CountlyConsentManager.sharedInstance.consentForEvents)
         return;
 
     CountlyEvent *event = CountlyEvent.new;
@@ -624,7 +625,7 @@ long long appLoadStartTime;
 {
     CLY_LOG_I(@"%s %@ %@ %lu %f", __FUNCTION__, key, segmentation, (unsigned long)count, sum);
 
-    if (!CountlyConsentManager.sharedInstance.consentForEvents)
+    if (isSuspended || !CountlyConsentManager.sharedInstance.consentForEvents)
         return;
 
     CountlyEvent *event = [CountlyPersistency.sharedInstance timedEventForKey:key];
@@ -647,7 +648,7 @@ long long appLoadStartTime;
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, key);
 
-    if (!CountlyConsentManager.sharedInstance.consentForEvents)
+    if (isSuspended || !CountlyConsentManager.sharedInstance.consentForEvents)
         return;
 
     CountlyEvent *event = [CountlyPersistency.sharedInstance timedEventForKey:key];

@@ -1,3 +1,5 @@
+- Updated suspend/resume mechanism for general availability & to temporarily shut down event recording.
+
 ## 20.11.3
 - Added optional appear and dismiss callbacks for feedback widget presenting
 - Added manually displayed and recorded feedback widgets support

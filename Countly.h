@@ -91,19 +91,28 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)endSession;
 
-#if (TARGET_OS_WATCH)
 /**
- * Suspends Countly, adds recorded events to request queue and ends current session.
- * @discussion This method needs to be called manually only on @c watchOS, on other platforms it will be called automatically.
+ * Suspends Countly, adding recorded events to request queue, pausing view tracking and ending the current session.
+ * @discussion
+ * On @c watchOS, call this in your extension delegate's -applicationWillResignActive.
+ * It may also be used to temporarily suspend Countly for other reasons, such as while a user enters an incognito session.
  */
 - (void)suspend;
 
 /**
- * Resumes Countly, begins a new session after the app comes to foreground.
- * @discussion This method needs to be called manually only on @c watchOS, on other platforms it will be called automatically.
+ * Resumes Countly, beginning a new session and resuming view tracking.
+ * @discussion
+ * On @c watchOS, call this in your extension delegate's -applicationDidBecomeActive.
+ * It may also be used to resume Countly for other reasons, such as when a user exits an incognito session.
  */
 - (void)resume;
-#endif
+
+/**
+ * Determine whether Countly is currently tracking events.
+ * @discussion
+ * Countly is tracking events after it has been started and while it hasn't been suspended.
+ */
+- (BOOL)isRunning;
 
 
 
