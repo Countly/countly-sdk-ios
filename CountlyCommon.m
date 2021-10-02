@@ -201,6 +201,9 @@ void CountlyPrint(NSString *stringToPrint)
 
 - (void)deviceOrientationDidChange:(NSNotification *)notification
 {
+    if (!self.enableOrientationTracking)
+        return;
+
     //NOTE: Delay is needed for interface orientation change animation to complete. Otherwise old interface orientation value is returned.
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(recordOrientation) object:nil];
     [self performSelector:@selector(recordOrientation) withObject:nil afterDelay:0.5];

@@ -69,6 +69,8 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 @property (nonatomic) BOOL enableAppleWatch;
 @property (nonatomic, copy) NSString* attributionID;
 @property (nonatomic) BOOL manualSessionHandling;
+@property (nonatomic) BOOL enableOrientationTracking;
+
 
 @property (nonatomic) NSUInteger maxKeyLength;
 @property (nonatomic) NSUInteger maxValueLength;

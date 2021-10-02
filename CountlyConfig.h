@@ -530,6 +530,19 @@ typedef enum : NSUInteger
  * @discussion If set, Performance Monitoring feature will be started automatically on SDK start.
  */
 @property (nonatomic) BOOL enablePerformanceMonitoring;
+
+#pragma mark -
+
+/**
+ * For enabling automatic user interface orientation tracking.
+ * @discussion If set, user interface orientation tracking feature will be enabled.
+ * @discussion An event will be sent whenever user interface orientation changes.
+ * @discussion Orientation event will not be sent if consent for @c CLYConsentUserDetails is not given,
+ * while @c requiresConsent flag is set on initial configuration.
+ * @discussion Automatic user interface orientation tracking is enabled by default.
+ * @discussion For disabling it, please set this flag to @c NO.
+ */
+@property (nonatomic) BOOL enableOrientationTracking;
 NS_ASSUME_NONNULL_END
 
 @end
