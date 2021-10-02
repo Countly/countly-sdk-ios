@@ -140,8 +140,9 @@ typedef enum : NSUInteger
 @property (nonatomic) BOOL enableDebug;
 
 /**
- * For ignoring all SSL trust exceptions
- * @discussion If set, all SSL trust exceptions will be ignoring. Works only in DEBUG mode
+ * For ignoring all SSL trust checks by setting server trust as exception.
+ * @discussion Can be used for self-signed certificates.
+ * @discussion Works only for Development environment where @c DEBUG flag is set in Build Settings.
  */
 @property (nonatomic) BOOL shouldIgnoreTrustCheck;
 

@@ -740,11 +740,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
             CFRelease(localKey);
     }
     
-    #if DEBUG
-    if (CountlyCommon.sharedInstance.shouldIgnoreTrustCheck) {
+#if DEBUG
+    if (CountlyCommon.sharedInstance.shouldIgnoreTrustCheck)
+    {
         SecTrustSetExceptions(serverTrust, SecTrustCopyExceptions(serverTrust));
     }
-    #endif
+#endif
     
     SecTrustResultType serverTrustResult;
 #pragma GCC diagnostic push
