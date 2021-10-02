@@ -531,14 +531,14 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion This is just a convenience method that handles setting user ID as new device ID and merging existing data on Countly Server.
  * @param userID Custom user ID uniquely defining the logged in user
  */
-- (void)userLoggedIn:(NSString *)userID;
+- (void)userLoggedIn:(NSString *)userID DEPRECATED_MSG_ATTRIBUTE("Use 'setNewDeviceID:onServer:' method instead!");
 
 /**
  * Handles switching from custom user ID to device ID for logged out users
  * @discussion When a user logs out, all the data can be tracked with default device ID henceforth.
  * @discussion This is just a convenience method that handles resetting device ID to default one and starting a new session.
  */
-- (void)userLoggedOut;
+- (void)userLoggedOut DEPRECATED_MSG_ATTRIBUTE("Use 'setNewDeviceID:onServer:' method instead!");;
 
 
 

@@ -404,9 +404,11 @@ long long appLoadStartTime;
     if (!CountlyCommon.sharedInstance.hasStarted)
         return;
 
-    if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
-        return;
-
+    if (!deviceID.length)
+    {
+        CLY_LOG_W(@"Passing `CLYDefaultDeviceID` or `nil` or empty string as devie ID is deprecated, and will not be allowed in the future.");
+    }
+    
     [self storeCustomDeviceIDState:deviceID];
 
     deviceID = [CountlyDeviceInfo.sharedInstance ensafeDeviceID:deviceID];
@@ -451,6 +453,8 @@ long long appLoadStartTime;
         [self suspend];
 
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
+
+        [CountlyConsentManager.sharedInstance cancelConsentForAllFeaturesWithoutSendingConsentsRequest];
 
         [self resume];
 
@@ -855,12 +859,16 @@ long long appLoadStartTime;
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, userID);
 
+    CLY_LOG_W(@"userLoggedIn: method is deprecated. Please directly use setNewDeviceID:onServer: method instead.");
+
     [self setNewDeviceID:userID onServer:YES];
 }
 
 - (void)userLoggedOut
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
+
+    CLY_LOG_W(@"userLoggedOut method is deprecated. Please directly use setNewDeviceID:onServer: method instead.");
 
     [self setNewDeviceID:CLYDefaultDeviceID onServer:NO];
 }
