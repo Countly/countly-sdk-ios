@@ -6,6 +6,8 @@
 
 #import <Foundation/Foundation.h>
 
+extern NSString* const kCountlyReservedEventView;
+
 @interface CountlyViewTracking : NSObject
 @property (nonatomic) BOOL isEnabledOnInitialConfig;
 

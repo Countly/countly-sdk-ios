@@ -585,9 +585,42 @@ long long appLoadStartTime;
     CLY_LOG_I(@"%s %@ %@ %lu %f %f", __FUNCTION__, key, segmentation, (unsigned long)count, sum, duration);
 
     if (!CountlyConsentManager.sharedInstance.consentForEvents)
-        return;
+    {
+        if ([self shouldByPassEventsConsentForReservedEvent:key])
+        {
+            CLY_LOG_V(@"By-passing events consent for reserved event: %@", key);
+        }
+        else
+        {
+            CLY_LOG_W(@"Events consent not given! Event will not be recorded.");
+            return;
+        }
+    }
 
     [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
+}
+
+- (BOOL)shouldByPassEventsConsentForReservedEvent:(NSString *)key
+{
+    if ([key isEqualToString:kCountlyReservedEventOrientation])
+        return CountlyConsentManager.sharedInstance.consentForUserDetails;
+
+    if ([key isEqualToString:kCountlyReservedEventStarRating])
+        return CountlyConsentManager.sharedInstance.consentForFeedback;
+
+    if ([key isEqualToString:kCountlyReservedEventSurvey])
+        return CountlyConsentManager.sharedInstance.consentForFeedback;
+
+    if ([key isEqualToString:kCountlyReservedEventNPS])
+        return CountlyConsentManager.sharedInstance.consentForFeedback;
+
+    if ([key isEqualToString:kCountlyReservedEventPushAction])
+        return CountlyConsentManager.sharedInstance.consentForPushNotifications;
+
+    if ([key isEqualToString:kCountlyReservedEventView])
+        return CountlyConsentManager.sharedInstance.consentForViewTracking;
+
+    return NO;
 }
 
 #pragma mark -

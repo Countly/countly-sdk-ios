@@ -49,6 +49,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 extern NSString* const kCountlyErrorDomain;
 
+extern NSString* const kCountlyReservedEventOrientation;
+
 NS_ERROR_ENUM(kCountlyErrorDomain)
 {
     CLYErrorFeedbackWidgetNotAvailable = 10001,
