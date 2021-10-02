@@ -140,6 +140,12 @@ typedef enum : NSUInteger
 @property (nonatomic) BOOL enableDebug;
 
 /**
+ * For ignoring all SSL trust exceptions
+ * @discussion If set, all SSL trust exceptions will be ignoring. Works only in DEBUG mode
+ */
+@property (nonatomic) BOOL shouldIgnoreTrustCheck;
+
+/**
  * For receiving SDK's internal logs even in production builds.
  * @discussion If set, SDK will forward its internal logs to this delegate object regardless of @c enableDebug initial config value.
  * @discussion @c internalLog:withLevel: method declared as @c required in @c CountlyLoggerDelegate protocol will be called with log @c NSString.
