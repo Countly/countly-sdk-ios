@@ -127,7 +127,10 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
 
     if (!value)
+    {
+        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
         return;
+    }
 
     self.modifications[key] = @{kCountlyUDKeyModifierSetOnce: value.copy};
 }
@@ -137,7 +140,10 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
 
     if (!value)
+    {
+        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
         return;
+    }
 
     self.modifications[key] = @{kCountlyUDKeyModifierSetOnce: value.copy};
 }
@@ -168,7 +174,10 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
 
     if (!value)
+    {
+        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
         return;
+    }
 
     self.modifications[key] = @{kCountlyUDKeyModifierIncrement: value};
 }
@@ -178,7 +187,10 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
 
     if (!value)
+    {
+        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
         return;
+    }
 
     self.modifications[key] = @{kCountlyUDKeyModifierMultiply: value};
 }
@@ -188,7 +200,10 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
 
     if (!value)
+    {
+        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
         return;
+    }
 
     self.modifications[key] = @{kCountlyUDKeyModifierMax: value};
 }
@@ -198,7 +213,10 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
 
     if (!value)
+    {
+        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
         return;
+    }
 
     self.modifications[key] = @{kCountlyUDKeyModifierMin: value};
 }
@@ -208,7 +226,10 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
 
     if (!value)
+    {
+        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
         return;
+    }
 
     self.modifications[key] = @{kCountlyUDKeyModifierPush: value.copy};
 }
@@ -216,7 +237,10 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 - (void)push:(NSString *)key numberValue:(NSNumber *)value;
 {
     if (!value)
+    {
+        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
         return;
+    }
 
     self.modifications[key] = @{kCountlyUDKeyModifierPush: value.copy};
 }
@@ -233,7 +257,10 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
 
     if (!value)
+    {
+        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
         return;
+    }
 
     self.modifications[key] = @{kCountlyUDKeyModifierPush: value.copy};
 }
@@ -243,7 +270,10 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
 
     if (!value)
+    {
+        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
         return;
+    }
 
     self.modifications[key] = @{kCountlyUDKeyModifierAddToSet: value.copy};
 }
@@ -253,7 +283,10 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
 
     if (!value)
+    {
+        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
         return;
+    }
 
     self.modifications[key] = @{kCountlyUDKeyModifierAddToSet: value.copy};
 }
@@ -270,7 +303,10 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
 
     if (!value)
+    {
+        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
         return;
+    }
 
     self.modifications[key] = @{kCountlyUDKeyModifierAddToSet: value.copy};
 }
@@ -280,7 +316,10 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
 
     if (!value)
+    {
+        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
         return;
+    }
 
     self.modifications[key] = @{kCountlyUDKeyModifierPull: value.copy};
 }
@@ -290,7 +329,10 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
 
     if (!value)
+    {
+        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
         return;
+    }
 
     self.modifications[key] = @{kCountlyUDKeyModifierPull: value.copy};
 }
@@ -307,7 +349,10 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
 
     if (!value)
+    {
+        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
         return;
+    }
 
     self.modifications[key] = @{kCountlyUDKeyModifierPull: value.copy};
 }
