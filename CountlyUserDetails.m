@@ -103,21 +103,29 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 - (void)set:(NSString *)key value:(NSString *)value
 {
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+
     self.modifications[key] = value.copy;
 }
 
 - (void)set:(NSString *)key numberValue:(NSNumber *)value
 {
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+
     self.modifications[key] = value.copy;
 }
 
 - (void)set:(NSString *)key boolValue:(BOOL)value
 {
+    CLY_LOG_I(@"%s %@ %d", __FUNCTION__, key, value);
+
     self.modifications[key] = @(value);
 }
 
 - (void)setOnce:(NSString *)key value:(NSString *)value
 {
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+
     if (!value)
         return;
 
@@ -126,6 +134,8 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 - (void)setOnce:(NSString *)key numberValue:(NSNumber *)value
 {
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+
     if (!value)
         return;
 
@@ -134,21 +144,29 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 - (void)setOnce:(NSString *)key boolValue:(BOOL)value;
 {
+    CLY_LOG_I(@"%s %@ %d", __FUNCTION__, key, value);
+
     self.modifications[key] = @{kCountlyUDKeyModifierSetOnce: @(value)};
 }
 
 - (void)unSet:(NSString *)key
 {
+    CLY_LOG_I(@"%s %@", __FUNCTION__, key);
+
     self.modifications[key] = NSNull.null;
 }
 
 - (void)increment:(NSString *)key
 {
+    CLY_LOG_I(@"%s %@", __FUNCTION__, key);
+
     [self incrementBy:key value:@1];
 }
 
 - (void)incrementBy:(NSString *)key value:(NSNumber *)value
 {
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+
     if (!value)
         return;
 
@@ -157,6 +175,8 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 - (void)multiply:(NSString *)key value:(NSNumber *)value
 {
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+
     if (!value)
         return;
 
@@ -165,6 +185,8 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 - (void)max:(NSString *)key value:(NSNumber *)value
 {
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+
     if (!value)
         return;
 
@@ -173,6 +195,8 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 - (void)min:(NSString *)key value:(NSNumber *)value
 {
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+
     if (!value)
         return;
 
@@ -181,6 +205,8 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 - (void)push:(NSString *)key value:(NSString *)value
 {
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+
     if (!value)
         return;
 
@@ -197,11 +223,15 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 - (void)push:(NSString *)key boolValue:(BOOL)value
 {
+    CLY_LOG_I(@"%s %@ %d", __FUNCTION__, key, value);
+
     self.modifications[key] = @{kCountlyUDKeyModifierPush: @(value)};
 }
 
 - (void)push:(NSString *)key values:(NSArray *)value
 {
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+
     if (!value)
         return;
 
@@ -210,6 +240,8 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 - (void)pushUnique:(NSString *)key value:(NSString *)value
 {
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+
     if (!value)
         return;
 
@@ -218,6 +250,8 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 - (void)pushUnique:(NSString *)key numberValue:(NSNumber *)value
 {
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+
     if (!value)
         return;
 
@@ -226,11 +260,15 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 - (void)pushUnique:(NSString *)key boolValue:(BOOL)value
 {
+    CLY_LOG_I(@"%s %@ %d", __FUNCTION__, key, value);
+
     self.modifications[key] = @{kCountlyUDKeyModifierAddToSet: @(value)};
 }
 
 - (void)pushUnique:(NSString *)key values:(NSArray *)value
 {
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+
     if (!value)
         return;
 
@@ -239,6 +277,8 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 - (void)pull:(NSString *)key value:(NSString *)value
 {
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+
     if (!value)
         return;
 
@@ -247,6 +287,8 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 - (void)pull:(NSString *)key numberValue:(NSNumber *)value
 {
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+
     if (!value)
         return;
 
@@ -255,11 +297,15 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 - (void)pull:(NSString *)key boolValue:(BOOL)value
 {
+    CLY_LOG_I(@"%s %@ %d", __FUNCTION__, key, value);
+
     self.modifications[key] = @{kCountlyUDKeyModifierPull: @(value)};
 }
 
 - (void)pull:(NSString *)key values:(NSArray *)value
 {
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+
     if (!value)
         return;
 
@@ -268,6 +314,8 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
 - (void)save
 {
+    CLY_LOG_I(@"%s", __FUNCTION__);
+
     if (!CountlyCommon.sharedInstance.hasStarted)
         return;
 
