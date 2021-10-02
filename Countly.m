@@ -95,7 +95,7 @@ long long appLoadStartTime;
     }
 
     CountlyConnectionManager.sharedInstance.appKey = config.appKey;
-    CountlyConnectionManager.sharedInstance.host = [config.host hasSuffix:@"/"] ? [config.host substringToIndex:config.host.length - 1] : config.host;
+    CountlyConnectionManager.sharedInstance.host = config.host;
     CountlyConnectionManager.sharedInstance.alwaysUsePOST = config.alwaysUsePOST;
     CountlyConnectionManager.sharedInstance.pinnedCertificates = config.pinnedCertificates;
     CountlyConnectionManager.sharedInstance.customHeaderFieldName = config.customHeaderFieldName;
@@ -190,12 +190,29 @@ long long appLoadStartTime;
         [self giveConsentForFeatures:config.consents];
 }
 
+
+- (void)setNewHost:(NSString *)newHost
+{
+    CLY_LOG_I(@"%s %@", __FUNCTION__, newHost);
+
+    if (!newHost.length)
+    {
+        CLY_LOG_W(@"New host is invalid!");
+        return;
+    }
+
+    CountlyConnectionManager.sharedInstance.host = newHost;
+}
+
 - (void)setNewAppKey:(NSString *)newAppKey
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, newAppKey);
     
     if (!newAppKey.length)
+    {
+        CLY_LOG_W(@"New app key is invalid!");
         return;
+    }
 
     [self suspend];
 

@@ -88,6 +88,20 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     return self;
 }
 
+- (void)setHost:(NSString *)host
+{
+    if ([host hasSuffix:@"/"])
+    {
+        CLY_LOG_W(@"Host has an extra \"/\" at the end! It will be removed by the SDK.\
+                  But please make sure you fix it to avoid this warning in the future.");
+        _host = [host substringToIndex:host.length - 1];
+    }
+    else
+    {
+        _host = host;
+    }
+}
+
 - (void)proceedOnQueue
 {
     CLY_LOG_D(@"Proceeding on queue...");
