@@ -365,8 +365,8 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 - (BOOL)isDeviceTargetedByWidget:(NSDictionary *)widgetInfo
 {
-    BOOL isTablet = UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad;
-    BOOL isPhone = UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPhone;
+    BOOL isTablet = UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad;
+    BOOL isPhone = UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone;
     BOOL isTabletTargeted = [widgetInfo[kCountlyFBKeyTargetDevices][kCountlyFBKeyTablet] boolValue];
     BOOL isPhoneTargeted = [widgetInfo[kCountlyFBKeyTargetDevices][kCountlyFBKeyPhone] boolValue];
 
