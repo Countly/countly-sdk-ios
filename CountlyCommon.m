@@ -172,26 +172,20 @@ void CountlyPrint(NSString *stringToPrint)
         return;
 
 #if (TARGET_OS_IOS || TARGET_OS_WATCH)
-    if (@available(iOS 9.0, *))
+    if (WCSession.isSupported)
     {
-        if (WCSession.isSupported)
-        {
-            self.watchDelegate = [CLYWCSessionDelegateInterceptor alloc];
-            self.watchDelegate.originalDelegate = WCSession.defaultSession.delegate;
-            WCSession.defaultSession.delegate = (id<WCSessionDelegate>)self.watchDelegate;
-            [WCSession.defaultSession activateSession];
-        }
+        self.watchDelegate = [CLYWCSessionDelegateInterceptor alloc];
+        self.watchDelegate.originalDelegate = WCSession.defaultSession.delegate;
+        WCSession.defaultSession.delegate = (id<WCSessionDelegate>)self.watchDelegate;
+        [WCSession.defaultSession activateSession];
     }
 #endif
 
 #if (TARGET_OS_IOS)
-    if (@available(iOS 9.0, *))
+    if (WCSession.defaultSession.paired && WCSession.defaultSession.watchAppInstalled)
     {
-        if (WCSession.defaultSession.paired && WCSession.defaultSession.watchAppInstalled)
-        {
-            [WCSession.defaultSession transferUserInfo:@{kCountlyParentDeviceIDTransferKey: CountlyDeviceInfo.sharedInstance.deviceID}];
-            CLY_LOG_D(@"Transferring parent device ID %@ ...", CountlyDeviceInfo.sharedInstance.deviceID);
-        }
+        [WCSession.defaultSession transferUserInfo:@{kCountlyParentDeviceIDTransferKey: CountlyDeviceInfo.sharedInstance.deviceID}];
+        CLY_LOG_D(@"Transferring parent device ID %@ ...", CountlyDeviceInfo.sharedInstance.deviceID);
     }
 #endif
 }
