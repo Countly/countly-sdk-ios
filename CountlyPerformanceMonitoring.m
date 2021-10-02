@@ -180,6 +180,8 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
     if (!traceName.length)
         return;
 
+    traceName = [traceName cly_truncatedKey:@"Network trace name"];
+
     NSDictionary* metrics =
     @{
         kCountlyPMKeyRequestPayloadSize: @(requestPayloadSize),
@@ -244,6 +246,9 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
         CLY_LOG_W(@"Custom trace with name '%@' not started yet or cancelled/ended before!", traceName);
         return;
     }
+
+    traceName = [traceName cly_truncatedKey:@"Custom trace name"];
+    metrics = [metrics cly_truncated:@"Custom trace metric"];
 
     NSNumber* endTime = @((long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000));
 

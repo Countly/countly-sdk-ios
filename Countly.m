@@ -73,6 +73,9 @@ long long appLoadStartTime;
     CountlyCommon.sharedInstance.enableDebug = config.enableDebug;
     CountlyCommon.sharedInstance.loggerDelegate = config.loggerDelegate;
     CountlyCommon.sharedInstance.internalLogLevel = config.internalLogLevel;
+    CountlyCommon.sharedInstance.maxKeyLength = config.maxKeyLength;
+    CountlyCommon.sharedInstance.maxValueLength = config.maxValueLength;
+    CountlyCommon.sharedInstance.maxSegmentationValues = config.maxSegmentationValues;
 
     CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
 
@@ -109,7 +112,7 @@ long long appLoadStartTime;
 
     CountlyCommon.sharedInstance.attributionID = config.attributionID;
 
-    CountlyDeviceInfo.sharedInstance.customMetrics = config.customMetrics;
+    CountlyDeviceInfo.sharedInstance.customMetrics = [config.customMetrics cly_truncated:@"Custom metric"];
 
 #if (TARGET_OS_IOS)
     CountlyFeedbacks.sharedInstance.message = config.starRatingMessage;
@@ -145,7 +148,7 @@ long long appLoadStartTime;
 #endif
 #endif
 
-    CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
+    CountlyCrashReporter.sharedInstance.crashSegmentation = [config.crashSegmentation cly_truncated:@"Crash segmentation"];
     CountlyCrashReporter.sharedInstance.crashLogLimit = MAX(1, config.crashLogLimit);
     CountlyCrashReporter.sharedInstance.crashFilter = config.crashFilter;
     CountlyCrashReporter.sharedInstance.shouldUsePLCrashReporter = config.shouldUsePLCrashReporter;

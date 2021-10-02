@@ -178,6 +178,11 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 {
     @synchronized (self.recordedEvents)
     {
+        event.key = [event.key cly_truncatedKey:@"Event key"];
+        NSDictionary* truncated = [event.segmentation cly_truncated:@"Event segmentation"];
+        NSDictionary* limited = [truncated cly_limited:@"Event segmentation"];
+        event.segmentation = limited;
+
         [self.recordedEvents addObject:event];
 
         if (self.recordedEvents.count >= self.eventSendThreshold)

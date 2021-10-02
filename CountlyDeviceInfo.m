@@ -318,14 +318,7 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     }
 #endif
 
-    if (CountlyDeviceInfo.sharedInstance.customMetrics)
-    {
-        [CountlyDeviceInfo.sharedInstance.customMetrics enumerateKeysAndObjectsUsingBlock:^(NSString* key, NSString* value, BOOL* stop)
-        {
-            if ([value isKindOfClass:NSString.class])
-                metricsDictionary[key] = value;
-        }];
-    }
+    [metricsDictionary addEntriesFromDictionary:CountlyDeviceInfo.sharedInstance.customMetrics];
 
     return [metricsDictionary cly_JSONify];
 }

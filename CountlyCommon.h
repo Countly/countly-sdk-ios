@@ -68,6 +68,10 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 @property (nonatomic, copy) NSString* attributionID;
 @property (nonatomic) BOOL manualSessionHandling;
 
+@property (nonatomic) NSUInteger maxKeyLength;
+@property (nonatomic) NSUInteger maxValueLength;
+@property (nonatomic) NSUInteger maxSegmentationValues;
+
 void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...) NS_FORMAT_FUNCTION(2, 3);
 void CountlyPrint(NSString *stringToPrint);
 
@@ -116,6 +120,8 @@ void CountlyPrint(NSString *stringToPrint);
 - (NSString *)cly_SHA256;
 - (NSData *)cly_dataUTF8;
 - (NSString *)cly_valueForQueryStringKey:(NSString *)key;
+- (NSString *)cly_truncatedKey:(NSString *)explanation;
+- (NSString *)cly_truncatedValue:(NSString *)explanation;
 @end
 
 @interface NSArray (Countly)
@@ -124,6 +130,8 @@ void CountlyPrint(NSString *stringToPrint);
 
 @interface NSDictionary (Countly)
 - (NSString *)cly_JSONify;
+- (NSDictionary *)cly_truncated:(NSString *)explanation;
+- (NSDictionary *)cly_limited:(NSString *)explanation;
 @end
 
 @interface NSData (Countly)

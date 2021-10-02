@@ -526,6 +526,29 @@ NSString* CountlyJSONFromObject(id object)
 
     return nil;
 }
+
+- (NSString *)cly_truncatedKey:(NSString *)explanation
+{
+    if (self.length > CountlyCommon.sharedInstance.maxKeyLength)
+    {
+        CLY_LOG_W(@"%@ length is more than the limit (%ld)! So, it will be truncated: %@.", explanation, (long)CountlyCommon.sharedInstance.maxKeyLength, self);
+        return [self substringToIndex:CountlyCommon.sharedInstance.maxKeyLength];
+    }
+
+    return self;
+}
+
+- (NSString *)cly_truncatedValue:(NSString *)explanation
+{
+    if (self.length > CountlyCommon.sharedInstance.maxValueLength)
+    {
+        CLY_LOG_W(@"%@ length is more than the limit (%ld)! So, it will be truncated: %@.", explanation, (long)CountlyCommon.sharedInstance.maxValueLength, self);
+        return [self substringToIndex:CountlyCommon.sharedInstance.maxValueLength];
+    }
+
+    return self;
+}
+
 @end
 
 @implementation NSArray (Countly)
@@ -540,6 +563,50 @@ NSString* CountlyJSONFromObject(id object)
 {
     return [CountlyJSONFromObject(self) cly_URLEscaped];
 }
+
+- (NSDictionary *)cly_truncated:(NSString *)explanation
+{
+    NSMutableDictionary* truncatedDict = self.mutableCopy;
+    [self enumerateKeysAndObjectsUsingBlock:^(NSString * key, id obj, BOOL * stop)
+    {
+        NSString* truncatedKey = [key cly_truncatedKey:[explanation stringByAppendingString:@" key"]];
+        if (![truncatedKey isEqualToString:key])
+        {
+            truncatedDict[truncatedKey] = obj;
+            [truncatedDict removeObjectForKey:key];
+        }
+
+        if ([obj isKindOfClass:NSString.class])
+        {
+            NSString* truncatedValue = [obj cly_truncatedValue:[explanation stringByAppendingString:@" value"]];
+            if (![truncatedValue isEqualToString:obj])
+            {
+                truncatedDict[truncatedKey] = truncatedValue;
+            }
+        }
+    }];
+
+    return truncatedDict.copy;
+}
+
+- (NSDictionary *)cly_limited:(NSString *)explanation
+{
+    NSArray* allKeys = self.allKeys;
+
+    if (allKeys.count <= CountlyCommon.sharedInstance.maxSegmentationValues)
+        return self;
+
+    NSMutableArray* excessKeys = allKeys.mutableCopy;
+    [excessKeys removeObjectsInRange:(NSRange){0, CountlyCommon.sharedInstance.maxSegmentationValues}];
+
+    CLY_LOG_W(@"Number of key-value pairs in %@ is more than the limit (%ld)! So, some of them will be removed:\n %@", explanation, (long)CountlyCommon.sharedInstance.maxSegmentationValues, [excessKeys description]);
+
+    NSMutableDictionary* limitedDict = self.mutableCopy;
+    [limitedDict removeObjectsForKeys:excessKeys];
+
+    return limitedDict.copy;
+}
+
 @end
 
 @implementation NSData (Countly)

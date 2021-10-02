@@ -116,6 +116,8 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
     CLY_LOG_D(@"View tracking started: %@", viewName);
 
+    viewName = [viewName cly_truncatedKey:@"View name"];
+
     NSMutableDictionary* segmentation = NSMutableDictionary.new;
     segmentation[kCountlyVTKeyName] = viewName;
     segmentation[kCountlyVTKeySegment] = CountlyDeviceInfo.osName;

@@ -315,6 +315,43 @@ typedef enum : NSUInteger
 @property (nonatomic) NSUInteger storedRequestsLimit;
 
 /**
+ * Limit for the length of all string keys.
+ * @discussion It affects:
+ * @discussion - event names
+ * @discussion - view names
+ * @discussion - APM network trace names
+ * @discussion - APM custom trace names
+ * @discussion - APM custom trace metric keys
+ * @discussion - segmentation keys
+ * @discussion - custom metric keys
+ * @discussion - custom user property keys
+ * @discussion Keys longer than this limit will be truncated.
+ * @discussion If not set, it will be 128 chars by default.
+ */
+@property (nonatomic) NSUInteger maxKeyLength;
+
+/**
+ * Limit for the length of values in all key-value pairs.
+ * @discussion It affects:
+ * @discussion - segmentation values
+ * @discussion - APM custom trace metric values
+ * @discussion - custom crash logs
+ * @discussion - custom metric values
+ * @discussion - custom user property values
+ * @discussion Values longer than this limit will be truncated.
+ * @discussion If not set, it will be 256 chars by default.
+ */
+@property (nonatomic) NSUInteger maxValueLength;
+
+/**
+ * Limit for the number of key-value pairs in segmentations.
+ * @discussion If there are more key-value pairs than this limit, some of them will be removed.
+ * @discussion As obviously there is no order among the keys of an NSDictionary, it is not defined which ones will be removed.
+ * @discussion If not set, it will be 30 by default.
+ */
+@property (nonatomic) NSUInteger maxSegmentationValues;
+
+/**
  * For sending all requests using HTTP POST method.
  * @discussion If set, all requests will be sent using HTTP POST method. Otherwise; only the requests with a file upload or data size more than 2048 bytes will be sent using HTTP POST method.
  */
