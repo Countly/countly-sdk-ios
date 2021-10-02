@@ -40,11 +40,15 @@ NSString* const kCountlyFBKeyShown          = @"shown";
 
 - (void)present
 {
+    CLY_LOG_I(@"%s", __FUNCTION__);
+
     [self presentWithAppearBlock:nil andDismissBlock:nil];
 }
 
 - (void)presentWithAppearBlock:(void(^ __nullable)(void))appearBlock andDismissBlock:(void(^ __nullable)(void))dismissBlock;
 {
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, appearBlock, dismissBlock);
+
     if (!CountlyConsentManager.sharedInstance.consentForFeedback)
         return;
 
@@ -80,6 +84,8 @@ NSString* const kCountlyFBKeyShown          = @"shown";
 
 - (void)getWidgetData:(void (^)(NSDictionary * __nullable widgetData, NSError * __nullable error))completionHandler
 {
+    CLY_LOG_I(@"%s %@", __FUNCTION__, completionHandler);
+
     NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:[self dataRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
         NSDictionary *widgetData = nil;
@@ -113,6 +119,8 @@ NSString* const kCountlyFBKeyShown          = @"shown";
 
 - (void)recordResult:(NSDictionary * __nullable)result
 {
+    CLY_LOG_I(@"%s %@", __FUNCTION__, result);
+
     if (!result)
         [self recordReservedEventForDismissing];
     else
