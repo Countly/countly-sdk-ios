@@ -304,17 +304,6 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     metricsDictionary[CLYMetricKeyDensity] = CountlyDeviceInfo.density;
     metricsDictionary[CLYMetricKeyLocale] = CountlyDeviceInfo.locale;
 
-#if (TARGET_OS_IOS)
-    if (CountlyCommon.sharedInstance.enableAppleWatch)
-    {
-        if (CountlyConsentManager.sharedInstance.consentForAppleWatch)
-        {
-            metricsDictionary[CLYMetricKeyHasWatch] = @(CountlyDeviceInfo.hasWatch);
-            metricsDictionary[CLYMetricKeyInstalledWatchApp] = @(CountlyDeviceInfo.installedWatchApp);
-        }
-    }
-#endif
-
     [metricsDictionary addEntriesFromDictionary:CountlyDeviceInfo.sharedInstance.customMetrics];
 
     return [metricsDictionary cly_JSONify];

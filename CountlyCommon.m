@@ -10,10 +10,6 @@
 NSString* const kCountlyReservedEventOrientation = @"[CLY]_orientation";
 NSString* const kCountlyOrientationKeyMode = @"mode";
 
-@interface CLYWCSessionDelegateInterceptor : CLYDelegateInterceptor
-@end
-
-
 @interface CountlyCommon ()
 {
     NSCalendar* gregorianCalendar;
@@ -28,15 +24,10 @@ NSString* const kCountlyOrientationKeyMode = @"mode";
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 @property (nonatomic) UIBackgroundTaskIdentifier bgTask;
 #endif
-#if (TARGET_OS_IOS || TARGET_OS_WATCH)
-@property (nonatomic) CLYWCSessionDelegateInterceptor* watchDelegate;
-#endif
 @end
 
 NSString* const kCountlySDKVersion = @"20.11.3";
 NSString* const kCountlySDKName = @"objc-native-ios";
-
-NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
 
 NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
 
@@ -161,34 +152,6 @@ void CountlyPrint(NSString *stringToPrint)
     return (NSTimeInterval)(self.lastTimestamp / 1000.0);
 }
 
-#pragma mark - Watch Connectivity
-
-- (void)startAppleWatchMatching
-{
-    if (!self.enableAppleWatch)
-        return;
-
-    if (!CountlyConsentManager.sharedInstance.consentForAppleWatch)
-        return;
-
-#if (TARGET_OS_IOS || TARGET_OS_WATCH)
-    if (WCSession.isSupported)
-    {
-        self.watchDelegate = [CLYWCSessionDelegateInterceptor alloc];
-        self.watchDelegate.originalDelegate = WCSession.defaultSession.delegate;
-        WCSession.defaultSession.delegate = (id<WCSessionDelegate>)self.watchDelegate;
-        [WCSession.defaultSession activateSession];
-    }
-#endif
-
-#if (TARGET_OS_IOS)
-    if (WCSession.defaultSession.paired && WCSession.defaultSession.watchAppInstalled)
-    {
-        [WCSession.defaultSession transferUserInfo:@{kCountlyParentDeviceIDTransferKey: CountlyDeviceInfo.sharedInstance.deviceID}];
-        CLY_LOG_D(@"Transferring parent device ID %@ ...", CountlyDeviceInfo.sharedInstance.deviceID);
-    }
-#endif
-}
 
 #pragma mark - Orientation
 
@@ -434,35 +397,6 @@ const CGFloat kCountlyDismissButtonStandardStatusBarHeight = 20.0;
 }
 @end
 
-
-#pragma mark - Watch Delegate Proxy
-@implementation CLYWCSessionDelegateInterceptor
-
-#if (TARGET_OS_WATCH)
-- (void)session:(WCSession *)session didReceiveUserInfo:(NSDictionary<NSString *, id> *)userInfo
-{
-    CLY_LOG_D(@"Watch received user info: \n%@", userInfo);
-
-    NSString* parentDeviceID = userInfo[kCountlyParentDeviceIDTransferKey];
-
-    if (parentDeviceID && ![parentDeviceID isEqualToString:[CountlyPersistency.sharedInstance retrieveWatchParentDeviceID]])
-    {
-        [CountlyConnectionManager.sharedInstance sendParentDeviceID:parentDeviceID];
-
-        CLY_LOG_D(@"Parent device ID %@ added to queue.", parentDeviceID);
-
-        [CountlyPersistency.sharedInstance storeWatchParentDeviceID:parentDeviceID];
-    }
-
-    if ([self.originalDelegate respondsToSelector:@selector(session:didReceiveUserInfo:)])
-    {
-        CLY_LOG_D(@"Forwarding WCSession user info to original delegate.");
-
-        [self.originalDelegate session:session didReceiveUserInfo:userInfo];
-    }
-}
-#endif
-@end
 
 
 #pragma mark - Categories

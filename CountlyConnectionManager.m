@@ -19,7 +19,6 @@ NSString* const kCountlyQSKeyAppKey           = @"app_key";
 
 NSString* const kCountlyQSKeyDeviceID         = @"device_id";
 NSString* const kCountlyQSKeyDeviceIDOld      = @"old_device_id";
-NSString* const kCountlyQSKeyDeviceIDParent   = @"parent_device_id";
 
 NSString* const kCountlyQSKeyTimestamp        = @"timestamp";
 NSString* const kCountlyQSKeyTimeZone         = @"tz";
@@ -435,16 +434,6 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
                              kCountlyQSKeyDeviceIDOld, oldDeviceID.cly_URLEscaped];
-
-    [CountlyPersistency.sharedInstance addToQueue:queryString];
-
-    [self proceedOnQueue];
-}
-
-- (void)sendParentDeviceID:(NSString *)parentDeviceID
-{
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
-                             kCountlyQSKeyDeviceIDParent, parentDeviceID.cly_URLEscaped];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 

@@ -71,7 +71,7 @@ extern CLYConsent const CLYConsentLocation;
 extern CLYConsent const CLYConsentViewTracking;
 extern CLYConsent const CLYConsentAttribution;
 extern CLYConsent const CLYConsentStarRating DEPRECATED_MSG_ATTRIBUTE("Please use CLYConsentFeedback instead!");
-extern CLYConsent const CLYConsentAppleWatch;
+extern CLYConsent const CLYConsentAppleWatch DEPRECATED_MSG_ATTRIBUTE("As automatic metrics for Apple Watch is not supported anymore, 'CLYConsentAppleWatch' is now inoperative!");;
 extern CLYConsent const CLYConsentPerformanceMonitoring;
 extern CLYConsent const CLYConsentFeedback;
 extern CLYConsent const CLYConsentRemoteConfig;
@@ -366,11 +366,11 @@ typedef enum : NSUInteger
 @property (nonatomic) BOOL manualSessionHandling;
 
 /**
- * For enabling automatic handling of Apple Watch related features for iOS apps with a watchOS counterpart app.
- * @discussion If set on both iOS and watchOS app, Apple Watch related features such as parent device matching, pairing status, and watch app installing status will be handled automatically.
- * @discussion This flag should not be set on independent watchOS apps.
+ * @c enableAppleWatch property is deprecated.
+ * @discussion As automatic metrics for Apple Watch is not supported anymore, @c enableAppleWatch is now inoperative.
+ * @discussion Using this property will have no effect.
  */
-@property (nonatomic) BOOL enableAppleWatch;
+@property (nonatomic) BOOL enableAppleWatch DEPRECATED_MSG_ATTRIBUTE("As automatic metrics for Apple Watch is not supported anymore, 'enableAppleWatch' is now inoperative!");
 
 #pragma mark -
 

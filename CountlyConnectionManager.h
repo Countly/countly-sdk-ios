@@ -48,7 +48,6 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 - (void)sendUserDetails:(NSString *)userDetails;
 - (void)sendCrashReport:(NSString *)report immediately:(BOOL)immediately;
 - (void)sendOldDeviceID:(NSString *)oldDeviceID;
-- (void)sendParentDeviceID:(NSString *)parentDeviceID;
 - (void)sendAttribution;
 - (void)sendConsentChanges:(NSString *)consentChanges;
 - (void)sendPerformanceMonitoringTrace:(NSString *)trace;

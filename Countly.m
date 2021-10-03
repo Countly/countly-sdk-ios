@@ -108,8 +108,6 @@ long long appLoadStartTime;
 
     CountlyCommon.sharedInstance.manualSessionHandling = config.manualSessionHandling;
 
-    CountlyCommon.sharedInstance.enableAppleWatch = config.enableAppleWatch;
-
     CountlyCommon.sharedInstance.attributionID = config.attributionID;
 
     CountlyDeviceInfo.sharedInstance.customMetrics = [config.customMetrics cly_truncated:@"Custom metric"];
@@ -171,8 +169,6 @@ long long appLoadStartTime;
 
     timer = [NSTimer timerWithTimeInterval:config.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
     [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
-
-    [CountlyCommon.sharedInstance startAppleWatchMatching];
 
     CountlyRemoteConfig.sharedInstance.isEnabledOnInitialConfig = config.enableRemoteConfig;
     CountlyRemoteConfig.sharedInstance.remoteConfigCompletionHandler = config.remoteConfigCompletionHandler;

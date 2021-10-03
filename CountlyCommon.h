@@ -68,7 +68,6 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 @property (nonatomic) BOOL enableDebug;
 @property (nonatomic, weak) id <CountlyLoggerDelegate> loggerDelegate;
 @property (nonatomic) CLYInternalLogLevel internalLogLevel;
-@property (nonatomic) BOOL enableAppleWatch;
 @property (nonatomic, copy) NSString* attributionID;
 @property (nonatomic) BOOL manualSessionHandling;
 @property (nonatomic) BOOL enableOrientationTracking;
@@ -96,8 +95,6 @@ void CountlyPrint(NSString *stringToPrint);
 - (void)tryPresentingViewController:(UIViewController *)viewController;
 - (void)tryPresentingViewController:(UIViewController *)viewController withCompletion:(void (^ __nullable) (void))completion;
 #endif
-
-- (void)startAppleWatchMatching;
 
 - (void)observeDeviceOrientationChanges;
 
