@@ -275,18 +275,6 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     return [NSBundle.mainBundle objectForInfoDictionaryKey:(NSString*)kCFBundleVersionKey];
 }
 
-#if (TARGET_OS_IOS)
-+ (NSInteger)hasWatch
-{
-    return (NSInteger)WCSession.defaultSession.paired;
-}
-
-+ (NSInteger)installedWatchApp
-{
-    return (NSInteger)WCSession.defaultSession.watchAppInstalled;
-}
-#endif
-
 + (NSString *)metrics
 {
     NSMutableDictionary* metricsDictionary = NSMutableDictionary.new;
