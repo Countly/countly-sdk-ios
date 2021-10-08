@@ -28,8 +28,6 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 @property (nonatomic) NSString* host;
 @property (nonatomic) NSURLSessionTask* connection;
 @property (nonatomic) NSArray* pinnedCertificates;
-@property (nonatomic) NSString* customHeaderFieldName;
-@property (nonatomic) NSString* customHeaderFieldValue;
 @property (nonatomic) NSString* secretSalt;
 @property (nonatomic) BOOL alwaysUsePOST;
 @property (nonatomic) NSURLSessionConfiguration* URLSessionConfiguration;

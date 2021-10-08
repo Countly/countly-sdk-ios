@@ -454,18 +454,16 @@ typedef enum : NSUInteger
 @property (nonatomic, copy) NSArray* pinnedCertificates;
 
 /**
- * Name of the custom HTTP header field to be sent with every request.
- * @discussion e.g. X-My-Secret-Server-Token
- * @discussion If set, every request sent to Countly Server will have this custom HTTP header and its value will be @c customHeaderFieldValue property.
- * @discussion If @c customHeaderFieldValue is not set when Countly is started, requests will not start until it is set using @c setCustomHeaderFieldValue: method later.
+ * @c customHeaderFieldName property is deprecated. Please use @c URLSessionConfiguration property instead.
+ * @discussion Using this property will have no effect.
  */
-@property (nonatomic, copy) NSString* customHeaderFieldName;
+@property (nonatomic, copy) NSString* customHeaderFieldName DEPRECATED_MSG_ATTRIBUTE("Use 'URLSessionConfiguration' property instead!");
 
 /**
- * Value of the custom HTTP header field to be sent with every request if @c customHeaderFieldName is set.
- * @discussion If not set while @c customHeaderFieldName is set, requests will not start until it is set using @c setCustomHeaderFieldValue: method later.
+ * @c customHeaderFieldValue property is deprecated. Please use @c URLSessionConfiguration property instead.
+ * @discussion Using this property will have no effect.
  */
-@property (nonatomic, copy) NSString* customHeaderFieldValue;
+@property (nonatomic, copy) NSString* customHeaderFieldValue DEPRECATED_MSG_ATTRIBUTE("Use 'URLSessionConfiguration' property instead!");
 
 /**
  * Salt value to be used for parameter tampering protection.

@@ -51,14 +51,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setNewAppKey:(NSString *)newAppKey;
 
 /**
- * Sets the value of the custom HTTP header field to be sent with every request if @c customHeaderFieldName is set on initial configuration.
- * @discussion If @c customHeaderFieldValue on initial configuration can not be set on app launch, this method can be used to do so later.
- * @discussion Requests not started due to missing @c customHeaderFieldValue since app launch will start hereafter.
- * @param customHeaderFieldValue Custom header field value
- */
-- (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue;
-
-/**
  * Flushes request and event queues.
  * @discussion Flushes persistently stored request queue and events recorded but not converted to a request so far.
  * @discussion Started timed events will not be affected.

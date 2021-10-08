@@ -123,12 +123,6 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return;
     }
 
-    if (self.customHeaderFieldName && !self.customHeaderFieldValue)
-    {
-        CLY_LOG_D(@"Proceeding on queue is aborted: customHeaderFieldName specified on config, but customHeaderFieldValue not set yet!");
-        return;
-    }
-
     if (CountlyPersistency.sharedInstance.isQueueBeingModified)
     {
         CLY_LOG_D(@"Proceeding on queue is aborted: Queue is being modified!");
@@ -173,9 +167,6 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         request.HTTPMethod = @"POST";
         request.HTTPBody = [queryString cly_dataUTF8];
     }
-
-    if (self.customHeaderFieldName && self.customHeaderFieldValue)
-        [request setValue:self.customHeaderFieldValue forHTTPHeaderField:self.customHeaderFieldName];
 
     request.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
 
@@ -378,15 +369,6 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [self endSession];
 
-    if (self.customHeaderFieldName && !self.customHeaderFieldValue)
-    {
-        CLY_LOG_D(@"customHeaderFieldName specified on config, but customHeaderFieldValue not set! Crash report stored to be sent later!");
-
-        [CountlyPersistency.sharedInstance addToQueue:queryString];
-        [CountlyPersistency.sharedInstance saveToFileSync];
-        return;
-    }
-
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
     {
         CLY_LOG_D(@"Device ID is set as CLYTemporaryDeviceID! Crash report stored to be sent later!");
@@ -402,9 +384,6 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverInputEndpoint]];
     request.HTTPMethod = @"POST";
     request.HTTPBody = [[self appendChecksum:queryString] cly_dataUTF8];
-
-    if (self.customHeaderFieldName && self.customHeaderFieldValue)
-        [request setValue:self.customHeaderFieldValue forHTTPHeaderField:self.customHeaderFieldName];
 
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 

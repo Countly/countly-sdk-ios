@@ -98,8 +98,6 @@ long long appLoadStartTime;
     CountlyConnectionManager.sharedInstance.host = config.host;
     CountlyConnectionManager.sharedInstance.alwaysUsePOST = config.alwaysUsePOST;
     CountlyConnectionManager.sharedInstance.pinnedCertificates = config.pinnedCertificates;
-    CountlyConnectionManager.sharedInstance.customHeaderFieldName = config.customHeaderFieldName;
-    CountlyConnectionManager.sharedInstance.customHeaderFieldValue = config.customHeaderFieldValue;
     CountlyConnectionManager.sharedInstance.secretSalt = config.secretSalt;
     CountlyConnectionManager.sharedInstance.URLSessionConfiguration = config.URLSessionConfiguration;
 
@@ -217,14 +215,6 @@ long long appLoadStartTime;
     CountlyConnectionManager.sharedInstance.appKey = newAppKey;
 
     [self resume];
-}
-
-- (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue
-{
-    CLY_LOG_I(@"%s %@", __FUNCTION__, customHeaderFieldValue);
-
-    CountlyConnectionManager.sharedInstance.customHeaderFieldValue = customHeaderFieldValue.copy;
-    [CountlyConnectionManager.sharedInstance proceedOnQueue];
 }
 
 - (void)flushQueues
