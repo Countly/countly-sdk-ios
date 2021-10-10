@@ -1,5 +1,5 @@
 Pod::Spec.new do |s|
-  s.name = 'Countly'
+  s.name = 'Countly-PL'
   s.version = '20.11.3'
   s.license = { :type => 'MIT', :file => 'LICENSE.md' }
   s.summary  = 'Countly is an innovative, real-time, open source mobile analytics platform.'
@@ -26,6 +26,18 @@ Pod::Spec.new do |s|
     ns.source_files = 'CountlyNotificationService.{m,h}'
     ns.ios.deployment_target = '10.0'
     ns.ios.frameworks = ['Foundation', 'UserNotifications']
+  end
+
+  s.subspec 'PL' do |pl|
+    pl.platform = :ios
+    pl.dependency 'Countly/Core'
+    pl.dependency 'PLCrashReporter', '~> 1'
+
+    # It is not possible to set static_framework attribute on subspecs.
+    # So, we have to set it on main spec.
+    # But it affects the main spec even when this subspec is not used.
+    # Asked this on CocoaPods GitHub page: https://github.com/CocoaPods/CocoaPods/issues/7355#issuecomment-619261908
+    s.static_framework = true
   end
 
 end
