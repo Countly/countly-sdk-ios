@@ -665,7 +665,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     }
     else
     {
-        serverKey = SecTrustCopyKey(serverTrust);
+        serverKey = SecTrustCopyPublicKey(serverTrust);
     }
 
     __block BOOL isLocalAndServerCertMatch = NO;
@@ -689,7 +689,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         }
         else
         {
-            localKey = SecTrustCopyKey(localTrust);
+            localKey = SecTrustCopyPublicKey(localTrust);
         }
 
         CFRelease(localCert);
