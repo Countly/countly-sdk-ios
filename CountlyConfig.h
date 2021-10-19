@@ -221,7 +221,8 @@ typedef enum : NSUInteger
 
 /**
  * For disabling automatically showing of message alerts by @c CLYPushNotifications feature.
- * @discussion If set, push notifications that contain a message or a URL visit request will not show alerts automatically. Push Open event will be recorded automatically, but Push Action event needs to be recorded manually, as well as displaying the message manually.
+ * @discussion If set, push notifications that contain a message or a URL will not show alerts automatically.
+ * @discussion Push Action event needs to be recorded manually, as well as displaying the message.
  */
 @property (nonatomic) BOOL doNotShowAlertForNotifications;
 
