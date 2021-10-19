@@ -202,7 +202,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
 
     if (!eventName)
     {
-        CLY_LOG_W(@"Unsupported feedback widget type! Event will not be recorded/");
+        CLY_LOG_W(@"Unsupported feedback widget type! Event will not be recorded!");
         return;
     }
 
