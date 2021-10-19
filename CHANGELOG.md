@@ -1,3 +1,27 @@
+## 21.10.0
+- Updated minimum supported OS versions as `iOS 10.0`, `tvOS 10.0`, `watchOS 4.0` and `macOS 10.14`
+- Updated some deprecated API usage to get rid of warnings
+- Added configurable internal limits `maxKeyLength`, `maxValueLength` and  `maxSegmentationValues`
+- Added `enableOrientationTracking` config for disabling automatic user interface orientation tracking
+- Added `setNewHost:` method to be able change the host on the go
+- Implemented cancelling all consents when device ID is changed without a merge
+- Implemented by-passing events consent for reserved internal events
+- Discarded consent requirement for changing device ID
+- Discarded auto metrics for Apple Watch
+- Discarded `customHeaderFieldName` and `customHeaderFieldValue` config properties
+- Discarded `setCustomHeaderFieldValue:` method
+- Fixed missing nullability specifier on `CountlyCommon.h`
+- Fixed missing info level logs on `CountlyFeedbackWidget` class
+- Fixed missing info level logs on `CountlyUserDetails` class
+- Deprecated `userLoggedIn:` and `userLoggedOut` methods
+- Deprecated going back to default system device ID
+
+- Other various improvements
+  - Updated HeaderDocs, internal logs, inline notes and pragma marks
+  - Updated Countly project settings for Xcode 13.0
+  - Refactored `connectionType` method
+
+
 ## 20.11.3
 - Added optional appear and dismiss callbacks for feedback widget presenting
 - Added manually displayed and recorded feedback widgets support
