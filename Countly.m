@@ -217,6 +217,11 @@ long long appLoadStartTime;
     [self resume];
 }
 
+- (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue
+{
+    CLY_LOG_W(@"setCustomHeaderFieldValue: method is deprecated. Please use `URLSessionConfiguration` property on `CountlyConfig` instead.");
+}
+
 - (void)flushQueues
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
