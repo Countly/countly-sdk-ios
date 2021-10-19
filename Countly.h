@@ -545,7 +545,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion When a user logs out, all the data can be tracked with default device ID henceforth.
  * @discussion This is just a convenience method that handles resetting device ID to default one and starting a new session.
  */
-- (void)userLoggedOut DEPRECATED_MSG_ATTRIBUTE("Use 'setNewDeviceID:onServer:' method instead!");;
+- (void)userLoggedOut DEPRECATED_MSG_ATTRIBUTE("Use 'setNewDeviceID:onServer:' method instead!");
 
 
 
