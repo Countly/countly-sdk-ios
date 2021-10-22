@@ -575,43 +575,37 @@ long long appLoadStartTime;
 {
     CLY_LOG_I(@"%s %@ %@ %lu %f %f", __FUNCTION__, key, segmentation, (unsigned long)count, sum, duration);
 
-    if (!CountlyConsentManager.sharedInstance.consentForEvents)
+    NSDictionary <NSString *, NSNumber *>* reservedEvents =
+    @{
+        kCountlyReservedEventOrientation: @(CountlyConsentManager.sharedInstance.consentForUserDetails),
+        kCountlyReservedEventStarRating: @(CountlyConsentManager.sharedInstance.consentForFeedback),
+        kCountlyReservedEventSurvey: @(CountlyConsentManager.sharedInstance.consentForFeedback),
+        kCountlyReservedEventNPS: @(CountlyConsentManager.sharedInstance.consentForFeedback),
+        kCountlyReservedEventPushAction: @(CountlyConsentManager.sharedInstance.consentForPushNotifications),
+        kCountlyReservedEventView: @(CountlyConsentManager.sharedInstance.consentForViewTracking),
+    };
+
+    NSNumber* aReservedEvent = reservedEvents[key];
+
+    if (aReservedEvent)
     {
-        if ([self shouldByPassEventsConsentForReservedEvent:key])
+        CLY_LOG_V(@"A reserved event detected: %@", key);
+
+        if (!aReservedEvent.boolValue)
         {
-            CLY_LOG_V(@"By-passing events consent for reserved event: %@", key);
-        }
-        else
-        {
-            CLY_LOG_W(@"Events consent not given! Event will not be recorded.");
+            CLY_LOG_W(@"Specific consent not given for the reserved event! So, it will not be recorded.");
             return;
         }
+
+        CLY_LOG_V(@"Specific consent given for the reserved event! So, it will be recorded.");
+    }
+    else if (!CountlyConsentManager.sharedInstance.consentForEvents)
+    {
+        CLY_LOG_W(@"Events consent not given! Event will not be recorded.");
+        return;
     }
 
     [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
-}
-
-- (BOOL)shouldByPassEventsConsentForReservedEvent:(NSString *)key
-{
-    if ([key isEqualToString:kCountlyReservedEventOrientation])
-        return CountlyConsentManager.sharedInstance.consentForUserDetails;
-
-    if ([key isEqualToString:kCountlyReservedEventStarRating])
-        return CountlyConsentManager.sharedInstance.consentForFeedback;
-
-    if ([key isEqualToString:kCountlyReservedEventSurvey])
-        return CountlyConsentManager.sharedInstance.consentForFeedback;
-
-    if ([key isEqualToString:kCountlyReservedEventNPS])
-        return CountlyConsentManager.sharedInstance.consentForFeedback;
-
-    if ([key isEqualToString:kCountlyReservedEventPushAction])
-        return CountlyConsentManager.sharedInstance.consentForPushNotifications;
-
-    if ([key isEqualToString:kCountlyReservedEventView])
-        return CountlyConsentManager.sharedInstance.consentForViewTracking;
-
-    return NO;
 }
 
 #pragma mark -
