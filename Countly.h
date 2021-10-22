@@ -6,9 +6,9 @@
 
 #import <Foundation/Foundation.h>
 #import <CoreLocation/CoreLocation.h>
-#import "CountlyUserDetails.h"
-#import "CountlyConfig.h"
-#import "CountlyFeedbackWidget.h"
+#import <Countly/CountlyUserDetails.h>
+#import <Countly/CountlyConfig.h>
+#import <Countly/CountlyFeedbackWidget.h>
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 #import <UserNotifications/UserNotifications.h>
 #endif
