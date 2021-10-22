@@ -45,7 +45,7 @@
 
 #import <objc/runtime.h>
 
-extern NSString* const kCountlyErrorDomain;
+extern NSString* _Nonnull const kCountlyErrorDomain;
 
 NS_ERROR_ENUM(kCountlyErrorDomain)
 {
@@ -57,21 +57,21 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 
 @interface CountlyCommon : NSObject
 
-@property (nonatomic, copy) NSString* SDKVersion;
-@property (nonatomic, copy) NSString* SDKName;
+@property (nonatomic, copy, nonnull) NSString* SDKVersion;
+@property (nonatomic, copy, nonnull) NSString* SDKName;
 
 @property (nonatomic) BOOL hasStarted;
 @property (nonatomic) BOOL enableDebug;
-@property (nonatomic, weak) id <CountlyLoggerDelegate> loggerDelegate;
+@property (nonatomic, weak, nullable) id <CountlyLoggerDelegate> loggerDelegate;
 @property (nonatomic) CLYInternalLogLevel internalLogLevel;
 @property (nonatomic) BOOL enableAppleWatch;
-@property (nonatomic, copy) NSString* attributionID;
+@property (nonatomic, copy, nullable) NSString* attributionID;
 @property (nonatomic) BOOL manualSessionHandling;
 
-void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...) NS_FORMAT_FUNCTION(2, 3);
-void CountlyPrint(NSString *stringToPrint);
+void CountlyInternalLog(CLYInternalLogLevel level, NSString* _Nonnull format, ...) NS_FORMAT_FUNCTION(2, 3);
+void CountlyPrint(NSString* _Nonnull stringToPrint);
 
-+ (instancetype)sharedInstance;
++ (nonnull instancetype)sharedInstance;
 - (NSInteger)hourOfDay;
 - (NSInteger)dayOfWeek;
 - (NSInteger)timeZone;
@@ -82,9 +82,9 @@ void CountlyPrint(NSString *stringToPrint);
 - (void)finishBackgroundTask;
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
-- (UIViewController *)topViewController;
-- (void)tryPresentingViewController:(UIViewController *)viewController;
-- (void)tryPresentingViewController:(UIViewController *)viewController withCompletion:(void (^ __nullable) (void))completion;
+- (nullable UIViewController *)topViewController;
+- (void)tryPresentingViewController:(nullable UIViewController *)viewController;
+- (void)tryPresentingViewController:(nullable UIViewController *)viewController withCompletion:(void (^ __nullable) (void))completion;
 #endif
 
 - (void)startAppleWatchMatching;
@@ -100,39 +100,39 @@ void CountlyPrint(NSString *stringToPrint);
 @end
 
 @interface CLYButton : UIButton
-@property (nonatomic, copy) void (^onClick)(id sender);
-+ (CLYButton *)dismissAlertButton;
+@property (nonatomic, nullable, copy) void (^onClick)(id _Nonnull sender);
++ (nonnull CLYButton *)dismissAlertButton;
 - (void)positionToTopRight;
 - (void)positionToTopRightConsideringStatusBar;
 @end
 #endif
 
 @interface CLYDelegateInterceptor : NSObject
-@property (nonatomic, weak) id originalDelegate;
+@property (nonatomic, nullable, weak) id originalDelegate;
 @end
 
 @interface NSString (Countly)
-- (NSString *)cly_URLEscaped;
-- (NSString *)cly_SHA256;
-- (NSData *)cly_dataUTF8;
-- (NSString *)cly_valueForQueryStringKey:(NSString *)key;
+- (nonnull NSString *)cly_URLEscaped;
+- (nonnull NSString *)cly_SHA256;
+- (nonnull NSData *)cly_dataUTF8;
+- (nonnull NSString *)cly_valueForQueryStringKey:(nonnull NSString *)key;
 @end
 
 @interface NSArray (Countly)
-- (NSString *)cly_JSONify;
+- (nonnull NSString *)cly_JSONify;
 @end
 
 @interface NSDictionary (Countly)
-- (NSString *)cly_JSONify;
+- (nonnull NSString *)cly_JSONify;
 @end
 
 @interface NSData (Countly)
-- (NSString *)cly_stringUTF8;
+- (nonnull NSString *)cly_stringUTF8;
 @end
 
 @interface Countly (RecordReservedEvent)
-- (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation;
-- (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration timestamp:(NSTimeInterval)timestamp;
+- (void)recordReservedEvent:(nonnull NSString *)key segmentation:(nullable NSDictionary *)segmentation;
+- (void)recordReservedEvent:(nonnull NSString *)key segmentation:(nullable NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration timestamp:(NSTimeInterval)timestamp;
 @end
 
 @interface CountlyUserDetails (ClearUserDetails)
