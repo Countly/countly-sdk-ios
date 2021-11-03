@@ -1,4 +1,4 @@
-## 21.10.0
+## 21.11.0
 - Updated minimum supported OS versions as `iOS 10.0`, `tvOS 10.0`, `watchOS 4.0` and `macOS 10.14`
 - Updated some deprecated API usage to get rid of warnings
 - Added configurable internal limits `maxKeyLength`, `maxValueLength` and  `maxSegmentationValues`
@@ -20,6 +20,7 @@
   - Updated HeaderDocs, internal logs, inline notes and pragma marks
   - Updated Countly project settings for Xcode 13.0
   - Refactored `connectionType` method
+
 
 
 ## 20.11.3
