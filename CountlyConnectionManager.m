@@ -665,7 +665,10 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     }
     else
     {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
         serverKey = SecTrustCopyPublicKey(serverTrust);
+#pragma GCC diagnostic pop
     }
 
     __block BOOL isLocalAndServerCertMatch = NO;
@@ -689,7 +692,10 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         }
         else
         {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
             localKey = SecTrustCopyPublicKey(localTrust);
+#pragma GCC diagnostic pop
         }
 
         CFRelease(localCert);
