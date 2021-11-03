@@ -415,12 +415,6 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)disableLocationInfo;
 
-/**
- * @c isGeoLocationEnabled property is deprecated. Please use @c disableLocationInfo method instead.
- * @discussion Using this property will have no effect.
- */
-@property (nonatomic) BOOL isGeoLocationEnabled DEPRECATED_MSG_ATTRIBUTE("Use 'disableLocationInfo' method instead!");
-
 
 
 #pragma mark - Crash Reporting
@@ -458,14 +452,6 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Custom crash logs recorded using @c recordCrashLog: method so far will be cleared.
  */
 - (void)clearCrashLogs;
-
-
-/**
- * @c crashLog: method is deprecated. Please use @c recordCrashLog: method instead.
- * @discussion Be advised, parameter type changed to plain @c NSString from string format, for better Swift compatibility.
- * @discussion Calling this method will have no effect.
- */
-- (void)crashLog:(NSString *)format, ... NS_FORMAT_FUNCTION(1,2) DEPRECATED_MSG_ATTRIBUTE("Use 'recordCrashLog:' method instead!");
 
 
 
@@ -513,12 +499,6 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion If AutoViewTracking feature is not enabled on initial configuration, this property has no effect.
  */
 @property (nonatomic) BOOL isAutoViewTrackingActive;
-
-/**
- * @c isAutoViewTrackingEnabled property is deprecated. Please use @c isAutoViewTrackingActive property instead.
- * @discussion Using this property will have no effect.
- */
-@property (nonatomic) BOOL isAutoViewTrackingEnabled DEPRECATED_MSG_ATTRIBUTE("Use 'isAutoViewTrackingActive' property instead!");
 
 #endif
 

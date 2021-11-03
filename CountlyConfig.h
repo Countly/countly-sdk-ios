@@ -55,11 +55,6 @@ extern CLYDeviceIDType const CLYDeviceIDTypeTemporary;
 extern CLYDeviceIDType const CLYDeviceIDTypeIDFV;
 extern CLYDeviceIDType const CLYDeviceIDTypeNSUUID;
 
-//NOTE: Legacy device ID options
-extern NSString* const CLYIDFV DEPRECATED_MSG_ATTRIBUTE("Please use CLYDefaultDeviceID instead!");
-extern NSString* const CLYIDFA DEPRECATED_MSG_ATTRIBUTE("Please use CLYDefaultDeviceID instead!");
-extern NSString* const CLYOpenUDID DEPRECATED_MSG_ATTRIBUTE("Please use CLYDefaultDeviceID instead!");
-
 //NOTE: Available consents
 typedef NSString* CLYConsent NS_EXTENSIBLE_STRING_ENUM;
 extern CLYConsent const CLYConsentSessions;
@@ -205,12 +200,6 @@ typedef enum : NSUInteger
 #pragma mark -
 
 /**
- * @c isTestDevice property is deprecated. Please use @c pushTestMode property instead.
- * @discussion Using this property will have no effect.
- */
-@property (nonatomic) BOOL isTestDevice DEPRECATED_MSG_ATTRIBUTE("Use 'pushTestMode' property instead!");
-
-/**
  * For specifying which test mode Countly Server should use for sending push notifications.
  * @discussion There are 2 test modes:
  * @discussion - @c CLYPushTestModeDevelopment: For development/debug builds signed with a development provisioning profile. Countly Server will send push notifications to Sandbox APNs.
@@ -286,19 +275,6 @@ typedef enum : NSUInteger
  * @discussion It is meant to be used for debugging purposes only while developing.
  */
 @property (nonatomic) BOOL resetStoredDeviceID;
-
-/**
- * @c forceDeviceIDInitialization property is deprecated. Please use @c resetStoredDeviceID property instead.
- * @discussion Using this property will have no effect.
- */
-@property (nonatomic) BOOL forceDeviceIDInitialization DEPRECATED_MSG_ATTRIBUTE("Use 'resetStoredDeviceID' property instead!");
-
-/**
- * @c applyZeroIDFAFixFor property is deprecated.
- * @discussion As IDFA is not supported anymore, @c applyZeroIDFAFix is now inoperative.
- * @discussion Using this property will have no effect.
- */
-@property (nonatomic) BOOL applyZeroIDFAFix DEPRECATED_MSG_ATTRIBUTE("As IDFA is not supported anymore, 'applyZeroIDFAFix' is now inoperative!");
 
 #pragma mark -
 
