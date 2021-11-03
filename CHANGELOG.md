@@ -1,9 +1,11 @@
 ## 21.11.0
 - Updated minimum supported OS versions as `iOS 10.0`, `tvOS 10.0`, `watchOS 4.0` and `macOS 10.14`
 - Updated some deprecated API usage to get rid of warnings
-- Added configurable internal limits `maxKeyLength`, `maxValueLength` and  `maxSegmentationValues`
+- Added configurable internal limits `maxKeyLength`, `maxValueLength` and `maxSegmentationValues`
 - Added `enableOrientationTracking` config for disabling automatic user interface orientation tracking
 - Added `setNewHost:` method to be able change the host on the go
+- Added `shouldIgnoreTrustCheck` config for self-signed certificates (thanks @centrinvest)
+- Created additional `Countly-PL.podspec` for avoiding static framework issue on original `Countly.podspec` (thanks @multinerd)
 - Implemented cancelling all consents when device ID is changed without a merge
 - Implemented by-passing events consent for reserved internal events
 - Discarded consent requirement for changing device ID
@@ -18,7 +20,8 @@
 
 - Other various improvements
   - Updated HeaderDocs, internal logs, inline notes and pragma marks
-  - Updated Countly project settings for Xcode 13.0
+  - Updated Countly project settings for Xcode 13.1
+  - Deleted previously deprecated methods and properties
   - Refactored `connectionType` method
 
 
