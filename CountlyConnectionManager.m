@@ -707,7 +707,14 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         if (localKey)
             CFRelease(localKey);
     }
-
+    
+#if DEBUG
+    if (CountlyCommon.sharedInstance.shouldIgnoreTrustCheck)
+    {
+        SecTrustSetExceptions(serverTrust, SecTrustCopyExceptions(serverTrust));
+    }
+#endif
+    
     SecTrustResultType serverTrustResult;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"

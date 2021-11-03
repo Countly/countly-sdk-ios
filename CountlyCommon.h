@@ -65,6 +65,7 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 
 @property (nonatomic) BOOL hasStarted;
 @property (nonatomic) BOOL enableDebug;
+@property (nonatomic) BOOL shouldIgnoreTrustCheck;
 @property (nonatomic, weak) id <CountlyLoggerDelegate> loggerDelegate;
 @property (nonatomic) CLYInternalLogLevel internalLogLevel;
 @property (nonatomic, copy) NSString* attributionID;
