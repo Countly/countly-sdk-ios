@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name = 'Countly-PL'
-  s.version = '20.11.3'
+  s.version = '21.11.0'
   s.license = { :type => 'MIT', :file => 'LICENSE.md' }
   s.summary  = 'Countly is an innovative, real-time, open source mobile analytics platform.'
   s.homepage = 'https://github.com/Countly/countly-sdk-ios'
