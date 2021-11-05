@@ -35,7 +35,6 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 @synthesize consentForLocation = _consentForLocation;
 @synthesize consentForViewTracking = _consentForViewTracking;
 @synthesize consentForAttribution = _consentForAttribution;
-@synthesize consentForAppleWatch = _consentForAppleWatch;
 @synthesize consentForPerformanceMonitoring = _consentForPerformanceMonitoring;
 @synthesize consentForFeedback = _consentForFeedback;
 @synthesize consentForRemoteConfig = _consentForRemoteConfig;
@@ -108,9 +107,6 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     if ([features containsObject:CLYConsentAttribution] && !self.consentForAttribution)
         self.consentForAttribution = YES;
 
-    if ([features containsObject:CLYConsentAppleWatch] && !self.consentForAppleWatch)
-        self.consentForAppleWatch = YES;
-
     if ([features containsObject:CLYConsentPerformanceMonitoring] && !self.consentForPerformanceMonitoring)
         self.consentForPerformanceMonitoring = YES;
 
@@ -130,7 +126,19 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 }
 
 
+- (void)cancelConsentForAllFeaturesWithoutSendingConsentsRequest
+{
+    [self cancelConsentForFeatures:[self allFeatures] shouldSkipSendingConsentChanges:YES];
+}
+
+
 - (void)cancelConsentForFeatures:(NSArray *)features
+{
+    [self cancelConsentForFeatures:features shouldSkipSendingConsentChanges:NO];
+}
+
+
+- (void)cancelConsentForFeatures:(NSArray *)features shouldSkipSendingConsentChanges:(BOOL)shouldSkipSendingConsentChanges
 {
     if (!self.requiresConsent)
         return;
@@ -159,9 +167,6 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     if ([features containsObject:CLYConsentAttribution] && self.consentForAttribution)
         self.consentForAttribution = NO;
 
-    if ([features containsObject:CLYConsentAppleWatch] && self.consentForAppleWatch)
-        self.consentForAppleWatch = NO;
-
     if ([features containsObject:CLYConsentPerformanceMonitoring] && self.consentForPerformanceMonitoring)
         self.consentForPerformanceMonitoring = NO;
 
@@ -171,7 +176,8 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     if ([features containsObject:CLYConsentRemoteConfig] && self.consentForRemoteConfig)
         self.consentForRemoteConfig = NO;
 
-    [self sendConsentChanges];
+    if (!shouldSkipSendingConsentChanges)
+        [self sendConsentChanges];
 }
 
 
@@ -197,28 +203,9 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
         CLYConsentLocation,
         CLYConsentViewTracking,
         CLYConsentAttribution,
-        CLYConsentAppleWatch,
         CLYConsentPerformanceMonitoring,
         CLYConsentFeedback,
     ];
-}
-
-
-- (BOOL)hasAnyConsent
-{
-    return
-    self.consentForSessions ||
-    self.consentForEvents ||
-    self.consentForUserDetails ||
-    self.consentForCrashReporting ||
-    self.consentForPushNotifications ||
-    self.consentForLocation ||
-    self.consentForViewTracking ||
-    self.consentForAttribution ||
-    self.consentForAppleWatch ||
-    self.consentForPerformanceMonitoring ||
-    self.consentForFeedback ||
-    self.consentForRemoteConfig;
 }
 
 - (BOOL)containsFeedbackOrStarRating:(NSArray *)features
@@ -400,27 +387,6 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 }
 
 
-- (void)setConsentForAppleWatch:(BOOL)consentForAppleWatch
-{
-    _consentForAppleWatch = consentForAppleWatch;
-
-#if (TARGET_OS_IOS || TARGET_OS_WATCH)
-    if (consentForAppleWatch)
-    {
-        CLY_LOG_D(@"Consent for AppleWatch is given.");
-
-        [CountlyCommon.sharedInstance startAppleWatchMatching];
-    }
-    else
-    {
-        CLY_LOG_D(@"Consent for AppleWatch is cancelled.");
-    }
-#endif
-
-    self.consentChanges[CLYConsentAppleWatch] = @(consentForAppleWatch);
-}
-
-
 - (void)setConsentForPerformanceMonitoring:(BOOL)consentForPerformanceMonitoring
 {
     _consentForPerformanceMonitoring = consentForPerformanceMonitoring;
@@ -552,15 +518,6 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
       return YES;
 
     return _consentForAttribution;
-}
-
-
-- (BOOL)consentForAppleWatch
-{
-    if (!self.requiresConsent)
-      return YES;
-
-    return _consentForAppleWatch;
 }
 
 

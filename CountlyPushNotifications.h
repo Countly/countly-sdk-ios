@@ -6,6 +6,8 @@
 
 #import <Foundation/Foundation.h>
 
+extern NSString* const kCountlyReservedEventPushAction;
+
 @interface CountlyPushNotifications : NSObject
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
 @property (nonatomic) BOOL isEnabledOnInitialConfig;

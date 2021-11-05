@@ -32,22 +32,29 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)startWithConfig:(CountlyConfig *)config;
 
 /**
- * Sets new app key to be used in following requests.
- * @discussion Before switching to new app key, this method suspends Countly and resumes immediately after.
- * @discussion Requests already queued previously will keep using the old app key.
- * @discussion New app key needs to be a non-zero length string, otherwise it is ignored.
- * @discussion @c recordPushNotificationToken and @c updateRemoteConfigWithCompletionHandler: methods may need to be called again after app key change.
- * @param newAppKey New app key
+ * Sets a new host to be used in requests.
+ * @discussion Requests already queued previously will also be using the new host.
+ * @discussion The new host needs to be a non-zero length string, otherwise it is ignored.
+ * @discussion @c recordPushNotificationToken and @c updateRemoteConfigWithCompletionHandler: methods may need to be called after the host change.
+ * @param newHost The new host
+ */
+- (void)setNewHost:(NSString *)newHost;
+
+/**
+ * Sets a new app key to be used in new requests.
+ * @discussion Before switching to the new app key, this method suspends Countly and resumes it immediately after.
+ * @discussion The requests already queued prior to this method call will keep using the old app key.
+ * @discussion The new app key needs to be a non-zero length string, otherwise it is ignored.
+ * @discussion @c recordPushNotificationToken and @c updateRemoteConfigWithCompletionHandler: methods may need to be called again after the app key change.
+ * @param newAppKey The new app key
  */
 - (void)setNewAppKey:(NSString *)newAppKey;
 
 /**
- * Sets the value of the custom HTTP header field to be sent with every request if @c customHeaderFieldName is set on initial configuration.
- * @discussion If @c customHeaderFieldValue on initial configuration can not be set on app launch, this method can be used to do so later.
- * @discussion Requests not started due to missing @c customHeaderFieldValue since app launch will start hereafter.
- * @param customHeaderFieldValue Custom header field value
+ * @c setCustomHeaderFieldValue: method is deprecated. Please use @c URLSessionConfiguration property on @c CountlyConfig instead.
+ * @discussion Calling this method will have no effect.
  */
-- (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue;
+- (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue DEPRECATED_MSG_ATTRIBUTE("Use 'URLSessionConfiguration' property on CountlyConfig instead!");
 
 /**
  * Flushes request and event queues.
@@ -408,12 +415,6 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)disableLocationInfo;
 
-/**
- * @c isGeoLocationEnabled property is deprecated. Please use @c disableLocationInfo method instead.
- * @discussion Using this property will have no effect.
- */
-@property (nonatomic) BOOL isGeoLocationEnabled DEPRECATED_MSG_ATTRIBUTE("Use 'disableLocationInfo' method instead!");
-
 
 
 #pragma mark - Crash Reporting
@@ -451,14 +452,6 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Custom crash logs recorded using @c recordCrashLog: method so far will be cleared.
  */
 - (void)clearCrashLogs;
-
-
-/**
- * @c crashLog: method is deprecated. Please use @c recordCrashLog: method instead.
- * @discussion Be advised, parameter type changed to plain @c NSString from string format, for better Swift compatibility.
- * @discussion Calling this method will have no effect.
- */
-- (void)crashLog:(NSString *)format, ... NS_FORMAT_FUNCTION(1,2) DEPRECATED_MSG_ATTRIBUTE("Use 'recordCrashLog:' method instead!");
 
 
 
@@ -507,12 +500,6 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic) BOOL isAutoViewTrackingActive;
 
-/**
- * @c isAutoViewTrackingEnabled property is deprecated. Please use @c isAutoViewTrackingActive property instead.
- * @discussion Using this property will have no effect.
- */
-@property (nonatomic) BOOL isAutoViewTrackingEnabled DEPRECATED_MSG_ATTRIBUTE("Use 'isAutoViewTrackingActive' property instead!");
-
 #endif
 
 
@@ -531,14 +518,14 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion This is just a convenience method that handles setting user ID as new device ID and merging existing data on Countly Server.
  * @param userID Custom user ID uniquely defining the logged in user
  */
-- (void)userLoggedIn:(NSString *)userID;
+- (void)userLoggedIn:(NSString *)userID DEPRECATED_MSG_ATTRIBUTE("Use 'setNewDeviceID:onServer:' method instead!");
 
 /**
  * Handles switching from custom user ID to device ID for logged out users
  * @discussion When a user logs out, all the data can be tracked with default device ID henceforth.
  * @discussion This is just a convenience method that handles resetting device ID to default one and starting a new session.
  */
-- (void)userLoggedOut;
+- (void)userLoggedOut DEPRECATED_MSG_ATTRIBUTE("Use 'setNewDeviceID:onServer:' method instead!");
 
 
 

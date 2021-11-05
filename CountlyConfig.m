@@ -52,11 +52,17 @@ NSString* const CLYOpenUDID = CLYDefaultDeviceID;
         self.storedRequestsLimit = 1000;
         self.crashLogLimit = 100;
 
+        self.maxKeyLength = 128;
+        self.maxValueLength = 256;
+        self.maxSegmentationValues = 30;
+
         self.location = kCLLocationCoordinate2DInvalid;
 
         self.URLSessionConfiguration = NSURLSessionConfiguration.defaultSessionConfiguration;
 
         self.internalLogLevel = CLYInternalLogLevelDebug;
+
+        self.enableOrientationTracking = YES;
     }
 
     return self;

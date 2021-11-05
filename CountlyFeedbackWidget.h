@@ -12,6 +12,8 @@ typedef NSString* CLYFeedbackWidgetType NS_EXTENSIBLE_STRING_ENUM;
 extern CLYFeedbackWidgetType const CLYFeedbackWidgetTypeSurvey;
 extern CLYFeedbackWidgetType const CLYFeedbackWidgetTypeNPS;
 
+extern NSString* const kCountlyReservedEventSurvey;
+extern NSString* const kCountlyReservedEventNPS;
 
 @interface CountlyFeedbackWidget : NSObject
 #if (TARGET_OS_IOS)

@@ -12,7 +12,9 @@
 CLYFeedbackWidgetType const CLYFeedbackWidgetTypeSurvey     = @"survey";
 CLYFeedbackWidgetType const CLYFeedbackWidgetTypeNPS        = @"nps";
 
-NSString* const kCountlyReservedEventPrefix = @"[CLY]_"; //NOTE: This will be used with feedback type.
+NSString* const kCountlyReservedEventSurvey = @"[CLY]_survey";
+NSString* const kCountlyReservedEventNPS    = @"[CLY]_nps";
+
 NSString* const kCountlyFBKeyClosed         = @"closed";
 NSString* const kCountlyFBKeyShown          = @"shown";
 
@@ -38,11 +40,15 @@ NSString* const kCountlyFBKeyShown          = @"shown";
 
 - (void)present
 {
+    CLY_LOG_I(@"%s", __FUNCTION__);
+
     [self presentWithAppearBlock:nil andDismissBlock:nil];
 }
 
 - (void)presentWithAppearBlock:(void(^ __nullable)(void))appearBlock andDismissBlock:(void(^ __nullable)(void))dismissBlock;
 {
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, appearBlock, dismissBlock);
+
     if (!CountlyConsentManager.sharedInstance.consentForFeedback)
         return;
 
@@ -78,6 +84,8 @@ NSString* const kCountlyFBKeyShown          = @"shown";
 
 - (void)getWidgetData:(void (^)(NSDictionary * __nullable widgetData, NSError * __nullable error))completionHandler
 {
+    CLY_LOG_I(@"%s %@", __FUNCTION__, completionHandler);
+
     NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:[self dataRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
         NSDictionary *widgetData = nil;
@@ -111,6 +119,8 @@ NSString* const kCountlyFBKeyShown          = @"shown";
 
 - (void)recordResult:(NSDictionary * __nullable)result
 {
+    CLY_LOG_I(@"%s %@", __FUNCTION__, result);
+
     if (!result)
         [self recordReservedEventForDismissing];
     else
@@ -184,7 +194,18 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     if (!CountlyConsentManager.sharedInstance.consentForFeedback)
         return;
 
-    NSString* eventName = [kCountlyReservedEventPrefix stringByAppendingString:self.type];
+    NSString* eventName = nil;
+    if ([self.type isEqualToString:CLYFeedbackWidgetTypeSurvey])
+        eventName = kCountlyReservedEventSurvey;
+    else if ([self.type isEqualToString:CLYFeedbackWidgetTypeNPS])
+        eventName = kCountlyReservedEventNPS;
+
+    if (!eventName)
+    {
+        CLY_LOG_W(@"Unsupported feedback widget type! Event will not be recorded!");
+        return;
+    }
+
     NSMutableDictionary* segmentation = segm.mutableCopy;
     segmentation[kCountlyFBKeyPlatform] = CountlyDeviceInfo.osName;
     segmentation[kCountlyFBKeyAppVersion] = CountlyDeviceInfo.appVersion;

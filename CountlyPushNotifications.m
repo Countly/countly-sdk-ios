@@ -16,7 +16,6 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 @interface CountlyPushNotifications () <UNUserNotificationCenterDelegate>
 @property (nonatomic) NSString* token;
-@property (nonatomic, copy) void (^permissionCompletion)(BOOL granted, NSError * error);
 #else
 @interface CountlyPushNotifications ()
 #endif
@@ -27,9 +26,6 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 #elif (TARGET_OS_OSX)
     #define CLYApplication NSApplication
 #endif
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
 @implementation CountlyPushNotifications
 
@@ -67,22 +63,16 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
     if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
         return;
 
-    if (@available(iOS 10.0, macOS 10.14, *))
-        UNUserNotificationCenter.currentNotificationCenter.delegate = self;
+    UNUserNotificationCenter.currentNotificationCenter.delegate = self;
 
     [self swizzlePushNotificationMethods];
 
-#if (TARGET_OS_IOS)
-    [UIApplication.sharedApplication registerForRemoteNotifications];
-#elif (TARGET_OS_OSX)
-    [NSApplication.sharedApplication registerForRemoteNotificationTypes:NSRemoteNotificationTypeBadge | NSRemoteNotificationTypeAlert | NSRemoteNotificationTypeSound];
+    [CLYApplication.sharedApplication registerForRemoteNotifications];
 
-    if (@available(macOS 10.14, *))
-    {
-        UNNotificationResponse* notificationResponse = self.launchNotification.userInfo[NSApplicationLaunchUserNotificationKey];
-        if (notificationResponse)
-            [self userNotificationCenter:UNUserNotificationCenter.currentNotificationCenter didReceiveNotificationResponse:notificationResponse withCompletionHandler:^{}];
-    }
+#if (TARGET_OS_OSX)
+    UNNotificationResponse* notificationResponse = self.launchNotification.userInfo[NSApplicationLaunchUserNotificationKey];
+    if (notificationResponse)
+        [self userNotificationCenter:UNUserNotificationCenter.currentNotificationCenter didReceiveNotificationResponse:notificationResponse withCompletionHandler:^{}];
 #endif
 }
 
@@ -91,11 +81,8 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
     if (!self.isEnabledOnInitialConfig)
         return;
 
-    if (@available(iOS 10.0, macOS 10.14, *))
-    {
-        if (UNUserNotificationCenter.currentNotificationCenter.delegate == self)
-            UNUserNotificationCenter.currentNotificationCenter.delegate = nil;
-    }
+    if (UNUserNotificationCenter.currentNotificationCenter.delegate == self)
+        UNUserNotificationCenter.currentNotificationCenter.delegate = nil;
 
     [CLYApplication.sharedApplication unregisterForRemoteNotifications];
 }
@@ -113,12 +100,6 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
     @[
         @"application:didRegisterForRemoteNotificationsWithDeviceToken:",
         @"application:didFailToRegisterForRemoteNotificationsWithError:",
-#if (TARGET_OS_IOS)
-        @"application:didRegisterUserNotificationSettings:",
-        @"application:didReceiveRemoteNotification:fetchCompletionHandler:",
-#elif (TARGET_OS_OSX)
-        @"application:didReceiveRemoteNotification:",
-#endif
     ];
 
     for (NSString* selectorString in selectors)
@@ -146,32 +127,16 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
     if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
         return;
 
-    if (@available(iOS 10.0, macOS 10.14, *))
+    if (options == 0)
+        options = UNAuthorizationOptionBadge | UNAuthorizationOptionSound | UNAuthorizationOptionAlert;
+
+    [UNUserNotificationCenter.currentNotificationCenter requestAuthorizationWithOptions:options completionHandler:^(BOOL granted, NSError* error)
     {
-        if (options == 0)
-            options = UNAuthorizationOptionBadge | UNAuthorizationOptionSound | UNAuthorizationOptionAlert;
+        if (completionHandler)
+            completionHandler(granted, error);
 
-        [UNUserNotificationCenter.currentNotificationCenter requestAuthorizationWithOptions:options completionHandler:^(BOOL granted, NSError* error)
-        {
-            if (completionHandler)
-                completionHandler(granted, error);
-
-            [self sendToken];
-        }];
-    }
-#if (TARGET_OS_IOS)
-    else
-    {
-        self.permissionCompletion = completionHandler;
-
-        if (options == 0)
-            options = UIUserNotificationTypeBadge | UIUserNotificationTypeSound | UIUserNotificationTypeAlert;
-
-        UIUserNotificationType userNotificationTypes = (UIUserNotificationType)options;
-        UIUserNotificationSettings* settings = [UIUserNotificationSettings settingsForTypes:userNotificationTypes categories:nil];
-        [UIApplication.sharedApplication registerUserNotificationSettings:settings];
-    }
-#endif
+        [self sendToken];
+    }];
 }
 
 - (void)sendToken
@@ -196,32 +161,15 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
     BOOL hasNotificationPermissionBefore = [CountlyPersistency.sharedInstance retrieveNotificationPermission];
 
-    if (@available(iOS 10.0, macOS 10.14, *))
+    [UNUserNotificationCenter.currentNotificationCenter getNotificationSettingsWithCompletionHandler:^(UNNotificationSettings* settings)
     {
-        [UNUserNotificationCenter.currentNotificationCenter getNotificationSettingsWithCompletionHandler:^(UNNotificationSettings* settings)
+        BOOL hasProvisionalPermission = NO;
+        if (@available(iOS 12.0, *))
         {
-            BOOL hasProvisionalPermission = NO;
-            if (@available(iOS 12.0, *))
-            {
-                hasProvisionalPermission = settings.authorizationStatus == UNAuthorizationStatusProvisional;
-            }
-        
-            if (settings.authorizationStatus == UNAuthorizationStatusAuthorized || hasProvisionalPermission)
-            {
-                [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
-                [CountlyPersistency.sharedInstance storeNotificationPermission:YES];
-            }
-            else if (hasNotificationPermissionBefore)
-            {
-                [self clearToken];
-                [CountlyPersistency.sharedInstance storeNotificationPermission:NO];
-            }
-        }];
-    }
-#if (TARGET_OS_IOS)
-    else
-    {
-        if (UIApplication.sharedApplication.currentUserNotificationSettings.types != UIUserNotificationTypeNone)
+            hasProvisionalPermission = settings.authorizationStatus == UNAuthorizationStatusProvisional;
+        }
+
+        if (settings.authorizationStatus == UNAuthorizationStatusAuthorized || hasProvisionalPermission)
         {
             [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
             [CountlyPersistency.sharedInstance storeNotificationPermission:YES];
@@ -231,140 +179,12 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
             [self clearToken];
             [CountlyPersistency.sharedInstance storeNotificationPermission:NO];
         }
-    }
-#endif
+    }];
 }
 
 - (void)clearToken
 {
     [CountlyConnectionManager.sharedInstance sendPushToken:@""];
-}
-
-- (void)handleNotification:(NSDictionary *)notification
-{
-#if (TARGET_OS_IOS || TARGET_OS_OSX)
-    if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
-        return;
-
-    CLY_LOG_D(@"Handling remote notification %@", notification);
-
-    NSDictionary* countlyPayload = notification[kCountlyPNKeyCountlyPayload];
-    NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
-
-    if (!notificationID)
-    {
-        CLY_LOG_D(@"Countly payload not found in notification dictionary!");
-        return;
-    }
-
-    CLY_LOG_D(@"Countly Push Notification ID: %@", notificationID);
-#endif
-
-#if (TARGET_OS_OSX)
-    //NOTE: For macOS targets, just record action event.
-    [self recordActionEvent:notificationID buttonIndex:0];
-#endif
-
-#if (TARGET_OS_IOS)
-    if (self.doNotShowAlertForNotifications)
-    {
-        CLY_LOG_D(@"doNotShowAlertForNotifications flag is set!");
-        return;
-    }
-
-    if (@available(iOS 10.0, *))
-    {
-        //NOTE: On iOS10+ when a silent notification (content-available: 1) with `alert` key arrives, do not show alert here, as it is shown in UN framework delegate method
-        CLY_LOG_W(@"A silent notification (content-available: 1) with `alert` key on iOS10+.");
-        return;
-    }
-
-    id alert = notification[@"aps"][@"alert"];
-    NSString* message = nil;
-    NSString* title = nil;
-
-    if ([alert isKindOfClass:NSDictionary.class])
-    {
-        message = alert[@"body"];
-        title = alert[@"title"];
-    }
-    else
-    {
-        message = (NSString*)alert;
-        title = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleDisplayName"];
-    }
-
-    if (!message && !title)
-    {
-        CLY_LOG_W(@"Title and Message are both not found in notification dictionary!");
-        return;
-    }
-
-
-    __block UIAlertController* alertController = [UIAlertController alertControllerWithTitle:title message:message preferredStyle:UIAlertControllerStyleAlert];
-
-
-    CLYButton* defaultButton = nil;
-    NSString* defaultURL = countlyPayload[kCountlyPNKeyDefaultURL];
-    if (defaultURL)
-    {
-        defaultButton = [CLYButton buttonWithType:UIButtonTypeCustom];
-        defaultButton.frame = alertController.view.bounds;
-        defaultButton.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-        defaultButton.onClick = ^(id sender)
-        {
-            [self recordActionEvent:notificationID buttonIndex:0];
-
-            [self openURL:defaultURL];
-
-            [alertController dismissViewControllerAnimated:YES completion:^
-            {
-                alertController = nil;
-            }];
-        };
-        [alertController.view addSubview:defaultButton];
-    }
-
-
-    CLYButton* dismissButton = [CLYButton dismissAlertButton];
-    dismissButton.onClick = ^(id sender)
-    {
-        [self recordActionEvent:notificationID buttonIndex:0];
-
-        [alertController dismissViewControllerAnimated:YES completion:^
-        {
-            alertController = nil;
-        }];
-    };
-    [alertController.view addSubview:dismissButton];
-    [dismissButton positionToTopRight];
-
-    NSArray* buttons = countlyPayload[kCountlyPNKeyButtons];
-    [buttons enumerateObjectsUsingBlock:^(NSDictionary* button, NSUInteger idx, BOOL * stop)
-    {
-        //NOTE: Add space to force buttons to be laid out vertically
-        NSString* actionTitle = [button[kCountlyPNKeyActionButtonTitle] stringByAppendingString:@"                       "];
-        NSString* URL = button[kCountlyPNKeyActionButtonURL];
-
-        UIAlertAction* visit = [UIAlertAction actionWithTitle:actionTitle style:UIAlertActionStyleDefault handler:^(UIAlertAction * action)
-        {
-            [self recordActionEvent:notificationID buttonIndex:idx + 1];
-
-            [self openURL:URL];
-
-            alertController = nil;
-        }];
-
-        [alertController addAction:visit];
-    }];
-
-    [CountlyCommon.sharedInstance tryPresentingViewController:alertController];
-
-    const CGFloat kCountlyActionButtonHeight = 44.0;
-    CGRect tempFrame = defaultButton.frame;
-    tempFrame.size.height -= buttons.count * kCountlyActionButtonHeight;
-    defaultButton.frame = tempFrame;
-#endif
 }
 
 - (void)openURL:(NSString *)URLString
@@ -375,7 +195,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.01 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
     {
 #if (TARGET_OS_IOS)
-        [UIApplication.sharedApplication openURL:[NSURL URLWithString:URLString]];
+        [UIApplication.sharedApplication openURL:[NSURL URLWithString:URLString] options:@{} completionHandler:nil];
 #elif (TARGET_OS_OSX)
         [NSWorkspace.sharedWorkspace openURL:[NSURL URLWithString:URLString]];
 #endif
@@ -420,7 +240,21 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
         NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
 
         if (notificationID)
-            completionHandler(UNNotificationPresentationOptionAlert);
+        {
+            UNNotificationPresentationOptions presentationOption = UNNotificationPresentationOptionNone;
+            if (@available(iOS 14.0, tvOS 14.0, macOS 11.0, watchOS 7.0, *))
+            {
+                presentationOption = UNNotificationPresentationOptionList | UNNotificationPresentationOptionBanner;
+            }
+            else
+            {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+                presentationOption = UNNotificationPresentationOptionAlert;
+#pragma GCC diagnostic pop
+            }
+            completionHandler(presentationOption);
+        }
     }
 
     id<UNUserNotificationCenterDelegate> appDelegate = (id<UNUserNotificationCenterDelegate>)CLYApplication.sharedApplication.delegate;
@@ -474,7 +308,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center openSettingsForNotification:(UNNotification *)notification API_AVAILABLE(ios(12.0), macos(10.14))
 {
-    if (@available(iOS 12.0, macOS 10.14, *))
+    if (@available(iOS 12.0, *))
     {
         id<UNUserNotificationCenterDelegate> appDelegate = (id<UNUserNotificationCenterDelegate>)CLYApplication.sharedApplication.delegate;
 
@@ -487,15 +321,6 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
 - (void)application:(CLYApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken{}
 - (void)application:(CLYApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error{}
-#if (TARGET_OS_IOS)
-- (void)application:(UIApplication *)application didRegisterUserNotificationSettings:(UIUserNotificationSettings *)notificationSettings{}
-- (void)application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler
-{
-    completionHandler(UIBackgroundFetchResultNewData);
-}
-#elif (TARGET_OS_OSX)
-- (void)application:(NSApplication *)application didReceiveRemoteNotification:(NSDictionary<NSString *,id> *)userInfo{}
-#endif
 #endif
 @end
 
@@ -530,40 +355,5 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 }
 #endif
 
-#if (TARGET_OS_IOS)
-- (void)Countly_application:(UIApplication *)application didRegisterUserNotificationSettings:(UIUserNotificationSettings *)notificationSettings
-{
-    CLY_LOG_D(@"App didRegisterUserNotificationSettings: %@", notificationSettings);
-
-    [CountlyPushNotifications.sharedInstance sendToken];
-
-    BOOL granted = UIApplication.sharedApplication.currentUserNotificationSettings.types != UIUserNotificationTypeNone;
-
-    if (CountlyPushNotifications.sharedInstance.permissionCompletion)
-        CountlyPushNotifications.sharedInstance.permissionCompletion(granted, nil);
-
-    [self Countly_application:application didRegisterUserNotificationSettings:notificationSettings];
-}
-
-- (void)Countly_application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo fetchCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler;
-{
-    CLY_LOG_D(@"App didReceiveRemoteNotification:fetchCompletionHandler");
-
-    [CountlyPushNotifications.sharedInstance handleNotification:userInfo];
-
-    [self Countly_application:application didReceiveRemoteNotification:userInfo fetchCompletionHandler:completionHandler];
-}
-
-#elif (TARGET_OS_OSX)
-- (void)Countly_application:(NSApplication *)application didReceiveRemoteNotification:(NSDictionary<NSString *,id> *)userInfo
-{
-    CLY_LOG_D(@"App didReceiveRemoteNotification:");
-
-    [CountlyPushNotifications.sharedInstance handleNotification:userInfo];
-
-    [self Countly_application:application didReceiveRemoteNotification:userInfo];
-}
-#endif
 #endif
 @end
-#pragma GCC diagnostic pop

@@ -10,10 +10,6 @@
 NSString* const kCountlyReservedEventOrientation = @"[CLY]_orientation";
 NSString* const kCountlyOrientationKeyMode = @"mode";
 
-@interface CLYWCSessionDelegateInterceptor : CLYDelegateInterceptor
-@end
-
-
 @interface CountlyCommon ()
 {
     NSCalendar* gregorianCalendar;
@@ -28,15 +24,10 @@ NSString* const kCountlyOrientationKeyMode = @"mode";
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 @property (nonatomic) UIBackgroundTaskIdentifier bgTask;
 #endif
-#if (TARGET_OS_IOS || TARGET_OS_WATCH)
-@property (nonatomic) CLYWCSessionDelegateInterceptor* watchDelegate;
-#endif
 @end
 
-NSString* const kCountlySDKVersion = @"20.11.3";
+NSString* const kCountlySDKVersion = @"21.11.0";
 NSString* const kCountlySDKName = @"objc-native-ios";
-
-NSString* const kCountlyParentDeviceIDTransferKey = @"kCountlyParentDeviceIDTransferKey";
 
 NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
 
@@ -161,40 +152,6 @@ void CountlyPrint(NSString *stringToPrint)
     return (NSTimeInterval)(self.lastTimestamp / 1000.0);
 }
 
-#pragma mark - Watch Connectivity
-
-- (void)startAppleWatchMatching
-{
-    if (!self.enableAppleWatch)
-        return;
-
-    if (!CountlyConsentManager.sharedInstance.consentForAppleWatch)
-        return;
-
-#if (TARGET_OS_IOS || TARGET_OS_WATCH)
-    if (@available(iOS 9.0, *))
-    {
-        if (WCSession.isSupported)
-        {
-            self.watchDelegate = [CLYWCSessionDelegateInterceptor alloc];
-            self.watchDelegate.originalDelegate = WCSession.defaultSession.delegate;
-            WCSession.defaultSession.delegate = (id<WCSessionDelegate>)self.watchDelegate;
-            [WCSession.defaultSession activateSession];
-        }
-    }
-#endif
-
-#if (TARGET_OS_IOS)
-    if (@available(iOS 9.0, *))
-    {
-        if (WCSession.defaultSession.paired && WCSession.defaultSession.watchAppInstalled)
-        {
-            [WCSession.defaultSession transferUserInfo:@{kCountlyParentDeviceIDTransferKey: CountlyDeviceInfo.sharedInstance.deviceID}];
-            CLY_LOG_D(@"Transferring parent device ID %@ ...", CountlyDeviceInfo.sharedInstance.deviceID);
-        }
-    }
-#endif
-}
 
 #pragma mark - Orientation
 
@@ -207,6 +164,9 @@ void CountlyPrint(NSString *stringToPrint)
 
 - (void)deviceOrientationDidChange:(NSNotification *)notification
 {
+    if (!self.enableOrientationTracking)
+        return;
+
     //NOTE: Delay is needed for interface orientation change animation to complete. Otherwise old interface orientation value is returned.
     [NSObject cancelPreviousPerformRequestsWithTarget:self selector:@selector(recordOrientation) object:nil];
     [self performSelector:@selector(recordOrientation) withObject:nil afterDelay:0.5];
@@ -215,15 +175,11 @@ void CountlyPrint(NSString *stringToPrint)
 - (void)recordOrientation
 {
 #if (TARGET_OS_IOS)
-    UIInterfaceOrientation interfaceOrientation = UIInterfaceOrientationUnknown;
-    if (@available(iOS 13.0, *))
-    {
-        interfaceOrientation = UIApplication.sharedApplication.keyWindow.windowScene.interfaceOrientation;
-    }
-    else
-    {
-        interfaceOrientation = UIApplication.sharedApplication.statusBarOrientation;
-    }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    UIInterfaceOrientation interfaceOrientation = UIApplication.sharedApplication.statusBarOrientation;
+#pragma GCC diagnostic pop
 
     NSString* mode = nil;
     if (UIInterfaceOrientationIsPortrait(interfaceOrientation))
@@ -283,18 +239,21 @@ void CountlyPrint(NSString *stringToPrint)
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 - (UIViewController *)topViewController
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     UIViewController* topVC = UIApplication.sharedApplication.keyWindow.rootViewController;
+#pragma GCC diagnostic pop
 
     while (YES)
     {
         if (topVC.presentedViewController)
             topVC = topVC.presentedViewController;
-         else if ([topVC isKindOfClass:UINavigationController.class])
-             topVC = ((UINavigationController *)topVC).topViewController;
-         else if ([topVC isKindOfClass:UITabBarController.class])
-             topVC = ((UITabBarController *)topVC).selectedViewController;
-         else
-             break;
+        else if ([topVC isKindOfClass:UINavigationController.class])
+            topVC = ((UINavigationController *)topVC).topViewController;
+        else if ([topVC isKindOfClass:UITabBarController.class])
+            topVC = ((UITabBarController *)topVC).selectedViewController;
+        else
+            break;
     }
 
     return topVC;
@@ -394,7 +353,11 @@ const CGFloat kCountlyDismissButtonStandardStatusBarHeight = 20.0;
     {
         if (@available(iOS 11.0, *))
         {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
             CGFloat top = UIApplication.sharedApplication.keyWindow.safeAreaInsets.top;
+#pragma GCC diagnostic pop
+
             if (top)
             {
                 rect.origin.y += top;
@@ -434,35 +397,6 @@ const CGFloat kCountlyDismissButtonStandardStatusBarHeight = 20.0;
 }
 @end
 
-
-#pragma mark - Watch Delegate Proxy
-@implementation CLYWCSessionDelegateInterceptor
-
-#if (TARGET_OS_WATCH)
-- (void)session:(WCSession *)session didReceiveUserInfo:(NSDictionary<NSString *, id> *)userInfo
-{
-    CLY_LOG_D(@"Watch received user info: \n%@", userInfo);
-
-    NSString* parentDeviceID = userInfo[kCountlyParentDeviceIDTransferKey];
-
-    if (parentDeviceID && ![parentDeviceID isEqualToString:[CountlyPersistency.sharedInstance retrieveWatchParentDeviceID]])
-    {
-        [CountlyConnectionManager.sharedInstance sendParentDeviceID:parentDeviceID];
-
-        CLY_LOG_D(@"Parent device ID %@ added to queue.", parentDeviceID);
-
-        [CountlyPersistency.sharedInstance storeWatchParentDeviceID:parentDeviceID];
-    }
-
-    if ([self.originalDelegate respondsToSelector:@selector(session:didReceiveUserInfo:)])
-    {
-        CLY_LOG_D(@"Forwarding WCSession user info to original delegate.");
-
-        [self.originalDelegate session:session didReceiveUserInfo:userInfo];
-    }
-}
-#endif
-@end
 
 
 #pragma mark - Categories
@@ -526,6 +460,29 @@ NSString* CountlyJSONFromObject(id object)
 
     return nil;
 }
+
+- (NSString *)cly_truncatedKey:(NSString *)explanation
+{
+    if (self.length > CountlyCommon.sharedInstance.maxKeyLength)
+    {
+        CLY_LOG_W(@"%@ length is more than the limit (%ld)! So, it will be truncated: %@.", explanation, (long)CountlyCommon.sharedInstance.maxKeyLength, self);
+        return [self substringToIndex:CountlyCommon.sharedInstance.maxKeyLength];
+    }
+
+    return self;
+}
+
+- (NSString *)cly_truncatedValue:(NSString *)explanation
+{
+    if (self.length > CountlyCommon.sharedInstance.maxValueLength)
+    {
+        CLY_LOG_W(@"%@ length is more than the limit (%ld)! So, it will be truncated: %@.", explanation, (long)CountlyCommon.sharedInstance.maxValueLength, self);
+        return [self substringToIndex:CountlyCommon.sharedInstance.maxValueLength];
+    }
+
+    return self;
+}
+
 @end
 
 @implementation NSArray (Countly)
@@ -540,6 +497,50 @@ NSString* CountlyJSONFromObject(id object)
 {
     return [CountlyJSONFromObject(self) cly_URLEscaped];
 }
+
+- (NSDictionary *)cly_truncated:(NSString *)explanation
+{
+    NSMutableDictionary* truncatedDict = self.mutableCopy;
+    [self enumerateKeysAndObjectsUsingBlock:^(NSString * key, id obj, BOOL * stop)
+    {
+        NSString* truncatedKey = [key cly_truncatedKey:[explanation stringByAppendingString:@" key"]];
+        if (![truncatedKey isEqualToString:key])
+        {
+            truncatedDict[truncatedKey] = obj;
+            [truncatedDict removeObjectForKey:key];
+        }
+
+        if ([obj isKindOfClass:NSString.class])
+        {
+            NSString* truncatedValue = [obj cly_truncatedValue:[explanation stringByAppendingString:@" value"]];
+            if (![truncatedValue isEqualToString:obj])
+            {
+                truncatedDict[truncatedKey] = truncatedValue;
+            }
+        }
+    }];
+
+    return truncatedDict.copy;
+}
+
+- (NSDictionary *)cly_limited:(NSString *)explanation
+{
+    NSArray* allKeys = self.allKeys;
+
+    if (allKeys.count <= CountlyCommon.sharedInstance.maxSegmentationValues)
+        return self;
+
+    NSMutableArray* excessKeys = allKeys.mutableCopy;
+    [excessKeys removeObjectsInRange:(NSRange){0, CountlyCommon.sharedInstance.maxSegmentationValues}];
+
+    CLY_LOG_W(@"Number of key-value pairs in %@ is more than the limit (%ld)! So, some of them will be removed:\n %@", explanation, (long)CountlyCommon.sharedInstance.maxSegmentationValues, [excessKeys description]);
+
+    NSMutableDictionary* limitedDict = self.mutableCopy;
+    [limitedDict removeObjectsForKeys:excessKeys];
+
+    return limitedDict.copy;
+}
+
 @end
 
 @implementation NSData (Countly)

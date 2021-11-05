@@ -31,7 +31,6 @@
 
 #if (TARGET_OS_IOS)
 #import <UIKit/UIKit.h>
-#import "WatchConnectivity/WatchConnectivity.h"
 #endif
 
 #if (TARGET_OS_WATCH)
@@ -45,7 +44,11 @@
 
 #import <objc/runtime.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 extern NSString* const kCountlyErrorDomain;
+
+extern NSString* const kCountlyReservedEventOrientation;
 
 NS_ERROR_ENUM(kCountlyErrorDomain)
 {
@@ -62,11 +65,17 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 
 @property (nonatomic) BOOL hasStarted;
 @property (nonatomic) BOOL enableDebug;
+@property (nonatomic) BOOL shouldIgnoreTrustCheck;
 @property (nonatomic, weak) id <CountlyLoggerDelegate> loggerDelegate;
 @property (nonatomic) CLYInternalLogLevel internalLogLevel;
-@property (nonatomic) BOOL enableAppleWatch;
 @property (nonatomic, copy) NSString* attributionID;
 @property (nonatomic) BOOL manualSessionHandling;
+@property (nonatomic) BOOL enableOrientationTracking;
+
+
+@property (nonatomic) NSUInteger maxKeyLength;
+@property (nonatomic) NSUInteger maxValueLength;
+@property (nonatomic) NSUInteger maxSegmentationValues;
 
 void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...) NS_FORMAT_FUNCTION(2, 3);
 void CountlyPrint(NSString *stringToPrint);
@@ -86,8 +95,6 @@ void CountlyPrint(NSString *stringToPrint);
 - (void)tryPresentingViewController:(UIViewController *)viewController;
 - (void)tryPresentingViewController:(UIViewController *)viewController withCompletion:(void (^ __nullable) (void))completion;
 #endif
-
-- (void)startAppleWatchMatching;
 
 - (void)observeDeviceOrientationChanges;
 
@@ -116,6 +123,8 @@ void CountlyPrint(NSString *stringToPrint);
 - (NSString *)cly_SHA256;
 - (NSData *)cly_dataUTF8;
 - (NSString *)cly_valueForQueryStringKey:(NSString *)key;
+- (NSString *)cly_truncatedKey:(NSString *)explanation;
+- (NSString *)cly_truncatedValue:(NSString *)explanation;
 @end
 
 @interface NSArray (Countly)
@@ -124,6 +133,8 @@ void CountlyPrint(NSString *stringToPrint);
 
 @interface NSDictionary (Countly)
 - (NSString *)cly_JSONify;
+- (NSDictionary *)cly_truncated:(NSString *)explanation;
+- (NSDictionary *)cly_limited:(NSString *)explanation;
 @end
 
 @interface NSData (Countly)
@@ -138,3 +149,5 @@ void CountlyPrint(NSString *stringToPrint);
 @interface CountlyUserDetails (ClearUserDetails)
 - (void)clearUserDetails;
 @end
+
+NS_ASSUME_NONNULL_END

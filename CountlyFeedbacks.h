@@ -13,6 +13,8 @@ extern NSString* const kCountlyFBKeyAppVersion;
 extern NSString* const kCountlyFBKeyWidgetID;
 extern NSString* const kCountlyFBKeyID;
 
+extern NSString* const kCountlyReservedEventStarRating;
+
 @interface CountlyFeedbacks : NSObject
 #if (TARGET_OS_IOS)
 + (instancetype)sharedInstance;
