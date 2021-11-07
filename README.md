@@ -13,9 +13,9 @@ Track, measure, and take action - all without leaving Countly.
 
 ## About this SDK
 This repository includes Countly iOS SDK with watchOS, tvOS & macOS support.
-The minimum deployment targets are `iOS 8.0`,  `watchOS 2.0`, `tvOS 9.0` , `macOS 10.10`, and it requires `Xcode 11.0+`.
+The minimum deployment targets are `iOS 10.0`,  `watchOS 4.0`, `tvOS 10.0` , `macOS 10.14`, and it requires `Xcode 13.0+`.
 
-See [Countly iOS SDK documentation](https://support.count.ly/hc/en-us/articles/360037753511-iOS-watchOS-tvOS-macOS)  for integration and details.
+See [Countly iOS SDK documentation](https://support.count.ly/hc/en-us/articles/360037753511-iOS-watchOS-tvOS-macOS) for integration and details.
 
 ## Sample iOS Application
 We also have a useful [sample iOS application](https://github.com/Countly/countly-sample-ios) which demonstrates how to use this SDK in depth.   
