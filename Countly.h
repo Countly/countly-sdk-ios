@@ -557,6 +557,25 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * __nullable error))completionHandler;
 
 /**
+ * Manually submits feedback for a widget with given ID.
+ * @discussion If the feedback widget with given ID is available, feedback will be submitted.
+ * @discussion Otherwise, @c completionHandler will be executed with an @c NSError.
+ * @discussion @c completionHandler will also be executed with @c nil once feedback has been successfully submitted.
+ * @discussion Calls to this method will be ignored and @c completionHandler will not be executed if:
+ * @discussion - Consent for @c CLYConsentFeedback is not given, while @c requiresConsent flag is set on initial configuration.
+ * @discussion - Current device ID is @c CLYTemporaryDeviceID.
+ * @discussion - @c widgetID is not a non-zero length valid string.
+ * @param widgetID ID of the feedback widget created on Countly Server.
+ * @param rating A user rating, ranging from 1 - 5.
+ * @param comment An optional user message to include with the rating.
+ * @param email An optional e-mail address if the user wants to be contacted.
+ * @param completionHandler A completion handler block to be executed when feedback has been submitted.
+ */
+- (void)submitFeedbackWidgetWithID:(NSString *)widgetID rating:(NSUInteger)rating
+                           comment:(NSString * __nullable)comment email:(NSString * __nullable)email
+                 completionHandler:(void (^)(NSError * __nullable error))completionHandler;
+
+/**
  * Fetches a list of available feedback widgets.
  * @discussion When feedback widgets are fetched successfully, @c completionHandler will be executed with an array of @c CountlyFeedbackWidget objects.
  * @discussion Otherwise, @c completionHandler will be executed with an @c NSError.

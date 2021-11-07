@@ -928,6 +928,14 @@ long long appLoadStartTime;
     [CountlyFeedbacks.sharedInstance checkFeedbackWidgetWithID:widgetID completionHandler:completionHandler];
 }
 
+- (void)submitFeedbackWidgetWithID:(NSString *)widgetID rating:(NSUInteger)rating comment:(NSString *)comment email:(NSString *)email completionHandler:(void (^)(NSError * error))completionHandler
+{
+    CLY_LOG_I(@"%s %@", __FUNCTION__, widgetID);
+
+    [CountlyFeedbacks.sharedInstance submitFeedbackWidgetWithID:widgetID rating:rating comment:comment email:email
+                                              completionHandler:completionHandler];
+}
+
 - (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> *feedbackWidgets, NSError * error))completionHandler
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, completionHandler);

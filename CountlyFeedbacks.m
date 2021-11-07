@@ -317,6 +317,52 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     [CountlyCommon.sharedInstance tryPresentingViewController:webVC];
 }
 
+- (void)submitFeedbackWidgetWithID:(NSString *)widgetID rating:(NSUInteger)rating comment:(NSString *)comment email:(NSString *)email
+        completionHandler:(void (^)(NSError * error))completionHandler {
+
+    if (!CountlyConsentManager.sharedInstance.consentForFeedback)
+        return;
+
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+        return;
+
+    if (!widgetID.length)
+        return;
+
+    CountlyEvent *event = CountlyEvent.new;
+    event.key = kCountlyReservedEventStarRating;
+    event.count = 1;
+    event.segmentation = @{
+            @"widget_id": widgetID,
+            @"contactMe": @(email != nil),
+            @"platform": CountlyDeviceInfo.osName,
+            @"app_version": CountlyDeviceInfo.appVersion,
+            @"platform_version_rate": @"",
+            @"rating": @(rating),
+            @"email": email,
+            @"comment": comment
+    };
+    event.timestamp = CountlyCommon.sharedInstance.uniqueTimestamp;
+    event.hourOfDay = CountlyCommon.sharedInstance.hourOfDay;
+    event.dayOfWeek = CountlyCommon.sharedInstance.dayOfWeek;
+
+    NSString *queryString = [[CountlyConnectionManager.sharedInstance queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%@",
+            kCountlyFBKeyAppVersion, CountlyDeviceInfo.appVersion,
+            @"events", [@[event.dictionaryRepresentation] cly_JSONify]];
+
+    NSString* serverInputEndpoint = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"/i/feedback/input?%@", queryString];
+    NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverInputEndpoint]];
+
+    [[NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError*  error)
+    {
+        dispatch_async(dispatch_get_main_queue(), ^
+        {
+            if (completionHandler)
+                completionHandler(error);
+        });
+    }] resume];
+}
+
 - (NSURLRequest *)widgetCheckURLRequest:(NSString *)widgetID
 {
     NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
