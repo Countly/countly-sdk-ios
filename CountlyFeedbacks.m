@@ -339,8 +339,8 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
             @"app_version": CountlyDeviceInfo.appVersion,
             @"platform_version_rate": @"",
             @"rating": @(rating),
-            @"email": email,
-            @"comment": comment
+            @"email": (id)email?: [NSNull null],
+            @"comment": (id)comment?: [NSNull null]
     };
     event.timestamp = CountlyCommon.sharedInstance.uniqueTimestamp;
     event.hourOfDay = CountlyCommon.sharedInstance.hourOfDay;
