@@ -56,30 +56,37 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     NSMutableDictionary* userDictionary = NSMutableDictionary.new;
     if (self.name)
         userDictionary[kCountlyUDKeyName] =
-                ![self.name isKindOfClass:[NSString class]] ? self.name :
+                ![self.name isKindOfClass:NSString.class] ? self.name :
                         [(NSString *)self.name cly_truncatedValue:@"User details name"];
+
     if (self.username)
         userDictionary[kCountlyUDKeyUsername] =
-                ![self.username isKindOfClass:[NSString class]] ? self.username :
+                ![self.username isKindOfClass:NSString.class] ? self.username :
                         [(NSString *)self.username cly_truncatedValue:@"User details username"];
+
     if (self.email)
         userDictionary[kCountlyUDKeyEmail] =
-                ![self.email isKindOfClass:[NSString class]] ? self.email :
+                ![self.email isKindOfClass:NSString.class] ? self.email :
                         [(NSString *)self.email cly_truncatedValue:@"User details email"];
+
     if (self.organization)
         userDictionary[kCountlyUDKeyOrganization] =
-                ![self.organization isKindOfClass:[NSString class]] ? self.organization :
+                ![self.organization isKindOfClass:NSString.class] ? self.organization :
                         [(NSString *)self.organization cly_truncatedValue:@"User details organization"];
+
     if (self.phone)
         userDictionary[kCountlyUDKeyPhone] =
-                ![self.phone isKindOfClass:[NSString class]] ? self.phone :
+                ![self.phone isKindOfClass:NSString.class] ? self.phone :
                         [(NSString *)self.phone cly_truncatedValue:@"User details phone"];
+
     if (self.gender)
         userDictionary[kCountlyUDKeyGender] =
-                ![self.gender isKindOfClass:[NSString class]] ? self.gender :
+                ![self.gender isKindOfClass:NSString.class] ? self.gender :
                         [(NSString *)self.gender cly_truncatedValue:@"User details gender"];
+
     if (self.pictureURL)
         userDictionary[kCountlyUDKeyPicture] = self.pictureURL;
+
     if (self.birthYear)
         userDictionary[kCountlyUDKeyBirthyear] = self.birthYear;
 

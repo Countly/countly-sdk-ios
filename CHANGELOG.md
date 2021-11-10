@@ -1,3 +1,9 @@
+## 21.11.1
+- Fixed a crash when some default user detail properties are set to `NSNull` (thanks @lhunath)
+- Updated README.md for minimum supported deployment targets
+
+
+
 ## 21.11.0
 - Updated minimum supported OS versions as `iOS 10.0`, `tvOS 10.0`, `watchOS 4.0` and `macOS 10.14`
 - Updated some deprecated API usage to get rid of warnings
