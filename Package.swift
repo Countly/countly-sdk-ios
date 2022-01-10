@@ -32,6 +32,7 @@ let package = Package(
             [
                 "Info.plist",
                 "Countly.podspec",
+                "Countly-PL.podspec",
                 "LICENSE.md",
                 "README.md",
                 "countly_dsym_uploader.sh",
