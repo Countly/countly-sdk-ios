@@ -554,7 +554,25 @@ NS_ASSUME_NONNULL_BEGIN
  * @param widgetID ID of the feedback widget created on Countly Server.
  * @param completionHandler A completion handler block to be executed when feedback widget is dismissed by user or there is an error.
  */
-- (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * __nullable error))completionHandler;
+- (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * __nullable error))completionHandler DEPRECATED_MSG_ATTRIBUTE("Use 'presentRatingWidgetWithID:' method instead!");
+
+/**
+ * Presents rating widget with given ID in a WKWebView placed in a UIViewController.
+ * @discussion First, the availability of the rating widget will be checked asynchronously.
+ * @discussion If the rating widget with given ID is available, it will be modally presented.
+ * @discussion Otherwise, @c completionHandler will be executed with an @c NSError.
+ * @discussion @c completionHandler will also be executed with @c nil when the rating widget is dismissed by user.
+ * @discussion Calls to this method will be ignored and @c completionHandler will not be executed if:
+ * @discussion - Consent for @c CLYConsentFeedback is not given, while @c requiresConsent flag is set on initial configuration.
+ * @discussion - Current device ID is @c CLYTemporaryDeviceID.
+ * @discussion - @c widgetID is not a non-zero length valid string.
+ * @discussion This is a legacy method for presenting Rating type feedback widgets only.
+ * @discussion Passing widget ID's of Survey or NPS type feedback widgets will not work.
+ * @param widgetID ID of the rating widget created on Countly Server.
+ * @param completionHandler A completion handler block to be executed when the rating widget is dismissed by user or there is an error.
+ */
+- (void)presentRatingWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * __nullable error))completionHandler;
+
 
 /**
  * Fetches a list of available feedback widgets.
