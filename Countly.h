@@ -573,6 +573,18 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)presentRatingWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * __nullable error))completionHandler;
 
+/**
+ * Manually records rating widget result with given ID and other info.
+ * @discussion Calls to this method will be ignored if:
+ * @discussion - Consent for @c CLYConsentFeedback is not given, while @c requiresConsent flag is set on initial configuration.
+ * @discussion - @c widgetID is not a non-zero length valid string.
+ * @param widgetID ID of the rating widget created on Countly Server
+ * @param rating User's rating
+ * @param email User's e-mail address (optional)
+ * @param comment User's comment (optional)
+ * @param userCanBeContacted User's consent for whether they can be contacted via e-mail or not
+ */
+- (void)recordRatingWidgetWithID:(NSString *)widgetID rating:(NSInteger)rating email:(NSString * _Nullable)email comment:(NSString * _Nullable)comment userCanBeContacted:(BOOL)userCanBeContacted;
 
 /**
  * Fetches a list of available feedback widgets.
