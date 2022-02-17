@@ -717,7 +717,9 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 #if DEBUG
     if (CountlyCommon.sharedInstance.shouldIgnoreTrustCheck)
     {
-        SecTrustSetExceptions(serverTrust, SecTrustCopyExceptions(serverTrust));
+        CFDataRef exceptions = SecTrustCopyExceptions(serverTrust);
+        SecTrustSetExceptions(serverTrust, exceptions);
+        CFRelease(exceptions);
     }
 #endif
     
