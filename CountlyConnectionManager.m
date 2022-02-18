@@ -432,10 +432,10 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     [self proceedOnQueue];
 }
 
-- (void)sendConsentChanges:(NSString *)consentChanges
+- (void)sendConsents:(NSString *)consents
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
-                             kCountlyQSKeyConsent, consentChanges];
+                             kCountlyQSKeyConsent, consents];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 

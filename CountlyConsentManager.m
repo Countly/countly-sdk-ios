@@ -112,7 +112,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     if ([features containsObject:CLYConsentRemoteConfig] && !self.consentForRemoteConfig)
         self.consentForRemoteConfig = YES;
 
-    [self sendConsentChanges];
+    [self sendConsents];
 }
 
 
@@ -124,17 +124,17 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 
 - (void)cancelConsentForAllFeaturesWithoutSendingConsentsRequest
 {
-    [self cancelConsentForFeatures:[self allFeatures] shouldSkipSendingConsentChanges:YES];
+    [self cancelConsentForFeatures:[self allFeatures] shouldSkipSendingConsentsRequest:YES];
 }
 
 
 - (void)cancelConsentForFeatures:(NSArray *)features
 {
-    [self cancelConsentForFeatures:features shouldSkipSendingConsentChanges:NO];
+    [self cancelConsentForFeatures:features shouldSkipSendingConsentsRequest:NO];
 }
 
 
-- (void)cancelConsentForFeatures:(NSArray *)features shouldSkipSendingConsentChanges:(BOOL)shouldSkipSendingConsentChanges
+- (void)cancelConsentForFeatures:(NSArray *)features shouldSkipSendingConsentsRequest:(BOOL)shouldSkipSendingConsentsRequest
 {
     if (!self.requiresConsent)
         return;
@@ -172,12 +172,12 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     if ([features containsObject:CLYConsentRemoteConfig] && self.consentForRemoteConfig)
         self.consentForRemoteConfig = NO;
 
-    if (!shouldSkipSendingConsentChanges)
-        [self sendConsentChanges];
+    if (!shouldSkipSendingConsentsRequest)
+        [self sendConsents];
 }
 
 
-- (void)sendConsentChanges
+- (void)sendConsents
 {
     NSDictionary * consents =
     @{
@@ -193,7 +193,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
         CLYConsentFeedback: @(self.consentForFeedback),
     };
 
-    [CountlyConnectionManager.sharedInstance sendConsentChanges:[consents cly_JSONify]];
+    [CountlyConnectionManager.sharedInstance sendConsents:[consents cly_JSONify]];
 }
 
 
