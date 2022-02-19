@@ -21,6 +21,7 @@ extern NSString* const kCountlyReservedEventStarRating;
 
 - (void)showDialog:(void(^)(NSInteger rating))completion;
 - (void)checkFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler;
+- (void)recordRatingWidgetWithID:(NSString *)widgetID rating:(NSInteger)rating email:(NSString *)email comment:(NSString *)comment userCanBeContacted:(BOOL)userCanBeContacted;
 - (void)checkForStarRatingAutoAsk;
 
 - (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> *feedbackWidgets, NSError *error))completionHandler;

@@ -35,6 +35,9 @@ NSString* const kCountlyFBKeyTargetDevices  = @"target_devices";
 NSString* const kCountlyFBKeyPhone          = @"phone";
 NSString* const kCountlyFBKeyTablet         = @"tablet";
 NSString* const kCountlyFBKeyFeedback       = @"feedback";
+NSString* const kCountlyFBKeyEmail          = @"email";
+NSString* const kCountlyFBKeyComment        = @"comment";
+NSString* const kCountlyFBKeyContactMe      = @"contactMe";
 
 const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
@@ -372,6 +375,27 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
     return ((isTablet && isTabletTargeted) || (isPhone && isPhoneTargeted));
 }
+
+- (void)recordRatingWidgetWithID:(NSString *)widgetID rating:(NSInteger)rating email:(NSString *)email comment:(NSString *)comment userCanBeContacted:(BOOL)userCanBeContacted
+{
+    if (!CountlyConsentManager.sharedInstance.consentForFeedback)
+        return;
+
+    if (!widgetID.length)
+        return;
+
+    NSMutableDictionary* segmentation = NSMutableDictionary.new;
+    segmentation[kCountlyFBKeyPlatform] = CountlyDeviceInfo.osName;
+    segmentation[kCountlyFBKeyAppVersion] = CountlyDeviceInfo.appVersion;
+    segmentation[kCountlyFBKeyRating] = @(rating);
+    segmentation[kCountlyFBKeyWidgetID] = widgetID;
+    segmentation[kCountlyFBKeyEmail] = email;
+    segmentation[kCountlyFBKeyComment] = comment;
+    segmentation[kCountlyFBKeyContactMe] = @(userCanBeContacted);
+
+    [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventStarRating segmentation:segmentation];
+}
+
 
 #pragma mark - Feedbacks (Surveys, NPS)
 
