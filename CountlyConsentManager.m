@@ -21,10 +21,6 @@ CLYConsent const CLYConsentFeedback             = @"feedback";
 CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 
 
-@interface CountlyConsentManager ()
-@property (nonatomic, strong) NSMutableDictionary* consentChanges;
-@end
-
 @implementation CountlyConsentManager
 
 @synthesize consentForSessions = _consentForSessions;
@@ -57,7 +53,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 {
     if (self = [super init])
     {
-        self.consentChanges = NSMutableDictionary.new;
+
     }
 
     return self;
@@ -116,7 +112,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     if ([features containsObject:CLYConsentRemoteConfig] && !self.consentForRemoteConfig)
         self.consentForRemoteConfig = YES;
 
-    [self sendConsentChanges];
+    [self sendConsents];
 }
 
 
@@ -128,17 +124,17 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 
 - (void)cancelConsentForAllFeaturesWithoutSendingConsentsRequest
 {
-    [self cancelConsentForFeatures:[self allFeatures] shouldSkipSendingConsentChanges:YES];
+    [self cancelConsentForFeatures:[self allFeatures] shouldSkipSendingConsentsRequest:YES];
 }
 
 
 - (void)cancelConsentForFeatures:(NSArray *)features
 {
-    [self cancelConsentForFeatures:features shouldSkipSendingConsentChanges:NO];
+    [self cancelConsentForFeatures:features shouldSkipSendingConsentsRequest:NO];
 }
 
 
-- (void)cancelConsentForFeatures:(NSArray *)features shouldSkipSendingConsentChanges:(BOOL)shouldSkipSendingConsentChanges
+- (void)cancelConsentForFeatures:(NSArray *)features shouldSkipSendingConsentsRequest:(BOOL)shouldSkipSendingConsentsRequest
 {
     if (!self.requiresConsent)
         return;
@@ -176,18 +172,28 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     if ([features containsObject:CLYConsentRemoteConfig] && self.consentForRemoteConfig)
         self.consentForRemoteConfig = NO;
 
-    if (!shouldSkipSendingConsentChanges)
-        [self sendConsentChanges];
+    if (!shouldSkipSendingConsentsRequest)
+        [self sendConsents];
 }
 
 
-- (void)sendConsentChanges
+- (void)sendConsents
 {
-    if (self.consentChanges.allKeys.count)
-    {
-        [CountlyConnectionManager.sharedInstance sendConsentChanges:[self.consentChanges cly_JSONify]];
-        [self.consentChanges removeAllObjects];
-    }
+    NSDictionary * consents =
+    @{
+        CLYConsentSessions: @(self.consentForSessions),
+        CLYConsentEvents: @(self.consentForEvents),
+        CLYConsentUserDetails: @(self.consentForUserDetails),
+        CLYConsentCrashReporting: @(self.consentForCrashReporting),
+        CLYConsentPushNotifications: @(self.consentForPushNotifications),
+        CLYConsentLocation: @(self.consentForLocation),
+        CLYConsentViewTracking: @(self.consentForViewTracking),
+        CLYConsentAttribution: @(self.consentForAttribution),
+        CLYConsentPerformanceMonitoring: @(self.consentForPerformanceMonitoring),
+        CLYConsentFeedback: @(self.consentForFeedback),
+    };
+
+    [CountlyConnectionManager.sharedInstance sendConsents:[consents cly_JSONify]];
 }
 
 
@@ -235,8 +241,6 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     {
         CLY_LOG_D(@"Consent for Session is cancelled.");
     }
-
-    self.consentChanges[CLYConsentSessions] = @(consentForSessions);
 }
 
 
@@ -255,8 +259,6 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
         [CountlyConnectionManager.sharedInstance sendEvents];
         [CountlyPersistency.sharedInstance clearAllTimedEvents];
     }
-
-    self.consentChanges[CLYConsentEvents] = @(consentForEvents);
 }
 
 
@@ -274,8 +276,6 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 
         [CountlyUserDetails.sharedInstance clearUserDetails];
     }
-
-    self.consentChanges[CLYConsentUserDetails] = @(consentForUserDetails);
 }
 
 
@@ -295,8 +295,6 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 
         [CountlyCrashReporter.sharedInstance stopCrashReporting];
     }
-
-    self.consentChanges[CLYConsentCrashReporting] = @(consentForCrashReporting);
 }
 
 
@@ -321,8 +319,6 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 #endif
     }
 #endif
-
-    self.consentChanges[CLYConsentPushNotifications] = @(consentForPushNotifications);
 }
 
 
@@ -340,8 +336,6 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     {
         CLY_LOG_D(@"Consent for Location is cancelled.");
     }
-
-    self.consentChanges[CLYConsentLocation] = @(consentForLocation);
 }
 
 
@@ -363,8 +357,6 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
         [CountlyViewTracking.sharedInstance stopAutoViewTracking];
     }
 #endif
-
-    self.consentChanges[CLYConsentViewTracking] = @(consentForViewTracking);
 }
 
 
@@ -382,8 +374,6 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     {
         CLY_LOG_D(@"Consent for Attribution is cancelled.");
     }
-
-    self.consentChanges[CLYConsentAttribution] = @(consentForAttribution);
 }
 
 
@@ -405,8 +395,6 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
         [CountlyPerformanceMonitoring.sharedInstance stopPerformanceMonitoring];
     }
 #endif
-
-    self.consentChanges[CLYConsentPerformanceMonitoring] = @(consentForPerformanceMonitoring);
 }
 
 - (void)setConsentForFeedback:(BOOL)consentForFeedback
@@ -425,8 +413,6 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
         CLY_LOG_D(@"Consent for Feedback is cancelled.");
     }
 #endif
-
-    self.consentChanges[CLYConsentFeedback] = @(consentForFeedback);
 }
 
 - (void)setConsentForRemoteConfig:(BOOL)consentForRemoteConfig
@@ -443,8 +429,6 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     {
         CLY_LOG_D(@"Consent for RemoteConfig is cancelled.");
     }
-
-    self.consentChanges[CLYConsentRemoteConfig] = @(consentForRemoteConfig);
 }
 
 #pragma mark -
