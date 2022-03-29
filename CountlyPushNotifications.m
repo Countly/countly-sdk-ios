@@ -9,6 +9,10 @@
 NSString* const kCountlyReservedEventPushAction = @"[CLY]_push_action";
 NSString* const kCountlyTokenError = @"kCountlyTokenError";
 
+NSString* const kCountlyPNKeyPlatform = @"p";
+NSString* const kCountlyPNKeyiOS = @"i";
+NSString* const kCountlyPNKeymacOS = @"m";
+
 //NOTE: Push Notification Test Modes
 CLYPushTestMode const CLYPushTestModeDevelopment = @"CLYPushTestModeDevelopment";
 CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFlightOrAdHoc";
@@ -218,10 +222,18 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
     if (!notificationID)
         return;
 
+    NSString* platform = @"unknown";
+#if (TARGET_OS_IOS)
+    platform = kCountlyPNKeyiOS;
+#elif (TARGET_OS_OSX)
+    platform = kCountlyPNKeymacOS;
+#endif
+
     NSDictionary* segmentation =
     @{
         kCountlyPNKeyNotificationID: notificationID,
-        kCountlyPNKeyActionButtonIndex: @(buttonIndex)
+        kCountlyPNKeyActionButtonIndex: @(buttonIndex),
+        kCountlyPNKeyPlatform: platform,
     };
 
     [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventPushAction segmentation:segmentation];
