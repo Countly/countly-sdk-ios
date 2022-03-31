@@ -90,6 +90,10 @@ extern CLYMetricKey const CLYMetricKeyLocale;
 extern CLYMetricKey const CLYMetricKeyHasWatch;
 extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
 
+//NOTE: Attribution keys
+typedef NSString* CLYAttributionKey NS_EXTENSIBLE_STRING_ENUM;
+extern CLYAttributionKey const CLYAttributionKeyIDFA;
+extern CLYAttributionKey const CLYAttributionKeyADID;
 
 //NOTE: Internal log levels
 typedef enum : NSUInteger
@@ -359,10 +363,28 @@ typedef enum : NSUInteger
 #pragma mark -
 
 /**
- * For specifying attribution ID (IDFA) for campaign attribution.
+ * For specifying attribution ID (IDFA).
  * @discussion If set, this attribution ID will be sent with all @c begin_session requests.
  */
 @property (nonatomic, copy) NSString* attributionID;
+
+/**
+ * For specifying direct attribution campaign type.
+ * @discussion Currently supported campaign types are "countly" and "_special_test".
+ */
+@property (nonatomic, copy) NSString* campaignType;
+
+/**
+ * For specifying direct attribution campaign data.
+ * @discussion Campaign data has to be in `{"cid":"CAMPAIGN_ID", "cuid":"CAMPAIGN_USER_ID"}` format.
+ */
+@property (nonatomic, copy) NSString* campaignData;
+
+/**
+ * For specifying indirect attribution with given key-value pairs.
+ * @discussion Keys could be a predefined CLYAttributionKey or any non-zero length valid string.
+ */
+@property (nonatomic, copy) NSDictionary<NSString *, NSString *> * indirectAttribution;
 
 /**
  * @c enableAttribution property is deprecated. Please use @c recordAttributionID method instead.

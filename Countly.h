@@ -607,11 +607,33 @@ NS_ASSUME_NONNULL_BEGIN
  * Records attribution ID (IDFA) for campaign attribution.
  * @discussion This method overrides @c attributionID property specified on initial configuration, and sends an immediate request.
  * @discussion Also, this attribution ID will be sent with all @c begin_session requests.
+ * @discussion Calls to this method will be ignored if:
+ * @discussion - Consent for @c CLYConsentAttribution is not given, while @c requiresConsent flag is set on initial configuration.
  * @param attributionID Attribution ID (IDFA)
  */
 - (void)recordAttributionID:(NSString *)attributionID;
 
+/**
+ * Records direct attribution with campaign type and data.
+ * @discussion Currently supported campaign types are "countly" and "_special_test".
+ * @discussion Campaign data has to be in `{"cid":"CAMPAIGN_ID", "cuid":"CAMPAIGN_USER_ID"}` format.
+ * @discussion This method sends an immediate request.
+ * @discussion Calls to this method will be ignored if:
+ * @discussion - Consent for @c CLYConsentAttribution is not given, while @c requiresConsent flag is set on initial configuration.
+ * @param campaignType Campaign Type
+ * @param campaignData Campaign Data
+ */
+- (void)recordDirectAttributionWithCampaignType:(NSString *)campaignType andCampaignData:(NSString *)campaignData;
 
+/**
+ * Records indirect attribution with given key-value pairs.
+ * @discussion Keys could be a predefined CLYAttributionKey or any non-zero length valid string.
+ * @discussion This method sends an immediate request.
+ * @discussion Calls to this method will be ignored if:
+ * @discussion - Consent for @c CLYConsentAttribution is not given, while @c requiresConsent flag is set on initial configuration.
+ * @param attribution Attribution key-value pairs
+ */
+- (void)recordIndirectAttribution:(NSDictionary<NSString *, NSString *> *)attribution;
 
 #pragma mark - Remote Config
 /**
