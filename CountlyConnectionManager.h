@@ -47,7 +47,10 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 - (void)sendCrashReport:(NSString *)report immediately:(BOOL)immediately;
 - (void)sendOldDeviceID:(NSString *)oldDeviceID;
 - (void)sendAttribution;
-- (void)sendConsentChanges:(NSString *)consentChanges;
+- (void)sendDirectAttributionWithCampaignID:(NSString *)campaignID andCampaignUserID:(NSString *)campaignUserID;
+- (void)sendAttributionData:(NSString *)attributionData;
+- (void)sendIndirectAttribution:(NSDictionary *)attribution;
+- (void)sendConsents:(NSString *)consents;
 - (void)sendPerformanceMonitoringTrace:(NSString *)trace;
 
 - (void)proceedOnQueue;

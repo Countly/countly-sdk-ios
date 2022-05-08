@@ -41,17 +41,25 @@ NSString* const kCountlyQSKeyLocationCity     = @"city";
 NSString* const kCountlyQSKeyLocationCountry  = @"country_code";
 NSString* const kCountlyQSKeyLocationIP       = @"ip_address";
 
+NSString* const kCountlyQSKeyAttributionID    = @"aid";
+NSString* const kCountlyQSKeyIDFA             = @"idfa";
+NSString* const kCountlyQSKeyADID             = @"adid";
+NSString* const kCountlyQSKeyCampaignID       = @"campaign_id";
+NSString* const kCountlyQSKeyCampaignUser     = @"campaign_user";
+NSString* const kCountlyQSKeyAttributionData  = @"attribution_data";
+
 NSString* const kCountlyQSKeyMetrics          = @"metrics";
 NSString* const kCountlyQSKeyEvents           = @"events";
 NSString* const kCountlyQSKeyUserDetails      = @"user_details";
 NSString* const kCountlyQSKeyCrash            = @"crash";
 NSString* const kCountlyQSKeyChecksum256      = @"checksum256";
-NSString* const kCountlyQSKeyAttributionID    = @"aid";
-NSString* const kCountlyQSKeyIDFA             = @"idfa";
 NSString* const kCountlyQSKeyConsent          = @"consent";
 NSString* const kCountlyQSKeyAPM              = @"apm";
 
 NSString* const kCountlyQSKeyMethod           = @"method";
+
+CLYAttributionKey const CLYAttributionKeyIDFA = kCountlyQSKeyIDFA;
+CLYAttributionKey const CLYAttributionKeyADID = kCountlyQSKeyADID;
 
 NSString* const kCountlyUploadBoundary = @"0cae04a8b698d63ff6ea55d168993f21";
 
@@ -432,10 +440,45 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     [self proceedOnQueue];
 }
 
-- (void)sendConsentChanges:(NSString *)consentChanges
+- (void)sendDirectAttributionWithCampaignID:(NSString *)campaignID andCampaignUserID:(NSString *)campaignUserID
+{
+    NSMutableString* queryString = [self queryEssentials].mutableCopy;
+    [queryString appendFormat:@"&%@=%@", kCountlyQSKeyCampaignID, campaignID];
+
+    if (campaignUserID.length)
+    {
+        [queryString appendFormat:@"&%@=%@", kCountlyQSKeyCampaignUser, campaignUserID];
+    }
+
+    [CountlyPersistency.sharedInstance addToQueue:queryString.copy];
+
+    [self proceedOnQueue];
+}
+
+- (void)sendAttributionData:(NSString *)attributionData
+{
+    NSMutableString* queryString = [self queryEssentials].mutableCopy;
+    [queryString appendFormat:@"&%@=%@", kCountlyQSKeyAttributionData, [attributionData cly_URLEscaped]];
+
+    [CountlyPersistency.sharedInstance addToQueue:queryString.copy];
+
+    [self proceedOnQueue];
+}
+
+- (void)sendIndirectAttribution:(NSDictionary *)attribution
+{
+    NSMutableString* queryString = [self queryEssentials].mutableCopy;
+    [queryString appendFormat:@"&%@=%@", kCountlyQSKeyAttributionID, [attribution cly_JSONify]];
+
+    [CountlyPersistency.sharedInstance addToQueue:queryString.copy];
+
+    [self proceedOnQueue];
+}
+
+- (void)sendConsents:(NSString *)consents
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
-                             kCountlyQSKeyConsent, consentChanges];
+                             kCountlyQSKeyConsent, consents];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -717,7 +760,9 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 #if DEBUG
     if (CountlyCommon.sharedInstance.shouldIgnoreTrustCheck)
     {
-        SecTrustSetExceptions(serverTrust, SecTrustCopyExceptions(serverTrust));
+        CFDataRef exceptions = SecTrustCopyExceptions(serverTrust);
+        SecTrustSetExceptions(serverTrust, exceptions);
+        CFRelease(exceptions);
     }
 #endif
     

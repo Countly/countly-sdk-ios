@@ -554,7 +554,37 @@ NS_ASSUME_NONNULL_BEGIN
  * @param widgetID ID of the feedback widget created on Countly Server.
  * @param completionHandler A completion handler block to be executed when feedback widget is dismissed by user or there is an error.
  */
-- (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * __nullable error))completionHandler;
+- (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * __nullable error))completionHandler DEPRECATED_MSG_ATTRIBUTE("Use 'presentRatingWidgetWithID:' method instead!");
+
+/**
+ * Presents rating widget with given ID in a WKWebView placed in a UIViewController.
+ * @discussion First, the availability of the rating widget will be checked asynchronously.
+ * @discussion If the rating widget with given ID is available, it will be modally presented.
+ * @discussion Otherwise, @c completionHandler will be executed with an @c NSError.
+ * @discussion @c completionHandler will also be executed with @c nil when the rating widget is dismissed by user.
+ * @discussion Calls to this method will be ignored and @c completionHandler will not be executed if:
+ * @discussion - Consent for @c CLYConsentFeedback is not given, while @c requiresConsent flag is set on initial configuration.
+ * @discussion - Current device ID is @c CLYTemporaryDeviceID.
+ * @discussion - @c widgetID is not a non-zero length valid string.
+ * @discussion This is a legacy method for presenting Rating type feedback widgets only.
+ * @discussion Passing widget ID's of Survey or NPS type feedback widgets will not work.
+ * @param widgetID ID of the rating widget created on Countly Server.
+ * @param completionHandler A completion handler block to be executed when the rating widget is dismissed by user or there is an error.
+ */
+- (void)presentRatingWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * __nullable error))completionHandler;
+
+/**
+ * Manually records rating widget result with given ID and other info.
+ * @discussion Calls to this method will be ignored if:
+ * @discussion - Consent for @c CLYConsentFeedback is not given, while @c requiresConsent flag is set on initial configuration.
+ * @discussion - @c widgetID is not a non-zero length valid string.
+ * @param widgetID ID of the rating widget created on Countly Server
+ * @param rating User's rating
+ * @param email User's e-mail address (optional)
+ * @param comment User's comment (optional)
+ * @param userCanBeContacted User's consent for whether they can be contacted via e-mail or not
+ */
+- (void)recordRatingWidgetWithID:(NSString *)widgetID rating:(NSInteger)rating email:(NSString * _Nullable)email comment:(NSString * _Nullable)comment userCanBeContacted:(BOOL)userCanBeContacted;
 
 /**
  * Fetches a list of available feedback widgets.
@@ -577,11 +607,33 @@ NS_ASSUME_NONNULL_BEGIN
  * Records attribution ID (IDFA) for campaign attribution.
  * @discussion This method overrides @c attributionID property specified on initial configuration, and sends an immediate request.
  * @discussion Also, this attribution ID will be sent with all @c begin_session requests.
+ * @discussion Calls to this method will be ignored if:
+ * @discussion - Consent for @c CLYConsentAttribution is not given, while @c requiresConsent flag is set on initial configuration.
  * @param attributionID Attribution ID (IDFA)
  */
 - (void)recordAttributionID:(NSString *)attributionID;
 
+/**
+ * Records direct attribution with campaign type and data.
+ * @discussion Currently supported campaign types are "countly" and "_special_test".
+ * @discussion Campaign data has to be in `{"cid":"CAMPAIGN_ID", "cuid":"CAMPAIGN_USER_ID"}` format.
+ * @discussion This method sends an immediate request.
+ * @discussion Calls to this method will be ignored if:
+ * @discussion - Consent for @c CLYConsentAttribution is not given, while @c requiresConsent flag is set on initial configuration.
+ * @param campaignType Campaign Type
+ * @param campaignData Campaign Data
+ */
+- (void)recordDirectAttributionWithCampaignType:(NSString *)campaignType andCampaignData:(NSString *)campaignData;
 
+/**
+ * Records indirect attribution with given key-value pairs.
+ * @discussion Keys could be a predefined CLYAttributionKey or any non-zero length valid string.
+ * @discussion This method sends an immediate request.
+ * @discussion Calls to this method will be ignored if:
+ * @discussion - Consent for @c CLYConsentAttribution is not given, while @c requiresConsent flag is set on initial configuration.
+ * @param attribution Attribution key-value pairs
+ */
+- (void)recordIndirectAttribution:(NSDictionary<NSString *, NSString *> *)attribution;
 
 #pragma mark - Remote Config
 /**

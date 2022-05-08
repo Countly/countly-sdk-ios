@@ -183,6 +183,12 @@ long long appLoadStartTime;
 
     if (config.consents)
         [self giveConsentForFeatures:config.consents];
+
+    if (config.campaignType && config.campaignData)
+        [self recordDirectAttributionWithCampaignType:config.campaignType andCampaignData:config.campaignData];
+
+    if (config.indirectAttribution)
+        [self recordIndirectAttribution:config.indirectAttribution];
 }
 
 
@@ -928,6 +934,20 @@ long long appLoadStartTime;
     [CountlyFeedbacks.sharedInstance checkFeedbackWidgetWithID:widgetID completionHandler:completionHandler];
 }
 
+- (void)presentRatingWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
+{
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, widgetID, completionHandler);
+
+    [CountlyFeedbacks.sharedInstance checkFeedbackWidgetWithID:widgetID completionHandler:completionHandler];
+}
+
+- (void)recordRatingWidgetWithID:(NSString *)widgetID rating:(NSInteger)rating email:(NSString * _Nullable)email comment:(NSString * _Nullable)comment userCanBeContacted:(BOOL)userCanBeContacted
+{
+    CLY_LOG_I(@"%s %@ %ld %@ %@ %d", __FUNCTION__, widgetID, (long)rating, email, comment, userCanBeContacted);
+
+    [CountlyFeedbacks.sharedInstance recordRatingWidgetWithID:widgetID rating:rating email:email comment:comment userCanBeContacted:userCanBeContacted];
+}
+
 - (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> *feedbackWidgets, NSError * error))completionHandler
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, completionHandler);
@@ -953,7 +973,80 @@ long long appLoadStartTime;
     [CountlyConnectionManager.sharedInstance sendAttribution];
 }
 
+- (void)recordDirectAttributionWithCampaignType:(NSString *)campaignType andCampaignData:(NSString *)campaignData
+{
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, campaignType, campaignData);
 
+    if (!CountlyConsentManager.sharedInstance.consentForAttribution)
+        return;
+
+    if (!campaignType.length)
+    {
+        CLY_LOG_E(@"campaignType must be non-zero length valid string. Method execution will be aborted!");
+        return;
+    }
+
+    if (!campaignData.length)
+    {
+        CLY_LOG_E(@"campaignData must be non-zero length valid string. Method execution will be aborted!");
+        return;
+    }
+
+    if ([campaignType isEqualToString:@"_special_test"])
+    {
+        [CountlyConnectionManager.sharedInstance sendAttributionData:campaignData];
+        return;
+    }
+
+    if (![campaignType isEqualToString:@"countly"])
+    {
+        CLY_LOG_W(@"Recording direct attribution with a type other than 'countly' is currently not supported. Method execution will be aborted!");
+        return;
+    }
+
+    NSError* error = nil;
+    NSDictionary* campaignDataDictionary = [NSJSONSerialization JSONObjectWithData:[campaignData cly_dataUTF8] options:0 error:&error];
+    if (error)
+    {
+        CLY_LOG_E(@"Campaign data is not in expected format. Method execution will be aborted!");
+        return;
+    }
+
+    NSString* campaignID = campaignDataDictionary[@"cid"];
+    if (!campaignID.length)
+    {
+        CLY_LOG_E(@"Campaign ID must be non-zero length valid string. Method execution will be aborted!");
+        return;
+    }
+
+    NSString* campaignUserID = campaignDataDictionary[@"cuid"];
+    if (!campaignUserID.length)
+    {
+        CLY_LOG_W(@"Campaign User ID must be non-zero length valid string. It will be ignored!");
+    }
+
+    [CountlyConnectionManager.sharedInstance sendDirectAttributionWithCampaignID:campaignID andCampaignUserID:campaignUserID];
+}
+
+- (void)recordIndirectAttribution:(NSDictionary<NSString *, NSString *> *)attribution
+{
+    CLY_LOG_I(@"%s %@", __FUNCTION__, attribution);
+
+    if (!CountlyConsentManager.sharedInstance.consentForAttribution)
+        return;
+
+    NSMutableDictionary* filtered = attribution.mutableCopy;
+    [attribution enumerateKeysAndObjectsUsingBlock:^(NSString * key, NSString * value, BOOL * stop)
+    {
+        if (!value.length)
+            [filtered removeObjectForKey:key];
+    }];
+
+    NSDictionary* truncated = [filtered cly_truncated:@"Indirect attribution"];
+    NSDictionary* limited = [truncated cly_limited:@"Indirect attribution"];
+
+    [CountlyConnectionManager.sharedInstance sendIndirectAttribution:limited];
+}
 
 #pragma mark - Remote Config
 

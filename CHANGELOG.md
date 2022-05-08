@@ -1,3 +1,15 @@
+## 21.11.2
+- Added direct and indirect attribution
+- Added platform info to default segmentation of push action events
+- Added `recordRatingWidgetWithID:rating:email:comment:userCanBeContacted:` method to be able to manually record rating widgets
+- Added macOS version info to `Countly.xcodeproj` (thanks @ntadej)
+- Updated sending consent changes to inlude all current consents state
+- Excluded Countly-PL.podspec from SPM manifest (thanks @harrisg) 
+- Fixed possible SecTrustCopyExceptions leak
+- Deprecated `presentFeedbackWidgetWithID:completionHandler:` method
+
+
+
 ## 21.11.1
 - Fixed a crash when some default user detail properties are set to `NSNull` (thanks @lhunath)
 - Updated README.md for minimum supported deployment targets
