@@ -205,6 +205,13 @@ long long appLoadStartTime;
     CountlyConnectionManager.sharedInstance.host = newHost;
 }
 
+- (void)setNewURLSessionConfiguration:(NSURLSessionConfiguration *)newURLSessionConfiguration
+{
+    CLY_LOG_I(@"%s %@", __FUNCTION__, newURLSessionConfiguration);
+
+    CountlyConnectionManager.sharedInstance.URLSessionConfiguration = newURLSessionConfiguration;
+}
+
 - (void)setNewAppKey:(NSString *)newAppKey
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, newAppKey);

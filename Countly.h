@@ -39,6 +39,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param newHost The new host
  */
 - (void)setNewHost:(NSString *)newHost;
+- (void)setNewURLSessionConfiguration:(NSURLSessionConfiguration *)newURLSessionConfiguration;
 
 /**
  * Sets a new app key to be used in new requests.
