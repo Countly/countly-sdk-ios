@@ -469,7 +469,6 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 - (BOOL)retrieveIsCustomDeviceID
 {
     return [NSUserDefaults.standardUserDefaults boolForKey:kCountlyIsCustomDeviceIDKey];
-
 }
 
 - (void)storeIsCustomDeviceID:(BOOL)isCustomDeviceID
