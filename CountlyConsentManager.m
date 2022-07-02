@@ -211,6 +211,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
         CLYConsentAttribution,
         CLYConsentPerformanceMonitoring,
         CLYConsentFeedback,
+        CLYConsentRemoteConfig,
     ];
 }
 
