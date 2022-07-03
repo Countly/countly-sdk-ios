@@ -7,6 +7,11 @@
 #import <Foundation/Foundation.h>
 #import <CoreLocation/CoreLocation.h>
 
+#if (TARGET_OS_IOS || TARGET_OS_TV)
+#import <UIKit/UIKit.h>
+#endif
+
+
 NS_ASSUME_NONNULL_BEGIN
 
 //NOTE: Countly features
@@ -111,6 +116,12 @@ typedef enum : NSUInteger
 - (void)internalLog:(NSString *)log withLevel:(CLYInternalLogLevel)level;
 @optional
 - (void)internalLog:(NSString *)log DEPRECATED_MSG_ATTRIBUTE("Use 'internalLog:withLevel:' method instead!");
+@end
+
+
+@protocol CountlyAutoViewTrackingName
+@optional
+- (NSString *)countlyAutoViewTrackingName;
 @end
 
 

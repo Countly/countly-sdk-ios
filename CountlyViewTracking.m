@@ -247,7 +247,16 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     if (!viewController)
         return nil;
 
-    NSString* title = viewController.title;
+    NSString* title = nil;
+
+    if ([viewController respondsToSelector:@selector(countlyAutoViewTrackingName)])
+    {
+        CLY_LOG_I(@"Viewcontroller conforms to CountlyAutoViewTrackingName protocol for custom auto view tracking name.");
+        title = [(id<CountlyAutoViewTrackingName>)viewController countlyAutoViewTrackingName];
+    }
+
+    if (!title)
+        title = viewController.title;
 
     if (!title)
         title = [viewController.navigationItem.titleView isKindOfClass:UILabel.class] ? ((UILabel *)viewController.navigationItem.titleView).text : nil;
