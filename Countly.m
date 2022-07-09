@@ -759,33 +759,6 @@ long long appLoadStartTime;
     [CountlyLocationManager.sharedInstance recordLocation:location city:city ISOCountryCode:ISOCountryCode IP:IP];
 }
 
-- (void)recordLocation:(CLLocationCoordinate2D)location
-{
-    CLY_LOG_W(@"recordLocation: method is deprecated. Please use recordLocation:city:countryCode:IP: method instead.");
-
-    [CountlyLocationManager.sharedInstance recordLocation:location city:nil ISOCountryCode:nil IP:nil];
-}
-
-- (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode
-{
-    CLY_LOG_W(@"recordCity:andISOCountryCode: method is deprecated. Please use recordLocation:city:countryCode:IP: method instead.");
-
-    if (!city.length && !ISOCountryCode.length)
-        return;
-
-    [CountlyLocationManager.sharedInstance recordLocation:kCLLocationCoordinate2DInvalid city:city ISOCountryCode:ISOCountryCode IP:nil];
-}
-
-- (void)recordIP:(NSString *)IP
-{
-    CLY_LOG_W(@"recordIP: method is deprecated. Please use recordLocation:city:countryCode:IP: method instead.");
-
-    if (!IP.length)
-        return;
-
-    [CountlyLocationManager.sharedInstance recordLocation:kCLLocationCoordinate2DInvalid city:nil ISOCountryCode:nil IP:IP];
-}
-
 - (void)disableLocationInfo
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
