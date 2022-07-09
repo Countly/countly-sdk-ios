@@ -70,8 +70,6 @@ extern CLYConsent const CLYConsentPushNotifications;
 extern CLYConsent const CLYConsentLocation;
 extern CLYConsent const CLYConsentViewTracking;
 extern CLYConsent const CLYConsentAttribution;
-extern CLYConsent const CLYConsentStarRating DEPRECATED_MSG_ATTRIBUTE("Please use CLYConsentFeedback instead!");
-extern CLYConsent const CLYConsentAppleWatch DEPRECATED_MSG_ATTRIBUTE("As automatic metrics for Apple Watch is not supported anymore, 'CLYConsentAppleWatch' is now inoperative!");
 extern CLYConsent const CLYConsentPerformanceMonitoring;
 extern CLYConsent const CLYConsentFeedback;
 extern CLYConsent const CLYConsentRemoteConfig;
