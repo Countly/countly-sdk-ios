@@ -34,11 +34,6 @@ CLYDeviceIDType const CLYDeviceIDTypeTemporary  = @"CLYDeviceIDTypeTemporary";
 CLYDeviceIDType const CLYDeviceIDTypeIDFV       = @"CLYDeviceIDTypeIDFV";
 CLYDeviceIDType const CLYDeviceIDTypeNSUUID     = @"CLYDeviceIDTypeNSUUID";
 
-//NOTE: Legacy device ID options. They will fallback to default device ID.
-NSString* const CLYIDFA = CLYDefaultDeviceID;
-NSString* const CLYIDFV = CLYDefaultDeviceID;
-NSString* const CLYOpenUDID = CLYDefaultDeviceID;
-
 - (instancetype)init
 {
     if (self = [super init])
