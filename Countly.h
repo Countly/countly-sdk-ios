@@ -51,12 +51,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setNewAppKey:(NSString *)newAppKey;
 
 /**
- * @c setCustomHeaderFieldValue: method is deprecated. Please use @c URLSessionConfiguration property on @c CountlyConfig instead.
- * @discussion Calling this method will have no effect.
- */
-- (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue DEPRECATED_MSG_ATTRIBUTE("Use 'URLSessionConfiguration' property on CountlyConfig instead!");
-
-/**
  * Flushes request and event queues.
  * @discussion Flushes persistently stored request queue and events recorded but not converted to a request so far.
  * @discussion Started timed events will not be affected.
