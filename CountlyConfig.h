@@ -362,13 +362,6 @@ typedef enum : NSUInteger
  */
 @property (nonatomic) BOOL manualSessionHandling;
 
-/**
- * @c enableAppleWatch property is deprecated.
- * @discussion As automatic metrics for Apple Watch is not supported anymore, @c enableAppleWatch is now inoperative.
- * @discussion Using this property will have no effect.
- */
-@property (nonatomic) BOOL enableAppleWatch DEPRECATED_MSG_ATTRIBUTE("As automatic metrics for Apple Watch is not supported anymore, 'enableAppleWatch' is now inoperative!");
-
 #pragma mark -
 
 /**
