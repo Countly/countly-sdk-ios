@@ -386,12 +386,6 @@ typedef enum : NSUInteger
  */
 @property (nonatomic, copy) NSDictionary<NSString *, NSString *> * indirectAttribution;
 
-/**
- * @c enableAttribution property is deprecated. Please use @c recordAttributionID method instead.
- * @discussion Using this property will have no effect.
- */
-@property (nonatomic) BOOL enableAttribution DEPRECATED_MSG_ATTRIBUTE("Use 'attributionID' property instead!");
-
 #pragma mark -
 
 /**
