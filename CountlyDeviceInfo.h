@@ -8,6 +8,15 @@
 
 @interface CountlyDeviceInfo : NSObject
 
+typedef enum : NSUInteger
+{
+    CLYDeviceIDTypeValueCustom = 0,
+    CLYDeviceIDTypeValueIDFV = 1,
+    CLYDeviceIDTypeValueNSUUID = 2,
+    CLYDeviceIDTypeValueTemporary = 9
+} CLYDeviceIDTypeValue;
+
+
 @property (nonatomic) NSString *deviceID;
 @property (nonatomic) NSDictionary<NSString *, NSString *>* customMetrics;
 
@@ -15,6 +24,7 @@
 - (void)initializeDeviceID:(NSString *)deviceID;
 - (NSString *)ensafeDeviceID:(NSString *)deviceID;
 - (BOOL)isDeviceIDTemporary;
+- (CLYDeviceIDTypeValue)deviceIDTypeValue;
 
 + (NSString *)device;
 + (NSString *)architecture;

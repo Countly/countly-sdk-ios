@@ -124,6 +124,27 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     return [self.deviceID isEqualToString:CLYTemporaryDeviceID];
 }
 
+- (CLYDeviceIDTypeValue)deviceIDTypeValue
+{
+    CLYDeviceIDType deviceIDType = Countly.sharedInstance.deviceIDType;
+
+    if ([deviceIDType isEqual:CLYDeviceIDTypeCustom])
+        return CLYDeviceIDTypeValueCustom;
+
+    if ([deviceIDType isEqual:CLYDeviceIDTypeIDFV])
+        return CLYDeviceIDTypeValueIDFV;
+
+    if ([deviceIDType isEqual:CLYDeviceIDTypeNSUUID])
+        return CLYDeviceIDTypeValueNSUUID;
+
+    if ([deviceIDType isEqual:CLYDeviceIDTypeTemporary])
+        return CLYDeviceIDTypeValueTemporary;
+
+    CLY_LOG_E(@"Device ID type is not one of the defined types.");
+
+    return (CLYDeviceIDTypeValue)-1;
+}
+
 #pragma mark -
 
 + (NSString *)device

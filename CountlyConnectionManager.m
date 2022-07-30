@@ -503,34 +503,13 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     return [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%d&%@=%lld&%@=%d&%@=%d&%@=%d&%@=%@&%@=%@",
         kCountlyQSKeyAppKey, self.appKey.cly_URLEscaped,
         kCountlyQSKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped,
-        kCountlyQSKeyDeviceIDType, (int)self.deviceIDType,
+        kCountlyQSKeyDeviceIDType, (int)CountlyDeviceInfo.sharedInstance.deviceIDTypeValue,
         kCountlyQSKeyTimestamp, (long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000),
         kCountlyQSKeyTimeHourOfDay, (int)CountlyCommon.sharedInstance.hourOfDay,
         kCountlyQSKeyTimeDayOfWeek, (int)CountlyCommon.sharedInstance.dayOfWeek,
         kCountlyQSKeyTimeZone, (int)CountlyCommon.sharedInstance.timeZone,
         kCountlyQSKeySDKVersion, CountlyCommon.sharedInstance.SDKVersion,
         kCountlyQSKeySDKName, CountlyCommon.sharedInstance.SDKName];
-}
-
-- (NSInteger)deviceIDType
-{
-    CLYDeviceIDType deviceIDType = Countly.sharedInstance.deviceIDType;
-
-    if ([deviceIDType isEqual:CLYDeviceIDTypeCustom])
-        return 0;
-
-    if ([deviceIDType isEqual:CLYDeviceIDTypeIDFV])
-        return 1;
-
-    if ([deviceIDType isEqual:CLYDeviceIDTypeNSUUID])
-        return 2;
-
-    if ([deviceIDType isEqual:CLYDeviceIDTypeTemporary])
-        return 9;
-
-    CLY_LOG_E(@"Device ID type is not one of the defined types.");
-
-    return -1;
 }
 
 - (NSString *)locationRelatedInfoQueryString
