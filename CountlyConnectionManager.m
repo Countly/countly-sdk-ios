@@ -109,6 +109,16 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     }
 }
 
+- (void)setURLSessionConfiguration:(NSURLSessionConfiguration *)URLSessionConfiguration
+{
+    if (URLSessionConfiguration != nil)
+    {
+        _URLSessionConfiguration = URLSessionConfiguration;
+        _URLSession = nil;
+    }
+}
+
+
 - (void)proceedOnQueue
 {
     CLY_LOG_D(@"Proceeding on queue...");
