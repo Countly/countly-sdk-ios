@@ -1,3 +1,18 @@
+## 22.06.0
+- Added `CountlyAutoViewTrackingName` protocol for supporting custom view titles with AutoViewTracking
+- Added `setNewURLSessionConfiguration:` method to be able change URL session configuraion on the go (thanks @angelix)
+- Added ability to save user details on SDK initialization
+- Added device ID type to every request being sent
+- Fixed missing remote config consent
+- Fixed auto view tracking for iOS 13+ PageSheet modal presentations
+- Deleted previously deprecated and inoperative methods and config flags
+
+- Other various improvements
+  - Updated HeaderDocs, internal logs, inline notes and pragma marks
+  - Updated Countly project settings for Xcode 13.4.1 (13F100)
+
+
+
 ## 21.11.2
 - Added direct and indirect attribution
 - Added platform info to default segmentation of push action events
