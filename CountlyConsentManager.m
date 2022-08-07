@@ -14,8 +14,6 @@ CLYConsent const CLYConsentPushNotifications    = @"push";
 CLYConsent const CLYConsentLocation             = @"location";
 CLYConsent const CLYConsentViewTracking         = @"views";
 CLYConsent const CLYConsentAttribution          = @"attribution";
-CLYConsent const CLYConsentStarRating           = @"star-rating";
-CLYConsent const CLYConsentAppleWatch           = @"accessory-devices";
 CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
 CLYConsent const CLYConsentFeedback             = @"feedback";
 CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
@@ -106,7 +104,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     if ([features containsObject:CLYConsentPerformanceMonitoring] && !self.consentForPerformanceMonitoring)
         self.consentForPerformanceMonitoring = YES;
 
-    if ([self containsFeedbackOrStarRating:features] && !self.consentForFeedback)
+    if ([features containsObject:CLYConsentFeedback] && !self.consentForFeedback)
         self.consentForFeedback = YES;
 
     if ([features containsObject:CLYConsentRemoteConfig] && !self.consentForRemoteConfig)
@@ -166,7 +164,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     if ([features containsObject:CLYConsentPerformanceMonitoring] && self.consentForPerformanceMonitoring)
         self.consentForPerformanceMonitoring = NO;
 
-    if ([self containsFeedbackOrStarRating:features] && self.consentForFeedback)
+    if ([features containsObject:CLYConsentFeedback] && self.consentForFeedback)
         self.consentForFeedback = NO;
 
     if ([features containsObject:CLYConsentRemoteConfig] && self.consentForRemoteConfig)
@@ -211,17 +209,10 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
         CLYConsentAttribution,
         CLYConsentPerformanceMonitoring,
         CLYConsentFeedback,
+        CLYConsentRemoteConfig,
     ];
 }
 
-- (BOOL)containsFeedbackOrStarRating:(NSArray *)features
-{
-    //NOTE: StarRating consent is merged into new Feedback consent.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    return [features containsObject:CLYConsentFeedback] || [features containsObject:CLYConsentStarRating];
-#pragma GCC diagnostic pop
-}
 
 #pragma mark -
 

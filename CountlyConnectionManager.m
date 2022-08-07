@@ -19,6 +19,7 @@ NSString* const kCountlyQSKeyAppKey           = @"app_key";
 
 NSString* const kCountlyQSKeyDeviceID         = @"device_id";
 NSString* const kCountlyQSKeyDeviceIDOld      = @"old_device_id";
+NSString* const kCountlyQSKeyDeviceIDType     = @"t";
 
 NSString* const kCountlyQSKeyTimestamp        = @"timestamp";
 NSString* const kCountlyQSKeyTimeZone         = @"tz";
@@ -108,6 +109,16 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         _host = host;
     }
 }
+
+- (void)setURLSessionConfiguration:(NSURLSessionConfiguration *)URLSessionConfiguration
+{
+    if (URLSessionConfiguration != nil)
+    {
+        _URLSessionConfiguration = URLSessionConfiguration;
+        _URLSession = nil;
+    }
+}
+
 
 - (void)proceedOnQueue
 {
@@ -499,15 +510,16 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (NSString *)queryEssentials
 {
-    return [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%lld&%@=%d&%@=%d&%@=%d&%@=%@&%@=%@",
-                                        kCountlyQSKeyAppKey, self.appKey.cly_URLEscaped,
-                                        kCountlyQSKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped,
-                                        kCountlyQSKeyTimestamp, (long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000),
-                                        kCountlyQSKeyTimeHourOfDay, (int)CountlyCommon.sharedInstance.hourOfDay,
-                                        kCountlyQSKeyTimeDayOfWeek, (int)CountlyCommon.sharedInstance.dayOfWeek,
-                                        kCountlyQSKeyTimeZone, (int)CountlyCommon.sharedInstance.timeZone,
-                                        kCountlyQSKeySDKVersion, CountlyCommon.sharedInstance.SDKVersion,
-                                        kCountlyQSKeySDKName, CountlyCommon.sharedInstance.SDKName];
+    return [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%d&%@=%lld&%@=%d&%@=%d&%@=%d&%@=%@&%@=%@",
+        kCountlyQSKeyAppKey, self.appKey.cly_URLEscaped,
+        kCountlyQSKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped,
+        kCountlyQSKeyDeviceIDType, (int)CountlyDeviceInfo.sharedInstance.deviceIDTypeValue,
+        kCountlyQSKeyTimestamp, (long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000),
+        kCountlyQSKeyTimeHourOfDay, (int)CountlyCommon.sharedInstance.hourOfDay,
+        kCountlyQSKeyTimeDayOfWeek, (int)CountlyCommon.sharedInstance.dayOfWeek,
+        kCountlyQSKeyTimeZone, (int)CountlyCommon.sharedInstance.timeZone,
+        kCountlyQSKeySDKVersion, CountlyCommon.sharedInstance.SDKVersion,
+        kCountlyQSKeySDKName, CountlyCommon.sharedInstance.SDKName];
 }
 
 - (NSString *)locationRelatedInfoQueryString

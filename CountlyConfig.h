@@ -7,6 +7,11 @@
 #import <Foundation/Foundation.h>
 #import <CoreLocation/CoreLocation.h>
 
+#if (TARGET_OS_IOS || TARGET_OS_TV)
+#import <UIKit/UIKit.h>
+#endif
+
+
 NS_ASSUME_NONNULL_BEGIN
 
 //NOTE: Countly features
@@ -65,8 +70,6 @@ extern CLYConsent const CLYConsentPushNotifications;
 extern CLYConsent const CLYConsentLocation;
 extern CLYConsent const CLYConsentViewTracking;
 extern CLYConsent const CLYConsentAttribution;
-extern CLYConsent const CLYConsentStarRating DEPRECATED_MSG_ATTRIBUTE("Please use CLYConsentFeedback instead!");
-extern CLYConsent const CLYConsentAppleWatch DEPRECATED_MSG_ATTRIBUTE("As automatic metrics for Apple Watch is not supported anymore, 'CLYConsentAppleWatch' is now inoperative!");
 extern CLYConsent const CLYConsentPerformanceMonitoring;
 extern CLYConsent const CLYConsentFeedback;
 extern CLYConsent const CLYConsentRemoteConfig;
@@ -109,8 +112,12 @@ typedef enum : NSUInteger
 
 @protocol CountlyLoggerDelegate<NSObject>
 - (void)internalLog:(NSString *)log withLevel:(CLYInternalLogLevel)level;
+@end
+
+
+@protocol CountlyAutoViewTrackingName
 @optional
-- (void)internalLog:(NSString *)log DEPRECATED_MSG_ATTRIBUTE("Use 'internalLog:withLevel:' method instead!");
+- (NSString *)countlyAutoViewTrackingName;
 @end
 
 
@@ -353,13 +360,6 @@ typedef enum : NSUInteger
  */
 @property (nonatomic) BOOL manualSessionHandling;
 
-/**
- * @c enableAppleWatch property is deprecated.
- * @discussion As automatic metrics for Apple Watch is not supported anymore, @c enableAppleWatch is now inoperative.
- * @discussion Using this property will have no effect.
- */
-@property (nonatomic) BOOL enableAppleWatch DEPRECATED_MSG_ATTRIBUTE("As automatic metrics for Apple Watch is not supported anymore, 'enableAppleWatch' is now inoperative!");
-
 #pragma mark -
 
 /**
@@ -385,12 +385,6 @@ typedef enum : NSUInteger
  * @discussion Keys could be a predefined CLYAttributionKey or any non-zero length valid string.
  */
 @property (nonatomic, copy) NSDictionary<NSString *, NSString *> * indirectAttribution;
-
-/**
- * @c enableAttribution property is deprecated. Please use @c recordAttributionID method instead.
- * @discussion Using this property will have no effect.
- */
-@property (nonatomic) BOOL enableAttribution DEPRECATED_MSG_ATTRIBUTE("Use 'attributionID' property instead!");
 
 #pragma mark -
 
@@ -458,18 +452,6 @@ typedef enum : NSUInteger
  * @discussion e.g. @c myserver.com.cer
  */
 @property (nonatomic, copy) NSArray* pinnedCertificates;
-
-/**
- * @c customHeaderFieldName property is deprecated. Please use @c URLSessionConfiguration property instead.
- * @discussion Using this property will have no effect.
- */
-@property (nonatomic, copy) NSString* customHeaderFieldName DEPRECATED_MSG_ATTRIBUTE("Use 'URLSessionConfiguration' property instead!");
-
-/**
- * @c customHeaderFieldValue property is deprecated. Please use @c URLSessionConfiguration property instead.
- * @discussion Using this property will have no effect.
- */
-@property (nonatomic, copy) NSString* customHeaderFieldValue DEPRECATED_MSG_ATTRIBUTE("Use 'URLSessionConfiguration' property instead!");
 
 /**
  * Salt value to be used for parameter tampering protection.

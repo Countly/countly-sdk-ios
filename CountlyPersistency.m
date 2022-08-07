@@ -111,17 +111,25 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
     NSString* temporaryDeviceIDQueryString = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, CLYTemporaryDeviceID];
     NSString* realDeviceIDQueryString = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, deviceID.cly_URLEscaped];
 
+    NSString* temporaryDeviceIDTypeQueryString = [NSString stringWithFormat:@"&%@=%d", kCountlyQSKeyDeviceIDType, (int)CLYDeviceIDTypeValueTemporary];
+    NSString* realDeviceIDTypeQueryString = [NSString stringWithFormat:@"&%@=%d", kCountlyQSKeyDeviceIDType, (int)CountlyDeviceInfo.sharedInstance.deviceIDTypeValue];
+
     @synchronized (self)
     {
+        self.isQueueBeingModified = YES;
+
         [self.queuedRequests.copy enumerateObjectsUsingBlock:^(NSString* queryString, NSUInteger idx, BOOL* stop)
         {
             if ([queryString containsString:temporaryDeviceIDQueryString])
             {
                 CLY_LOG_D(@"Detected a request with temporary device ID in queue and replaced it with real device ID.");
                 NSString * replacedQueryString = [queryString stringByReplacingOccurrencesOfString:temporaryDeviceIDQueryString withString:realDeviceIDQueryString];
+                replacedQueryString = [replacedQueryString stringByReplacingOccurrencesOfString:temporaryDeviceIDTypeQueryString withString:realDeviceIDTypeQueryString];
                 self.queuedRequests[idx] = replacedQueryString;
             }
         }];
+
+        self.isQueueBeingModified = NO;
     }
 }
 
@@ -469,7 +477,6 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 - (BOOL)retrieveIsCustomDeviceID
 {
     return [NSUserDefaults.standardUserDefaults boolForKey:kCountlyIsCustomDeviceIDKey];
-
 }
 
 - (void)storeIsCustomDeviceID:(BOOL)isCustomDeviceID

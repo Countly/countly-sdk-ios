@@ -41,6 +41,12 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setNewHost:(NSString *)newHost;
 
 /**
+ * Sets a new URL session configuration to be used with all requests.
+ * @param newURLSessionConfiguration The new URL session configuration
+ */
+- (void)setNewURLSessionConfiguration:(NSURLSessionConfiguration *)newURLSessionConfiguration;
+
+/**
  * Sets a new app key to be used in new requests.
  * @discussion Before switching to the new app key, this method suspends Countly and resumes it immediately after.
  * @discussion The requests already queued prior to this method call will keep using the old app key.
@@ -49,12 +55,6 @@ NS_ASSUME_NONNULL_BEGIN
  * @param newAppKey The new app key
  */
 - (void)setNewAppKey:(NSString *)newAppKey;
-
-/**
- * @c setCustomHeaderFieldValue: method is deprecated. Please use @c URLSessionConfiguration property on @c CountlyConfig instead.
- * @discussion Calling this method will have no effect.
- */
-- (void)setCustomHeaderFieldValue:(NSString *)customHeaderFieldValue DEPRECATED_MSG_ATTRIBUTE("Use 'URLSessionConfiguration' property on CountlyConfig instead!");
 
 /**
  * Flushes request and event queues.
@@ -380,34 +380,6 @@ NS_ASSUME_NONNULL_BEGIN
  * @param IP User's explicit IP address
  */
 - (void)recordLocation:(CLLocationCoordinate2D)location city:(NSString * _Nullable)city ISOCountryCode:(NSString * _Nullable)ISOCountryCode IP:(NSString * _Nullable)IP;
-
-/**
- * Records user's location info to be used for geo-location based push notifications and advanced user segmentation.
- * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location.
- * @discussion If the app uses Core Location services and granted permission, a location with better accuracy can be provided using this method.
- * @discussion This method overrides @c location property specified on initial configuration, and sends an immediate request.
- * @param location User's location with latitude and longitude
- */
-- (void)recordLocation:(CLLocationCoordinate2D)location DEPRECATED_MSG_ATTRIBUTE("Use 'recordLocation:city:ISOCountryCode:IP:' method instead!");
-
-/**
- * Records user's city and country info to be used for geo-location based push notifications and advanced user segmentation.
- * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location.
- * @discussion If the app has information about user's city and/or country, these information can be provided using this method.
- * @discussion This method overrides @c city and @c ISOCountryCode properties specified on initial configuration, and sends an immediate request.
- * @param city User's city
- * @param ISOCountryCode User's ISO country code in ISO 3166-1 alpha-2 format
- */
-- (void)recordCity:(NSString *)city andISOCountryCode:(NSString *)ISOCountryCode DEPRECATED_MSG_ATTRIBUTE("Use 'recordLocation:city:ISOCountryCode:IP:' method instead!");
-
-/**
- * Records user's IP address to be used for geo-location based push notifications and advanced user segmentation.
- * @discussion By default, Countly Server uses a geo-ip database for acquiring user's location.
- * @discussion If the app needs to explicitly specify the IP address due to network requirements, it can be provided using this method.
- * @discussion This method overrides @c IP property specified on initial configuration, and sends an immediate request.
- * @param IP User's explicit IP address
- */
-- (void)recordIP:(NSString *)IP DEPRECATED_MSG_ATTRIBUTE("Use 'recordLocation:city:ISOCountryCode:IP:' method instead!");
 
 /**
  * Disables geo-location based push notifications by clearing all existing location info.
