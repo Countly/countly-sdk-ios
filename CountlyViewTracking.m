@@ -11,7 +11,9 @@
 @property (nonatomic) NSTimeInterval lastViewStartTime;
 @property (nonatomic) NSTimeInterval accumulatedTime;
 @property (nonatomic) NSMutableArray* exceptionViewControllers;
+#if (TARGET_OS_IOS || TARGET_OS_TV)
 @property (nonatomic) UIViewController* presentingViewController;
+#endif
 @end
 
 NSString* const kCountlyReservedEventView = @"[CLY]_view";
