@@ -111,6 +111,8 @@ long long appLoadStartTime;
 
     CountlyDeviceInfo.sharedInstance.customMetrics = [config.customMetrics cly_truncated:@"Custom metric"];
 
+    [Countly.user save];
+
 #if (TARGET_OS_IOS)
     CountlyFeedbacks.sharedInstance.message = config.starRatingMessage;
     CountlyFeedbacks.sharedInstance.sessionCount = config.starRatingSessionCount;
