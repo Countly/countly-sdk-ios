@@ -116,6 +116,8 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 
     @synchronized (self)
     {
+        self.isQueueBeingModified = YES;
+
         [self.queuedRequests.copy enumerateObjectsUsingBlock:^(NSString* queryString, NSUInteger idx, BOOL* stop)
         {
             if ([queryString containsString:temporaryDeviceIDQueryString])
@@ -126,6 +128,8 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
                 self.queuedRequests[idx] = replacedQueryString;
             }
         }];
+
+        self.isQueueBeingModified = NO;
     }
 }
 
