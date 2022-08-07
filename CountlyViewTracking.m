@@ -11,9 +11,6 @@
 @property (nonatomic) NSTimeInterval lastViewStartTime;
 @property (nonatomic) NSTimeInterval accumulatedTime;
 @property (nonatomic) NSMutableArray* exceptionViewControllers;
-#if (TARGET_OS_IOS || TARGET_OS_TV)
-@property (nonatomic) UIViewController* presentingViewController;
-#endif
 @end
 
 NSString* const kCountlyReservedEventView = @"[CLY]_view";
@@ -356,7 +353,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
             presenting = ((UINavigationController *)presenting).topViewController;
         }
 
-        CountlyViewTracking.sharedInstance.presentingViewController = presenting;
+        self.presentingVC = presenting;
     }
 }
 
@@ -364,11 +361,11 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 {
     [self Countly_viewDidDisappear:animated];
 
-    if (self.isPageSheetModal)
+    if (self.presentingVC)
     {
         CLY_LOG_I(@"A modal view controller with PageSheet presentation style is dismissed on iOS 13+. Forcing auto view tracking with stored presenting view controller.");
-        [CountlyViewTracking.sharedInstance performAutoViewTrackingForViewController:CountlyViewTracking.sharedInstance.presentingViewController];
-        CountlyViewTracking.sharedInstance.presentingViewController = nil;
+        [CountlyViewTracking.sharedInstance performAutoViewTrackingForViewController:self.presentingVC];
+        self.presentingVC = nil;
     }
 }
 
@@ -379,7 +376,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 #if (TARGET_OS_IOS)
     if (@available(iOS 13.0, *))
     {
-        if (self.modalPresentationStyle == UIModalPresentationPageSheet)
+        if (self.modalPresentationStyle == UIModalPresentationPageSheet && self.isBeingPresented)
         {
             return YES;
         }
@@ -387,6 +384,16 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 #endif
 
     return NO;
+}
+
+- (void)setPresentingVC:(UIViewController *)presentingVC
+{
+    objc_setAssociatedObject(self, @selector(presentingVC), presentingVC, OBJC_ASSOCIATION_ASSIGN);
+}
+
+- (UIViewController *)presentingVC
+{
+    return objc_getAssociatedObject(self, @selector(presentingVC));
 }
 
 @end
