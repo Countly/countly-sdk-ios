@@ -122,7 +122,7 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
             {
                 CLY_LOG_D(@"Detected a request with temporary device ID in queue and replaced it with real device ID.");
                 NSString * replacedQueryString = [queryString stringByReplacingOccurrencesOfString:temporaryDeviceIDQueryString withString:realDeviceIDQueryString];
-                replacedQueryString = [queryString stringByReplacingOccurrencesOfString:temporaryDeviceIDTypeQueryString withString:realDeviceIDTypeQueryString];
+                replacedQueryString = [replacedQueryString stringByReplacingOccurrencesOfString:temporaryDeviceIDTypeQueryString withString:realDeviceIDTypeQueryString];
                 self.queuedRequests[idx] = replacedQueryString;
             }
         }];
