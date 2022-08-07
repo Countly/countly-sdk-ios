@@ -374,7 +374,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 {
     //NOTE: iOS 13 check is not related to availability of UIModalPresentationPageSheet,
     //      but needed due to behavioral difference in presenting logic compared to previous iOS versions.
-
+#if (TARGET_OS_IOS)
     if (@available(iOS 13.0, *))
     {
         if (self.modalPresentationStyle == UIModalPresentationPageSheet)
@@ -382,6 +382,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
             return YES;
         }
     }
+#endif
 
     return NO;
 }
