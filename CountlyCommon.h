@@ -31,6 +31,7 @@
 
 #if (TARGET_OS_IOS)
 #import <UIKit/UIKit.h>
+#import <WebKit/WebKit.h>
 #endif
 
 #if (TARGET_OS_WATCH)
@@ -104,6 +105,7 @@ void CountlyPrint(NSString *stringToPrint);
 
 #if (TARGET_OS_IOS)
 @interface CLYInternalViewController : UIViewController
+@property (nonatomic, weak) WKWebView* webView;
 @end
 
 @interface CLYButton : UIButton
