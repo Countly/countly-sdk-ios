@@ -293,6 +293,28 @@ void CountlyPrint(NSString *stringToPrint)
 #if (TARGET_OS_IOS)
 @implementation CLYInternalViewController : UIViewController
 
+- (void)viewWillLayoutSubviews
+{
+    [super viewWillLayoutSubviews];
+
+    if (self.webView)
+    {
+        CGRect frame = CGRectInset(self.view.bounds, 20.0, 20.0);
+
+        UIEdgeInsets insets = UIEdgeInsetsZero;
+        if (@available(iOS 11.0, *))
+        {
+            #pragma GCC diagnostic push
+            #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+            insets = UIApplication.sharedApplication.keyWindow.safeAreaInsets;
+            #pragma GCC diagnostic pop
+        }
+
+        frame = UIEdgeInsetsInsetRect(frame, insets);
+        self.webView.frame = frame;
+    }
+}
+
 @end
 
 
