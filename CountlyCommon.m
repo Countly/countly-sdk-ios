@@ -26,7 +26,7 @@ NSString* const kCountlyOrientationKeyMode = @"mode";
 #endif
 @end
 
-NSString* const kCountlySDKVersion = @"22.06.0";
+NSString* const kCountlySDKVersion = @"22.06.1";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
@@ -292,6 +292,28 @@ void CountlyPrint(NSString *stringToPrint)
 #pragma mark - Internal ViewController
 #if (TARGET_OS_IOS)
 @implementation CLYInternalViewController : UIViewController
+
+- (void)viewWillLayoutSubviews
+{
+    [super viewWillLayoutSubviews];
+
+    if (self.webView)
+    {
+        CGRect frame = CGRectInset(self.view.bounds, 20.0, 20.0);
+
+        UIEdgeInsets insets = UIEdgeInsetsZero;
+        if (@available(iOS 11.0, *))
+        {
+            #pragma GCC diagnostic push
+            #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+            insets = UIApplication.sharedApplication.keyWindow.safeAreaInsets;
+            #pragma GCC diagnostic pop
+        }
+
+        frame = UIEdgeInsetsInsetRect(frame, insets);
+        self.webView.frame = frame;
+    }
+}
 
 @end
 

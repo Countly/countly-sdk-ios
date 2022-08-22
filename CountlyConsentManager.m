@@ -79,15 +79,15 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     //NOTE: Otherwise, if location consent is given after sessions consent, begin_session request will be sent with an empty string as location.
     if ([features containsObject:CLYConsentLocation] && !self.consentForLocation)
         self.consentForLocation = YES;
+    
+    if ([features containsObject:CLYConsentUserDetails] && !self.consentForUserDetails)
+        self.consentForUserDetails = YES;
 
     if ([features containsObject:CLYConsentSessions] && !self.consentForSessions)
         self.consentForSessions = YES;
 
     if ([features containsObject:CLYConsentEvents] && !self.consentForEvents)
         self.consentForEvents = YES;
-
-    if ([features containsObject:CLYConsentUserDetails] && !self.consentForUserDetails)
-        self.consentForUserDetails = YES;
 
     if ([features containsObject:CLYConsentCrashReporting] && !self.consentForCrashReporting)
         self.consentForCrashReporting = YES;
@@ -260,6 +260,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     if (consentForUserDetails)
     {
         CLY_LOG_D(@"Consent for UserDetails is given.");
+        [Countly.user save];
     }
     else
     {

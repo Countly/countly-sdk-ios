@@ -526,7 +526,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param widgetID ID of the feedback widget created on Countly Server.
  * @param completionHandler A completion handler block to be executed when feedback widget is dismissed by user or there is an error.
  */
-- (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * __nullable error))completionHandler DEPRECATED_MSG_ATTRIBUTE("Use 'presentRatingWidgetWithID:' method instead!");
+- (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * __nullable error))completionHandler DEPRECATED_MSG_ATTRIBUTE("Use 'presentRatingWidgetWithID:completionHandler' method instead!");
 
 /**
  * Presents rating widget with given ID in a WKWebView placed in a UIViewController.
@@ -599,7 +599,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Records indirect attribution with given key-value pairs.
- * @discussion Keys could be a predefined CLYAttributionKey or any non-zero length valid string.
+ * @discussion Keys could be a predefined @c CLYAttributionKey or any non-zero length valid string.
  * @discussion This method sends an immediate request.
  * @discussion Calls to this method will be ignored if:
  * @discussion - Consent for @c CLYConsentAttribution is not given, while @c requiresConsent flag is set on initial configuration.
