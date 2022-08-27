@@ -242,7 +242,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyOmitKeys, [omitKeys cly_JSONify]];
     }
     
-    if (CountlyConsentManager.sharedInstance.consentForSessions)
+    if (CountlyConsentManager.sharedInstance.consentForSessions || CountlyConsentManager.sharedInstance.consentForMetrics)
     {
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
     }
@@ -609,7 +609,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
     
     queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMethod, kCountlyRCKeyFetchVariant];
     
-    if (CountlyConsentManager.sharedInstance.consentForSessions)
+    if (CountlyConsentManager.sharedInstance.consentForSessions || CountlyConsentManager.sharedInstance.consentForMetrics)
     {
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
     }
@@ -646,7 +646,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyVariant, variantName.cly_URLEscaped];
     }
     
-    if (CountlyConsentManager.sharedInstance.consentForSessions)
+    if (CountlyConsentManager.sharedInstance.consentForSessions || CountlyConsentManager.sharedInstance.consentForMetrics)
     {
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
     }
@@ -720,7 +720,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyKeys, [keys cly_JSONify]];
     }
     
-    if (CountlyConsentManager.sharedInstance.consentForSessions)
+    if (CountlyConsentManager.sharedInstance.consentForSessions || CountlyConsentManager.sharedInstance.consentForMetrics)
     {
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
     }

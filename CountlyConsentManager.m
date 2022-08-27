@@ -6,6 +6,7 @@
 
 #import "CountlyCommon.h"
 
+CLYConsent const CLYConsentMetrics              = @"metrics";
 CLYConsent const CLYConsentSessions             = @"sessions";
 CLYConsent const CLYConsentEvents               = @"events";
 CLYConsent const CLYConsentUserDetails          = @"users";
@@ -21,6 +22,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 
 @implementation CountlyConsentManager
 
+@synthesize consentForMetrics = _consentForMetrics;
 @synthesize consentForSessions = _consentForSessions;
 @synthesize consentForEvents = _consentForEvents;
 @synthesize consentForUserDetails = _consentForUserDetails;
@@ -83,6 +85,9 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     if ([features containsObject:CLYConsentUserDetails] && !self.consentForUserDetails)
         self.consentForUserDetails = YES;
 
+    if ([features containsObject:CLYConsentMetrics] && !self.consentForMetrics)
+        self.consentForMetrics = YES;
+    
     if ([features containsObject:CLYConsentSessions] && !self.consentForSessions)
         self.consentForSessions = YES;
 
@@ -137,6 +142,9 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     if (!self.requiresConsent)
         return;
 
+    if ([features containsObject:CLYConsentMetrics] && self.consentForMetrics)
+        self.consentForMetrics = NO;
+    
     if ([features containsObject:CLYConsentSessions] && self.consentForSessions)
         self.consentForSessions = NO;
 
@@ -179,6 +187,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 {
     NSDictionary * consents =
     @{
+        CLYConsentMetrics: @(self.consentForMetrics),
         CLYConsentSessions: @(self.consentForSessions),
         CLYConsentEvents: @(self.consentForEvents),
         CLYConsentUserDetails: @(self.consentForUserDetails),
@@ -200,6 +209,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 {
     return
     @[
+        CLYConsentMetrics,
         CLYConsentSessions,
         CLYConsentEvents,
         CLYConsentUserDetails,
@@ -234,6 +244,19 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 
 #pragma mark -
 
+- (void)setConsentForMetrics:(BOOL)consentForMetrics
+{
+    _consentForMetrics = consentForMetrics;
+
+    if (consentForMetrics)
+    {
+        CLY_LOG_D(@"Consent for Metrics is given.");
+    }
+    else
+    {
+        CLY_LOG_D(@"Consent for Metrics is cancelled.");
+    }
+}
 
 - (void)setConsentForSessions:(BOOL)consentForSessions
 {
@@ -443,6 +466,14 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 }
 
 #pragma mark -
+
+- (BOOL)consentForMetrics
+{
+    if (!self.requiresConsent)
+      return YES;
+
+    return _consentForMetrics;
+}
 
 - (BOOL)consentForSessions
 {
