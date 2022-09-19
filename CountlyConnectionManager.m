@@ -508,6 +508,28 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 #pragma mark ---
 
+- (void)addDirectRequest:(NSDictionary<NSString *, NSString *> *)requestParameters
+{
+    if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
+        return;
+
+    NSMutableDictionary* mutableRequestParameters = requestParameters.mutableCopy;
+    [mutableRequestParameters removeObjectsForKeys:self.reservedQueryStringKeys];
+
+    NSMutableString* queryString = [self queryEssentials].mutableCopy;
+
+    [mutableRequestParameters enumerateKeysAndObjectsUsingBlock:^(NSString * key, NSString * value, BOOL * stop)
+    {
+        [queryString appendFormat:@"&%@=%@", key, value];
+    }];
+
+    [CountlyPersistency.sharedInstance addToQueue:queryString.copy];
+
+    [self proceedOnQueue];
+}
+
+#pragma mark ---
+
 - (NSString *)queryEssentials
 {
     return [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%d&%@=%lld&%@=%d&%@=%d&%@=%d&%@=%@&%@=%@",
@@ -521,6 +543,27 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         kCountlyQSKeySDKVersion, CountlyCommon.sharedInstance.SDKVersion,
         kCountlyQSKeySDKName, CountlyCommon.sharedInstance.SDKName];
 }
+
+
+- (NSArray *)reservedQueryStringKeys
+{
+    return
+    @[
+        kCountlyQSKeyAppKey,
+        kCountlyQSKeyDeviceID,
+        kCountlyQSKeyDeviceIDType,
+        kCountlyQSKeyTimestamp,
+        kCountlyQSKeyTimeHourOfDay,
+        kCountlyQSKeyTimeDayOfWeek,
+        kCountlyQSKeyTimeZone,
+        kCountlyQSKeySDKVersion,
+        kCountlyQSKeySDKName,
+        kCountlyQSKeyDeviceID,
+        kCountlyQSKeyDeviceIDOld,
+        kCountlyQSKeyChecksum256,
+    ];
+}
+
 
 - (NSString *)locationRelatedInfoQueryString
 {

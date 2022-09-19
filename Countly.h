@@ -85,6 +85,15 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)removeDifferentAppKeysFromQueue;
 
+/**
+ * Adds a direct request to the queue using given key-value pairs as query string pairs.
+ * @discussion requestParameters should be an @c NSDictionary, with keys and values are both @c NSString's only.
+ * @discussion Calls to this method will be ignored if:
+ * @discussion - There are not any consents given while @c requiresConsent flag is set on initial configuration.
+ * @param requestParameters Query string key-value pairs to be used in direct request
+ */
+- (void)addDirectRequest:(NSDictionary<NSString *, NSString *> * _Nullable)requestParameters;
+
 
 
 #pragma mark - Sessions

@@ -364,6 +364,13 @@ long long appLoadStartTime;
     [CountlyPersistency.sharedInstance removeDifferentAppKeysFromQueue];
 }
 
+- (void)addDirectRequest:(NSDictionary<NSString *, NSString *> * _Nullable)requestParameters
+{
+    CLY_LOG_I(@"%s %@", __FUNCTION__, requestParameters);
+
+    [CountlyConnectionManager.sharedInstance addDirectRequest:requestParameters];
+}
+
 
 
 #pragma mark - Sessions
