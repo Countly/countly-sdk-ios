@@ -31,6 +31,10 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)startWithConfig:(CountlyConfig *)config;
 
+
+
+#pragma mark - Override Configuration
+
 /**
  * Sets a new host to be used in requests.
  * @discussion Requests already queued previously will also be using the new host.
@@ -41,12 +45,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setNewHost:(NSString *)newHost;
 
 /**
- * Sets a new URL session configuration to be used with all requests.
- * @param newURLSessionConfiguration The new URL session configuration
- */
-- (void)setNewURLSessionConfiguration:(NSURLSessionConfiguration *)newURLSessionConfiguration;
-
-/**
  * Sets a new app key to be used in new requests.
  * @discussion Before switching to the new app key, this method suspends Countly and resumes it immediately after.
  * @discussion The requests already queued prior to this method call will keep using the old app key.
@@ -55,6 +53,16 @@ NS_ASSUME_NONNULL_BEGIN
  * @param newAppKey The new app key
  */
 - (void)setNewAppKey:(NSString *)newAppKey;
+
+/**
+ * Sets a new URL session configuration to be used with all requests.
+ * @param newURLSessionConfiguration The new URL session configuration
+ */
+- (void)setNewURLSessionConfiguration:(NSURLSessionConfiguration *)newURLSessionConfiguration;
+
+
+
+#pragma mark - Queue Operations
 
 /**
  * Flushes request and event queues.
@@ -76,6 +84,10 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion these requests will be removed from request queue.
  */
 - (void)removeDifferentAppKeysFromQueue;
+
+
+
+#pragma mark - Sessions
 
 /**
  * Starts session and sends @c begin_session request with default metrics for manual session handling.
