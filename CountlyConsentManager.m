@@ -215,6 +215,23 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 }
 
 
+- (BOOL)hasAnyConsent
+{
+    return
+    self.consentForSessions ||
+    self.consentForEvents ||
+    self.consentForUserDetails ||
+    self.consentForCrashReporting ||
+    self.consentForPushNotifications ||
+    self.consentForLocation ||
+    self.consentForViewTracking ||
+    self.consentForAttribution ||
+    self.consentForPerformanceMonitoring ||
+    self.consentForFeedback ||
+    self.consentForRemoteConfig;
+}
+
+
 #pragma mark -
 
 
