@@ -189,6 +189,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
         CLYConsentAttribution: @(self.consentForAttribution),
         CLYConsentPerformanceMonitoring: @(self.consentForPerformanceMonitoring),
         CLYConsentFeedback: @(self.consentForFeedback),
+        CLYConsentRemoteConfig: @(self.consentForRemoteConfig),
     };
 
     [CountlyConnectionManager.sharedInstance sendConsents:[consents cly_JSONify]];
