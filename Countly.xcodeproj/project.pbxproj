@@ -410,7 +410,7 @@
 					"@loader_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.14;
-				MARKETING_VERSION = 22.06.1;
+				MARKETING_VERSION = 22.06.2;
 				PRODUCT_BUNDLE_IDENTIFIER = ly.count.CountlyiOSSDK;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -439,7 +439,7 @@
 					"@loader_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.14;
-				MARKETING_VERSION = 22.06.1;
+				MARKETING_VERSION = 22.06.2;
 				PRODUCT_BUNDLE_IDENTIFIER = ly.count.CountlyiOSSDK;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
