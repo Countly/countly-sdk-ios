@@ -514,7 +514,15 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return;
 
     NSMutableDictionary* mutableRequestParameters = requestParameters.mutableCopy;
-    [mutableRequestParameters removeObjectsForKeys:self.reservedQueryStringKeys];
+
+    for (NSString * reservedKey in self.reservedQueryStringKeys)
+    {
+        if (mutableRequestParameters[reservedKey])
+        {
+            CLY_LOG_W(@"A reserved query string key detected in direct request parameters and it will be removed: %@", reservedKey);
+            [mutableRequestParameters removeObjectForKey:reservedKey];
+        }
+    }
 
     NSMutableString* queryString = [self queryEssentials].mutableCopy;
 
