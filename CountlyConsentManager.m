@@ -189,6 +189,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
         CLYConsentAttribution: @(self.consentForAttribution),
         CLYConsentPerformanceMonitoring: @(self.consentForPerformanceMonitoring),
         CLYConsentFeedback: @(self.consentForFeedback),
+        CLYConsentRemoteConfig: @(self.consentForRemoteConfig),
     };
 
     [CountlyConnectionManager.sharedInstance sendConsents:[consents cly_JSONify]];
@@ -211,6 +212,23 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
         CLYConsentFeedback,
         CLYConsentRemoteConfig,
     ];
+}
+
+
+- (BOOL)hasAnyConsent
+{
+    return
+    self.consentForSessions ||
+    self.consentForEvents ||
+    self.consentForUserDetails ||
+    self.consentForCrashReporting ||
+    self.consentForPushNotifications ||
+    self.consentForLocation ||
+    self.consentForViewTracking ||
+    self.consentForAttribution ||
+    self.consentForPerformanceMonitoring ||
+    self.consentForFeedback ||
+    self.consentForRemoteConfig;
 }
 
 

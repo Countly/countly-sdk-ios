@@ -28,4 +28,6 @@
 - (void)cancelConsentForFeatures:(NSArray *)features;
 - (void)cancelConsentForAllFeatures;
 - (void)cancelConsentForAllFeaturesWithoutSendingConsentsRequest;
+- (BOOL)hasAnyConsent;
+
 @end

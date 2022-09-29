@@ -4,8 +4,6 @@
 //
 // Please visit www.count.ly for more information.
 
-#pragma mark - Core
-
 #import "CountlyCommon.h"
 
 @interface Countly ()
@@ -18,6 +16,8 @@
 long long appLoadStartTime;
 
 @implementation Countly
+
+#pragma mark - Core
 
 + (void)load
 {
@@ -61,8 +61,6 @@ long long appLoadStartTime;
 
     return self;
 }
-
-#pragma mark ---
 
 - (void)startWithConfig:(CountlyConfig *)config
 {
@@ -193,95 +191,7 @@ long long appLoadStartTime;
         [self recordIndirectAttribution:config.indirectAttribution];
 }
 
-
-- (void)setNewHost:(NSString *)newHost
-{
-    CLY_LOG_I(@"%s %@", __FUNCTION__, newHost);
-
-    if (!newHost.length)
-    {
-        CLY_LOG_W(@"New host is invalid!");
-        return;
-    }
-
-    CountlyConnectionManager.sharedInstance.host = newHost;
-}
-
-- (void)setNewURLSessionConfiguration:(NSURLSessionConfiguration *)newURLSessionConfiguration
-{
-    CLY_LOG_I(@"%s %@", __FUNCTION__, newURLSessionConfiguration);
-
-    CountlyConnectionManager.sharedInstance.URLSessionConfiguration = newURLSessionConfiguration;
-}
-
-- (void)setNewAppKey:(NSString *)newAppKey
-{
-    CLY_LOG_I(@"%s %@", __FUNCTION__, newAppKey);
-    
-    if (!newAppKey.length)
-    {
-        CLY_LOG_W(@"New app key is invalid!");
-        return;
-    }
-
-    [self suspend];
-
-    [CountlyPerformanceMonitoring.sharedInstance clearAllCustomTraces];
-
-    CountlyConnectionManager.sharedInstance.appKey = newAppKey;
-
-    [self resume];
-}
-
-- (void)flushQueues
-{
-    CLY_LOG_I(@"%s", __FUNCTION__);
-
-    [CountlyPersistency.sharedInstance flushEvents];
-    [CountlyPersistency.sharedInstance flushQueue];
-}
-
-- (void)replaceAllAppKeysInQueueWithCurrentAppKey
-{
-    CLY_LOG_I(@"%s", __FUNCTION__);
-
-    [CountlyPersistency.sharedInstance replaceAllAppKeysInQueueWithCurrentAppKey];
-}
-
-- (void)removeDifferentAppKeysFromQueue
-{
-    CLY_LOG_I(@"%s", __FUNCTION__);
-
-    [CountlyPersistency.sharedInstance removeDifferentAppKeysFromQueue];
-}
-
-#pragma mark ---
-
-- (void)beginSession
-{
-    CLY_LOG_I(@"%s", __FUNCTION__);
-
-    if (CountlyCommon.sharedInstance.manualSessionHandling)
-        [CountlyConnectionManager.sharedInstance beginSession];
-}
-
-- (void)updateSession
-{
-    CLY_LOG_I(@"%s", __FUNCTION__);
-
-    if (CountlyCommon.sharedInstance.manualSessionHandling)
-        [CountlyConnectionManager.sharedInstance updateSession];
-}
-
-- (void)endSession
-{
-    CLY_LOG_I(@"%s", __FUNCTION__);
-
-    if (CountlyCommon.sharedInstance.manualSessionHandling)
-        [CountlyConnectionManager.sharedInstance endSession];
-}
-
-#pragma mark ---
+#pragma mark -
 
 - (void)onTimer:(NSTimer *)timer
 {
@@ -348,8 +258,6 @@ long long appLoadStartTime;
     isSuspended = NO;
 }
 
-#pragma mark ---
-
 - (void)applicationDidEnterBackground:(NSNotification *)notification
 {
     CLY_LOG_D(@"App did enter background.");
@@ -387,6 +295,110 @@ long long appLoadStartTime;
         timer = nil;
     }
 }
+
+
+#pragma mark - Override Configuration
+
+- (void)setNewHost:(NSString *)newHost
+{
+    CLY_LOG_I(@"%s %@", __FUNCTION__, newHost);
+
+    if (!newHost.length)
+    {
+        CLY_LOG_W(@"New host is invalid!");
+        return;
+    }
+
+    CountlyConnectionManager.sharedInstance.host = newHost;
+}
+
+- (void)setNewURLSessionConfiguration:(NSURLSessionConfiguration *)newURLSessionConfiguration
+{
+    CLY_LOG_I(@"%s %@", __FUNCTION__, newURLSessionConfiguration);
+
+    CountlyConnectionManager.sharedInstance.URLSessionConfiguration = newURLSessionConfiguration;
+}
+
+- (void)setNewAppKey:(NSString *)newAppKey
+{
+    CLY_LOG_I(@"%s %@", __FUNCTION__, newAppKey);
+    
+    if (!newAppKey.length)
+    {
+        CLY_LOG_W(@"New app key is invalid!");
+        return;
+    }
+
+    [self suspend];
+
+    [CountlyPerformanceMonitoring.sharedInstance clearAllCustomTraces];
+
+    CountlyConnectionManager.sharedInstance.appKey = newAppKey;
+
+    [self resume];
+}
+
+
+
+#pragma mark - Queue Operations
+
+- (void)flushQueues
+{
+    CLY_LOG_I(@"%s", __FUNCTION__);
+
+    [CountlyPersistency.sharedInstance flushEvents];
+    [CountlyPersistency.sharedInstance flushQueue];
+}
+
+- (void)replaceAllAppKeysInQueueWithCurrentAppKey
+{
+    CLY_LOG_I(@"%s", __FUNCTION__);
+
+    [CountlyPersistency.sharedInstance replaceAllAppKeysInQueueWithCurrentAppKey];
+}
+
+- (void)removeDifferentAppKeysFromQueue
+{
+    CLY_LOG_I(@"%s", __FUNCTION__);
+
+    [CountlyPersistency.sharedInstance removeDifferentAppKeysFromQueue];
+}
+
+- (void)addDirectRequest:(NSDictionary<NSString *, NSString *> * _Nullable)requestParameters
+{
+    CLY_LOG_I(@"%s %@", __FUNCTION__, requestParameters);
+
+    [CountlyConnectionManager.sharedInstance addDirectRequest:requestParameters];
+}
+
+
+
+#pragma mark - Sessions
+
+- (void)beginSession
+{
+    CLY_LOG_I(@"%s", __FUNCTION__);
+
+    if (CountlyCommon.sharedInstance.manualSessionHandling)
+        [CountlyConnectionManager.sharedInstance beginSession];
+}
+
+- (void)updateSession
+{
+    CLY_LOG_I(@"%s", __FUNCTION__);
+
+    if (CountlyCommon.sharedInstance.manualSessionHandling)
+        [CountlyConnectionManager.sharedInstance updateSession];
+}
+
+- (void)endSession
+{
+    CLY_LOG_I(@"%s", __FUNCTION__);
+
+    if (CountlyCommon.sharedInstance.manualSessionHandling)
+        [CountlyConnectionManager.sharedInstance endSession];
+}
+
 
 
 
@@ -651,7 +663,7 @@ long long appLoadStartTime;
     [CountlyPersistency.sharedInstance recordEvent:event];
 }
 
-#pragma mark ---
+#pragma mark -
 
 - (void)startEvent:(NSString *)key
 {
