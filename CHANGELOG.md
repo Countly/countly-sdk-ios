@@ -5,16 +5,12 @@
 - Other various improvements
   - Updated some pragma marks
 
-
-
 ## 22.06.1
 - Fixed user details consent issue on SDK start
 - Updated feedback widget internal webview design and layout
 
 - Other various improvements
   - Updated HeaderDocs, internal logs, inline notes and pragma marks
-
-
 
 ## 22.06.0
 - Added `CountlyAutoViewTrackingName` protocol for supporting custom view titles with AutoViewTracking
@@ -29,8 +25,6 @@
   - Updated HeaderDocs, internal logs, inline notes and pragma marks
   - Updated Countly project settings for Xcode 13.4.1 (13F100)
 
-
-
 ## 21.11.2
 - Added direct and indirect attribution
 - Added platform info to default segmentation of push action events
@@ -41,13 +35,9 @@
 - Fixed possible SecTrustCopyExceptions leak
 - Deprecated `presentFeedbackWidgetWithID:completionHandler:` method
 
-
-
 ## 21.11.1
 - Fixed a crash when some default user detail properties are set to `NSNull` (thanks @lhunath)
 - Updated README.md for minimum supported deployment targets
-
-
 
 ## 21.11.0
 - Updated minimum supported OS versions as `iOS 10.0`, `tvOS 10.0`, `watchOS 4.0` and `macOS 10.14`
@@ -75,15 +65,11 @@
   - Deleted previously deprecated methods and properties
   - Refactored `connectionType` method
 
-
-
 ## 20.11.3
 - Added optional appear and dismiss callbacks for feedback widget presenting
 - Added manually displayed and recorded feedback widgets support
 - Fixed HTTP method check for feedback widget requests
 - Implemented immediately sending of queued events when a widget event is recorded
-
-
 
 ## 20.11.2
 - Added configurable internal log levels
@@ -108,15 +94,11 @@
   - Updated HeaderDocs, internal logs, inline notes and pragma marks
   - Updated Countly project settings for Xcode 12.4
 
-
-
 ## 20.11.1
 - Added `loggerDelegate` initial config property for receiving internal logs on production builds
 - Fixed manual view tracking state clean up when view tracking consent is cancelled
 - Updated `CountlyFeedbackWidget.h` as public header file in Xcode project file for Carthage 
 - Added nullability specifiers for block parameters
-
-
 
 ## 20.11.0
 - Added Surveys and NPS feedback widgets
@@ -142,8 +124,6 @@
   - Updated some constant key declarations for common use
   - Updated HeaderDocs, internal logs, inline notes and pragma marks
   
-
-
 ## 20.04.3
 - Deprecated `recordLocation:`, `recordCity:andISOCountryCode:`, `recordIP:` methods
 - Added new combined `recordLocation:city:ISOCountryCode:IP:` method for recording location related info
@@ -160,8 +140,6 @@
   - Treated empty string `city`, `ISOCountryCode` and `IP` values as `nil`
   - Added warnings for the cases where `city` and `ISOCountryCode` code are not set as a pair
 
-
-
 ## 20.04.2
 - Implemented overriding default metrics and adding custom ones 
 - Fixed advertising tracking enabled check
@@ -171,16 +149,14 @@
   - Refactored extra slash check using `hasSuffix:` method
   - Renamed some app life cycle observing methods for clarity
 
-
-
 ## 20.04.1
 - Added Application Performance Monitoring (Phase 1)
-    - Manual network traces
-    - Manual custom traces
-    - Semi-automatic app start time trace
-    - Automatic app foreground time trace
-    - Automatic app background time trace
-    - Consent handling for Application Performance Monitoring
+  - Manual network traces
+  - Manual custom traces
+  - Semi-automatic app start time trace
+  - Automatic app foreground time trace
+  - Automatic app background time trace
+  - Consent handling for Application Performance Monitoring
 - Added `COUNTLY_EXCLUDE_PUSHNOTIFICATIONS` flag to disable push notifications altogether in order to avoid App Store Connect warnings (thanks @grundleborg)
 - Fixed an incorrect internal logging on SDK start
 - Fixed location consent order to avoid some legacy Countly Server issue with location info being unavailable even after giving consent
@@ -190,12 +166,10 @@
 - Applied `alwaysUsePOST` flag to remote config requests
 
 - Other various improvements
-    - Deleted some unnecessary imports
-    - Updated HeaderDocs, internal logs, inline notes and pragma marks 
-    - Added missing frameworks to CocoaPods podspec
-    - Added ability to override SDK name and version for bridge SDKs
-
-
+  - Deleted some unnecessary imports
+  - Updated HeaderDocs, internal logs, inline notes and pragma marks 
+  - Added missing frameworks to CocoaPods podspec
+  - Added ability to override SDK name and version for bridge SDKs
 
 ## 20.04
 - Added crash reporting feature for tvOS
@@ -211,16 +185,14 @@
 - Discarded OpenGL ES version info in crash reports 
 
 - Other various improvements
-    - Deleted an unnecessary UIKit import
-    - Added precaution for possible nil lines in backtrace
-    - Added precaution for possible nil OS name value
-    - Replaced scheduledTimerWithTimeInterval call with timerWithTimeInterval (thanks @mt-rpranata)
-    - Updated architerture method for crash reports
-    - Updated CocoaPods podspec for core subspec approach
-    - Updated feature, consent and push test mode specifiers as NSString typedefs
-    - Updated HeaderDocs, internal logs, inline notes and pragma marks 
-
-
+  - Deleted an unnecessary UIKit import
+  - Added precaution for possible nil lines in backtrace
+  - Added precaution for possible nil OS name value
+  - Replaced scheduledTimerWithTimeInterval call with timerWithTimeInterval (thanks @mt-rpranata)
+  - Updated architerture method for crash reports
+  - Updated CocoaPods podspec for core subspec approach
+  - Updated feature, consent and push test mode specifiers as NSString typedefs
+  - Updated HeaderDocs, internal logs, inline notes and pragma marks 
 
 ## 19.08
 - Added temporary device ID mode
@@ -242,24 +214,22 @@
 - Updated default device ID on tvOS as `identifierForVendor` 
 
 - Other various improvements
-    - Renamed `forceDeviceIDInitialization` flag as `resetStoredDeviceID`
-    - Added lightweight generics for segmentation parameters
-    - Added dSYM upload script to preserved paths in Podspec
-    - Updated dSYM upload script to support paths with spaces     
-    - Changed request cache policy to `NSURLRequestReloadIgnoringLocalCacheData`
-    - Added battery level for watchOS 4.0+
-    - Added JSON validity check before converting objects
-    - Deleted unused `kCountlyCRKeyLoadAddress` constant
-    - Improved internal logging in binary images processing for crash reports
-    - Added persistency for generated `NSUUID`
-    - Added precaution to prevent invalid requests from being added to queue
-    - Discarded null check on request queue
-    - Discarded all APM related files
-    - Added length check for view tracking view name
-    - Added length check for view tracking exceptions
-    - Updated HeaderDocs, internal logs, inline notes and pragma marks 
-
-
+  - Renamed `forceDeviceIDInitialization` flag as `resetStoredDeviceID`
+  - Added lightweight generics for segmentation parameters
+  - Added dSYM upload script to preserved paths in Podspec
+  - Updated dSYM upload script to support paths with spaces     
+  - Changed request cache policy to `NSURLRequestReloadIgnoringLocalCacheData`
+  - Added battery level for watchOS 4.0+
+  - Added JSON validity check before converting objects
+  - Deleted unused `kCountlyCRKeyLoadAddress` constant
+  - Improved internal logging in binary images processing for crash reports
+  - Added persistency for generated `NSUUID`
+  - Added precaution to prevent invalid requests from being added to queue
+  - Discarded null check on request queue
+  - Discarded all APM related files
+  - Added length check for view tracking view name
+  - Added length check for view tracking exceptions
+  - Updated HeaderDocs, internal logs, inline notes and pragma marks 
 
 ## 19.02
 - Added push notification support for macOS
@@ -277,11 +247,9 @@
 - Fixed feedback widget dismiss button position
 
 - Other various improvements
-    - Discarded separate UIWindow usage for presenting feedback widgets
-    - Added checksum to feedback widget requests
-    - Improved internal logging for request queue
-
-
+  - Discarded separate UIWindow usage for presenting feedback widgets
+  - Added checksum to feedback widget requests
+  - Improved internal logging for request queue
 
 ## 18.08
 - Added feedback widgets support
@@ -303,8 +271,6 @@
   - Refactored `buildUUID` and `executableName` as properties
   - Refactored custom crash log array and date formatter
   - Updated HeaderDocs, inline notes, pragma marks 
-
-
 
 ## 18.04
 - Added consent management for GDPR compliance
@@ -338,8 +304,6 @@
   - Updated HeaderDocs, inline notes, pragma marks 
   - Performed whitespace cleaning
 
-
-
 ## 18.01
 
 - Added `attribution` config
@@ -363,8 +327,6 @@
   - Updated `OpenGLESVersion` method return type as `NSString`
   - Updated time related types as `NSTimeInterval`
   - Updated HeaderDocs
-
-
 
 ## 17.09
 
@@ -391,8 +353,6 @@
   - Rearranged file imports
   - Updated HeaderDocs
   - Cleaned whitespace
-
-
 
 ## 17.05
 
@@ -446,8 +406,6 @@
   - Updated HeaderDocs
   - Cleaned whitespace
 
-
-
 ## 16.12
 
 - Refactored push notifications  
@@ -495,8 +453,6 @@
   - Updated HeaderDocs
   - Cleaned whitespace
 
-
-
 ## 16.06.4
 
 - Fixed iOS10 zero-IDFA problem
@@ -510,8 +466,6 @@
 - Disabled server response dictionary check.
 - Other minor improvements like better internal logging, standardization, whitespacing, code cleaning, commenting, pragma marking and HeaderDocing
 
-
-
 ## 16.06.3
 
 - Fixed a persistency related crash
@@ -523,8 +477,6 @@
 - Improved headerdocs grammar and formatting for easier integration and usage
 - Fixed some static analyzer warnings
 
-
-
 ## 16.06.2
 
 - Added Star-Rating, the simplest form of feedback from users, both automatically and manually.
@@ -534,8 +486,6 @@
 - Improved headerdocs grammar and formatting for easier integration and usage
 - Fixed some static analyzer warnings
 
-
-
 ## 16.06.1
 
 - Added support for certificate pinning.
@@ -543,8 +493,6 @@
 - Implemented switching between GET and POST depending on data size on requests.
 - Fixed a URL encoding issue which causes problems for Asian languages and some JSON payloads.
 - Fixed custom crash log formatter.
-
-
 
 ## 16.06
 
@@ -561,16 +509,12 @@
 - Changed default alert title for push messages
 - Other minor improvements like better internal logging, standardization, whitespacing, code cleaning, commenting, pragma marking and HeaderDocing
 
-
-
 # 16.02.01
 
 - Swithed to POST method for all requests by default
 - Fixed some issues with Crash Reporting persistency
 - Fixed some issues with CocoaPods v1.0.0
 - Other minor fixes and improvements
-
-
 
 ## 16.02
 
@@ -586,13 +530,9 @@ Completely re-written iOS SDK with watchOS, tvOS & OSX support
 - Persistency without CoreData
 - Various performance improvements and minor bugfixes
 
-
-
 ## 15.06.01
 
 Updated CocoaPods spec
-
-
 
 ## 15.06
 
