@@ -891,24 +891,6 @@ long long appLoadStartTime;
     return CountlyUserDetails.sharedInstance;
 }
 
-- (void)userLoggedIn:(NSString *)userID
-{
-    CLY_LOG_I(@"%s %@", __FUNCTION__, userID);
-
-    CLY_LOG_W(@"userLoggedIn: method is deprecated. Please directly use setNewDeviceID:onServer: method instead.");
-
-    [self setNewDeviceID:userID onServer:YES];
-}
-
-- (void)userLoggedOut
-{
-    CLY_LOG_I(@"%s", __FUNCTION__);
-
-    CLY_LOG_W(@"userLoggedOut method is deprecated. Please directly use setNewDeviceID:onServer: method instead.");
-
-    [self setNewDeviceID:CLYDefaultDeviceID onServer:NO];
-}
-
 
 
 #pragma mark - Star Rating
