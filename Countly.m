@@ -84,7 +84,12 @@ long long appLoadStartTime;
     if (!config.host.length || [config.host isEqualToString:@"https://YOUR_COUNTLY_SERVER"])
         [NSException raise:@"CountlyHostNotSetException" format:@"host property on CountlyConfig object is not set"];
 
-    CLY_LOG_I(@"Initializing with %@ SDK v%@", CountlyCommon.sharedInstance.SDKName, CountlyCommon.sharedInstance.SDKVersion);
+    CLY_LOG_I(@"Initializing with %@ SDK v%@ on %@ with %@ %@",
+        CountlyCommon.sharedInstance.SDKName,
+        CountlyCommon.sharedInstance.SDKVersion,
+        CountlyDeviceInfo.device,
+        CountlyDeviceInfo.osName,
+        CountlyDeviceInfo.osVersion);
 
     if (!CountlyDeviceInfo.sharedInstance.deviceID || config.resetStoredDeviceID)
     {
