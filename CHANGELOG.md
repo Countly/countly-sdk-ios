@@ -1,4 +1,15 @@
-## 22.06.2
+## 22.09.0
+- Deleted previously deprecated `userLoggedIn:` and `userLoggedOut` methods
+- Added new exception recording methods: `recordException:`, `recordException:isFatal:`, `recordException:isFatal:stackTrace:segmentation:` 
+- Deprecated existing exception recording methods: `recordHandledException:`, `recordHandledException:withStackTrace:`, `recordUnhandledException:withStackTrace:`
+- Added `recordError:stackTrace:`, `recordError:isFatal:stackTrace:segmentation:` methods for Swift errors
+  
+- Other various improvements
+  - Added device info to SDK initialization logs
+
+
+
+ ## 22.06.2
 - Added direct requests support
 - Fixed missing remote config consent in consents request
 
