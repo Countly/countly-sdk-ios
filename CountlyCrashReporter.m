@@ -487,7 +487,7 @@ void CountlySignalHandler(int signalCode)
     //NOTE: Custom UncaughtExceptionHandler is called with an irrelevant stack trace, not the original crash call stack trace.
     //NOTE: And system's own UncaughtExceptionHandler handles the exception by just printing it to the Console.
     //NOTE: So, we intercept the exception here and record manually.
-    [CountlyCrashReporter.sharedInstance recordException:exception withStackTrace:nil isFatal:NO];
+    [CountlyCrashReporter.sharedInstance recordException:exception isFatal:NO stackTrace:nil segmentation:nil];
 }
 
 - (void)sendEvent:(NSEvent *)theEvent
