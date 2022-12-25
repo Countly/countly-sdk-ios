@@ -84,7 +84,12 @@ long long appLoadStartTime;
     if (!config.host.length || [config.host isEqualToString:@"https://YOUR_COUNTLY_SERVER"])
         [NSException raise:@"CountlyHostNotSetException" format:@"host property on CountlyConfig object is not set"];
 
-    CLY_LOG_I(@"Initializing with %@ SDK v%@", CountlyCommon.sharedInstance.SDKName, CountlyCommon.sharedInstance.SDKVersion);
+    CLY_LOG_I(@"Initializing with %@ SDK v%@ on %@ with %@ %@",
+        CountlyCommon.sharedInstance.SDKName,
+        CountlyCommon.sharedInstance.SDKVersion,
+        CountlyDeviceInfo.device,
+        CountlyDeviceInfo.osName,
+        CountlyDeviceInfo.osVersion);
 
     if (!CountlyDeviceInfo.sharedInstance.deviceID || config.resetStoredDeviceID)
     {
@@ -791,25 +796,60 @@ long long appLoadStartTime;
 
 #pragma mark - Crash Reporting
 
+- (void)recordException:(NSException *)exception
+{
+    CLY_LOG_I(@"%s %@", __FUNCTION__, exception);
+
+    [CountlyCrashReporter.sharedInstance recordException:exception isFatal:NO stackTrace:nil segmentation:nil];
+}
+
+- (void)recordException:(NSException *)exception isFatal:(BOOL)isFatal
+{
+    CLY_LOG_I(@"%s %@ %d", __FUNCTION__, exception, isFatal);
+
+    [CountlyCrashReporter.sharedInstance recordException:exception isFatal:isFatal stackTrace:nil segmentation:nil];
+}
+
+- (void)recordException:(NSException *)exception isFatal:(BOOL)isFatal stackTrace:(NSArray *)stackTrace segmentation:(NSDictionary<NSString *, NSString *> *)segmentation
+{
+    CLY_LOG_I(@"%s %@ %d %@ %@", __FUNCTION__, exception, isFatal, stackTrace, segmentation);
+
+    [CountlyCrashReporter.sharedInstance recordException:exception isFatal:isFatal stackTrace:stackTrace segmentation:segmentation];
+}
+
+- (void)recordError:(NSString *)errorName stackTrace:(NSArray * _Nullable)stackTrace
+{
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, errorName, stackTrace);
+
+    [CountlyCrashReporter.sharedInstance recordError:errorName isFatal:NO stackTrace:stackTrace segmentation:nil];
+}
+
+- (void)recordError:(NSString *)errorName isFatal:(BOOL)isFatal stackTrace:(NSArray * _Nullable)stackTrace segmentation:(NSDictionary<NSString *, NSString *> * _Nullable)segmentation
+{
+    CLY_LOG_I(@"%s %@ %d %@ %@", __FUNCTION__, errorName, isFatal, stackTrace, segmentation);
+
+    [CountlyCrashReporter.sharedInstance recordError:errorName isFatal:isFatal stackTrace:stackTrace segmentation:segmentation];
+}
+
 - (void)recordHandledException:(NSException *)exception
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, exception);
 
-    [CountlyCrashReporter.sharedInstance recordException:exception withStackTrace:nil isFatal:NO];
+    [CountlyCrashReporter.sharedInstance recordException:exception isFatal:NO stackTrace:nil segmentation:nil];
 }
 
 - (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray *)stackTrace
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, exception, stackTrace);
 
-    [CountlyCrashReporter.sharedInstance recordException:exception withStackTrace:stackTrace isFatal:NO];
+    [CountlyCrashReporter.sharedInstance recordException:exception isFatal:NO stackTrace:stackTrace segmentation:nil];
 }
 
 - (void)recordUnhandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, exception, stackTrace);
 
-    [CountlyCrashReporter.sharedInstance recordException:exception withStackTrace:stackTrace isFatal:YES];
+    [CountlyCrashReporter.sharedInstance recordException:exception isFatal:YES stackTrace:stackTrace segmentation:nil];
 }
 
 - (void)recordCrashLog:(NSString *)log
@@ -884,24 +924,6 @@ long long appLoadStartTime;
 + (CountlyUserDetails *)user
 {
     return CountlyUserDetails.sharedInstance;
-}
-
-- (void)userLoggedIn:(NSString *)userID
-{
-    CLY_LOG_I(@"%s %@", __FUNCTION__, userID);
-
-    CLY_LOG_W(@"userLoggedIn: method is deprecated. Please directly use setNewDeviceID:onServer: method instead.");
-
-    [self setNewDeviceID:userID onServer:YES];
-}
-
-- (void)userLoggedOut
-{
-    CLY_LOG_I(@"%s", __FUNCTION__);
-
-    CLY_LOG_W(@"userLoggedOut method is deprecated. Please directly use setNewDeviceID:onServer: method instead.");
-
-    [self setNewDeviceID:CLYDefaultDeviceID onServer:NO];
 }
 
 
