@@ -17,6 +17,7 @@
 
 NSString* const kCountlyExceptionUserInfoBacktraceKey = @"kCountlyExceptionUserInfoBacktraceKey";
 NSString* const kCountlyExceptionUserInfoSignalCodeKey = @"kCountlyExceptionUserInfoSignalCodeKey";
+NSString* const kCountlyExceptionUserInfoSegmentationOverrideKey = @"kCountlyExceptionUserInfoSegmentationOverrideKey";
 
 NSString* const kCountlyCRKeyBinaryImages      = @"_binary_images";
 NSString* const kCountlyCRKeyOS                = @"_os";
@@ -208,19 +209,26 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 
 #endif
 
-- (void)recordException:(NSException *)exception withStackTrace:(NSArray *)stackTrace isFatal:(BOOL)isFatal
+- (void)recordException:(NSException *)exception isFatal:(BOOL)isFatal stackTrace:(NSArray *)stackTrace segmentation:(NSDictionary *)segmentation
 {
     if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
         return;
 
-    if (stackTrace)
+    if (stackTrace || segmentation)
     {
         NSMutableDictionary* userInfo = [NSMutableDictionary dictionaryWithDictionary:exception.userInfo];
         userInfo[kCountlyExceptionUserInfoBacktraceKey] = stackTrace;
+        userInfo[kCountlyExceptionUserInfoSegmentationOverrideKey] = segmentation;
         exception = [NSException exceptionWithName:exception.name reason:exception.reason userInfo:userInfo];
     }
 
     CountlyExceptionHandler(exception, isFatal, false);
+}
+
+- (void)recordError:(NSString *)errorName isFatal:(BOOL)isFatal stackTrace:(NSArray *)stackTrace segmentation:(NSDictionary *)segmentation
+{
+    NSException* exception = [NSException exceptionWithName:@"Swift Error" reason:errorName userInfo:nil];
+    [self recordException:exception isFatal:isFatal stackTrace:stackTrace segmentation:segmentation];
 }
 
 void CountlyUncaughtExceptionHandler(NSException *exception)
@@ -276,9 +284,14 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     if (CountlyCrashReporter.sharedInstance.crashSegmentation)
         [custom addEntriesFromDictionary:CountlyCrashReporter.sharedInstance.crashSegmentation];
 
+    NSDictionary* segmentationOverride = exception.userInfo[kCountlyExceptionUserInfoSegmentationOverrideKey];
+    if (segmentationOverride)
+        [custom addEntriesFromDictionary:segmentationOverride];
+
     NSMutableDictionary* userInfo = exception.userInfo.mutableCopy;
     [userInfo removeObjectForKey:kCountlyExceptionUserInfoBacktraceKey];
     [userInfo removeObjectForKey:kCountlyExceptionUserInfoSignalCodeKey];
+    [userInfo removeObjectForKey:kCountlyExceptionUserInfoSegmentationOverrideKey];
     [custom addEntriesFromDictionary:userInfo];
 
     if (custom.allKeys.count)
