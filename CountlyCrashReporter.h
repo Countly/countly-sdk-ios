@@ -19,7 +19,8 @@
 + (instancetype)sharedInstance;
 - (void)startCrashReporting;
 - (void)stopCrashReporting;
-- (void)recordException:(NSException *)exception withStackTrace:(NSArray *)stackTrace isFatal:(BOOL)isFatal;
+- (void)recordException:(NSException *)exception isFatal:(BOOL)isFatal stackTrace:(NSArray *)stackTrace segmentation:(NSDictionary *)segmentation;
+- (void)recordError:(NSString *)errorName isFatal:(BOOL)isFatal stackTrace:(NSArray *)stackTrace segmentation:(NSDictionary *)segmentation;
 - (void)log:(NSString *)log;
 - (void)clearCrashLogs;
 @end

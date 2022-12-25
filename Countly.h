@@ -413,17 +413,61 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - Crash Reporting
 
 /**
+ * Records an non-fatal exception.
+ * @discussion A convenience method for @c recordException:isFatal:stackTrace:segmentation:
+ * with isFatal passed as @c NO, stack trace and segmentation are passed as @c nil.
+ * @param exception Exception to be recorded
+ */
+- (void)recordException:(NSException *)exception;
+
+/**
+ * Records an exception with fatality information.
+ * @discussion A convenience method for @c recordException:isFatal:stackTrace:segmentation:
+ * with stack trace and segmentation are passed as @c nil.
+ * @param isFatal Whether the exception is fatal or not
+ */
+- (void)recordException:(NSException *)exception isFatal:(BOOL)isFatal;
+
+/**
+ * Records an exception with fatality information, given stack trace and segmentation.
+ * @discussion For manually recording all exceptions, fatal or not, with an ability to pass custom stack trace and segmentation data.
+ * @param exception Exception to be recorded
+ * @param isFatal Whether the exception is fatal or not
+ * @param stackTrace Stack trace to be recorded
+ * @param segmentation Crash segmentation to override @c crashSegmentation set on initial configuration
+ */
+- (void)recordException:(NSException *)exception isFatal:(BOOL)isFatal stackTrace:(NSArray * _Nullable)stackTrace segmentation:(NSDictionary<NSString *, NSString *> * _Nullable)segmentation;
+
+/**
+ * Records a Swift error with given stack trace.
+ * @discussion For manually recording Swift errors with an ability to pass custom stack trace.
+ * @param errorName A name describing the error to be recorded, a non-zero length valid string
+ * @param stackTrace Stack trace to be recorded
+ */
+- (void)recordError:(NSString *)errorName stackTrace:(NSArray * _Nullable)stackTrace;
+
+/**
+ * Records a Swift error with fatality information, given stack trace and segmentation.
+ * @discussion For manually recording Swift errors with an ability to pass custom stack trace and segmentation data.
+ * @param errorName A name describing the error to be recorded, a non-zero length valid string
+ * @param isFatal Whether the error is fatal or not
+ * @param stackTrace Stack trace to be recorded
+ * @param segmentation Crash segmentation to override @c crashSegmentation set on initial configuration
+ */
+- (void)recordError:(NSString *)errorName isFatal:(BOOL)isFatal stackTrace:(NSArray * _Nullable)stackTrace segmentation:(NSDictionary<NSString *, NSString *> * _Nullable)segmentation;
+
+/**
  * Records a handled exception manually.
  * @param exception Exception to be recorded
  */
-- (void)recordHandledException:(NSException *)exception;
+- (void)recordHandledException:(NSException *)exception DEPRECATED_MSG_ATTRIBUTE("Use 'recordException:' method instead!");
 
 /**
  * Records a handled exception and given stack trace manually.
  * @param exception Exception to be recorded
  * @param stackTrace Stack trace to be recorded
  */
-- (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace;
+- (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace DEPRECATED_MSG_ATTRIBUTE("Use 'recordException:isFatal:stackTrace:segmentation:' method instead! (passing isFatal:NO, segmentation:nil)");
 
 /**
  * Records an unhandled exception and given stack trace manually.
@@ -431,7 +475,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param exception Exception to be recorded
  * @param stackTrace Stack trace to be recorded
  */
-- (void)recordUnhandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace;
+- (void)recordUnhandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace DEPRECATED_MSG_ATTRIBUTE("Use 'recordException:isFatal:stackTrace:segmentation:' method instead! (passing isFatal:YES, segmentation:nil)");
 
 /**
  * Records custom logs to be delivered with crash report.
@@ -505,20 +549,6 @@ NS_ASSUME_NONNULL_BEGIN
  */
 + (CountlyUserDetails *)user;
 
-/**
- * Handles switching from device ID to custom user ID for logged in users
- * @discussion When a user logs in, this user can be tracked with custom user ID instead of device ID.
- * @discussion This is just a convenience method that handles setting user ID as new device ID and merging existing data on Countly Server.
- * @param userID Custom user ID uniquely defining the logged in user
- */
-- (void)userLoggedIn:(NSString *)userID DEPRECATED_MSG_ATTRIBUTE("Use 'setNewDeviceID:onServer:' method instead!");
-
-/**
- * Handles switching from custom user ID to device ID for logged out users
- * @discussion When a user logs out, all the data can be tracked with default device ID henceforth.
- * @discussion This is just a convenience method that handles resetting device ID to default one and starting a new session.
- */
-- (void)userLoggedOut DEPRECATED_MSG_ATTRIBUTE("Use 'setNewDeviceID:onServer:' method instead!");
 
 
 

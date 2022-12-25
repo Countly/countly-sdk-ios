@@ -1,59 +1,58 @@
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/68dc667ef1e6465e99fa9d4b2ee56e58)](https://www.codacy.com/gh/Countly/countly-sdk-ios/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Countly/countly-sdk-ios&amp;utm_campaign=Badge_Grade)
+
 # Countly iOS SDK
 
-[![Platform](https://img.shields.io/cocoapods/p/Countly.svg?style=flat)](https://support.count.ly/hc/en-us/articles/360037753511-iOS-watchOS-tvOS-macOS#supported-system-versions)
-[![GitHub license](https://img.shields.io/badge/license-MIT-lightgrey.svg)](https://github.com/Countly/countly-sdk-ios/blob/master/LICENSE.md) 
-[![GitHub release](https://img.shields.io/github/release/Countly/countly-sdk-ios.svg)](https://github.com/Countly/countly-sdk-ios/releases)
-[![CocoaPods Compatible](https://img.shields.io/cocoapods/v/Countly.svg)](https://support.count.ly/hc/en-us/articles/360037753511-iOS-watchOS-tvOS-macOS#cocoapods)
-[![Carthage Compatible](https://img.shields.io/badge/Carthage-compatible-4BC51D.svg?style=flat)](https://support.count.ly/hc/en-us/articles/360037753511-iOS-watchOS-tvOS-macOS#carthage)
+This repository contains the Countly iOS SDK, which can be integrated into iOS, watchOS, tvOS & macOS applications. The Countly iOS SDK is intended to be used with [Countly Community Edition](https://github.com/Countly/countly-server) or [Countly Enterprise Edition](https://count.ly/product).
 
 ## What is Countly?
-[Countly](http://count.ly) is a product analytics solution and innovation enabler that helps teams track product performance and customer journey and behavior across [mobile](https://count.ly/mobile-analytics), [web](http://count.ly/web-analytics), and [desktop](https://count.ly/desktop-analytics) applications. [Ensuring privacy by design](https://count.ly/your-data-your-rules), Countly allows you to innovate and enhance your products to provide personalized and customized customer experiences, and meet key business and revenue goals.
+[Countly](https://count.ly) is a product analytics solution and innovation enabler that helps teams track product performance and customer journey and behavior across [mobile](https://count.ly/mobile-analytics), [web](http://count.ly/web-analytics),
+and [desktop](https://count.ly/desktop-analytics) applications. [Ensuring privacy by design](https://count.ly/privacy-by-design), Countly allows you to innovate and enhance your products to provide personalized and customized customer experiences, and meet key business and revenue goals.
 
 Track, measure, and take action - all without leaving Countly.
 
-## About this SDK
-This repository includes Countly iOS SDK with watchOS, tvOS & macOS support.
-The minimum deployment targets are `iOS 10.0`,  `watchOS 4.0`, `tvOS 10.0` , `macOS 10.14`, and it requires `Xcode 13.0+`.
+* **Slack user?** [Join our Slack Community](https://slack.count.ly)
+* **Questions or feature requests?** [Post in our Community Forum](https://support.count.ly/hc/en-us/community/topics)
+* **Looking for the Countly Server?** [Countly Community Edition repository](https://github.com/Countly/countly-server)
+* **Looking for other Countly SDKs?** [An overview of all Countly SDKs for mobile, web and desktop](https://support.count.ly/hc/en-us/articles/360037236571-Downloading-and-Installing-SDKs#officially-supported-sdks)
 
-See [Countly iOS SDK documentation](https://support.count.ly/hc/en-us/articles/360037753511-iOS-watchOS-tvOS-macOS) for integration and details.
+## Integrating Countly SDK in your projects
 
-## Sample iOS Application
-We also have a useful [sample iOS application](https://github.com/Countly/countly-sample-ios) which demonstrates how to use this SDK in depth.   
-It includes iOS (both Objective-C and Swift), watchOS, tvOS and macOS sample projects.  
-Feel free to use them as a reference while you develop your application and also for easily testing your Countly Server.
+For a detailed description on how to use this SDK [check out our documentation](https://support.count.ly/hc/en-us/articles/360037753511-iOS-watchOS-tvOS-macOS).
 
-![iOS-sample-app](https://count.ly/github/countly-ios-sample-app.png)
+For information about how to add the SDK to your project, please check [this section of the documentation](https://support.count.ly/hc/en-us/articles/360037753511-iOS-watchOS-tvOS-macOS#adding-the-sdk-to-the-project).
+
+You can find minimal SDK integration information for your project in [this section of the documentation](https://support.count.ly/hc/en-us/articles/360037753511-iOS-watchOS-tvOS-macOS#minimal-setup).
+
+For an example integration of this SDK, you can have a look [here](https://github.com/Countly/countly-sample-ios).
+
+This SDK supports the following features:
+* [Analytics](https://support.count.ly/hc/en-us/articles/4431589003545-Analytics)
+* [Push Notifications](https://support.count.ly/hc/en-us/articles/4405405459225-Push-Notifications)
+* [User Profiles](https://support.count.ly/hc/en-us/articles/4403281285913-User-Profiles)
+* [Crash Reports](https://support.count.ly/hc/en-us/articles/4404213566105-Crashes-Errors)
+* [A/B Testing](https://support.count.ly/hc/en-us/articles/4416496362393-A-B-Testing-)
+* [Performance Monitoring](https://support.count.ly/hc/en-us/articles/4734457847705-Performance)
+* [Feedback Widgets](https://support.count.ly/hc/en-us/articles/4652903481753-Feedback-Surveys-NPS-and-Ratings-)
 
 ## Security
-
 Security is very important to us. If you discover any issue regarding security, please disclose the information responsibly by sending an email to security@count.ly and **not by creating a GitHub issue**.
 
-## Other Countly Resources
-This SDK needs one of the following counterpart Countly Server editions to work:
-
-* [Countly Community Edition](https://github.com/Countly/countly-server) (downloadable from GitHub)
-* [Countly Enterprise Edition](https://count.ly/product)
-
-For more information about Countly Enterprise Edition, please see [comparison of Countly editions](https://count.ly/pricing#compare-editions).
-
-There are also other [Countly SDK repositories](https://support.count.ly/hc/en-us/articles/360037236571-Downloading-Installing-SDKs) both official and community supported.
-
-## How can I help you with your efforts?
-Glad you asked. We need ideas, feedbacks and constructive comments.  
-All your suggestions will be taken care with upmost importance.  
-We are on [Twitter](https://twitter.com/gocountly), [Facebook](https://www.facebook.com/Countly) and [YouTube](https://www.youtube.com/user/GoCountly) if you would like to keep up with our fast progress!
-
 ## Badges
-If you like Countly, [why not use one of our badges](https://count.ly/brand-assets) and give a link back to us, so others could know about this wonderful platform? 
+If you like Countly, [why not use one of our badges](https://count.ly/brand-assets) and give a link back to us so others know about this wonderful platform?
 
 <a href="https://count.ly/f/badge" rel="nofollow"><img style="width:145px;height:60px" src="https://count.ly/badges/dark.svg?v2" alt="Countly - Product Analytics" /></a>
 
-    <a href="https://count.ly/f/badge" rel="nofollow"><img style="width:145px;height:60px" src="https://count.ly/badges/dark.svg" alt="Countly - Product Analytics" /></a>
+```JS
+<a href="https://count.ly/f/badge" rel="nofollow"><img style="width:145px;height:60px" src="https://count.ly/badges/dark.svg" alt="Countly - Product Analytics" /></a>
+```
 
 <a href="https://count.ly/f/badge" rel="nofollow"><img style="width:145px;height:60px" src="https://count.ly/badges/light.svg?v2" alt="Countly - Product Analytics" /></a>
 
-    <a href="https://count.ly/f/badge" rel="nofollow"><img style="width:145px;height:60px" src="https://count.ly/badges/light.svg" alt="Countly - Product Analytics" /></a>
+```JS
+<a href="https://count.ly/f/badge" rel="nofollow"><img style="width:145px;height:60px" src="https://count.ly/badges/light.svg" alt="Countly - Product Analytics" /></a>
+```
 
-## Support
-Have any questions?  
-Visit [Countly Community Area](https://support.count.ly/hc/en-us/community/topics "Countly Community Area") or join our [Slack community](https://slack.count.ly).
+## How can I help you with your efforts?
+Glad you asked! We need ideas, feedback and constructive comments. All your suggestions will be taken care of with utmost importance. For feature requests and engaging with the community, join [our Slack Community](https://slack.count.ly) or [Community Forum](https://support.count.ly/hc/en-us/community/topics).
+
+We are on [Twitter](http://twitter.com/gocountly), [Facebook](https://www.facebook.com/Countly) and [LinkedIn](https://www.linkedin.com/company/countly) if you would like to keep up with Countly related updates.
