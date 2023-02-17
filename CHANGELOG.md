@@ -7,7 +7,7 @@
 - Other various improvements
   - Added device info to SDK initialization logs
 
- ## 22.06.2
+## 22.06.2
 - Added direct requests support
 - Fixed missing remote config consent in consents request
 
