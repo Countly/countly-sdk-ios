@@ -386,6 +386,8 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     if (!CountlyConsentManager.sharedInstance.consentForUserDetails)
         return;
 
+    [CountlyConnectionManager.sharedInstance sendEvents];
+
     NSString* userDetails = [self serializedUserDetails];
     if (userDetails)
         [CountlyConnectionManager.sharedInstance sendUserDetails:userDetails];

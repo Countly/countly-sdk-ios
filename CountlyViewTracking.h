@@ -10,6 +10,8 @@ extern NSString* const kCountlyReservedEventView;
 
 @interface CountlyViewTracking : NSObject
 @property (nonatomic) BOOL isEnabledOnInitialConfig;
+@property (nonatomic) NSString* currentViewID;
+@property (nonatomic) NSString* previousViewID;
 
 + (instancetype)sharedInstance;
 

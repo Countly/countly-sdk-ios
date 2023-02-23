@@ -1,3 +1,10 @@
+## 23.02.0
+- Added event IDs
+- Added current and previous view IDs to events
+- Added sending pending events before sending user details on `save` call.
+ 
+
+
 ## 22.09.0
 - Deleted previously deprecated `userLoggedIn:` and `userLoggedOut` methods
 - Added new exception recording methods: `recordException:`, `recordException:isFatal:`, `recordException:isFatal:stackTrace:segmentation:` 
@@ -7,7 +14,7 @@
 - Other various improvements
   - Added device info to SDK initialization logs
 
- ## 22.06.2
+## 22.06.2
 - Added direct requests support
 - Fixed missing remote config consent in consents request
 
