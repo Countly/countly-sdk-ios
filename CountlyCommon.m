@@ -152,6 +152,17 @@ void CountlyPrint(NSString *stringToPrint)
     return (NSTimeInterval)(self.lastTimestamp / 1000.0);
 }
 
+- (NSString *)randomEventID
+{
+    const int size = 6;
+    void *randomBuffer = malloc(size);
+    arc4random_buf(randomBuffer, size);
+    NSData* randomData = [NSData dataWithBytesNoCopy:randomBuffer length:size freeWhenDone:YES];
+    NSString* randomBase64 = [randomData base64EncodedStringWithOptions:0];
+    NSTimeInterval timestamp = self.uniqueTimestamp;
+    NSString* randomEventID = [NSString stringWithFormat:@"%@%lld", randomBase64, (long long)(timestamp * 1000)];
+    return randomEventID;
+}
 
 #pragma mark - Orientation
 

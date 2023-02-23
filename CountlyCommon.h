@@ -87,6 +87,7 @@ void CountlyPrint(NSString *stringToPrint);
 - (NSInteger)timeZone;
 - (NSInteger)timeSinceLaunch;
 - (NSTimeInterval)uniqueTimestamp;
+- (NSString *)randomEventID;
 
 - (void)startBackgroundTask;
 - (void)finishBackgroundTask;
