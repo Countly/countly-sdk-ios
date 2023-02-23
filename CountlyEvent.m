@@ -30,7 +30,7 @@ NSString* const kCountlyEventKeyDuration      = @"dur";
     }
     eventData[kCountlyEventKeyID] = self.ID;
     eventData[kCountlyEventKeyCVID] = self.CVID;
-    eventData[kCountlyEventKeyPVID] = self.PVID ?: @"";
+    eventData[kCountlyEventKeyPVID] = self.PVID;
     eventData[kCountlyEventKeyCount] = @(self.count);
     eventData[kCountlyEventKeySum] = @(self.sum);
     eventData[kCountlyEventKeyTimestamp] = @((long long)(self.timestamp * 1000));

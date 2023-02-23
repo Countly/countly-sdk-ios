@@ -670,11 +670,11 @@ long long appLoadStartTime;
 
     if ([key isEqualToString:kCountlyReservedEventView])
     {
-        event.PVID = CountlyViewTracking.sharedInstance.previousViewID;
+        event.PVID = CountlyViewTracking.sharedInstance.previousViewID ?: @"";
     }
     else
     {
-        event.CVID = CountlyViewTracking.sharedInstance.currentViewID;
+        event.CVID = CountlyViewTracking.sharedInstance.currentViewID ?: @"";
     }
 
     event.segmentation = segmentation;
