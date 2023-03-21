@@ -14,6 +14,7 @@
 @end
 
 long long appLoadStartTime;
+NSString* previousEventID;
 
 @implementation Countly
 
@@ -614,7 +615,7 @@ long long appLoadStartTime;
     };
 
     NSNumber* aReservedEvent = reservedEvents[key];
-
+    
     if (aReservedEvent)
     {
         CLY_LOG_V(@"A reserved event detected: %@", key);
@@ -633,29 +634,29 @@ long long appLoadStartTime;
         return;
     }
 
-    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration ID:nil timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
+    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration ID:nil timestamp:CountlyCommon.sharedInstance.uniqueTimestamp isReservedEvent:aReservedEvent];
 }
 
 #pragma mark -
 
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation
 {
-    [self recordEvent:key segmentation:segmentation count:1 sum:0 duration:0 ID:nil timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
+    [self recordEvent:key segmentation:segmentation count:1 sum:0 duration:0 ID:nil timestamp:CountlyCommon.sharedInstance.uniqueTimestamp isReservedEvent:YES];
 }
 
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation ID:(NSString *)ID
 {
-    [self recordEvent:key segmentation:segmentation count:1 sum:0 duration:0 ID:ID timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
+    [self recordEvent:key segmentation:segmentation count:1 sum:0 duration:0 ID:ID timestamp:CountlyCommon.sharedInstance.uniqueTimestamp isReservedEvent:YES];
 }
 
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration ID:(NSString *)ID timestamp:(NSTimeInterval)timestamp
 {
-    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration ID:ID timestamp:timestamp];
+    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration ID:ID timestamp:timestamp isReservedEvent:YES];
 }
 
 #pragma mark -
 
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration ID:(NSString *)ID timestamp:(NSTimeInterval)timestamp
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration ID:(NSString *)ID timestamp:(NSTimeInterval)timestamp isReservedEvent:(BOOL)isReservedEvent
 {
     if (key.length == 0)
         return;
@@ -677,6 +678,11 @@ long long appLoadStartTime;
         event.CVID = CountlyViewTracking.sharedInstance.currentViewID ?: @"";
     }
 
+    if(!isReservedEvent) {
+        event.PEID = previousEventID ?: @"";
+        previousEventID = event.ID;
+    }
+    
     event.segmentation = segmentation;
     event.count = MAX(count, 1);
     event.sum = sum;

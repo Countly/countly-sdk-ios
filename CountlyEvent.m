@@ -12,6 +12,7 @@ NSString* const kCountlyEventKeyKey           = @"key";
 NSString* const kCountlyEventKeyID            = @"id";
 NSString* const kCountlyEventKeyCVID          = @"cvid";
 NSString* const kCountlyEventKeyPVID          = @"pvid";
+NSString* const kCountlyEventKeyPEID          = @"peid";
 NSString* const kCountlyEventKeySegmentation  = @"segmentation";
 NSString* const kCountlyEventKeyCount         = @"count";
 NSString* const kCountlyEventKeySum           = @"sum";
