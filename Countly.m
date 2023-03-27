@@ -433,6 +433,14 @@ long long appLoadStartTime;
 #endif
 }
 
+- (void)changeDeviceIDWithMerge:(NSString * _Nullable)deviceID {
+    [self setNewDeviceID:deviceID onServer:YES];
+}
+
+- (void)changeDeviceIDWithoutMerge:(NSString * _Nullable)deviceID {
+    [self setNewDeviceID:deviceID onServer:NO];
+}
+
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer
 {
     CLY_LOG_I(@"%s %@ %d", __FUNCTION__, deviceID, onServer);

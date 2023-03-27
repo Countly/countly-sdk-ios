@@ -1,3 +1,7 @@
+## 23.02.1
+- Deprecated existing change device id method: `setNewDeviceID:`
+- Added new change device id methods `changeDeviceIDWithMerge:`, `changeDeviceIDWithoutMerge:`.
+
 ## 23.02.0
 - Added event IDs
 - Added current and previous view IDs to events

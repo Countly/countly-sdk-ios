@@ -162,8 +162,25 @@ NS_ASSUME_NONNULL_BEGIN
  * @param deviceID New device ID
  * @param onServer If set, data on Countly Server will be merged automatically, otherwise device will be counted as a new device
  */
-- (void)setNewDeviceID:(NSString * _Nullable)deviceID onServer:(BOOL)onServer;
+- (void)setNewDeviceID:(NSString * _Nullable)deviceID onServer:(BOOL)onServer DEPRECATED_MSG_ATTRIBUTE("Use 'changeDeviceIDWithMerge: or changeDeviceIDWithoutMerge:' method instead!");
 
+/**
+ * Sets new device ID to be persistently stored and used in following requests.
+ * @discussion Value passed for @c deviceID parameter has to be a non-zero length valid string, otherwise default device ID will be used instead.
+ * @discussion If value passed for @c deviceID parameter is exactly same to the current device ID, method call is ignored.
+ * @discussion When passing @c CLYTemporaryDeviceID for @c deviceID parameter, argument for @c onServer parameter does not matter.
+ * @param deviceID New device ID
+ */
+- (void)changeDeviceIDWithMerge:(NSString * _Nullable)deviceID;
+
+/**
+ * Sets new device ID to be persistently stored and used in following requests.
+ * @discussion Value passed for @c deviceID parameter has to be a non-zero length valid string, otherwise default device ID will be used instead.
+ * @discussion If value passed for @c deviceID parameter is exactly same to the current device ID, method call is ignored.
+ * @discussion When passing @c CLYTemporaryDeviceID for @c deviceID parameter, argument for @c onServer parameter does not matter.
+ * @param deviceID New device ID
+ */
+- (void)changeDeviceIDWithoutMerge:(NSString * _Nullable)deviceID;
 
 
 #pragma mark - Consents
