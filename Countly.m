@@ -14,7 +14,7 @@
 @end
 
 long long appLoadStartTime;
-// It holds the event id of previous recorded event.
+// It holds the event id of previous recorded custom event.
 NSString* previousEventID;
 
 @implementation Countly
