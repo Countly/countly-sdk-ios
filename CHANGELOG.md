@@ -1,3 +1,6 @@
+## 23.02.1
+- Added previous event ID and sending it with custom events.
+
 ## 23.02.0
 - Added event IDs
 - Added current and previous view IDs to events
