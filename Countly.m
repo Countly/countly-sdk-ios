@@ -14,6 +14,7 @@
 @end
 
 long long appLoadStartTime;
+// It holds the event id of previous recorded event.
 NSString* previousEventID;
 
 @implementation Countly
@@ -604,23 +605,13 @@ NSString* previousEventID;
 {
     CLY_LOG_I(@"%s %@ %@ %lu %f %f", __FUNCTION__, key, segmentation, (unsigned long)count, sum, duration);
 
-    NSDictionary <NSString *, NSNumber *>* reservedEvents =
-    @{
-        kCountlyReservedEventOrientation: @(CountlyConsentManager.sharedInstance.consentForUserDetails),
-        kCountlyReservedEventStarRating: @(CountlyConsentManager.sharedInstance.consentForFeedback),
-        kCountlyReservedEventSurvey: @(CountlyConsentManager.sharedInstance.consentForFeedback),
-        kCountlyReservedEventNPS: @(CountlyConsentManager.sharedInstance.consentForFeedback),
-        kCountlyReservedEventPushAction: @(CountlyConsentManager.sharedInstance.consentForPushNotifications),
-        kCountlyReservedEventView: @(CountlyConsentManager.sharedInstance.consentForViewTracking),
-    };
+    BOOL isReservedEvent = [self isReservedEvent:key];
 
-    NSNumber* aReservedEvent = reservedEvents[key];
-
-    if (aReservedEvent)
+    if (isReservedEvent)
     {
         CLY_LOG_V(@"A reserved event detected: %@", key);
 
-        if (!aReservedEvent.boolValue)
+        if (!isReservedEvent)
         {
             CLY_LOG_W(@"Specific consent not given for the reserved event! So, it will not be recorded.");
             return;
@@ -634,29 +625,29 @@ NSString* previousEventID;
         return;
     }
 
-    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration ID:nil timestamp:CountlyCommon.sharedInstance.uniqueTimestamp isReservedEvent:aReservedEvent];
+    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration ID:nil timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
 }
 
 #pragma mark -
 
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation
 {
-    [self recordEvent:key segmentation:segmentation count:1 sum:0 duration:0 ID:nil timestamp:CountlyCommon.sharedInstance.uniqueTimestamp isReservedEvent:YES];
+    [self recordEvent:key segmentation:segmentation count:1 sum:0 duration:0 ID:nil timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
 }
 
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation ID:(NSString *)ID
 {
-    [self recordEvent:key segmentation:segmentation count:1 sum:0 duration:0 ID:ID timestamp:CountlyCommon.sharedInstance.uniqueTimestamp isReservedEvent:YES];
+    [self recordEvent:key segmentation:segmentation count:1 sum:0 duration:0 ID:ID timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
 }
 
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration ID:(NSString *)ID timestamp:(NSTimeInterval)timestamp
 {
-    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration ID:ID timestamp:timestamp isReservedEvent:YES];
+    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration ID:ID timestamp:timestamp];
 }
 
 #pragma mark -
 
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration ID:(NSString *)ID timestamp:(NSTimeInterval)timestamp isReservedEvent:(BOOL)isReservedEvent
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration ID:(NSString *)ID timestamp:(NSTimeInterval)timestamp
 {
     if (key.length == 0)
         return;
@@ -678,6 +669,10 @@ NSString* previousEventID;
         event.CVID = CountlyViewTracking.sharedInstance.currentViewID ?: @"";
     }
 
+    // Check if the event is a reserved event
+    BOOL isReservedEvent = [self isReservedEvent:key];
+
+    // If the event is not reserved, assign the previous event ID to the current event's PEID property, or an empty string if previousEventID is nil. Then, update previousEventID to the current event's ID.
     if(!isReservedEvent)
     {
         event.PEID = previousEventID ?: @"";
@@ -693,6 +688,22 @@ NSString* previousEventID;
     event.duration = duration;
 
     [CountlyPersistency.sharedInstance recordEvent:event];
+}
+
+- (BOOL)isReservedEvent:(NSString *)key
+{
+    NSDictionary <NSString *, NSNumber *>* reservedEvents =
+    @{
+        kCountlyReservedEventOrientation: @(CountlyConsentManager.sharedInstance.consentForUserDetails),
+        kCountlyReservedEventStarRating: @(CountlyConsentManager.sharedInstance.consentForFeedback),
+        kCountlyReservedEventSurvey: @(CountlyConsentManager.sharedInstance.consentForFeedback),
+        kCountlyReservedEventNPS: @(CountlyConsentManager.sharedInstance.consentForFeedback),
+        kCountlyReservedEventPushAction: @(CountlyConsentManager.sharedInstance.consentForPushNotifications),
+        kCountlyReservedEventView: @(CountlyConsentManager.sharedInstance.consentForViewTracking),
+    };
+    
+    NSNumber* aReservedEvent = reservedEvents[key];
+    return aReservedEvent.boolValue;
 }
 
 #pragma mark -
