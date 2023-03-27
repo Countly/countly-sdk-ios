@@ -615,7 +615,7 @@ NSString* previousEventID;
     };
 
     NSNumber* aReservedEvent = reservedEvents[key];
-    
+
     if (aReservedEvent)
     {
         CLY_LOG_V(@"A reserved event detected: %@", key);
@@ -678,7 +678,8 @@ NSString* previousEventID;
         event.CVID = CountlyViewTracking.sharedInstance.currentViewID ?: @"";
     }
 
-    if(!isReservedEvent) {
+    if(!isReservedEvent)
+    {
         event.PEID = previousEventID ?: @"";
         previousEventID = event.ID;
     }
