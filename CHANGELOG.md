@@ -1,14 +1,12 @@
 ## 23.02.1
+- Added new methods for changing the device id: `changeDeviceIDWithMerge:`, `changeDeviceIDWithoutMerge:`.
 - Deprecated existing method to change the device id: `setNewDeviceID:`
-- Added new change device id methods `changeDeviceIDWithMerge:`, `changeDeviceIDWithoutMerge:`.
 
 ## 23.02.0
 - Added event IDs
 - Added current and previous view IDs to events
 - Added sending pending events before sending user details on `save` call.
  
-
-
 ## 22.09.0
 - Deleted previously deprecated `userLoggedIn:` and `userLoggedOut` methods
 - Added new exception recording methods: `recordException:`, `recordException:isFatal:`, `recordException:isFatal:stackTrace:segmentation:` 
