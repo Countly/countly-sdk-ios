@@ -1,5 +1,5 @@
 ## 23.02.1
-- Deprecated existing change device id method: `setNewDeviceID:`
+- Deprecated existing method to change the device id: `setNewDeviceID:`
 - Added new change device id methods `changeDeviceIDWithMerge:`, `changeDeviceIDWithoutMerge:`.
 
 ## 23.02.0
