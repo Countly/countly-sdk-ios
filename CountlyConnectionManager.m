@@ -373,11 +373,17 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
                              kCountlyQSKeyCrash, report];
 
+    [CountlyPersistency.sharedInstance addToQueue:queryString];    
+
     if (!immediately)
     {
-        [CountlyPersistency.sharedInstance addToQueue:queryString];
         [self proceedOnQueue];
         return;
+    } 
+    else 
+    {
+        //save to file early to increase chances of recording this crash
+        [CountlyPersistency.sharedInstance saveToFileSync];
     }
 
     //NOTE: Prevent `event` and `end_session` requests from being started, after `sendEvents` and `endSession` calls below.
@@ -388,16 +394,13 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [self endSession];
 
+    [CountlyPersistency.sharedInstance saveToFileSync];
+
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
     {
         CLY_LOG_D(@"Device ID is set as CLYTemporaryDeviceID! Crash report stored to be sent later!");
-
-        [CountlyPersistency.sharedInstance addToQueue:queryString];
-        [CountlyPersistency.sharedInstance saveToFileSync];
         return;
     }
-
-    [CountlyPersistency.sharedInstance saveToFileSync];
 
     NSString* serverInputEndpoint = [self.host stringByAppendingString:kCountlyEndpointI];
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverInputEndpoint]];
