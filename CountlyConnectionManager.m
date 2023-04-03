@@ -387,6 +387,10 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [self endSession];
+    
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
+    [CountlyPersistency.sharedInstance saveToFileSync];
+    return;
 
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
     {
