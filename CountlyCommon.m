@@ -98,10 +98,10 @@ void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...)
 
     logString = [NSString stringWithFormat:@"[%@] %@", logLevelPrefixes[level], logString];
 
-#if DEBUG
+//#if DEBUG
     if (CountlyCommon.sharedInstance.enableDebug)
         CountlyPrint(logString);
-#endif
+//#endif
 
     if ([CountlyCommon.sharedInstance.loggerDelegate respondsToSelector:@selector(internalLog:withLevel:)])
     {

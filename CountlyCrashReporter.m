@@ -9,8 +9,8 @@
 #include <execinfo.h>
 
 #if __has_include(<CrashReporter/CrashReporter.h>)
-    #define COUNTLY_PLCRASHREPORTER_EXISTS true
-    #import <CrashReporter/CrashReporter.h>
+#define COUNTLY_PLCRASHREPORTER_EXISTS true
+#import <CrashReporter/CrashReporter.h>
 #else
 
 #endif
@@ -58,6 +58,11 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 #ifdef COUNTLY_PLCRASHREPORTER_EXISTS
 @property (nonatomic) PLCrashReporter* crashReporter;
 #endif
+
+// Declare a property to hold the timer
+@property (nonatomic, strong) NSTimer *myTimer;
+
+@property (nonatomic) NSUncaughtExceptionHandler * exceptionHandler;
 @end
 
 
@@ -67,7 +72,7 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
         return nil;
-
+    
     static CountlyCrashReporter *s_sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
@@ -83,7 +88,7 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
         self.dateFormatter = NSDateFormatter.new;
         self.dateFormatter.dateFormat = @"yyyy-MM-dd HH:mm:ss.SSS";
     }
-
+    
     return self;
 }
 
@@ -91,10 +96,10 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 {
     if (!self.isEnabledOnInitialConfig)
         return;
-
+    
     if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
         return;
-
+    
     if (self.shouldUsePLCrashReporter)
     {
 #ifdef COUNTLY_PLCRASHREPORTER_EXISTS
@@ -104,9 +109,12 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 #endif
         return;
     }
-
+    
     NSSetUncaughtExceptionHandler(&CountlyUncaughtExceptionHandler);
-
+    _exceptionHandler = NSGetUncaughtExceptionHandler();
+    [self startTimer];
+    
+    
 #if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_OSX)
     signal(SIGABRT, CountlySignalHandler);
     signal(SIGILL, CountlySignalHandler);
@@ -119,13 +127,57 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 }
 
 
+// Call this method to start the timer
+- (void)startTimer {
+    // Create the timer and schedule it to repeat every 5 seconds
+    self.myTimer = [NSTimer scheduledTimerWithTimeInterval:1.0
+                                                    target:self
+                                                  selector:@selector(timerFired:)
+                                                  userInfo:nil
+                                                   repeats:YES];
+}
+
+// This method will be called every time the timer fires
+- (void)timerFired:(NSTimer *)timer {
+    // Do something here, such as calling a method or updating a variable
+    NSLog(@"Timer fired!");
+    
+    NSUncaughtExceptionHandler * exceptionHandlerNew = NSGetUncaughtExceptionHandler();
+    if(_exceptionHandler != exceptionHandlerNew) {
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"exceptionHandler is changed"
+                                                                       message:@"Counlty will not report crashes anymore"
+                                                                preferredStyle:UIAlertControllerStyleAlert];
+        UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"OK"
+                                                           style:UIAlertActionStyleDefault
+                                                         handler:nil];
+        [alert addAction:okAction];
+        
+        UIViewController* topVC = UIApplication.sharedApplication.keyWindow.rootViewController;
+        [topVC presentViewController:alert animated:YES completion:nil];
+        [self stopTimer];
+    }
+    else {
+        NSLog(@"Countly exceptionHandler");
+        
+    }
+    
+}
+
+// Call this method to stop the timer
+- (void)stopTimer {
+    // Stop the timer and release it
+    [self.myTimer invalidate];
+    self.myTimer = nil;
+}
+
+
 - (void)stopCrashReporting
 {
     if (!self.isEnabledOnInitialConfig)
         return;
-
+    
     NSSetUncaughtExceptionHandler(NULL);
-
+    
 #if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_OSX)
     signal(SIGABRT, SIG_DFL);
     signal(SIGILL, SIG_DFL);
@@ -135,8 +187,9 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
     signal(SIGPIPE, SIG_DFL);
     signal(SIGTRAP, SIG_DFL);
 #endif
-
+    
     [self clearCrashLogs];
+    [self stopTimer];
 }
 
 #ifdef COUNTLY_PLCRASHREPORTER_EXISTS
@@ -145,64 +198,64 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 {
     PLCrashReporterSignalHandlerType type = self.shouldUseMachSignalHandler ? PLCrashReporterSignalHandlerTypeMach : PLCrashReporterSignalHandlerTypeBSD;
     PLCrashReporterConfig* config = [PLCrashReporterConfig.alloc initWithSignalHandlerType:type symbolicationStrategy:PLCrashReporterSymbolicationStrategyNone];
-
+    
     self.crashReporter = [PLCrashReporter.alloc initWithConfiguration:config];
-
+    
     if (self.crashReporter.hasPendingCrashReport)
         [self handlePendingCrashReport];
     else
         [CountlyPersistency.sharedInstance deleteCustomCrashLogFile];
-
+    
     [self.crashReporter enableCrashReporter];
 }
 
 - (void)handlePendingCrashReport
 {
     NSError *error;
-
+    
     NSData* crashData = [self.crashReporter loadPendingCrashReportDataAndReturnError:&error];
     if (!crashData)
     {
         CLY_LOG_W(@"Could not load crash report data: %@", error);
         return;
     }
-
+    
     PLCrashReport *report = [PLCrashReport.alloc initWithData:crashData error:&error];
     if (!report)
     {
         CLY_LOG_W(@"Could not initialize crash report using data %@", error);
         return;
     }
-
+    
     NSString* reportText = [PLCrashReportTextFormatter stringValueForCrashReport:report withTextFormat:PLCrashReportTextFormatiOS];
-
+    
     NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
     crashReport[kCountlyCRKeyError] = reportText;
     crashReport[kCountlyCRKeyOS] = CountlyDeviceInfo.osName;
     crashReport[kCountlyCRKeyAppVersion] = report.applicationInfo.applicationVersion;
     crashReport[kCountlyCRKeyPLCrash] = @YES;
     crashReport[kCountlyCRKeyCustom] = [CountlyPersistency.sharedInstance customCrashLogsFromFile];
-
+    
     if (self.crashOccuredOnPreviousSessionCallback)
         self.crashOccuredOnPreviousSessionCallback(crashReport);
-
+    
     BOOL shouldSend = YES;
     if (self.shouldSendCrashReportCallback)
     {
         CLY_LOG_D(@"shouldSendCrashReportCallback is set, asking it if the report should be sent or not.");
         shouldSend = self.shouldSendCrashReportCallback(crashReport);
-
+        
         if (shouldSend)
             CLY_LOG_D(@"shouldSendCrashReportCallback returned YES, sending the report.");
         else
             CLY_LOG_D(@"shouldSendCrashReportCallback returned NO, not sending the report.");
     }
-
+    
     if (shouldSend)
     {
         [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:NO];
     }
-
+    
     [CountlyPersistency.sharedInstance deleteCustomCrashLogFile];
     [self.crashReporter purgePendingCrashReport];
 }
@@ -213,7 +266,7 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 {
     if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
         return;
-
+    
     if (stackTrace || segmentation)
     {
         NSMutableDictionary* userInfo = [NSMutableDictionary dictionaryWithDictionary:exception.userInfo];
@@ -221,7 +274,7 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
         userInfo[kCountlyExceptionUserInfoSegmentationOverrideKey] = segmentation;
         exception = [NSException exceptionWithName:exception.name reason:exception.reason userInfo:userInfo];
     }
-
+    
     CountlyExceptionHandler(exception, isFatal, false);
 }
 
@@ -238,22 +291,23 @@ void CountlyUncaughtExceptionHandler(NSException *exception)
 
 void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDetect)
 {
+    CLY_LOG_D(@"CountlyExceptionHandler : %@", exception.description);
     const NSInteger kCLYMebibit = 1048576;
-
+    
     NSArray* stackTrace = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
     if (!stackTrace)
         stackTrace = exception.callStackSymbols;
-
+    
     NSString* stackTraceJoined = [stackTrace componentsJoinedByString:@"\n"];
-
+    
     BOOL matchesFilter = NO;
     if (CountlyCrashReporter.sharedInstance.crashFilter)
     {
         matchesFilter = [CountlyCrashReporter.sharedInstance isMatchingFilter:stackTraceJoined] ||
-                        [CountlyCrashReporter.sharedInstance isMatchingFilter:exception.description] ||
-                        [CountlyCrashReporter.sharedInstance isMatchingFilter:exception.name];
+        [CountlyCrashReporter.sharedInstance isMatchingFilter:exception.description] ||
+        [CountlyCrashReporter.sharedInstance isMatchingFilter:exception.name];
     }
-
+    
     NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
     crashReport[kCountlyCRKeyError] = stackTraceJoined;
     crashReport[kCountlyCRKeyBinaryImages] = [CountlyCrashReporter.sharedInstance binaryImagesForStackTrace:stackTrace];
@@ -279,27 +333,27 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     crashReport[kCountlyCRKeyRoot] = @(CountlyDeviceInfo.isJailbroken);
     crashReport[kCountlyCRKeyBackground] = @(CountlyDeviceInfo.isInBackground);
     crashReport[kCountlyCRKeyRun] = @(CountlyCommon.sharedInstance.timeSinceLaunch);
-
+    
     NSMutableDictionary* custom = NSMutableDictionary.new;
     if (CountlyCrashReporter.sharedInstance.crashSegmentation)
         [custom addEntriesFromDictionary:CountlyCrashReporter.sharedInstance.crashSegmentation];
-
+    
     NSDictionary* segmentationOverride = exception.userInfo[kCountlyExceptionUserInfoSegmentationOverrideKey];
     if (segmentationOverride)
         [custom addEntriesFromDictionary:segmentationOverride];
-
+    
     NSMutableDictionary* userInfo = exception.userInfo.mutableCopy;
     [userInfo removeObjectForKey:kCountlyExceptionUserInfoBacktraceKey];
     [userInfo removeObjectForKey:kCountlyExceptionUserInfoSignalCodeKey];
     [userInfo removeObjectForKey:kCountlyExceptionUserInfoSegmentationOverrideKey];
     [custom addEntriesFromDictionary:userInfo];
-
+    
     if (custom.allKeys.count)
         crashReport[kCountlyCRKeyCustom] = custom;
-
+    
     if (CountlyCrashReporter.sharedInstance.customCrashLogs)
         crashReport[kCountlyCRKeyLogs] = [CountlyCrashReporter.sharedInstance.customCrashLogs componentsJoinedByString:@"\n"];
-
+    
     //NOTE: Do not send crash report if it is matching optional regex filter.
     if (!matchesFilter)
     {
@@ -309,18 +363,19 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     {
         CLY_LOG_D(@"Crash matches filter and it will not be processed.");
     }
-
+    
     if (isAutoDetect)
         [CountlyCrashReporter.sharedInstance stopCrashReporting];
 }
 
 void CountlySignalHandler(int signalCode)
 {
+    CLY_LOG_D(@"CountlySignalHandler with signalCode: %d", signalCode);
     const NSInteger kCountlyStackFramesMax = 128;
     void *stack[kCountlyStackFramesMax];
     NSInteger frameCount = backtrace(stack, kCountlyStackFramesMax);
     char **lines = backtrace_symbols(stack, (int)frameCount);
-
+    
     NSMutableArray *backtrace = [NSMutableArray arrayWithCapacity:frameCount];
     for (NSInteger i = 1; i < frameCount; i++)
     {
@@ -331,13 +386,13 @@ void CountlySignalHandler(int signalCode)
                 [backtrace addObject:line];
         }
     }
-
+    
     free(lines);
-
+    
     NSDictionary *userInfo = @{kCountlyExceptionUserInfoSignalCodeKey: @(signalCode), kCountlyExceptionUserInfoBacktraceKey: backtrace};
     NSString *reason = [NSString stringWithFormat:@"App terminated by SIG%@", [NSString stringWithUTF8String:sys_signame[signalCode]].uppercaseString];
     NSException *e = [NSException exceptionWithName:@"Fatal Signal" reason:reason userInfo:userInfo];
-
+    
     CountlyUncaughtExceptionHandler(e);
 }
 
@@ -345,14 +400,14 @@ void CountlySignalHandler(int signalCode)
 {
     if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
         return;
-
+    
     const NSInteger kCountlyCustomCrashLogLengthLimit = 1000;
-
+    
     if (log.length > kCountlyCustomCrashLogLengthLimit)
         log = [log substringToIndex:kCountlyCustomCrashLogLengthLimit];
-
+    
     NSString* logWithDateTime = [NSString stringWithFormat:@"<%@> %@",[self.dateFormatter stringFromDate:NSDate.date], log];
-
+    
     if (self.shouldUsePLCrashReporter)
     {
         [CountlyPersistency.sharedInstance writeCustomCrashLogToFile:logWithDateTime];
@@ -360,7 +415,7 @@ void CountlySignalHandler(int signalCode)
     else
     {
         [self.customCrashLogs addObject:logWithDateTime];
-
+        
         if (self.customCrashLogs.count > self.crashLogLimit)
             [self.customCrashLogs removeObjectAtIndex:0];
     }
@@ -392,9 +447,9 @@ void CountlySignalHandler(int signalCode)
             [binaryImagesInStack addObject:binaryImageName];
         }
     }
-
+    
     NSMutableDictionary* binaryImages = NSMutableDictionary.new;
-
+    
     uint32_t imageCount = _dyld_image_count();
     for (uint32_t i = 0; i < imageCount; i++)
     {
@@ -404,32 +459,32 @@ void CountlySignalHandler(int signalCode)
             CLY_LOG_W(@"Image Name can not be retrieved!");
             continue;
         }
-
+        
         NSString *imageName = [NSString stringWithUTF8String:imageNameChar].lastPathComponent;
-
+        
         if (![binaryImagesInStack containsObject:imageName])
         {
             CLY_LOG_V(@"Image Name is not in the stack trace, so it will be ignored!\n%@", imageName);
             continue;
         }
-
+        
         CLY_LOG_D(@"Image Name is in the stack trace, so it will be used!\n%@", imageName);
-
+        
         const struct mach_header* imageHeader = _dyld_get_image_header(i);
         if (imageHeader == NULL)
         {
             CLY_LOG_W(@"Image Header can not be retrieved!");
             continue;
         }
-
+        
         BOOL is64bit = imageHeader->magic == MH_MAGIC_64 || imageHeader->magic == MH_CIGAM_64;
         uintptr_t ptr = (uintptr_t)imageHeader + (is64bit ? sizeof(struct mach_header_64) : sizeof(struct mach_header));
         NSString* imageUUID = nil;
-
+        
         for (uint32_t j = 0; j < imageHeader->ncmds; j++)
         {
             const struct segment_command_64* segCmd = (struct segment_command_64*)ptr;
-
+            
             if (segCmd->cmd == LC_UUID)
             {
                 const uint8_t* uuid = ((const struct uuid_command*)segCmd)->uuid;
@@ -438,25 +493,25 @@ void CountlySignalHandler(int signalCode)
             }
             ptr += segCmd->cmdsize;
         }
-
+        
         if (!imageUUID)
         {
             CLY_LOG_W(@"Image UUID can not be retrieved!");
             continue;
         }
-
+        
         //NOTE: Include app's own build UUID directly in crash report object, as Countly Server needs it for fast lookup
         if (imageHeader->filetype == MH_EXECUTE)
         {
             CountlyCrashReporter.sharedInstance.buildUUID = imageUUID;
             CountlyCrashReporter.sharedInstance.executableName = imageName;
         }
-
+        
         NSString *imageLoadAddress = [NSString stringWithFormat:@"0x%llX", (uint64_t)imageHeader];
-
+        
         binaryImages[imageName] = @{kCountlyCRKeyImageLoadAddress: imageLoadAddress, kCountlyCRKeyImageBuildUUID: imageUUID};
     }
-
+    
     return [NSDictionary dictionaryWithDictionary:binaryImages];
 }
 
@@ -464,12 +519,12 @@ void CountlySignalHandler(int signalCode)
 {
     if (!self.crashFilter)
         return NO;
-
+    
     NSUInteger numberOfMatches = [self.crashFilter numberOfMatchesInString:string options:0 range:(NSRange){0, string.length}];
-
+    
     if (numberOfMatches == 0)
         return NO;
-
+    
     return YES;
 }
 
@@ -483,7 +538,7 @@ void CountlySignalHandler(int signalCode)
 - (void)reportException:(NSException *)exception
 {
     [super reportException:exception];
-
+    
     //NOTE: Custom UncaughtExceptionHandler is called with an irrelevant stack trace, not the original crash call stack trace.
     //NOTE: And system's own UncaughtExceptionHandler handles the exception by just printing it to the Console.
     //NOTE: So, we intercept the exception here and record manually.
@@ -494,7 +549,7 @@ void CountlySignalHandler(int signalCode)
 {
     //NOTE: Exceptions caused by UI related events (which run on main thread by default) seem to not trigger reportException: method.
     //NOTE: So, we execute sendEvent: in a try-catch block to catch them.
-
+    
     @try
     {
         [super sendEvent:theEvent];
