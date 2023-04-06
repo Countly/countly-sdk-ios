@@ -14,6 +14,8 @@
 @end
 
 long long appLoadStartTime;
+// It holds the event id of previous recorded custom event.
+NSString* previousEventID;
 
 @implementation Countly
 
@@ -603,23 +605,13 @@ long long appLoadStartTime;
 {
     CLY_LOG_I(@"%s %@ %@ %lu %f %f", __FUNCTION__, key, segmentation, (unsigned long)count, sum, duration);
 
-    NSDictionary <NSString *, NSNumber *>* reservedEvents =
-    @{
-        kCountlyReservedEventOrientation: @(CountlyConsentManager.sharedInstance.consentForUserDetails),
-        kCountlyReservedEventStarRating: @(CountlyConsentManager.sharedInstance.consentForFeedback),
-        kCountlyReservedEventSurvey: @(CountlyConsentManager.sharedInstance.consentForFeedback),
-        kCountlyReservedEventNPS: @(CountlyConsentManager.sharedInstance.consentForFeedback),
-        kCountlyReservedEventPushAction: @(CountlyConsentManager.sharedInstance.consentForPushNotifications),
-        kCountlyReservedEventView: @(CountlyConsentManager.sharedInstance.consentForViewTracking),
-    };
+    BOOL isReservedEvent = [self isReservedEvent:key];
 
-    NSNumber* aReservedEvent = reservedEvents[key];
-
-    if (aReservedEvent)
+    if (isReservedEvent)
     {
         CLY_LOG_V(@"A reserved event detected: %@", key);
 
-        if (!aReservedEvent.boolValue)
+        if (!isReservedEvent)
         {
             CLY_LOG_W(@"Specific consent not given for the reserved event! So, it will not be recorded.");
             return;
@@ -677,6 +669,16 @@ long long appLoadStartTime;
         event.CVID = CountlyViewTracking.sharedInstance.currentViewID ?: @"";
     }
 
+    // Check if the event is a reserved event
+    BOOL isReservedEvent = [self isReservedEvent:key];
+
+    // If the event is not reserved, assign the previous event ID to the current event's PEID property, or an empty string if previousEventID is nil. Then, update previousEventID to the current event's ID.
+    if(!isReservedEvent)
+    {
+        event.PEID = previousEventID ?: @"";
+        previousEventID = event.ID;
+    }
+    
     event.segmentation = segmentation;
     event.count = MAX(count, 1);
     event.sum = sum;
@@ -686,6 +688,22 @@ long long appLoadStartTime;
     event.duration = duration;
 
     [CountlyPersistency.sharedInstance recordEvent:event];
+}
+
+- (BOOL)isReservedEvent:(NSString *)key
+{
+    NSDictionary <NSString *, NSNumber *>* reservedEvents =
+    @{
+        kCountlyReservedEventOrientation: @(CountlyConsentManager.sharedInstance.consentForUserDetails),
+        kCountlyReservedEventStarRating: @(CountlyConsentManager.sharedInstance.consentForFeedback),
+        kCountlyReservedEventSurvey: @(CountlyConsentManager.sharedInstance.consentForFeedback),
+        kCountlyReservedEventNPS: @(CountlyConsentManager.sharedInstance.consentForFeedback),
+        kCountlyReservedEventPushAction: @(CountlyConsentManager.sharedInstance.consentForPushNotifications),
+        kCountlyReservedEventView: @(CountlyConsentManager.sharedInstance.consentForViewTracking),
+    };
+    
+    NSNumber* aReservedEvent = reservedEvents[key];
+    return aReservedEvent.boolValue;
 }
 
 #pragma mark -
