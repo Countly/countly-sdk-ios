@@ -155,6 +155,8 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
     
     NSUncaughtExceptionHandler * exceptionHandlerNew = NSGetUncaughtExceptionHandler();
     if(_exceptionHandler != exceptionHandlerNew) {
+        
+        CLY_LOG_I(@"CountlyCrashReporter exceptionHandler is changed: Counlty will not report crashes anymore");
         UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"exceptionHandler is changed"
                                                                        message:@"Counlty will not report crashes anymore"
                                                                 preferredStyle:UIAlertControllerStyleAlert];
