@@ -94,6 +94,8 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 
 - (void)startCrashReporting
 {
+    
+    CLY_LOG_I(@"CountlyCrashReporter startCrashReporting");
     if (!self.isEnabledOnInitialConfig)
         return;
     
@@ -110,12 +112,18 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
         return;
     }
     
+    
+    CLY_LOG_I(@"CountlyCrashReporter setting CountlyUncaughtExceptionHandler");
     NSSetUncaughtExceptionHandler(&CountlyUncaughtExceptionHandler);
     _exceptionHandler = NSGetUncaughtExceptionHandler();
     [self startTimer];
     
+    CLY_LOG_I(@"CountlyCrashReporter Timer Started");
+    
     
 #if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_OSX)
+    
+    CLY_LOG_I(@"CountlyCrashReporter setting CountlySignalHandler Start");
     signal(SIGABRT, CountlySignalHandler);
     signal(SIGILL, CountlySignalHandler);
     signal(SIGSEGV, CountlySignalHandler);
@@ -123,6 +131,8 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
     signal(SIGBUS, CountlySignalHandler);
     signal(SIGPIPE, CountlySignalHandler);
     signal(SIGTRAP, CountlySignalHandler);
+    
+    CLY_LOG_I(@"CountlyCrashReporter setting CountlySignalHandler End");
 #endif
 }
 

@@ -157,8 +157,11 @@ long long appLoadStartTime;
     CountlyCrashReporter.sharedInstance.shouldUseMachSignalHandler = config.shouldUseMachSignalHandler;
     CountlyCrashReporter.sharedInstance.crashOccuredOnPreviousSessionCallback = config.crashOccuredOnPreviousSessionCallback;
     CountlyCrashReporter.sharedInstance.shouldSendCrashReportCallback = config.shouldSendCrashReportCallback;
+    
+    CLY_LOG_I(@"startWithConfig checking CLYCrashReporting");
     if ([config.features containsObject:CLYCrashReporting])
     {
+        CLY_LOG_I(@"startWithConfig with feature CLYCrashReporting");
         CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;
         [CountlyCrashReporter.sharedInstance startCrashReporting];
     }
