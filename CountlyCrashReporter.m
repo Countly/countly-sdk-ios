@@ -151,6 +151,7 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 - (void)timerFired:(NSTimer *)timer {
     // Do something here, such as calling a method or updating a variable
     NSLog(@"Timer fired!");
+    CLY_LOG_I(@"CountlyCrashReporter Timer fired!");
     
     NSUncaughtExceptionHandler * exceptionHandlerNew = NSGetUncaughtExceptionHandler();
     if(_exceptionHandler != exceptionHandlerNew) {
@@ -168,6 +169,7 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
     }
     else {
         NSLog(@"Countly exceptionHandler");
+        CLY_LOG_I(@"CountlyCrashReporter Countly exceptionHandler");
         
     }
     
