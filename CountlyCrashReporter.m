@@ -378,6 +378,8 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     
     if (isAutoDetect)
         [CountlyCrashReporter.sharedInstance stopCrashReporting];
+    
+    CLY_LOG_I(@"CountlyExceptionHandler Ended after reporting crash");
 }
 
 void CountlySignalHandler(int signalCode)
@@ -406,6 +408,8 @@ void CountlySignalHandler(int signalCode)
     NSException *e = [NSException exceptionWithName:@"Fatal Signal" reason:reason userInfo:userInfo];
     
     CountlyUncaughtExceptionHandler(e);
+    
+    CLY_LOG_I(@"CountlySignalHandler ended after reporting crash");
 }
 
 - (void)log:(NSString *)log
