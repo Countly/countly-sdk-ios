@@ -90,6 +90,8 @@ long long appLoadStartTime;
         CountlyDeviceInfo.device,
         CountlyDeviceInfo.osName,
         CountlyDeviceInfo.osVersion);
+    
+    CLY_LOG_I(@"startWithConfig testing log 1");
 
     if (!CountlyDeviceInfo.sharedInstance.deviceID || config.resetStoredDeviceID)
     {
@@ -98,6 +100,8 @@ long long appLoadStartTime;
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:config.deviceID];
     }
 
+    
+    CLY_LOG_I(@"startWithConfig testing log 2");
     CountlyConnectionManager.sharedInstance.appKey = config.appKey;
     CountlyConnectionManager.sharedInstance.host = config.host;
     CountlyConnectionManager.sharedInstance.alwaysUsePOST = config.alwaysUsePOST;
@@ -116,6 +120,8 @@ long long appLoadStartTime;
 
     [Countly.user save];
 
+    
+    CLY_LOG_I(@"startWithConfig testing log 3");
 #if (TARGET_OS_IOS)
     CountlyFeedbacks.sharedInstance.message = config.starRatingMessage;
     CountlyFeedbacks.sharedInstance.sessionCount = config.starRatingSessionCount;
@@ -136,6 +142,8 @@ long long appLoadStartTime;
         [CountlyConnectionManager.sharedInstance sendAttribution];
     }
 
+    
+    CLY_LOG_I(@"startWithConfig testing log 4");
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
     if ([config.features containsObject:CLYPushNotifications])
@@ -150,6 +158,8 @@ long long appLoadStartTime;
 #endif
 #endif
 
+    
+    CLY_LOG_I(@"startWithConfig testing log 5");
     CountlyCrashReporter.sharedInstance.crashSegmentation = [config.crashSegmentation cly_truncated:@"Crash segmentation"];
     CountlyCrashReporter.sharedInstance.crashLogLimit = MAX(1, config.crashLogLimit);
     CountlyCrashReporter.sharedInstance.crashFilter = config.crashFilter;
