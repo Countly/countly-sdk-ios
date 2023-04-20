@@ -5,7 +5,6 @@
 // Please visit www.count.ly for more information.
 
 #import "CountlyCommon.h"
-#import "CountlyServerConfig.h"
 
 @interface Countly ()
 {
