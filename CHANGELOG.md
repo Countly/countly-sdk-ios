@@ -1,5 +1,5 @@
 ## 23.02.2
-- Added server configurations feature to enable/disable tracking and networking, this is experimental feature and can cause breaking changes.
+- Added server configuration functionality. This is an experimental feature.
 
 ## 23.02.1
 - Added previous event ID and sending it with custom events.
