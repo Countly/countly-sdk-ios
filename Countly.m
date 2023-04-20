@@ -118,7 +118,12 @@ NSString* previousEventID;
 
     [Countly.user save];
     
-    [CountlyServerConfig.sharedInstance fetchServerConfig];
+    CountlyCommon.sharedInstance.enableServerConfiguration = config.enableServerConfiguration;
+    
+    if(config.enableServerConfiguration)
+    {
+        [CountlyServerConfig.sharedInstance fetchServerConfig];
+    }
 
 #if (TARGET_OS_IOS)
     CountlyFeedbacks.sharedInstance.message = config.starRatingMessage;

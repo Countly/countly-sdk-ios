@@ -90,7 +90,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, completionHandler);
     
-    if (!CountlyServerConfig.sharedInstance.networking)
+    if (!CountlyServerConfig.sharedInstance.networkingEnabled)
     {
         CLY_LOG_D(@"'getWidgetData' is aborted: SDK Networking is disabled from server config!");
         return;

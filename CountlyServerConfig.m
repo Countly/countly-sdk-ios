@@ -12,11 +12,11 @@
 NSString* const kCountlySCKeySC             = @"sc";
 
 @implementation CountlyServerConfig
-#if (TARGET_OS_IOS)
-{
-    UIButton* btn_star[5];
-}
 
+@synthesize trackingEnabled = _trackingEnabled;
+@synthesize networkingEnabled = _networkingEnabled;
+
+#if (TARGET_OS_IOS)
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
@@ -32,8 +32,8 @@ NSString* const kCountlySCKeySC             = @"sc";
 {
     if (self = [super init])
     {
-        self.tracking = YES;
-        self.networking = YES;
+        self.trackingEnabled = YES;
+        self.networkingEnabled = YES;
         NSDictionary* serverConfigObject = [CountlyPersistency.sharedInstance retrieveServerConfig];
         if(serverConfigObject) {
             [self populateServerConfig:serverConfigObject];
@@ -43,17 +43,39 @@ NSString* const kCountlySCKeySC             = @"sc";
     return self;
 }
 
+- (BOOL)trackingEnabled
+{
+    if (!CountlyCommon.sharedInstance.enableServerConfiguration)
+        return YES;
+    
+    return _trackingEnabled;
+}
+
+- (BOOL)networkingEnabled
+{
+    if (!CountlyCommon.sharedInstance.enableServerConfiguration)
+        return YES;
+    
+    return _networkingEnabled;
+}
+
 - (void)populateServerConfig:(NSDictionary *)dictionary
 {
-    self.tracking = [dictionary[@"tracking"] boolValue];
-    self.networking = [dictionary[@"networking"] boolValue];
+    self.trackingEnabled = [dictionary[@"tracking"] boolValue];
+    self.networkingEnabled = [dictionary[@"networking"] boolValue];
     
-    CLY_LOG_D(@"tracking : %@", self.tracking ? @"YES" : @"NO");
-    CLY_LOG_D(@"networking : %@", self.networking ? @"YES" : @"NO");
+    CLY_LOG_D(@"tracking : %@", self.trackingEnabled ? @"YES" : @"NO");
+    CLY_LOG_D(@"networking : %@", self.networkingEnabled ? @"YES" : @"NO");
 }
 
 - (void)fetchServerConfig
 {
+    if (!CountlyCommon.sharedInstance.enableServerConfiguration)
+    {
+        CLY_LOG_D(@"'fetchServerConfig' enable server configuration during init time configuration.");
+        return;
+    }
+    
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
         return;
     

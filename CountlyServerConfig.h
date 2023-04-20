@@ -12,8 +12,8 @@
 
 - (void)fetchServerConfig;
 
-@property (nonatomic) BOOL tracking;
-@property (nonatomic) BOOL networking;
+@property (nonatomic) BOOL trackingEnabled;
+@property (nonatomic) BOOL networkingEnabled;
 #endif
 @end
 

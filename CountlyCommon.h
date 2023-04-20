@@ -74,6 +74,7 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 @property (nonatomic, copy) NSString* attributionID;
 @property (nonatomic) BOOL manualSessionHandling;
 @property (nonatomic) BOOL enableOrientationTracking;
+@property (nonatomic) BOOL enableServerConfiguration;
 
 
 @property (nonatomic) NSUInteger maxKeyLength;

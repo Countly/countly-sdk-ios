@@ -529,6 +529,13 @@ typedef enum : NSUInteger
  * @discussion For disabling it, please set this flag to @c NO.
  */
 @property (nonatomic) BOOL enableOrientationTracking;
+
+/**
+ * This is Experimental and can cause breaking changes
+ * For enabling fetching and applying of server config values.
+ * @discussion If set, Server Config values specified on Countly Server will be fetched on beginning of sessions.
+ */
+@property (nonatomic) BOOL enableServerConfiguration;
 NS_ASSUME_NONNULL_END
 
 @end

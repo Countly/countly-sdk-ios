@@ -124,7 +124,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 {
     CLY_LOG_D(@"Proceeding on queue...");
     
-    if (!CountlyServerConfig.sharedInstance.networking)
+    if (!CountlyServerConfig.sharedInstance.networkingEnabled)
     {
         CLY_LOG_D(@"Proceeding on queue is aborted: SDK Networking is disabled from server config!");
         return;
@@ -370,7 +370,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)sendCrashReport:(NSString *)report immediately:(BOOL)immediately;
 {
-    if (!CountlyServerConfig.sharedInstance.networking)
+    if (!CountlyServerConfig.sharedInstance.networkingEnabled)
     {
         CLY_LOG_D(@"'sendCrashReport' is aborted: SDK Networking is disabled from server config!");
         return;
