@@ -120,6 +120,7 @@ NSString* previousEventID;
     
     CountlyCommon.sharedInstance.enableServerConfiguration = config.enableServerConfiguration;
     
+    // Fetch server configs if 'enableServerConfiguration' is true.
     if(config.enableServerConfiguration)
     {
         [CountlyServerConfig.sharedInstance fetchServerConfig];
