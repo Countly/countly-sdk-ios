@@ -5,6 +5,7 @@
 // Please visit www.count.ly for more information.
 
 #import "CountlyCommon.h"
+#import "CountlyServerConfig.h"
 
 @interface Countly ()
 {
@@ -117,6 +118,8 @@ NSString* previousEventID;
     CountlyDeviceInfo.sharedInstance.customMetrics = [config.customMetrics cly_truncated:@"Custom metric"];
 
     [Countly.user save];
+    
+    [CountlyServerConfig.sharedInstance fetchServerConfig];
 
 #if (TARGET_OS_IOS)
     CountlyFeedbacks.sharedInstance.message = config.starRatingMessage;
