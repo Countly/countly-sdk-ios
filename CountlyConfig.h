@@ -532,7 +532,7 @@ typedef enum : NSUInteger
 
 /**
  * This is Experimental and can cause breaking changes
- * For enabling fetching and applying of server config values.
+ * For enabling to fetching and applying of server config values.
  * @discussion If set, Server Config values specified on Countly Server will be fetched on beginning of sessions.
  */
 @property (nonatomic) BOOL enableServerConfiguration;
