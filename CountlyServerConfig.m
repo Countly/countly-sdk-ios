@@ -61,8 +61,14 @@ NSString* const kCountlySCKeySC             = @"sc";
 
 - (void)populateServerConfig:(NSDictionary *)dictionary
 {
-    self.trackingEnabled = [dictionary[@"tracking"] boolValue];
-    self.networkingEnabled = [dictionary[@"networking"] boolValue];
+    if(dictionary[@"tracking"])
+    {
+        self.trackingEnabled = [dictionary[@"tracking"] boolValue];
+    }
+    if(dictionary[@"networking"])
+    {
+        self.networkingEnabled = [dictionary[@"networking"] boolValue];
+    }
     
     CLY_LOG_D(@"tracking : %@", self.trackingEnabled ? @"YES" : @"NO");
     CLY_LOG_D(@"networking : %@", self.networkingEnabled ? @"YES" : @"NO");
