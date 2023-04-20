@@ -70,6 +70,7 @@ NSString* const kCountlySCKeySC             = @"sc";
 
 - (void)fetchServerConfig
 {
+    CLY_LOG_D(@"Fetching server configs...");
     if (!CountlyCommon.sharedInstance.enableServerConfiguration)
     {
         CLY_LOG_D(@"'fetchServerConfig' enable server configuration during init time configuration.");
@@ -86,7 +87,7 @@ NSString* const kCountlySCKeySC             = @"sc";
         if (!error)
         {
             serverConfigResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
-            CLY_LOG_D(@"%@", serverConfigResponse.description);
+            CLY_LOG_D(@"Server Config Fetched: %@", serverConfigResponse.description);
         }
         
         if (!error)
@@ -144,6 +145,8 @@ NSString* const kCountlySCKeySC             = @"sc";
         NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:URL]];
         return request;
     }
+    
+    CLY_LOG_D(@"serverConfigRequest URL :%@", URL);
 }
 
 #endif
