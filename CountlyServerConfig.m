@@ -32,16 +32,6 @@ NSString* const kCountlySCKeySC             = @"sc";
 {
     if (self = [super init])
     {
-#if (TARGET_OS_WATCH)
-        self.updateSessionPeriod = 20.0;
-#else
-        self.updateSessionPeriod = 60.0;
-#endif
-        self.eventSendThreshold = 100;
-        self.storedRequestsLimit = 1000;
-        
-        self.views = YES;
-        self.crashes = YES;
         self.tracking = YES;
         self.networking = YES;
         NSDictionary* serverConfigObject = [CountlyPersistency.sharedInstance retrieveServerConfig];
@@ -55,21 +45,9 @@ NSString* const kCountlySCKeySC             = @"sc";
 
 - (void)populateServerConfig:(NSDictionary *)dictionary
 {
-    self.updateSessionPeriod = [dictionary[@"heartbeat"] intValue];
-    self.eventSendThreshold = [dictionary[@"event_queue"] intValue];
-    self.storedRequestsLimit = [dictionary[@"request_queue"] intValue];
-    
-    self.views = [dictionary[@"views"] boolValue];
-    self.crashes = [dictionary[@"crashes"] boolValue];
     self.tracking = [dictionary[@"tracking"] boolValue];
     self.networking = [dictionary[@"networking"] boolValue];
     
-    CLY_LOG_D(@"updateSessionPeriod : %lu", (unsigned long)self.updateSessionPeriod);
-    CLY_LOG_D(@"eventSendThreshold : %lu", (unsigned long)self.eventSendThreshold);
-    CLY_LOG_D(@"storedRequestsLimit : %lu", (unsigned long)self.eventSendThreshold);
-    
-    CLY_LOG_D(@"views : %@", self.views ? @"YES" : @"NO");
-    CLY_LOG_D(@"crashes : %@", self.crashes ? @"YES" : @"NO");
     CLY_LOG_D(@"tracking : %@", self.tracking ? @"YES" : @"NO");
     CLY_LOG_D(@"networking : %@", self.networking ? @"YES" : @"NO");
 }

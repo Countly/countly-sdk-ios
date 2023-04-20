@@ -195,12 +195,6 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 
 - (void)recordEvent:(CountlyEvent *)event
 {
-    if(!CountlyServerConfig.sharedInstance.tracking)
-    {
-        CLY_LOG_D(@"'recordEvent' is aborted: SDK Tracking is disabled from server config!");
-        return;
-    }
-    
     @synchronized (self.recordedEvents)
     {
         event.key = [event.key cly_truncatedKey:@"Event key"];
