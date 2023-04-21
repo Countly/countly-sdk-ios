@@ -236,6 +236,12 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 - (void)checkFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
 {
+    if (!CountlyServerConfig.sharedInstance.networkingEnabled)
+    {
+        CLY_LOG_D(@"'checkFeedbackWidgetWithID' is aborted: SDK Networking is disabled from server config!");
+        return;
+    }
+    
     if (!CountlyConsentManager.sharedInstance.consentForFeedback)
         return;
 
@@ -401,6 +407,12 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 - (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> *feedbackWidgets, NSError *error))completionHandler
 {
+    if (!CountlyServerConfig.sharedInstance.networkingEnabled)
+    {
+        CLY_LOG_D(@"'getFeedbackWidgets' is aborted: SDK Networking is disabled from server config!");
+        return;
+    }
+    
     if (!CountlyConsentManager.sharedInstance.consentForFeedback)
         return;
 

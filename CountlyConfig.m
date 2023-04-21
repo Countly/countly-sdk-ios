@@ -58,6 +58,7 @@ CLYDeviceIDType const CLYDeviceIDTypeNSUUID     = @"CLYDeviceIDTypeNSUUID";
         self.internalLogLevel = CLYInternalLogLevelDebug;
 
         self.enableOrientationTracking = YES;
+        self.enableServerConfiguration = NO;
     }
 
     return self;

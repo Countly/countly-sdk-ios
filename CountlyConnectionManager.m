@@ -123,6 +123,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 - (void)proceedOnQueue
 {
     CLY_LOG_D(@"Proceeding on queue...");
+    
+    if (!CountlyServerConfig.sharedInstance.networkingEnabled)
+    {
+        CLY_LOG_D(@"Proceeding on queue is aborted: SDK Networking is disabled from server config!");
+        return;
+    }
 
     if (self.connection)
     {
@@ -364,6 +370,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)sendCrashReport:(NSString *)report immediately:(BOOL)immediately;
 {
+    if (!CountlyServerConfig.sharedInstance.networkingEnabled)
+    {
+        CLY_LOG_D(@"'sendCrashReport' is aborted: SDK Networking is disabled from server config!");
+        return;
+    }
+    
     if (!report)
     {
         CLY_LOG_W(@"Crash report is nil. Converting to JSON may have failed due to custom objects in initial config's crashSegmentation property.");

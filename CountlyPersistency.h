@@ -56,6 +56,9 @@
 - (NSDictionary *)retrieveRemoteConfig;
 - (void)storeRemoteConfig:(NSDictionary *)remoteConfig;
 
+- (NSDictionary *)retrieveServerConfig;
+- (void)storeServerConfig:(NSDictionary *)serverConfig;
+
 @property (nonatomic) NSUInteger eventSendThreshold;
 @property (nonatomic) NSUInteger storedRequestsLimit;
 @property (nonatomic, readonly) BOOL isQueueBeingModified;

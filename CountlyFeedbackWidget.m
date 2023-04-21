@@ -89,6 +89,12 @@ NSString* const kCountlyFBKeyShown          = @"shown";
 - (void)getWidgetData:(void (^)(NSDictionary * __nullable widgetData, NSError * __nullable error))completionHandler
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, completionHandler);
+    
+    if (!CountlyServerConfig.sharedInstance.networkingEnabled)
+    {
+        CLY_LOG_D(@"'getWidgetData' is aborted: SDK Networking is disabled from server config!");
+        return;
+    }
 
     NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:[self dataRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {

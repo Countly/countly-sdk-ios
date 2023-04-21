@@ -23,6 +23,8 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 NSString* const kCountlyNotificationPermissionKey = @"kCountlyNotificationPermissionKey";
 NSString* const kCountlyIsCustomDeviceIDKey = @"kCountlyIsCustomDeviceIDKey";
 NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersistencyKey";
+NSString* const kCountlyServerConfigPersistencyKey = @"kCountlyServerConfigPersistencyKey";
+
 
 NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 
@@ -69,6 +71,12 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 
 - (void)addToQueue:(NSString *)queryString
 {
+    if(!CountlyServerConfig.sharedInstance.trackingEnabled)
+    {
+        CLY_LOG_D(@"'addToQueue' is aborted: SDK Tracking is disabled from server config!");
+        return;
+    }
+    
     if (!queryString.length || [queryString isEqual:NSNull.null])
         return;
 
@@ -497,6 +505,21 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 - (void)storeRemoteConfig:(NSDictionary *)remoteConfig
 {
     [NSUserDefaults.standardUserDefaults setObject:remoteConfig forKey:kCountlyRemoteConfigPersistencyKey];
+    [NSUserDefaults.standardUserDefaults synchronize];
+}
+
+- (NSDictionary *)retrieveServerConfig
+{
+    NSDictionary* serverConfig = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyServerConfigPersistencyKey];
+    if (!serverConfig)
+        serverConfig = NSDictionary.new;
+    
+    return serverConfig;
+}
+
+- (void)storeServerConfig:(NSDictionary *)serverConfig
+{
+    [NSUserDefaults.standardUserDefaults setObject:serverConfig forKey:kCountlyServerConfigPersistencyKey];
     [NSUserDefaults.standardUserDefaults synchronize];
 }
 

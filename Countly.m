@@ -117,6 +117,14 @@ NSString* previousEventID;
     CountlyDeviceInfo.sharedInstance.customMetrics = [config.customMetrics cly_truncated:@"Custom metric"];
 
     [Countly.user save];
+    
+    CountlyCommon.sharedInstance.enableServerConfiguration = config.enableServerConfiguration;
+    
+    // Fetch server configs if 'enableServerConfiguration' is true.
+    if(config.enableServerConfiguration)
+    {
+        [CountlyServerConfig.sharedInstance fetchServerConfig];
+    }
 
 #if (TARGET_OS_IOS)
     CountlyFeedbacks.sharedInstance.message = config.starRatingMessage;
