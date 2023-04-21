@@ -1,5 +1,6 @@
 ## 23.02.2
 - Added server configuration functionality. This is an experimental feature.
+- Not reporting battery level in the crash handler to prevent hanging
 
 ## 23.02.1
 - Added previous event ID and sending it with custom events.
