@@ -273,7 +273,7 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     crashReport[kCountlyCRKeyRAMTotal] = @(CountlyDeviceInfo.totalRAM / kCLYMebibit);
     crashReport[kCountlyCRKeyDiskCurrent] = @((CountlyDeviceInfo.totalDisk - CountlyDeviceInfo.freeDisk) / kCLYMebibit);
     crashReport[kCountlyCRKeyDiskTotal] = @(CountlyDeviceInfo.totalDisk / kCLYMebibit);
-    crashReport[kCountlyCRKeyBattery] = @(CountlyDeviceInfo.batteryLevel);
+    //crashReport[kCountlyCRKeyBattery] = @(CountlyDeviceInfo.batteryLevel);//not reporting this to prevent hanging in the middle of crash reporting
     crashReport[kCountlyCRKeyOrientation] = CountlyDeviceInfo.orientation;
     crashReport[kCountlyCRKeyOnline] = @((CountlyDeviceInfo.connectionType) ? 1 : 0 );
     crashReport[kCountlyCRKeyRoot] = @(CountlyDeviceInfo.isJailbroken);
