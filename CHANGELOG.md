@@ -1,3 +1,6 @@
+## xx.xx.xx
+- Added back battery level reporting to crash reporting. Battery level is only reported if battery was enabled before.
+
 ## 23.02.2
 - Added server configuration functionality. This is an experimental feature.
 - Not reporting battery level in the crash handler to prevent hanging
