@@ -366,7 +366,7 @@ typedef enum : NSUInteger
  * For specifying attribution ID (IDFA).
  * @discussion If set, this attribution ID will be sent with all @c begin_session requests.
  */
-@property (nonatomic, copy) NSString* attributionID;
+@property (nonatomic, copy) NSString* attributionID DEPRECATED_MSG_ATTRIBUTE("Use 'campaignType' and 'campaignData' for direct attribution or  'indirectAttribution' for indirect attribution");
 
 /**
  * For specifying direct attribution campaign type.
