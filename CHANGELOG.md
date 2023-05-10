@@ -1,3 +1,7 @@
+## xx.xx.xx
+- Deprecated `attributionID` initial config flag
+- Deprecated `recordAttributionID` method
+
 ## 23.02.2
 - Added server configuration functionality. This is an experimental feature.
 - Not reporting battery level in the crash handler to prevent hanging
