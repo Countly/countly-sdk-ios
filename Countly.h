@@ -634,7 +634,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion - Consent for @c CLYConsentAttribution is not given, while @c requiresConsent flag is set on initial configuration.
  * @param attributionID Attribution ID (IDFA)
  */
-- (void)recordAttributionID:(NSString *)attributionID;
+- (void)recordAttributionID:(NSString *)attributionID DEPRECATED_MSG_ATTRIBUTE("Use 'recordDirectAttributionWithCampaignType:' or  'recordIndirectAttribution' method instead!");
 
 /**
  * Records direct attribution with campaign type and data.
