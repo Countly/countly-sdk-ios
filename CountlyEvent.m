@@ -12,6 +12,7 @@ NSString* const kCountlyEventKeyKey           = @"key";
 NSString* const kCountlyEventKeyID            = @"id";
 NSString* const kCountlyEventKeyCVID          = @"cvid";
 NSString* const kCountlyEventKeyPVID          = @"pvid";
+NSString* const kCountlyEventKeyPEID          = @"peid";
 NSString* const kCountlyEventKeySegmentation  = @"segmentation";
 NSString* const kCountlyEventKeyCount         = @"count";
 NSString* const kCountlyEventKeySum           = @"sum";
@@ -31,6 +32,7 @@ NSString* const kCountlyEventKeyDuration      = @"dur";
     eventData[kCountlyEventKeyID] = self.ID;
     eventData[kCountlyEventKeyCVID] = self.CVID;
     eventData[kCountlyEventKeyPVID] = self.PVID;
+    eventData[kCountlyEventKeyPEID] = self.PEID;
     eventData[kCountlyEventKeyCount] = @(self.count);
     eventData[kCountlyEventKeySum] = @(self.sum);
     eventData[kCountlyEventKeyTimestamp] = @((long long)(self.timestamp * 1000));
@@ -48,6 +50,7 @@ NSString* const kCountlyEventKeyDuration      = @"dur";
         self.ID = [decoder decodeObjectForKey:NSStringFromSelector(@selector(ID))];
         self.CVID = [decoder decodeObjectForKey:NSStringFromSelector(@selector(CVID))];
         self.PVID = [decoder decodeObjectForKey:NSStringFromSelector(@selector(PVID))];
+        self.PEID = [decoder decodeObjectForKey:NSStringFromSelector(@selector(PEID))];
         self.segmentation = [decoder decodeObjectForKey:NSStringFromSelector(@selector(segmentation))];
         self.count = [decoder decodeIntegerForKey:NSStringFromSelector(@selector(count))];
         self.sum = [decoder decodeDoubleForKey:NSStringFromSelector(@selector(sum))];
@@ -56,7 +59,7 @@ NSString* const kCountlyEventKeyDuration      = @"dur";
         self.dayOfWeek = [decoder decodeIntegerForKey:NSStringFromSelector(@selector(dayOfWeek))];
         self.duration = [decoder decodeDoubleForKey:NSStringFromSelector(@selector(duration))];
     }
-
+    
     return self;
 }
 
@@ -66,6 +69,7 @@ NSString* const kCountlyEventKeyDuration      = @"dur";
     [encoder encodeObject:self.ID forKey:NSStringFromSelector(@selector(ID))];
     [encoder encodeObject:self.CVID forKey:NSStringFromSelector(@selector(CVID))];
     [encoder encodeObject:self.PVID forKey:NSStringFromSelector(@selector(PVID))];
+    [encoder encodeObject:self.PEID forKey:NSStringFromSelector(@selector(PEID))];
     [encoder encodeObject:self.segmentation forKey:NSStringFromSelector(@selector(segmentation))];
     [encoder encodeInteger:self.count forKey:NSStringFromSelector(@selector(count))];
     [encoder encodeDouble:self.sum forKey:NSStringFromSelector(@selector(sum))];

@@ -22,6 +22,7 @@
 #import "CountlyLocationManager.h"
 #import "CountlyRemoteConfig.h"
 #import "CountlyPerformanceMonitoring.h"
+#import "CountlyServerConfig.h"
 
 #define CLY_LOG_E(fmt, ...) CountlyInternalLog(CLYInternalLogLevelError, fmt, ##__VA_ARGS__)
 #define CLY_LOG_W(fmt, ...) CountlyInternalLog(CLYInternalLogLevelWarning, fmt, ##__VA_ARGS__)
@@ -57,6 +58,7 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
     CLYErrorFeedbackWidgetNotTargetedForDevice = 10002,
     CLYErrorRemoteConfigGeneralAPIError = 10011,
     CLYErrorFeedbacksGeneralAPIError = 10012,
+    CLYErrorServerConfigGeneralAPIError = 10013,
 };
 
 @interface CountlyCommon : NSObject
@@ -72,6 +74,7 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 @property (nonatomic, copy) NSString* attributionID;
 @property (nonatomic) BOOL manualSessionHandling;
 @property (nonatomic) BOOL enableOrientationTracking;
+@property (nonatomic) BOOL enableServerConfiguration;
 
 
 @property (nonatomic) NSUInteger maxKeyLength;

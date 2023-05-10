@@ -125,6 +125,11 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
 
 - (void)fetchRemoteConfigForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSDictionary* remoteConfig, NSError * error))completionHandler
 {
+    if (!CountlyServerConfig.sharedInstance.networkingEnabled)
+    {
+        CLY_LOG_D(@"'fetchRemoteConfigForKeys' is aborted: SDK Networking is disabled from server config!");
+        return;
+    }
     if (!completionHandler)
         return;
 

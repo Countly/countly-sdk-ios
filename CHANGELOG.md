@@ -1,12 +1,21 @@
-## 23.02.1
+## xx.xx.xx
+- Added back battery level reporting to crash reporting. Battery level is only reported if battery was enabled before.
 - Added new methods for changing the device id: `changeDeviceIDWithMerge:`, `changeDeviceIDWithoutMerge:`.
 - Deprecated existing method to change the device id: `setNewDeviceID:`
+
+## 23.02.2
+- Added server configuration functionality. This is an experimental feature.
+- Not reporting battery level in the crash handler to prevent hanging
+
+## 23.02.1
+- Added previous event ID and sending it with custom events.
+- Updated default `maxSegmentationValues` from 30 to 100
 
 ## 23.02.0
 - Added event IDs
 - Added current and previous view IDs to events
 - Added sending pending events before sending user details on `save` call.
- 
+
 ## 22.09.0
 - Deleted previously deprecated `userLoggedIn:` and `userLoggedOut` methods
 - Added new exception recording methods: `recordException:`, `recordException:isFatal:`, `recordException:isFatal:stackTrace:segmentation:` 
