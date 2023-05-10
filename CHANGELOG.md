@@ -1,4 +1,7 @@
 ## xx.xx.xx
+- Added back battery level reporting to crash reporting. Battery level is only reported if battery was enabled before.
+- Added new methods for changing the device id: `changeDeviceIDWithMerge:`, `changeDeviceIDWithoutMerge:`.
+- Deprecated existing method to change the device id: `setNewDeviceID:`
 - Deprecated `attributionID` initial config flag
 - Deprecated `recordAttributionID` method
 

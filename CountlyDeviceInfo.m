@@ -396,10 +396,16 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     return [homeDirectory[NSFileSystemSize] longLongValue];
 }
 
+// If it is not possible to retrieve a valid value then it will return a -1.
 + (NSInteger)batteryLevel
 {
 #if (TARGET_OS_IOS)
-    UIDevice.currentDevice.batteryMonitoringEnabled = YES;
+    // If battey state is "unknown" that means that battery monitoring is not enabled.
+    // In that case we will not able to retrieve a battery level.
+    if(UIDevice.currentDevice.batteryState == UIDeviceBatteryStateUnknown)
+    {
+        return -1;
+    }
     return abs((int)(UIDevice.currentDevice.batteryLevel * 100));
 #elif (TARGET_OS_WATCH)
     return abs((int)(WKInterfaceDevice.currentDevice.batteryLevel * 100));
@@ -415,7 +421,7 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     return (currentLevel / (float)maxLevel) * 100;
 #endif
 
-    return 100;
+    return -1;
 }
 
 + (NSString *)orientation
