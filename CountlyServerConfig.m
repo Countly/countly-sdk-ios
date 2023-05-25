@@ -5,18 +5,16 @@
 // Please visit www.count.ly for more information.
 
 #import "CountlyCommon.h"
-#if (TARGET_OS_IOS)
-#import <WebKit/WebKit.h>
-#endif
 
-NSString* const kCountlySCKeySC             = @"sc";
+@interface CountlyServerConfig ()
+@property (nonatomic) BOOL trackingEnabled;
+@property (nonatomic) BOOL networkingEnabled;
+@end
+
+NSString* const kCountlySCKeySC = @"sc";
 
 @implementation CountlyServerConfig
 
-@synthesize trackingEnabled = _trackingEnabled;
-@synthesize networkingEnabled = _networkingEnabled;
-
-#if (TARGET_OS_IOS)
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
@@ -155,5 +153,4 @@ NSString* const kCountlySCKeySC             = @"sc";
     CLY_LOG_D(@"serverConfigRequest URL :%@", URL);
 }
 
-#endif
 @end
