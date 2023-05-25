@@ -6,6 +6,7 @@
 
 #import <Foundation/Foundation.h>
 #import "Countly.h"
+#import "CountlyServerConfig.h"
 #import "CountlyPersistency.h"
 #import "CountlyConnectionManager.h"
 #import "CountlyEvent.h"
@@ -22,7 +23,6 @@
 #import "CountlyLocationManager.h"
 #import "CountlyRemoteConfig.h"
 #import "CountlyPerformanceMonitoring.h"
-#import "CountlyServerConfig.h"
 
 #define CLY_LOG_E(fmt, ...) CountlyInternalLog(CLYInternalLogLevelError, fmt, ##__VA_ARGS__)
 #define CLY_LOG_W(fmt, ...) CountlyInternalLog(CLYInternalLogLevelWarning, fmt, ##__VA_ARGS__)

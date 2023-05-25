@@ -6,14 +6,15 @@
 
 #import <Foundation/Foundation.h>
 
+extern NSString* const kCountlySCKeySC;
+
 @interface CountlyServerConfig : NSObject
-#if (TARGET_OS_IOS)
 + (instancetype)sharedInstance;
 
 - (void)fetchServerConfig;
 
-@property (nonatomic) BOOL trackingEnabled;
-@property (nonatomic) BOOL networkingEnabled;
-#endif
+- (BOOL)trackingEnabled;
+- (BOOL)networkingEnabled;
+
 @end
 
