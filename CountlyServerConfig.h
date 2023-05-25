@@ -13,8 +13,8 @@ extern NSString* const kCountlySCKeySC;
 
 - (void)fetchServerConfig;
 
-- (BOOL)isTrackingEnabled;
-- (BOOL)isNetworkingEnabled;
+- (BOOL)trackingEnabled;
+- (BOOL)networkingEnabled;
 
 @end
 

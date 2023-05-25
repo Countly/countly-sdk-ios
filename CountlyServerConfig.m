@@ -41,7 +41,7 @@ NSString* const kCountlySCKeySC = @"sc";
     return self;
 }
 
-- (BOOL)isTrackingEnabled
+- (BOOL)trackingEnabled
 {
     if (!CountlyCommon.sharedInstance.enableServerConfiguration)
         return YES;
@@ -49,7 +49,7 @@ NSString* const kCountlySCKeySC = @"sc";
     return _trackingEnabled;
 }
 
-- (BOOL)isNetworkingEnabled
+- (BOOL)networkingEnabled
 {
     if (!CountlyCommon.sharedInstance.enableServerConfiguration)
         return YES;
