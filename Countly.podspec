@@ -10,10 +10,10 @@ Pod::Spec.new do |s|
 
   s.requires_arc = true
   s.default_subspecs = 'Core'
-  s.ios.deployment_target = '10.0'
-  s.osx.deployment_target = '10.14'
+  s.ios.deployment_target = '11.0'
+  s.osx.deployment_target = '11.0'
   s.watchos.deployment_target = '4.0'
-  s.tvos.deployment_target = '10.0'
+  s.tvos.deployment_target = '11.0'
 
   s.subspec 'Core' do |core|
     core.source_files = '*.{h,m}'
@@ -24,7 +24,7 @@ Pod::Spec.new do |s|
 
   s.subspec 'NotificationService' do |ns|
     ns.source_files = 'CountlyNotificationService.{m,h}'
-    ns.ios.deployment_target = '10.0'
+    ns.ios.deployment_target = '11.0'
     ns.ios.frameworks = ['Foundation', 'UserNotifications']
   end
 
