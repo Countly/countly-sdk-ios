@@ -1150,14 +1150,22 @@ NSString* previousEventID;
     return [CountlyRemoteConfig.sharedInstance getAllRCVariants];
 }
 
-- (void)fetchVariantsForKeys:(void (^)(NSError * error))completionHandler
+- (NSDictionary *)getRCVariantsForKey:(NSString *)key {
+    return [CountlyRemoteConfig.sharedInstance getRCVariantsForKey:key];
+}
+
+- (void)enrollInRCVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(void (^)(CLYResponse response, NSError * error))completionHandler {
+    [CountlyRemoteConfig.sharedInstance enrollInRCVariant:key variantName:variantName completionHandler:completionHandler];
+}
+
+- (void)fetchVariants:(void (^)(CLYResponse response, NSError * error))completionHandler
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, completionHandler);
     
     [CountlyRemoteConfig.sharedInstance fetchRCVariantsForKeys:nil completionHandler:completionHandler];
 }
 
-- (void)fetchVariantsForKeys:(NSArray *)keys completionHandler:(void (^)(NSError * error))completionHandler
+- (void)fetchVariantsForKeys:(NSArray *)keys completionHandler:(void (^)(CLYResponse response, NSError * error))completionHandler
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, keys, completionHandler);
     

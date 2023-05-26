@@ -14,6 +14,11 @@ NSString* const kCountlyRCKeyKey                = @"key";
 NSString* const kCountlyRCKeyKeys               = @"keys";
 NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
 
+
+CLYResponse const CLYResponseNetworkIssue       = @"CLYResponseNetworkIssue";
+CLYResponse const CLYResponseSuccess            = @"CLYResponseSuccess";
+CLYResponse const CLYResponseError              = @"CLYResponseError";
+
 @interface CountlyRemoteConfig ()
 @property (nonatomic) NSDictionary* cachedRemoteConfig;
 @property (nonatomic) NSDictionary* localCachedVariants;
@@ -229,17 +234,26 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
     return self.localCachedVariants;
 }
 
-- (void)fetchRCVariantsForKeys:(NSArray *)keys completionHandler:(void (^)(NSError * error))completionHandler
+- (NSDictionary *)getRCVariantsForKey:(NSString *)key {
+    return  self.localCachedVariants[key];
+}
+
+- (void)fetchRCVariantsForKeys:(NSArray *)keys completionHandler:(void (^)(CLYResponse response, NSError * error))completionHandler
 {
     if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
+    {
+        CLY_LOG_D(@"'fetchVariantForKeys' is aborted: RemoteConfig consent requires");
         return;
-    
+    }
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+    {
+        CLY_LOG_D(@"'fetchVariantForKeys' is aborted: Due to temporary device id");
         return;
+    }
     
     CLY_LOG_D(@"Fetching variants manually...");
     
-    [self fetchRCVariantsForKeysInternal:keys completionHandler:^(NSDictionary *varaints, NSError *error)
+    [self fetchRCVariantsForKeysInternal:keys completionHandler:^(CLYResponse response, NSDictionary *varaints,NSError *error)
      {
         if (!error)
         {
@@ -253,11 +267,11 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
         }
         
         if (completionHandler)
-            completionHandler(error);
+            completionHandler(response, error);
     }];
 }
 
-- (void)fetchRCVariantsForKeysInternal:(NSArray *)keys completionHandler:(void (^)(NSDictionary* variants, NSError * error))completionHandler
+- (void)fetchRCVariantsForKeysInternal:(NSArray *)keys completionHandler:(void (^)(CLYResponse response, NSDictionary* variants, NSError * error))completionHandler
 {
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
     {
@@ -293,7 +307,7 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
             
             dispatch_async(dispatch_get_main_queue(), ^
                            {
-                completionHandler(nil, error);
+                completionHandler(CLYResponseError, nil, error);
             });
             
             return;
@@ -303,7 +317,7 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
         
         dispatch_async(dispatch_get_main_queue(), ^
                        {
-            completionHandler(variants, nil);
+            completionHandler(CLYResponseSuccess, variants, nil);
         });
     }];
     
@@ -312,7 +326,7 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
     CLY_LOG_D(@"Fetch variants Request <%p> started:\n[%@] %@", (id)request, request.HTTPMethod, request.URL.absoluteString);
 }
 
-- (void)enrollInRCVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(void (^)(NSError * error))completionHandler
+- (void)enrollInRCVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(void (^)(CLYResponse response, NSError * error))completionHandler
 {
     if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
         return;
@@ -322,7 +336,7 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
     
     CLY_LOG_D(@"Enrolling RC variant");
     
-    [self enrollInRCVariantInternal:key variantName:variantName completionHandler:^(NSError *error)
+    [self enrollInRCVariantInternal:key variantName:variantName completionHandler:^(CLYResponse response, NSError *error)
      {
         if (!error)
         {
@@ -335,19 +349,22 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
         }
         
         if (completionHandler)
-            completionHandler(error);
+            completionHandler(response, error);
     }];
 }
 
-- (void)enrollInRCVariantInternal:(NSString *)key variantName:(NSString *)variantName completionHandler:(void (^)(NSError * error))completionHandler
+- (void)enrollInRCVariantInternal:(NSString *)key variantName:(NSString *)variantName completionHandler:(void (^)(CLYResponse response, NSError * error))completionHandler
 {
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
     {
-        CLY_LOG_D(@"'fetchVariantForKeys' is aborted: SDK Networking is disabled from server config!");
+        CLY_LOG_D(@"'enrollInRCVariant' is aborted: SDK Networking is disabled from server config!");
         return;
     }
     if (!completionHandler)
+    {
+        CLY_LOG_D(@"'enrollInRCVariant' is aborted: 'completionHandler' not provided");
         return;
+    }
     
     NSURLRequest* request = [self enrollInVarianRequestForKey:key variantName:variantName];
     NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
@@ -364,28 +381,28 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
             if (((NSHTTPURLResponse*)response).statusCode != 200)
             {
                 NSMutableDictionary* userInfo = variants.mutableCopy;
-                userInfo[NSLocalizedDescriptionKey] = @"Fetch variants general API error";
+                userInfo[NSLocalizedDescriptionKey] = @"Enroll In RC Variant general API error";
                 error = [NSError errorWithDomain:kCountlyErrorDomain code:CLYErrorRemoteConfigGeneralAPIError userInfo:userInfo];
             }
         }
         
         if (error)
         {
-            CLY_LOG_D(@"Fetch variants Request <%p> failed!\nError: %@", request, error);
+            CLY_LOG_D(@"Enroll RC Variant Request <%p> failed!\nError: %@", request, error);
             
             dispatch_async(dispatch_get_main_queue(), ^
                            {
-                completionHandler(error);
+                completionHandler(CLYResponseError, error);
             });
             
             return;
         }
         
-        CLY_LOG_D(@"Fetch variants Request <%p> successfully completed.", request);
+        CLY_LOG_D(@"Enroll RC Variant Request <%p> successfully completed.", request);
         
         dispatch_async(dispatch_get_main_queue(), ^
                        {
-            completionHandler(nil);
+            completionHandler(CLYResponseSuccess, nil);
         });
     }];
     

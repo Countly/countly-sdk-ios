@@ -98,6 +98,12 @@ typedef NSString* CLYAttributionKey NS_EXTENSIBLE_STRING_ENUM;
 extern CLYAttributionKey const CLYAttributionKeyIDFA;
 extern CLYAttributionKey const CLYAttributionKeyADID;
 
+//NOTE: Response values of request
+typedef NSString* CLYResponse NS_EXTENSIBLE_STRING_ENUM;
+extern CLYResponse const CLYResponseNetworkIssue;
+extern CLYResponse const CLYResponseSuccess;
+extern CLYResponse const CLYResponseError;
+
 //NOTE: Internal log levels
 typedef enum : NSUInteger
 {
