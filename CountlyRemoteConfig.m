@@ -8,6 +8,9 @@
 
 NSString* const kCountlyRCKeyFetchRemoteConfig  = @"fetch_remote_config";
 NSString* const kCountlyRCKeyFetchVariant       = @"ab_fetch_variants";
+NSString* const kCountlyRCKeyEnrollVariant      = @"ab_enroll_variant";
+NSString* const kCountlyRCKeyVariant            = @"variant";
+NSString* const kCountlyRCKeyKey                = @"key";
 NSString* const kCountlyRCKeyKeys               = @"keys";
 NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
 
@@ -309,6 +312,88 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
     CLY_LOG_D(@"Fetch variants Request <%p> started:\n[%@] %@", (id)request, request.HTTPMethod, request.URL.absoluteString);
 }
 
+- (void)enrollInRCVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(void (^)(NSError * error))completionHandler
+{
+    if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
+        return;
+    
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+        return;
+    
+    CLY_LOG_D(@"Enrolling RC variant");
+    
+    [self enrollInRCVariantInternal:key variantName:variantName completionHandler:^(NSError *error)
+     {
+        if (!error)
+        {
+            CLY_LOG_D(@"Enrolling RC variant successful.");
+            
+        }
+        else
+        {
+            CLY_LOG_W(@"Enrolling RC variant failed: %@", error);
+        }
+        
+        if (completionHandler)
+            completionHandler(error);
+    }];
+}
+
+- (void)enrollInRCVariantInternal:(NSString *)key variantName:(NSString *)variantName completionHandler:(void (^)(NSError * error))completionHandler
+{
+    if (!CountlyServerConfig.sharedInstance.networkingEnabled)
+    {
+        CLY_LOG_D(@"'fetchVariantForKeys' is aborted: SDK Networking is disabled from server config!");
+        return;
+    }
+    if (!completionHandler)
+        return;
+    
+    NSURLRequest* request = [self enrollInVarianRequestForKey:key variantName:variantName];
+    NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+                              {
+        NSDictionary* variants = nil;
+        
+        if (!error)
+        {
+            variants = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+        }
+        
+        if (!error)
+        {
+            if (((NSHTTPURLResponse*)response).statusCode != 200)
+            {
+                NSMutableDictionary* userInfo = variants.mutableCopy;
+                userInfo[NSLocalizedDescriptionKey] = @"Fetch variants general API error";
+                error = [NSError errorWithDomain:kCountlyErrorDomain code:CLYErrorRemoteConfigGeneralAPIError userInfo:userInfo];
+            }
+        }
+        
+        if (error)
+        {
+            CLY_LOG_D(@"Fetch variants Request <%p> failed!\nError: %@", request, error);
+            
+            dispatch_async(dispatch_get_main_queue(), ^
+                           {
+                completionHandler(error);
+            });
+            
+            return;
+        }
+        
+        CLY_LOG_D(@"Fetch variants Request <%p> successfully completed.", request);
+        
+        dispatch_async(dispatch_get_main_queue(), ^
+                       {
+            completionHandler(nil);
+        });
+    }];
+    
+    [task resume];
+    
+    CLY_LOG_D(@"Fetch variants Request <%p> started:\n[%@] %@", (id)request, request.HTTPMethod, request.URL.absoluteString);
+}
+
 - (NSURLRequest *)fetchVariantsRequestForKeys:(NSArray *)keys
 {
     NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
@@ -318,6 +403,43 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
     if (keys)
     {
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyKeys, [keys cly_JSONify]];
+    }
+    
+    if (CountlyConsentManager.sharedInstance.consentForSessions)
+    {
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
+    }
+    
+    queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
+    
+    NSString* serverOutputSDKEndpoint = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"%@%@",
+                                         kCountlyEndpointO,
+                                         kCountlyEndpointSDK];
+    
+    if (CountlyConnectionManager.sharedInstance.alwaysUsePOST)
+    {
+        NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverOutputSDKEndpoint]];
+        request.HTTPMethod = @"POST";
+        request.HTTPBody = [queryString cly_dataUTF8];
+        return request.copy;
+    }
+    else
+    {
+        NSString* withQueryString = [serverOutputSDKEndpoint stringByAppendingFormat:@"?%@", queryString];
+        NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:withQueryString]];
+        return request;
+    }
+}
+
+- (NSURLRequest *)enrollInVarianRequestForKey:(NSString *)key variantName:(NSString *)variantName
+{
+    NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
+    
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMethod, kCountlyRCKeyEnrollVariant];
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyKey, key];
+    if (variantName)
+    {
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyVariant, variantName];
     }
     
     if (CountlyConsentManager.sharedInstance.consentForSessions)
