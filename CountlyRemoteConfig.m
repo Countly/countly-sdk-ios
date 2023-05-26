@@ -7,11 +7,13 @@
 #import "CountlyCommon.h"
 
 NSString* const kCountlyRCKeyFetchRemoteConfig  = @"fetch_remote_config";
+NSString* const kCountlyRCKeyFetchVariant       = @"ab_fetch_variants";
 NSString* const kCountlyRCKeyKeys               = @"keys";
 NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
 
 @interface CountlyRemoteConfig ()
 @property (nonatomic) NSDictionary* cachedRemoteConfig;
+@property (nonatomic) NSDictionary* localCachedVariants;
 @end
 
 @implementation CountlyRemoteConfig
@@ -204,6 +206,131 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
                                          kCountlyEndpointO,
                                          kCountlyEndpointSDK];
 
+    if (CountlyConnectionManager.sharedInstance.alwaysUsePOST)
+    {
+        NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverOutputSDKEndpoint]];
+        request.HTTPMethod = @"POST";
+        request.HTTPBody = [queryString cly_dataUTF8];
+        return request.copy;
+    }
+    else
+    {
+        NSString* withQueryString = [serverOutputSDKEndpoint stringByAppendingFormat:@"?%@", queryString];
+        NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:withQueryString]];
+        return request;
+    }
+}
+
+- (NSDictionary *)getAllVariants
+{
+    return self.localCachedVariants;
+}
+
+- (void)fetchVariantsForKeys:(NSArray *)keys completionHandler:(void (^)(NSError * error))completionHandler
+{
+    if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
+        return;
+    
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+        return;
+    
+    CLY_LOG_D(@"Fetching variants manually...");
+    
+    [self fetchVariantsForKeysInternal:keys completionHandler:^(NSDictionary *varaints, NSError *error)
+     {
+        if (!error)
+        {
+            self.localCachedVariants = varaints;
+            CLY_LOG_D(@"Fetching variants manually is successful. \n%@", varaints);
+            
+        }
+        else
+        {
+            CLY_LOG_W(@"Fetching variants manually failed: %@", error);
+        }
+        
+        if (completionHandler)
+            completionHandler(error);
+    }];
+}
+
+- (void)fetchVariantsForKeysInternal:(NSArray *)keys completionHandler:(void (^)(NSDictionary* variants, NSError * error))completionHandler
+{
+    if (!CountlyServerConfig.sharedInstance.networkingEnabled)
+    {
+        CLY_LOG_D(@"'fetchVariantForKeys' is aborted: SDK Networking is disabled from server config!");
+        return;
+    }
+    if (!completionHandler)
+        return;
+    
+    NSURLRequest* request = [self fetchVariantsRequestForKeys:keys];
+    NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+                              {
+        NSDictionary* variants = nil;
+        
+        if (!error)
+        {
+            variants = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+        }
+        
+        if (!error)
+        {
+            if (((NSHTTPURLResponse*)response).statusCode != 200)
+            {
+                NSMutableDictionary* userInfo = variants.mutableCopy;
+                userInfo[NSLocalizedDescriptionKey] = @"Fetch variants general API error";
+                error = [NSError errorWithDomain:kCountlyErrorDomain code:CLYErrorRemoteConfigGeneralAPIError userInfo:userInfo];
+            }
+        }
+        
+        if (error)
+        {
+            CLY_LOG_D(@"Fetch variants Request <%p> failed!\nError: %@", request, error);
+            
+            dispatch_async(dispatch_get_main_queue(), ^
+                           {
+                completionHandler(nil, error);
+            });
+            
+            return;
+        }
+        
+        CLY_LOG_D(@"Fetch variants Request <%p> successfully completed.", request);
+        
+        dispatch_async(dispatch_get_main_queue(), ^
+                       {
+            completionHandler(variants, nil);
+        });
+    }];
+    
+    [task resume];
+    
+    CLY_LOG_D(@"Fetch variants Request <%p> started:\n[%@] %@", (id)request, request.HTTPMethod, request.URL.absoluteString);
+}
+
+- (NSURLRequest *)fetchVariantsRequestForKeys:(NSArray *)keys
+{
+    NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
+    
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMethod, kCountlyRCKeyFetchVariant];
+    
+    if (keys)
+    {
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyKeys, [keys cly_JSONify]];
+    }
+    
+    if (CountlyConsentManager.sharedInstance.consentForSessions)
+    {
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
+    }
+    
+    queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
+    
+    NSString* serverOutputSDKEndpoint = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"%@%@",
+                                         kCountlyEndpointO,
+                                         kCountlyEndpointSDK];
+    
     if (CountlyConnectionManager.sharedInstance.alwaysUsePOST)
     {
         NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverOutputSDKEndpoint]];

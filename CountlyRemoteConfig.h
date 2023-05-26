@@ -13,7 +13,9 @@
 + (instancetype)sharedInstance;
 
 - (void)startRemoteConfig;
-- (id)remoteConfigValueForKey:(NSString *)key;
-- (void)updateRemoteConfigForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler;
 - (void)clearCachedRemoteConfig;
+- (NSDictionary *)getAllVariants;
+- (id)remoteConfigValueForKey:(NSString *)key;
+- (void)fetchVariantsForKeys:(NSArray *)keys completionHandler:(void (^)(NSError * error))completionHandler;
+- (void)updateRemoteConfigForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler;
 @end
