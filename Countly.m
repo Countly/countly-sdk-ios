@@ -1143,6 +1143,27 @@ NSString* previousEventID;
     [CountlyRemoteConfig.sharedInstance updateRemoteConfigForKeys:nil omitKeys:omitKeys completionHandler:completionHandler];
 }
 
+- (NSDictionary *)getAllRemoteConfigVariants
+{
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    
+    return [CountlyRemoteConfig.sharedInstance getAllRCVariants];
+}
+
+- (void)fetchVariantsForKeys:(void (^)(NSError * error))completionHandler
+{
+    CLY_LOG_I(@"%s %@", __FUNCTION__, completionHandler);
+    
+    [CountlyRemoteConfig.sharedInstance fetchRCVariantsForKeys:nil completionHandler:completionHandler];
+}
+
+- (void)fetchVariantsForKeys:(NSArray *)keys completionHandler:(void (^)(NSError * error))completionHandler
+{
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, keys, completionHandler);
+    
+    [CountlyRemoteConfig.sharedInstance fetchRCVariantsForKeys:keys completionHandler:completionHandler];
+}
+
 
 
 #pragma mark - Performance Monitoring

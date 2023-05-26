@@ -717,6 +717,12 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)updateRemoteConfigExceptForKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * __nullable error))completionHandler;
 
+- (NSDictionary *)getAllRemoteConfigVariants;
+
+- (void)fetchRCVariants:(void (^)(NSError * error))completionHandler;
+
+- (void)fetchRCVariantsForKeys:(NSArray *)keys completionHandler:(void (^)(NSError * error))completionHandler;
+
 
 
 #pragma mark - Performance Monitoring

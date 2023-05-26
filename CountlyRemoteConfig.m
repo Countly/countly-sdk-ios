@@ -221,12 +221,12 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
     }
 }
 
-- (NSDictionary *)getAllVariants
+- (NSDictionary *)getAllRCVariants
 {
     return self.localCachedVariants;
 }
 
-- (void)fetchVariantsForKeys:(NSArray *)keys completionHandler:(void (^)(NSError * error))completionHandler
+- (void)fetchRCVariantsForKeys:(NSArray *)keys completionHandler:(void (^)(NSError * error))completionHandler
 {
     if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
         return;
@@ -236,7 +236,7 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
     
     CLY_LOG_D(@"Fetching variants manually...");
     
-    [self fetchVariantsForKeysInternal:keys completionHandler:^(NSDictionary *varaints, NSError *error)
+    [self fetchRCVariantsForKeysInternal:keys completionHandler:^(NSDictionary *varaints, NSError *error)
      {
         if (!error)
         {
@@ -254,7 +254,7 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
     }];
 }
 
-- (void)fetchVariantsForKeysInternal:(NSArray *)keys completionHandler:(void (^)(NSDictionary* variants, NSError * error))completionHandler
+- (void)fetchRCVariantsForKeysInternal:(NSArray *)keys completionHandler:(void (^)(NSDictionary* variants, NSError * error))completionHandler
 {
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
     {
