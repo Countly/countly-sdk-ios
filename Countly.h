@@ -8,6 +8,7 @@
 #import <CoreLocation/CoreLocation.h>
 #import "CountlyUserDetails.h"
 #import "CountlyConfig.h"
+#import "CountlyRCValue.h"
 #import "CountlyFeedbackWidget.h"
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 #import <UserNotifications/UserNotifications.h>
@@ -721,12 +722,19 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (NSArray *)testingGetVariantsForKey:(NSString *)key;
 
-- (void)testingFetchAllVariants:(void (^)(CLYResponse response, NSError * error))completionHandler;
+- (void)testingFetchAllVariants:(void (^)(CLYRequestResult response, NSError * error))completionHandler;
 
 - (void)testingFetchVariantsForKeys:(NSArray *)keys completionHandler:(RCVariantCallback)completionHandler;
 
 - (void)testingEnrollIntoVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(RCVariantCallback)completionHandler;
 
+- (CountlyRCValue *)getRCValue:(NSString *)key;
+
+- (void)UpdateAllRCValues:(RCDownloadCallback)completionHandler;
+
+- (void)UpdateSpecificRCValues:(NSArray *)keys completionHandler:(RCDownloadCallback)completionHandler;
+
+- (void)UpdateOmittingRCValues:(NSArray *)omitKeys completionHandler:(RCDownloadCallback)completionHandler;
 
 #pragma mark - Performance Monitoring
 

@@ -5,6 +5,7 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
+#import "CountlyRCValue.h"
 
 @interface CountlyRemoteConfig : NSObject
 @property (nonatomic) BOOL isEnabledOnInitialConfig;
@@ -16,6 +17,9 @@
 - (void)clearCachedRemoteConfig;
 - (id)remoteConfigValueForKey:(NSString *)key;
 - (void)updateRemoteConfigForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler;
+
+- (CountlyRCValue *)getRCValue:(NSString *)key;
+- (void)updateValuesForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(RCDownloadCallback)completionHandler;
 
 - (NSDictionary *)testingGetAllVariants;
 - (NSArray *)testingGetVariantsForKey:(NSString *)key;

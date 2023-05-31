@@ -99,12 +99,20 @@ extern CLYAttributionKey const CLYAttributionKeyIDFA;
 extern CLYAttributionKey const CLYAttributionKeyADID;
 
 //NOTE: Response values of request
-typedef NSString* CLYResponse NS_EXTENSIBLE_STRING_ENUM;
-extern CLYResponse const CLYResponseNetworkIssue;
-extern CLYResponse const CLYResponseSuccess;
-extern CLYResponse const CLYResponseError;
+typedef NSString* CLYRequestResult NS_EXTENSIBLE_STRING_ENUM;
+extern CLYRequestResult const CLYResponseNetworkIssue;
+extern CLYRequestResult const CLYResponseSuccess;
+extern CLYRequestResult const CLYResponseError;
 
-typedef void (^RCVariantCallback)(CLYResponse response, NSError * error);
+//NOTE: Response values of request
+typedef NSString* CLYRCValueState NS_EXTENSIBLE_STRING_ENUM;
+extern CLYRCValueState const CLYCached;
+extern CLYRCValueState const CLYCurrentUser;
+extern CLYRCValueState const CLYNoValue;
+
+typedef void (^RCVariantCallback)(CLYRequestResult response, NSError * error);
+
+typedef void (^RCDownloadCallback)(CLYRequestResult response, NSError * error, BOOL fullValueUpdate, NSDictionary* downloadedValues);
 
 //NOTE: Internal log levels
 typedef enum : NSUInteger

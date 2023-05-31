@@ -15,13 +15,18 @@ NSString* const kCountlyRCKeyKeys               = @"keys";
 NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
 
 
-CLYResponse const CLYResponseNetworkIssue       = @"CLYResponseNetworkIssue";
-CLYResponse const CLYResponseSuccess            = @"CLYResponseSuccess";
-CLYResponse const CLYResponseError              = @"CLYResponseError";
+CLYRequestResult const CLYResponseNetworkIssue  = @"CLYResponseNetworkIssue";
+CLYRequestResult const CLYResponseSuccess       = @"CLYResponseSuccess";
+CLYRequestResult const CLYResponseError         = @"CLYResponseError";
+
+CLYRCValueState const CLYCached                 = @"CLYCached";
+CLYRCValueState const CLYCurrentUser            = @"CLYCurrentUser";
+CLYRCValueState const CLYNoValue                = @"CLYNoValue";
 
 @interface CountlyRemoteConfig ()
 @property (nonatomic) NSDictionary* cachedRemoteConfig;
 @property (nonatomic) NSDictionary* localCachedVariants;
+@property (nonatomic) NSDictionary<NSString *, CountlyRCMeta *>* cachedRemoteConfigMeta;
 @end
 
 @implementation CountlyRemoteConfig
@@ -42,6 +47,8 @@ CLYResponse const CLYResponseError              = @"CLYResponseError";
     if (self = [super init])
     {
         self.cachedRemoteConfig = [CountlyPersistency.sharedInstance retrieveRemoteConfig];
+        self.cachedRemoteConfigMeta = [CountlyPersistency.sharedInstance retrieveRemoteConfigMeta];
+        
     }
 
     return self;
@@ -229,12 +236,83 @@ CLYResponse const CLYResponseError              = @"CLYResponseError";
     }
 }
 
+- (CountlyRCValue *)getRCValue:(NSString *)key
+{
+    id value = self.cachedRemoteConfig[key];
+    CountlyRCMeta* meta = self.cachedRemoteConfigMeta[key];
+    return [[CountlyRCValue alloc] initWithValue:value meta:meta];
+}
+
+- (void)updateValuesForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(RCDownloadCallback)completionHandler
+{
+    if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
+        return;
+    
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+        return;
+    
+    CLY_LOG_D(@"Fetching remote config manually...");
+    
+    [self fetchRemoteConfigForKeys:keys omitKeys:omitKeys completionHandler:^(NSDictionary *remoteConfig, NSError *error)
+     {
+        BOOL fullValueUpdate = false;
+        if (!error)
+        {
+            CLY_LOG_D(@"Fetching remote config manually is successful. \n%@", remoteConfig);
+            NSDictionary* remoteConfigMeta = [self createRCMeta:remoteConfig];
+            if (!keys && !omitKeys)
+            {
+                fullValueUpdate = true;
+                self.cachedRemoteConfig = remoteConfig;
+                self.cachedRemoteConfigMeta = remoteConfigMeta;
+            }
+            else
+            {
+                NSMutableDictionary* partiallyUpdatedRemoteConfig = self.cachedRemoteConfig.mutableCopy;
+                [partiallyUpdatedRemoteConfig addEntriesFromDictionary:remoteConfig];
+                self.cachedRemoteConfig = [NSDictionary dictionaryWithDictionary:partiallyUpdatedRemoteConfig];
+                
+                NSMutableDictionary* partiallyUpdatedRemoteConfigMeta = self.cachedRemoteConfigMeta.mutableCopy;
+                [partiallyUpdatedRemoteConfigMeta addEntriesFromDictionary:remoteConfigMeta];
+                self.cachedRemoteConfigMeta = [NSDictionary dictionaryWithDictionary:partiallyUpdatedRemoteConfigMeta];
+            }
+            
+            [CountlyPersistency.sharedInstance storeRemoteConfig:self.cachedRemoteConfig];
+            [CountlyPersistency.sharedInstance storeRemoteConfigMeta:self.cachedRemoteConfigMeta];
+            
+            
+        }
+        else
+        {
+            CLY_LOG_W(@"Fetching remote config manually failed: %@", error);
+        }
+        
+        if (completionHandler)
+            completionHandler(CLYResponseSuccess, error, fullValueUpdate, remoteConfig);
+    }];
+}
+
+- (NSDictionary *) createRCMeta:(NSDictionary *) remoteConfig
+{
+    NSMutableDictionary<NSString *, CountlyRCMeta *>* remoteConfigMeta = [[NSMutableDictionary alloc] init];
+    NSString *deviceID = [Countly.sharedInstance deviceID];
+    NSTimeInterval timeStamp = [CountlyCommon.sharedInstance uniqueTimestamp];
+    [remoteConfig enumerateKeysAndObjectsUsingBlock:^(NSString * key, NSString * value, BOOL * stop)
+     {
+        remoteConfigMeta[key] = [[CountlyRCMeta alloc] initWithDeviceID:deviceID timestamp:timeStamp];
+            
+    }];
+
+    return  remoteConfigMeta;
+}
+
 - (NSDictionary *)testingGetAllVariants
 {
     return self.localCachedVariants;
 }
 
-- (NSDictionary *)testingGetVariantsForKey:(NSString *)key {
+- (NSDictionary *)testingGetVariantsForKey:(NSString *)key
+{
     return  self.localCachedVariants[key];
 }
 
@@ -253,7 +331,7 @@ CLYResponse const CLYResponseError              = @"CLYResponseError";
     
     CLY_LOG_D(@"Fetching variants manually...");
     
-    [self testingGetVariantsForKeyInternal:keys completionHandler:^(CLYResponse response, NSDictionary *varaints,NSError *error)
+    [self testingGetVariantsForKeyInternal:keys completionHandler:^(CLYRequestResult response, NSDictionary *varaints,NSError *error)
      {
         if (!error)
         {
@@ -271,7 +349,7 @@ CLYResponse const CLYResponseError              = @"CLYResponseError";
     }];
 }
 
-- (void)testingGetVariantsForKeyInternal:(NSArray *)keys completionHandler:(void (^)(CLYResponse response, NSDictionary* variants, NSError * error))completionHandler
+- (void)testingGetVariantsForKeyInternal:(NSArray *)keys completionHandler:(void (^)(CLYRequestResult response, NSDictionary* variants, NSError * error))completionHandler
 {
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
     {
@@ -336,7 +414,7 @@ CLYResponse const CLYResponseError              = @"CLYResponseError";
     
     CLY_LOG_D(@"Enrolling RC variant");
     
-    [self testingEnrollIntoVariantInternal:key variantName:variantName completionHandler:^(CLYResponse response, NSError *error)
+    [self testingEnrollIntoVariantInternal:key variantName:variantName completionHandler:^(CLYRequestResult response, NSError *error)
      {
         if (!error)
         {
