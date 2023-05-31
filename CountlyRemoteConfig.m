@@ -229,16 +229,16 @@ CLYResponse const CLYResponseError              = @"CLYResponseError";
     }
 }
 
-- (NSDictionary *)getAllRCVariants
+- (NSDictionary *)testingGetAllVariants
 {
     return self.localCachedVariants;
 }
 
-- (NSDictionary *)getRCVariantsForKey:(NSString *)key {
+- (NSDictionary *)testingGetVariantsForKey:(NSString *)key {
     return  self.localCachedVariants[key];
 }
 
-- (void)fetchRCVariantsForKeys:(NSArray *)keys completionHandler:(void (^)(CLYResponse response, NSError * error))completionHandler
+- (void)testingFetchVariantsForKeys:(NSArray *)keys completionHandler:(RCVariantCallback)completionHandler
 {
     if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
     {
@@ -253,7 +253,7 @@ CLYResponse const CLYResponseError              = @"CLYResponseError";
     
     CLY_LOG_D(@"Fetching variants manually...");
     
-    [self fetchRCVariantsForKeysInternal:keys completionHandler:^(CLYResponse response, NSDictionary *varaints,NSError *error)
+    [self testingGetVariantsForKeyInternal:keys completionHandler:^(CLYResponse response, NSDictionary *varaints,NSError *error)
      {
         if (!error)
         {
@@ -271,7 +271,7 @@ CLYResponse const CLYResponseError              = @"CLYResponseError";
     }];
 }
 
-- (void)fetchRCVariantsForKeysInternal:(NSArray *)keys completionHandler:(void (^)(CLYResponse response, NSDictionary* variants, NSError * error))completionHandler
+- (void)testingGetVariantsForKeyInternal:(NSArray *)keys completionHandler:(void (^)(CLYResponse response, NSDictionary* variants, NSError * error))completionHandler
 {
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
     {
@@ -326,7 +326,7 @@ CLYResponse const CLYResponseError              = @"CLYResponseError";
     CLY_LOG_D(@"Fetch variants Request <%p> started:\n[%@] %@", (id)request, request.HTTPMethod, request.URL.absoluteString);
 }
 
-- (void)enrollInRCVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(void (^)(CLYResponse response, NSError * error))completionHandler
+- (void)testingEnrollIntoVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(RCVariantCallback)completionHandler
 {
     if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
         return;
@@ -336,7 +336,7 @@ CLYResponse const CLYResponseError              = @"CLYResponseError";
     
     CLY_LOG_D(@"Enrolling RC variant");
     
-    [self enrollInRCVariantInternal:key variantName:variantName completionHandler:^(CLYResponse response, NSError *error)
+    [self testingEnrollIntoVariantInternal:key variantName:variantName completionHandler:^(CLYResponse response, NSError *error)
      {
         if (!error)
         {
@@ -353,7 +353,7 @@ CLYResponse const CLYResponseError              = @"CLYResponseError";
     }];
 }
 
-- (void)enrollInRCVariantInternal:(NSString *)key variantName:(NSString *)variantName completionHandler:(void (^)(CLYResponse response, NSError * error))completionHandler
+- (void)testingEnrollIntoVariantInternal:(NSString *)key variantName:(NSString *)variantName completionHandler:(RCVariantCallback)completionHandler
 {
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
     {
@@ -363,6 +363,16 @@ CLYResponse const CLYResponseError              = @"CLYResponseError";
     if (!completionHandler)
     {
         CLY_LOG_D(@"'enrollInRCVariant' is aborted: 'completionHandler' not provided");
+        return;
+    }
+    
+    if(!key) {
+        CLY_LOG_D(@"'enrollInRCVariant' is aborted: 'key' is not valid");
+        return;
+    }
+    
+    if(!variantName) {
+        CLY_LOG_D(@"'enrollInRCVariant' is aborted: 'variantName' is not valid");
         return;
     }
     
@@ -400,10 +410,13 @@ CLYResponse const CLYResponseError              = @"CLYResponseError";
         
         CLY_LOG_D(@"Enroll RC Variant Request <%p> successfully completed.", request);
         
-        dispatch_async(dispatch_get_main_queue(), ^
-                       {
-            completionHandler(CLYResponseSuccess, nil);
-        });
+        [self updateRemoteConfigForKeys:nil omitKeys:nil completionHandler:^(NSError *updateRCError) {
+            dispatch_async(dispatch_get_main_queue(), ^
+                           {
+                completionHandler(CLYResponseSuccess, nil);
+            });
+        }];
+       
     }];
     
     [task resume];
@@ -456,7 +469,7 @@ CLYResponse const CLYResponseError              = @"CLYResponseError";
     queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyKey, key];
     if (variantName)
     {
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyVariant, variantName];
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyVariant, variantName.cly_URLEscaped];
     }
     
     if (CountlyConsentManager.sharedInstance.consentForSessions)
@@ -466,9 +479,8 @@ CLYResponse const CLYResponseError              = @"CLYResponseError";
     
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
     
-    NSString* serverOutputSDKEndpoint = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"%@%@",
-                                         kCountlyEndpointO,
-                                         kCountlyEndpointSDK];
+    NSString* serverOutputSDKEndpoint = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"%@",
+                                         kCountlyEndpointI];
     
     if (CountlyConnectionManager.sharedInstance.alwaysUsePOST)
     {

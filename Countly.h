@@ -717,15 +717,15 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)updateRemoteConfigExceptForKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * __nullable error))completionHandler;
 
-- (NSDictionary *)getAllRemoteConfigVariants;
+- (NSDictionary *)testingGetAllVariants;
 
-- (void)fetchRCVariants:(void (^)(CLYResponse response, NSError * error))completionHandler;
+- (NSArray *)testingGetVariantsForKey:(NSString *)key;
 
-- (void)fetchRCVariantsForKeys:(NSArray *)keys completionHandler:(void (^)(CLYResponse response, NSError * error))completionHandler;
+- (void)testingFetchAllVariants:(void (^)(CLYResponse response, NSError * error))completionHandler;
 
-- (NSDictionary *)getRCVariantsForKey:(NSString *)key;
+- (void)testingFetchVariantsForKeys:(NSArray *)keys completionHandler:(RCVariantCallback)completionHandler;
 
-- (void)enrollInRCVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(void (^)(CLYResponse response, NSError * error))completionHandler;
+- (void)testingEnrollIntoVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(RCVariantCallback)completionHandler;
 
 
 #pragma mark - Performance Monitoring

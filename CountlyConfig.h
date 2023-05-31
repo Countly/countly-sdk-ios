@@ -104,6 +104,8 @@ extern CLYResponse const CLYResponseNetworkIssue;
 extern CLYResponse const CLYResponseSuccess;
 extern CLYResponse const CLYResponseError;
 
+typedef void (^RCVariantCallback)(CLYResponse response, NSError * error);
+
 //NOTE: Internal log levels
 typedef enum : NSUInteger
 {

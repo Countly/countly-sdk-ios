@@ -1143,33 +1143,39 @@ NSString* previousEventID;
     [CountlyRemoteConfig.sharedInstance updateRemoteConfigForKeys:nil omitKeys:omitKeys completionHandler:completionHandler];
 }
 
-- (NSDictionary *)getAllRemoteConfigVariants
+- (NSDictionary *)testingGetAllVariants
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
     
-    return [CountlyRemoteConfig.sharedInstance getAllRCVariants];
+    return [CountlyRemoteConfig.sharedInstance testingGetAllVariants];
 }
 
-- (NSDictionary *)getRCVariantsForKey:(NSString *)key {
-    return [CountlyRemoteConfig.sharedInstance getRCVariantsForKey:key];
+- (NSArray *)testingGetVariantsForKey:(NSString *)key {
+    
+    CLY_LOG_I(@"%s %@", __FUNCTION__, key);
+    
+    return [CountlyRemoteConfig.sharedInstance testingGetVariantsForKey:key];
 }
 
-- (void)enrollInRCVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(void (^)(CLYResponse response, NSError * error))completionHandler {
-    [CountlyRemoteConfig.sharedInstance enrollInRCVariant:key variantName:variantName completionHandler:completionHandler];
+- (void)testingEnrollIntoVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(RCVariantCallback)completionHandler {
+    
+    CLY_LOG_I(@"%s %@ %@ %@", __FUNCTION__, key, variantName , completionHandler);
+    
+    [CountlyRemoteConfig.sharedInstance testingEnrollIntoVariant:key variantName:variantName completionHandler:completionHandler];
 }
 
-- (void)fetchVariants:(void (^)(CLYResponse response, NSError * error))completionHandler
+- (void)testingFetchAllVariants:(void (^)(CLYResponse response, NSError * error))completionHandler
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, completionHandler);
     
-    [CountlyRemoteConfig.sharedInstance fetchRCVariantsForKeys:nil completionHandler:completionHandler];
+    [CountlyRemoteConfig.sharedInstance testingFetchVariantsForKeys:nil completionHandler:completionHandler];
 }
 
-- (void)fetchVariantsForKeys:(NSArray *)keys completionHandler:(void (^)(CLYResponse response, NSError * error))completionHandler
+- (void)testingFetchVariantsForKeys:(NSArray *)keys completionHandler:(RCVariantCallback)completionHandler
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, keys, completionHandler);
     
-    [CountlyRemoteConfig.sharedInstance fetchRCVariantsForKeys:keys completionHandler:completionHandler];
+    [CountlyRemoteConfig.sharedInstance testingFetchVariantsForKeys:keys completionHandler:completionHandler];
 }
 
 

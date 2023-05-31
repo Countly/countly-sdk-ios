@@ -14,10 +14,11 @@
 
 - (void)startRemoteConfig;
 - (void)clearCachedRemoteConfig;
-- (NSDictionary *)getAllRCVariants;
 - (id)remoteConfigValueForKey:(NSString *)key;
-- (NSDictionary *)getRCVariantsForKey:(NSString *)key;
-- (void)fetchRCVariantsForKeys:(NSArray *)keys completionHandler:(void (^)(CLYResponse response, NSError * error))completionHandler;
 - (void)updateRemoteConfigForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler;
-- (void)enrollInRCVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(void (^)(CLYResponse response, NSError * error))completionHandler;
+
+- (NSDictionary *)testingGetAllVariants;
+- (NSArray *)testingGetVariantsForKey:(NSString *)key;
+- (void)testingFetchVariantsForKeys:(NSArray *)keys completionHandler:(RCVariantCallback)completionHandler;
+- (void)testingEnrollIntoVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(RCVariantCallback)completionHandler;
 @end
