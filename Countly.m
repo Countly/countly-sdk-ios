@@ -188,7 +188,7 @@ NSString* previousEventID;
     CountlyRemoteConfig.sharedInstance.IsEnabledRemoteConfigValueCaching = config.enableRemoteConfigValueCaching;
     CountlyRemoteConfig.sharedInstance.remoteConfigCompletionHandler = config.remoteConfigCompletionHandler;
     CountlyRemoteConfig.sharedInstance.remoteConfigGlobalCallback = config.remoteConfigGlobalCallback;
-    [CountlyRemoteConfig.sharedInstance startRemoteConfig];
+    [CountlyRemoteConfig.sharedInstance downloadRemoteConfig];
     
     CountlyPerformanceMonitoring.sharedInstance.isEnabledOnInitialConfig = config.enablePerformanceMonitoring;
     [CountlyPerformanceMonitoring.sharedInstance startPerformanceMonitoring];
@@ -485,7 +485,7 @@ NSString* previousEventID;
 
         [CountlyConnectionManager.sharedInstance proceedOnQueue];
 
-        [CountlyRemoteConfig.sharedInstance startRemoteConfig];
+        [CountlyRemoteConfig.sharedInstance downloadRemoteConfig];
 
         return;
     }
@@ -517,8 +517,16 @@ NSString* previousEventID;
         [CountlyPersistency.sharedInstance clearAllTimedEvents];
     }
 
-    [CountlyRemoteConfig.sharedInstance clearCachedRemoteConfig];
-    [CountlyRemoteConfig.sharedInstance startRemoteConfig];
+    if(onServer || [deviceID isEqualToString:CLYTemporaryDeviceID] )
+    {
+        [CountlyRemoteConfig.sharedInstance clearCachedRemoteConfig:NO];
+    }
+    [CountlyRemoteConfig.sharedInstance downloadRemoteConfig];
+}
+
+- (void)remoteConfigClearAllValues
+{
+    [CountlyRemoteConfig.sharedInstance clearCachedRemoteConfig:YES];
 }
 
 - (void)storeCustomDeviceIDState:(NSString *)deviceID
@@ -1179,6 +1187,35 @@ NSString* previousEventID;
     return [CountlyRemoteConfig.sharedInstance getValue:key];
 }
 
+- (NSDictionary<NSString*, CountlyRCValue *> *)remoteConfigGetAllValues
+{
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    return [CountlyRemoteConfig.sharedInstance getAllValues];
+}
+
+- (void)remoteConfigEnrollIntoABTestsForKeys:(NSArray *)keys
+{
+    CLY_LOG_I(@"%s %@", __FUNCTION__, keys);
+    [CountlyRemoteConfig.sharedInstance enrollIntoABTestsForKeys:keys];
+}
+
+- (void)remoteConfigExitABTestsForKeys:(NSArray *)keys
+{
+    CLY_LOG_I(@"%s %@", __FUNCTION__, keys);
+    [CountlyRemoteConfig.sharedInstance exitABTestsForKeys:keys];
+}
+
+-(void)remoteConfigRegisterDownloadCallback:(RCDownloadCallback) callback
+{
+    CLY_LOG_I(@"%s %@", __FUNCTION__, callback);
+    [CountlyRemoteConfig.sharedInstance registerDownloadCallback:callback];
+}
+
+-(void)remoteConfigRemoveDownloadCallback:(RCDownloadCallback) callback
+{
+    CLY_LOG_I(@"%s %@", __FUNCTION__, callback);
+    [CountlyRemoteConfig.sharedInstance removeDownloadCallback:callback];
+}
 
 - (void)remoteConfigDownloadValues:(RCDownloadCallback)completionHandler
 {

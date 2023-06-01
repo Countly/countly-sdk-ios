@@ -24,9 +24,8 @@ CLYRCValueState const CLYCurrentUser            = @"CLYCurrentUser";
 CLYRCValueState const CLYNoValue                = @"CLYNoValue";
 
 @interface CountlyRemoteConfig ()
-@property (nonatomic) NSDictionary* cachedRemoteConfig;
 @property (nonatomic) NSDictionary* localCachedVariants;
-@property (nonatomic) NSDictionary<NSString *, CountlyRCMeta *>* cachedRemoteConfigMeta;
+@property (nonatomic) NSDictionary<NSString *, CountlyRCValue *>* cachedRemoteConfig;
 @end
 
 @implementation CountlyRemoteConfig
@@ -47,8 +46,8 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
     if (self = [super init])
     {
         self.cachedRemoteConfig = [CountlyPersistency.sharedInstance retrieveRemoteConfig];
-        self.cachedRemoteConfigMeta = [CountlyPersistency.sharedInstance retrieveRemoteConfigMeta];
         
+        self.remoteConfigGlobalCallbacks = [[NSMutableArray alloc] init];
     }
 
     return self;
@@ -74,9 +73,9 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
         if (!error)
         {
             CLY_LOG_D(@"Fetching remote config on start is successful. \n%@", remoteConfig);
-
-            self.cachedRemoteConfig = remoteConfig;
+            self.cachedRemoteConfig = [self createRCMeta:remoteConfig];
             [CountlyPersistency.sharedInstance storeRemoteConfig:self.cachedRemoteConfig];
+            
         }
         else
         {
@@ -119,19 +118,21 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
         if (!error)
         {
             CLY_LOG_D(@"Fetching remote config manually is successful. \n%@", remoteConfig);
-
+            NSDictionary* remoteConfigMeta = [self createRCMeta:remoteConfig];
             if (!keys && !omitKeys)
             {
-                self.cachedRemoteConfig = remoteConfig;
+                self.cachedRemoteConfig = remoteConfigMeta;
             }
             else
             {
-                NSMutableDictionary* partiallyUpdatedRemoteConfig = self.cachedRemoteConfig.mutableCopy;
-                [partiallyUpdatedRemoteConfig addEntriesFromDictionary:remoteConfig];
-                self.cachedRemoteConfig = [NSDictionary dictionaryWithDictionary:partiallyUpdatedRemoteConfig];
+                NSMutableDictionary* partiallyUpdatedRemoteConfigMeta = self.cachedRemoteConfig.mutableCopy;
+                [partiallyUpdatedRemoteConfigMeta addEntriesFromDictionary:remoteConfigMeta];
+                self.cachedRemoteConfig = [NSDictionary dictionaryWithDictionary:partiallyUpdatedRemoteConfigMeta];
             }
-
+            
             [CountlyPersistency.sharedInstance storeRemoteConfig:self.cachedRemoteConfig];
+            
+            
         }
         else
         {
@@ -145,13 +146,22 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
 
 - (id)remoteConfigValueForKey:(NSString *)key
 {
-    return self.cachedRemoteConfig[key];
+    CountlyRCValue* countlyRCValue = self.cachedRemoteConfig[key];
+    if(countlyRCValue) {
+        return countlyRCValue.value;
+    }
+    return nil;
 }
 
-- (void)clearCachedRemoteConfig
+- (void)clearCachedRemoteConfig:(BOOL)force
 {
-    self.cachedRemoteConfig = nil;
-    [CountlyPersistency.sharedInstance storeRemoteConfig:self.cachedRemoteConfig];
+    if(force || !self.IsEnabledRemoteConfigValueCaching) {
+        self.cachedRemoteConfig = nil;
+        [CountlyPersistency.sharedInstance storeRemoteConfig:self.cachedRemoteConfig];
+    }
+    else {
+        [self updateMetaStateToCache];
+    }
 }
 
 #pragma mark ---
@@ -254,9 +264,22 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
 
 - (CountlyRCValue *)getValue:(NSString *)key
 {
-    id value = self.cachedRemoteConfig[key];
-    CountlyRCMeta* meta = self.cachedRemoteConfigMeta[key];
-    return [[CountlyRCValue alloc] initWithValue:value meta:meta];
+    return self.cachedRemoteConfig[key];
+}
+
+- (NSDictionary<NSString*, CountlyRCValue *> *)getAllValues
+{
+    return self.cachedRemoteConfig;
+}
+
+- (void)enrollIntoABTestsForKeys:(NSArray *)keys
+{
+    
+}
+
+- (void)exitABTestsForKeys:(NSArray *)keys
+{
+    
 }
 
 - (void)downloadValuesForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(RCDownloadCallback)completionHandler
@@ -279,22 +302,16 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
             if (!keys && !omitKeys)
             {
                 fullValueUpdate = true;
-                self.cachedRemoteConfig = remoteConfig;
-                self.cachedRemoteConfigMeta = remoteConfigMeta;
+                self.cachedRemoteConfig = remoteConfigMeta;
             }
             else
             {
-                NSMutableDictionary* partiallyUpdatedRemoteConfig = self.cachedRemoteConfig.mutableCopy;
-                [partiallyUpdatedRemoteConfig addEntriesFromDictionary:remoteConfig];
-                self.cachedRemoteConfig = [NSDictionary dictionaryWithDictionary:partiallyUpdatedRemoteConfig];
-                
-                NSMutableDictionary* partiallyUpdatedRemoteConfigMeta = self.cachedRemoteConfigMeta.mutableCopy;
+                NSMutableDictionary* partiallyUpdatedRemoteConfigMeta = self.cachedRemoteConfig.mutableCopy;
                 [partiallyUpdatedRemoteConfigMeta addEntriesFromDictionary:remoteConfigMeta];
-                self.cachedRemoteConfigMeta = [NSDictionary dictionaryWithDictionary:partiallyUpdatedRemoteConfigMeta];
+                self.cachedRemoteConfig = [NSDictionary dictionaryWithDictionary:partiallyUpdatedRemoteConfigMeta];
             }
             
             [CountlyPersistency.sharedInstance storeRemoteConfig:self.cachedRemoteConfig];
-            [CountlyPersistency.sharedInstance storeRemoteConfigMeta:self.cachedRemoteConfigMeta];
             
             
         }
@@ -305,21 +322,51 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
         
         if (completionHandler)
             completionHandler(CLYResponseSuccess, error, fullValueUpdate, remoteConfig);
+        
+        
+        if (self.remoteConfigGlobalCallback)
+            self.remoteConfigGlobalCallback(CLYResponseSuccess, error, fullValueUpdate, remoteConfig);
+        
+        [self.remoteConfigGlobalCallbacks enumerateObjectsUsingBlock:^(RCDownloadCallback callback, NSUInteger idx, BOOL * stop)
+         {
+            callback(CLYResponseSuccess, error, fullValueUpdate, remoteConfig);
+        }];
+        
+        
     }];
 }
 
 - (NSDictionary *) createRCMeta:(NSDictionary *) remoteConfig
 {
-    NSMutableDictionary<NSString *, CountlyRCMeta *>* remoteConfigMeta = [[NSMutableDictionary alloc] init];
-    NSString *deviceID = [Countly.sharedInstance deviceID];
+    NSMutableDictionary<NSString *, CountlyRCValue *>* remoteConfigMeta = [[NSMutableDictionary alloc] init];
     NSTimeInterval timeStamp = [CountlyCommon.sharedInstance uniqueTimestamp];
     [remoteConfig enumerateKeysAndObjectsUsingBlock:^(NSString * key, NSString * value, BOOL * stop)
      {
-        remoteConfigMeta[key] = [[CountlyRCMeta alloc] initWithDeviceID:deviceID timestamp:timeStamp];
+        remoteConfigMeta[key] = [[CountlyRCValue alloc] initWithValue:value valueState:CLYCurrentUser timestamp:timeStamp];
             
     }];
 
     return  remoteConfigMeta;
+}
+
+- (void)updateMetaStateToCache
+{
+    [self.cachedRemoteConfig enumerateKeysAndObjectsUsingBlock:^(NSString * key, CountlyRCValue * countlyRCMeta, BOOL * stop)
+     {
+        countlyRCMeta.valueState = CLYCached;
+        
+    }];
+    
+    [CountlyPersistency.sharedInstance storeRemoteConfig:self.cachedRemoteConfig];
+}
+
+-(void)registerDownloadCallback:(RCDownloadCallback) callback
+{
+    [self.remoteConfigGlobalCallbacks addObject:callback];
+}
+-(void)removeDownloadCallback:(RCDownloadCallback) callback
+{
+    [self.remoteConfigGlobalCallbacks removeObject:callback];
 }
 
 - (NSDictionary *)testingGetAllVariants

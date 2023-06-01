@@ -23,7 +23,6 @@ NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 NSString* const kCountlyNotificationPermissionKey = @"kCountlyNotificationPermissionKey";
 NSString* const kCountlyIsCustomDeviceIDKey = @"kCountlyIsCustomDeviceIDKey";
 NSString* const kCountlyRemoteConfigPersistencyKey = @"kCountlyRemoteConfigPersistencyKey";
-NSString* const kCountlyRemoteConfigPersistencyKeyMeta = @"kCountlyRemoteConfigPersistencyKeyMeta";
 NSString* const kCountlyServerConfigPersistencyKey = @"kCountlyServerConfigPersistencyKey";
 
 
@@ -496,33 +495,17 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 
 - (NSDictionary *)retrieveRemoteConfig
 {
-    NSDictionary* remoteConfig = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyRemoteConfigPersistencyKey];
+    NSData* data = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyRemoteConfigPersistencyKey];
+    NSDictionary* remoteConfig = [NSKeyedUnarchiver unarchiveObjectWithData:data];
     if (!remoteConfig)
         remoteConfig = NSDictionary.new;
-
+    
     return remoteConfig;
 }
 
 - (void)storeRemoteConfig:(NSDictionary *)remoteConfig
 {
-    [NSUserDefaults.standardUserDefaults setObject:remoteConfig forKey:kCountlyRemoteConfigPersistencyKey];
-    [NSUserDefaults.standardUserDefaults synchronize];
-}
-
-- (NSDictionary *)retrieveRemoteConfigMeta
-{
-    NSData* data = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyRemoteConfigPersistencyKeyMeta];
-    NSDictionary* remoteConfigMeta = [NSKeyedUnarchiver unarchiveObjectWithData:data];
-    if (!remoteConfigMeta)
-        remoteConfigMeta = NSDictionary.new;
-    
-    return remoteConfigMeta;
-}
-
-- (void)storeRemoteConfigMeta:(NSDictionary *)remoteConfigMeta
-{
-    
-    [NSUserDefaults.standardUserDefaults setObject:[NSKeyedArchiver archivedDataWithRootObject:remoteConfigMeta] forKey:kCountlyRemoteConfigPersistencyKeyMeta];
+    [NSUserDefaults.standardUserDefaults setObject:[NSKeyedArchiver archivedDataWithRootObject:remoteConfig] forKey:kCountlyRemoteConfigPersistencyKey];
     [NSUserDefaults.standardUserDefaults synchronize];
 }
 

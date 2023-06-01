@@ -726,17 +726,25 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)testingEnrollIntoVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(RCVariantCallback)completionHandler;
 
-- (NSArray<CountlyRCValue *> *)remoteConfigGetAllValues;
-
 - (void)remoteConfigClearAllValues;
 
 - (CountlyRCValue *)remoteConfigGetValue:(NSString *)key;
+
+- (NSDictionary<NSString*, CountlyRCValue *> *)remoteConfigGetAllValues;
+
+-(void)remoteConfigRegisterDownloadCallback:(RCDownloadCallback) callback;
+
+-(void)remoteConfigRemoveDownloadCallback:(RCDownloadCallback) callback;
 
 - (void)remoteConfigDownloadValues:(RCDownloadCallback)completionHandler;
 
 - (void)remoteConfigDownloadSpecificValues:(NSArray *)keys completionHandler:(RCDownloadCallback)completionHandler;
 
 - (void)remoteConfigDownloadOmittingValues:(NSArray *)omitKeys completionHandler:(RCDownloadCallback)completionHandler;
+
+- (void)remoteConfigEnrollIntoABTestsForKeys:(NSArray *)keys;
+
+- (void)remoteConfigExitABTestsForKeys:(NSArray *)keys;
 
 #pragma mark - Performance Monitoring
 

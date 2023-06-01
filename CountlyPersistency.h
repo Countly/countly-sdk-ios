@@ -56,10 +56,6 @@
 - (NSDictionary *)retrieveRemoteConfig;
 - (void)storeRemoteConfig:(NSDictionary *)remoteConfig;
 
-
-- (NSDictionary *)retrieveRemoteConfigMeta;
-- (void)storeRemoteConfigMeta:(NSDictionary *)remoteConfig;
-
 - (NSDictionary *)retrieveServerConfig;
 - (void)storeServerConfig:(NSDictionary *)serverConfig;
 

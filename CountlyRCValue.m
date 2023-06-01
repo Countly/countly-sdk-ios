@@ -10,45 +10,18 @@
 
 @implementation CountlyRCValue
 
-- (instancetype)init
-{
-    if (self = [super init])
-    {
-        self.value = nil;
-        self.valueState = CLYNoValue;
-    }
-    
-    return self;
-}
-
-- (instancetype)initWithValue:(id)value meta:(CountlyRCMeta *) meta
-{
-    if (self = [super init])
-    {
-        self.value = value;
-        if(meta) {
-            self.timestamp = meta.timestamp;
-            self.valueState = meta.valueState;
-        }
-    }
-    
-    return self;
-}
-
-@end
-
-@implementation CountlyRCMeta
-
 
 - (void)encodeWithCoder:(NSCoder *)encoder {
     
-    [encoder encodeObject:self.deviceID forKey:NSStringFromSelector(@selector(deviceID))];
+    [encoder encodeObject:self.value forKey:NSStringFromSelector(@selector(valueState))];
+    [encoder encodeObject:self.valueState forKey:NSStringFromSelector(@selector(valueState))];
     [encoder encodeDouble:self.timestamp forKey:NSStringFromSelector(@selector(timestamp))];
 }
 
 - (id)initWithCoder:(NSCoder *)decoder {
     if((self = [super init])) {
-        self.deviceID = [decoder decodeObjectForKey:NSStringFromSelector(@selector(deviceID))];
+        self.value = [decoder decodeObjectForKey:NSStringFromSelector(@selector(valueState))];
+        self.valueState = [decoder decodeObjectForKey:NSStringFromSelector(@selector(valueState))];
         self.timestamp = [decoder decodeDoubleForKey:NSStringFromSelector(@selector(timestamp))];
     }
     return self;
@@ -63,30 +36,16 @@
     return self;
 }
 
-- (instancetype)initWithDeviceID:(NSString *)deviceID timestamp:(NSTimeInterval) timestamp
+- (instancetype)initWithValue:(id)value valueState:(CLYRCValueState)valueState timestamp:(NSTimeInterval) timestamp;
 {
     if (self = [super init])
     {
-        self.deviceID = deviceID;
+        self.value = value;
+        self.valueState = valueState;
         self.timestamp = timestamp;
     }
     
     return self;
-}
-
-- (CLYRCValueState) valueState
-{
-    if(self.deviceID)
-    {
-       if([self.deviceID isEqualToString:[Countly.sharedInstance deviceID]] )
-       {
-           return CLYCurrentUser;
-       }
-       else {
-           return CLYCached;
-       }
-    }
-    return  CLYNoValue ;
 }
 
 
