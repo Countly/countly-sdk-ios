@@ -88,6 +88,22 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
     }];
 }
 
+- (void)downloadRemoteConfig
+{
+    if (!self.isEnabledOnInitialConfig)
+        return;
+    
+    if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
+        return;
+    
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+        return;
+    
+    CLY_LOG_D(@"Fetching remote config on start...");
+    
+    [self downloadValuesForKeys:nil omitKeys:nil completionHandler:self.remoteConfigGlobalCallback];
+}
+
 - (void)updateRemoteConfigForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler
 {
     if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
@@ -236,14 +252,14 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
     }
 }
 
-- (CountlyRCValue *)getRCValue:(NSString *)key
+- (CountlyRCValue *)getValue:(NSString *)key
 {
     id value = self.cachedRemoteConfig[key];
     CountlyRCMeta* meta = self.cachedRemoteConfigMeta[key];
     return [[CountlyRCValue alloc] initWithValue:value meta:meta];
 }
 
-- (void)updateValuesForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(RCDownloadCallback)completionHandler
+- (void)downloadValuesForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(RCDownloadCallback)completionHandler
 {
     if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
         return;
@@ -316,7 +332,7 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
     return  self.localCachedVariants[key];
 }
 
-- (void)testingFetchVariantsForKeys:(NSArray *)keys completionHandler:(RCVariantCallback)completionHandler
+- (void)testingFetchAllVariants:(RCVariantCallback)completionHandler
 {
     if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
     {
@@ -331,7 +347,7 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
     
     CLY_LOG_D(@"Fetching variants manually...");
     
-    [self testingGetVariantsForKeyInternal:keys completionHandler:^(CLYRequestResult response, NSDictionary *varaints,NSError *error)
+    [self testingGetAllVariantsInternal:^(CLYRequestResult response, NSDictionary *varaints,NSError *error)
      {
         if (!error)
         {
@@ -349,7 +365,7 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
     }];
 }
 
-- (void)testingGetVariantsForKeyInternal:(NSArray *)keys completionHandler:(void (^)(CLYRequestResult response, NSDictionary* variants, NSError * error))completionHandler
+- (void)testingGetAllVariantsInternal:(void (^)(CLYRequestResult response, NSDictionary* variants, NSError * error))completionHandler
 {
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
     {
@@ -359,7 +375,7 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
     if (!completionHandler)
         return;
     
-    NSURLRequest* request = [self fetchVariantsRequestForKeys:keys];
+    NSURLRequest* request = [self downloadVariantsRequest];
     NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
                               {
         NSDictionary* variants = nil;
@@ -502,16 +518,12 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
     CLY_LOG_D(@"Fetch variants Request <%p> started:\n[%@] %@", (id)request, request.HTTPMethod, request.URL.absoluteString);
 }
 
-- (NSURLRequest *)fetchVariantsRequestForKeys:(NSArray *)keys
+- (NSURLRequest *)downloadVariantsRequest
 {
     NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
     
     queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMethod, kCountlyRCKeyFetchVariant];
     
-    if (keys)
-    {
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyKeys, [keys cly_JSONify]];
-    }
     
     if (CountlyConsentManager.sharedInstance.consentForSessions)
     {

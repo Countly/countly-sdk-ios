@@ -525,6 +525,11 @@ typedef enum : NSUInteger
  */
 @property (nonatomic, copy) void (^remoteConfigCompletionHandler)(NSError * _Nullable error);
 
+@property (nonatomic) BOOL enableRemoteConfigAutomaticTriggers;
+@property (nonatomic) BOOL enableRemoteConfigValueCaching;
+
+@property (nonatomic, copy) RCDownloadCallback remoteConfigGlobalCallback;
+
 #pragma mark -
 
 /**
