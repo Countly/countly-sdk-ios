@@ -1,6 +1,7 @@
-## xx.xx.xx
+## 23.02.3
 - Added back battery level reporting to crash reporting. Battery level is only reported if battery was enabled before.
 - Added new methods for changing the device id: `changeDeviceIDWithMerge:`, `changeDeviceIDWithoutMerge:`.
+- Fixed a bug where the app would crash if `city`, `countryCode` or `IP` in location was null.
 - Deprecated existing method to change the device id: `setNewDeviceID:`
 - Deprecated `attributionID` initial config flag
 - Deprecated `recordAttributionID` method
