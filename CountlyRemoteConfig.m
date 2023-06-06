@@ -14,6 +14,10 @@ NSString* const kCountlyRCKeyKey                = @"key";
 NSString* const kCountlyRCKeyKeys               = @"keys";
 NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
 
+NSString* const kCountlyRCKeyRC                 = @"rc";
+NSString* const kCountlyRCKeyABOptIn            = @"ab";
+NSString* const kCountlyRCKeyABOptOut           = @"ab_opt_out";
+
 
 CLYRequestResult const CLYResponseNetworkIssue  = @"CLYResponseNetworkIssue";
 CLYRequestResult const CLYResponseSuccess       = @"CLYResponseSuccess";
@@ -34,7 +38,7 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
         return nil;
-
+    
     static CountlyRemoteConfig* s_sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
@@ -49,7 +53,7 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
         
         self.remoteConfigGlobalCallbacks = [[NSMutableArray alloc] init];
     }
-
+    
     return self;
 }
 
@@ -59,17 +63,17 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
 {
     if (!self.isEnabledOnInitialConfig)
         return;
-
+    
     if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
         return;
-
+    
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
         return;
-
+    
     CLY_LOG_D(@"Fetching remote config on start...");
-
-    [self fetchRemoteConfigForKeys:nil omitKeys:nil completionHandler:^(NSDictionary *remoteConfig, NSError *error)
-    {
+    
+    [self fetchRemoteConfigForKeys:nil omitKeys:nil isLegacy:NO completionHandler:^(NSDictionary *remoteConfig, NSError *error)
+     {
         if (!error)
         {
             CLY_LOG_D(@"Fetching remote config on start is successful. \n%@", remoteConfig);
@@ -81,7 +85,7 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
         {
             CLY_LOG_W(@"Fetching remote config on start failed: %@", error);
         }
-
+        
         if (self.remoteConfigCompletionHandler)
             self.remoteConfigCompletionHandler(error);
     }];
@@ -107,14 +111,14 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
 {
     if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
         return;
-
+    
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
         return;
-
+    
     CLY_LOG_D(@"Fetching remote config manually...");
-
-    [self fetchRemoteConfigForKeys:keys omitKeys:omitKeys completionHandler:^(NSDictionary *remoteConfig, NSError *error)
-    {
+    
+    [self fetchRemoteConfigForKeys:keys omitKeys:omitKeys isLegacy:YES completionHandler:^(NSDictionary *remoteConfig, NSError *error)
+     {
         if (!error)
         {
             CLY_LOG_D(@"Fetching remote config manually is successful. \n%@", remoteConfig);
@@ -138,7 +142,7 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
         {
             CLY_LOG_W(@"Fetching remote config manually failed: %@", error);
         }
-
+        
         if (completionHandler)
             completionHandler(error);
     }];
@@ -166,7 +170,7 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
 
 #pragma mark ---
 
-- (void)fetchRemoteConfigForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSDictionary* remoteConfig, NSError * error))completionHandler
+- (void)fetchRemoteConfigForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys  isLegacy:(BOOL)isLegacy completionHandler:(void (^)(NSDictionary* remoteConfig, NSError * error))completionHandler
 {
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
     {
@@ -175,17 +179,17 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
     }
     if (!completionHandler)
         return;
-
-    NSURLRequest* request = [self remoteConfigRequestForKeys:keys omitKeys:omitKeys];
+    
+    NSURLRequest* request = [self remoteConfigRequestForKeys:keys omitKeys:omitKeys isLegacy:isLegacy];
     NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
-    {
+                              {
         NSDictionary* remoteConfig = nil;
-
+        
         if (!error)
         {
             remoteConfig = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
         }
-
+        
         if (!error)
         {
             if (((NSHTTPURLResponse*)response).statusCode != 200)
@@ -195,38 +199,39 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
                 error = [NSError errorWithDomain:kCountlyErrorDomain code:CLYErrorRemoteConfigGeneralAPIError userInfo:userInfo];
             }
         }
-
+        
         if (error)
         {
             CLY_LOG_D(@"Remote Config Request <%p> failed!\nError: %@", request, error);
-
+            
             dispatch_async(dispatch_get_main_queue(), ^
-            {
+                           {
                 completionHandler(nil, error);
             });
-
+            
             return;
         }
-
+        
         CLY_LOG_D(@"Remote Config Request <%p> successfully completed.", request);
-
+        
         dispatch_async(dispatch_get_main_queue(), ^
-        {
+                       {
             completionHandler(remoteConfig, nil);
         });
     }];
-
+    
     [task resume];
-
+    
     CLY_LOG_D(@"Remote Config Request <%p> started:\n[%@] %@", (id)request, request.HTTPMethod, request.URL.absoluteString);
 }
 
-- (NSURLRequest *)remoteConfigRequestForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys
+- (NSURLRequest *)remoteConfigRequestForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys isLegacy:(BOOL)isLegacy
 {
     NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
-
-    queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMethod, kCountlyRCKeyFetchRemoteConfig];
-
+    
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMethod,
+                   isLegacy ? kCountlyRCKeyFetchRemoteConfig : kCountlyRCKeyRC];
+    
     if (keys)
     {
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyKeys, [keys cly_JSONify]];
@@ -235,18 +240,18 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
     {
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyOmitKeys, [omitKeys cly_JSONify]];
     }
-
+    
     if (CountlyConsentManager.sharedInstance.consentForSessions)
     {
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
     }
-
+    
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
-
+    
     NSString* serverOutputSDKEndpoint = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"%@%@",
                                          kCountlyEndpointO,
                                          kCountlyEndpointSDK];
-
+    
     if (CountlyConnectionManager.sharedInstance.alwaysUsePOST)
     {
         NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverOutputSDKEndpoint]];
@@ -274,12 +279,31 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
 
 - (void)enrollIntoABTestsForKeys:(NSArray *)keys
 {
+    if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
+        return;
+    
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+        return;
+    
+    
+    CLY_LOG_D(@"Entolling in AB Tests...");
+    
+    [self enrollExitABForKeys:keys enroll:YES];
     
 }
 
 - (void)exitABTestsForKeys:(NSArray *)keys
 {
+    if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
+        return;
     
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+        return;
+    
+    
+    CLY_LOG_D(@"Exiting AB Tests...");
+    
+    [self enrollExitABForKeys:keys enroll:NO];
 }
 
 - (void)downloadValuesForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(RCDownloadCallback)completionHandler
@@ -292,7 +316,7 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
     
     CLY_LOG_D(@"Fetching remote config manually...");
     
-    [self fetchRemoteConfigForKeys:keys omitKeys:omitKeys completionHandler:^(NSDictionary *remoteConfig, NSError *error)
+    [self fetchRemoteConfigForKeys:keys omitKeys:omitKeys isLegacy:NO completionHandler:^(NSDictionary *remoteConfig, NSError *error)
      {
         BOOL fullValueUpdate = false;
         if (!error)
@@ -343,9 +367,9 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
     [remoteConfig enumerateKeysAndObjectsUsingBlock:^(NSString * key, NSString * value, BOOL * stop)
      {
         remoteConfigMeta[key] = [[CountlyRCValue alloc] initWithValue:value valueState:CLYCurrentUser timestamp:timeStamp];
-            
+        
     }];
-
+    
     return  remoteConfigMeta;
 }
 
@@ -557,7 +581,7 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
                 completionHandler(CLYResponseSuccess, nil);
             });
         }];
-       
+        
     }];
     
     [task resume];
@@ -618,6 +642,81 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
     
     NSString* serverOutputSDKEndpoint = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"%@",
                                          kCountlyEndpointI];
+    
+    if (CountlyConnectionManager.sharedInstance.alwaysUsePOST)
+    {
+        NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverOutputSDKEndpoint]];
+        request.HTTPMethod = @"POST";
+        request.HTTPBody = [queryString cly_dataUTF8];
+        return request.copy;
+    }
+    else
+    {
+        NSString* withQueryString = [serverOutputSDKEndpoint stringByAppendingFormat:@"?%@", queryString];
+        NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:withQueryString]];
+        return request;
+    }
+}
+
+- (void)enrollExitABForKeys:(NSArray *)keys enroll:(BOOL)enroll
+{
+    if (!CountlyServerConfig.sharedInstance.networkingEnabled)
+    {
+        CLY_LOG_D(@"'%@' is aborted: SDK Networking is disabled from server config!", enroll ? @"enrollABTestForKeys" : @"exitABTestForKeys");
+        return;
+    }
+    
+    NSURLRequest* request = enroll ? [self enrollABRequestForKeys:keys] : [self exitABRequestForKeys:keys];
+    NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+                              {
+        
+        if (error)
+        {
+            CLY_LOG_D(@"%@ Request <%p> failed!\nError: %@", enroll ? @"enrollABTestForKeys" : @"exitABTestForKeys", request, error);
+        }
+        else
+        {
+            CLY_LOG_D(@"%@ Request <%p> successfully completed.", enroll ? @"enrollABTestForKeys" : @"exitABTestForKeys", request);
+        }
+        
+    }];
+    
+    [task resume];
+    
+    CLY_LOG_D(@"%@ Request <%p> started:\n[%@] %@", enroll ? @"enrollABTestForKeys" : @"exitABTestForKeys", (id)request, request.HTTPMethod, request.URL.absoluteString);
+}
+
+- (NSURLRequest *)enrollABRequestForKeys:(NSArray*)keys
+{
+    return [self aBRequestForMethod:kCountlyRCKeyABOptIn keys:keys];
+}
+
+- (NSURLRequest *)exitABRequestForKeys:(NSArray*)keys
+{
+    return [self aBRequestForMethod:kCountlyRCKeyABOptOut keys:keys];
+}
+
+- (NSURLRequest *)aBRequestForMethod:(NSString*)method keys:(NSArray*)keys
+{
+    NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
+    
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMethod, kCountlyRCKeyABOptIn];
+    
+    if (keys)
+    {
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyKeys, [keys cly_JSONify]];
+    }
+    
+    if (CountlyConsentManager.sharedInstance.consentForSessions)
+    {
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
+    }
+    
+    queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
+    
+    NSString* serverOutputSDKEndpoint = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"%@%@",
+                                         kCountlyEndpointO,
+                                         kCountlyEndpointSDK];
     
     if (CountlyConnectionManager.sharedInstance.alwaysUsePOST)
     {
