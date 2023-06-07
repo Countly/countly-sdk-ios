@@ -9,6 +9,7 @@
 #import "CountlyUserDetails.h"
 #import "CountlyConfig.h"
 #import "CountlyRCValue.h"
+#import "CountlyRemoteConfig.h"
 #import "CountlyFeedbackWidget.h"
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 #import <UserNotifications/UserNotifications.h>
@@ -717,6 +718,8 @@ NS_ASSUME_NONNULL_BEGIN
  * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure
  */
 - (void)updateRemoteConfigExceptForKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * __nullable error))completionHandler;
+
+- (CountlyRemoteConfig *) remoteConfig;
 
 - (NSDictionary *)testingGetAllVariants;
 

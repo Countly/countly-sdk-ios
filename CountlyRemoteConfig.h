@@ -1,40 +1,44 @@
-// CountlyLocationManager.h
 //
-// This code is provided under the MIT License.
+//  CountlyRemoteConfig.h
+//  CountlyTestApp-iOS
 //
-// Please visit www.count.ly for more information.
+//  Created by Muhammad Junaid Akram on 07/06/2023.
+//  Copyright © 2023 Countly. All rights reserved.
+//
 
 #import <Foundation/Foundation.h>
 #import "CountlyRCValue.h"
 
 @interface CountlyRemoteConfig : NSObject
-@property (nonatomic) BOOL isEnabledOnInitialConfig;
-@property (nonatomic) BOOL IsEnabledRemoteConfigValueCaching;
-@property (nonatomic, copy) void (^remoteConfigCompletionHandler)(NSError * error);
-@property (nonatomic, copy) RCDownloadCallback remoteConfigGlobalCallback;
-@property (nonatomic) NSMutableArray<RCDownloadCallback> *remoteConfigGlobalCallbacks;
 
 + (instancetype)sharedInstance;
 
-- (void)startRemoteConfig;
-- (void)clearCachedRemoteConfig:(BOOL)force;
-- (id)remoteConfigValueForKey:(NSString *)key;
-- (void)updateRemoteConfigForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler;
-
-
-- (void)downloadRemoteConfig;
-- (CountlyRCValue *)getValue:(NSString *)key;
-- (void)downloadValuesForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(RCDownloadCallback)completionHandler;
-
 - (NSDictionary *)testingGetAllVariants;
+
 - (NSArray *)testingGetVariantsForKey:(NSString *)key;
-- (void)testingDownloadAllVariants:(NSArray *)keys completionHandler:(RCVariantCallback)completionHandler;
+
+- (void)testingFetchAllVariants:(void (^)(CLYRequestResult response, NSError * error))completionHandler;
+
 - (void)testingEnrollIntoVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(RCVariantCallback)completionHandler;
 
-- (NSDictionary<NSString*, CountlyRCValue *> *)getAllValues;
-- (void)enrollIntoABTestsForKeys:(NSArray *)keys;
-- (void)exitABTestsForKeys:(NSArray *)keys;
+- (void)remoteConfigClearAllValues;
 
--(void)registerDownloadCallback:(RCDownloadCallback) callback;
--(void)removeDownloadCallback:(RCDownloadCallback) callback;
+- (CountlyRCValue *)remoteConfigGetValue:(NSString *)key;
+
+- (NSDictionary<NSString*, CountlyRCValue *> *)remoteConfigGetAllValues;
+
+-(void)remoteConfigRegisterDownloadCallback:(RCDownloadCallback) callback;
+
+-(void)remoteConfigRemoveDownloadCallback:(RCDownloadCallback) callback;
+
+- (void)remoteConfigDownloadValues:(RCDownloadCallback)completionHandler;
+
+- (void)remoteConfigDownloadSpecificValues:(NSArray *)keys completionHandler:(RCDownloadCallback)completionHandler;
+
+- (void)remoteConfigDownloadOmittingValues:(NSArray *)omitKeys completionHandler:(RCDownloadCallback)completionHandler;
+
+- (void)remoteConfigEnrollIntoABTestsForKeys:(NSArray *)keys;
+
+- (void)remoteConfigExitABTestsForKeys:(NSArray *)keys;
+
 @end
