@@ -23,13 +23,13 @@ CLYRequestResult const CLYResponseNetworkIssue  = @"CLYResponseNetworkIssue";
 CLYRequestResult const CLYResponseSuccess       = @"CLYResponseSuccess";
 CLYRequestResult const CLYResponseError         = @"CLYResponseError";
 
-CLYRCValueState const CLYCached                 = @"CLYCached";
-CLYRCValueState const CLYCurrentUser            = @"CLYCurrentUser";
-CLYRCValueState const CLYNoValue                = @"CLYNoValue";
+BOOL const CLYCached                 = @"CLYCached";
+BOOL const CLYCurrentUser            = @"CLYCurrentUser";
+BOOL const CLYNoValue                = @"CLYNoValue";
 
 @interface CountlyRemoteConfigInternal ()
 @property (nonatomic) NSDictionary* localCachedVariants;
-@property (nonatomic) NSDictionary<NSString *, CountlyRCValue *>* cachedRemoteConfig;
+@property (nonatomic) NSDictionary<NSString *, CountlyRCData *>* cachedRemoteConfig;
 @end
 
 @implementation CountlyRemoteConfigInternal
@@ -104,7 +104,7 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
     
     CLY_LOG_D(@"Fetching remote config on start...");
     
-    [self downloadValuesForKeys:nil omitKeys:nil completionHandler:self.remoteConfigGlobalCallback];
+    [self downloadValuesForKeys:nil omitKeys:nil completionHandler:nil];
 }
 
 - (void)updateRemoteConfigForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler
@@ -150,7 +150,7 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
 
 - (id)remoteConfigValueForKey:(NSString *)key
 {
-    CountlyRCValue* countlyRCValue = self.cachedRemoteConfig[key];
+    CountlyRCData* countlyRCValue = self.cachedRemoteConfig[key];
     if(countlyRCValue) {
         return countlyRCValue.value;
     }
@@ -159,7 +159,7 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
 
 - (void)clearCachedRemoteConfig:(BOOL)force
 {
-    if(force || !self.IsEnabledRemoteConfigValueCaching) {
+    if(force || !self.isEnabledRemoteConfigValueCaching) {
         self.cachedRemoteConfig = nil;
         [CountlyPersistency.sharedInstance storeRemoteConfig:self.cachedRemoteConfig];
     }
@@ -267,12 +267,12 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
     }
 }
 
-- (CountlyRCValue *)getValue:(NSString *)key
+- (CountlyRCData *)getValue:(NSString *)key
 {
     return self.cachedRemoteConfig[key];
 }
 
-- (NSDictionary<NSString*, CountlyRCValue *> *)getAllValues
+- (NSDictionary<NSString*, CountlyRCData *> *)getAllValues
 {
     return self.cachedRemoteConfig;
 }
@@ -348,9 +348,6 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
             completionHandler(CLYResponseSuccess, error, fullValueUpdate, remoteConfig);
         
         
-        if (self.remoteConfigGlobalCallback)
-            self.remoteConfigGlobalCallback(CLYResponseSuccess, error, fullValueUpdate, remoteConfig);
-        
         [self.remoteConfigGlobalCallbacks enumerateObjectsUsingBlock:^(RCDownloadCallback callback, NSUInteger idx, BOOL * stop)
          {
             callback(CLYResponseSuccess, error, fullValueUpdate, remoteConfig);
@@ -362,11 +359,10 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
 
 - (NSDictionary *) createRCMeta:(NSDictionary *) remoteConfig
 {
-    NSMutableDictionary<NSString *, CountlyRCValue *>* remoteConfigMeta = [[NSMutableDictionary alloc] init];
-    NSTimeInterval timeStamp = [CountlyCommon.sharedInstance uniqueTimestamp];
+    NSMutableDictionary<NSString *, CountlyRCData *>* remoteConfigMeta = [[NSMutableDictionary alloc] init];
     [remoteConfig enumerateKeysAndObjectsUsingBlock:^(NSString * key, NSString * value, BOOL * stop)
      {
-        remoteConfigMeta[key] = [[CountlyRCValue alloc] initWithValue:value valueState:CLYCurrentUser timestamp:timeStamp];
+        remoteConfigMeta[key] = [[CountlyRCData alloc] initWithValue:value isCurrentUsersData:YES];
         
     }];
     
@@ -375,9 +371,9 @@ CLYRCValueState const CLYNoValue                = @"CLYNoValue";
 
 - (void)updateMetaStateToCache
 {
-    [self.cachedRemoteConfig enumerateKeysAndObjectsUsingBlock:^(NSString * key, CountlyRCValue * countlyRCMeta, BOOL * stop)
+    [self.cachedRemoteConfig enumerateKeysAndObjectsUsingBlock:^(NSString * key, CountlyRCData * countlyRCMeta, BOOL * stop)
      {
-        countlyRCMeta.valueState = CLYCached;
+        countlyRCMeta.isCurrentUsersData = NO;
         
     }];
     

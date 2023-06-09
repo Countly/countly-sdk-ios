@@ -7,7 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "CountlyRCValue.h"
+#import "CountlyRCData.h"
 
 @interface CountlyRemoteConfig : NSObject
 
@@ -17,25 +17,25 @@
 
 - (NSArray *)testingGetVariantsForKey:(NSString *)key;
 
-- (void)testingFetchAllVariants:(void (^)(CLYRequestResult response, NSError * error))completionHandler;
+- (void)testingDownloadVariantInformation:(void (^)(CLYRequestResult response, NSError * error))completionHandler;
 
 - (void)testingEnrollIntoVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(RCVariantCallback)completionHandler;
 
-- (void)remoteConfigClearAllValues;
+- (void)remoteConfigClearAll;
 
-- (CountlyRCValue *)remoteConfigGetValue:(NSString *)key;
+- (CountlyRCData *)remoteConfigGetKey:(NSString *)key;
 
-- (NSDictionary<NSString*, CountlyRCValue *> *)remoteConfigGetAllValues;
+- (NSDictionary<NSString*, CountlyRCData *> *)remoteConfigGetAllKeys;
 
 -(void)remoteConfigRegisterDownloadCallback:(RCDownloadCallback) callback;
 
 -(void)remoteConfigRemoveDownloadCallback:(RCDownloadCallback) callback;
 
-- (void)remoteConfigDownloadValues:(RCDownloadCallback)completionHandler;
+- (void)remoteConfigDownloadKeys:(RCDownloadCallback)completionHandler;
 
-- (void)remoteConfigDownloadSpecificValues:(NSArray *)keys completionHandler:(RCDownloadCallback)completionHandler;
+- (void)remoteConfigDownloadSpecificKeys:(NSArray *)keys completionHandler:(RCDownloadCallback)completionHandler;
 
-- (void)remoteConfigDownloadOmittingValues:(NSArray *)omitKeys completionHandler:(RCDownloadCallback)completionHandler;
+- (void)remoteConfigDownloadOmittingKeys:(NSArray *)omitKeys completionHandler:(RCDownloadCallback)completionHandler;
 
 - (void)remoteConfigEnrollIntoABTestsForKeys:(NSArray *)keys;
 

@@ -23,7 +23,7 @@
 #import "CountlyLocationManager.h"
 #import "CountlyRemoteConfigInternal.h"
 #import "CountlyPerformanceMonitoring.h"
-#import "CountlyRCValue.h"
+#import "CountlyRCData.h"
 #import "CountlyRemoteConfig.h"
 
 #define CLY_LOG_E(fmt, ...) CountlyInternalLog(CLYInternalLogLevelError, fmt, ##__VA_ARGS__)

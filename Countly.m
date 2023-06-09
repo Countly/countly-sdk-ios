@@ -185,9 +185,11 @@ NSString* previousEventID;
     [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
 
     CountlyRemoteConfigInternal.sharedInstance.isEnabledOnInitialConfig = config.enableRemoteConfigAutomaticTriggers;
-    CountlyRemoteConfigInternal.sharedInstance.IsEnabledRemoteConfigValueCaching = config.enableRemoteConfigValueCaching;
+    CountlyRemoteConfigInternal.sharedInstance.isEnabledRemoteConfigValueCaching = config.enableRemoteConfigValueCaching;
     CountlyRemoteConfigInternal.sharedInstance.remoteConfigCompletionHandler = config.remoteConfigCompletionHandler;
-    CountlyRemoteConfigInternal.sharedInstance.remoteConfigGlobalCallback = config.remoteConfigGlobalCallback;
+    if(config.remoteConfigGlobalCallbacks) {
+        CountlyRemoteConfigInternal.sharedInstance.remoteConfigGlobalCallbacks = config.remoteConfigGlobalCallbacks;
+    }
     [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfig];
     
     CountlyPerformanceMonitoring.sharedInstance.isEnabledOnInitialConfig = config.enablePerformanceMonitoring;
@@ -1151,103 +1153,6 @@ NSString* previousEventID;
 - (CountlyRemoteConfig *) remoteConfig {
     return CountlyRemoteConfig.sharedInstance;
 }
-
-- (void)remoteConfigClearAllValues
-{
-    [self.remoteConfig remoteConfigClearAllValues];
-}
-
-- (NSDictionary *)testingGetAllVariants
-{
-    CLY_LOG_I(@"%s", __FUNCTION__);
-    
-    return [self.remoteConfig testingGetAllVariants];
-}
-
-- (NSArray *)testingGetVariantsForKey:(NSString *)key {
-    
-    CLY_LOG_I(@"%s %@", __FUNCTION__, key);
-    
-    return [self.remoteConfig testingGetVariantsForKey:key];
-}
-
-- (void)testingEnrollIntoVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(RCVariantCallback)completionHandler {
-    
-    CLY_LOG_I(@"%s %@ %@ %@", __FUNCTION__, key, variantName , completionHandler);
-    
-    [self.remoteConfig testingEnrollIntoVariant:key variantName:variantName completionHandler:completionHandler];
-}
-
-- (void)testingFetchAllVariants:(void (^)(CLYRequestResult response, NSError * error))completionHandler
-{
-    CLY_LOG_I(@"%s %@", __FUNCTION__, completionHandler);
-    
-    [self.remoteConfig testingFetchAllVariants:completionHandler];
-}
-
-- (CountlyRCValue *)remoteConfigGetValue:(NSString *)key
-{
-    CLY_LOG_I(@"%s %@", __FUNCTION__, key);
-    return [self.remoteConfig remoteConfigGetValue:key];
-}
-
-- (NSDictionary<NSString*, CountlyRCValue *> *)remoteConfigGetAllValues
-{
-    CLY_LOG_I(@"%s", __FUNCTION__);
-    return [self.remoteConfig remoteConfigGetAllValues];
-}
-
-- (void)remoteConfigEnrollIntoABTestsForKeys:(NSArray *)keys
-{
-    CLY_LOG_I(@"%s %@", __FUNCTION__, keys);
-    [self.remoteConfig remoteConfigEnrollIntoABTestsForKeys:keys];
-}
-
-- (void)remoteConfigExitABTestsForKeys:(NSArray *)keys
-{
-    CLY_LOG_I(@"%s %@", __FUNCTION__, keys);
-    [self.remoteConfig remoteConfigExitABTestsForKeys:keys];
-}
-
--(void)remoteConfigRegisterDownloadCallback:(RCDownloadCallback) callback
-{
-    CLY_LOG_I(@"%s %@", __FUNCTION__, callback);
-    [self.remoteConfig remoteConfigRegisterDownloadCallback:callback];
-}
-
--(void)remoteConfigRemoveDownloadCallback:(RCDownloadCallback) callback
-{
-    CLY_LOG_I(@"%s %@", __FUNCTION__, callback);
-    [self.remoteConfig remoteConfigRemoveDownloadCallback:callback];
-}
-
-- (void)remoteConfigDownloadValues:(RCDownloadCallback)completionHandler
-{
-    CLY_LOG_I(@"%s %@", __FUNCTION__, completionHandler);
-    [self.remoteConfig remoteConfigDownloadValues:^(CLYRequestResult  _Nonnull response, NSError * _Nonnull error, BOOL fullValueUpdate, NSDictionary * _Nonnull downloadedValues) {
-        CLY_LOG_I(@"%@ %@ %d %lu",response.description, error.description, fullValueUpdate, (unsigned long)downloadedValues.allKeys.count);
-    }];
-
-}
-
-- (void)remoteConfigDownloadSpecificValues:(NSArray *)keys completionHandler:(RCDownloadCallback)completionHandler
-{
-    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, keys, completionHandler);
-    [self.remoteConfig remoteConfigDownloadSpecificValues:keys completionHandler:^(CLYRequestResult  _Nonnull response, NSError * _Nonnull error, BOOL fullValueUpdate, NSDictionary * _Nonnull downloadedValues) {
-        CLY_LOG_I(@"%@ %@ %d %lu",response.description, error.description, fullValueUpdate, (unsigned long)downloadedValues.allKeys.count);
-    }];
-    
-}
-
-- (void)remoteConfigDownloadOmittingValues:(NSArray *)omitKeys completionHandler:(RCDownloadCallback)completionHandler
-{
-    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, omitKeys, completionHandler);
-    [self.remoteConfig remoteConfigDownloadOmittingValues:omitKeys completionHandler:^(CLYRequestResult  _Nonnull response, NSError * _Nonnull error, BOOL fullValueUpdate, NSDictionary * _Nonnull downloadedValues) {
-        CLY_LOG_I(@"%@ %@ %d %lu",response.description, error.description, fullValueUpdate, (unsigned long)downloadedValues.allKeys.count);
-    }];
-}
-
-
 
 #pragma mark - Performance Monitoring
 

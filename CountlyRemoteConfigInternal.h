@@ -5,13 +5,12 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
-#import "CountlyRCValue.h"
+#import "CountlyRCData.h"
 
 @interface CountlyRemoteConfigInternal : NSObject
 @property (nonatomic) BOOL isEnabledOnInitialConfig;
-@property (nonatomic) BOOL IsEnabledRemoteConfigValueCaching;
+@property (nonatomic) BOOL isEnabledRemoteConfigValueCaching;
 @property (nonatomic, copy) void (^remoteConfigCompletionHandler)(NSError * error);
-@property (nonatomic, copy) RCDownloadCallback remoteConfigGlobalCallback;
 @property (nonatomic) NSMutableArray<RCDownloadCallback> *remoteConfigGlobalCallbacks;
 
 + (instancetype)sharedInstance;
@@ -23,7 +22,7 @@
 
 
 - (void)downloadRemoteConfig;
-- (CountlyRCValue *)getValue:(NSString *)key;
+- (CountlyRCData *)getValue:(NSString *)key;
 - (void)downloadValuesForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(RCDownloadCallback)completionHandler;
 
 - (NSDictionary *)testingGetAllVariants;
@@ -31,7 +30,7 @@
 - (void)testingDownloadAllVariants:(NSArray *)keys completionHandler:(RCVariantCallback)completionHandler;
 - (void)testingEnrollIntoVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(RCVariantCallback)completionHandler;
 
-- (NSDictionary<NSString*, CountlyRCValue *> *)getAllValues;
+- (NSDictionary<NSString*, CountlyRCData *> *)getAllValues;
 - (void)enrollIntoABTestsForKeys:(NSArray *)keys;
 - (void)exitABTestsForKeys:(NSArray *)keys;
 

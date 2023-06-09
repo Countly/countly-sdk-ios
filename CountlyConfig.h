@@ -104,12 +104,6 @@ extern CLYRequestResult const CLYResponseNetworkIssue;
 extern CLYRequestResult const CLYResponseSuccess;
 extern CLYRequestResult const CLYResponseError;
 
-//NOTE: Response values of request
-typedef NSString* CLYRCValueState NS_EXTENSIBLE_STRING_ENUM;
-extern CLYRCValueState const CLYCached;
-extern CLYRCValueState const CLYCurrentUser;
-extern CLYRCValueState const CLYNoValue;
-
 typedef void (^RCVariantCallback)(CLYRequestResult response, NSError * error);
 
 typedef void (^RCDownloadCallback)(CLYRequestResult response, NSError * error, BOOL fullValueUpdate, NSDictionary* downloadedValues);
@@ -528,7 +522,9 @@ typedef enum : NSUInteger
 @property (nonatomic) BOOL enableRemoteConfigAutomaticTriggers;
 @property (nonatomic) BOOL enableRemoteConfigValueCaching;
 
-@property (nonatomic, copy) RCDownloadCallback remoteConfigGlobalCallback;
+@property (nonatomic) NSMutableArray<RCDownloadCallback> *remoteConfigGlobalCallbacks;
+
+- (void)remoteConfigRegisterGlobalCallback:(RCDownloadCallback) callback;
 
 #pragma mark -
 

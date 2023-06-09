@@ -64,4 +64,9 @@ CLYDeviceIDType const CLYDeviceIDTypeNSUUID     = @"CLYDeviceIDTypeNSUUID";
     return self;
 }
 
+-(void)remoteConfigRegisterGlobalCallback:(RCDownloadCallback) callback
+{
+    [self.remoteConfigGlobalCallbacks addObject:callback];
+}
+
 @end

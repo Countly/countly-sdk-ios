@@ -8,7 +8,7 @@
 #import <CoreLocation/CoreLocation.h>
 #import "CountlyUserDetails.h"
 #import "CountlyConfig.h"
-#import "CountlyRCValue.h"
+#import "CountlyRCData.h"
 #import "CountlyRemoteConfig.h"
 #import "CountlyFeedbackWidget.h"
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
@@ -685,7 +685,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion If Countly Server is not reachable, this method will return the last retrieved value which is stored on device.
  * @param key Remote config key specified on Countly Server
  */
-- (id)remoteConfigValueForKey:(NSString *)key;
+- (id)remoteConfigValueForKey:(NSString *)key DEPRECATED_MSG_ATTRIBUTE("Use '[remoteConfig remoteConfigGetKey:]' method instead!");
 
 /**
  * Manually updates all locally stored remote config values by fetching latest values from Countly Server, and executes completion handler.
@@ -695,7 +695,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion - Current device ID is @c CLYTemporaryDeviceID.
  * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure.
  */
-- (void)updateRemoteConfigWithCompletionHandler:(void (^)(NSError * __nullable error))completionHandler;
+- (void)updateRemoteConfigWithCompletionHandler:(void (^)(NSError * __nullable error))completionHandler DEPRECATED_MSG_ATTRIBUTE("Use '[remoteConfig remoteConfigDownloadKeys:]' method instead!");
 
 /**
  * Manually updates locally stored remote config values only for specified keys, by fetching latest values from Countly Server, and executes completion handler.
@@ -706,7 +706,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param keys An array of remote config keys to update
  * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure
  */
-- (void)updateRemoteConfigOnlyForKeys:(NSArray *)keys completionHandler:(void (^)(NSError * __nullable error))completionHandler;
+- (void)updateRemoteConfigOnlyForKeys:(NSArray *)keys completionHandler:(void (^)(NSError * __nullable error))completionHandler DEPRECATED_MSG_ATTRIBUTE("Use '[remoteConfig remoteConfigDownloadSpecificKeys:]' method instead!");
 
 /**
  * Manually updates locally stored remote config values except for specified keys, by fetching latest values from Countly Server, and executes completion handler.
@@ -717,37 +717,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @param omitKeys An array of remote config keys to omit from updating
  * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure
  */
-- (void)updateRemoteConfigExceptForKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * __nullable error))completionHandler;
+- (void)updateRemoteConfigExceptForKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * __nullable error))completionHandler DEPRECATED_MSG_ATTRIBUTE("Use '[remoteConfig remoteConfigDownloadOmittingKeys:]' method instead!");
 
 - (CountlyRemoteConfig *) remoteConfig;
-
-- (NSDictionary *)testingGetAllVariants;
-
-- (NSArray *)testingGetVariantsForKey:(NSString *)key;
-
-- (void)testingFetchAllVariants:(void (^)(CLYRequestResult response, NSError * error))completionHandler;
-
-- (void)testingEnrollIntoVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(RCVariantCallback)completionHandler;
-
-- (void)remoteConfigClearAllValues;
-
-- (CountlyRCValue *)remoteConfigGetValue:(NSString *)key;
-
-- (NSDictionary<NSString*, CountlyRCValue *> *)remoteConfigGetAllValues;
-
--(void)remoteConfigRegisterDownloadCallback:(RCDownloadCallback) callback;
-
--(void)remoteConfigRemoveDownloadCallback:(RCDownloadCallback) callback;
-
-- (void)remoteConfigDownloadValues:(RCDownloadCallback)completionHandler;
-
-- (void)remoteConfigDownloadSpecificValues:(NSArray *)keys completionHandler:(RCDownloadCallback)completionHandler;
-
-- (void)remoteConfigDownloadOmittingValues:(NSArray *)omitKeys completionHandler:(RCDownloadCallback)completionHandler;
-
-- (void)remoteConfigEnrollIntoABTestsForKeys:(NSArray *)keys;
-
-- (void)remoteConfigExitABTestsForKeys:(NSArray *)keys;
 
 #pragma mark - Performance Monitoring
 

@@ -52,20 +52,20 @@
     [CountlyRemoteConfigInternal.sharedInstance testingEnrollIntoVariant:key variantName:variantName completionHandler:completionHandler];
 }
 
-- (void)testingFetchAllVariants:(void (^)(CLYRequestResult response, NSError * error))completionHandler
+- (void)testingDownloadVariantInformation:(void (^)(CLYRequestResult response, NSError * error))completionHandler
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, completionHandler);
     
     [CountlyRemoteConfigInternal.sharedInstance testingDownloadAllVariants:nil completionHandler:completionHandler];
 }
 
-- (CountlyRCValue *)remoteConfigGetValue:(NSString *)key
+- (CountlyRCData *)remoteConfigGetKey:(NSString *)key
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, key);
     return [CountlyRemoteConfigInternal.sharedInstance getValue:key];
 }
 
-- (NSDictionary<NSString*, CountlyRCValue *> *)remoteConfigGetAllValues
+- (NSDictionary<NSString*, CountlyRCData *> *)remoteConfigGetAllKeys
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
     return [CountlyRemoteConfigInternal.sharedInstance getAllValues];
@@ -95,7 +95,7 @@
     [CountlyRemoteConfigInternal.sharedInstance removeDownloadCallback:callback];
 }
 
-- (void)remoteConfigDownloadValues:(RCDownloadCallback)completionHandler
+- (void)remoteConfigDownloadKeys:(RCDownloadCallback)completionHandler
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, completionHandler);
     [CountlyRemoteConfigInternal.sharedInstance downloadValuesForKeys:nil omitKeys:nil completionHandler:^(CLYRequestResult  _Nonnull response, NSError * _Nonnull error, BOOL fullValueUpdate, NSDictionary * _Nonnull downloadedValues) {
@@ -104,7 +104,7 @@
     
 }
 
-- (void)remoteConfigDownloadSpecificValues:(NSArray *)keys completionHandler:(RCDownloadCallback)completionHandler
+- (void)remoteConfigDownloadSpecificKeys:(NSArray *)keys completionHandler:(RCDownloadCallback)completionHandler
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, keys, completionHandler);
     [CountlyRemoteConfigInternal.sharedInstance downloadValuesForKeys:keys omitKeys:nil completionHandler:^(CLYRequestResult  _Nonnull response, NSError * _Nonnull error, BOOL fullValueUpdate, NSDictionary * _Nonnull downloadedValues) {
@@ -113,7 +113,7 @@
     
 }
 
-- (void)remoteConfigDownloadOmittingValues:(NSArray *)omitKeys completionHandler:(RCDownloadCallback)completionHandler
+- (void)remoteConfigDownloadOmittingKeys:(NSArray *)omitKeys completionHandler:(RCDownloadCallback)completionHandler
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, omitKeys, completionHandler);
     [CountlyRemoteConfigInternal.sharedInstance downloadValuesForKeys:nil omitKeys:omitKeys completionHandler:^(CLYRequestResult  _Nonnull response, NSError * _Nonnull error, BOOL fullValueUpdate, NSDictionary * _Nonnull downloadedValues) {
@@ -121,7 +121,7 @@
     }];
 }
 
-- (void)remoteConfigClearAllValues
+- (void)remoteConfigClearAll
 {
     [CountlyRemoteConfigInternal.sharedInstance clearCachedRemoteConfig:YES];
 }
