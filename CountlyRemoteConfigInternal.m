@@ -345,12 +345,12 @@ BOOL const CLYNoValue                = @"CLYNoValue";
         }
         
         if (completionHandler)
-            completionHandler(CLYResponseSuccess, error, fullValueUpdate, remoteConfig);
+            completionHandler(CLYResponseSuccess, error, fullValueUpdate, self.cachedRemoteConfig);
         
         
         [self.remoteConfigGlobalCallbacks enumerateObjectsUsingBlock:^(RCDownloadCallback callback, NSUInteger idx, BOOL * stop)
          {
-            callback(CLYResponseSuccess, error, fullValueUpdate, remoteConfig);
+            callback(CLYResponseSuccess, error, fullValueUpdate, self.cachedRemoteConfig);
         }];
         
         

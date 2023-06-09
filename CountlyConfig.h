@@ -6,6 +6,7 @@
 
 #import <Foundation/Foundation.h>
 #import <CoreLocation/CoreLocation.h>
+#import "CountlyRCData.h"
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 #import <UIKit/UIKit.h>
@@ -106,7 +107,7 @@ extern CLYRequestResult const CLYResponseError;
 
 typedef void (^RCVariantCallback)(CLYRequestResult response, NSError * error);
 
-typedef void (^RCDownloadCallback)(CLYRequestResult response, NSError * error, BOOL fullValueUpdate, NSDictionary* downloadedValues);
+typedef void (^RCDownloadCallback)(CLYRequestResult response, NSError * error, BOOL fullValueUpdate, NSDictionary<NSString *, CountlyRCData *>*);
 
 //NOTE: Internal log levels
 typedef enum : NSUInteger

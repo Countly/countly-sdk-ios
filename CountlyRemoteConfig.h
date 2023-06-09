@@ -17,7 +17,7 @@
 
 - (NSArray *)testingGetVariantsForKey:(NSString *)key;
 
-- (void)testingDownloadVariantInformation:(void (^)(CLYRequestResult response, NSError * error))completionHandler;
+- (void)testingDownloadVariantInformation:(RCVariantCallback)completionHandler;
 
 - (void)testingEnrollIntoVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(RCVariantCallback)completionHandler;
 
