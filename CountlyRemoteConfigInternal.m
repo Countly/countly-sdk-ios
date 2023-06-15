@@ -319,10 +319,11 @@ BOOL const CLYNoValue                = @"CLYNoValue";
     [self fetchRemoteConfigForKeys:keys omitKeys:omitKeys isLegacy:NO completionHandler:^(NSDictionary *remoteConfig, NSError *error)
      {
         BOOL fullValueUpdate = false;
+        NSDictionary* remoteConfigMeta = remoteConfig ? [self createRCMeta:remoteConfig] : @{};
         if (!error)
         {
             CLY_LOG_D(@"Fetching remote config manually is successful. \n%@", remoteConfig);
-            NSDictionary* remoteConfigMeta = [self createRCMeta:remoteConfig];
+//            NSDictionary* remoteConfigMeta = [self createRCMeta:remoteConfig];
             if (!keys && !omitKeys)
             {
                 fullValueUpdate = true;
@@ -345,12 +346,12 @@ BOOL const CLYNoValue                = @"CLYNoValue";
         }
         
         if (completionHandler)
-            completionHandler(CLYResponseSuccess, error, fullValueUpdate, self.cachedRemoteConfig);
+            completionHandler(CLYResponseSuccess, error, fullValueUpdate, remoteConfigMeta);
         
         
         [self.remoteConfigGlobalCallbacks enumerateObjectsUsingBlock:^(RCDownloadCallback callback, NSUInteger idx, BOOL * stop)
          {
-            callback(CLYResponseSuccess, error, fullValueUpdate, self.cachedRemoteConfig);
+            callback(CLYResponseSuccess, error, fullValueUpdate, remoteConfigMeta);
         }];
         
         

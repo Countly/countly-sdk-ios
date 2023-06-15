@@ -14,7 +14,6 @@
 @property (nonatomic) BOOL isCurrentUsersData;
 
 - (instancetype)initWithValue:(id)value isCurrentUsersData:(BOOL)isCurrentUsersData;
-- (BOOL) isCurrentUsersData;
 
 @end
 

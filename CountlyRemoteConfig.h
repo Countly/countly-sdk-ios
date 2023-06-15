@@ -21,24 +21,24 @@
 
 - (void)testingEnrollIntoVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(RCVariantCallback)completionHandler;
 
-- (void)remoteConfigClearAll;
+- (void)clearAll;
 
-- (CountlyRCData *)remoteConfigGetKey:(NSString *)key;
+- (CountlyRCData *)getKey:(NSString *)key;
 
 - (NSDictionary<NSString*, CountlyRCData *> *)remoteConfigGetAllKeys;
 
--(void)remoteConfigRegisterDownloadCallback:(RCDownloadCallback) callback;
+-(void)registerDownloadCallback:(RCDownloadCallback) callback;
 
--(void)remoteConfigRemoveDownloadCallback:(RCDownloadCallback) callback;
+-(void)removeDownloadCallback:(RCDownloadCallback) callback;
 
-- (void)remoteConfigDownloadKeys:(RCDownloadCallback)completionHandler;
+- (void)downloadKeys:(RCDownloadCallback)completionHandler;
 
-- (void)remoteConfigDownloadSpecificKeys:(NSArray *)keys completionHandler:(RCDownloadCallback)completionHandler;
+- (void)downloadSpecificKeys:(NSArray *)keys completionHandler:(RCDownloadCallback)completionHandler;
 
-- (void)remoteConfigDownloadOmittingKeys:(NSArray *)omitKeys completionHandler:(RCDownloadCallback)completionHandler;
+- (void)downloadOmittingKeys:(NSArray *)omitKeys completionHandler:(RCDownloadCallback)completionHandler;
 
-- (void)remoteConfigEnrollIntoABTestsForKeys:(NSArray *)keys;
+- (void)enrollIntoABTestsForKeys:(NSArray *)keys;
 
-- (void)remoteConfigExitABTestsForKeys:(NSArray *)keys;
+- (void)exitABTestsForKeys:(NSArray *)keys;
 
 @end
