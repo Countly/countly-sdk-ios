@@ -59,13 +59,13 @@
     [CountlyRemoteConfigInternal.sharedInstance testingDownloadAllVariants:nil completionHandler:completionHandler];
 }
 
-- (CountlyRCData *)getKey:(NSString *)key
+- (CountlyRCData *)getValue:(NSString *)key
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, key);
     return [CountlyRemoteConfigInternal.sharedInstance getValue:key];
 }
 
-- (NSDictionary<NSString*, CountlyRCData *> *)remoteConfigGetAllKeys
+- (NSDictionary<NSString*, CountlyRCData *> *)getAllValues
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
     return [CountlyRemoteConfigInternal.sharedInstance getAllValues];

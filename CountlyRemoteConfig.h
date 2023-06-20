@@ -14,9 +14,9 @@
 + (instancetype)sharedInstance;
 
 
-- (CountlyRCData *)getKey:(NSString *)key;
+- (CountlyRCData *)getValue:(NSString *)key;
 
-- (NSDictionary<NSString*, CountlyRCData *> *)remoteConfigGetAllKeys;
+- (NSDictionary<NSString*, CountlyRCData *> *)getAllValues;
 
 -(void)registerDownloadCallback:(RCDownloadCallback) callback;
 

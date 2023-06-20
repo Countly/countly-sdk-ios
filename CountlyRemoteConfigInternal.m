@@ -61,7 +61,7 @@ BOOL const CLYNoValue                = @"CLYNoValue";
 
 - (void)startRemoteConfig
 {
-    if (!self.isEnabledOnInitialConfig)
+    if (!self.isRCAutomaticTriggersEnabled)
         return;
     
     if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
@@ -93,7 +93,7 @@ BOOL const CLYNoValue                = @"CLYNoValue";
 
 - (void)downloadRemoteConfig
 {
-    if (!self.isEnabledOnInitialConfig)
+    if (!self.isRCAutomaticTriggersEnabled)
         return;
     
     if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
@@ -164,7 +164,7 @@ BOOL const CLYNoValue                = @"CLYNoValue";
 
 - (void)clearCachedRemoteConfig:(BOOL)force
 {
-    if(force || !self.isEnabledRemoteConfigValueCaching) {
+    if(force || !self.isRCValueCachingEnabled) {
         self.cachedRemoteConfig = nil;
         [CountlyPersistency.sharedInstance storeRemoteConfig:self.cachedRemoteConfig];
     }

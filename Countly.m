@@ -184,8 +184,8 @@ NSString* previousEventID;
     timer = [NSTimer timerWithTimeInterval:config.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
     [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
 
-    CountlyRemoteConfigInternal.sharedInstance.isEnabledOnInitialConfig = config.enableRemoteConfigAutomaticTriggers || config.enableRemoteConfig;
-    CountlyRemoteConfigInternal.sharedInstance.isEnabledRemoteConfigValueCaching = config.enableRemoteConfigValueCaching;
+    CountlyRemoteConfigInternal.sharedInstance.isRCAutomaticTriggersEnabled = config.enableRemoteConfigAutomaticTriggers || config.enableRemoteConfig;
+    CountlyRemoteConfigInternal.sharedInstance.isRCValueCachingEnabled = config.enableRemoteConfigValueCaching;
     CountlyRemoteConfigInternal.sharedInstance.remoteConfigCompletionHandler = config.remoteConfigCompletionHandler;
     if(config.getRemoteConfigGlobalCallbacks) {
         CountlyRemoteConfigInternal.sharedInstance.remoteConfigGlobalCallbacks = config.getRemoteConfigGlobalCallbacks;

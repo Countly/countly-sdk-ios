@@ -8,8 +8,8 @@
 #import "CountlyRCData.h"
 
 @interface CountlyRemoteConfigInternal : NSObject
-@property (nonatomic) BOOL isEnabledOnInitialConfig;
-@property (nonatomic) BOOL isEnabledRemoteConfigValueCaching;
+@property (nonatomic) BOOL isRCAutomaticTriggersEnabled;
+@property (nonatomic) BOOL isRCValueCachingEnabled;
 @property (nonatomic, copy) void (^remoteConfigCompletionHandler)(NSError * error);
 @property (nonatomic) NSMutableArray<RCDownloadCallback> *remoteConfigGlobalCallbacks;
 
