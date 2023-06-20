@@ -433,7 +433,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     {
         CLY_LOG_D(@"Consent for RemoteConfig is given.");
 
-        [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfig];
+        [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfigAutomatically];
     }
     else
     {

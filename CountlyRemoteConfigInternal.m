@@ -91,7 +91,7 @@ BOOL const CLYNoValue                = @"CLYNoValue";
     }];
 }
 
-- (void)downloadRemoteConfig
+- (void)downloadRemoteConfigAutomatically
 {
     if (!self.isRCAutomaticTriggersEnabled)
         return;

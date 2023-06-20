@@ -190,7 +190,7 @@ NSString* previousEventID;
     if(config.getRemoteConfigGlobalCallbacks) {
         CountlyRemoteConfigInternal.sharedInstance.remoteConfigGlobalCallbacks = config.getRemoteConfigGlobalCallbacks;
     }
-    [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfig];
+    [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfigAutomatically];
     
     CountlyPerformanceMonitoring.sharedInstance.isEnabledOnInitialConfig = config.enablePerformanceMonitoring;
     [CountlyPerformanceMonitoring.sharedInstance startPerformanceMonitoring];
@@ -487,7 +487,7 @@ NSString* previousEventID;
 
         [CountlyConnectionManager.sharedInstance proceedOnQueue];
 
-        [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfig];
+        [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfigAutomatically];
 
         return;
     }
@@ -523,7 +523,7 @@ NSString* previousEventID;
     {
         [CountlyRemoteConfigInternal.sharedInstance clearCachedRemoteConfig:NO];
     }
-    [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfig];
+    [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfigAutomatically];
 }
 
 - (void)storeCustomDeviceIDState:(NSString *)deviceID

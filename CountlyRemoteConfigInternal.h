@@ -21,7 +21,7 @@
 - (void)updateRemoteConfigForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler;
 
 
-- (void)downloadRemoteConfig;
+- (void)downloadRemoteConfigAutomatically;
 - (CountlyRCData *)getValue:(NSString *)key;
 - (void)downloadValuesForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(RCDownloadCallback)completionHandler;
 
