@@ -6,6 +6,10 @@
 
 #import "CountlyCommon.h"
 
+@interface CountlyConfig ()
+@property (nonatomic) NSMutableArray<RCDownloadCallback> *remoteConfigGlobalCallbacks;
+@end
+
 @implementation CountlyConfig
 
 //NOTE: Countly features
@@ -67,6 +71,12 @@ CLYDeviceIDType const CLYDeviceIDTypeNSUUID     = @"CLYDeviceIDTypeNSUUID";
 -(void)remoteConfigRegisterGlobalCallback:(RCDownloadCallback) callback
 {
     [self.remoteConfigGlobalCallbacks addObject:callback];
+}
+
+
+- (NSMutableArray<RCDownloadCallback> *) getRemoteConfigGlobalCallbacks
+{
+    return self.remoteConfigGlobalCallbacks;
 }
 
 @end

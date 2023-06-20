@@ -13,15 +13,6 @@
 
 + (instancetype)sharedInstance;
 
-- (NSDictionary *)testingGetAllVariants;
-
-- (NSArray *)testingGetVariantsForKey:(NSString *)key;
-
-- (void)testingDownloadVariantInformation:(RCVariantCallback)completionHandler;
-
-- (void)testingEnrollIntoVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(RCVariantCallback)completionHandler;
-
-- (void)clearAll;
 
 - (CountlyRCData *)getKey:(NSString *)key;
 
@@ -40,5 +31,15 @@
 - (void)enrollIntoABTestsForKeys:(NSArray *)keys;
 
 - (void)exitABTestsForKeys:(NSArray *)keys;
+
+- (NSDictionary *)testingGetAllVariants;
+
+- (NSArray *)testingGetVariantsForKey:(NSString *)key;
+
+- (void)testingDownloadVariantInformation:(RCVariantCallback)completionHandler;
+
+- (void)testingEnrollIntoVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(RCVariantCallback)completionHandler;
+
+- (void)clearAll;
 
 @end

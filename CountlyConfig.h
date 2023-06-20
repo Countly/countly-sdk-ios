@@ -508,7 +508,7 @@ typedef enum : NSUInteger
  * For enabling automatic fetching of remote config values.
  * @discussion If set, Remote Config values specified on Countly Server will be fetched on beginning of sessions.
  */
-@property (nonatomic) BOOL enableRemoteConfig;
+@property (nonatomic) BOOL enableRemoteConfig DEPRECATED_MSG_ATTRIBUTE("Use 'enableRemoteConfigAutomaticTriggers' instead");
 
 /**
  * Completion block to be executed after remote config is fetched from Countly Server, on start or device ID change.
@@ -518,14 +518,30 @@ typedef enum : NSUInteger
  * @discussion If Countly Server is not reachable or if there is another error, it will be executed with an @c NSError indicating the problem.
  * @discussion If @c enableRemoteConfig flag is not set on initial config, it will never be executed.
  */
-@property (nonatomic, copy) void (^remoteConfigCompletionHandler)(NSError * _Nullable error);
+@property (nonatomic, copy) void (^remoteConfigCompletionHandler)(NSError * _Nullable error) DEPRECATED_MSG_ATTRIBUTE("Use 'remoteConfigRegisterGlobalCallback' instead");
 
+/**
+ * For enabling automatic fetching of remote config values.
+ * @discussion If set, Remote Config values specified on Countly Server will be fetched on beginning of sessions, exit temporary device id and changing device id onserver.
+ */
 @property (nonatomic) BOOL enableRemoteConfigAutomaticTriggers;
+
+/**
+ * For enabling remote config caching.
+ * @discussion If set, Remote Config values of previous device id will be cache.
+ */
 @property (nonatomic) BOOL enableRemoteConfigValueCaching;
 
-@property (nonatomic) NSMutableArray<RCDownloadCallback> *remoteConfigGlobalCallbacks;
 
+/**
+ * Register global completion blocks to be executed after remote config is fetched from Countly Server.
+ */
 - (void)remoteConfigRegisterGlobalCallback:(RCDownloadCallback) callback;
+
+/**
+ * Get a list of registered global completion blocks.
+ */
+- (NSMutableArray<RCDownloadCallback> *) getRemoteConfigGlobalCallbacks;
 
 #pragma mark -
 
