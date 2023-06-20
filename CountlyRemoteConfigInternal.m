@@ -104,7 +104,12 @@ BOOL const CLYNoValue                = @"CLYNoValue";
     
     CLY_LOG_D(@"Fetching remote config on start...");
     
-    [self downloadValuesForKeys:nil omitKeys:nil completionHandler:nil];
+    [self downloadValuesForKeys:nil omitKeys:nil completionHandler:^(CLYRequestResult  _Nonnull response, NSError * _Nonnull error, BOOL fullValueUpdate, NSDictionary<NSString *,CountlyRCData *> * _Nonnull downloadedValues)
+     {
+        if (self.remoteConfigCompletionHandler)
+            self.remoteConfigCompletionHandler(error);
+    }];
+    
 }
 
 - (void)updateRemoteConfigForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler
