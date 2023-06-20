@@ -1,11 +1,5 @@
 ## 23.6.0
-- Deprecated `enableRemoteConfig` initial config flag
-- Deprecated `remoteConfigCompletionHandler` in config
-- Deprecated existing remote config methods: 
-    - `remoteConfigValueForKey:`
-    - `updateRemoteConfigWithCompletionHandler:`
-    - `updateRemoteConfigOnlyForKeys:completionHandler`
-    - `updateRemoteConfigExceptForKeys:completionHandler`
+- !! Major breaking change !! Automatically downloaded remote config values will no longer be automatically enrolled in their AB tests.
 - Added `CountlyRemoteConfig:` interface with new remote config methods:
     - `getKey:`
     - `remoteConfigGetAllKeys:`
@@ -25,6 +19,13 @@
 - Added `enableRemoteConfigValueCaching` config for caching of remote config
 - Added `remoteConfigRegisterGlobalCallback` config to register remote config global callbacks during init.
 - Added `getRemoteConfigGlobalCallbacks` config to get a list of remote config global callbacks.
+- Deprecated `enableRemoteConfig` initial config flag
+- Deprecated `remoteConfigCompletionHandler` in config
+- Deprecated existing remote config methods: 
+    - `remoteConfigValueForKey:`
+    - `updateRemoteConfigWithCompletionHandler:`
+    - `updateRemoteConfigOnlyForKeys:completionHandler`
+    - `updateRemoteConfigExceptForKeys:completionHandler`
 
 ## 23.02.3
 - Added back battery level reporting to crash reporting. Battery level is only reported if battery was enabled before.
