@@ -1,8 +1,8 @@
 ## 23.6.0
 - !! Major breaking change !! Automatically downloaded remote config values will no longer be automatically enrolled in their AB tests.
 - Added `CountlyRemoteConfig:` interface with new remote config methods:
-    - `getKey:`
-    - `remoteConfigGetAllKeys:`
+    - `getValue:`
+    - `getAllValues:`
     - `registerDownloadCallback:`
     - `removeDownloadCallback:`
     - `downloadKeys:`
