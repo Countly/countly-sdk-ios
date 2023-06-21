@@ -23,10 +23,6 @@ CLYRequestResult const CLYResponseNetworkIssue  = @"CLYResponseNetworkIssue";
 CLYRequestResult const CLYResponseSuccess       = @"CLYResponseSuccess";
 CLYRequestResult const CLYResponseError         = @"CLYResponseError";
 
-BOOL const CLYCached                 = @"CLYCached";
-BOOL const CLYCurrentUser            = @"CLYCurrentUser";
-BOOL const CLYNoValue                = @"CLYNoValue";
-
 @interface CountlyRemoteConfigInternal ()
 @property (nonatomic) NSDictionary* localCachedVariants;
 @property (nonatomic) NSDictionary<NSString *, CountlyRCData *>* cachedRemoteConfig;
@@ -405,7 +401,7 @@ BOOL const CLYNoValue                = @"CLYNoValue";
     return  self.localCachedVariants[key];
 }
 
-- (void)testingFetchAllVariants:(RCVariantCallback)completionHandler
+- (void)testingDownloadAllVariants:(RCVariantCallback)completionHandler
 {
     if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
     {
@@ -420,7 +416,7 @@ BOOL const CLYNoValue                = @"CLYNoValue";
     
     CLY_LOG_D(@"Fetching variants manually...");
     
-    [self testingGetAllVariantsInternal:^(CLYRequestResult response, NSDictionary *varaints,NSError *error)
+    [self testingDownloadAllVariantsInternal:^(CLYRequestResult response, NSDictionary *varaints,NSError *error)
      {
         if (!error)
         {
@@ -438,7 +434,7 @@ BOOL const CLYNoValue                = @"CLYNoValue";
     }];
 }
 
-- (void)testingGetAllVariantsInternal:(void (^)(CLYRequestResult response, NSDictionary* variants, NSError * error))completionHandler
+- (void)testingDownloadAllVariantsInternal:(void (^)(CLYRequestResult response, NSDictionary* variants, NSError * error))completionHandler
 {
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
     {
@@ -596,7 +592,6 @@ BOOL const CLYNoValue                = @"CLYNoValue";
     NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
     
     queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMethod, kCountlyRCKeyFetchVariant];
-    
     
     if (CountlyConsentManager.sharedInstance.consentForSessions)
     {
