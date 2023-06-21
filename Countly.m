@@ -184,9 +184,13 @@ NSString* previousEventID;
     timer = [NSTimer timerWithTimeInterval:config.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
     [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
 
-    CountlyRemoteConfig.sharedInstance.isEnabledOnInitialConfig = config.enableRemoteConfig;
-    CountlyRemoteConfig.sharedInstance.remoteConfigCompletionHandler = config.remoteConfigCompletionHandler;
-    [CountlyRemoteConfig.sharedInstance startRemoteConfig];
+    CountlyRemoteConfigInternal.sharedInstance.isRCAutomaticTriggersEnabled = config.enableRemoteConfigAutomaticTriggers || config.enableRemoteConfig;
+    CountlyRemoteConfigInternal.sharedInstance.isRCValueCachingEnabled = config.enableRemoteConfigValueCaching;
+    CountlyRemoteConfigInternal.sharedInstance.remoteConfigCompletionHandler = config.remoteConfigCompletionHandler;
+    if(config.getRemoteConfigGlobalCallbacks) {
+        CountlyRemoteConfigInternal.sharedInstance.remoteConfigGlobalCallbacks = config.getRemoteConfigGlobalCallbacks;
+    }
+    [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfigAutomatically];
     
     CountlyPerformanceMonitoring.sharedInstance.isEnabledOnInitialConfig = config.enablePerformanceMonitoring;
     [CountlyPerformanceMonitoring.sharedInstance startPerformanceMonitoring];
@@ -483,7 +487,7 @@ NSString* previousEventID;
 
         [CountlyConnectionManager.sharedInstance proceedOnQueue];
 
-        [CountlyRemoteConfig.sharedInstance startRemoteConfig];
+        [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfigAutomatically];
 
         return;
     }
@@ -515,8 +519,11 @@ NSString* previousEventID;
         [CountlyPersistency.sharedInstance clearAllTimedEvents];
     }
 
-    [CountlyRemoteConfig.sharedInstance clearCachedRemoteConfig];
-    [CountlyRemoteConfig.sharedInstance startRemoteConfig];
+    if(!onServer || [deviceID isEqualToString:CLYTemporaryDeviceID] )
+    {
+        [CountlyRemoteConfigInternal.sharedInstance clearCachedRemoteConfig:NO];
+    }
+    [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfigAutomatically];
 }
 
 - (void)storeCustomDeviceIDState:(NSString *)deviceID
@@ -1119,31 +1126,33 @@ NSString* previousEventID;
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, key);
 
-    return [CountlyRemoteConfig.sharedInstance remoteConfigValueForKey:key];
+    return [CountlyRemoteConfigInternal.sharedInstance remoteConfigValueForKey:key];
 }
 
 - (void)updateRemoteConfigWithCompletionHandler:(void (^)(NSError * error))completionHandler
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, completionHandler);
 
-    [CountlyRemoteConfig.sharedInstance updateRemoteConfigForKeys:nil omitKeys:nil completionHandler:completionHandler];
+    [CountlyRemoteConfigInternal.sharedInstance updateRemoteConfigForKeys:nil omitKeys:nil completionHandler:completionHandler];
 }
 
 - (void)updateRemoteConfigOnlyForKeys:(NSArray *)keys completionHandler:(void (^)(NSError * error))completionHandler
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, keys, completionHandler);
 
-    [CountlyRemoteConfig.sharedInstance updateRemoteConfigForKeys:keys omitKeys:nil completionHandler:completionHandler];
+    [CountlyRemoteConfigInternal.sharedInstance updateRemoteConfigForKeys:keys omitKeys:nil completionHandler:completionHandler];
 }
 
 - (void)updateRemoteConfigExceptForKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, omitKeys, completionHandler);
 
-    [CountlyRemoteConfig.sharedInstance updateRemoteConfigForKeys:nil omitKeys:omitKeys completionHandler:completionHandler];
+    [CountlyRemoteConfigInternal.sharedInstance updateRemoteConfigForKeys:nil omitKeys:omitKeys completionHandler:completionHandler];
 }
 
-
+- (CountlyRemoteConfig *) remoteConfig {
+    return CountlyRemoteConfig.sharedInstance;
+}
 
 #pragma mark - Performance Monitoring
 
