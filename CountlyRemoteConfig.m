@@ -56,7 +56,7 @@
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, completionHandler);
     
-    [CountlyRemoteConfigInternal.sharedInstance testingDownloadAllVariants:nil completionHandler:completionHandler];
+    [CountlyRemoteConfigInternal.sharedInstance testingDownloadAllVariants:completionHandler];
 }
 
 - (CountlyRCData *)getValue:(NSString *)key

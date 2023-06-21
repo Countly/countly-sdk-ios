@@ -27,7 +27,7 @@
 
 - (NSDictionary *)testingGetAllVariants;
 - (NSArray *)testingGetVariantsForKey:(NSString *)key;
-- (void)testingDownloadAllVariants:(NSArray *)keys completionHandler:(RCVariantCallback)completionHandler;
+- (void)testingDownloadAllVariants:(RCVariantCallback)completionHandler;
 - (void)testingEnrollIntoVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(RCVariantCallback)completionHandler;
 
 - (NSDictionary<NSString*, CountlyRCData *> *)getAllValues;
