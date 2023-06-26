@@ -86,12 +86,25 @@ NSString* previousEventID;
     if (!config.host.length || [config.host isEqualToString:@"https://YOUR_COUNTLY_SERVER"])
         [NSException raise:@"CountlyHostNotSetException" format:@"host property on CountlyConfig object is not set"];
 
-    CLY_LOG_I(@"Initializing with %@ SDK v%@ on %@ with %@ %@",
-        CountlyCommon.sharedInstance.SDKName,
-        CountlyCommon.sharedInstance.SDKVersion,
-        CountlyDeviceInfo.device,
-        CountlyDeviceInfo.osName,
-        CountlyDeviceInfo.osVersion);
+    if([CountlyCommon.sharedInstance.SDKName isEqualToString:kCountlySDKName] && [CountlyCommon.sharedInstance.SDKVersion isEqualToString:kCountlySDKVersion])
+    {
+        CLY_LOG_I(@"Initializing with %@ SDK v%@ on %@ with %@ %@",
+                  CountlyCommon.sharedInstance.SDKName,
+                  CountlyCommon.sharedInstance.SDKVersion,
+                  CountlyDeviceInfo.device,
+                  CountlyDeviceInfo.osName,
+                  CountlyDeviceInfo.osVersion);
+    }
+    else {
+        CLY_LOG_I(@"Initializing with %@ SDK v%@ on %@ with %@ %@ default SDK name %@ defaul SDK version %@",
+                  CountlyCommon.sharedInstance.SDKName,
+                  CountlyCommon.sharedInstance.SDKVersion,
+                  CountlyDeviceInfo.device,
+                  CountlyDeviceInfo.osName,
+                  CountlyDeviceInfo.osVersion,
+                  kCountlySDKName,
+                  kCountlySDKVersion);
+    }
 
     if (!CountlyDeviceInfo.sharedInstance.deviceID || config.resetStoredDeviceID)
     {
@@ -522,6 +535,10 @@ NSString* previousEventID;
     if(!onServer || [deviceID isEqualToString:CLYTemporaryDeviceID] )
     {
         [CountlyRemoteConfigInternal.sharedInstance clearCachedRemoteConfig:NO];
+    }
+    
+    if(![deviceID isEqualToString:CLYTemporaryDeviceID] )
+    {
         [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfigAutomatically];
     }
 }

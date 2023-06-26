@@ -45,7 +45,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
 {
     if (self = [super init])
     {
-        self.cachedRemoteConfig = [CountlyPersistency.sharedInstance retrieveRemoteConfig];
+        self.cachedRemoteConfig = [CountlyPersistency.sharedInstance retrieveRemoteConfig] ;
         
         self.remoteConfigGlobalCallbacks = [[NSMutableArray alloc] init];
     }
@@ -447,11 +447,28 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
     NSURLRequest* request = [self downloadVariantsRequest];
     NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
                               {
-        NSDictionary* variants = nil;
+        NSMutableDictionary* variants = NSMutableDictionary.new;
         
         if (!error)
         {
-            variants = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+            NSDictionary* variants_ = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+            [variants_ enumerateKeysAndObjectsUsingBlock:^(NSString * key, NSArray* value, BOOL * stop)
+             {
+                NSMutableArray<NSString*>* valuesArray = NSMutableArray.new;
+                [value enumerateObjectsUsingBlock:^(id arrayValue, NSUInteger idx, BOOL * stop)
+                 {
+                    
+                    NSString *valueType = NSStringFromClass([arrayValue class]);
+                    if([valueType isEqualToString:@"__NSDictionaryI"]) {
+                        [valuesArray addObject:arrayValue[@"name"]];
+                    }
+                    else {
+                        [valuesArray addObject:arrayValue];
+                    }
+                    printf("%s", valueType);
+                }];
+                variants[key] = valuesArray;
+            }];
         }
         
         if (!error)
