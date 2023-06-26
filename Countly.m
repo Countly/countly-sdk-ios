@@ -96,7 +96,7 @@ NSString* previousEventID;
                   CountlyDeviceInfo.osVersion);
     }
     else {
-        CLY_LOG_I(@"Initializing with %@ SDK v%@ on %@ with %@ %@ default SDK name %@ defaul SDK version %@",
+        CLY_LOG_I(@"Initializing with %@ SDK v%@ on %@ with %@ %@ default SDK name %@ default SDK version %@",
                   CountlyCommon.sharedInstance.SDKName,
                   CountlyCommon.sharedInstance.SDKVersion,
                   CountlyDeviceInfo.device,
