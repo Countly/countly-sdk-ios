@@ -465,7 +465,6 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
                     else {
                         [valuesArray addObject:arrayValue];
                     }
-                    printf("%s", valueType);
                 }];
                 variants[key] = valuesArray;
             }];

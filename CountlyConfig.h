@@ -105,9 +105,9 @@ extern CLYRequestResult const CLYResponseNetworkIssue;
 extern CLYRequestResult const CLYResponseSuccess;
 extern CLYRequestResult const CLYResponseError;
 
-typedef void (^RCVariantCallback)(CLYRequestResult response, NSError * error);
+typedef void (^RCVariantCallback)(CLYRequestResult response, NSError *_Nullable error);
 
-typedef void (^RCDownloadCallback)(CLYRequestResult response, NSError * error, BOOL fullValueUpdate, NSDictionary<NSString *, CountlyRCData *>* downloadedValues);
+typedef void (^RCDownloadCallback)(CLYRequestResult response, NSError *_Nullable error, BOOL fullValueUpdate, NSDictionary<NSString *, CountlyRCData *>* downloadedValues);
 
 //NOTE: Internal log levels
 typedef enum : NSUInteger
