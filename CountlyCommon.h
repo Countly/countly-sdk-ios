@@ -63,9 +63,8 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
     CLYErrorServerConfigGeneralAPIError = 10013,
 };
 
-
-NSString* const kCountlySDKVersion = @"23.6.0";
-NSString* const kCountlySDKName = @"objc-native-ios";
+extern NSString* const kCountlySDKVersion;
+extern NSString* const kCountlySDKName;
 
 @interface CountlyCommon : NSObject
 

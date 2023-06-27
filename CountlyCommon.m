@@ -26,6 +26,9 @@ NSString* const kCountlyOrientationKeyMode = @"mode";
 #endif
 @end
 
+NSString* const kCountlySDKVersion = @"23.6.0";
+NSString* const kCountlySDKName = @"objc-native-ios";
+
 NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
 
 NSString* const kCountlyInternalLogPrefix = @"[Countly] ";
