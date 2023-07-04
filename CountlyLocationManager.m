@@ -49,23 +49,9 @@
     else
         self.location = nil;
 
-    if (city && ![[NSNull null] isEqual:city] && city.length) {
-        self.city = city;
-    } else {
-        self.city = nil;
-    }
-
-    if (ISOCountryCode && ![[NSNull null] isEqual:ISOCountryCode] && ISOCountryCode.length) {
-        self.ISOCountryCode = ISOCountryCode;
-    } else {
-        self.ISOCountryCode = nil;
-    }
-
-    if (IP && ![[NSNull null] isEqual:IP] && IP.length) {
-        self.IP = IP;
-    } else {
-        self.IP = nil;
-    }
+    self.city = city.length ? city : nil;
+    self.ISOCountryCode = ISOCountryCode.length ? ISOCountryCode : nil;
+    self.IP = IP.length ? IP : nil;
 
     if (self.city && !self.ISOCountryCode)
     {
