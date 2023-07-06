@@ -10,7 +10,7 @@
 		1A3A576329ED47A20041B7BE /* CountlyServerConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 1A3A576229ED47A20041B7BE /* CountlyServerConfig.m */; };
 		1A3A576529ED47BD0041B7BE /* CountlyServerConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 1A3A576429ED47B50041B7BE /* CountlyServerConfig.h */; };
 		1A423E9E2A271E46008C4757 /* CountlyRCData.m in Sources */ = {isa = PBXBuildFile; fileRef = 1A423E9D2A271E46008C4757 /* CountlyRCData.m */; };
-		1A423EA02A271FE0008C4757 /* CountlyRCData.h in Headers */ = {isa = PBXBuildFile; fileRef = 1A423E9F2A271E52008C4757 /* CountlyRCData.h */; };
+		1A423EA02A271FE0008C4757 /* CountlyRCData.h in Headers */ = {isa = PBXBuildFile; fileRef = 1A423E9F2A271E52008C4757 /* CountlyRCData.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		1ACA5DC12A309E7F001F770B /* CountlyRemoteConfigInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = 1ACA5DBF2A309E7F001F770B /* CountlyRemoteConfigInternal.h */; };
 		1ACA5DC22A309E7F001F770B /* CountlyRemoteConfigInternal.m in Sources */ = {isa = PBXBuildFile; fileRef = 1ACA5DC02A309E7F001F770B /* CountlyRemoteConfigInternal.m */; };
 		3B20A9872245225A00E3D7AE /* Countly.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9852245225A00E3D7AE /* Countly.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -26,7 +26,7 @@
 		3B20A9BE2245228700E3D7AE /* CountlyDeviceInfo.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9992245228400E3D7AE /* CountlyDeviceInfo.h */; };
 		3B20A9BF2245228700E3D7AE /* CountlyLocationManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A99A2245228400E3D7AE /* CountlyLocationManager.h */; };
 		3B20A9C02245228700E3D7AE /* CountlyConsentManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B20A99B2245228400E3D7AE /* CountlyConsentManager.m */; };
-		3B20A9C12245228700E3D7AE /* CountlyRemoteConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A99C2245228400E3D7AE /* CountlyRemoteConfig.h */; };
+		3B20A9C12245228700E3D7AE /* CountlyRemoteConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A99C2245228400E3D7AE /* CountlyRemoteConfig.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3B20A9C32245228700E3D7AE /* CountlyEvent.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A99E2245228400E3D7AE /* CountlyEvent.h */; };
 		3B20A9C42245228700E3D7AE /* CountlyUserDetails.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A99F2245228400E3D7AE /* CountlyUserDetails.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3B20A9C52245228700E3D7AE /* CountlyCrashReporter.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9A02245228400E3D7AE /* CountlyCrashReporter.h */; };
@@ -179,12 +179,12 @@
 				3B20A9CA2245228700E3D7AE /* CountlyConfig.h in Headers */,
 				3B20A9872245225A00E3D7AE /* Countly.h in Headers */,
 				1A423EA02A271FE0008C4757 /* CountlyRCData.h in Headers */,
+				3B20A9C12245228700E3D7AE /* CountlyRemoteConfig.h in Headers */,
 				3B20A9B22245228700E3D7AE /* CountlyConnectionManager.h in Headers */,
 				1A3A576529ED47BD0041B7BE /* CountlyServerConfig.h in Headers */,
 				1ACA5DC12A309E7F001F770B /* CountlyRemoteConfigInternal.h in Headers */,
 				3B20A9CC2245228700E3D7AE /* CountlyViewTracking.h in Headers */,
 				3B20A9BF2245228700E3D7AE /* CountlyLocationManager.h in Headers */,
-				3B20A9C12245228700E3D7AE /* CountlyRemoteConfig.h in Headers */,
 				D219374B248AC71C00E5798B /* CountlyPerformanceMonitoring.h in Headers */,
 				3B20A9BC2245228700E3D7AE /* CountlyCommon.h in Headers */,
 				3B20A9C52245228700E3D7AE /* CountlyCrashReporter.h in Headers */,
