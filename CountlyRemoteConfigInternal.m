@@ -315,7 +315,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
         return;
     
-    CLY_LOG_D(@"Fetching remote config manually...");
+    CLY_LOG_D(@"Fetching remote config...");
     
     [self fetchRemoteConfigForKeys:keys omitKeys:omitKeys isLegacy:NO completionHandler:^(NSDictionary *remoteConfig, NSError *error)
      {
@@ -323,7 +323,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         NSDictionary* remoteConfigMeta = remoteConfig ? [self createRCMeta:remoteConfig] : @{};
         if (!error)
         {
-            CLY_LOG_D(@"Fetching remote config manually is successful. \n%@", remoteConfig);
+            CLY_LOG_D(@"Fetching remote config is successful. \n%@", remoteConfig);
 //            NSDictionary* remoteConfigMeta = [self createRCMeta:remoteConfig];
             if (!keys && !omitKeys)
             {
@@ -343,7 +343,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         }
         else
         {
-            CLY_LOG_W(@"Fetching remote config manually failed: %@", error);
+            CLY_LOG_W(@"Fetching remote config failed: %@", error);
         }
         
         if (completionHandler)
