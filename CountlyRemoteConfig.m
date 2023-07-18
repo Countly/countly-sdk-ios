@@ -117,7 +117,7 @@
 
 - (void)clearAll
 {
-    [CountlyRemoteConfigInternal.sharedInstance clearCachedRemoteConfig:YES];
+    [CountlyRemoteConfigInternal.sharedInstance clearAll];
 }
 
 

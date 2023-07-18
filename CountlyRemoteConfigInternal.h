@@ -16,7 +16,8 @@
 + (instancetype)sharedInstance;
 
 - (void)startRemoteConfig;
-- (void)clearCachedRemoteConfig:(BOOL)force;
+- (void)clearAll;
+- (void)clearCachedRemoteConfig;
 - (id)remoteConfigValueForKey:(NSString *)key;
 - (void)updateRemoteConfigForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler;
 

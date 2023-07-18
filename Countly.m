@@ -532,10 +532,8 @@ NSString* previousEventID;
         [CountlyPersistency.sharedInstance clearAllTimedEvents];
     }
 
-    if(!onServer || [deviceID isEqualToString:CLYTemporaryDeviceID] )
-    {
-        [CountlyRemoteConfigInternal.sharedInstance clearCachedRemoteConfig:NO];
-    }
+    
+    [CountlyRemoteConfigInternal.sharedInstance clearCachedRemoteConfig];
     
     if(![deviceID isEqualToString:CLYTemporaryDeviceID] )
     {

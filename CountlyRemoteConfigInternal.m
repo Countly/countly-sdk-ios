@@ -158,15 +158,22 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
     return nil;
 }
 
-- (void)clearCachedRemoteConfig:(BOOL)force
+- (void)clearCachedRemoteConfig
 {
-    if(force || !self.isRCValueCachingEnabled) {
-        self.cachedRemoteConfig = nil;
-        [CountlyPersistency.sharedInstance storeRemoteConfig:self.cachedRemoteConfig];
+    if(!self.isRCValueCachingEnabled)
+    {
+        [self clearAll];
     }
-    else {
+    else
+    {
         [self updateMetaStateToCache];
     }
+}
+
+-(void)clearAll
+{
+    self.cachedRemoteConfig = nil;
+    [CountlyPersistency.sharedInstance storeRemoteConfig:self.cachedRemoteConfig];
 }
 
 #pragma mark ---
