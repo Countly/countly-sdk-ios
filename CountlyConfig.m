@@ -63,6 +63,7 @@ CLYDeviceIDType const CLYDeviceIDTypeNSUUID     = @"CLYDeviceIDTypeNSUUID";
 
         self.enableOrientationTracking = YES;
         self.enableServerConfiguration = NO;
+        self.remoteConfigGlobalCallbacks = NSMutableArray.new;
     }
 
     return self;
