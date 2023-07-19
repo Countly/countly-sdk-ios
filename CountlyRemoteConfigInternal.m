@@ -328,6 +328,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
      {
         BOOL fullValueUpdate = false;
         NSDictionary* remoteConfigMeta = remoteConfig ? [self createRCMeta:remoteConfig] : @{};
+        CLYRequestResult requestResult = CLYResponseSuccess;
         if (!error)
         {
             CLY_LOG_D(@"Fetching remote config is successful. \n%@", remoteConfig);
@@ -350,16 +351,17 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         }
         else
         {
+            requestResult = CLYResponseError;
             CLY_LOG_W(@"Fetching remote config failed: %@", error);
         }
         
         if (completionHandler)
-            completionHandler(CLYResponseSuccess, error, fullValueUpdate, remoteConfigMeta);
+            completionHandler(requestResult, error, fullValueUpdate, remoteConfigMeta);
         
         
         [self.remoteConfigGlobalCallbacks enumerateObjectsUsingBlock:^(RCDownloadCallback callback, NSUInteger idx, BOOL * stop)
          {
-            callback(CLYResponseSuccess, error, fullValueUpdate, remoteConfigMeta);
+            callback(requestResult, error, fullValueUpdate, remoteConfigMeta);
         }];
         
         
