@@ -1,7 +1,6 @@
 ## 23.6.2
-- The issue with the remote config global callback not being invoked has been fixed.
-- Fixed issue related to remote config caching.
-
+- Fixed bug where init time provided global Remote config download callbacks were ignored
+- Remote config values are now not erased anymore when removing remote config consent
 ## 23.6.1
 - Fixed SPM public header issues of `CountlyRCData.h` and `CountlyRemoteConfig.h` 
 
