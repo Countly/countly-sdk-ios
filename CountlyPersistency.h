@@ -16,6 +16,7 @@
 - (void)removeFromQueue:(NSString *)queryString;
 - (NSString *)firstItemInQueue;
 - (void)flushQueue;
+- (NSUInteger)remainingRequestCount;
 - (void)replaceAllTemporaryDeviceIDsInQueueWithDeviceID:(NSString *)deviceID;
 - (void)replaceAllAppKeysInQueueWithCurrentAppKey;
 - (void)removeDifferentAppKeysFromQueue;

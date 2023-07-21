@@ -56,6 +56,7 @@ NSString* const kCountlyQSKeyCrash            = @"crash";
 NSString* const kCountlyQSKeyChecksum256      = @"checksum256";
 NSString* const kCountlyQSKeyConsent          = @"consent";
 NSString* const kCountlyQSKeyAPM              = @"apm";
+NSString* const kCountlyQSKeyRemainingRequest = @"rr";
 
 NSString* const kCountlyQSKeyMethod           = @"method";
 
@@ -172,6 +173,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     NSString* queryString = firstItemInQueue;
 
+    queryString = [self appendRemainingRequest:queryString];
     queryString = [self appendChecksum:queryString];
 
     NSString* serverInputEndpoint = [self.host stringByAppendingString:kCountlyEndpointI];
@@ -701,6 +703,14 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyChecksum256, checksum];
     }
 
+    return queryString;
+}
+
+- (NSString *)appendRemainingRequest:(NSString *)queryString
+{
+    NSUInteger rrCount = [CountlyPersistency.sharedInstance remainingRequestCount] - 1;
+    return [queryString stringByAppendingFormat:@"&%@=%lu", kCountlyQSKeyRemainingRequest, (unsigned long)rrCount];
+    
     return queryString;
 }
 
