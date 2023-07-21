@@ -173,8 +173,8 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     NSString* queryString = firstItemInQueue;
 
-    queryString = [self appendChecksum:queryString];
     queryString = [self appendRemainingRequest:queryString];
+    queryString = [self appendChecksum:queryString];
 
     NSString* serverInputEndpoint = [self.host stringByAppendingString:kCountlyEndpointI];
     NSString* fullRequestURL = [serverInputEndpoint stringByAppendingFormat:@"?%@", queryString];
