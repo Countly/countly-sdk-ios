@@ -114,6 +114,14 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
     }
 }
 
+- (NSUInteger)remainingRequestCount
+{
+    @synchronized (self)
+    {
+        return [self.queuedRequests count];
+    }
+}
+
 - (void)replaceAllTemporaryDeviceIDsInQueueWithDeviceID:(NSString *)deviceID
 {
     NSString* temporaryDeviceIDQueryString = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, CLYTemporaryDeviceID];
