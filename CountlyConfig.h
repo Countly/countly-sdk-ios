@@ -22,12 +22,12 @@ typedef NSString* CLYFeature NS_EXTENSIBLE_STRING_ENUM;
 extern CLYFeature const CLYPushNotifications;
 #endif
 extern CLYFeature const CLYCrashReporting;
-extern CLYFeature const CLYAutoViewTracking;
+extern CLYFeature const CLYAutoViewTracking DEPRECATED_MSG_ATTRIBUTE("Use 'config.enableAutomaticViewTracking' instead");
 #elif (TARGET_OS_WATCH)
 extern CLYFeature const CLYCrashReporting;
 #elif (TARGET_OS_TV)
 extern CLYFeature const CLYCrashReporting;
-extern CLYFeature const CLYAutoViewTracking;
+extern CLYFeature const CLYAutoViewTracking  DEPRECATED_MSG_ATTRIBUTE("Use 'config.enableAutomaticViewTracking' instead");
 #elif (TARGET_OS_OSX)
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
 extern CLYFeature const CLYPushNotifications;
@@ -132,6 +132,8 @@ typedef enum : NSUInteger
 @end
 
 
+
+
 @interface CountlyConfig : NSObject
 
 /**
@@ -204,6 +206,37 @@ typedef enum : NSUInteger
  * @discussion For overriding default metrics, keys should be @c CLYMetricKey 's.
  */
 @property (nonatomic, copy) NSDictionary<NSString *, NSString *>* customMetrics;
+
+#pragma mark -
+
+#if (TARGET_OS_IOS || TARGET_OS_TV)
+/**
+ * For enabling automatic view tacking.
+ * @discussion If set, views will automatically track.
+ */
+@property (nonatomic) BOOL enableAutomaticViewTracking;
+
+/**
+ * Automatic view exclusion list .
+ * @discussion These views will exclude from automatic tracking.
+ */
+@property (nonatomic, copy) NSArray* automaticViewTrackingExclusionList;
+#endif
+/**
+ * Global view segmentation.
+ * @discussion If set, It will send with every view.
+ */
+
+@property (nonatomic, copy) NSDictionary* globalViewSegmentation;
+
+/**
+ * For tracking multiuple views manually.
+ * @discussion If set, user can track multiple views at same time manually
+ *  starting a new view would not automatically close the previous one.
+ * .
+ */
+@property (nonatomic) BOOL useMultipleViewFlow;
+
 
 #pragma mark -
 

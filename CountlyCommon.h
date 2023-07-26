@@ -14,7 +14,7 @@
 #import "CountlyDeviceInfo.h"
 #import "CountlyCrashReporter.h"
 #import "CountlyConfig.h"
-#import "CountlyViewTracking.h"
+#import "CountlyViewTrackingInternal.h"
 #import "CountlyFeedbacks.h"
 #import "CountlyFeedbackWidget.h"
 #import "CountlyPushNotifications.h"
@@ -24,7 +24,9 @@
 #import "CountlyRemoteConfigInternal.h"
 #import "CountlyPerformanceMonitoring.h"
 #import "CountlyRCData.h"
+#import "CountlyViewData.h"
 #import "CountlyRemoteConfig.h"
+#import "CountlyViewTracking.h"
 
 #define CLY_LOG_E(fmt, ...) CountlyInternalLog(CLYInternalLogLevelError, fmt, ##__VA_ARGS__)
 #define CLY_LOG_W(fmt, ...) CountlyInternalLog(CLYInternalLogLevelWarning, fmt, ##__VA_ARGS__)

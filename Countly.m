@@ -187,10 +187,14 @@ NSString* previousEventID;
     }
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
-    if ([config.features containsObject:CLYAutoViewTracking])
+    if (config.enableAutomaticViewTracking || [config.features containsObject:CLYAutoViewTracking])
     {
-        CountlyViewTracking.sharedInstance.isEnabledOnInitialConfig = YES;
-        [CountlyViewTracking.sharedInstance startAutoViewTracking];
+        // Print deprecation flag for feature
+        CountlyViewTrackingInternal.sharedInstance.isEnabledOnInitialConfig = YES;
+        [CountlyViewTrackingInternal.sharedInstance startAutoViewTracking];
+    }
+    if(config.automaticViewTrackingExclusionList) {
+//        [CountlyViewTrackingInternal]
     }
 #endif
 
@@ -257,7 +261,7 @@ NSString* previousEventID;
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance endSession];
 
-    [CountlyViewTracking.sharedInstance pauseView];
+    [CountlyViewTrackingInternal.sharedInstance pauseView];
 
     [CountlyPersistency.sharedInstance saveToFile];
 }
@@ -285,7 +289,7 @@ NSString* previousEventID;
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
 
-    [CountlyViewTracking.sharedInstance resumeView];
+    [CountlyViewTrackingInternal.sharedInstance resumeView];
 
     isSuspended = NO;
 }
@@ -308,7 +312,7 @@ NSString* previousEventID;
 
     CountlyConnectionManager.sharedInstance.isTerminating = YES;
 
-    [CountlyViewTracking.sharedInstance endView];
+    [CountlyViewTrackingInternal.sharedInstance endView];
 
     [CountlyConnectionManager.sharedInstance sendEvents];
 
@@ -700,11 +704,11 @@ NSString* previousEventID;
 
     if ([key isEqualToString:kCountlyReservedEventView])
     {
-        event.PVID = CountlyViewTracking.sharedInstance.previousViewID ?: @"";
+        event.PVID = CountlyViewTrackingInternal.sharedInstance.previousViewID ?: @"";
     }
     else
     {
-        event.CVID = CountlyViewTracking.sharedInstance.currentViewID ?: @"";
+        event.CVID = CountlyViewTrackingInternal.sharedInstance.currentViewID ?: @"";
     }
 
     // Check if the event is a reserved event
@@ -953,14 +957,14 @@ NSString* previousEventID;
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, viewName);
 
-    [CountlyViewTracking.sharedInstance startView:viewName customSegmentation:nil];
+    [CountlyViewTrackingInternal.sharedInstance startView:viewName customSegmentation:nil];
 }
 
 - (void)recordView:(NSString *)viewName segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
 
-    [CountlyViewTracking.sharedInstance startView:viewName customSegmentation:segmentation];
+    [CountlyViewTrackingInternal.sharedInstance startView:viewName customSegmentation:segmentation];
 }
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
@@ -968,31 +972,35 @@ NSString* previousEventID;
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, exception);
 
-    [CountlyViewTracking.sharedInstance addExceptionForAutoViewTracking:exception.copy];
+    [CountlyViewTrackingInternal.sharedInstance addExceptionForAutoViewTracking:exception.copy];
 }
 
 - (void)removeExceptionForAutoViewTracking:(NSString *)exception
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, exception);
 
-    [CountlyViewTracking.sharedInstance removeExceptionForAutoViewTracking:exception.copy];
+    [CountlyViewTrackingInternal.sharedInstance removeExceptionForAutoViewTracking:exception.copy];
 }
 
 - (void)setIsAutoViewTrackingActive:(BOOL)isAutoViewTrackingActive
 {
     CLY_LOG_I(@"%s %d", __FUNCTION__, isAutoViewTrackingActive);
 
-    CountlyViewTracking.sharedInstance.isAutoViewTrackingActive = isAutoViewTrackingActive;
+    CountlyViewTrackingInternal.sharedInstance.isAutoViewTrackingActive = isAutoViewTrackingActive;
 }
 
 - (BOOL)isAutoViewTrackingActive
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
 
-    return CountlyViewTracking.sharedInstance.isAutoViewTrackingActive;
+    return CountlyViewTrackingInternal.sharedInstance.isAutoViewTrackingActive;
 }
 #endif
 
+- (CountlyViewTracking *) view
+{
+    return CountlyViewTracking.sharedInstance;
+}
 
 
 #pragma mark - User Details
