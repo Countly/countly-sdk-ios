@@ -1,10 +1,8 @@
+// CountlyRemoteConfig.h
 //
-//  CountlyRemoteConfig.h
-//  CountlyTestApp-iOS
+// This code is provided under the MIT License.
 //
-//  Created by Muhammad Junaid Akram on 07/06/2023.
-//  Copyright © 2023 Countly. All rights reserved.
-//
+// Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
 #import "CountlyRCData.h"

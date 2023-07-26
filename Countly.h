@@ -557,7 +557,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 @property (nonatomic) BOOL isAutoViewTrackingActive;
 
-- (CountlyViewTracking *) view;
+- (CountlyViewTracking *) views;
 
 #endif
 

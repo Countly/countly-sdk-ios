@@ -1,10 +1,9 @@
+// CountlyViewData.h
 //
-//  CountlyViewData.h
-//  Countly
+// This code is provided under the MIT License.
 //
-//  Created by Muhammad Junaid Akram on 26/07/2023.
-//  Copyright © 2023 Alin Radut. All rights reserved.
-//
+// Please visit www.count.ly for more information.
+
 
 #import <Foundation/Foundation.h>
 

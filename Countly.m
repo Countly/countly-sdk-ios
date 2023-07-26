@@ -997,7 +997,7 @@ NSString* previousEventID;
 }
 #endif
 
-- (CountlyViewTracking *) view
+- (CountlyViewTracking *) views
 {
     return CountlyViewTracking.sharedInstance;
 }
