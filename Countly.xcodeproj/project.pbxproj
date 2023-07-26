@@ -33,11 +33,11 @@
 		3B20A9C42245228700E3D7AE /* CountlyUserDetails.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A99F2245228400E3D7AE /* CountlyUserDetails.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3B20A9C52245228700E3D7AE /* CountlyCrashReporter.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9A02245228400E3D7AE /* CountlyCrashReporter.h */; };
 		3B20A9C72245228700E3D7AE /* CountlyNotificationService.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9A22245228500E3D7AE /* CountlyNotificationService.h */; };
-		3B20A9C82245228700E3D7AE /* CountlyViewTrackingInternal.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B20A9A32245228500E3D7AE /* CountlyViewTrackingInternal.m */; };
+		3B20A9C82245228700E3D7AE /* CountlyViewTracking.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B20A9A32245228500E3D7AE /* CountlyViewTracking.m */; };
 		3B20A9C92245228700E3D7AE /* CountlyUserDetails.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B20A9A42245228500E3D7AE /* CountlyUserDetails.m */; };
 		3B20A9CA2245228700E3D7AE /* CountlyConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9A52245228500E3D7AE /* CountlyConfig.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3B20A9CB2245228700E3D7AE /* CountlyRemoteConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B20A9A62245228500E3D7AE /* CountlyRemoteConfig.m */; };
-		3B20A9CC2245228700E3D7AE /* CountlyViewTrackingInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9A72245228500E3D7AE /* CountlyViewTrackingInternal.h */; };
+		3B20A9CC2245228700E3D7AE /* CountlyViewTracking.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9A72245228500E3D7AE /* CountlyViewTracking.h */; };
 		3B20A9CE2245228700E3D7AE /* CountlyCrashReporter.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B20A9A92245228500E3D7AE /* CountlyCrashReporter.m */; };
 		3B20A9CF2245228700E3D7AE /* CountlyDeviceInfo.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B20A9AA2245228500E3D7AE /* CountlyDeviceInfo.m */; };
 		3B20A9D12245228700E3D7AE /* CountlyConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B20A9AC2245228600E3D7AE /* CountlyConfig.m */; };
@@ -82,11 +82,11 @@
 		3B20A99F2245228400E3D7AE /* CountlyUserDetails.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyUserDetails.h; sourceTree = "<group>"; };
 		3B20A9A02245228400E3D7AE /* CountlyCrashReporter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyCrashReporter.h; sourceTree = "<group>"; };
 		3B20A9A22245228500E3D7AE /* CountlyNotificationService.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyNotificationService.h; sourceTree = "<group>"; };
-		3B20A9A32245228500E3D7AE /* CountlyViewTrackingInternal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyViewTrackingInternal.m; sourceTree = "<group>"; };
+		3B20A9A32245228500E3D7AE /* CountlyViewTracking.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyViewTracking.m; sourceTree = "<group>"; };
 		3B20A9A42245228500E3D7AE /* CountlyUserDetails.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyUserDetails.m; sourceTree = "<group>"; };
 		3B20A9A52245228500E3D7AE /* CountlyConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyConfig.h; sourceTree = "<group>"; };
 		3B20A9A62245228500E3D7AE /* CountlyRemoteConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyRemoteConfig.m; sourceTree = "<group>"; };
-		3B20A9A72245228500E3D7AE /* CountlyViewTrackingInternal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyViewTrackingInternal.h; sourceTree = "<group>"; };
+		3B20A9A72245228500E3D7AE /* CountlyViewTracking.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyViewTracking.h; sourceTree = "<group>"; };
 		3B20A9A92245228500E3D7AE /* CountlyCrashReporter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyCrashReporter.m; sourceTree = "<group>"; };
 		3B20A9AA2245228500E3D7AE /* CountlyDeviceInfo.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyDeviceInfo.m; sourceTree = "<group>"; };
 		3B20A9AC2245228600E3D7AE /* CountlyConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyConfig.m; sourceTree = "<group>"; };
@@ -158,8 +158,8 @@
 				3B20A9A62245228500E3D7AE /* CountlyRemoteConfig.m */,
 				3B20A99F2245228400E3D7AE /* CountlyUserDetails.h */,
 				3B20A9A42245228500E3D7AE /* CountlyUserDetails.m */,
-				3B20A9A72245228500E3D7AE /* CountlyViewTrackingInternal.h */,
-				3B20A9A32245228500E3D7AE /* CountlyViewTrackingInternal.m */,
+				3B20A9A72245228500E3D7AE /* CountlyViewTracking.h */,
+				3B20A9A32245228500E3D7AE /* CountlyViewTracking.m */,
 				3B20A9862245225A00E3D7AE /* Info.plist */,
 				3B20A9832245225A00E3D7AE /* Products */,
 			);
@@ -190,7 +190,7 @@
 				3B20A9B22245228700E3D7AE /* CountlyConnectionManager.h in Headers */,
 				1A3A576529ED47BD0041B7BE /* CountlyServerConfig.h in Headers */,
 				1ACA5DC12A309E7F001F770B /* CountlyRemoteConfigInternal.h in Headers */,
-				3B20A9CC2245228700E3D7AE /* CountlyViewTrackingInternal.h in Headers */,
+				3B20A9CC2245228700E3D7AE /* CountlyViewTracking.h in Headers */,
 				3B20A9BF2245228700E3D7AE /* CountlyLocationManager.h in Headers */,
 				D219374B248AC71C00E5798B /* CountlyPerformanceMonitoring.h in Headers */,
 				3B20A9BC2245228700E3D7AE /* CountlyCommon.h in Headers */,
@@ -293,7 +293,7 @@
 				3B20A9B42245228700E3D7AE /* CountlyPushNotifications.m in Sources */,
 				3B20A9C92245228700E3D7AE /* CountlyUserDetails.m in Sources */,
 				3B20A9D12245228700E3D7AE /* CountlyConfig.m in Sources */,
-				3B20A9C82245228700E3D7AE /* CountlyViewTrackingInternal.m in Sources */,
+				3B20A9C82245228700E3D7AE /* CountlyViewTracking.m in Sources */,
 				3B20A9D22245228700E3D7AE /* CountlyLocationManager.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
