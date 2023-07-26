@@ -358,13 +358,13 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     {
         CLY_LOG_D(@"Consent for ViewTracking is given.");
 
-        [CountlyViewTracking.sharedInstance startAutoViewTracking];
+        [CountlyViewTrackingInternal.sharedInstance startAutoViewTracking];
     }
     else
     {
         CLY_LOG_D(@"Consent for ViewTracking is cancelled.");
 
-        [CountlyViewTracking.sharedInstance stopAutoViewTracking];
+        [CountlyViewTrackingInternal.sharedInstance stopAutoViewTracking];
     }
 #endif
 }
