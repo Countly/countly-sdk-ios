@@ -5,7 +5,6 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
-#import "CountlyRCData.h"
 
 @interface CountlyViewTracking : NSObject
 

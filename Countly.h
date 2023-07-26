@@ -556,12 +556,9 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion If AutoViewTracking feature is not enabled on initial configuration, this property has no effect.
  */
 @property (nonatomic) BOOL isAutoViewTrackingActive;
-
-- (CountlyViewTracking *) views;
-
 #endif
 
-
+- (CountlyViewTracking *) views;
 
 #pragma mark - User Details
 
