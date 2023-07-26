@@ -35,13 +35,15 @@
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, segmentation);
 }
-- (void)startView:(NSString *)viewName
+- (NSString *)startView:(NSString *)viewName
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, viewName);
+    return @"";
 }
-- (void)startView:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
+- (NSString *)startView:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
+    return @"";
 }
 
 - (void)stopViewWithName:(NSString *)viewName
