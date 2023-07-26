@@ -9,8 +9,6 @@
 /* Begin PBXBuildFile section */
 		1A3110632A7128CD001CB507 /* CountlyViewData.m in Sources */ = {isa = PBXBuildFile; fileRef = 1A3110622A7128CD001CB507 /* CountlyViewData.m */; };
 		1A3110652A7128ED001CB507 /* CountlyViewData.h in Headers */ = {isa = PBXBuildFile; fileRef = 1A3110642A7128DC001CB507 /* CountlyViewData.h */; };
-		1A31106C2A713F54001CB507 /* CountlyViewTracking.h in Headers */ = {isa = PBXBuildFile; fileRef = 1A31106A2A713F54001CB507 /* CountlyViewTracking.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		1A31106D2A713F54001CB507 /* CountlyViewTracking.m in Sources */ = {isa = PBXBuildFile; fileRef = 1A31106B2A713F54001CB507 /* CountlyViewTracking.m */; };
 		1A3A576329ED47A20041B7BE /* CountlyServerConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 1A3A576229ED47A20041B7BE /* CountlyServerConfig.m */; };
 		1A3A576529ED47BD0041B7BE /* CountlyServerConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 1A3A576429ED47B50041B7BE /* CountlyServerConfig.h */; };
 		1A423E9E2A271E46008C4757 /* CountlyRCData.m in Sources */ = {isa = PBXBuildFile; fileRef = 1A423E9D2A271E46008C4757 /* CountlyRCData.m */; };
@@ -58,8 +56,6 @@
 /* Begin PBXFileReference section */
 		1A3110622A7128CD001CB507 /* CountlyViewData.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyViewData.m; sourceTree = "<group>"; };
 		1A3110642A7128DC001CB507 /* CountlyViewData.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyViewData.h; sourceTree = "<group>"; };
-		1A31106A2A713F54001CB507 /* CountlyViewTracking.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyViewTracking.h; sourceTree = "<group>"; };
-		1A31106B2A713F54001CB507 /* CountlyViewTracking.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyViewTracking.m; sourceTree = "<group>"; };
 		1A3A576229ED47A20041B7BE /* CountlyServerConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyServerConfig.m; sourceTree = "<group>"; };
 		1A3A576429ED47B50041B7BE /* CountlyServerConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyServerConfig.h; sourceTree = "<group>"; };
 		1A423E9D2A271E46008C4757 /* CountlyRCData.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyRCData.m; sourceTree = "<group>"; };
@@ -120,8 +116,6 @@
 		3B20A9782245225A00E3D7AE = {
 			isa = PBXGroup;
 			children = (
-				1A31106A2A713F54001CB507 /* CountlyViewTracking.h */,
-				1A31106B2A713F54001CB507 /* CountlyViewTracking.m */,
 				1A3110642A7128DC001CB507 /* CountlyViewData.h */,
 				1A3110622A7128CD001CB507 /* CountlyViewData.m */,
 				1ACA5DBF2A309E7F001F770B /* CountlyRemoteConfigInternal.h */,
@@ -205,7 +199,6 @@
 				3B20A9D62245228700E3D7AE /* CountlyConsentManager.h in Headers */,
 				3B20A9C32245228700E3D7AE /* CountlyEvent.h in Headers */,
 				3B20A9C72245228700E3D7AE /* CountlyNotificationService.h in Headers */,
-				1A31106C2A713F54001CB507 /* CountlyViewTracking.h in Headers */,
 				3B20A9B72245228700E3D7AE /* CountlyPersistency.h in Headers */,
 				D249BF5E254D3D180058A6C2 /* CountlyFeedbackWidget.h in Headers */,
 				D2CFEF972545FBE80026B044 /* CountlyFeedbacks.h in Headers */,
@@ -295,7 +288,6 @@
 				3B20A9CB2245228700E3D7AE /* CountlyRemoteConfig.m in Sources */,
 				3B20A9BD2245228700E3D7AE /* CountlyConnectionManager.m in Sources */,
 				3B20A9C02245228700E3D7AE /* CountlyConsentManager.m in Sources */,
-				1A31106D2A713F54001CB507 /* CountlyViewTracking.m in Sources */,
 				1A3A576329ED47A20041B7BE /* CountlyServerConfig.m in Sources */,
 				D219374C248AC71C00E5798B /* CountlyPerformanceMonitoring.m in Sources */,
 				3B20A9B42245228700E3D7AE /* CountlyPushNotifications.m in Sources */,

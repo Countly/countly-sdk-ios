@@ -190,8 +190,8 @@ NSString* previousEventID;
     if (config.enableAutomaticViewTracking || [config.features containsObject:CLYAutoViewTracking])
     {
         // Print deprecation flag for feature
-        CountlyViewTrackingInternal.sharedInstance.isEnabledOnInitialConfig = YES;
-        [CountlyViewTrackingInternal.sharedInstance startAutoViewTracking];
+        CountlyViewTracking.sharedInstance.isEnabledOnInitialConfig = YES;
+        [CountlyViewTracking.sharedInstance startAutoViewTracking];
     }
     if(config.automaticViewTrackingExclusionList) {
 //        [CountlyViewTrackingInternal]
@@ -261,7 +261,7 @@ NSString* previousEventID;
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance endSession];
 
-    [CountlyViewTrackingInternal.sharedInstance pauseView];
+    [CountlyViewTracking.sharedInstance pauseView];
 
     [CountlyPersistency.sharedInstance saveToFile];
 }
@@ -289,7 +289,7 @@ NSString* previousEventID;
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
 
-    [CountlyViewTrackingInternal.sharedInstance resumeView];
+    [CountlyViewTracking.sharedInstance resumeView];
 
     isSuspended = NO;
 }
@@ -312,7 +312,7 @@ NSString* previousEventID;
 
     CountlyConnectionManager.sharedInstance.isTerminating = YES;
 
-    [CountlyViewTrackingInternal.sharedInstance endView];
+    [CountlyViewTracking.sharedInstance endView];
 
     [CountlyConnectionManager.sharedInstance sendEvents];
 
@@ -704,11 +704,11 @@ NSString* previousEventID;
 
     if ([key isEqualToString:kCountlyReservedEventView])
     {
-        event.PVID = CountlyViewTrackingInternal.sharedInstance.previousViewID ?: @"";
+        event.PVID = CountlyViewTracking.sharedInstance.previousViewID ?: @"";
     }
     else
     {
-        event.CVID = CountlyViewTrackingInternal.sharedInstance.currentViewID ?: @"";
+        event.CVID = CountlyViewTracking.sharedInstance.currentViewID ?: @"";
     }
 
     // Check if the event is a reserved event
@@ -957,14 +957,14 @@ NSString* previousEventID;
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, viewName);
 
-    [CountlyViewTrackingInternal.sharedInstance startView:viewName customSegmentation:nil];
+    [CountlyViewTracking.sharedInstance startView:viewName customSegmentation:nil];
 }
 
 - (void)recordView:(NSString *)viewName segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
 
-    [CountlyViewTrackingInternal.sharedInstance startView:viewName customSegmentation:segmentation];
+    [CountlyViewTracking.sharedInstance startView:viewName customSegmentation:segmentation];
 }
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
@@ -972,28 +972,28 @@ NSString* previousEventID;
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, exception);
 
-    [CountlyViewTrackingInternal.sharedInstance addExceptionForAutoViewTracking:exception.copy];
+    [CountlyViewTracking.sharedInstance addExceptionForAutoViewTracking:exception.copy];
 }
 
 - (void)removeExceptionForAutoViewTracking:(NSString *)exception
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, exception);
 
-    [CountlyViewTrackingInternal.sharedInstance removeExceptionForAutoViewTracking:exception.copy];
+    [CountlyViewTracking.sharedInstance removeExceptionForAutoViewTracking:exception.copy];
 }
 
 - (void)setIsAutoViewTrackingActive:(BOOL)isAutoViewTrackingActive
 {
     CLY_LOG_I(@"%s %d", __FUNCTION__, isAutoViewTrackingActive);
 
-    CountlyViewTrackingInternal.sharedInstance.isAutoViewTrackingActive = isAutoViewTrackingActive;
+    CountlyViewTracking.sharedInstance.isAutoViewTrackingActive = isAutoViewTrackingActive;
 }
 
 - (BOOL)isAutoViewTrackingActive
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
 
-    return CountlyViewTrackingInternal.sharedInstance.isAutoViewTrackingActive;
+    return CountlyViewTracking.sharedInstance.isAutoViewTrackingActive;
 }
 #endif
 
