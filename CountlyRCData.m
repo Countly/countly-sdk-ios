@@ -4,7 +4,7 @@
 //
 // Please visit www.count.ly for more information.
 
-#import "CountlyCommon.h"
+#import "CountlyRCData.h"
 
 @implementation CountlyRCData
 
