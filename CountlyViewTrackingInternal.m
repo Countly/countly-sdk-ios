@@ -6,7 +6,7 @@
 
 #import "CountlyCommon.h"
 
-@interface CountlyViewTracking ()
+@interface CountlyViewTrackingInternal ()
 @property (nonatomic) NSString* currentView;
 @property (nonatomic) NSTimeInterval currentViewStartTime;
 @property (nonatomic) NSTimeInterval accumulatedTime;
@@ -33,14 +33,14 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 @end
 #endif
 
-@implementation CountlyViewTracking
+@implementation CountlyViewTrackingInternal
 
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
         return nil;
-    
-    static CountlyViewTracking* s_sharedInstance = nil;
+
+    static CountlyViewTrackingInternal* s_sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
     return s_sharedInstance;
@@ -167,7 +167,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     [self swizzleViewTrackingMethods];
     
     UIViewController* topVC = CountlyCommon.sharedInstance.topViewController;
-    NSString* viewTitle = [CountlyViewTracking.sharedInstance titleForViewController:topVC];
+    NSString* viewTitle = [CountlyViewTrackingInternal.sharedInstance titleForViewController:topVC];
     [self startView:viewTitle];
 }
 
@@ -409,7 +409,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 {
     [self Countly_viewDidAppear:animated];
 
-    [CountlyViewTracking.sharedInstance performAutoViewTrackingForViewController:self];
+    [CountlyViewTrackingInternal.sharedInstance performAutoViewTrackingForViewController:self];
 
     if (self.isPageSheetModal)
     {
@@ -436,7 +436,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     if (self.presentingVC)
     {
         CLY_LOG_I(@"A modal view controller with PageSheet presentation style is dismissed on iOS 13+. Forcing auto view tracking with stored presenting view controller.");
-        [CountlyViewTracking.sharedInstance performAutoViewTrackingForViewController:self.presentingVC];
+        [CountlyViewTrackingInternal.sharedInstance performAutoViewTrackingForViewController:self.presentingVC];
         self.presentingVC = nil;
     }
 }
