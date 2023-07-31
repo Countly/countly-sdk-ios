@@ -12,6 +12,7 @@
 @property (nonatomic) NSTimeInterval accumulatedTime;
 @property (nonatomic) NSMutableArray* exceptionViewControllers;
 @property (nonatomic) NSMutableDictionary<NSString*, CountlyViewData *> * viewDataDictionary;
+@property (nonatomic, copy) NSDictionary* globalViewSegmentation;
 @end
 
 NSString* const kCountlyReservedEventView = @"[CLY]_view";
@@ -168,7 +169,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     
     UIViewController* topVC = CountlyCommon.sharedInstance.topViewController;
     NSString* viewTitle = [CountlyViewTrackingInternal.sharedInstance titleForViewController:topVC];
-    [self startView:viewTitle];
+    [self startViewInternal:viewTitle customSegmentation:nil];
 }
 
 - (void)swizzleViewTrackingMethods
@@ -226,7 +227,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     }
     
     if (!isException)
-        [self startView:viewTitle];
+        [self startViewInternal:viewTitle customSegmentation:nil];
 }
 
 
@@ -310,10 +311,10 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     return reservedViewTrackingSegmentationKeys;
 }
 
-- (void)startViewInternal:(NSString *)viewName
-{
-    [self startViewInternal:viewName customSegmentation:nil];
-}
+//- (void)startViewInternal:(NSString *)viewName
+//{
+//    [self startViewInternal:viewName customSegmentation:nil];
+//}
 
 - (void)startViewInternal:(NSString *)viewName customSegmentation:(NSDictionary *)customSegmentation
 {
@@ -361,31 +362,19 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, segmentation);
 }
-//- (NSString *)startView:(NSString *)viewName
-//{
-//    CLY_LOG_I(@"%s %@", __FUNCTION__, viewName);
-//    return @"";
-//}
+
 - (NSString *)startView:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
     return @"";
 }
 
-- (void)stopViewWithName:(NSString *)viewName
-{
-    CLY_LOG_I(@"%s %@", __FUNCTION__, viewName);
-}
-- (void)stopViewWithName:(NSString *)viewName customSegmentation:(NSDictionary *)segmentation
+- (void)stopViewWithName:(NSString *)viewName segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
 }
 
-- (void)stopViewWithID:(NSString *)viewID
-{
-    CLY_LOG_I(@"%s %@", __FUNCTION__, viewID);
-}
-- (void)stopViewWithID:(NSString *)viewID customSegmentation:(NSDictionary *)segmentation
+- (void)stopViewWithID:(NSString *)viewID segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewID, segmentation);
 }
