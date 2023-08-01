@@ -194,10 +194,13 @@ NSString* previousEventID;
         [CountlyViewTrackingInternal.sharedInstance startAutoViewTracking];
     }
     if(config.automaticViewTrackingExclusionList) {
-//        [CountlyViewTrackingInternal]
+        [CountlyViewTrackingInternal.sharedInstance addAutoViewTrackingExclutionList:config.automaticViewTrackingExclusionList];
     }
 #endif
-
+    CountlyViewTrackingInternal.sharedInstance.useMultipleViewFlow = config.useMultipleViewFlow;
+    if(config.globalViewSegmentation) {
+        [CountlyViewTrackingInternal.sharedInstance setGlobalViewSegmentation:config.globalViewSegmentation];
+    }
     timer = [NSTimer timerWithTimeInterval:config.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
     [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
 

@@ -36,4 +36,7 @@ extern NSString* const kCountlyReservedEventView;
 - (void)stopViewWithID:(NSString *)viewID segmentation:(NSDictionary *)segmentation;
 - (void)pauseViewWithID:(NSString *)viewID;
 - (void)resumeViewWithID:(NSString *)viewID;
+#if (TARGET_OS_IOS || TARGET_OS_TV)
+- (void)addAutoViewTrackingExclutionList:(NSArray *)viewTrackingExclusionList;
+#endif
 @end

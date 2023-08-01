@@ -12,6 +12,12 @@
 @property (nonatomic) NSString* viewID;
 @property (nonatomic) NSString* viewName;
 @property (nonatomic) NSTimeInterval viewStartTime;
+@property (nonatomic) NSTimeInterval viewCreationTime;
 @property (nonatomic) NSTimeInterval viewAccumulatedTime;
+
+- (instancetype)initWithID:(NSString *)viewID viewName:(NSString *)viewName;
+- (NSTimeInterval)duration;
+- (void)pauseView;
+- (void)resumeView;
 
 @end
