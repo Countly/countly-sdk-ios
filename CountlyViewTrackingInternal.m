@@ -7,9 +7,9 @@
 #import "CountlyCommon.h"
 
 @interface CountlyViewTrackingInternal ()
-@property (nonatomic) NSString* currentView;
-@property (nonatomic) NSTimeInterval currentViewStartTime;
-@property (nonatomic) NSTimeInterval accumulatedTime;
+//@property (nonatomic) CountlyViewData* currentView;
+//@property (nonatomic) NSTimeInterval currentViewStartTime;
+//@property (nonatomic) NSTimeInterval accumulatedTime;
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 @property (nonatomic) NSMutableSet* automaticViewTrackingExclusionList;
 #endif
@@ -119,11 +119,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
     
-    if(self.useMultipleViewFlow)
-    {
-        
-    }
-    else
+    if(!self.useMultipleViewFlow)
     {
         [self endView];
     }
@@ -132,22 +128,18 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     
 }
 
+-(CountlyViewData* ) currentView
+{
+    if(!self.currentViewID)
+        return nil;
+    return [self.viewDataDictionary objectForKey:self.currentViewID];
+}
+
 - (void)endView
 {
-    if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
-        return;
-    
     if (self.currentView)
     {
-        NSMutableDictionary* segmentation = NSMutableDictionary.new;
-        segmentation[kCountlyVTKeyName] = self.currentView;
-        segmentation[kCountlyVTKeySegment] = CountlyDeviceInfo.osName;
-        
-        NSTimeInterval duration = NSDate.date.timeIntervalSince1970 - self.currentViewStartTime + self.accumulatedTime;
-        self.accumulatedTime = 0;
-        [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventView segmentation:segmentation count:1 sum:0 duration:duration ID:self.currentViewID timestamp:self.currentViewStartTime];
-        
-        CLY_LOG_D(@"View tracking ended: %@ duration: %.17g", self.currentView, duration);
+        [self endViewWithKey:self.currentView.viewID];
     }
 }
 
@@ -157,18 +149,19 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         return;
     [self.viewDataDictionary enumerateKeysAndObjectsUsingBlock:^(NSString * key, CountlyViewData * viewData, BOOL * stop)
      {
-        if([viewData.viewName isEqualToString:viewName]) {
-            [self endView:viewData];
+        if([viewData.viewName isEqualToString:viewName])
+        {
+            [self endViewWithKey:key];
         }
         
     }];
 }
 
-- (void)endView:(CountlyViewData *) viewData
+- (void)endViewWithKey:(NSString *) viewKey
 {
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
-    
+    CountlyViewData* viewData = self.viewDataDictionary[viewKey];
     if (viewData)
     {
         NSMutableDictionary* segmentation = NSMutableDictionary.new;
@@ -177,26 +170,24 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         
         NSTimeInterval duration = viewData.duration;
         viewData.viewAccumulatedTime = 0;
-        [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventView segmentation:segmentation count:1 sum:0 duration:duration ID:self.currentViewID timestamp:viewData.viewStartTime];
+        [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventView segmentation:segmentation count:1 sum:0 duration:duration ID:viewData.viewID timestamp:viewData.viewCreationTime];
         
-        CLY_LOG_D(@"View tracking ended: %@ duration: %.17g", self.currentView, duration);
+        CLY_LOG_D(@"View tracking ended: %@ duration: %.17g", viewData.viewName, duration);
+        [self.viewDataDictionary removeObjectForKey:viewKey];
     }
 }
 
-
-
 - (void)pauseView
 {
-    if (self.currentViewStartTime)
+    if (self.currentView)
     {
-        self.accumulatedTime = NSDate.date.timeIntervalSince1970 - self.currentViewStartTime + self.accumulatedTime;
-        self.currentViewStartTime = 0;
+        [self.currentView pauseView];
     }
 }
 
 - (void)resumeView
 {
-    self.currentViewStartTime = CountlyCommon.sharedInstance.uniqueTimestamp;
+    [self.currentView resumeView];
 }
 
 #pragma mark -
@@ -239,10 +230,8 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 {
     self.isAutoViewTrackingActive = NO;
     
-    self.currentView = nil;
+//    self.currentView = nil;
     self.currentViewID = nil;
-    self.currentViewStartTime = 0;
-    self.accumulatedTime = 0;
 }
 
 - (void)performAutoViewTrackingForViewController:(UIViewController *)viewController
@@ -255,7 +244,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     
     NSString* viewTitle = [self titleForViewController:viewController];
     
-    if ([self.currentView isEqualToString:viewTitle])
+    if (self.currentView && [self.currentView.viewName isEqualToString:viewTitle])
         return;
     
     BOOL isException = NO;
@@ -396,12 +385,11 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         [segmentation addEntriesFromDictionary:mutableCustomSegmentation];
     }
     
-//    self.currentView = viewName;
+    
     self.previousViewID = self.currentViewID;
     self.currentViewID = CountlyCommon.sharedInstance.randomEventID;
-//    self.currentViewStartTime = CountlyCommon.sharedInstance.uniqueTimestamp;
     
-    CountlyViewData* viewData = [[CountlyViewData alloc] initWithID:viewName viewName:self.currentViewID];
+    CountlyViewData *viewData = [[CountlyViewData alloc] initWithID:viewName viewName:self.currentViewID];
     self.viewDataDictionary[self.currentViewID] = viewData;
     
     [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventView segmentation:segmentation ID:self.currentViewID];
