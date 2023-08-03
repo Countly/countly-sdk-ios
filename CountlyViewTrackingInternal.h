@@ -38,5 +38,10 @@ extern NSString* const kCountlyReservedEventView;
 - (void)resumeViewWithID:(NSString *)viewID;
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 - (void)addAutoViewTrackingExclutionList:(NSArray *)viewTrackingExclusionList;
+
+- (void)applicationDidEnterBackground;
+- (void)applicationWillEnterForeground;
+- (void)applicationWillTerminate;
+
 #endif
 @end
