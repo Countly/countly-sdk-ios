@@ -13,8 +13,6 @@ extern NSString* const kCountlyReservedEventView;
 @property (nonatomic) NSString* currentViewID;
 @property (nonatomic) NSString* previousViewID;
 
-@property (nonatomic) BOOL useMultipleViewFlow;
-
 + (instancetype)sharedInstance;
 
 - (void)startView:(NSString *)viewName customSegmentation:(NSDictionary *)customSegmentation;
@@ -31,6 +29,7 @@ extern NSString* const kCountlyReservedEventView;
 
 - (void)setGlobalViewSegmentation:(NSDictionary *)segmentation;
 - (void)updateGlobalViewSegmentation:(NSDictionary *)segmentation;
+- (NSString *)recordView:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
 - (NSString *)startView:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
 - (void)stopViewWithName:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
 - (void)stopViewWithID:(NSString *)viewID segmentation:(NSDictionary *)segmentation;

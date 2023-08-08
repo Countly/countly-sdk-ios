@@ -9,15 +9,6 @@
 
 @implementation CountlyViewData
 
-- (instancetype)init
-{
-    if (self = [super init])
-    {
-    }
-    
-    return self;
-}
-
 - (instancetype)initWithID:(NSString *)viewID viewName:(NSString *)viewName
 {
     if (self = [super init])
@@ -27,6 +18,7 @@
         self.viewCreationTime = CountlyCommon.sharedInstance.uniqueTimestamp;
         self.viewStartTime = self.viewCreationTime;
         self.viewAccumulatedTime = 0;
+        self.isAutoStopView = false;
     }
     
     return self;

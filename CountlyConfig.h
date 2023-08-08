@@ -229,14 +229,6 @@ typedef enum : NSUInteger
 
 @property (nonatomic, copy) NSDictionary* globalViewSegmentation;
 
-/**
- * For tracking multiuple views manually.
- * @discussion If set, user can track multiple views at same time manually
- *  starting a new view would not automatically close the previous one.
- * .
- */
-@property (nonatomic) BOOL useMultipleViewFlow;
-
 
 #pragma mark -
 

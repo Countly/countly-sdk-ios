@@ -37,6 +37,19 @@
     CLY_LOG_I(@"%s %@", __FUNCTION__, segmentation);
     [CountlyViewTrackingInternal.sharedInstance updateGlobalViewSegmentation:segmentation];
 }
+
+- (NSString *)recordView:(NSString *)viewName
+{
+    CLY_LOG_I(@"%s %@", __FUNCTION__, viewName);
+    
+    return [CountlyViewTrackingInternal.sharedInstance recordView:viewName segmentation:nil];
+}
+- (NSString *)recordView:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
+{
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
+    return [CountlyViewTrackingInternal.sharedInstance recordView:viewName segmentation:segmentation];
+}
+
 - (NSString *)startView:(NSString *)viewName
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, viewName);

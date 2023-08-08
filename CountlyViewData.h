@@ -14,6 +14,7 @@
 @property (nonatomic) NSTimeInterval viewStartTime;
 @property (nonatomic) NSTimeInterval viewCreationTime;
 @property (nonatomic) NSTimeInterval viewAccumulatedTime;
+@property (nonatomic) BOOL isAutoStopView;
 
 - (instancetype)initWithID:(NSString *)viewID viewName:(NSString *)viewName;
 - (NSTimeInterval)duration;

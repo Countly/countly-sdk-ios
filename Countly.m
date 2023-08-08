@@ -197,7 +197,6 @@ NSString* previousEventID;
         [CountlyViewTrackingInternal.sharedInstance addAutoViewTrackingExclutionList:config.automaticViewTrackingExclusionList];
     }
 #endif
-    CountlyViewTrackingInternal.sharedInstance.useMultipleViewFlow = config.useMultipleViewFlow;
     if(config.globalViewSegmentation) {
         [CountlyViewTrackingInternal.sharedInstance setGlobalViewSegmentation:config.globalViewSegmentation];
     }
