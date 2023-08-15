@@ -283,8 +283,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)startView:(NSString *)viewName customSegmentation:(NSDictionary *)customSegmentation
 {
-    [self startView:viewName segmentation:customSegmentation];
-    
+    [self startAutoStoppedView:viewName segmentation:customSegmentation];
 }
 
 - (void)addExceptionForAutoViewTracking:(NSString *)exception
