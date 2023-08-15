@@ -11,6 +11,8 @@
 		1A3A576529ED47BD0041B7BE /* CountlyServerConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 1A3A576429ED47B50041B7BE /* CountlyServerConfig.h */; };
 		1A423E9E2A271E46008C4757 /* CountlyRCData.m in Sources */ = {isa = PBXBuildFile; fileRef = 1A423E9D2A271E46008C4757 /* CountlyRCData.m */; };
 		1A423EA02A271FE0008C4757 /* CountlyRCData.h in Headers */ = {isa = PBXBuildFile; fileRef = 1A423E9F2A271E52008C4757 /* CountlyRCData.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		1A5AF93C2A56951500429C1B /* CountlyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5AF93B2A56951500429C1B /* CountlyTests.swift */; };
+		1A5AF93D2A56951500429C1B /* Countly.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B20A9822245225A00E3D7AE /* Countly.framework */; };
 		1ACA5DC12A309E7F001F770B /* CountlyRemoteConfigInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = 1ACA5DBF2A309E7F001F770B /* CountlyRemoteConfigInternal.h */; };
 		1ACA5DC22A309E7F001F770B /* CountlyRemoteConfigInternal.m in Sources */ = {isa = PBXBuildFile; fileRef = 1ACA5DC02A309E7F001F770B /* CountlyRemoteConfigInternal.m */; };
 		3B20A9872245225A00E3D7AE /* Countly.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9852245225A00E3D7AE /* Countly.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -51,11 +53,24 @@
 		D2CFEF982545FBE80026B044 /* CountlyFeedbacks.m in Sources */ = {isa = PBXBuildFile; fileRef = D2CFEF962545FBE80026B044 /* CountlyFeedbacks.m */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		1A5AF93E2A56951500429C1B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3B20A9792245225A00E3D7AE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3B20A9812245225A00E3D7AE;
+			remoteInfo = Countly;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		1A3A576229ED47A20041B7BE /* CountlyServerConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyServerConfig.m; sourceTree = "<group>"; };
 		1A3A576429ED47B50041B7BE /* CountlyServerConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyServerConfig.h; sourceTree = "<group>"; };
+		1A3BE66D2A5594A4008C4839 /* CountlyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyTests.swift; sourceTree = "<group>"; };
 		1A423E9D2A271E46008C4757 /* CountlyRCData.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyRCData.m; sourceTree = "<group>"; };
 		1A423E9F2A271E52008C4757 /* CountlyRCData.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyRCData.h; sourceTree = "<group>"; };
+		1A5AF9392A56951500429C1B /* CountlyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CountlyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		1A5AF93B2A56951500429C1B /* CountlyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyTests.swift; sourceTree = "<group>"; };
 		1ACA5DBF2A309E7F001F770B /* CountlyRemoteConfigInternal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyRemoteConfigInternal.h; sourceTree = "<group>"; };
 		1ACA5DC02A309E7F001F770B /* CountlyRemoteConfigInternal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyRemoteConfigInternal.m; sourceTree = "<group>"; };
 		3B20A9822245225A00E3D7AE /* Countly.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Countly.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -99,6 +114,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		1A5AF9362A56951500429C1B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1A5AF93D2A56951500429C1B /* Countly.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		3B20A97F2245225A00E3D7AE /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -109,6 +132,22 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1A3BE66C2A5594A4008C4839 /* CountlyTests */ = {
+			isa = PBXGroup;
+			children = (
+				1A3BE66D2A5594A4008C4839 /* CountlyTests.swift */,
+			);
+			path = CountlyTests;
+			sourceTree = "<group>";
+		};
+		1A5AF93A2A56951500429C1B /* CountlyTests */ = {
+			isa = PBXGroup;
+			children = (
+				1A5AF93B2A56951500429C1B /* CountlyTests.swift */,
+			);
+			path = CountlyTests;
+			sourceTree = "<group>";
+		};
 		3B20A9782245225A00E3D7AE = {
 			isa = PBXGroup;
 			children = (
@@ -155,6 +194,8 @@
 				3B20A9A72245228500E3D7AE /* CountlyViewTrackingInternal.h */,
 				3B20A9A32245228500E3D7AE /* CountlyViewTrackingInternal.m */,
 				3B20A9862245225A00E3D7AE /* Info.plist */,
+				1A3BE66C2A5594A4008C4839 /* CountlyTests */,
+				1A5AF93A2A56951500429C1B /* CountlyTests */,
 				3B20A9832245225A00E3D7AE /* Products */,
 			);
 			sourceTree = "<group>";
@@ -163,6 +204,7 @@
 			isa = PBXGroup;
 			children = (
 				3B20A9822245225A00E3D7AE /* Countly.framework */,
+				1A5AF9392A56951500429C1B /* CountlyTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -177,8 +219,8 @@
 				3B20A9D32245228700E3D7AE /* CountlyPushNotifications.h in Headers */,
 				3B20A9C42245228700E3D7AE /* CountlyUserDetails.h in Headers */,
 				3B20A9CA2245228700E3D7AE /* CountlyConfig.h in Headers */,
-				3B20A9872245225A00E3D7AE /* Countly.h in Headers */,
 				1A423EA02A271FE0008C4757 /* CountlyRCData.h in Headers */,
+				3B20A9872245225A00E3D7AE /* Countly.h in Headers */,
 				3B20A9C12245228700E3D7AE /* CountlyRemoteConfig.h in Headers */,
 				3B20A9B22245228700E3D7AE /* CountlyConnectionManager.h in Headers */,
 				1A3A576529ED47BD0041B7BE /* CountlyServerConfig.h in Headers */,
@@ -201,6 +243,24 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
+		1A5AF9382A56951500429C1B /* CountlyTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1A5AF9402A56951500429C1B /* Build configuration list for PBXNativeTarget "CountlyTests" */;
+			buildPhases = (
+				1A5AF9352A56951500429C1B /* Sources */,
+				1A5AF9362A56951500429C1B /* Frameworks */,
+				1A5AF9372A56951500429C1B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1A5AF93F2A56951500429C1B /* PBXTargetDependency */,
+			);
+			name = CountlyTests;
+			productName = CountlyTests;
+			productReference = 1A5AF9392A56951500429C1B /* CountlyTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		3B20A9812245225A00E3D7AE /* Countly */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 3B20A98A2245225A00E3D7AE /* Build configuration list for PBXNativeTarget "Countly" */;
@@ -225,9 +285,13 @@
 		3B20A9792245225A00E3D7AE /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
+				LastSwiftUpdateCheck = 1410;
 				LastUpgradeCheck = 1410;
 				ORGANIZATIONNAME = "Alin Radut";
 				TargetAttributes = {
+					1A5AF9382A56951500429C1B = {
+						CreatedOnToolsVersion = 14.1;
+					};
 					3B20A9812245225A00E3D7AE = {
 						CreatedOnToolsVersion = 10.1;
 					};
@@ -247,11 +311,19 @@
 			projectRoot = "";
 			targets = (
 				3B20A9812245225A00E3D7AE /* Countly */,
+				1A5AF9382A56951500429C1B /* CountlyTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		1A5AF9372A56951500429C1B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		3B20A9802245225A00E3D7AE /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -262,6 +334,14 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		1A5AF9352A56951500429C1B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1A5AF93C2A56951500429C1B /* CountlyTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		3B20A97E2245225A00E3D7AE /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -292,7 +372,67 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		1A5AF93F2A56951500429C1B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3B20A9812245225A00E3D7AE /* Countly */;
+			targetProxy = 1A5AF93E2A56951500429C1B /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		1A5AF9412A56951500429C1B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3S32KFMHB8;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.countly.CountlyTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx watchos watchsimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,3,4";
+			};
+			name = Debug;
+		};
+		1A5AF9422A56951500429C1B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3S32KFMHB8;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 10.14;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.countly.CountlyTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx watchos watchsimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2,3,4";
+			};
+			name = Release;
+		};
 		3B20A9882245225A00E3D7AE /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -346,14 +486,16 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				MACOSX_DEPLOYMENT_TARGET = 10.14;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				TVOS_DEPLOYMENT_TARGET = 11.0;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
+				WATCHOS_DEPLOYMENT_TARGET = 4.0;
 			};
 			name = Debug;
 		};
@@ -404,14 +546,16 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 11.0;
 				MACOSX_DEPLOYMENT_TARGET = 10.14;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				TVOS_DEPLOYMENT_TARGET = 11.0;
 				VALIDATE_PRODUCT = YES;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
+				WATCHOS_DEPLOYMENT_TARGET = 4.0;
 			};
 			name = Release;
 		};
@@ -439,8 +583,10 @@
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx watchos watchsimulator";
 				SUPPORTS_MACCATALYST = NO;
-				TARGETED_DEVICE_FAMILY = 1;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,3,4";
 			};
 			name = Debug;
 		};
@@ -468,14 +614,25 @@
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "appletvos appletvsimulator iphoneos iphonesimulator macosx watchos watchsimulator";
 				SUPPORTS_MACCATALYST = NO;
-				TARGETED_DEVICE_FAMILY = 1;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,3,4";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		1A5AF9402A56951500429C1B /* Build configuration list for PBXNativeTarget "CountlyTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1A5AF9412A56951500429C1B /* Debug */,
+				1A5AF9422A56951500429C1B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		3B20A97C2245225A00E3D7AE /* Build configuration list for PBXProject "Countly" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
