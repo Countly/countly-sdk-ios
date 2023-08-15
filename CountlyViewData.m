@@ -15,10 +15,9 @@
     {
         self.viewID = viewID;
         self.viewName = viewName;
-        self.viewCreationTime = CountlyCommon.sharedInstance.uniqueTimestamp;
-        self.viewStartTime = self.viewCreationTime;
+        self.viewStartTime = CountlyCommon.sharedInstance.uniqueTimestamp;
         self.viewAccumulatedTime = 0;
-        self.isAutoStopView = false;
+        self.isAutoStoppedView = false;
     }
     
     return self;

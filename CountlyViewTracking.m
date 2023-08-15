@@ -38,16 +38,16 @@
     [CountlyViewTrackingInternal.sharedInstance updateGlobalViewSegmentation:segmentation];
 }
 
-- (NSString *)recordView:(NSString *)viewName
+- (NSString *)startAutoStoppedView:(NSString *)viewName
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, viewName);
     
-    return [CountlyViewTrackingInternal.sharedInstance recordView:viewName segmentation:nil];
+    return [CountlyViewTrackingInternal.sharedInstance startAutoStoppedView:viewName segmentation:nil];
 }
-- (NSString *)recordView:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
+- (NSString *)startAutoStoppedView:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
-    return [CountlyViewTrackingInternal.sharedInstance recordView:viewName segmentation:segmentation];
+    return [CountlyViewTrackingInternal.sharedInstance startAutoStoppedView:viewName segmentation:segmentation];
 }
 
 - (NSString *)startView:(NSString *)viewName
@@ -93,6 +93,12 @@
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, viewID);
     [CountlyViewTrackingInternal.sharedInstance resumeViewWithID:viewID];
+}
+
+- (void)stopAllViews:(NSDictionary *)segmentation
+{
+    CLY_LOG_I(@"%s %@", __FUNCTION__, segmentation);
+    [CountlyViewTrackingInternal.sharedInstance stopAllViews:segmentation];
 }
 
 @end

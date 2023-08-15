@@ -16,9 +16,6 @@ extern NSString* const kCountlyReservedEventView;
 + (instancetype)sharedInstance;
 
 - (void)startView:(NSString *)viewName customSegmentation:(NSDictionary *)customSegmentation;
-- (void)endView;
-- (void)pauseView;
-- (void)resumeView;
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 - (void)startAutoViewTracking;
 - (void)stopAutoViewTracking;
@@ -29,18 +26,19 @@ extern NSString* const kCountlyReservedEventView;
 
 - (void)setGlobalViewSegmentation:(NSDictionary *)segmentation;
 - (void)updateGlobalViewSegmentation:(NSDictionary *)segmentation;
-- (NSString *)recordView:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
+- (NSString *)startAutoStoppedView:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
 - (NSString *)startView:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
 - (void)stopViewWithName:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
 - (void)stopViewWithID:(NSString *)viewID segmentation:(NSDictionary *)segmentation;
 - (void)pauseViewWithID:(NSString *)viewID;
 - (void)resumeViewWithID:(NSString *)viewID;
-#if (TARGET_OS_IOS || TARGET_OS_TV)
-- (void)addAutoViewTrackingExclutionList:(NSArray *)viewTrackingExclusionList;
+- (void)stopAllViews:(NSDictionary *)segmentation;
 
 - (void)applicationDidEnterBackground;
 - (void)applicationWillEnterForeground;
 - (void)applicationWillTerminate;
 
+#if (TARGET_OS_IOS || TARGET_OS_TV)
+- (void)addAutoViewTrackingExclutionList:(NSArray *)viewTrackingExclusionList;
 #endif
 @end
