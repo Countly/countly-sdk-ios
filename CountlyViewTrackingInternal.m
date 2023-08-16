@@ -162,7 +162,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         return nil;
     }
 #endif
-    NSString* viewID = [self startViewInternal:viewName customSegmentation:segmentation isAutoStopView:true];
+    NSString* viewID = [self startViewInternal:viewName customSegmentation:segmentation isAutoStoppedView:true];
     return viewID;
 }
 
@@ -350,10 +350,10 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (NSString*)startViewInternal:(NSString *)viewName customSegmentation:(NSDictionary *)customSegmentation
 {
-    return [self startViewInternal:viewName customSegmentation:customSegmentation isAutoStopView:false];
+    return [self startViewInternal:viewName customSegmentation:customSegmentation isAutoStoppedView:false];
 }
 
-- (NSString*)startViewInternal:(NSString *)viewName customSegmentation:(NSDictionary *)customSegmentation isAutoStopView:(BOOL) isAutoStopView
+- (NSString*)startViewInternal:(NSString *)viewName customSegmentation:(NSDictionary *)customSegmentation isAutoStoppedView:(BOOL) isAutoStoppedView
 {
     if (!viewName.length)
         return nil;
@@ -395,8 +395,8 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     self.previousViewID = self.currentViewID;
     self.currentViewID = CountlyCommon.sharedInstance.randomEventID;
     
-    CountlyViewData *viewData = [[CountlyViewData alloc] initWithID:viewName viewName:self.currentViewID];
-    viewData.isAutoStoppedView = isAutoStopView;
+    CountlyViewData *viewData = [[CountlyViewData alloc] initWithID:self.currentViewID viewName:viewName];
+    viewData.isAutoStoppedView = isAutoStoppedView;
     self.viewDataDictionary[self.currentViewID] = viewData;
     
     [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventView segmentation:segmentation ID:self.currentViewID];
