@@ -14,7 +14,7 @@
 @property (nonatomic) NSMutableSet* automaticViewTrackingExclusionList;
 #endif
 @property (nonatomic) NSMutableDictionary<NSString*, CountlyViewData *> * viewDataDictionary;
-@property (nonatomic, copy) NSMutableDictionary* viewSegmentation;
+@property (nonatomic) NSMutableDictionary* viewSegmentation;
 @end
 
 NSString* const kCountlyReservedEventView = @"[CLY]_view";
@@ -400,6 +400,8 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     self.viewDataDictionary[self.currentViewID] = viewData;
     
     [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventView segmentation:segmentation ID:self.currentViewID];
+    
+    CLY_LOG_D(@"View name: %@ View ID: %@ isAutoStoppedView: %@", viewName, self.currentViewID, isAutoStoppedView ? @"YES" : @"NO");
     
     return self.currentViewID;
 }
