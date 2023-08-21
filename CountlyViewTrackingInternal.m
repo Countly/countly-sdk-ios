@@ -151,7 +151,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if(self.isAutoViewTrackingActive) {
-        CLY_LOG_W(@"Manuallt start view tracking is not allowed when automatic tracking is enabled!");
+        CLY_LOG_W(@"%s Manually start view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return nil;
     }
 #endif
@@ -164,7 +164,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if(self.isAutoViewTrackingActive) {
-        CLY_LOG_W(@"Manually start view tracking is not allowed when automatic tracking is enabled!");
+        CLY_LOG_W(@"%s Manually start view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return nil;
     }
 #endif
@@ -177,7 +177,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if(self.isAutoViewTrackingActive) {
-        CLY_LOG_W(@"Manually stop view tracking is not allowed when automatic tracking is enabled!");
+        CLY_LOG_W(@"%s Manually stop view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return;
     }
 #endif
@@ -190,7 +190,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewID, segmentation);
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if(self.isAutoViewTrackingActive) {
-        CLY_LOG_W(@"Manually stop view tracking is not allowed when automatic tracking is enabled!");
+        CLY_LOG_W(@"%s Manually stop view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return;
     }
 #endif
@@ -202,7 +202,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     CLY_LOG_I(@"%s %@", __FUNCTION__, viewID);
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if(self.isAutoViewTrackingActive) {
-        CLY_LOG_W(@"Manually pause view tracking is not allowed when automatic tracking is enabled!");
+        CLY_LOG_W(@"%s Manually pause view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return;
     }
 #endif
@@ -214,7 +214,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     CLY_LOG_I(@"%s %@", __FUNCTION__, viewID);
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if(self.isAutoViewTrackingActive) {
-        CLY_LOG_W(@"Manually resume view tracking is not allowed when automatic tracking is enabled!");
+        CLY_LOG_W(@"%s Manually resume view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return;
     }
 #endif
@@ -226,7 +226,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     CLY_LOG_I(@"%s %@", __FUNCTION__, segmentation);
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if(self.isAutoViewTrackingActive) {
-        CLY_LOG_W(@"Manually stop view tracking is not allowed when automatic tracking is enabled!");
+        CLY_LOG_W(@"%s Manually stop view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return;
     }
 #endif
@@ -310,14 +310,24 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 {
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
+    __block NSString *viewID = nil;
     [self.viewDataDictionary enumerateKeysAndObjectsUsingBlock:^(NSString * key, CountlyViewData * viewData, BOOL * stop)
      {
         if([viewData.viewName isEqualToString:viewName])
         {
-            [self stopViewWithIDInternal:key customSegmentation:nil];
+            viewID = key;
+            *stop = YES;
         }
         
     }];
+    
+    if(viewID)
+    {
+        [self stopViewWithIDInternal:viewID customSegmentation:customSegmentation];
+    }
+    else {
+        CLY_LOG_D(@"%s No View exist with name: %@", __FUNCTION__, viewName);
+    }
 }
 
 - (void)stopViewWithIDInternal:(NSString *) viewKey customSegmentation:(NSDictionary *)customSegmentation
@@ -347,8 +357,11 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         viewData.viewAccumulatedTime = 0;
         [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventView segmentation:segmentation count:1 sum:0 duration:duration ID:viewData.viewID timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
         
-        CLY_LOG_D(@"View tracking ended: %@ duration: %.17g", viewData.viewName, duration);
+        CLY_LOG_D(@"%s View tracking ended: %@ duration: %.17g", __FUNCTION__, viewData.viewName, duration);
         [self.viewDataDictionary removeObjectForKey:viewKey];
+    }
+    else {
+        CLY_LOG_D(@"%s No View exist with ID: %@", __FUNCTION__, viewKey);
     }
 }
 
@@ -369,7 +382,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     
     viewName = viewName.copy;
     
-    CLY_LOG_D(@"View tracking started: %@", viewName);
+    CLY_LOG_D(@"%s View tracking started: %@", __FUNCTION__, viewName);
     
     viewName = [viewName cly_truncatedKey:@"View name"];
     
@@ -403,7 +416,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     
     [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventView segmentation:segmentation ID:self.currentViewID];
     
-    CLY_LOG_D(@"View name: %@ View ID: %@ isAutoStoppedView: %@", viewName, self.currentViewID, isAutoStoppedView ? @"YES" : @"NO");
+    CLY_LOG_D(@"%s View name: %@ View ID: %@ isAutoStoppedView: %@", __FUNCTION__, viewName, self.currentViewID, isAutoStoppedView ? @"YES" : @"NO");
     
     return self.currentViewID;
 }
@@ -417,6 +430,9 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     {
         [viewData pauseView];
     }
+    else {
+        CLY_LOG_D(@"%s No View exist with ID: %@", __FUNCTION__, viewID);
+    }
 }
 
 - (void)resumeViewWithIDInternal:(NSString *) viewID
@@ -427,6 +443,10 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     if (viewData)
     {
         [viewData resumeView];
+    }
+    
+    else {
+        CLY_LOG_D(@"%s No View exist with ID: %@", __FUNCTION__, viewID);
     }
 }
 
@@ -533,7 +553,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         
         if (isException)
         {
-            CLY_LOG_V(@"%@ is an exceptional view, so it will be ignored for view tracking.", viewTitle);
+            CLY_LOG_V(@"%s %@ is an exceptional view, so it will be ignored for view tracking.", __FUNCTION__, viewTitle);
             break;
         }
     }
@@ -552,7 +572,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     
     if ([viewController respondsToSelector:@selector(countlyAutoViewTrackingName)])
     {
-        CLY_LOG_I(@"Viewcontroller conforms to CountlyAutoViewTrackingName protocol for custom auto view tracking name.");
+        CLY_LOG_I(@"%s Viewcontroller conforms to CountlyAutoViewTrackingName protocol for custom auto view tracking name.", __FUNCTION__);
         title = [(id<CountlyAutoViewTrackingName>)viewController countlyAutoViewTrackingName];
     }
     
@@ -622,7 +642,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         //     does not trigger `viewDidAppear` on presenting view controller when they are dismissed.
         //      Also, `self.presentingViewController` property is nil in both `viewWillDisappear` and `viewDidDisappear`.
         //      So, we store it here in modal's `viewDidAppear` to be used for view tracking later.
-        CLY_LOG_I(@"A modal view controller with PageSheet presentation style is presented on iOS 13+. Storing presenting view controller to be used later.");
+        CLY_LOG_I(@"%s A modal view controller with PageSheet presentation style is presented on iOS 13+. Storing presenting view controller to be used later.", __FUNCTION__);
 
         UIViewController* presenting = self.presentingViewController;
         if ([presenting isKindOfClass:UINavigationController.class])
@@ -640,7 +660,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
     if (self.presentingVC)
     {
-        CLY_LOG_I(@"A modal view controller with PageSheet presentation style is dismissed on iOS 13+. Forcing auto view tracking with stored presenting view controller.");
+        CLY_LOG_I(@"%s A modal view controller with PageSheet presentation style is dismissed on iOS 13+. Forcing auto view tracking with stored presenting view controller.", __FUNCTION__);
         [CountlyViewTrackingInternal.sharedInstance performAutoViewTrackingForViewController:self.presentingVC];
         self.presentingVC = nil;
     }
