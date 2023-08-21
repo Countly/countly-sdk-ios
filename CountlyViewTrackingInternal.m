@@ -308,6 +308,12 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 #pragma mark - Internal methods old
 - (void)stopViewWithNameInternal:(NSString *) viewName customSegmentation:(NSDictionary *)customSegmentation
 {
+    if (!viewName || !viewName.length)
+    {
+        CLY_LOG_D(@"%s View name should not be null or empty", __FUNCTION__);
+        return;
+    }
+    
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
     __block NSString *viewID = nil;
@@ -332,6 +338,12 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)stopViewWithIDInternal:(NSString *) viewKey customSegmentation:(NSDictionary *)customSegmentation
 {
+    if (!viewKey || !viewKey.length)
+    {
+        CLY_LOG_D(@"%s View ID should not be null or empty", __FUNCTION__);
+        return;
+    }
+    
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
     CountlyViewData* viewData = self.viewDataDictionary[viewKey];
@@ -372,8 +384,11 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (NSString*)startViewInternal:(NSString *)viewName customSegmentation:(NSDictionary *)customSegmentation isAutoStoppedView:(BOOL) isAutoStoppedView
 {
-    if (!viewName.length)
+    if (!viewName || !viewName.length)
+    {
+        CLY_LOG_D(@"%s View name should not be null or empty", __FUNCTION__);
         return nil;
+    }
     
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return nil;
@@ -423,6 +438,12 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)pauseViewWithIDInternal:(NSString *) viewID
 {
+    if (!viewID || !viewID.length)
+    {
+        CLY_LOG_D(@"%s View ID should not be null or empty", __FUNCTION__);
+        return;
+    }
+    
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
     CountlyViewData* viewData = self.viewDataDictionary[viewID];
@@ -437,6 +458,12 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)resumeViewWithIDInternal:(NSString *) viewID
 {
+    if (!viewID || !viewID.length)
+    {
+        CLY_LOG_D(@"%s View ID should not be null or empty", __FUNCTION__);
+        return;
+    }
+    
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
     CountlyViewData* viewData = self.viewDataDictionary[viewID];
