@@ -264,7 +264,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     self.isAutoViewTrackingActive = NO;
     
     //    self.currentView = nil;
-    self.currentViewID = nil;
+//    self.currentViewID = nil;
 }
 
 - (void)setIsAutoViewTrackingActive:(BOOL)isAutoViewTrackingActive
@@ -406,7 +406,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     segmentation[kCountlyVTKeySegment] = CountlyDeviceInfo.osName;
     segmentation[kCountlyVTKeyVisit] = @1;
     
-    if (self.viewDataDictionary.count == 0)
+    if (!self.currentViewID)
         segmentation[kCountlyVTKeyStart] = @1;
     
     if (self.viewSegmentation)
@@ -622,7 +622,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 #pragma mark - Public function for application state
 
-- (void)applicationDidEnterBackground {
+- (void)applicationWillEnterForeground {
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if(self.isAutoViewTrackingActive) {
         
@@ -631,10 +631,10 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         [self resumeAllViewsInternal];
     }
 #else
-    [self resumeAllViews];
+    [self resumeAllViewsInternal];
 #endif
 }
-- (void)applicationWillEnterForeground {
+- (void)applicationDidEnterBackground {
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if(self.isAutoViewTrackingActive) {
         [self stopCurrentView];
@@ -643,7 +643,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         [self pauseAllViewsInternal];
     }
 #else
-    [self pauseAllViews];
+    [self pauseAllViewsInternal];
 #endif
 }
 - (void)applicationWillTerminate {
