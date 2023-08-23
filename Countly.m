@@ -959,14 +959,14 @@ NSString* previousEventID;
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, viewName);
 
-    [CountlyViewTrackingInternal.sharedInstance startView:viewName customSegmentation:nil];
+    [CountlyViewTrackingInternal.sharedInstance startAutoStoppedView:viewName segmentation:nil];
 }
 
 - (void)recordView:(NSString *)viewName segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
 
-    [CountlyViewTrackingInternal.sharedInstance startView:viewName customSegmentation:segmentation];
+    [CountlyViewTrackingInternal.sharedInstance startAutoStoppedView:viewName segmentation:segmentation];
 }
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)

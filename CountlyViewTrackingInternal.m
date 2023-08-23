@@ -289,11 +289,6 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 #pragma mark - Public methods Deprecated
 
-- (void)startView:(NSString *)viewName customSegmentation:(NSDictionary *)customSegmentation
-{
-    [self startAutoStoppedView:viewName segmentation:customSegmentation];
-}
-
 - (void)addExceptionForAutoViewTracking:(NSString *)exception
 {
     if (!exception.length)
@@ -536,6 +531,8 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)stopAllViewsInternal:(NSDictionary *)segmentation
 {
+    if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
+        return;
     [self.viewDataDictionary enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, CountlyViewData * _Nonnull viewData, BOOL * _Nonnull stop) {
         [self stopViewWithIDInternal:key customSegmentation:segmentation];
     }];

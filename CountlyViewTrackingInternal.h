@@ -15,7 +15,6 @@ extern NSString* const kCountlyReservedEventView;
 
 + (instancetype)sharedInstance;
 
-- (void)startView:(NSString *)viewName customSegmentation:(NSDictionary *)customSegmentation;
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 - (void)startAutoViewTracking;
 - (void)stopAutoViewTracking;
