@@ -15,6 +15,7 @@
 #endif
 @property (nonatomic) NSMutableDictionary<NSString*, CountlyViewData *> * viewDataDictionary;
 @property (nonatomic) NSMutableDictionary* viewSegmentation;
+@property (nonatomic) BOOL isFirstView;
 @end
 
 NSString* const kCountlyReservedEventView = @"[CLY]_view";
@@ -100,6 +101,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         
         self.viewDataDictionary = NSMutableDictionary.new;
         self.viewSegmentation = nil;
+        self.isFirstView = true;
     }
     
     return self;
@@ -406,8 +408,11 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     segmentation[kCountlyVTKeySegment] = CountlyDeviceInfo.osName;
     segmentation[kCountlyVTKeyVisit] = @1;
     
-    if (!self.currentViewID)
+    if (self.isFirstView)
+    {
+        self.isFirstView = false;
         segmentation[kCountlyVTKeyStart] = @1;
+    }
     
     if (self.viewSegmentation)
     {
@@ -648,6 +653,12 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 }
 - (void)applicationWillTerminate {
     [self stopAllViewsInternal:nil];
+}
+
+
+- (void)resetFirstView
+{
+    self.isFirstView = false;
 }
 
 
