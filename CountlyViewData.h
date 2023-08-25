@@ -24,15 +24,16 @@
  */
 @property (nonatomic) NSTimeInterval viewStartTime;
 /**
- * Accumulated time of view.
- * @discussion The time of view when app is in foreground
- */
-@property (nonatomic) NSTimeInterval viewAccumulatedTime;
-/**
  * Is this view is auto stoppable.
  * @discussion If set then this view will automatically stopped when new view is started.
  */
 @property (nonatomic) BOOL isAutoStoppedView;
+
+/**
+ * Is this view is automaticaly paused.
+ * @discussion It sets true when app goes to backround, and view will resume on the basis of that flag when app goes to foreground.
+ */
+@property (nonatomic) BOOL isAutoPaused;
 
 /**
  * Initialize view data
@@ -50,9 +51,16 @@
 
 /**
  * Pause view
+ * @discussion View is paused automatically base on the app background event.
+ */
+- (void)autoPauseView;
+
+/**
+ * Pause view
  * @discussion When the view is paused then that time will not consider when calculating the duration
  */
 - (void)pauseView;
+
 /**
  * Resume view
  * @discussion View time will resume

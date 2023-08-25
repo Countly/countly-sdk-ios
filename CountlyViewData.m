@@ -16,8 +16,8 @@
         self.viewID = viewID;
         self.viewName = viewName;
         self.viewStartTime = CountlyCommon.sharedInstance.uniqueTimestamp;
-        self.viewAccumulatedTime = 0;
         self.isAutoStoppedView = false;
+        self.isAutoPaused = false;
     }
     
     return self;
@@ -25,21 +25,30 @@
 
 - (NSTimeInterval)duration
 {
-    NSTimeInterval duration = NSDate.date.timeIntervalSince1970 - self.viewStartTime + self.viewAccumulatedTime;
+    NSTimeInterval duration = NSDate.date.timeIntervalSince1970 - self.viewStartTime;
     return duration;
+}
+
+- (void)autoPauseView
+{
+    if (self.viewStartTime) // To check that view is not paused already manually
+    {
+        self.isAutoPaused = true;
+    }
+    [self pauseView];
 }
 
 - (void)pauseView
 {
     if (self.viewStartTime)
     {
-        self.viewAccumulatedTime = NSDate.date.timeIntervalSince1970 - self.viewStartTime + self.viewAccumulatedTime;
         self.viewStartTime = 0;
     }
 }
 
 - (void)resumeView
 {
+    self.isAutoPaused = false;
     self.viewStartTime = CountlyCommon.sharedInstance.uniqueTimestamp;
 }
 
