@@ -520,7 +520,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion If AutoViewTracking feature is enabled on initial configuration, this method does not need to be called manually.
  * @param viewName Name of the view visited, a non-zero length valid string
  */
-- (void)recordView:(NSString *)viewName;
+- (void)recordView:(NSString *)viewName DEPRECATED_MSG_ATTRIBUTE("Use '[views startView/startAutoStoppedView:]' method instead!");
 
 /**
  * Records a visited view with given name and custom segmentation.
@@ -533,7 +533,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param viewName Name of the view visited, a non-zero length valid string
  * @param segmentation Custom segmentation key-value pairs
  */
-- (void)recordView:(NSString *)viewName segmentation:(NSDictionary<NSString *, NSString *> *)segmentation;
+- (void)recordView:(NSString *)viewName segmentation:(NSDictionary<NSString *, NSString *> *)segmentation DEPRECATED_MSG_ATTRIBUTE("Use '[views startView/startAutoStoppedView:]' method instead!");
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 /**
@@ -542,20 +542,20 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Adding an already added @c UIViewController title or subclass name again will have no effect.
  * @param exception @c UIViewController title or subclass name to be added as exception
  */
-- (void)addExceptionForAutoViewTracking:(NSString *)exception;
+- (void)addExceptionForAutoViewTracking:(NSString *)exception DEPRECATED_MSG_ATTRIBUTE("Use '[views setGlobalViewSegmentation:]' method or 'globalViewSegmentation' of config instead!");
 
 /**
  * Removes exception for AutoViewTracking.
  * @discussion Removing an already removed (or not yet added) @c UIViewController title or subclass name will have no effect.
  * @param exception @c UIViewController title or subclass name to be removed
  */
-- (void)removeExceptionForAutoViewTracking:(NSString *)exception;
+- (void)removeExceptionForAutoViewTracking:(NSString *)exception DEPRECATED_MSG_ATTRIBUTE("Don't use this method, it will be remove in future release");
 
 /**
  * Temporarily activates or deactivates AutoViewTracking, if AutoViewTracking feature is enabled on initial configuration.
  * @discussion If AutoViewTracking feature is not enabled on initial configuration, this property has no effect.
  */
-@property (nonatomic) BOOL isAutoViewTrackingActive;
+@property (nonatomic) BOOL isAutoViewTrackingActive DEPRECATED_MSG_ATTRIBUTE("Don't use this variable, it will be remove in future release");
 #endif
 
 - (CountlyViewTracking *) views;
