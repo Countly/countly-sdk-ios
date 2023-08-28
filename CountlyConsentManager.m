@@ -60,12 +60,6 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 
 #pragma mark -
 
-
-- (void)giveConsentForAllFeatures
-{
-    [self giveConsentForFeatures:[self allFeatures]];
-}
-
 - (void)giveAllConsents
 {
     [self giveConsentForFeatures:[self allFeatures]];
