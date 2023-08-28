@@ -24,7 +24,8 @@
 
 + (instancetype)sharedInstance;
 - (void)giveConsentForFeatures:(NSArray *)features;
-- (void)giveConsentForAllFeatures;
+- (void)giveConsentForAllFeatures DEPRECATED_MSG_ATTRIBUTE("Use 'giveAllConsents:' method instead!");
+- (void)giveAllConsents;
 - (void)cancelConsentForFeatures:(NSArray *)features;
 - (void)cancelConsentForAllFeatures;
 - (void)cancelConsentForAllFeaturesWithoutSendingConsentsRequest;

@@ -66,6 +66,11 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     [self giveConsentForFeatures:[self allFeatures]];
 }
 
+- (void)giveAllConsents
+{
+    [self giveConsentForFeatures:[self allFeatures]];
+}
+
 
 - (void)giveConsentForFeatures:(NSArray *)features
 {

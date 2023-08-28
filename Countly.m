@@ -79,6 +79,9 @@ NSString* previousEventID;
     CountlyCommon.sharedInstance.maxSegmentationValues = config.maxSegmentationValues;
 
     CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
+    if(config.enableAllConsents) {
+        [self giveAllConsents];
+    }
 
     if (!config.appKey.length || [config.appKey isEqualToString:@"YOUR_APP_KEY"])
         [NSException raise:@"CountlyAppKeyNotSetException" format:@"appKey property on CountlyConfig object is not set"];
@@ -569,7 +572,14 @@ NSString* previousEventID;
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
 
-    [CountlyConsentManager.sharedInstance giveConsentForAllFeatures];
+    [CountlyConsentManager.sharedInstance giveAllConsents];
+}
+
+- (void)giveAllConsents
+{
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    
+    [CountlyConsentManager.sharedInstance giveAllConsents];
 }
 
 - (void)cancelConsentForFeature:(NSString *)featureName
