@@ -7,9 +7,6 @@
 #import "CountlyCommon.h"
 
 @interface CountlyViewTrackingInternal ()
-//@property (nonatomic) CountlyViewData* currentView;
-//@property (nonatomic) NSTimeInterval currentViewStartTime;
-//@property (nonatomic) NSTimeInterval accumulatedTime;
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 @property (nonatomic) NSMutableSet* automaticViewTrackingExclusionList;
 #endif
