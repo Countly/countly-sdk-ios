@@ -79,9 +79,6 @@ NSString* previousEventID;
     CountlyCommon.sharedInstance.maxSegmentationValues = config.maxSegmentationValues;
 
     CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
-    if(config.enableAllConsents) {
-        [self giveAllConsents];
-    }
 
     if (!config.appKey.length || [config.appKey isEqualToString:@"YOUR_APP_KEY"])
         [NSException raise:@"CountlyAppKeyNotSetException" format:@"appKey property on CountlyConfig object is not set"];
@@ -216,7 +213,10 @@ NSString* previousEventID;
 
     [CountlyConnectionManager.sharedInstance proceedOnQueue];
 
-    if (config.consents)
+    //TODO: Should move at the top after checking the the edge cases of current implementation
+    if(config.enableAllConsents)
+        [self giveAllConsents];
+    else if (config.consents)
         [self giveConsentForFeatures:config.consents];
 
     if (config.campaignType && config.campaignData)
