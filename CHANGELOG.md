@@ -1,3 +1,8 @@
+## xx.x.x
+- Added `enableAllConsents` initial config property to give all consents at init time
+- Added `giveAllConsents` method to give all consents
+- Deprecated `giveConsentForAllFeatures` method
+
 ## 23.6.2
 - Fixed bug where init time provided global Remote config download callbacks were ignored
 - Remote config values are now not erased anymore when removing remote config consent
