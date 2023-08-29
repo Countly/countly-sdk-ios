@@ -211,7 +211,13 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion This is a convenience method for grating consent for all features at once.
  * @discussion Inner workings of @c giveConsentForFeature: method applies for this method as well.
  */
-- (void)giveConsentForAllFeatures;
+- (void)giveConsentForAllFeatures DEPRECATED_MSG_ATTRIBUTE("Use 'giveAllConsents:' method instead!");
+
+/**
+ * Grants consent to all features and starts them.
+ * @discussion This is a convenience method for grating consent for all features at once.
+ */
+- (void)giveAllConsents;
 
 /**
  * Cancels consent to given feature and stops it.

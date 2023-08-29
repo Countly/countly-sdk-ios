@@ -244,6 +244,13 @@ typedef enum : NSUInteger
  * @discussion Just like in @c giveConsentForFeatures: method.
  */
 @property (nonatomic, copy) NSArray<CLYConsent>* consents;
+
+/**
+ * For giving all consents during init.
+ * @discussion If set, it will give all feature consents.
+ */
+@property (nonatomic) BOOL enableAllConsents;
+
 #pragma mark -
 
 /**

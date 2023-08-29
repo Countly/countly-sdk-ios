@@ -219,7 +219,10 @@ NSString* previousEventID;
 
     [CountlyConnectionManager.sharedInstance proceedOnQueue];
 
-    if (config.consents)
+    //TODO: Should move at the top after checking the the edge cases of current implementation
+    if(config.enableAllConsents)
+        [self giveAllConsents];
+    else if (config.consents)
         [self giveConsentForFeatures:config.consents];
 
     if (config.campaignType && config.campaignData)
@@ -575,7 +578,14 @@ NSString* previousEventID;
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
 
-    [CountlyConsentManager.sharedInstance giveConsentForAllFeatures];
+    [CountlyConsentManager.sharedInstance giveAllConsents];
+}
+
+- (void)giveAllConsents
+{
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    
+    [CountlyConsentManager.sharedInstance giveAllConsents];
 }
 
 - (void)cancelConsentForFeature:(NSString *)featureName
