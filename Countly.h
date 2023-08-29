@@ -558,6 +558,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL isAutoViewTrackingActive DEPRECATED_MSG_ATTRIBUTE("Don't use this variable, it will be remove in future release");
 #endif
 
+/**
+ * Interface variable to access views tracking functionalities.
+ * @discussion Views tracking interface for developer to interact with SDK.
+ */
 - (CountlyViewTracking *) views;
 
 #pragma mark - User Details
