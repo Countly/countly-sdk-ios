@@ -1,12 +1,10 @@
+// CountlyRCData.m
 //
-//  CLYRCValue.m
-//  Countly
+// This code is provided under the MIT License.
 //
-//  Created by Muhammad Junaid Akram on 31/05/2023.
-//  Copyright © 2023 Alin Radut. All rights reserved.
-//
+// Please visit www.count.ly for more information.
 
-#import "CountlyCommon.h"
+#import "CountlyRCData.h"
 
 @implementation CountlyRCData
 

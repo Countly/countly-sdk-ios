@@ -187,13 +187,19 @@ NSString* previousEventID;
     }
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
-    if ([config.features containsObject:CLYAutoViewTracking])
+    if (config.enableAutomaticViewTracking || [config.features containsObject:CLYAutoViewTracking])
     {
+        // Print deprecation flag for feature
         CountlyViewTrackingInternal.sharedInstance.isEnabledOnInitialConfig = YES;
         [CountlyViewTrackingInternal.sharedInstance startAutoViewTracking];
     }
+    if(config.automaticViewTrackingExclusionList) {
+        [CountlyViewTrackingInternal.sharedInstance addAutoViewTrackingExclutionList:config.automaticViewTrackingExclusionList];
+    }
 #endif
-
+    if(config.globalViewSegmentation) {
+        [CountlyViewTrackingInternal.sharedInstance setGlobalViewSegmentation:config.globalViewSegmentation];
+    }
     timer = [NSTimer timerWithTimeInterval:config.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
     [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
 
@@ -260,7 +266,7 @@ NSString* previousEventID;
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance endSession];
 
-    [CountlyViewTrackingInternal.sharedInstance pauseView];
+    [CountlyViewTrackingInternal.sharedInstance applicationDidEnterBackground];
 
     [CountlyPersistency.sharedInstance saveToFile];
 }
@@ -288,7 +294,7 @@ NSString* previousEventID;
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
 
-    [CountlyViewTrackingInternal.sharedInstance resumeView];
+    [CountlyViewTrackingInternal.sharedInstance applicationWillEnterForeground];
 
     isSuspended = NO;
 }
@@ -311,7 +317,7 @@ NSString* previousEventID;
 
     CountlyConnectionManager.sharedInstance.isTerminating = YES;
 
-    [CountlyViewTrackingInternal.sharedInstance endView];
+    [CountlyViewTrackingInternal.sharedInstance applicationWillTerminate];
 
     [CountlyConnectionManager.sharedInstance sendEvents];
 
@@ -963,14 +969,14 @@ NSString* previousEventID;
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, viewName);
 
-    [CountlyViewTrackingInternal.sharedInstance startView:viewName customSegmentation:nil];
+    [CountlyViewTrackingInternal.sharedInstance startAutoStoppedView:viewName segmentation:nil];
 }
 
 - (void)recordView:(NSString *)viewName segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
 
-    [CountlyViewTrackingInternal.sharedInstance startView:viewName customSegmentation:segmentation];
+    [CountlyViewTrackingInternal.sharedInstance startAutoStoppedView:viewName segmentation:segmentation];
 }
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
@@ -1003,6 +1009,10 @@ NSString* previousEventID;
 }
 #endif
 
+- (CountlyViewTracking *) views
+{
+    return CountlyViewTracking.sharedInstance;
+}
 
 
 #pragma mark - User Details

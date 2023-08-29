@@ -304,6 +304,8 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
     [self proceedOnQueue];
+    
+    [CountlyViewTrackingInternal.sharedInstance resetFirstView];
 }
 
 #pragma mark ---

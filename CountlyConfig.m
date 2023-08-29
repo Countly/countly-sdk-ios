@@ -16,11 +16,13 @@
 #if (TARGET_OS_IOS)
 CLYFeature const CLYPushNotifications   = @"CLYPushNotifications";
 CLYFeature const CLYCrashReporting      = @"CLYCrashReporting";
-CLYFeature const CLYAutoViewTracking    = @"CLYAutoViewTracking";
+// CLYAutoViewTracking is deprecated, Use 'config.enableAutomaticViewTracking' instead
+CLYFeature const CLYAutoViewTracking    = @"CLYAutoViewTracking" ;
 #elif (TARGET_OS_WATCH)
 CLYFeature const CLYCrashReporting      = @"CLYCrashReporting";
 #elif (TARGET_OS_TV)
 CLYFeature const CLYCrashReporting      = @"CLYCrashReporting";
+// CLYAutoViewTracking is deprecated, Use 'config.enableAutomaticViewTracking' instead
 CLYFeature const CLYAutoViewTracking    = @"CLYAutoViewTracking";
 #elif (TARGET_OS_OSX)
 CLYFeature const CLYPushNotifications   = @"CLYPushNotifications";

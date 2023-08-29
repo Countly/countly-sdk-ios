@@ -1,7 +1,32 @@
-## xx.x.x
+## 23.8.0
+- Added `CountlyViewTracking:` interface with new view methods:
+    - `setGlobalViewSegmentation:`
+    - `updateGlobalViewSegmentation:`
+    - `startView:`
+    - `startView:segmentation`
+    - `startAutoStoppedView:`
+    - `startAutoStoppedView:segmentation`
+    - `stopViewWithName:`
+    - `stopViewWithName:segmentation`
+    - `stopViewWithID:`
+    - `stopViewWithID:segmentation`
+    - `pauseViewWithID:`
+    - `pauseViewWithID:`
+    - `stopAllViews:`
 - Added `enableAllConsents` initial config property to give all consents at init time
 - Added `giveAllConsents` method to give all consents
+- Added `enableAutomaticViewTracking` config for automatic track views
+- Added `automaticViewTrackingExclusionList` config for automatic view tracking exclusion list
+- Added `globalViewSegmentation` config to add set global view segmentation.
 - Deprecated `giveConsentForAllFeatures` method
+- Deprecated `CLYAutoViewTracking` in config
+- Deprecated existing view tracking methods and variables:  
+    - `recordView:`
+    - `recordView:segmentation`
+    - `addExceptionForAutoViewTracking:`
+    - `removeExceptionForAutoViewTracking:`
+    - `isAutoViewTrackingActive`
+    
 
 ## 23.6.2
 - Fixed bug where init time provided global Remote config download callbacks were ignored
