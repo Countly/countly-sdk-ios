@@ -1,4 +1,4 @@
-## 23.6.3
+## 23.8.0
 - Added `CountlyViewTracking:` interface with new view methods:
     - `setGlobalViewSegmentation:`
     - `updateGlobalViewSegmentation:`
