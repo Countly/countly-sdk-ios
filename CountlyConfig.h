@@ -577,7 +577,7 @@ typedef enum : NSUInteger
 
 /**
  * For enabling automatic AB enrolling on download.
- * @discussion If set, AB will automatically enroll on downloanding values.
+ * @discussion If set, user will will automatically be enrolled in AB test when downloading RC values.
  */
 @property (nonatomic) BOOL enrollABOnRCDownload;
 
