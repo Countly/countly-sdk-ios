@@ -403,6 +403,14 @@ typedef enum : NSUInteger
  */
 @property (nonatomic) BOOL manualSessionHandling;
 
+/**
+ * For handling start and stop sessions manually.
+ * @discussion If set, SDK does not handle beginning and ending sessions automatically. Methods @c beginSession and @c endSession need to be called manually.
+ * update session will handle auto automatically, no need to call @c updateSession when hybrid mode is enabled.
+ * NOTE: It will work only when manualSessionHandling is enabled.
+ */
+@property (nonatomic) BOOL enableManualSessionControlHybridMode;
+
 #pragma mark -
 
 /**

@@ -20,6 +20,7 @@
 - Added `automaticViewTrackingExclusionList` config for automatic view tracking exclusion list
 - Added `globalViewSegmentation` config to add set global view segmentation.
 - Added `enrollABOnRCDownload` config method to auto enroll users to AB tests when downloading RC values.
+- Added `enableManualSessionControlHybridMode` config. With this mode 'updateSession' calls will automatically be handled by SDK for manual session handling.
 - Deprecated `giveConsentForAllFeatures` method
 - Deprecated `CLYAutoViewTracking` in config
 - Deprecated existing view tracking methods and variables:  

@@ -238,9 +238,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 {
     [self.automaticViewTrackingExclusionList addObjectsFromArray:viewTrackingExclusionList];
 }
-#endif
 
-#if (TARGET_OS_IOS || TARGET_OS_TV)
 - (void)startAutoViewTracking
 {
     if (!self.isEnabledOnInitialConfig)
@@ -281,9 +279,6 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 }
 
 
-#endif
-
-
 #pragma mark - Public methods Deprecated
 
 - (void)addExceptionForAutoViewTracking:(NSString *)exception
@@ -298,6 +293,8 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 {
     [self.automaticViewTrackingExclusionList removeObject:exception];
 }
+
+#endif
 
 #pragma mark - Internal methods old
 - (void)stopViewWithNameInternal:(NSString *) viewName customSegmentation:(NSDictionary *)customSegmentation

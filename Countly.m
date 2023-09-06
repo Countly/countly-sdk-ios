@@ -124,6 +124,7 @@ NSString* previousEventID;
     CountlyPersistency.sharedInstance.storedRequestsLimit = MAX(1, config.storedRequestsLimit);
 
     CountlyCommon.sharedInstance.manualSessionHandling = config.manualSessionHandling;
+    CountlyCommon.sharedInstance.enableManualSessionControlHybridMode = config.enableManualSessionControlHybridMode;
 
     CountlyCommon.sharedInstance.attributionID = config.attributionID;
 
@@ -243,7 +244,14 @@ NSString* previousEventID;
         return;
 
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
+    {
         [CountlyConnectionManager.sharedInstance updateSession];
+    }
+    // this condtion is called only when both manual session handling and hybrid mode is enabled.
+    else if(CountlyCommon.sharedInstance.enableManualSessionControlHybridMode)
+    {
+        [CountlyConnectionManager.sharedInstance updateSession];
+    }
 
     [CountlyConnectionManager.sharedInstance sendEvents];
 }
