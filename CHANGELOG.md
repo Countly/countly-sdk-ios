@@ -18,6 +18,7 @@
 - Added `enableAutomaticViewTracking` config for automatic track views
 - Added `automaticViewTrackingExclusionList` config for automatic view tracking exclusion list
 - Added `globalViewSegmentation` config to add set global view segmentation.
+- Added `enrollABOnRCDownload` config for auto enrolling AB when downloading values.
 - Deprecated `giveConsentForAllFeatures` method
 - Deprecated `CLYAutoViewTracking` in config
 - Deprecated existing view tracking methods and variables:  

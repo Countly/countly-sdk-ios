@@ -10,6 +10,7 @@
 @interface CountlyRemoteConfigInternal : NSObject
 @property (nonatomic) BOOL isRCAutomaticTriggersEnabled;
 @property (nonatomic) BOOL isRCValueCachingEnabled;
+@property (nonatomic) BOOL enrollABOnRCDownload;
 @property (nonatomic, copy) void (^remoteConfigCompletionHandler)(NSError * error);
 @property (nonatomic) NSMutableArray<RCDownloadCallback> *remoteConfigGlobalCallbacks;
 

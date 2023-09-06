@@ -575,6 +575,13 @@ typedef enum : NSUInteger
  */
 - (NSMutableArray<RCDownloadCallback> *) getRemoteConfigGlobalCallbacks;
 
+/**
+ * For enabling automatic AB enrolling on download.
+ * @discussion If set, AB will automatically enroll on downloanding values.
+ */
+@property (nonatomic) BOOL enrollABOnRCDownload;
+
+
 #pragma mark -
 
 /**
