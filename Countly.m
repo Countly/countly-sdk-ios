@@ -247,6 +247,7 @@ NSString* previousEventID;
     {
         [CountlyConnectionManager.sharedInstance updateSession];
     }
+    // this condtion is called only when both manual session handling and hybrid mode is enabled.
     else if(CountlyCommon.sharedInstance.enableManualSessionControlHybridMode)
     {
         [CountlyConnectionManager.sharedInstance updateSession];
