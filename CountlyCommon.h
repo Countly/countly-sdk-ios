@@ -80,6 +80,7 @@ extern NSString* const kCountlySDKName;
 @property (nonatomic) CLYInternalLogLevel internalLogLevel;
 @property (nonatomic, copy) NSString* attributionID;
 @property (nonatomic) BOOL manualSessionHandling;
+@property (nonatomic) BOOL enableManualSessionControlHybridMode;
 @property (nonatomic) BOOL enableOrientationTracking;
 @property (nonatomic) BOOL enableServerConfiguration;
 
