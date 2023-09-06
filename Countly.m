@@ -244,8 +244,11 @@ NSString* previousEventID;
         return;
 
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
+    {
         [CountlyConnectionManager.sharedInstance updateSession];
-    else if(CountlyCommon.sharedInstance.enableManualSessionControlHybridMode) {
+    }
+    else if(CountlyCommon.sharedInstance.enableManualSessionControlHybridMode)
+    {
         [CountlyConnectionManager.sharedInstance updateSession];
     }
 
