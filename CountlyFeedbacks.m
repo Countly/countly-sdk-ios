@@ -234,11 +234,11 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 #pragma mark - Feedbacks (Ratings) (Legacy Feedback Widget)
 
-- (void)checkFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
+- (void)presentRatingWidgetWithID:(NSString *)widgetID closeButtonText:(NSString *)closeButtonText completionHandler:(void (^)(NSError * error))completionHandler
 {
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
     {
-        CLY_LOG_D(@"'checkFeedbackWidgetWithID' is aborted: SDK Networking is disabled from server config!");
+        CLY_LOG_D(@"'presentRatingWidgetWithID' is aborted: SDK Networking is disabled from server config!");
         return;
     }
     
@@ -289,14 +289,14 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
         dispatch_async(dispatch_get_main_queue(), ^
         {
-            [self presentFeedbackWidgetWithID:widgetID completionHandler:completionHandler];
+            [self presentRatingWidgetInternal:widgetID closeButtonText:closeButtonText completionHandler:completionHandler];
         });
     }];
 
     [task resume];
 }
 
-- (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
+- (void)presentRatingWidgetInternal:(NSString *)widgetID closeButtonText:(NSString *)closeButtonText  completionHandler:(void (^)(NSError * error))completionHandler
 {
     __block CLYInternalViewController* webVC = CLYInternalViewController.new;
     webVC.view.backgroundColor = UIColor.whiteColor;
@@ -309,7 +309,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     NSURL* widgetDisplayURL = [self widgetDisplayURL:widgetID];
     [webView loadRequest:[NSURLRequest requestWithURL:widgetDisplayURL]];
 
-    CLYButton* dismissButton = [CLYButton dismissAlertButton];
+    CLYButton* dismissButton = [CLYButton dismissAlertButton:closeButtonText];
     dismissButton.onClick = ^(id sender)
     {
         [webVC dismissViewControllerAnimated:YES completion:^

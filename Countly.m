@@ -1040,15 +1040,23 @@ NSString* previousEventID;
 - (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, widgetID, completionHandler);
-
-    [CountlyFeedbacks.sharedInstance checkFeedbackWidgetWithID:widgetID completionHandler:completionHandler];
+    
+    [self presentRatingWidgetWithID:widgetID closeButtonText:nil completionHandler:completionHandler];
 }
 
 - (void)presentRatingWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, widgetID, completionHandler);
+    
+    [self presentRatingWidgetWithID:widgetID closeButtonText:nil completionHandler:completionHandler];
+}
 
-    [CountlyFeedbacks.sharedInstance checkFeedbackWidgetWithID:widgetID completionHandler:completionHandler];
+- (void)presentRatingWidgetWithID:(NSString *)widgetID closeButtonText:(NSString * _Nullable)closeButtonText  completionHandler:(void (^)(NSError * __nullable error))completionHandler
+{
+    
+    CLY_LOG_I(@"%s %@ %@ %@", __FUNCTION__, widgetID, closeButtonText, completionHandler);
+    
+    [CountlyFeedbacks.sharedInstance presentRatingWidgetWithID:widgetID closeButtonText:closeButtonText completionHandler:completionHandler];
 }
 
 - (void)recordRatingWidgetWithID:(NSString *)widgetID rating:(NSInteger)rating email:(NSString * _Nullable)email comment:(NSString * _Nullable)comment userCanBeContacted:(BOOL)userCanBeContacted
