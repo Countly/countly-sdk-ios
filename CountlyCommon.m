@@ -351,19 +351,27 @@ const CGFloat kCountlyDismissButtonStandardStatusBarHeight = 20.0;
         self.onClick(self);
 }
 
-+ (CLYButton *)dismissAlertButton
++ (CLYButton *)dismissAlertButton:(NSString * _Nullable)closeButtonText
 {
+    if(!closeButtonText) {
+        closeButtonText = @"x";
+    }
     CLYButton* dismissButton = [CLYButton buttonWithType:UIButtonTypeCustom];
     dismissButton.frame = (CGRect){CGPointZero, kCountlyDismissButtonSize, kCountlyDismissButtonSize};
-    [dismissButton setTitle:@"✕" forState:UIControlStateNormal];
+    [dismissButton setTitle:closeButtonText forState:UIControlStateNormal];
     [dismissButton setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
     dismissButton.backgroundColor = [UIColor.blackColor colorWithAlphaComponent:0.5];
     dismissButton.layer.cornerRadius = dismissButton.bounds.size.width * 0.5;
     dismissButton.layer.borderColor = [UIColor.blackColor colorWithAlphaComponent:0.7].CGColor;
     dismissButton.layer.borderWidth = 1.0;
     dismissButton.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleBottomMargin;
-
+    
     return dismissButton;
+}
+
++ (CLYButton *)dismissAlertButton
+{
+    return [CLYButton dismissAlertButton:nil];
 }
 
 - (void)positionToTopRight

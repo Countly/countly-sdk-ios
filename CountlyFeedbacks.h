@@ -20,7 +20,7 @@ extern NSString* const kCountlyReservedEventStarRating;
 + (instancetype)sharedInstance;
 
 - (void)showDialog:(void(^)(NSInteger rating))completion;
-- (void)checkFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler;
+- (void)presentRatingWidgetWithID:(NSString *)widgetID closeButtonText:(NSString *)closeButtonText completionHandler:(void (^)(NSError * error))completionHandler;
 - (void)recordRatingWidgetWithID:(NSString *)widgetID rating:(NSInteger)rating email:(NSString *)email comment:(NSString *)comment userCanBeContacted:(BOOL)userCanBeContacted;
 - (void)checkForStarRatingAutoAsk;
 
