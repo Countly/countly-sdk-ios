@@ -209,6 +209,9 @@ NSString* previousEventID;
     if(config.getRemoteConfigGlobalCallbacks) {
         CountlyRemoteConfigInternal.sharedInstance.remoteConfigGlobalCallbacks = config.getRemoteConfigGlobalCallbacks;
     }
+    if(config.enrollABOnRCDownload) {
+        CountlyRemoteConfigInternal.sharedInstance.enrollABOnRCDownload = config.enrollABOnRCDownload;
+    }
     [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfigAutomatically];
     
     CountlyPerformanceMonitoring.sharedInstance.isEnabledOnInitialConfig = config.enablePerformanceMonitoring;

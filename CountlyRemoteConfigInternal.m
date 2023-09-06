@@ -17,6 +17,7 @@ NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
 NSString* const kCountlyRCKeyRC                 = @"rc";
 NSString* const kCountlyRCKeyABOptIn            = @"ab";
 NSString* const kCountlyRCKeyABOptOut           = @"ab_opt_out";
+NSString* const kCountlyRCKeyAutoOptIn          = @"oi";
 
 
 CLYRequestResult const CLYResponseNetworkIssue  = @"CLYResponseNetworkIssue";
@@ -252,6 +253,10 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
     if (CountlyConsentManager.sharedInstance.consentForSessions)
     {
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
+    }
+    
+    if(self.enrollABOnRCDownload) {
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyAutoOptIn, @"1"];
     }
     
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
