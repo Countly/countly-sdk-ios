@@ -641,7 +641,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param closeButtonText text for close button
  * @param completionHandler A completion handler block to be executed when the rating widget is dismissed by user or there is an error.
  */
-- (void)presentRatingWidgetWithID:(NSString *)widgetID closeButtonText:(NSString * _Nullable)closeButtonText  completionHandler:(void (^)(NSError * __nullable error))completionHandler;
+//- (void)presentRatingWidgetWithID:(NSString *)widgetID closeButtonText:(NSString * _Nullable)closeButtonText  completionHandler:(void (^)(NSError * __nullable error))completionHandler;
 
 /**
  * Manually records rating widget result with given ID and other info.

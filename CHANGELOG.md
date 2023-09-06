@@ -15,7 +15,6 @@
     - `stopAllViews:`
 - Added `enableAllConsents` initial config property to give all consents at init time
 - Added `giveAllConsents` method to give all consents
-- Added `presentRatingWidgetWithID` method with `closeButtonText` parameter
 - Added `enableAutomaticViewTracking` config for automatic track views
 - Added `automaticViewTrackingExclusionList` config for automatic view tracking exclusion list
 - Added `globalViewSegmentation` config to add set global view segmentation.
