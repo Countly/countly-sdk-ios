@@ -1,3 +1,6 @@
+## 23.8.1
+- Fixed SPM public header issues of `CountlyViewTracking.h` 
+
 ## 23.8.0
 - Added `CountlyViewTracking:` interface with new view methods:
     - `setGlobalViewSegmentation:`
