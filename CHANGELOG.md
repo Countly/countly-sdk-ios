@@ -1,4 +1,6 @@
 ## 23.8.1
+- Expanded feedback widget functionality. Added ability to use rating widgets.
+- Added functionality to access tags for feedback widgets.
 - Fixed SPM public header issues of `CountlyViewTracking.h` 
 
 ## 23.8.0

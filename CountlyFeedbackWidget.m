@@ -9,11 +9,13 @@
 #import <WebKit/WebKit.h>
 #endif
 
-CLYFeedbackWidgetType const CLYFeedbackWidgetTypeSurvey     = @"survey";
-CLYFeedbackWidgetType const CLYFeedbackWidgetTypeNPS        = @"nps";
+CLYFeedbackWidgetType const CLYFeedbackWidgetTypeSurvey = @"survey";
+CLYFeedbackWidgetType const CLYFeedbackWidgetTypeNPS    = @"nps";
+CLYFeedbackWidgetType const CLYFeedbackWidgetTypeRating = @"rating";
 
 NSString* const kCountlyReservedEventSurvey = @"[CLY]_survey";
 NSString* const kCountlyReservedEventNPS    = @"[CLY]_nps";
+NSString* const kCountlyReservedEventRating = @"[CLY]_rating";
 
 NSString* const kCountlyFBKeyClosed         = @"closed";
 NSString* const kCountlyFBKeyShown          = @"shown";
@@ -22,6 +24,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
 @property (nonatomic) CLYFeedbackWidgetType type;
 @property (nonatomic) NSString* ID;
 @property (nonatomic) NSString* name;
+@property (nonatomic) NSArray<NSString*>* tags;
 @property (nonatomic) NSDictionary* data;
 @end
 
@@ -35,6 +38,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     feedback.ID = dictionary[kCountlyFBKeyID];
     feedback.type = dictionary[@"type"];
     feedback.name = dictionary[@"name"];
+    feedback.tags = dictionary[@"tg"];
     return feedback;
 }
 
@@ -209,6 +213,8 @@ NSString* const kCountlyFBKeyShown          = @"shown";
         eventName = kCountlyReservedEventSurvey;
     else if ([self.type isEqualToString:CLYFeedbackWidgetTypeNPS])
         eventName = kCountlyReservedEventNPS;
+    else if ([self.type isEqualToString:CLYFeedbackWidgetTypeRating])
+        eventName = kCountlyReservedEventRating;
 
     if (!eventName)
     {
@@ -227,7 +233,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
 
 - (NSString *)description
 {
-    NSString *customDescription = [NSString stringWithFormat:@"\rID: %@, Type: %@ \rName: %@", self.ID, self.type, self.name];
+    NSString *customDescription = [NSString stringWithFormat:@"\rID: %@, Type: %@ \rName: %@ \rTags: %@", self.ID, self.type, self.name, self.tags];
     return [[super description] stringByAppendingString:customDescription];
 }
 

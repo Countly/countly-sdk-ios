@@ -11,9 +11,11 @@ NS_ASSUME_NONNULL_BEGIN
 typedef NSString* CLYFeedbackWidgetType NS_EXTENSIBLE_STRING_ENUM;
 extern CLYFeedbackWidgetType const CLYFeedbackWidgetTypeSurvey;
 extern CLYFeedbackWidgetType const CLYFeedbackWidgetTypeNPS;
+extern CLYFeedbackWidgetType const CLYFeedbackWidgetTypeRating;
 
 extern NSString* const kCountlyReservedEventSurvey;
 extern NSString* const kCountlyReservedEventNPS;
+extern NSString* const kCountlyReservedEventRating;
 
 @interface CountlyFeedbackWidget : NSObject
 #if (TARGET_OS_IOS)
@@ -21,6 +23,7 @@ extern NSString* const kCountlyReservedEventNPS;
 @property (nonatomic, readonly) CLYFeedbackWidgetType type;
 @property (nonatomic, readonly) NSString* ID;
 @property (nonatomic, readonly) NSString* name;
+@property (nonatomic, readonly) NSArray<NSString* >* tags;
 @property (nonatomic, readonly) NSDictionary* data;
 
 /**
