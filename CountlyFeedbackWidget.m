@@ -9,13 +9,13 @@
 #import <WebKit/WebKit.h>
 #endif
 
-CLYFeedbackWidgetType const CLYFeedbackWidgetTypeSurvey     = @"survey";
-CLYFeedbackWidgetType const CLYFeedbackWidgetTypeNPS        = @"nps";
-CLYFeedbackWidgetType const CLYFeedbackWidgetTypeRating        = @"rating";
+CLYFeedbackWidgetType const CLYFeedbackWidgetTypeSurvey = @"survey";
+CLYFeedbackWidgetType const CLYFeedbackWidgetTypeNPS    = @"nps";
+CLYFeedbackWidgetType const CLYFeedbackWidgetTypeRating = @"rating";
 
 NSString* const kCountlyReservedEventSurvey = @"[CLY]_survey";
 NSString* const kCountlyReservedEventNPS    = @"[CLY]_nps";
-NSString* const kCountlyReservedEventRating    = @"[CLY]_rating";
+NSString* const kCountlyReservedEventRating = @"[CLY]_rating";
 
 NSString* const kCountlyFBKeyClosed         = @"closed";
 NSString* const kCountlyFBKeyShown          = @"shown";
