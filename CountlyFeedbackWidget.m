@@ -15,7 +15,7 @@ CLYFeedbackWidgetType const CLYFeedbackWidgetTypeRating = @"rating";
 
 NSString* const kCountlyReservedEventSurvey = @"[CLY]_survey";
 NSString* const kCountlyReservedEventNPS    = @"[CLY]_nps";
-NSString* const kCountlyReservedEventRating = @"[CLY]_rating";
+NSString* const kCountlyReservedEventRating = @"[CLY]_star_rating";
 
 NSString* const kCountlyFBKeyClosed         = @"closed";
 NSString* const kCountlyFBKeyShown          = @"shown";
