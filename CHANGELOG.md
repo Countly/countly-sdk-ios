@@ -1,5 +1,5 @@
 ## 23.8.2
-- Fixed rating event key
+- Fixed rating feedback widget event key
 
 ## 23.8.1
 - Expanded feedback widget functionality. Added ability to use rating widgets.
