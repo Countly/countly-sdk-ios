@@ -113,6 +113,19 @@
     [CountlyRemoteConfigInternal.sharedInstance downloadValuesForKeys:nil omitKeys:omitKeys completionHandler:completionHandler];
 }
 
+- (void) testingDownloadExperimentInformation:(RCVariantCallback)completionHandler;
+{
+    CLY_LOG_I(@"%s %@", __FUNCTION__, completionHandler);
+    
+    [CountlyRemoteConfigInternal.sharedInstance testingDownloadExperimentInformation:completionHandler];
+}
+
+- (NSDictionary<NSString*, CountlyExperimentInfo*> *) testingGetAllExperimentInfo
+{
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    return [CountlyRemoteConfigInternal.sharedInstance testingGetAllExperimentInfo];
+}
+
 - (void)clearAll
 {
     [CountlyRemoteConfigInternal.sharedInstance clearAll];

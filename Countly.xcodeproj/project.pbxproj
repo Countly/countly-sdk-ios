@@ -15,6 +15,8 @@
 		1A3A576529ED47BD0041B7BE /* CountlyServerConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 1A3A576429ED47B50041B7BE /* CountlyServerConfig.h */; };
 		1A423E9E2A271E46008C4757 /* CountlyRCData.m in Sources */ = {isa = PBXBuildFile; fileRef = 1A423E9D2A271E46008C4757 /* CountlyRCData.m */; };
 		1A423EA02A271FE0008C4757 /* CountlyRCData.h in Headers */ = {isa = PBXBuildFile; fileRef = 1A423E9F2A271E52008C4757 /* CountlyRCData.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		1A478D032AB314750056A5E7 /* CountlyExperimentInfo.h in Headers */ = {isa = PBXBuildFile; fileRef = 1A9027FF2AB197C00044EBCF /* CountlyExperimentInfo.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		1A9027FE2AB197B50044EBCF /* CountlyExperimentInfo.m in Sources */ = {isa = PBXBuildFile; fileRef = 1A9027FD2AB197B50044EBCF /* CountlyExperimentInfo.m */; };
 		1ACA5DC12A309E7F001F770B /* CountlyRemoteConfigInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = 1ACA5DBF2A309E7F001F770B /* CountlyRemoteConfigInternal.h */; };
 		1ACA5DC22A309E7F001F770B /* CountlyRemoteConfigInternal.m in Sources */ = {isa = PBXBuildFile; fileRef = 1ACA5DC02A309E7F001F770B /* CountlyRemoteConfigInternal.m */; };
 		3B20A9872245225A00E3D7AE /* Countly.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9852245225A00E3D7AE /* Countly.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -64,6 +66,8 @@
 		1A3A576429ED47B50041B7BE /* CountlyServerConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyServerConfig.h; sourceTree = "<group>"; };
 		1A423E9D2A271E46008C4757 /* CountlyRCData.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyRCData.m; sourceTree = "<group>"; };
 		1A423E9F2A271E52008C4757 /* CountlyRCData.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyRCData.h; sourceTree = "<group>"; };
+		1A9027FD2AB197B50044EBCF /* CountlyExperimentInfo.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyExperimentInfo.m; sourceTree = "<group>"; };
+		1A9027FF2AB197C00044EBCF /* CountlyExperimentInfo.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyExperimentInfo.h; sourceTree = "<group>"; };
 		1ACA5DBF2A309E7F001F770B /* CountlyRemoteConfigInternal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyRemoteConfigInternal.h; sourceTree = "<group>"; };
 		1ACA5DC02A309E7F001F770B /* CountlyRemoteConfigInternal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyRemoteConfigInternal.m; sourceTree = "<group>"; };
 		3B20A9822245225A00E3D7AE /* Countly.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Countly.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -120,6 +124,8 @@
 		3B20A9782245225A00E3D7AE = {
 			isa = PBXGroup;
 			children = (
+				1A9027FF2AB197C00044EBCF /* CountlyExperimentInfo.h */,
+				1A9027FD2AB197B50044EBCF /* CountlyExperimentInfo.m */,
 				1A31106E2A7141AF001CB507 /* CountlyViewTracking.h */,
 				1A31106F2A7141AF001CB507 /* CountlyViewTracking.m */,
 				1A3110642A7128DC001CB507 /* CountlyViewData.h */,
@@ -186,6 +192,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1A478D032AB314750056A5E7 /* CountlyExperimentInfo.h in Headers */,
 				3B20A9D32245228700E3D7AE /* CountlyPushNotifications.h in Headers */,
 				3B20A9C42245228700E3D7AE /* CountlyUserDetails.h in Headers */,
 				3B20A9CA2245228700E3D7AE /* CountlyConfig.h in Headers */,
@@ -301,6 +308,7 @@
 				3B20A9B42245228700E3D7AE /* CountlyPushNotifications.m in Sources */,
 				3B20A9C92245228700E3D7AE /* CountlyUserDetails.m in Sources */,
 				3B20A9D12245228700E3D7AE /* CountlyConfig.m in Sources */,
+				1A9027FE2AB197B50044EBCF /* CountlyExperimentInfo.m in Sources */,
 				3B20A9C82245228700E3D7AE /* CountlyViewTrackingInternal.m in Sources */,
 				3B20A9D22245228700E3D7AE /* CountlyLocationManager.m in Sources */,
 			);
