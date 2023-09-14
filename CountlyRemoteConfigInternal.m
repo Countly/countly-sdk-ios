@@ -28,7 +28,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
 @interface CountlyRemoteConfigInternal ()
 @property (nonatomic) NSDictionary* localCachedVariants;
 @property (nonatomic) NSDictionary<NSString *, CountlyRCData *>* cachedRemoteConfig;
-@property (nonatomic) NSDictionary<NSString*, CountlyExperimentInfo*> * localCachedExperiments;
+@property (nonatomic) NSDictionary<NSString*, CountlyExperimentInformation*> * localCachedExperiments;
 @end
 
 @implementation CountlyRemoteConfigInternal
@@ -702,7 +702,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
     NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
                               {
         
-        NSMutableDictionary<NSString*, CountlyExperimentInfo*> * experiments = NSMutableDictionary.new;
+        NSMutableDictionary<NSString*, CountlyExperimentInformation*> * experiments = NSMutableDictionary.new;
         
         if (!error)
         {
@@ -710,7 +710,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
             NSArray* experimentsInfo = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
             [experimentsInfo enumerateObjectsUsingBlock:^(NSDictionary* value, NSUInteger idx, BOOL * stop)
              {
-                CountlyExperimentInfo* experimentInfo = [[CountlyExperimentInfo alloc] initWithID:value[@"id"] experimentName:value[@"name"] experimentDescription:value[@"description"] currentVariant:value[@"currentVariant"] variants:value[@"variants"]];
+                CountlyExperimentInformation* experimentInfo = [[CountlyExperimentInformation alloc] initWithID:value[@"id"] experimentName:value[@"name"] experimentDescription:value[@"description"] currentVariant:value[@"currentVariant"] variants:value[@"variants"]];
                 experiments[experimentInfo.experimentID] = experimentInfo;
                 
             }];
@@ -782,7 +782,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         return request;
     }
 }
-- (NSDictionary<NSString*, CountlyExperimentInfo*> *) testingGetAllExperimentInfo
+- (NSDictionary<NSString*, CountlyExperimentInformation*> *) testingGetAllExperimentInfo
 {
     return self.localCachedExperiments;
 }

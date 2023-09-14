@@ -6,7 +6,7 @@
 
 #import <Foundation/Foundation.h>
 
-@interface CountlyExperimentInfo : NSObject
+@interface CountlyExperimentInformation : NSObject
 
 @property (nonatomic, readonly) NSString* experimentID;
 @property (nonatomic, readonly) NSString* experimentName;

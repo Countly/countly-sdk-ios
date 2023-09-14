@@ -120,7 +120,7 @@
     [CountlyRemoteConfigInternal.sharedInstance testingDownloadExperimentInformation:completionHandler];
 }
 
-- (NSDictionary<NSString*, CountlyExperimentInfo*> *) testingGetAllExperimentInfo
+- (NSDictionary<NSString*, CountlyExperimentInformation*> *) testingGetAllExperimentInfo
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
     return [CountlyRemoteConfigInternal.sharedInstance testingGetAllExperimentInfo];

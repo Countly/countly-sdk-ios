@@ -33,7 +33,7 @@
 - (void)testingEnrollIntoVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(RCVariantCallback)completionHandler;
 
 - (void) testingDownloadExperimentInformation:(RCVariantCallback)completionHandler;
-- (NSDictionary<NSString*, CountlyExperimentInfo*> *) testingGetAllExperimentInfo;
+- (NSDictionary<NSString*, CountlyExperimentInformation*> *) testingGetAllExperimentInfo;
 
 - (NSDictionary<NSString*, CountlyRCData *> *)getAllValues;
 - (void)enrollIntoABTestsForKeys:(NSArray *)keys;

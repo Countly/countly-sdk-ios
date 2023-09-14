@@ -4,9 +4,9 @@
 //
 // Please visit www.count.ly for more information.
 
-#import "CountlyExperimentInfo.h"
+#import "CountlyExperimentInformation.h"
 
-@interface CountlyExperimentInfo ()
+@interface CountlyExperimentInformation ()
 @property (nonatomic) NSString* experimentID;
 @property (nonatomic) NSString* experimentName;
 @property (nonatomic) NSString* experimentDescription;
@@ -15,7 +15,7 @@
 @end
 
 
-@implementation CountlyExperimentInfo
+@implementation CountlyExperimentInformation
 
 - (instancetype)init
 {
