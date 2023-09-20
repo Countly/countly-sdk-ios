@@ -1,3 +1,7 @@
+## 23.8.3
+- Added `getValueAndEnroll:` in remote config interface
+- Added `getAllValuesAndEnroll:` in remote config interface
+
 ## 23.8.2
 - Fixed rating feedback widget event key for widget closed event
 - Added `testingDownloadExperimentInformation:` in remote config interface
