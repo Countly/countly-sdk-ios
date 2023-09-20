@@ -1,6 +1,6 @@
 ## 23.8.3
-- Added `getValueAndEnroll:` in remote config interface
-- Added `getAllValuesAndEnroll:` in remote config interface
+- Added a call to enroll users to A/B tests when getting a remote config value: 'getValueAndEnroll'
+- Added a call to enroll users to A/B tests when getting all remote config values: 'getAllValuesAndEnroll'
 
 ## 23.8.2
 - Fixed rating feedback widget event key for widget closed event
