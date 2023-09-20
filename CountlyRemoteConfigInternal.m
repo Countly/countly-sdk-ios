@@ -371,7 +371,6 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         if (!error)
         {
             CLY_LOG_D(@"Fetching remote config is successful. \n%@", remoteConfig);
-            //            NSDictionary* remoteConfigMeta = [self createRCMeta:remoteConfig];
             if (!keys && !omitKeys)
             {
                 fullValueUpdate = true;
