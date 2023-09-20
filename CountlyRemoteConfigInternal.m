@@ -157,7 +157,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
 - (id)remoteConfigValueForKey:(NSString *)key
 {
     CountlyRCData* countlyRCValue = self.cachedRemoteConfig[key];
-    if  (countlyRCValue) {
+    if (countlyRCValue) {
         return countlyRCValue.value;
     }
     return nil;
@@ -165,7 +165,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
 
 - (void)clearCachedRemoteConfig
 {
-    if  (!self.isRCValueCachingEnabled)
+    if (!self.isRCValueCachingEnabled)
     {
         [self clearAll];
     }
@@ -259,7 +259,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
     }
     
-    if  (self.enrollABOnRCDownload) {
+    if (self.enrollABOnRCDownload) {
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyAutoOptIn, @"1"];
     }
     
@@ -297,7 +297,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
 - (CountlyRCData *)getValueAndEnroll:(NSString *)key
 {
     CountlyRCData *value = [self getValue:key];
-    if  (value) {
+    if (value) {
         [self enrollIntoABTestsForKeys:@[key]];
     }
     else {
@@ -308,7 +308,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
 
 - (NSDictionary<NSString*, CountlyRCData *> *)getAllValuesAndEnroll
 {
-    if  (self.cachedRemoteConfig && self.cachedRemoteConfig.count > 0) {
+    if (self.cachedRemoteConfig && self.cachedRemoteConfig.count > 0) {
         [self enrollIntoABTestsForKeys: self.cachedRemoteConfig.allKeys];
     }
     else {
@@ -501,7 +501,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
                  {
                     
                     NSString *valueType = NSStringFromClass([arrayValue class]);
-                    if  ([valueType isEqualToString:@"__NSDictionaryI"]) {
+                    if ([valueType isEqualToString:@"__NSDictionaryI"]) {
                         [valuesArray addObject:arrayValue[@"name"]];
                     }
                     else {
@@ -587,12 +587,12 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         return;
     }
     
-    if  (!key) {
+    if (!key) {
         CLY_LOG_D(@"'enrollInRCVariant' is aborted: 'key' is not valid");
         return;
     }
     
-    if  (!variantName) {
+    if (!variantName) {
         CLY_LOG_D(@"'enrollInRCVariant' is aborted: 'variantName' is not valid");
         return;
     }
