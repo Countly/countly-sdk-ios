@@ -294,6 +294,29 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
     return self.cachedRemoteConfig;
 }
 
+- (CountlyRCData *)getValueAndEnroll:(NSString *)key
+{
+    CountlyRCData *value = [self getValue:key];
+    if(value) {
+        [self enrollIntoABTestsForKeys:@[key]];
+    }
+    else {
+        CLY_LOG_D(@"No value exists against key: %@ to enroll in AB testing", key);
+    }
+    return value;
+}
+
+- (NSDictionary<NSString*, CountlyRCData *> *)getAllValuesAndEnroll
+{
+    if(self.cachedRemoteConfig && self.cachedRemoteConfig.count > 0) {
+        [self enrollIntoABTestsForKeys: self.cachedRemoteConfig.allKeys];
+    }
+    else {
+        CLY_LOG_D(@"No values exists to enroll in AB testing...");
+    }
+    return self.cachedRemoteConfig;
+}
+
 - (void)enrollIntoABTestsForKeys:(NSArray *)keys
 {
     if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
