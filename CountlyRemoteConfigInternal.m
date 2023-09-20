@@ -290,7 +290,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
 - (CountlyRCData *)getValue:(NSString *)key
 {
     CountlyRCData *countlyRCData = self.cachedRemoteConfig[key];
-    if (countlyRCData) {
+    if (!countlyRCData) {
         countlyRCData = [[CountlyRCData alloc] initWithValue:nil isCurrentUsersData:YES];
     }
     return countlyRCData;
