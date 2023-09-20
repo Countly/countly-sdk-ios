@@ -78,7 +78,7 @@
 - (NSDictionary<NSString*, CountlyRCData *> *)getAllValuesAndEnroll
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
-    return [CountlyRemoteConfigInternal.sharedInstance getAllValues];
+    return [CountlyRemoteConfigInternal.sharedInstance getAllValuesAndEnroll];
 }
 
 - (void)enrollIntoABTestsForKeys:(NSArray *)keys
