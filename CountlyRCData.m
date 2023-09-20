@@ -16,7 +16,7 @@
 }
 
 - (id)initWithCoder:(NSCoder *)decoder {
-    if((self = [super init])) {
+    if ((self = [super init])) {
         self.value = [decoder decodeObjectForKey:NSStringFromSelector(@selector(value))];
         self.isCurrentUsersData = [decoder decodeBoolForKey:NSStringFromSelector(@selector(isCurrentUsersData))];
     }

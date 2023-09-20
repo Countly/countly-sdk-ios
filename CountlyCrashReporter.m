@@ -275,7 +275,7 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     crashReport[kCountlyCRKeyDiskTotal] = @(CountlyDeviceInfo.totalDisk / kCLYMebibit);
     NSInteger batteryLevel = CountlyDeviceInfo.batteryLevel;
     // We will add battery level only if there is a valid value.
-    if(batteryLevel >= 0)
+    if (batteryLevel >= 0)
     {
         crashReport[kCountlyCRKeyBattery] = @(batteryLevel);
     }

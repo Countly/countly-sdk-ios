@@ -17,6 +17,10 @@
 
 - (NSDictionary<NSString*, CountlyRCData *> *)getAllValues;
 
+- (CountlyRCData *)getValueAndEnroll:(NSString *)key;
+
+- (NSDictionary<NSString*, CountlyRCData *> *)getAllValuesAndEnroll;
+
 -(void)registerDownloadCallback:(RCDownloadCallback) callback;
 
 -(void)removeDownloadCallback:(RCDownloadCallback) callback;

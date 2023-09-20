@@ -26,7 +26,7 @@ NSString* const kCountlyOrientationKeyMode = @"mode";
 #endif
 @end
 
-NSString* const kCountlySDKVersion = @"23.8.2";
+NSString* const kCountlySDKVersion = @"23.8.3";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
@@ -353,7 +353,7 @@ const CGFloat kCountlyDismissButtonStandardStatusBarHeight = 20.0;
 
 + (CLYButton *)dismissAlertButton:(NSString * _Nullable)closeButtonText
 {
-    if(!closeButtonText) {
+    if (!closeButtonText) {
         closeButtonText = @"x";
     }
     CLYButton* dismissButton = [CLYButton buttonWithType:UIButtonTypeCustom];

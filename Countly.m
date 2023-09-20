@@ -86,7 +86,7 @@ NSString* previousEventID;
     if (!config.host.length || [config.host isEqualToString:@"https://YOUR_COUNTLY_SERVER"])
         [NSException raise:@"CountlyHostNotSetException" format:@"host property on CountlyConfig object is not set"];
 
-    if([CountlyCommon.sharedInstance.SDKName isEqualToString:kCountlySDKName] && [CountlyCommon.sharedInstance.SDKVersion isEqualToString:kCountlySDKVersion])
+    if ([CountlyCommon.sharedInstance.SDKName isEqualToString:kCountlySDKName] && [CountlyCommon.sharedInstance.SDKVersion isEqualToString:kCountlySDKVersion])
     {
         CLY_LOG_I(@"Initializing with %@ SDK v%@ on %@ with %@ %@",
                   CountlyCommon.sharedInstance.SDKName,
@@ -135,7 +135,7 @@ NSString* previousEventID;
     CountlyCommon.sharedInstance.enableServerConfiguration = config.enableServerConfiguration;
     
     // Fetch server configs if 'enableServerConfiguration' is true.
-    if(config.enableServerConfiguration)
+    if (config.enableServerConfiguration)
     {
         [CountlyServerConfig.sharedInstance fetchServerConfig];
     }
@@ -194,11 +194,11 @@ NSString* previousEventID;
         CountlyViewTrackingInternal.sharedInstance.isEnabledOnInitialConfig = YES;
         [CountlyViewTrackingInternal.sharedInstance startAutoViewTracking];
     }
-    if(config.automaticViewTrackingExclusionList) {
+    if (config.automaticViewTrackingExclusionList) {
         [CountlyViewTrackingInternal.sharedInstance addAutoViewTrackingExclutionList:config.automaticViewTrackingExclusionList];
     }
 #endif
-    if(config.globalViewSegmentation) {
+    if (config.globalViewSegmentation) {
         [CountlyViewTrackingInternal.sharedInstance setGlobalViewSegmentation:config.globalViewSegmentation];
     }
     timer = [NSTimer timerWithTimeInterval:config.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
@@ -207,10 +207,10 @@ NSString* previousEventID;
     CountlyRemoteConfigInternal.sharedInstance.isRCAutomaticTriggersEnabled = config.enableRemoteConfigAutomaticTriggers || config.enableRemoteConfig;
     CountlyRemoteConfigInternal.sharedInstance.isRCValueCachingEnabled = config.enableRemoteConfigValueCaching;
     CountlyRemoteConfigInternal.sharedInstance.remoteConfigCompletionHandler = config.remoteConfigCompletionHandler;
-    if(config.getRemoteConfigGlobalCallbacks) {
+    if (config.getRemoteConfigGlobalCallbacks) {
         CountlyRemoteConfigInternal.sharedInstance.remoteConfigGlobalCallbacks = config.getRemoteConfigGlobalCallbacks;
     }
-    if(config.enrollABOnRCDownload) {
+    if (config.enrollABOnRCDownload) {
         CountlyRemoteConfigInternal.sharedInstance.enrollABOnRCDownload = config.enrollABOnRCDownload;
     }
     [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfigAutomatically];
@@ -224,7 +224,7 @@ NSString* previousEventID;
     [CountlyConnectionManager.sharedInstance proceedOnQueue];
 
     //TODO: Should move at the top after checking the the edge cases of current implementation
-    if(config.enableAllConsents)
+    if (config.enableAllConsents)
         [self giveAllConsents];
     else if (config.consents)
         [self giveConsentForFeatures:config.consents];
@@ -248,7 +248,7 @@ NSString* previousEventID;
         [CountlyConnectionManager.sharedInstance updateSession];
     }
     // this condtion is called only when both manual session handling and hybrid mode is enabled.
-    else if(CountlyCommon.sharedInstance.enableManualSessionControlHybridMode)
+    else if (CountlyCommon.sharedInstance.enableManualSessionControlHybridMode)
     {
         [CountlyConnectionManager.sharedInstance updateSession];
     }
@@ -555,7 +555,7 @@ NSString* previousEventID;
     
     [CountlyRemoteConfigInternal.sharedInstance clearCachedRemoteConfig];
     
-    if(![deviceID isEqualToString:CLYTemporaryDeviceID] )
+    if (![deviceID isEqualToString:CLYTemporaryDeviceID] )
     {
         [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfigAutomatically];
     }
@@ -738,7 +738,7 @@ NSString* previousEventID;
     BOOL isReservedEvent = [self isReservedEvent:key];
 
     // If the event is not reserved, assign the previous event ID to the current event's PEID property, or an empty string if previousEventID is nil. Then, update previousEventID to the current event's ID.
-    if(!isReservedEvent)
+    if (!isReservedEvent)
     {
         event.PEID = previousEventID ?: @"";
         previousEventID = event.ID;

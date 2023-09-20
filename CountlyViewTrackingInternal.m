@@ -136,7 +136,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 - (void)updateGlobalViewSegmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, segmentation);
-    if(!self.viewSegmentation) {
+    if (!self.viewSegmentation) {
         self.viewSegmentation = NSMutableDictionary.new;
     }
     
@@ -149,7 +149,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
 #if (TARGET_OS_IOS || TARGET_OS_TV)
-    if(self.isAutoViewTrackingActive) {
+    if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually start view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return nil;
     }
@@ -162,7 +162,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
 #if (TARGET_OS_IOS || TARGET_OS_TV)
-    if(self.isAutoViewTrackingActive) {
+    if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually start view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return nil;
     }
@@ -175,7 +175,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
 #if (TARGET_OS_IOS || TARGET_OS_TV)
-    if(self.isAutoViewTrackingActive) {
+    if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually stop view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return;
     }
@@ -188,7 +188,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewID, segmentation);
 #if (TARGET_OS_IOS || TARGET_OS_TV)
-    if(self.isAutoViewTrackingActive) {
+    if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually stop view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return;
     }
@@ -200,7 +200,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, viewID);
 #if (TARGET_OS_IOS || TARGET_OS_TV)
-    if(self.isAutoViewTrackingActive) {
+    if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually pause view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return;
     }
@@ -212,7 +212,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, viewID);
 #if (TARGET_OS_IOS || TARGET_OS_TV)
-    if(self.isAutoViewTrackingActive) {
+    if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually resume view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return;
     }
@@ -224,7 +224,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, segmentation);
 #if (TARGET_OS_IOS || TARGET_OS_TV)
-    if(self.isAutoViewTrackingActive) {
+    if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually stop view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return;
     }
@@ -271,7 +271,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
-    if(_isAutoViewTrackingActive != isAutoViewTrackingActive) {
+    if (_isAutoViewTrackingActive != isAutoViewTrackingActive) {
         [self stopAllViewsInternal:nil];
     }
     
@@ -310,7 +310,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     __block NSString *viewID = nil;
     [self.viewDataDictionary enumerateKeysAndObjectsUsingBlock:^(NSString * key, CountlyViewData * viewData, BOOL * stop)
      {
-        if([viewData.viewName isEqualToString:viewName])
+        if ([viewData.viewName isEqualToString:viewName])
         {
             viewID = key;
             *stop = YES;
@@ -318,7 +318,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         
     }];
     
-    if(viewID)
+    if (viewID)
     {
         [self stopViewWithIDInternal:viewID customSegmentation:customSegmentation];
     }
@@ -364,7 +364,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventView segmentation:segmentation count:1 sum:0 duration:duration ID:viewData.viewID timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
         
         CLY_LOG_D(@"%s View tracking ended: %@ duration: %.17g", __FUNCTION__, viewData.viewName, duration);
-        if(!autoPaused) {
+        if (!autoPaused) {
             [self.viewDataDictionary removeObjectForKey:viewKey];
         }
     }
@@ -478,7 +478,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 -(CountlyViewData* ) currentView
 {
-    if(!self.currentViewID)
+    if (!self.currentViewID)
         return nil;
     return [self.viewDataDictionary objectForKey:self.currentViewID];
 }
@@ -528,7 +528,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)pauseViewInternal:(CountlyViewData*) viewData autoPaused:(BOOL) autoPaused
 {
-    if(autoPaused) {
+    if (autoPaused) {
         [viewData autoPauseView];
     }
     else {
@@ -540,7 +540,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 - (void)resumeAllViewsInternal
 {
     [self.viewDataDictionary enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, CountlyViewData * _Nonnull viewData, BOOL * _Nonnull stop) {
-        if(viewData.isAutoPaused)
+        if (viewData.isAutoPaused)
         {
             [viewData resumeView];
         }
@@ -644,7 +644,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)applicationWillEnterForeground {
 #if (TARGET_OS_IOS || TARGET_OS_TV)
-    if(self.isAutoViewTrackingActive) {
+    if (self.isAutoViewTrackingActive) {
         
     }
     else {
@@ -656,7 +656,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 }
 - (void)applicationDidEnterBackground {
 #if (TARGET_OS_IOS || TARGET_OS_TV)
-    if(self.isAutoViewTrackingActive) {
+    if (self.isAutoViewTrackingActive) {
         [self stopCurrentView];
     }
     else {

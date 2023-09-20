@@ -33,7 +33,7 @@ NSString* const kCountlySCKeySC = @"sc";
         self.trackingEnabled = YES;
         self.networkingEnabled = YES;
         NSDictionary* serverConfigObject = [CountlyPersistency.sharedInstance retrieveServerConfig];
-        if(serverConfigObject) {
+        if (serverConfigObject) {
             [self populateServerConfig:serverConfigObject];
         }
     }
@@ -59,11 +59,11 @@ NSString* const kCountlySCKeySC = @"sc";
 
 - (void)populateServerConfig:(NSDictionary *)dictionary
 {
-    if(dictionary[@"tracking"])
+    if (dictionary[@"tracking"])
     {
         self.trackingEnabled = [dictionary[@"tracking"] boolValue];
     }
-    if(dictionary[@"networking"])
+    if (dictionary[@"networking"])
     {
         self.networkingEnabled = [dictionary[@"networking"] boolValue];
     }
@@ -111,7 +111,7 @@ NSString* const kCountlySCKeySC = @"sc";
         }
         
         NSDictionary* serverConfigObject = serverConfigResponse[@"c"];
-        if(serverConfigObject) {
+        if (serverConfigObject) {
             [self populateServerConfig:serverConfigObject];
             [CountlyPersistency.sharedInstance storeServerConfig:serverConfigObject];
         }
