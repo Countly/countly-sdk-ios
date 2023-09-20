@@ -71,7 +71,7 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 
 - (void)addToQueue:(NSString *)queryString
 {
-    if(!CountlyServerConfig.sharedInstance.trackingEnabled)
+    if (!CountlyServerConfig.sharedInstance.trackingEnabled)
     {
         CLY_LOG_D(@"'addToQueue' is aborted: SDK Tracking is disabled from server config!");
         return;

@@ -402,7 +402,7 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 #if (TARGET_OS_IOS)
     // If battey state is "unknown" that means that battery monitoring is not enabled.
     // In that case we will not able to retrieve a battery level.
-    if(UIDevice.currentDevice.batteryState == UIDeviceBatteryStateUnknown)
+    if (UIDevice.currentDevice.batteryState == UIDeviceBatteryStateUnknown)
     {
         return -1;
     }

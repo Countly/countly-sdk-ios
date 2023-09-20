@@ -353,7 +353,7 @@ const CGFloat kCountlyDismissButtonStandardStatusBarHeight = 20.0;
 
 + (CLYButton *)dismissAlertButton:(NSString * _Nullable)closeButtonText
 {
-    if(!closeButtonText) {
+    if (!closeButtonText) {
         closeButtonText = @"x";
     }
     CLYButton* dismissButton = [CLYButton buttonWithType:UIButtonTypeCustom];
