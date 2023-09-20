@@ -48,7 +48,10 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
 {
     if (self = [super init])
     {
-        self.cachedRemoteConfig = [CountlyPersistency.sharedInstance retrieveRemoteConfig] ;
+        self.cachedRemoteConfig = [CountlyPersistency.sharedInstance retrieveRemoteConfig];
+        if(!self.cachedRemoteConfig) {
+            self.cachedRemoteConfig = NSMutableDictionary.new;
+        }
         
         self.remoteConfigGlobalCallbacks = [[NSMutableArray alloc] init];
         
@@ -177,7 +180,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
 
 -(void)clearAll
 {
-    self.cachedRemoteConfig = nil;
+    self.cachedRemoteConfig = NSMutableDictionary.new;
     [CountlyPersistency.sharedInstance storeRemoteConfig:self.cachedRemoteConfig];
 }
 
@@ -286,7 +289,11 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
 
 - (CountlyRCData *)getValue:(NSString *)key
 {
-    return self.cachedRemoteConfig[key];
+    CountlyRCData *countlyRCData = self.cachedRemoteConfig[key];
+    if (countlyRCData) {
+        countlyRCData = [[CountlyRCData alloc] initWithValue:nil isCurrentUsersData:YES];
+    }
+    return countlyRCData;
 }
 
 - (NSDictionary<NSString*, CountlyRCData *> *)getAllValues
@@ -296,14 +303,14 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
 
 - (CountlyRCData *)getValueAndEnroll:(NSString *)key
 {
-    CountlyRCData *value = [self getValue:key];
-    if (value) {
+    CountlyRCData *countlyRCData = [self getValue:key];
+    if (countlyRCData.value) {
         [self enrollIntoABTestsForKeys:@[key]];
     }
     else {
         CLY_LOG_D(@"No value exists against key: %@ to enroll in AB testing", key);
     }
-    return value;
+    return countlyRCData;
 }
 
 - (NSDictionary<NSString*, CountlyRCData *> *)getAllValuesAndEnroll
