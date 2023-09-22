@@ -20,7 +20,6 @@ extern NSString* const kCountlyEndpointSDK;
 extern NSString* const kCountlyEndpointFeedback;
 extern NSString* const kCountlyEndpointWidget;
 extern NSString* const kCountlyEndpointSurveys;
-extern NSString* const kCountlyEndPointOverrideTag;
 
 extern const NSInteger kCountlyGETRequestMaxLength;
 
