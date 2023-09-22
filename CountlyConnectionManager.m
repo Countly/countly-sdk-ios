@@ -60,6 +60,10 @@ NSString* const kCountlyQSKeyRemainingRequest = @"rr";
 
 NSString* const kCountlyQSKeyMethod           = @"method";
 
+NSString* const kCountlyRCKeyABOptIn          = @"ab";
+NSString* const kCountlyRCKeyABOptOut         = @"ab_opt_out";
+NSString* const kCountlyEndPointOverrideTag   = @"&new_end_point=";
+
 CLYAttributionKey const CLYAttributionKeyIDFA = kCountlyQSKeyIDFA;
 CLYAttributionKey const CLYAttributionKeyADID = kCountlyQSKeyADID;
 
@@ -169,6 +173,15 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return;
     }
 
+    NSString* endPoint = kCountlyEndpointI;
+    NSString *overrideEndPoint = [self getOverrideTagEndPoint:firstItemInQueue];
+    if(overrideEndPoint) {
+        NSString* stringToRemove = [kCountlyEndPointOverrideTag stringByAppendingString:overrideEndPoint];
+        firstItemInQueue = [firstItemInQueue stringByReplacingOccurrencesOfString:stringToRemove withString:@""];
+        endPoint = overrideEndPoint;
+    }
+    
+    
     [CountlyCommon.sharedInstance startBackgroundTask];
 
     NSString* queryString = firstItemInQueue;
@@ -176,7 +189,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     queryString = [self appendRemainingRequest:queryString];
     queryString = [self appendChecksum:queryString];
 
-    NSString* serverInputEndpoint = [self.host stringByAppendingString:kCountlyEndpointI];
+    NSString* serverInputEndpoint = [self.host stringByAppendingString:endPoint];
     NSString* fullRequestURL = [serverInputEndpoint stringByAppendingFormat:@"?%@", queryString];
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:fullRequestURL]];
 
@@ -232,6 +245,21 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     [self.connection resume];
 
     [self logRequest:request];
+}
+
+- (NSString *)getOverrideTagEndPoint:(NSString *)queryString
+{
+    NSString* tempURLString = [@"http://example.com/path?" stringByAppendingString:queryString];
+    NSURLComponents* URLComponents = [NSURLComponents componentsWithString:tempURLString];
+    for (NSURLQueryItem* queryItem in URLComponents.queryItems)
+    {
+        if ([queryItem.name isEqualToString:kCountlyEndPointOverrideTag])
+        {
+            return queryItem.value;
+        }
+    }
+    
+    return nil;
 }
 
 - (void)logRequest:(NSURLRequest *)request
@@ -519,6 +547,40 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
+    [self proceedOnQueue];
+}
+
+#pragma mark ---
+
+- (void)sendEnrollABRequestForKeys:(NSArray*)keys
+{
+    NSString* events = [CountlyPersistency.sharedInstance serializedRecordedEvents];
+    
+    if (!events)
+        return;
+    
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMethod, kCountlyRCKeyABOptIn];
+    
+    queryString = [queryString stringByAppendingFormat:@"%@%@%@", kCountlyEndPointOverrideTag, kCountlyEndpointO, kCountlyEndpointSDK];
+    
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
+    
+    [self proceedOnQueue];
+}
+
+- (void)sendExitABRequestForKeys:(NSArray*)keys
+{
+    NSString* events = [CountlyPersistency.sharedInstance serializedRecordedEvents];
+    
+    if (!events)
+        return;
+    
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMethod, kCountlyRCKeyABOptOut];
+    
+    queryString = [queryString stringByAppendingFormat:@"%@%@%@", kCountlyEndPointOverrideTag, kCountlyEndpointO, kCountlyEndpointSDK];
+    
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
+    
     [self proceedOnQueue];
 }
 
