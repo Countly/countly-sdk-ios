@@ -63,6 +63,7 @@ extern CLYDeviceIDType const CLYDeviceIDTypeNSUUID;
 
 //NOTE: Available consents
 typedef NSString* CLYConsent NS_EXTENSIBLE_STRING_ENUM;
+extern CLYConsent const CLYConsentMetrics;
 extern CLYConsent const CLYConsentSessions;
 extern CLYConsent const CLYConsentEvents;
 extern CLYConsent const CLYConsentUserDetails;

@@ -10,6 +10,7 @@
 
 @property (nonatomic) BOOL requiresConsent;
 
+@property (nonatomic, readonly) BOOL consentForMetrics;
 @property (nonatomic, readonly) BOOL consentForSessions;
 @property (nonatomic, readonly) BOOL consentForEvents;
 @property (nonatomic, readonly) BOOL consentForUserDetails;
