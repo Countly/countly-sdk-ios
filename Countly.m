@@ -121,6 +121,7 @@ NSString* previousEventID;
     CountlyConnectionManager.sharedInstance.URLSessionConfiguration = config.URLSessionConfiguration;
 
     CountlyPersistency.sharedInstance.eventSendThreshold = config.eventSendThreshold;
+    CountlyPersistency.sharedInstance.requestDropAgeHours = config.requestDropAgeHours;
     CountlyPersistency.sharedInstance.storedRequestsLimit = MAX(1, config.storedRequestsLimit);
 
     CountlyCommon.sharedInstance.manualSessionHandling = config.manualSessionHandling;

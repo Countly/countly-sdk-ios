@@ -154,6 +154,8 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         CLY_LOG_D(@"Proceeding on queue is aborted: Queue is being modified!");
         return;
     }
+    
+    [CountlyPersistency.sharedInstance removeOldAgeRequestsFromQueue];
 
     NSString* firstItemInQueue = [CountlyPersistency.sharedInstance firstItemInQueue];
     if (!firstItemInQueue)
