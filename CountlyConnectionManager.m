@@ -63,6 +63,7 @@ NSString* const kCountlyQSKeyMethod           = @"method";
 NSString* const kCountlyRCKeyABOptIn          = @"ab";
 NSString* const kCountlyRCKeyABOptOut         = @"ab_opt_out";
 NSString* const kCountlyEndPointOverrideTag   = @"&new_end_point=";
+NSString* const kCountlyNewEndPoint   = @"new_end_point";
 
 CLYAttributionKey const CLYAttributionKeyIDFA = kCountlyQSKeyIDFA;
 CLYAttributionKey const CLYAttributionKeyADID = kCountlyQSKeyADID;
@@ -173,18 +174,17 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return;
     }
 
+    NSString* queryString = firstItemInQueue;
     NSString* endPoint = kCountlyEndpointI;
     NSString *overrideEndPoint = [self getOverrideTagEndPoint:firstItemInQueue];
     if(overrideEndPoint) {
         NSString* stringToRemove = [kCountlyEndPointOverrideTag stringByAppendingString:overrideEndPoint];
-        firstItemInQueue = [firstItemInQueue stringByReplacingOccurrencesOfString:stringToRemove withString:@""];
+        queryString = [firstItemInQueue stringByReplacingOccurrencesOfString:stringToRemove withString:@""];
         endPoint = overrideEndPoint;
     }
     
     
     [CountlyCommon.sharedInstance startBackgroundTask];
-
-    NSString* queryString = firstItemInQueue;
 
     queryString = [self appendRemainingRequest:queryString];
     queryString = [self appendChecksum:queryString];
@@ -214,7 +214,14 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     {
         self.connection = nil;
 
+        
         CLY_LOG_V(@"Approximate received data size for request <%p> is %ld bytes.", (id)request, (long)data.length);
+        
+        if(response) {
+            NSInteger code = ((NSHTTPURLResponse*)response).statusCode;
+            CLY_LOG_V(@"Response received from server with status code: %ld\nFor Request: %@", (long)code, ((NSHTTPURLResponse*)response).URL);
+        }
+        
 
         if (!error)
         {
@@ -253,7 +260,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     NSURLComponents* URLComponents = [NSURLComponents componentsWithString:tempURLString];
     for (NSURLQueryItem* queryItem in URLComponents.queryItems)
     {
-        if ([queryItem.name isEqualToString:kCountlyEndPointOverrideTag])
+        if ([queryItem.name isEqualToString:kCountlyNewEndPoint])
         {
             return queryItem.value;
         }
@@ -554,12 +561,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)sendEnrollABRequestForKeys:(NSArray*)keys
 {
-    NSString* events = [CountlyPersistency.sharedInstance serializedRecordedEvents];
-    
-    if (!events)
-        return;
-    
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMethod, kCountlyRCKeyABOptIn];
+    
+    if (keys)
+    {
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyKeys, [keys cly_JSONify]];
+    }
     
     queryString = [queryString stringByAppendingFormat:@"%@%@%@", kCountlyEndPointOverrideTag, kCountlyEndpointO, kCountlyEndpointSDK];
     
@@ -570,12 +577,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)sendExitABRequestForKeys:(NSArray*)keys
 {
-    NSString* events = [CountlyPersistency.sharedInstance serializedRecordedEvents];
-    
-    if (!events)
-        return;
-    
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMethod, kCountlyRCKeyABOptOut];
+    
+    if (keys)
+    {
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyKeys, [keys cly_JSONify]];
+    }
     
     queryString = [queryString stringByAppendingFormat:@"%@%@%@", kCountlyEndPointOverrideTag, kCountlyEndpointO, kCountlyEndpointSDK];
     
@@ -796,17 +803,17 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
             return NO;
         }
         
+        CLY_LOG_V(@"Response recieved from server:\n%@\nFor Request: %@", serverReply, ((NSHTTPURLResponse*)response).URL);
+        
         NSString* result = serverReply[@"result"];
-        if ([result isEqualToString:@"Success"])
+        
+        if(result)
         {
-            CLY_LOG_V(@"Value for `result` key in server reply is `Success`.");
-            return YES;            
+            return YES;
         }
-        else
-        {
-            CLY_LOG_V(@"Value for `result` key in server reply is not `Success`.");
-            return NO;
-        }
+        
+        return NO;
+        
     }
     else
     {
