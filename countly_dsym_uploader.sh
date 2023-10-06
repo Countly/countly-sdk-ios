@@ -4,10 +4,11 @@
 #
 # This code is provided under the MIT License.
 #
-# Please visit www.count.ly for more information.
+# Please visit https://countly.com/ for more information.
 
 
 # For your target, go to `Build Phases` tab and choose `New Run Script Phase` after clicking plus (+) button.
+# Here the first line is a find command to find and extract the path to the script. If you know the path you can skip this line.
 # Add these two lines:
 #
 # COUNTLY_DSYM_UPLOADER=$(find $SRCROOT -name "countly_dsym_uploader.sh" | head -n 1)
@@ -39,6 +40,7 @@ HOST="${1}";
 APPKEY="${2}";
 CUSTOM_DSYM_PATH="${3}"
 
+countly_log "Provided server:[$HOST]\n app key:[$APPKEY]\n custom dSYM path:[$CUSTOM_DSYM_PATH]"
 
 # Pre-checks
 if [[ -z $HOST ]]; then
@@ -69,11 +71,17 @@ if [[ ! -d $DSYM_PATH ]]; then
     countly_fail "dSYM path ${DSYM_PATH} does not exist!"
 fi
 
+countly_log "Current dSYM path:[$DSYM_PATH]"
 
 # Extracting Build UUIDs from DSYM using dwarfdump
-BUILD_UUIDS=$(xcrun dwarfdump --uuid "${DSYM_PATH}" | awk '{print $2}' | xargs | sed 's/ /,/g')
+XCRUN_RES=$(xcrun dwarfdump --uuid "${DSYM_PATH}")
+countly_log "Xcrun result:[$XCRUN_RES]"
+RAW_UUID=$(echo "${XCRUN_RES}" | awk '{print $2}')
+countly_log "Raw UUID:[$RAW_UUID]"
+# Remove whitespace and such
+BUILD_UUIDS=$(echo "${RAW_UUID}" | xargs | sed 's/ /,/g')
 if [ $? -eq 0 ]; then
-    countly_log "Extracted Build UUIDs: ${BUILD_UUIDS}"
+    countly_log "Extracted Build UUIDs:[${BUILD_UUIDS}]"
 else
     countly_fail "Extracting Build UUIDs failed!"
 fi
@@ -103,7 +111,7 @@ fi
 
 QUERY="?platform=${PLATFORM}&epn=${EPN}&app_key=${APPKEY}&build=${BUILD_UUIDS}"
 URL="${HOST}${ENDPOINT}${QUERY}"
-countly_log "Uploading to ${URL}"
+countly_log "Uploading to:[${URL}]"
 
 
 # Uploading to server using curl
@@ -111,7 +119,7 @@ UPLOAD_RESULT=$(curl -s -F "symbols=@${DSYM_ZIP_PATH}" "${URL}")
 if [ $? -eq 0 ] && [ "${UPLOAD_RESULT}" == "{\"result\":\"Success\"}" ]; then
     countly_log "dSYM upload succesfully completed."
 else
-    countly_fail "dSYM upload failed! ${UPLOAD_RESULT}"
+    countly_fail "dSYM upload failed! Response from the server:[${UPLOAD_RESULT}]"
 fi
 
 
