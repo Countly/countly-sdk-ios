@@ -353,7 +353,7 @@ typedef enum : NSUInteger
 @property (nonatomic) NSUInteger storedRequestsLimit;
 
 /**
- * Request age is the difference between current time and creation time if request, requests will remove from queue whose age increase from the request drop age.
+ * Age of a request is the difference between the current time and the creation time of the request. Requests will be removed from the queue if their age exceeds the request drop age set here.
  * @discussion If not set, it will not effect the requests.
  */
 @property (nonatomic) NSUInteger requestDropAgeHours;
