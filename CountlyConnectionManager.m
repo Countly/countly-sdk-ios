@@ -154,8 +154,6 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         CLY_LOG_D(@"Proceeding on queue is aborted: Queue is being modified!");
         return;
     }
-    
-    [CountlyPersistency.sharedInstance removeOldAgeRequestsFromQueue];
 
     NSString* firstItemInQueue = [CountlyPersistency.sharedInstance firstItemInQueue];
     if (!firstItemInQueue)
@@ -163,6 +161,18 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         CLY_LOG_D(@"Queue is empty. All requests are processed.");
         return;
     }
+    BOOL isOldRequest = [CountlyPersistency.sharedInstance isOldRequest:firstItemInQueue];
+    if(isOldRequest)
+    {
+        [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
+        
+        [CountlyPersistency.sharedInstance saveToFile];
+        
+        [self proceedOnQueue];
+        
+        return;
+    }
+    
 
     NSString* temporaryDeviceIDQueryString = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, CLYTemporaryDeviceID];
     if ([firstItemInQueue containsString:temporaryDeviceIDQueryString])
