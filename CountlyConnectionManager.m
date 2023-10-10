@@ -166,6 +166,18 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         CLY_LOG_D(@"Queue is empty. All requests are processed.");
         return;
     }
+    BOOL isOldRequest = [CountlyPersistency.sharedInstance isOldRequest:firstItemInQueue];
+    if(isOldRequest)
+    {
+        [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
+        
+        [CountlyPersistency.sharedInstance saveToFile];
+        
+        [self proceedOnQueue];
+        
+        return;
+    }
+    
 
     NSString* temporaryDeviceIDQueryString = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, CLYTemporaryDeviceID];
     if ([firstItemInQueue containsString:temporaryDeviceIDQueryString])

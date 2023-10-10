@@ -83,9 +83,14 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
     @synchronized (self)
     {
         [self.queuedRequests addObject:queryString];
-
         if (self.queuedRequests.count > self.storedRequestsLimit && !CountlyConnectionManager.sharedInstance.connection)
-            [self.queuedRequests removeObjectAtIndex:0];
+        {
+            [self removeOldAgeRequestsFromQueue];
+            if (self.queuedRequests.count > self.storedRequestsLimit && !CountlyConnectionManager.sharedInstance.connection)
+            {
+                [self.queuedRequests removeObjectAtIndex:0];
+            }
+        }
     }
 }
 
@@ -197,6 +202,40 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 
         self.isQueueBeingModified = NO;
     }
+}
+
+- (void)removeOldAgeRequestsFromQueue
+{
+    @synchronized (self)
+    {
+        if(self.requestDropAgeHours && self.requestDropAgeHours > 0) {
+            self.isQueueBeingModified = YES;
+            
+            NSPredicate* predicate = [NSPredicate predicateWithBlock:^BOOL(NSString* queryString, NSDictionary<NSString *, id> * bindings)
+                                      {
+                BOOL isOldAgeRequest = [self isOldRequest:queryString];
+                return !isOldAgeRequest;
+            }];
+            
+            [self.queuedRequests filterUsingPredicate:predicate];
+            
+            self.isQueueBeingModified = NO;
+        }
+    }
+}
+
+-(BOOL)isOldRequest:(NSString*) queryString
+{
+    double requestTimeStamp = [[queryString cly_valueForQueryStringKey:kCountlyQSKeyTimestamp] longLongValue]/1000.0;
+    double durationInSecods = NSDate.date.timeIntervalSince1970 - requestTimeStamp;
+    double durationInHours = (durationInSecods/3600.0);
+    BOOL isOldAgeRequest = durationInHours >= self.requestDropAgeHours;
+    if (isOldAgeRequest)
+    {
+        CLY_LOG_D(@"Detected a request with an old age (age in hours: %f) in queue and removed it.", durationInHours);
+    }
+    
+    return isOldAgeRequest;
 }
 
 #pragma mark ---

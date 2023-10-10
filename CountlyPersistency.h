@@ -20,6 +20,7 @@
 - (void)replaceAllTemporaryDeviceIDsInQueueWithDeviceID:(NSString *)deviceID;
 - (void)replaceAllAppKeysInQueueWithCurrentAppKey;
 - (void)removeDifferentAppKeysFromQueue;
+- (void)removeOldAgeRequestsFromQueue;
 
 - (void)recordEvent:(CountlyEvent *)event;
 - (NSString *)serializedRecordedEvents;
@@ -60,7 +61,10 @@
 - (NSDictionary *)retrieveServerConfig;
 - (void)storeServerConfig:(NSDictionary *)serverConfig;
 
+-(BOOL)isOldRequest:(NSString*) queryString;
+
 @property (nonatomic) NSUInteger eventSendThreshold;
 @property (nonatomic) NSUInteger storedRequestsLimit;
+@property (nonatomic) NSUInteger requestDropAgeHours;
 @property (nonatomic, readonly) BOOL isQueueBeingModified;
 @end

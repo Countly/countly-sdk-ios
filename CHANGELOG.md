@@ -1,4 +1,5 @@
 ## 23.8.3
+- Added `requestDropAgeHours` initial config property to set a time limit after which the requests would be removed if not sent to the server
 - Added a call to enroll users to A/B tests when getting a remote config value: 'getValueAndEnroll'
 - Added a call to enroll users to A/B tests when getting all remote config values: 'getAllValuesAndEnroll'
 
