@@ -16,8 +16,6 @@ NSString* const kCountlyRCKeyKeys               = @"keys";
 NSString* const kCountlyRCKeyOmitKeys           = @"omit_keys";
 
 NSString* const kCountlyRCKeyRC                 = @"rc";
-NSString* const kCountlyRCKeyABOptIn            = @"ab";
-NSString* const kCountlyRCKeyABOptOut           = @"ab_opt_out";
 NSString* const kCountlyRCKeyAutoOptIn          = @"oi";
 
 
@@ -335,8 +333,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
     
     CLY_LOG_D(@"Entolling in AB Tests...");
     
-    [self enrollExitABForKeys:keys enroll:YES];
-    
+    [CountlyConnectionManager.sharedInstance sendEnrollABRequestForKeys:keys];
 }
 
 - (void)exitABTestsForKeys:(NSArray *)keys
@@ -350,7 +347,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
     
     CLY_LOG_D(@"Exiting AB Tests...");
     
-    [self enrollExitABForKeys:keys enroll:NO];
+    [CountlyConnectionManager.sharedInstance sendExitABRequestForKeys:keys];
 }
 
 - (void)downloadValuesForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(RCDownloadCallback)completionHandler
@@ -836,81 +833,6 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
     
     NSString* serverOutputSDKEndpoint = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"%@",
                                          kCountlyEndpointI];
-    
-    if (CountlyConnectionManager.sharedInstance.alwaysUsePOST)
-    {
-        NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverOutputSDKEndpoint]];
-        request.HTTPMethod = @"POST";
-        request.HTTPBody = [queryString cly_dataUTF8];
-        return request.copy;
-    }
-    else
-    {
-        NSString* withQueryString = [serverOutputSDKEndpoint stringByAppendingFormat:@"?%@", queryString];
-        NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:withQueryString]];
-        return request;
-    }
-}
-
-- (void)enrollExitABForKeys:(NSArray *)keys enroll:(BOOL)enroll
-{
-    if (!CountlyServerConfig.sharedInstance.networkingEnabled)
-    {
-        CLY_LOG_D(@"'%@' is aborted: SDK Networking is disabled from server config!", enroll ? @"enrollABTestForKeys" : @"exitABTestForKeys");
-        return;
-    }
-    
-    NSURLRequest* request = enroll ? [self enrollABRequestForKeys:keys] : [self exitABRequestForKeys:keys];
-    NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
-                              {
-        
-        if (error)
-        {
-            CLY_LOG_D(@"%@ Request <%p> failed!\nError: %@", enroll ? @"enrollABTestForKeys" : @"exitABTestForKeys", request, error);
-        }
-        else
-        {
-            CLY_LOG_D(@"%@ Request <%p> successfully completed.", enroll ? @"enrollABTestForKeys" : @"exitABTestForKeys", request);
-        }
-        
-    }];
-    
-    [task resume];
-    
-    CLY_LOG_D(@"%@ Request <%p> started:\n[%@] %@", enroll ? @"enrollABTestForKeys" : @"exitABTestForKeys", (id)request, request.HTTPMethod, request.URL.absoluteString);
-}
-
-- (NSURLRequest *)enrollABRequestForKeys:(NSArray*)keys
-{
-    return [self aBRequestForMethod:kCountlyRCKeyABOptIn keys:keys];
-}
-
-- (NSURLRequest *)exitABRequestForKeys:(NSArray*)keys
-{
-    return [self aBRequestForMethod:kCountlyRCKeyABOptOut keys:keys];
-}
-
-- (NSURLRequest *)aBRequestForMethod:(NSString*)method keys:(NSArray*)keys
-{
-    NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
-    
-    queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMethod, kCountlyRCKeyABOptIn];
-    
-    if (keys)
-    {
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyKeys, [keys cly_JSONify]];
-    }
-    
-    if (CountlyConsentManager.sharedInstance.consentForSessions)
-    {
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
-    }
-    
-    queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
-    
-    NSString* serverOutputSDKEndpoint = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"%@%@",
-                                         kCountlyEndpointO,
-                                         kCountlyEndpointSDK];
     
     if (CountlyConnectionManager.sharedInstance.alwaysUsePOST)
     {

@@ -20,6 +20,7 @@ extern NSString* const kCountlyEndpointSDK;
 extern NSString* const kCountlyEndpointFeedback;
 extern NSString* const kCountlyEndpointWidget;
 extern NSString* const kCountlyEndpointSurveys;
+extern NSString* const kCountlyRCKeyKeys;
 extern NSString* const kCountlyQSKeyTimestamp;
 
 extern const NSInteger kCountlyGETRequestMaxLength;
@@ -54,6 +55,9 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 - (void)sendIndirectAttribution:(NSDictionary *)attribution;
 - (void)sendConsents:(NSString *)consents;
 - (void)sendPerformanceMonitoringTrace:(NSString *)trace;
+
+- (void)sendEnrollABRequestForKeys:(NSArray*)keys;
+- (void)sendExitABRequestForKeys:(NSArray*)keys;
 
 - (void)addDirectRequest:(NSDictionary<NSString *, NSString *> *)requestParameters;
 
