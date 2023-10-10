@@ -226,7 +226,7 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 
 -(BOOL)isOldRequest:(NSString*) queryString
 {
-    double requestTimeStamp = [[queryString cly_valueForQueryStringKey:kCountlyQSKeyTimestamp] longLongValue]/1000;
+    double requestTimeStamp = [[queryString cly_valueForQueryStringKey:kCountlyQSKeyTimestamp] longLongValue]/1000.0;
     double durationInSecods = NSDate.date.timeIntervalSince1970 - requestTimeStamp;
     double durationInHours = (durationInSecods/3600.0);
     BOOL isOldAgeRequest = durationInHours >= self.requestDropAgeHours;
