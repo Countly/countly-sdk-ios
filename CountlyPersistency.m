@@ -213,7 +213,7 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
             
             NSPredicate* predicate = [NSPredicate predicateWithBlock:^BOOL(NSString* queryString, NSDictionary<NSString *, id> * bindings)
                                       {
-                BOOL isOldAgeRequest = [self isOldRequest:queryString];
+                BOOL isOldAgeRequest = [self isOldRequestInternal:queryString];
                 return !isOldAgeRequest;
             }];
             
@@ -225,6 +225,15 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 }
 
 -(BOOL)isOldRequest:(NSString*) queryString
+{
+    if(self.requestDropAgeHours && self.requestDropAgeHours > 0) {
+        return [self isOldRequestInternal:queryString];
+    }
+    return false;
+    
+}
+
+-(BOOL)isOldRequestInternal:(NSString *)queryString
 {
     double requestTimeStamp = [[queryString cly_valueForQueryStringKey:kCountlyQSKeyTimestamp] longLongValue]/1000.0;
     double durationInSecods = NSDate.date.timeIntervalSince1970 - requestTimeStamp;
