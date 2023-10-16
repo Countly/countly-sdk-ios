@@ -3,6 +3,7 @@
 - Added a call to enroll users to A/B tests when getting a remote config value: 'getValueAndEnroll'
 - Added a call to enroll users to A/B tests when getting all remote config values: 'getAllValuesAndEnroll'
 
+- Fixed sending '--' as carrier name due to platform changes from iOS version 16.4. This version and above will now not send any carrier information due to platform limitations.
 - Mitigated an issue where users could not enroll to an A/B tests if enrollment request has failed
 
 ## 23.8.2

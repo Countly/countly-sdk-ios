@@ -240,7 +240,15 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 #if (!TARGET_OS_MACCATALYST)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    return CountlyDeviceInfo.sharedInstance.networkInfo.subscriberCellularProvider.carrierName;
+    //Note: "carrierName" is deprecated and returns '--' value for apps that are built with the iOS 16.4 SDK or later.
+    if (@available(iOS 16.4, *))
+    {
+        return nil;
+    }
+    else 
+    {
+        return CountlyDeviceInfo.sharedInstance.networkInfo.subscriberCellularProvider.carrierName;
+    }
 #pragma GCC diagnostic pop
 #endif
 #endif
