@@ -245,7 +245,8 @@ CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
     {
         return nil;
     }
-    else {
+    else 
+    {
         return CountlyDeviceInfo.sharedInstance.networkInfo.subscriberCellularProvider.carrierName;
     }
 #pragma GCC diagnostic pop
