@@ -24,6 +24,7 @@ NSString* const kCountlyNotificationPermissionKey = @"kCountlyNotificationPermis
 NSString* const kCountlyIsCustomDeviceIDKey = @"kCountlyIsCustomDeviceIDKey";
 NSString* const kCountlyRemoteConfigKey = @"kCountlyRemoteConfigKey";
 NSString* const kCountlyServerConfigPersistencyKey = @"kCountlyServerConfigPersistencyKey";
+NSString* const kCountlyAppVersionKey = @"av";
 
 
 NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
@@ -79,6 +80,9 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
     
     if (!queryString.length || [queryString isEqual:NSNull.null])
         return;
+    
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@",
+                   kCountlyAppVersionKey, CountlyDeviceInfo.appVersion];
 
     @synchronized (self)
     {

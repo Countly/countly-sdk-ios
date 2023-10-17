@@ -94,6 +94,8 @@ extern CLYMetricKey const CLYMetricKeyLocale;
 extern CLYMetricKey const CLYMetricKeyHasWatch;
 extern CLYMetricKey const CLYMetricKeyInstalledWatchApp;
 
+extern NSString* const kCountlyAppVersionKey;
+
 //NOTE: Attribution keys
 typedef NSString* CLYAttributionKey NS_EXTENSIBLE_STRING_ENUM;
 extern CLYAttributionKey const CLYAttributionKeyIDFA;

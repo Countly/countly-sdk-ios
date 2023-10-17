@@ -130,6 +130,9 @@ NSString* const kCountlySCKeySC = @"sc";
                              kCountlyQSKeySDKName, CountlyCommon.sharedInstance.SDKName,
                              kCountlyQSKeySDKVersion, CountlyCommon.sharedInstance.SDKVersion];
     
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@",
+                   kCountlyAppVersionKey, CountlyDeviceInfo.appVersion];
+    
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
     
     NSMutableString* URL = CountlyConnectionManager.sharedInstance.host.mutableCopy;
