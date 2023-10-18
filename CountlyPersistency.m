@@ -79,6 +79,9 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
     
     if (!queryString.length || [queryString isEqual:NSNull.null])
         return;
+    
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@",
+                   kCountlyAppVersionKey, CountlyDeviceInfo.appVersion];
 
     @synchronized (self)
     {

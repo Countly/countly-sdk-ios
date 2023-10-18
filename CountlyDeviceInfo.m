@@ -33,6 +33,8 @@ CLYMetricKey const CLYMetricKeyLocale             = @"_locale";
 CLYMetricKey const CLYMetricKeyHasWatch           = @"_has_watch";
 CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
+NSString* const kCountlyAppVersionKey = @"av";
+
 @interface CountlyDeviceInfo ()
 @property (nonatomic) BOOL isInBackground;
 #if (TARGET_OS_IOS)

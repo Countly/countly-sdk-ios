@@ -255,14 +255,17 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyOmitKeys, [omitKeys cly_JSONify]];
     }
     
+    if (self.enrollABOnRCDownload) {
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyAutoOptIn, @"1"];
+    }
+    
     if (CountlyConsentManager.sharedInstance.consentForSessions)
     {
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
     }
     
-    if (self.enrollABOnRCDownload) {
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyAutoOptIn, @"1"];
-    }
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@",
+                   kCountlyAppVersionKey, CountlyDeviceInfo.appVersion];
     
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
     
@@ -654,10 +657,8 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
     
     queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMethod, kCountlyRCKeyFetchVariant];
     
-    if (CountlyConsentManager.sharedInstance.consentForSessions)
-    {
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
-    }
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@",
+                   kCountlyAppVersionKey, CountlyDeviceInfo.appVersion];
     
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
     
@@ -783,10 +784,8 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
     
     queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMethod, kCountlyRCKeyFetchExperiments];
     
-    if (CountlyConsentManager.sharedInstance.consentForSessions)
-    {
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
-    }
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@",
+                   kCountlyAppVersionKey, CountlyDeviceInfo.appVersion];
     
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
     
@@ -824,10 +823,8 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyVariant, variantName.cly_URLEscaped];
     }
     
-    if (CountlyConsentManager.sharedInstance.consentForSessions)
-    {
-        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
-    }
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@",
+                   kCountlyAppVersionKey, CountlyDeviceInfo.appVersion];
     
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
     

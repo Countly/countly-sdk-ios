@@ -150,6 +150,9 @@ NSString* const kCountlyFBKeyShown          = @"shown";
         kCountlyFBKeyPlatform, CountlyDeviceInfo.osName,
         kCountlyFBKeyShown, @"1",
         kCountlyFBKeyWidgetID, self.ID];
+    
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@",
+                   kCountlyAppVersionKey, CountlyDeviceInfo.appVersion];
 
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
 
@@ -185,6 +188,9 @@ NSString* const kCountlyFBKeyShown          = @"shown";
         kCountlyFBKeyAppVersion, CountlyDeviceInfo.appVersion,
         kCountlyFBKeyPlatform, CountlyDeviceInfo.osName,
         kCountlyFBKeyWidgetID, self.ID];
+    
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@",
+                   kCountlyAppVersionKey, CountlyDeviceInfo.appVersion];
 
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
 

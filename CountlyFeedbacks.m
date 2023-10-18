@@ -331,6 +331,9 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
 
     queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyFBKeyWidgetID, widgetID];
+    
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@",
+                   kCountlyAppVersionKey, CountlyDeviceInfo.appVersion];
 
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
 
@@ -361,6 +364,9 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     queryString = [queryString stringByAppendingFormat:@"&%@=%@&%@=%@",
                    kCountlyFBKeyWidgetID, widgetID,
                    kCountlyFBKeyAppVersion, CountlyDeviceInfo.appVersion];
+    
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@",
+                   kCountlyAppVersionKey, CountlyDeviceInfo.appVersion];
 
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
 
@@ -476,6 +482,9 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         kCountlyQSKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped,
         kCountlyQSKeySDKName, CountlyCommon.sharedInstance.SDKName,
         kCountlyQSKeySDKVersion, CountlyCommon.sharedInstance.SDKVersion];
+    
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@",
+                   kCountlyAppVersionKey, CountlyDeviceInfo.appVersion];
 
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
 
