@@ -259,6 +259,11 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyAutoOptIn, @"1"];
     }
     
+    if (CountlyConsentManager.sharedInstance.consentForSessions)
+    {
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
+    }
+    
     queryString = [queryString stringByAppendingFormat:@"&%@=%@",
                    kCountlyAppVersionKey, CountlyDeviceInfo.appVersion];
     
