@@ -1,4 +1,4 @@
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/68dc667ef1e6465e99fa9d4b2ee56e58)](https://www.codacy.com/gh/Countly/countly-sdk-ios/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Countly/countly-sdk-ios&amp;utm_campaign=Badge_Grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/68dc667ef1e6465e99fa9d4b2ee56e58)](https://app.codacy.com/gh/Countly/countly-sdk-ios/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 
 # Countly iOS SDK
 
