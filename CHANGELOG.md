@@ -1,3 +1,6 @@
+## 23.8.4
+* Added `disableLocation` initial config property to disable location tracking
+
 ## 23.8.3
 * Added `requestDropAgeHours` initial config property to set a time limit after which the requests would be removed if not sent to the server
 * Added a call to enroll users to A/B tests when getting a remote config value: 'getValueAndEnroll'
