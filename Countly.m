@@ -148,10 +148,12 @@ NSString* previousEventID;
     CountlyFeedbacks.sharedInstance.ratingCompletionForAutoAsk = config.starRatingCompletion;
     [CountlyFeedbacks.sharedInstance checkForStarRatingAutoAsk];
 
-    if(config.disableLocation) {
-        [CountlyLocationManager.sharedInstance updateLocation:kCLLocationCoordinate2DInvalid city:nil ISOCountryCode:nil IP:nil];
+    if(config.disableLocation)
+    {
+        [CountlyLocationManager.sharedInstance disableLocation];
     }
-    else {
+    else
+    {
         [CountlyLocationManager.sharedInstance updateLocation:config.location city:config.city ISOCountryCode:config.ISOCountryCode IP:config.IP];
     }
 #endif
