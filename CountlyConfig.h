@@ -314,6 +314,13 @@ typedef enum : NSUInteger
  */
 @property (nonatomic, copy) NSString* IP;
 
+/**
+ * For disabling location tracking by clearing all existing location info..
+ * @discussion If set, Location tracking is disabled
+ * Once disabled, geo-location based push notifications can be enabled again by calling @c recordLocation: method.
+*/
+@property (nonatomic) BOOL disableLocation;
+
 #pragma mark -
 
 /**

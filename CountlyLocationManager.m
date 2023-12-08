@@ -79,14 +79,18 @@
     if (!CountlyConsentManager.sharedInstance.consentForLocation)
         return;
 
-    self.isLocationInfoDisabled = YES;
+    [self disableLocation];
 
+    [CountlyConnectionManager.sharedInstance sendLocationInfo];
+}
+
+- (void)disableLocation
+{
+    self.isLocationInfoDisabled = YES;
     self.location = nil;
     self.city = nil;
     self.ISOCountryCode = nil;
     self.IP = nil;
-
-    [CountlyConnectionManager.sharedInstance sendLocationInfo];
 }
 
 @end
