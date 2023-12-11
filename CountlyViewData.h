@@ -35,6 +35,10 @@
  */
 @property (nonatomic) BOOL isAutoPaused;
 
+
+
+@property (nonatomic) NSDictionary* segmentation;
+
 /**
  * Initialize view data
  * @discussion If set then this view will automatically stopped when new view is started.
