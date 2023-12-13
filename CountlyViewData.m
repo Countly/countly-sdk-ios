@@ -18,6 +18,7 @@
         self.viewStartTime = CountlyCommon.sharedInstance.uniqueTimestamp;
         self.isAutoStoppedView = false;
         self.isAutoPaused = false;
+        self.segmentation = NSMutableDictionary.new;
     }
     
     return self;
