@@ -348,6 +348,11 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         segmentation[kCountlyVTKeyName] = viewData.viewName;
         segmentation[kCountlyVTKeySegment] = CountlyDeviceInfo.osName;
         
+        if (viewData.segmentation)
+        {
+            [segmentation addEntriesFromDictionary:viewData.segmentation];
+        }
+        
         if (self.viewSegmentation)
         {
             [segmentation addEntriesFromDictionary:self.viewSegmentation];
@@ -556,6 +561,73 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     }];
 }
 
+- (void)addSegmentationToViewWithNameInternal:(NSString *) viewName segmentation:(NSDictionary *)segmentation
+{
+    if (!viewName || !viewName.length)
+    {
+        CLY_LOG_D(@"%s View name should not be null or empty", __FUNCTION__);
+        return;
+    }
+    
+    __block NSString *viewID = nil;
+    [self.viewDataDictionary enumerateKeysAndObjectsUsingBlock:^(NSString * key, CountlyViewData * viewData, BOOL * stop)
+     {
+        if ([viewData.viewName isEqualToString:viewName])
+        {
+            viewID = key;
+            *stop = YES;
+        }
+        
+    }];
+    
+    if (viewID)
+    {
+        [self addSegmentationToViewWithIDInternal:viewID segmentation:segmentation];
+    }
+    else {
+        CLY_LOG_D(@"%s No View exist with name: %@", __FUNCTION__, viewName);
+    }
+}
+
+- (void)addSegmentationToViewWithIDInternal:(NSString *) viewID segmentation:(NSDictionary *)segmentation{
+    if (!viewID || !viewID.length)
+    {
+        CLY_LOG_D(@"%s View ID should not be null or empty", __FUNCTION__);
+        return;
+    }
+    
+    if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
+        return;
+    CountlyViewData* viewData = self.viewDataDictionary[viewID];
+    if (viewData)
+    {
+        NSMutableDictionary *mutableSegmentation = segmentation.mutableCopy;
+        [mutableSegmentation removeObjectsForKeys:self.reservedViewTrackingSegmentationKeys];
+        if(mutableSegmentation) {
+            if(!viewData.segmentation) {
+                viewData.segmentation = NSMutableDictionary.new;
+            }
+            [viewData.segmentation addEntriesFromDictionary:mutableSegmentation];
+        }
+        [self.viewDataDictionary setObject:viewData forKey:viewID];
+    }
+    else {
+        CLY_LOG_D(@"%s No View exist with ID: %@", __FUNCTION__, viewID);
+    }
+}
+
+
+- (void)addSegmentationToViewWithID:(NSString *)viewID segmentation:(NSDictionary *)segmentation
+{
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewID, segmentation);
+    [self addSegmentationToViewWithIDInternal:viewID segmentation:segmentation];
+}
+
+- (void)addSegmentationToViewWithName:(NSString *)viewName segmentation:(NSDictionary *)segmentation
+{
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
+    [self addSegmentationToViewWithNameInternal:viewName segmentation:segmentation];
+}
 
 #pragma mark - Internal auto view tracking methods
 

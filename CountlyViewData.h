@@ -35,6 +35,13 @@
  */
 @property (nonatomic) BOOL isAutoPaused;
 
+
+/**
+ * Segmentation for a view.
+ * @discussion You can set this segmentation after the view has started using the "addSegmentationToViewWithID:" or "addSegmentationToViewWithID" methods of view interface.
+ */
+@property (nonatomic) NSMutableDictionary* segmentation;
+
 /**
  * Initialize view data
  * @discussion If set then this view will automatically stopped when new view is started.

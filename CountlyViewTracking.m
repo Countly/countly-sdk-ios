@@ -86,4 +86,15 @@
     [CountlyViewTrackingInternal.sharedInstance stopAllViews:segmentation];
 }
 
+
+- (void)addSegmentationToViewWithID:(NSString *)viewID segmentation:(NSDictionary *)segmentation
+{
+    [CountlyViewTrackingInternal.sharedInstance addSegmentationToViewWithID:viewID segmentation:segmentation];
+}
+
+- (void)addSegmentationToViewWithName:(NSString *)viewName segmentation:(NSDictionary *)segmentation
+{
+    [CountlyViewTrackingInternal.sharedInstance addSegmentationToViewWithName:viewName segmentation:segmentation];
+}
+
 @end

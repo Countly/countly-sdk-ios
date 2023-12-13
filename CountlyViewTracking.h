@@ -30,5 +30,8 @@
 
 - (void)stopAllViews:(NSDictionary *)segmentation;
 
+- (void)addSegmentationToViewWithID:(NSString *)viewID segmentation:(NSDictionary *)segmentation;
+
+- (void)addSegmentationToViewWithName:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
 
 @end

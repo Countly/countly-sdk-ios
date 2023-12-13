@@ -1,5 +1,7 @@
 ## 23.8.4
 * Added `disableLocation` initial config property to disable location tracking
+* Added `addSegmentationToViewWithID:` in view interface for adding segmentation to an ongoing view
+* Added `addSegmentationToViewWithName:` in view interface for adding segmentation to an ongoing view
 
 ## 23.8.3
 * Added `requestDropAgeHours` initial config property to set a time limit after which the requests would be removed if not sent to the server
