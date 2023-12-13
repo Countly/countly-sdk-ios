@@ -348,7 +348,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         segmentation[kCountlyVTKeyName] = viewData.viewName;
         segmentation[kCountlyVTKeySegment] = CountlyDeviceInfo.osName;
         
-        if (viewData.segmentation.count > 0)
+        if (viewData.segmentation)
         {
             [segmentation addEntriesFromDictionary:viewData.segmentation];
         }
@@ -604,6 +604,9 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         NSMutableDictionary *mutableSegmentation = segmentation.mutableCopy;
         [mutableSegmentation removeObjectsForKeys:self.reservedViewTrackingSegmentationKeys];
         if(mutableSegmentation) {
+            if(!viewData.segmentation) {
+                viewData.segmentation = NSMutableDictionary.new;
+            }
             [viewData.segmentation addEntriesFromDictionary:mutableSegmentation];
         }
         [self.viewDataDictionary setObject:viewData forKey:viewID];
