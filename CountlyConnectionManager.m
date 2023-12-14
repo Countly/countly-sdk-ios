@@ -617,6 +617,8 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
             [mutableRequestParameters removeObjectForKey:reservedKey];
         }
     }
+    
+    mutableRequestParameters[@"dr"] = [NSNumber numberWithInt:1];
 
     NSMutableString* queryString = [self queryEssentials].mutableCopy;
 
