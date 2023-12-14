@@ -1,4 +1,4 @@
-## 23.8.4
+## 23.12.0
 * Added `disableLocation` initial config property to disable location tracking
 * Added `addSegmentationToViewWithID:` in view interface for adding segmentation to an ongoing view
 * Added `addSegmentationToViewWithName:` in view interface for adding segmentation to an ongoing view
