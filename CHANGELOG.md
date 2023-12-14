@@ -3,7 +3,7 @@
 * Added `addSegmentationToViewWithID:` in view interface for adding segmentation to an ongoing view
 * Added `addSegmentationToViewWithName:` in view interface for adding segmentation to an ongoing view
 
-* Fixed pause view recursive call issue
+* Fixed bug with "pauseViewWithID" call where it could go into a recursive loop
 
 ## 23.8.3
 * Added `requestDropAgeHours` initial config property to set a time limit after which the requests would be removed if not sent to the server
