@@ -506,18 +506,6 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     }
 }
 
-- (void)pauseCurrentView
-{
-    if (self.currentView)
-    {
-        [self pauseViewInternal:self.currentView];
-    }
-}
-
-- (void)resumeCurrentView
-{
-    [self.currentView resumeView];
-}
 
 - (void)pauseAllViewsInternal
 {
