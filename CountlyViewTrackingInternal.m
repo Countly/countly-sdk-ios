@@ -98,7 +98,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         
         self.viewDataDictionary = NSMutableDictionary.new;
         self.viewSegmentation = nil;
-        self.isFirstView = true;
+        self.isFirstView = YES;
     }
     
     return self;
@@ -167,7 +167,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         return nil;
     }
 #endif
-    NSString* viewID = [self startViewInternal:viewName customSegmentation:segmentation isAutoStoppedView:true];
+    NSString* viewID = [self startViewInternal:viewName customSegmentation:segmentation isAutoStoppedView:YES];
     return viewID;
 }
 
@@ -329,7 +329,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)stopViewWithIDInternal:(NSString *) viewKey customSegmentation:(NSDictionary *)customSegmentation
 {
-    [self stopViewWithIDInternal:viewKey customSegmentation:customSegmentation autoPaused:false];
+    [self stopViewWithIDInternal:viewKey customSegmentation:customSegmentation autoPaused:NO];
 }
 
 - (void)stopViewWithIDInternal:(NSString *) viewKey customSegmentation:(NSDictionary *)customSegmentation autoPaused:(BOOL) autoPaused{
@@ -380,7 +380,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (NSString*)startViewInternal:(NSString *)viewName customSegmentation:(NSDictionary *)customSegmentation
 {
-    return [self startViewInternal:viewName customSegmentation:customSegmentation isAutoStoppedView:false];
+    return [self startViewInternal:viewName customSegmentation:customSegmentation isAutoStoppedView:NO];
 }
 
 - (NSString*)startViewInternal:(NSString *)viewName customSegmentation:(NSDictionary *)customSegmentation isAutoStoppedView:(BOOL) isAutoStoppedView
@@ -409,7 +409,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     
     if (self.isFirstView)
     {
-        self.isFirstView = false;
+        self.isFirstView = NO;
         segmentation[kCountlyVTKeyStart] = @1;
     }
     
@@ -506,29 +506,17 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     }
 }
 
-- (void)pauseCurrentView
-{
-    if (self.currentView)
-    {
-        [self pauseViewInternal:self.currentView];
-    }
-}
-
-- (void)resumeCurrentView
-{
-    [self.currentView resumeView];
-}
 
 - (void)pauseAllViewsInternal
 {
     [self.viewDataDictionary enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, CountlyViewData * _Nonnull viewData, BOOL * _Nonnull stop) {
-        [self pauseViewInternal:viewData autoPaused:true];
+        [self pauseViewInternal:viewData autoPaused:YES];
     }];
 }
 
 - (void)pauseViewInternal:(CountlyViewData*) viewData
 {
-    [self pauseViewInternal:viewData];
+    [self pauseViewInternal:viewData autoPaused:NO];
 }
 
 - (void)pauseViewInternal:(CountlyViewData*) viewData autoPaused:(BOOL) autoPaused
@@ -539,7 +527,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     else {
         [viewData pauseView];
     }
-    [self stopViewWithIDInternal:viewData.viewID customSegmentation:nil autoPaused:true];
+    [self stopViewWithIDInternal:viewData.viewID customSegmentation:nil autoPaused:YES];
 }
 
 - (void)resumeAllViewsInternal
@@ -746,7 +734,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)resetFirstView
 {
-    self.isFirstView = false;
+    self.isFirstView = NO;
 }
 
 
