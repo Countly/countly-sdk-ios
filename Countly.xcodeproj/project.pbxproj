@@ -16,11 +16,13 @@
 		1A423E9E2A271E46008C4757 /* CountlyRCData.m in Sources */ = {isa = PBXBuildFile; fileRef = 1A423E9D2A271E46008C4757 /* CountlyRCData.m */; };
 		1A423EA02A271FE0008C4757 /* CountlyRCData.h in Headers */ = {isa = PBXBuildFile; fileRef = 1A423E9F2A271E52008C4757 /* CountlyRCData.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		1A478D032AB314750056A5E7 /* CountlyExperimentInformation.h in Headers */ = {isa = PBXBuildFile; fileRef = 1A9027FF2AB197C00044EBCF /* CountlyExperimentInformation.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		1A50D7052B3C5AA3009C6938 /* CountlyBaseTestCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A50D7042B3C5AA3009C6938 /* CountlyBaseTestCase.swift */; };
 		1A5C4C972B35B0850032EE1F /* CountlyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5C4C962B35B0850032EE1F /* CountlyTests.swift */; };
 		1A5C4C982B35B0850032EE1F /* Countly.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B20A9822245225A00E3D7AE /* Countly.framework */; platformFilters = (ios, macos, ); };
 		1A9027FE2AB197B50044EBCF /* CountlyExperimentInformation.m in Sources */ = {isa = PBXBuildFile; fileRef = 1A9027FD2AB197B50044EBCF /* CountlyExperimentInformation.m */; };
 		1ACA5DC12A309E7F001F770B /* CountlyRemoteConfigInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = 1ACA5DBF2A309E7F001F770B /* CountlyRemoteConfigInternal.h */; };
 		1ACA5DC22A309E7F001F770B /* CountlyRemoteConfigInternal.m in Sources */ = {isa = PBXBuildFile; fileRef = 1ACA5DC02A309E7F001F770B /* CountlyRemoteConfigInternal.m */; };
+		1AFD79022B3EF82C00772FBD /* CountlyTests-Bridging-Header.h in Headers */ = {isa = PBXBuildFile; fileRef = 1AFD79012B3EF82C00772FBD /* CountlyTests-Bridging-Header.h */; };
 		3B20A9872245225A00E3D7AE /* Countly.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9852245225A00E3D7AE /* Countly.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3B20A9B22245228700E3D7AE /* CountlyConnectionManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A98D2245228300E3D7AE /* CountlyConnectionManager.h */; };
 		3B20A9B32245228700E3D7AE /* CountlyNotificationService.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B20A98E2245228300E3D7AE /* CountlyNotificationService.m */; };
@@ -78,12 +80,14 @@
 		1A3A576429ED47B50041B7BE /* CountlyServerConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyServerConfig.h; sourceTree = "<group>"; };
 		1A423E9D2A271E46008C4757 /* CountlyRCData.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyRCData.m; sourceTree = "<group>"; };
 		1A423E9F2A271E52008C4757 /* CountlyRCData.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyRCData.h; sourceTree = "<group>"; };
+		1A50D7042B3C5AA3009C6938 /* CountlyBaseTestCase.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyBaseTestCase.swift; sourceTree = "<group>"; };
 		1A5C4C942B35B0850032EE1F /* CountlyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CountlyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1A5C4C962B35B0850032EE1F /* CountlyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyTests.swift; sourceTree = "<group>"; };
 		1A9027FD2AB197B50044EBCF /* CountlyExperimentInformation.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyExperimentInformation.m; sourceTree = "<group>"; };
 		1A9027FF2AB197C00044EBCF /* CountlyExperimentInformation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyExperimentInformation.h; sourceTree = "<group>"; };
 		1ACA5DBF2A309E7F001F770B /* CountlyRemoteConfigInternal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyRemoteConfigInternal.h; sourceTree = "<group>"; };
 		1ACA5DC02A309E7F001F770B /* CountlyRemoteConfigInternal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyRemoteConfigInternal.m; sourceTree = "<group>"; };
+		1AFD79012B3EF82C00772FBD /* CountlyTests-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "CountlyTests-Bridging-Header.h"; sourceTree = "<group>"; };
 		3B20A9822245225A00E3D7AE /* Countly.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Countly.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B20A9852245225A00E3D7AE /* Countly.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Countly.h; sourceTree = "<group>"; };
 		3B20A9862245225A00E3D7AE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -147,6 +151,8 @@
 			isa = PBXGroup;
 			children = (
 				1A5C4C962B35B0850032EE1F /* CountlyTests.swift */,
+				1A50D7042B3C5AA3009C6938 /* CountlyBaseTestCase.swift */,
+				1AFD79012B3EF82C00772FBD /* CountlyTests-Bridging-Header.h */,
 			);
 			path = CountlyTests;
 			sourceTree = "<group>";
@@ -220,6 +226,14 @@
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
+		1AFD78FC2B3EF63D00772FBD /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1AFD79022B3EF82C00772FBD /* CountlyTests-Bridging-Header.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		3B20A97D2245225A00E3D7AE /* Headers */ = {
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
@@ -258,6 +272,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 1A5C4C9B2B35B0850032EE1F /* Build configuration list for PBXNativeTarget "CountlyTests" */;
 			buildPhases = (
+				1AFD78FC2B3EF63D00772FBD /* Headers */,
 				1A5C4C902B35B0850032EE1F /* Sources */,
 				1A5C4C912B35B0850032EE1F /* Frameworks */,
 				1A5C4C922B35B0850032EE1F /* Resources */,
@@ -351,6 +366,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1A5C4C972B35B0850032EE1F /* CountlyTests.swift in Sources */,
+				1A50D7052B3C5AA3009C6938 /* CountlyBaseTestCase.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -417,6 +433,7 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OBJC_BRIDGING_HEADER = "CountlyTests/CountlyTests-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -440,6 +457,7 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OBJC_BRIDGING_HEADER = "CountlyTests/CountlyTests-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
