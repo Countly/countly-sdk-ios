@@ -27,6 +27,7 @@
 #import "CountlyViewData.h"
 #import "CountlyRemoteConfig.h"
 #import "CountlyViewTracking.h"
+#import "Resettable.h"
 
 #define CLY_LOG_E(fmt, ...) CountlyInternalLog(CLYInternalLogLevelError, fmt, ##__VA_ARGS__)
 #define CLY_LOG_W(fmt, ...) CountlyInternalLog(CLYInternalLogLevelWarning, fmt, ##__VA_ARGS__)
@@ -68,7 +69,7 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 extern NSString* const kCountlySDKVersion;
 extern NSString* const kCountlySDKName;
 
-@interface CountlyCommon : NSObject
+@interface CountlyCommon : NSObject <Resettable>
 
 @property (nonatomic, copy) NSString* SDKVersion;
 @property (nonatomic, copy) NSString* SDKName;

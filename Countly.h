@@ -12,13 +12,14 @@
 #import "CountlyRemoteConfig.h"
 #import "CountlyFeedbackWidget.h"
 #import "CountlyViewTracking.h"
+#import "Resettable.h"
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 #import <UserNotifications/UserNotifications.h>
 #endif
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface Countly : NSObject
+@interface Countly : NSObject <Resettable>
 
 #pragma mark - Core
 

@@ -45,6 +45,7 @@ class CountlyBaseTestCase: XCTestCase {
                 XCTFail("Error waiting for expectations: \(error)")
             }
         }
+        resetSingletonInstance()
     }
     
     func yourAsyncOperation(completion: @escaping (Result<Void, Error>) -> Void) {
@@ -56,6 +57,12 @@ class CountlyBaseTestCase: XCTestCase {
             Thread.sleep(forTimeInterval: 10)
             completion(.success(()))
         }
+    }
+    
+    func resetSingletonInstance() {
+        Countly.sharedInstance().resetInstance()
+        CountlyCommon.sharedInstance().resetInstance()
+        CountlyPersistency.sharedInstance().resetInstance()
     }
     
 }

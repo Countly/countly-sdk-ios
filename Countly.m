@@ -28,12 +28,18 @@ NSString* previousEventID;
     appLoadStartTime = floor(NSDate.date.timeIntervalSince1970 * 1000);
 }
 
+static Countly *s_sharedCountly = nil;
+static dispatch_once_t onceToken;
+
 + (instancetype)sharedInstance
 {
-    static Countly *s_sharedCountly = nil;
-    static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedCountly = self.new;});
     return s_sharedCountly;
+}
+
+- (void)resetInstance {
+    onceToken = 0;
+    s_sharedCountly = nil;
 }
 
 - (instancetype)init

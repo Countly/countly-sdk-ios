@@ -23,6 +23,7 @@
 		1ACA5DC12A309E7F001F770B /* CountlyRemoteConfigInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = 1ACA5DBF2A309E7F001F770B /* CountlyRemoteConfigInternal.h */; };
 		1ACA5DC22A309E7F001F770B /* CountlyRemoteConfigInternal.m in Sources */ = {isa = PBXBuildFile; fileRef = 1ACA5DC02A309E7F001F770B /* CountlyRemoteConfigInternal.m */; };
 		1AFD79022B3EF82C00772FBD /* CountlyTests-Bridging-Header.h in Headers */ = {isa = PBXBuildFile; fileRef = 1AFD79012B3EF82C00772FBD /* CountlyTests-Bridging-Header.h */; };
+		39911B672B457DBB00AC053C /* Resettable.h in Headers */ = {isa = PBXBuildFile; fileRef = 39911B662B457DB500AC053C /* Resettable.h */; };
 		3B20A9872245225A00E3D7AE /* Countly.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9852245225A00E3D7AE /* Countly.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3B20A9B22245228700E3D7AE /* CountlyConnectionManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A98D2245228300E3D7AE /* CountlyConnectionManager.h */; };
 		3B20A9B32245228700E3D7AE /* CountlyNotificationService.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B20A98E2245228300E3D7AE /* CountlyNotificationService.m */; };
@@ -88,6 +89,7 @@
 		1ACA5DBF2A309E7F001F770B /* CountlyRemoteConfigInternal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyRemoteConfigInternal.h; sourceTree = "<group>"; };
 		1ACA5DC02A309E7F001F770B /* CountlyRemoteConfigInternal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyRemoteConfigInternal.m; sourceTree = "<group>"; };
 		1AFD79012B3EF82C00772FBD /* CountlyTests-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "CountlyTests-Bridging-Header.h"; sourceTree = "<group>"; };
+		39911B662B457DB500AC053C /* Resettable.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Resettable.h; sourceTree = "<group>"; };
 		3B20A9822245225A00E3D7AE /* Countly.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Countly.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B20A9852245225A00E3D7AE /* Countly.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Countly.h; sourceTree = "<group>"; };
 		3B20A9862245225A00E3D7AE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -160,6 +162,7 @@
 		3B20A9782245225A00E3D7AE = {
 			isa = PBXGroup;
 			children = (
+				39911B662B457DB500AC053C /* Resettable.h */,
 				1A9027FF2AB197C00044EBCF /* CountlyExperimentInformation.h */,
 				1A9027FD2AB197B50044EBCF /* CountlyExperimentInformation.m */,
 				1A31106E2A7141AF001CB507 /* CountlyViewTracking.h */,
@@ -252,6 +255,7 @@
 				3B20A9CC2245228700E3D7AE /* CountlyViewTrackingInternal.h in Headers */,
 				3B20A9BF2245228700E3D7AE /* CountlyLocationManager.h in Headers */,
 				D219374B248AC71C00E5798B /* CountlyPerformanceMonitoring.h in Headers */,
+				39911B672B457DBB00AC053C /* Resettable.h in Headers */,
 				3B20A9BC2245228700E3D7AE /* CountlyCommon.h in Headers */,
 				3B20A9C52245228700E3D7AE /* CountlyCrashReporter.h in Headers */,
 				3B20A9BE2245228700E3D7AE /* CountlyDeviceInfo.h in Headers */,
