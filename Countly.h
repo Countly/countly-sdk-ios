@@ -806,6 +806,8 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)appLoadingFinished;
 
+- (void)halt;
+
 NS_ASSUME_NONNULL_END
 
 @end

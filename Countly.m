@@ -1268,4 +1268,11 @@ static dispatch_once_t onceToken;
     [CountlyPerformanceMonitoring.sharedInstance recordAppStartDurationTraceWithStartTime:appLoadStartTime endTime:appLoadEndTime];
 }
 
+- (void)halt
+{
+    [self resetInstance];
+    [CountlyCommon.sharedInstance resetInstance];
+    [CountlyPersistency.sharedInstance resetInstance];
+}
+
 @end
