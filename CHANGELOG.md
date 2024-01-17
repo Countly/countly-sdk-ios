@@ -1,5 +1,5 @@
 ## 23.12.2
-* Mitigated an issue where some dSYM files were archived without content
+* Mitigated an issue in the symbol file uploading script where some dSYM files were archived without content
 
 ## 23.12.1
 * dSYM uploading script now can upload multiple dSYM files if their location is provided
