@@ -1,3 +1,6 @@
+## 23.12.2
+* Mitigated an issue in the symbol file uploading script where some dSYM files were archived without content
+
 ## 23.12.1
 * dSYM uploading script now can upload multiple dSYM files if their location is provided
 * Added support for Xcode 15 DWARF file environment variable changes while using dSYM upload script
