@@ -197,17 +197,36 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     [CountlyCommon.sharedInstance startBackgroundTask];
 
     queryString = [self appendRemainingRequest:queryString];
-    queryString = [self appendChecksum:queryString];
+    NSMutableData* pictureUploadData = [self pictureUploadDataForQueryString:queryString];
+
+    if(!pictureUploadData)
+    {
+        queryString = [self appendChecksum:queryString];
+    }
 
     NSString* serverInputEndpoint = [self.host stringByAppendingString:endPoint];
     NSString* fullRequestURL = [serverInputEndpoint stringByAppendingFormat:@"?%@", queryString];
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:fullRequestURL]];
 
-    NSData* pictureUploadData = [self pictureUploadDataForQueryString:queryString];
     if (pictureUploadData)
     {
+        queryString = [queryString stringByRemovingPercentEncoding];
+        queryString = [self appendChecksum:queryString];
+
+        request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverInputEndpoint]];
         NSString *contentType = [@"multipart/form-data; boundary=" stringByAppendingString:kCountlyUploadBoundary];
         [request addValue:contentType forHTTPHeaderField: @"Content-Type"];
+        
+        NSArray *query = [queryString componentsSeparatedByString:@"&"];
+        NSEnumerator *e = [query objectEnumerator];
+        NSString* kvString;
+        while (kvString = [e nextObject]) {
+            NSArray *kv = [kvString componentsSeparatedByString:@"="];
+            [self addMultipart:pictureUploadData andKey:kv[0] andValue:kv[1]];
+        }
+        
+        NSString* boundaryEnd = [NSString stringWithFormat:@"\r\n--%@--\r\n", kCountlyUploadBoundary];
+        [pictureUploadData appendData:[boundaryEnd cly_dataUTF8]];
         request.HTTPMethod = @"POST";
         request.HTTPBody = pictureUploadData;
     }
@@ -715,7 +734,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     return [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyAttributionID, [attribution cly_JSONify]];
 }
 
-- (NSData *)pictureUploadDataForQueryString:(NSString *)queryString
+- (NSMutableData *)pictureUploadDataForQueryString:(NSString *)queryString
 {
 #if (TARGET_OS_IOS)
     NSString* localPicturePath = nil;
@@ -764,17 +783,28 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     NSString* boundaryStart = [NSString stringWithFormat:@"--%@\r\n", kCountlyUploadBoundary];
     NSString* contentDisposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"pictureFile\"; filename=\"%@\"\r\n", localPicturePath.lastPathComponent];
     NSString* contentType = [NSString stringWithFormat:@"Content-Type: image/%@\r\n\r\n", allowedFileTypes[fileExtIndex]];
-    NSString* boundaryEnd = [NSString stringWithFormat:@"\r\n--%@--\r\n", kCountlyUploadBoundary];
 
     NSMutableData* uploadData = NSMutableData.new;
     [uploadData appendData:[boundaryStart cly_dataUTF8]];
     [uploadData appendData:[contentDisposition cly_dataUTF8]];
     [uploadData appendData:[contentType cly_dataUTF8]];
     [uploadData appendData:imageData];
-    [uploadData appendData:[boundaryEnd cly_dataUTF8]];
     return uploadData;
 #endif
     return nil;
+}
+
+- (void)addMultipart:(NSMutableData *)uploadData andKey:(NSString *)key andValue:(NSString *)value
+{
+#if (TARGET_OS_IOS)
+
+    NSString* boundaryStart = [NSString stringWithFormat:@"\r\n--%@\r\n", kCountlyUploadBoundary];
+    NSString* contentDisposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\";\r\n\r\n", key];
+
+    [uploadData appendData:[boundaryStart cly_dataUTF8]];
+    [uploadData appendData:[contentDisposition cly_dataUTF8]];
+    [uploadData appendData:[value cly_dataUTF8]];
+#endif
 }
 
 - (NSString *)appendChecksum:(NSString *)queryString
