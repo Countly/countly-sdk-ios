@@ -297,6 +297,7 @@ static dispatch_once_t onceToken;
 }
 
 - (void)resetInstance {
+    CLY_LOG_I(@"%s", __FUNCTION__);
     [self flushEvents];
     [self clearAllTimedEvents];
     [self flushQueue];

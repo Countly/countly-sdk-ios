@@ -59,8 +59,10 @@ static dispatch_once_t onceToken;
 }
 
 - (void)resetInstance {
+    CLY_LOG_I(@"%s", __FUNCTION__);
     onceToken = 0;
     s_sharedInstance = nil;
+    _hasStarted = false;
 }
 
 

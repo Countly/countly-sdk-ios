@@ -806,6 +806,11 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)appLoadingFinished;
 
+/**
+ * Reset the state of SDK that it is not initialized.
+ * @discussion Reset shared instances
+ * @discussion Clear request queue and events queue
+ */
 - (void)halt;
 
 NS_ASSUME_NONNULL_END

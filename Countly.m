@@ -38,6 +38,7 @@ static dispatch_once_t onceToken;
 }
 
 - (void)resetInstance {
+    CLY_LOG_I(@"%s", __FUNCTION__);
     onceToken = 0;
     s_sharedCountly = nil;
 }
@@ -1270,9 +1271,15 @@ static dispatch_once_t onceToken;
 
 - (void)halt
 {
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    [CountlyPersistency.sharedInstance resetInstance];
+    [CountlyDeviceInfo.sharedInstance resetInstance];
     [self resetInstance];
     [CountlyCommon.sharedInstance resetInstance];
-    [CountlyPersistency.sharedInstance resetInstance];
+    
+    NSString *appDomain = [[NSBundle mainBundle] bundleIdentifier];
+    [NSUserDefaults.standardUserDefaults removePersistentDomainForName:appDomain];
+    [NSUserDefaults.standardUserDefaults synchronize];
 }
 
 @end
