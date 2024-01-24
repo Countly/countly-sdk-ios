@@ -1,5 +1,12 @@
 ## 23.12.2
 * Mitigated an issue in the symbol file uploading script where some dSYM files were archived without content
+* Added a separate APM Configs with following options:
+    * `enableForegroundBackgroundTracking`
+    * `enableAppStartTimeTracking`
+    * `enableManualAppLoadedTrigger`
+    * `setAppStartTimestampOverride:`
+ 
+* Deprecated `enablePerformanceMonitoring` initial config flag
 
 ## 23.12.1
 * dSYM uploading script now can upload multiple dSYM files if their location is provided
