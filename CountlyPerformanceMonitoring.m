@@ -32,6 +32,10 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
 
 @implementation CountlyPerformanceMonitoring
 
+BOOL enableAppStartTimeTracking;
+BOOL enableManualAppLoadedTrigger;
+BOOL enableForegroundBackgroundTracking;
+
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
@@ -41,6 +45,15 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
     return s_sharedInstance;
+}
+
+
+- (void) startWithConfig:(CountlyAPMConfig *) apmConfig
+{
+    enableAppStartTimeTracking = apmConfig.enableAppStartTimeTracking;
+    enableManualAppLoadedTrigger = apmConfig.enableManualAppLoadedTrigger;
+    enableForegroundBackgroundTracking = apmConfig.enableForegroundBackgroundTracking;
+    [self startPerformanceMonitoring];
 }
 
 - (instancetype)init
@@ -57,13 +70,13 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
 
 - (void)startPerformanceMonitoring
 {
-    if (!self.isEnabledOnInitialConfig)
+    if (!enableForegroundBackgroundTracking)
         return;
 
     if (!CountlyConsentManager.sharedInstance.consentForPerformanceMonitoring)
         return;
     
-    CLY_LOG_D(@"Starting performance monitoring...");
+    CLY_LOG_D(@"Starting performance monitoring foreground/background tracking...");
 
 #if (TARGET_OS_OSX)
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(applicationDidBecomeActive:) name:NSApplicationDidBecomeActiveNotification object:nil];
@@ -97,6 +110,10 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
 - (void)applicationDidBecomeActive:(NSNotification *)notification
 {
     CLY_LOG_D(@"applicationDidBecomeActive: (Performance Monitoring)");
+    
+    if (!enableForegroundBackgroundTracking)
+        return;
+    
     [self startForegroundTrace];
     
 }
@@ -104,11 +121,18 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
 - (void)applicationWillResignActive:(NSNotification *)notification
 {
     CLY_LOG_D(@"applicationWillResignActive: (Performance Monitoring)");
+    
+    if (!enableForegroundBackgroundTracking)
+        return;
+    
     [self startBackgroundTrace];
 }
 
 - (void)startForegroundTrace
 {
+    if (!enableForegroundBackgroundTracking)
+        return;
+    
     [self endBackgroundTrace];
 
     [self startCustomTrace:kCountlyPMKeyAppInForeground];
@@ -116,11 +140,17 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
 
 - (void)endForegroundTrace
 {
+    if (!enableForegroundBackgroundTracking)
+        return;
+    
     [self endCustomTrace:kCountlyPMKeyAppInForeground metrics:nil];
 }
 
 - (void)startBackgroundTrace
 {
+    if (!enableForegroundBackgroundTracking)
+        return;
+    
     [self endForegroundTrace];
 
     [self startCustomTrace:kCountlyPMKeyAppInBackground];
@@ -128,6 +158,8 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
 
 - (void)endBackgroundTrace
 {
+    if (!enableForegroundBackgroundTracking)
+        return;
     [self endCustomTrace:kCountlyPMKeyAppInBackground metrics:nil];
 }
 
@@ -138,6 +170,12 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
     if (!CountlyConsentManager.sharedInstance.consentForPerformanceMonitoring)
         return;
 
+    if(!enableAppStartTimeTracking || !enableManualAppLoadedTrigger)
+    {
+        CLY_LOG_W(@"Set 'enableAppStartTimeTracking' and 'enableManualAppLoadedTrigger' in config to record App start duration trace!");
+        return;
+    }
+    
     if (self.hasAlreadyRecordedAppStartDurationTrace)
     {
         CLY_LOG_W(@"App start duration trace can be recorded once per app launch. So, it will not be recorded this time!");
