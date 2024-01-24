@@ -210,9 +210,6 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
     if (pictureUploadData)
     {
-        queryString = [queryString stringByRemovingPercentEncoding];
-        queryString = [self appendChecksum:queryString];
-
         request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverInputEndpoint]];
         NSString *contentType = [@"multipart/form-data; boundary=" stringByAppendingString:kCountlyUploadBoundary];
         [request addValue:contentType forHTTPHeaderField: @"Content-Type"];
@@ -222,7 +219,13 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         NSString* kvString;
         while (kvString = [e nextObject]) {
             NSArray *kv = [kvString componentsSeparatedByString:@"="];
-            [self addMultipart:pictureUploadData andKey:kv[0] andValue:kv[1]];
+            [self addMultipart:pictureUploadData andKey:[kv[0] stringByRemovingPercentEncoding] andValue:[kv[1] stringByRemovingPercentEncoding]];
+        }
+        
+        if (self.secretSalt)
+        {
+            NSString* checksum = [[[queryString stringByRemovingPercentEncoding] stringByAppendingString:self.secretSalt] cly_SHA256];
+            [self addMultipart:pictureUploadData andKey:kCountlyQSKeyChecksum256 andValue:checksum];
         }
         
         NSString* boundaryEnd = [NSString stringWithFormat:@"\r\n--%@--\r\n", kCountlyUploadBoundary];
@@ -636,8 +639,6 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
             [mutableRequestParameters removeObjectForKey:reservedKey];
         }
     }
-    
-    mutableRequestParameters[@"dr"] = [NSNumber numberWithInt:1];
 
     NSMutableString* queryString = [self queryEssentials].mutableCopy;
 
