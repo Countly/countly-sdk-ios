@@ -616,7 +616,7 @@ typedef enum : NSUInteger
 
 /**
  * Variable to access apm configurations.
- * @discussion Views tracking interface for developer to interact with SDK.
+ * @discussion APM configurations for developer to interact with SDK.
  */
 - (CountlyAPMConfig *) apm;
 
