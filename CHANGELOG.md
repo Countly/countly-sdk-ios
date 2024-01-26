@@ -1,11 +1,12 @@
 ## 24.1.0
-* Mitigated an issue in the symbol file uploading script where some dSYM files were archived without content
 * Added a separate APM Configs with following options:
     * `enableForegroundBackgroundTracking`
     * `enableAppStartTimeTracking`
     * `enableManualAppLoadedTrigger`
     * `setAppStartTimestampOverride:`
- 
+      
+* Mitigated an issue in the symbol file uploading script where some dSYM files were archived without content
+  
 * Deprecated `enablePerformanceMonitoring` initial config flag
 
 ## 23.12.1
