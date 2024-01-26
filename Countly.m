@@ -222,9 +222,11 @@ NSString* previousEventID;
         CountlyRemoteConfigInternal.sharedInstance.enrollABOnRCDownload = config.enrollABOnRCDownload;
     }
     [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfigAutomatically];
+    if(config.apm.getAppStartTimestampOverride) {
+        appLoadStartTime = config.apm.getAppStartTimestampOverride;
+    }
     
-    CountlyPerformanceMonitoring.sharedInstance.isEnabledOnInitialConfig = config.enablePerformanceMonitoring;
-    [CountlyPerformanceMonitoring.sharedInstance startPerformanceMonitoring];
+    [CountlyPerformanceMonitoring.sharedInstance startWithConfig:config.apm];
 
     CountlyCommon.sharedInstance.enableOrientationTracking = config.enableOrientationTracking;
     [CountlyCommon.sharedInstance observeDeviceOrientationChanges];
