@@ -1,4 +1,4 @@
-## 23.12.2
+## 24.1.0
 * Mitigated an issue in the symbol file uploading script where some dSYM files were archived without content
 * Added a separate APM Configs with following options:
     * `enableForegroundBackgroundTracking`
