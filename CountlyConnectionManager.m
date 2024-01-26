@@ -199,7 +199,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     queryString = [self appendRemainingRequest:queryString];
     NSMutableData* pictureUploadData = [self pictureUploadDataForQueryString:queryString];
 
-    if(!pictureUploadData)
+    if (!pictureUploadData)
     {
         queryString = [self appendChecksum:queryString];
     }
