@@ -205,9 +205,8 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     }
 
     NSString* serverInputEndpoint = [self.host stringByAppendingString:endPoint];
-    NSString* fullRequestURL = [serverInputEndpoint stringByAppendingFormat:@"?%@", queryString];
-    NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:fullRequestURL]];
-
+    NSMutableURLRequest* request;
+    
     if (pictureUploadData)
     {
         request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverInputEndpoint]];
@@ -238,6 +237,11 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverInputEndpoint]];
         request.HTTPMethod = @"POST";
         request.HTTPBody = [queryString cly_dataUTF8];
+    }
+    else
+    {
+        NSString* fullRequestURL = [serverInputEndpoint stringByAppendingFormat:@"?%@", queryString];
+        request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:fullRequestURL]];
     }
 
     request.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
