@@ -797,15 +797,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)addMultipart:(NSMutableData *)uploadData andKey:(NSString *)key andValue:(NSString *)value
 {
-#if (TARGET_OS_IOS)
-
     NSString* boundaryStart = [NSString stringWithFormat:@"\r\n--%@\r\n", kCountlyUploadBoundary];
     NSString* contentDisposition = [NSString stringWithFormat:@"Content-Disposition: form-data; name=\"%@\";\r\n\r\n", key];
 
     [uploadData appendData:[boundaryStart cly_dataUTF8]];
     [uploadData appendData:[contentDisposition cly_dataUTF8]];
     [uploadData appendData:[value cly_dataUTF8]];
-#endif
 }
 
 - (NSString *)appendChecksum:(NSString *)queryString
