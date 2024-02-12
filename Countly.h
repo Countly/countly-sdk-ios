@@ -812,6 +812,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Clear request queue and events queue
  */
 - (void)halt;
+- (void)halt:(BOOL) clearStorage;
 
 NS_ASSUME_NONNULL_END
 

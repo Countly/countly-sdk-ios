@@ -12,19 +12,14 @@ import XCTest
 class CountlyBaseTestCase: XCTestCase {
     var countly: Countly!
     var deviceID: String = ""
+    let appKey: String = "58594c9a3f461ebc000761a68c2146659ef75ea0"
+    var host: String = "https://master.count.ly/"
     
     override func setUpWithError() throws {
-        Countly.sharedInstance().halt()
         // Put setup code here. This method is called before the invocation of each test method in the class.
         let config: CountlyConfig = CountlyConfig()
-        config.appKey = "58594c9a3f461ebc000761a68c2146659ef75ea0"
-        config.host = "https://master.count.ly/"
-        config.enableDebug = true
-        //        config.eventSendThreshold = 0
-        
-        deviceID = String(Int.random(in: 0..<100))
-        config.deviceID = deviceID
-        config.features = [CLYFeature.crashReporting];
+        config.appKey = appKey
+        config.host = host
         countly = Countly();
         countly.start(with: config)
         //         let queuedRequests = CountlyPersistency.sharedInstance().value(forKey: "queuedRequests") as? NSMutableArray
@@ -64,7 +59,7 @@ class CountlyBaseTestCase: XCTestCase {
     }
     
     func cleanupState() {
-        Countly.sharedInstance().halt()
+        Countly.sharedInstance().halt(true)
     }
     
 }

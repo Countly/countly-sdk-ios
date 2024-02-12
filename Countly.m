@@ -1272,14 +1272,23 @@ static dispatch_once_t onceToken;
 - (void)halt
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
+    [self halt:false];
+}
+
+- (void)halt:(BOOL) clearStorage
+{
+    CLY_LOG_I(@"%s %d", __FUNCTION__, clearStorage);
     [CountlyPersistency.sharedInstance resetInstance];
     [CountlyDeviceInfo.sharedInstance resetInstance];
     [self resetInstance];
     [CountlyCommon.sharedInstance resetInstance];
     
-    NSString *appDomain = [[NSBundle mainBundle] bundleIdentifier];
-    [NSUserDefaults.standardUserDefaults removePersistentDomainForName:appDomain];
-    [NSUserDefaults.standardUserDefaults synchronize];
+    if(clearStorage)
+    {
+        NSString *appDomain = [[NSBundle mainBundle] bundleIdentifier];
+        [NSUserDefaults.standardUserDefaults removePersistentDomainForName:appDomain];
+        [NSUserDefaults.standardUserDefaults synchronize];
+    }
 }
 
 @end

@@ -304,7 +304,6 @@ static dispatch_once_t onceToken;
     [self saveToFile];
     onceToken = 0;
     s_sharedInstance = nil;
-    
 }
 
 #pragma mark ---
