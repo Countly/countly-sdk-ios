@@ -21,10 +21,10 @@ class CountlyTests: CountlyBaseTestCase {
     
     func testReInitWithDeviceId() throws {
         
-        XCTAssertTrue(CountlyCommon.sharedInstance().hasStarted == true, "Countly initialization failed.")
+        XCTAssertTrue(CountlyCommon.sharedInstance().hasStarted, "Countly initialization failed.")
         XCTAssertTrue(Countly.sharedInstance().deviceIDType() == CLYDeviceIDType.IDFV, "Countly deviced id type should be IDFV when no device id is provided during init.")
         Countly.sharedInstance().halt(true)
-        XCTAssertTrue(CountlyCommon.sharedInstance().hasStarted != true, "Countly halt failed.")
+        XCTAssertTrue(!CountlyCommon.sharedInstance().hasStarted, "Countly halt failed.")
         let config: CountlyConfig = CountlyConfig()
         config.appKey = appKey
         config.host = host
@@ -38,7 +38,7 @@ class CountlyTests: CountlyBaseTestCase {
         
         
         print(Countly.sharedInstance().deviceID())
-        XCTAssertTrue(CountlyCommon.sharedInstance().hasStarted == true, "Countly initialization failed.")
+        XCTAssertTrue(CountlyCommon.sharedInstance().hasStarted, "Countly initialization failed.")
         XCTAssertTrue(Countly.sharedInstance().deviceID() == deviceID, "Countly device id not match with provided device id.")
         XCTAssertTrue(Countly.sharedInstance().deviceIDType() == CLYDeviceIDType.custom, "Countly deviced id type should be custom when device id is provided during init.")
     }
@@ -60,6 +60,7 @@ class CountlyTests: CountlyBaseTestCase {
                let isQueueBeingModified =  CountlyPersistency.sharedInstance().value(forKey: "isQueueBeingModified") as? Bool {
                 print("Successfully access private properties.")
                 
+                
             }
             else {
                 print("Failed to access private properties.")
@@ -68,3 +69,4 @@ class CountlyTests: CountlyBaseTestCase {
         
     }
 }
+
