@@ -14,30 +14,18 @@ class CountlyTests: CountlyBaseTestCase {
     
     // MARK: - Configuration Tests
     
-    func testCountlyInitialization() throws {
-        // Test if Countly is properly initialized
-        XCTAssertTrue(CountlyCommon.sharedInstance().hasStarted, "Countly initialization failed.")
-    }
-    
     func testReInitWithDeviceId() throws {
+        
+        startCountly()
         
         XCTAssertTrue(CountlyCommon.sharedInstance().hasStarted, "Countly initialization failed.")
         XCTAssertTrue(Countly.sharedInstance().deviceIDType() == CLYDeviceIDType.IDFV, "Countly deviced id type should be IDFV when no device id is provided during init.")
         Countly.sharedInstance().halt(true)
         XCTAssertTrue(!CountlyCommon.sharedInstance().hasStarted, "Countly halt failed.")
-        let config: CountlyConfig = CountlyConfig()
-        config.appKey = appKey
-        config.host = host
-        config.enableDebug = true
         
         let deviceID = String(Int.random(in: 0..<100))
-        config.deviceID = deviceID
-        config.features = [CLYFeature.crashReporting];
+        startCountly(deviceID: deviceID)
         
-        Countly.sharedInstance().start(with: config)
-        
-        
-        print(Countly.sharedInstance().deviceID())
         XCTAssertTrue(CountlyCommon.sharedInstance().hasStarted, "Countly initialization failed.")
         XCTAssertTrue(Countly.sharedInstance().deviceID() == deviceID, "Countly device id not match with provided device id.")
         XCTAssertTrue(Countly.sharedInstance().deviceIDType() == CLYDeviceIDType.custom, "Countly deviced id type should be custom when device id is provided during init.")

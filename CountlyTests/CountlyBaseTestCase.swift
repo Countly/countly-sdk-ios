@@ -17,45 +17,28 @@ class CountlyBaseTestCase: XCTestCase {
     
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
+        cleanupState()
+    }
+    
+    func startCountly(deviceID: String? = nil) {
+         let config = createBaseConfig(deviceID: deviceID)
+        Countly.sharedInstance().start(with: config);
+    }
+    
+    func createBaseConfig(deviceID: String? = nil) -> CountlyConfig {
         let config: CountlyConfig = CountlyConfig()
         config.appKey = appKey
         config.host = host
-        countly = Countly();
-        countly.start(with: config)
-        //         let queuedRequests = CountlyPersistency.sharedInstance().value(forKey: "queuedRequests") as? NSMutableArray
-        
-        
+        config.enableDebug = true
+        config.features = [CLYFeature.crashReporting];
+        if(deviceID != nil) {
+            config.deviceID = deviceID!
+        }
+        return config
     }
     
     override func tearDownWithError() throws {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
-        CountlyConnectionManager.sharedInstance().sendEvents();
-        let expectation = self.expectation(description: "Async Operation")
-        
-        // Assuming you have an asynchronous operation to perform, like a network request or async function call
-        yourAsyncOperation { result in
-            // Handle the result or cleanup
-            expectation.fulfill()
-        }
-        
-        // Wait for the asynchronous operation to complete (or fail after a timeout)
-        waitForExpectations(timeout: 11) { error in
-            if let error = error {
-                XCTFail("Error waiting for expectations: \(error)")
-            }
-        }
-        cleanupState()
-    }
-    
-    func yourAsyncOperation(completion: @escaping (Result<Void, Error>) -> Void) {
-        // Perform your asynchronous operation
-        // Call the completion handler when the operation is done
-        // You can replace this with your actual asynchronous code
-        DispatchQueue.global().async {
-            // Simulating an async operation
-            Thread.sleep(forTimeInterval: 10)
-            completion(.success(()))
-        }
     }
     
     func cleanupState() {
