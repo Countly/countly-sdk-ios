@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name = 'Countly'
-  s.version = '23.12.0'
+  s.version = '24.1.0'
   s.license = { :type => 'MIT', :file => 'LICENSE' }
   s.summary  = 'Countly is an innovative, real-time, open source mobile analytics platform.'
   s.homepage = 'https://github.com/Countly/countly-sdk-ios'
@@ -17,7 +17,7 @@ Pod::Spec.new do |s|
 
   s.subspec 'Core' do |core|
     core.source_files = '*.{h,m}'
-    core.public_header_files = 'Countly.h', 'CountlyUserDetails.h', 'CountlyConfig.h', 'CountlyFeedbackWidget.h', 'CountlyRCData.h', 'CountlyRemoteConfig.h', 'CountlyViewTracking.h', 'CountlyExperimentInformation.h'
+    core.public_header_files = 'Countly.h', 'CountlyUserDetails.h', 'CountlyConfig.h', 'CountlyFeedbackWidget.h', 'CountlyRCData.h', 'CountlyRemoteConfig.h', 'CountlyViewTracking.h', 'CountlyExperimentInformation.h', 'CountlyAPMConfig.h'
     core.preserve_path = 'countly_dsym_uploader.sh'
     core.ios.frameworks = ['Foundation', 'UIKit', 'UserNotifications', 'CoreLocation', 'WebKit', 'CoreTelephony', 'WatchConnectivity']
   end

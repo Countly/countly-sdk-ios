@@ -24,6 +24,8 @@
 		1ACA5DC22A309E7F001F770B /* CountlyRemoteConfigInternal.m in Sources */ = {isa = PBXBuildFile; fileRef = 1ACA5DC02A309E7F001F770B /* CountlyRemoteConfigInternal.m */; };
 		1AFD79022B3EF82C00772FBD /* CountlyTests-Bridging-Header.h in Headers */ = {isa = PBXBuildFile; fileRef = 1AFD79012B3EF82C00772FBD /* CountlyTests-Bridging-Header.h */; };
 		39911B672B457DBB00AC053C /* Resettable.h in Headers */ = {isa = PBXBuildFile; fileRef = 39911B662B457DB500AC053C /* Resettable.h */; };
+		39527E152B5FD27400EE5D7B /* CountlyAPMConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 39527E142B5FD27400EE5D7B /* CountlyAPMConfig.m */; };
+		39527E182B5FD54C00EE5D7B /* CountlyAPMConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 39527E162B5FD28900EE5D7B /* CountlyAPMConfig.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3B20A9872245225A00E3D7AE /* Countly.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9852245225A00E3D7AE /* Countly.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3B20A9B22245228700E3D7AE /* CountlyConnectionManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A98D2245228300E3D7AE /* CountlyConnectionManager.h */; };
 		3B20A9B32245228700E3D7AE /* CountlyNotificationService.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B20A98E2245228300E3D7AE /* CountlyNotificationService.m */; };
@@ -90,6 +92,8 @@
 		1ACA5DC02A309E7F001F770B /* CountlyRemoteConfigInternal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyRemoteConfigInternal.m; sourceTree = "<group>"; };
 		1AFD79012B3EF82C00772FBD /* CountlyTests-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "CountlyTests-Bridging-Header.h"; sourceTree = "<group>"; };
 		39911B662B457DB500AC053C /* Resettable.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Resettable.h; sourceTree = "<group>"; };
+		39527E142B5FD27400EE5D7B /* CountlyAPMConfig.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyAPMConfig.m; sourceTree = "<group>"; };
+		39527E162B5FD28900EE5D7B /* CountlyAPMConfig.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyAPMConfig.h; sourceTree = "<group>"; };
 		3B20A9822245225A00E3D7AE /* Countly.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Countly.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B20A9852245225A00E3D7AE /* Countly.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Countly.h; sourceTree = "<group>"; };
 		3B20A9862245225A00E3D7AE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -163,6 +167,8 @@
 			isa = PBXGroup;
 			children = (
 				39911B662B457DB500AC053C /* Resettable.h */,
+				39527E162B5FD28900EE5D7B /* CountlyAPMConfig.h */,
+				39527E142B5FD27400EE5D7B /* CountlyAPMConfig.m */,
 				1A9027FF2AB197C00044EBCF /* CountlyExperimentInformation.h */,
 				1A9027FD2AB197B50044EBCF /* CountlyExperimentInformation.m */,
 				1A31106E2A7141AF001CB507 /* CountlyViewTracking.h */,
@@ -257,6 +263,7 @@
 				D219374B248AC71C00E5798B /* CountlyPerformanceMonitoring.h in Headers */,
 				39911B672B457DBB00AC053C /* Resettable.h in Headers */,
 				3B20A9BC2245228700E3D7AE /* CountlyCommon.h in Headers */,
+				39527E182B5FD54C00EE5D7B /* CountlyAPMConfig.h in Headers */,
 				3B20A9C52245228700E3D7AE /* CountlyCrashReporter.h in Headers */,
 				3B20A9BE2245228700E3D7AE /* CountlyDeviceInfo.h in Headers */,
 				3B20A9D62245228700E3D7AE /* CountlyConsentManager.h in Headers */,
@@ -393,6 +400,7 @@
 				3B20A9CB2245228700E3D7AE /* CountlyRemoteConfig.m in Sources */,
 				3B20A9BD2245228700E3D7AE /* CountlyConnectionManager.m in Sources */,
 				3B20A9C02245228700E3D7AE /* CountlyConsentManager.m in Sources */,
+				39527E152B5FD27400EE5D7B /* CountlyAPMConfig.m in Sources */,
 				1A3110712A7141AF001CB507 /* CountlyViewTracking.m in Sources */,
 				1A3A576329ED47A20041B7BE /* CountlyServerConfig.m in Sources */,
 				D219374C248AC71C00E5798B /* CountlyPerformanceMonitoring.m in Sources */,
@@ -616,7 +624,7 @@
 					"@loader_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.14;
-				MARKETING_VERSION = 23.12.0;
+				MARKETING_VERSION = 24.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = ly.count.CountlyiOSSDK;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -648,7 +656,7 @@
 					"@loader_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.14;
-				MARKETING_VERSION = 23.12.0;
+				MARKETING_VERSION = 24.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = ly.count.CountlyiOSSDK;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

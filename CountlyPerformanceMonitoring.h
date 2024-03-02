@@ -7,9 +7,9 @@
 #import <Foundation/Foundation.h>
 
 @interface CountlyPerformanceMonitoring : NSObject
-@property (nonatomic) BOOL isEnabledOnInitialConfig;
 
 + (instancetype)sharedInstance;
+- (void) startWithConfig:(CountlyAPMConfig *) apmConfig;
 
 - (void)startPerformanceMonitoring;
 - (void)stopPerformanceMonitoring;

@@ -7,6 +7,7 @@
 #import <Foundation/Foundation.h>
 #import <CoreLocation/CoreLocation.h>
 #import "CountlyRCData.h"
+#import "CountlyAPMConfig.h"
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 #import <UIKit/UIKit.h>
@@ -611,7 +612,13 @@ typedef enum : NSUInteger
  * For enabling automatic performance monitoring.
  * @discussion If set, Performance Monitoring feature will be started automatically on SDK start.
  */
-@property (nonatomic) BOOL enablePerformanceMonitoring;
+@property (nonatomic) BOOL enablePerformanceMonitoring DEPRECATED_MSG_ATTRIBUTE("Use 'apm' CountlyAPMConfig object instead");
+
+/**
+ * Variable to access apm configurations.
+ * @discussion APM configurations for developer to interact with SDK.
+ */
+- (CountlyAPMConfig *) apm;
 
 #pragma mark -
 
