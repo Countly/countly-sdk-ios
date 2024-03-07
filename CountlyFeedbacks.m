@@ -117,7 +117,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     }
     @catch (NSException* exception)
     {
-        CLY_LOG_W(@"UIAlertController's contentViewController can not be set: \n%@", exception);
+        CLY_LOG_W(@"[CountlyFeedbacks] showDialog, UIAlertController's contentViewController can not be set, got exception %@", exception);
     }
 
     [CountlyCommon.sharedInstance tryPresentingViewController:self.alertController];

@@ -372,7 +372,7 @@ NSString* const kCountlyAppVersionKey = @"av";
     }
     @catch (NSException *exception)
     {
-        CLY_LOG_W(@"Connection type can not be retrieved: \n%@", exception);
+        CLY_LOG_W(@"[CountlyDeviceInfo] connectionType, Connection type can not be retrieved, got exception: %@", exception);
     }
 
     return connType;

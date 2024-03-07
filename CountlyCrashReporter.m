@@ -414,11 +414,11 @@ void CountlySignalHandler(int signalCode)
 
         if (![binaryImagesInStack containsObject:imageName])
         {
-            CLY_LOG_V(@"Image Name is not in the stack trace, so it will be ignored!\n%@", imageName);
+            CLY_LOG_V(@"[CountlyCrashReport] binaryImagesForStackTrace, imageName:[%@] is not in the stack trace, so it will be ignored!", imageName);
             continue;
         }
 
-        CLY_LOG_D(@"Image Name is in the stack trace, so it will be used!\n%@", imageName);
+        CLY_LOG_D(@"[CountlyCrashReport] binaryImagesForStackTrace, imageName:[%@] is in the stack trace, so it will be used!", imageName);
 
         const struct mach_header* imageHeader = _dyld_get_image_header(i);
         if (imageHeader == NULL)

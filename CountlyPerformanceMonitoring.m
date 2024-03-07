@@ -53,7 +53,7 @@ BOOL enableForegroundBackgroundTracking;
     enableAppStartTimeTracking = apmConfig.enableAppStartTimeTracking;
     enableManualAppLoadedTrigger = apmConfig.enableManualAppLoadedTrigger;
     if(enableAppStartTimeTracking && !enableManualAppLoadedTrigger) {
-        CLY_LOG_W(@"Automatic app start tracking is currently not supported, use manual app loaded trigger for now by setting 'config.apm.enableManualAppLoadedTrigger'\n Then call '[Countly.sharedInstance appLoadingFinished]'");
+        CLY_LOG_W(@"[CountlyPerformanceMonitoring] startWithConfig, Automatic app start tracking is currently not supported, use manual app loaded trigger for now by setting 'config.apm.enableManualAppLoadedTrigger' Then call '[Countly.sharedInstance appLoadingFinished]'");
     }
     enableForegroundBackgroundTracking = apmConfig.enableForegroundBackgroundTracking;
     [self startPerformanceMonitoring];
