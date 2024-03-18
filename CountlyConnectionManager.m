@@ -255,7 +255,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         
         if(response) {
             NSInteger code = ((NSHTTPURLResponse*)response).statusCode;
-            CLY_LOG_V(@"Response received from server with status code: %ld\nFor Request: %@", (long)code, ((NSHTTPURLResponse*)response).URL);
+            CLY_LOG_V(@"%s, Response received from server with status code:[ %ld ] request:[ %@ ]", __FUNCTION__, (long)code, ((NSHTTPURLResponse*)response).URL);
         }
         
 
@@ -273,12 +273,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
             }
             else
             {
-                CLY_LOG_D(@"Request <%p> failed!\nServer reply: %@", request, [data cly_stringUTF8]);
+                CLY_LOG_D(@"%s, request:[ <%p> ] failed! response:[ %@ ]", __FUNCTION__, request, [data cly_stringUTF8]);
             }
         }
         else
         {
-            CLY_LOG_D(@"Request <%p> failed!\nError: %@", request, error);
+            CLY_LOG_D(@"%s, request:[ <%p> ] failed! error:[ %@ ]", __FUNCTION__, request, error);
 #if (TARGET_OS_WATCH)
             [CountlyPersistency.sharedInstance saveToFile];
 #endif
@@ -317,7 +317,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         sentSize += request.HTTPBody.length;
     }
 
-    CLY_LOG_D(@"Request <%p> started:\n[%@] %@ \n%@", (id)request, request.HTTPMethod, request.URL.absoluteString, bodyAsString);
+    CLY_LOG_D(@"%s, request:[ <%p> ] started. [%@] %@ %@", __FUNCTION__, (id)request, request.HTTPMethod, request.URL.absoluteString, bodyAsString);
     CLY_LOG_V(@"Approximate sent data size for request <%p> is %ld bytes.", (id)request, (long)sentSize);
 }
 
@@ -498,7 +498,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     {
         if (error || ![self isRequestSuccessful:response data:data])
         {
-            CLY_LOG_D(@"Request <%p> failed!\n%@: %@", request, error ? @"Error" : @"Server reply", error ?: [data cly_stringUTF8]);
+            CLY_LOG_D(@"%s, request: [ %p ] failed! %@: %@", __FUNCTION__, request, error ? @"Error" : @"Server reply", error ?: [data cly_stringUTF8]);
             [CountlyPersistency.sharedInstance addToQueue:queryString];
             [CountlyPersistency.sharedInstance saveToFileSync];
         }
@@ -847,7 +847,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
             return NO;
         }
         
-        CLY_LOG_V(@"Response recieved from server:\n%@\nFor Request: %@", serverReply, ((NSHTTPURLResponse*)response).URL);
+        CLY_LOG_V(@"%s, response:[ %@ ] request:[ %@ ]", __FUNCTION__, serverReply, ((NSHTTPURLResponse*)response).URL);
         
         NSString* result = serverReply[@"result"];
         
