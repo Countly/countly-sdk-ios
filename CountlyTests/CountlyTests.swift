@@ -15,16 +15,16 @@ class CountlyTests: CountlyBaseTestCase {
     // MARK: - Configuration Tests
     
     func testReInitWithDeviceId() throws {
-        
-        startCountly()
+        let config = createBaseConfig()
+        Countly.sharedInstance().start(with: config);
         
         XCTAssertTrue(CountlyCommon.sharedInstance().hasStarted, "Countly initialization failed.")
         XCTAssertTrue(Countly.sharedInstance().deviceIDType() == CLYDeviceIDType.IDFV, "Countly deviced id type should be IDFV when no device id is provided during init.")
         Countly.sharedInstance().halt(true)
         XCTAssertTrue(!CountlyCommon.sharedInstance().hasStarted, "Countly halt failed.")
         
-        let deviceID = String(Int.random(in: 0..<100))
-        startCountly(deviceID: deviceID)
+        config.deviceID = deviceID
+        Countly.sharedInstance().start(with: config);
         
         XCTAssertTrue(CountlyCommon.sharedInstance().hasStarted, "Countly initialization failed.")
         XCTAssertTrue(Countly.sharedInstance().deviceID() == deviceID, "Countly device id not match with provided device id.")
@@ -57,4 +57,6 @@ class CountlyTests: CountlyBaseTestCase {
         
     }
 }
+
+
 
