@@ -23,6 +23,8 @@ class CountlyTests: CountlyBaseTestCase {
         Countly.sharedInstance().halt(true)
         XCTAssertTrue(!CountlyCommon.sharedInstance().hasStarted, "Countly halt failed.")
         
+        let deviceID = String(Int.random(in: 0..<100))
+    
         config.deviceID = deviceID
         Countly.sharedInstance().start(with: config);
         
