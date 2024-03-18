@@ -1274,7 +1274,7 @@ static dispatch_once_t onceToken;
 - (void)halt
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
-    [self halt:false];
+    [self halt:true];
 }
 
 - (void)halt:(BOOL) clearStorage
