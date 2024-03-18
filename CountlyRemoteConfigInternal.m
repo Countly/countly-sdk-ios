@@ -78,7 +78,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
      {
         if (!error)
         {
-            CLY_LOG_D(@"[CountlyRemoteConfigInternal] startRemoteConfig, Fetching remote config on start is successful. %@", remoteConfig);
+            CLY_LOG_D(@"%s, Fetching remote config on start is successful. %@", __FUNCTION__, remoteConfig);
             self.cachedRemoteConfig = [self createRCMeta:remoteConfig];
             [CountlyPersistency.sharedInstance storeRemoteConfig:self.cachedRemoteConfig];
             
@@ -128,7 +128,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
      {
         if (!error)
         {
-            CLY_LOG_D(@"[CountlyRemoteConfigInternal] updateRemoteConfigForKeys, Fetching remote config manually is successful. %@", remoteConfig);
+            CLY_LOG_D(@"%s, Fetching remote config manually is successful. %@", __FUNCTION__, remoteConfig);
             NSDictionary* remoteConfigMeta = [self createRCMeta:remoteConfig];
             if (!keys && !omitKeys)
             {
@@ -216,7 +216,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         
         if (error)
         {
-            CLY_LOG_D(@"[CountlyRemoteConfigInternal] fetchRemoteConfigForKeys, Remote Config Request:[ %p ] failed! error:[ %@ ]", request, error);
+            CLY_LOG_D(@"%s, Remote Config Request:[ %p ] failed! error:[ %@ ]", __FUNCTION__, request, error);
             
             dispatch_async(dispatch_get_main_queue(), ^
                            {
@@ -236,7 +236,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
     
     [task resume];
     
-    CLY_LOG_D(@"[CountlyRemoteConfigInternal] fetchRemoteConfigForKeys, Remote Config Request <%p> started: [%@] %@", (id)request, request.HTTPMethod, request.URL.absoluteString);
+    CLY_LOG_D(@"%s, Remote Config Request <%p> started: [%@] %@", __FUNCTION__, (id)request, request.HTTPMethod, request.URL.absoluteString);
 }
 
 - (NSURLRequest *)remoteConfigRequestForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys isLegacy:(BOOL)isLegacy
@@ -370,7 +370,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         CLYRequestResult requestResult = CLYResponseSuccess;
         if (!error)
         {
-            CLY_LOG_D(@"[CountlyRemoteConfigInternal] fetchRemoteConfigForKeys, fetching remote config is successful. %@", remoteConfig);
+            CLY_LOG_D(@"%s, fetching remote config is successful. %@", __FUNCTION__, remoteConfig);
             if (!keys && !omitKeys)
             {
                 fullValueUpdate = true;
@@ -468,12 +468,12 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         if (!error)
         {
             self.localCachedVariants = varaints;
-            CLY_LOG_D(@"[CountlyRemoteConfigInternal] testingDownloadAllVariantsInternal, Fetching variants manually is successful. %@", varaints);
+            CLY_LOG_D(@"%s, Fetching variants manually is successful. %@", __FUNCTION__, varaints);
             
         }
         else
         {
-            CLY_LOG_W(@"[CountlyRemoteConfigInternal] testingDownloadAllVariantsInternal, Fetching variants manually failed: %@", error);
+            CLY_LOG_W(@"%s, Fetching variants manually failed: %@", __FUNCTION__, error);
         }
         
         if (completionHandler)
@@ -530,7 +530,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         
         if (error)
         {
-            CLY_LOG_D(@"[CountlyRemoteConfigInternal] testingDownloadAllVariantsInternal, Fetch variants Request <%p> failed! Error: %@", request, error);
+            CLY_LOG_D(@"%s, Fetch variants Request <%p> failed! Error: %@", __FUNCTION__, request, error);
             
             dispatch_async(dispatch_get_main_queue(), ^
                            {
@@ -550,7 +550,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
     
     [task resume];
     
-    CLY_LOG_D(@"[CountlyRemoteConfigInternal] testingDownloadAllVariantsInternal, Fetch variants Request <%p> started [%@] %@", (id)request, request.HTTPMethod, request.URL.absoluteString);
+    CLY_LOG_D(@"%s, Fetch variants Request <%p> started [%@] %@", __FUNCTION__, (id)request, request.HTTPMethod, request.URL.absoluteString);
 }
 
 - (void)testingEnrollIntoVariant:(NSString *)key variantName:(NSString *)variantName completionHandler:(RCVariantCallback)completionHandler
@@ -625,7 +625,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         
         if (error)
         {
-            CLY_LOG_D(@"[CountlyRemoteConfigInternal] testingEnrollIntoVariantInternal, Enroll RC Variant Request <%p> failed! Error: %@", request, error);
+            CLY_LOG_D(@"%s, Enroll RC Variant Request <%p> failed! Error: %@", __FUNCTION__, request, error);
             
             dispatch_async(dispatch_get_main_queue(), ^
                            {
@@ -648,7 +648,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
     
     [task resume];
     
-    CLY_LOG_D(@"[CountlyRemoteConfigInternal] testingEnrollIntoVariantInternal, Fetch variants Request <%p> started: [%@] %@", (id)request, request.HTTPMethod, request.URL.absoluteString);
+    CLY_LOG_D(@"%s, Fetch variants Request <%p> started: [%@] %@", __FUNCTION__, (id)request, request.HTTPMethod, request.URL.absoluteString);
 }
 
 - (NSURLRequest *)downloadVariantsRequest
@@ -701,7 +701,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         if (!error)
         {
             self.localCachedExperiments = experimentInfo;
-            CLY_LOG_D(@"[CountlyRemoteConfigInternal] testingDownloadExperimentInformation, Download experiments info is successful. %@", experimentInfo);
+            CLY_LOG_D(@"%s, Download experiments info is successful. %@", __FUNCTION__,experimentInfo);
             
         }
         else
@@ -755,7 +755,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         
         if (error)
         {
-            CLY_LOG_D(@"[CountlyRemoteConfigInternal] testingDownloaExperimentInfoInternal, Download experiments Request <%p> failed! Error: %@", request, error);
+            CLY_LOG_D(@"%s, Download experiments Request <%p> failed! Error: %@", __FUNCTION__, request, error);
             
             dispatch_async(dispatch_get_main_queue(), ^
                            {
@@ -775,7 +775,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
     
     [task resume];
     
-    CLY_LOG_D(@"[CountlyRemoteConfigInternal] testingDownloaExperimentInfoInternal, Download experiments Request <%p> started: [%@] %@", (id)request, request.HTTPMethod, request.URL.absoluteString);
+    CLY_LOG_D(@"%s, Download experiments Request <%p> started: [%@] %@", __FUNCTION__, (id)request, request.HTTPMethod, request.URL.absoluteString);
 }
 
 - (NSURLRequest *)downloadExperimentInfoRequest

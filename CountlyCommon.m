@@ -456,7 +456,7 @@ NSString* CountlyJSONFromObject(id object)
     NSData *data = [NSJSONSerialization dataWithJSONObject:object options:0 error:&error];
     if (error)
     {
-        CLY_LOG_W(@"[CountlyCommon] CountlyJSONFromObject, JSON can not be created error:[ %@ ]", error);
+        CLY_LOG_W(@"%s, JSON can not be created error:[ %@ ]", __FUNCTION__, error);
     }
 
     return [data cly_stringUTF8];
@@ -574,7 +574,7 @@ NSString* CountlyJSONFromObject(id object)
     NSMutableArray* excessKeys = allKeys.mutableCopy;
     [excessKeys removeObjectsInRange:(NSRange){0, CountlyCommon.sharedInstance.maxSegmentationValues}];
 
-    CLY_LOG_W(@"[CountlyCommon] cly_limited, Number of key-value pairs in %@ is more than the limit (%ld)! So, some of them will be removed %@", explanation, (long)CountlyCommon.sharedInstance.maxSegmentationValues, [excessKeys description]);
+    CLY_LOG_W(@"%s, Number of key-value pairs in %@ is more than the limit (%ld)! So, some of them will be removed %@", __FUNCTION__, explanation, (long)CountlyCommon.sharedInstance.maxSegmentationValues, [excessKeys description]);
 
     NSMutableDictionary* limitedDict = self.mutableCopy;
     [limitedDict removeObjectsForKeys:excessKeys];

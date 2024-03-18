@@ -358,7 +358,7 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
             [line writeToFile:crashLogFileURL.path atomically:YES encoding:NSUTF8StringEncoding error:&error];
             if (error)
             {
-                CLY_LOG_W(@"[CountlyPersistency] writeCustomCrashLogToFile, Crash Log File can not be created, got erro%@", error);
+                CLY_LOG_W(@"%s, Crash Log File can not be created, got error %@", __FUNCTION__, error);
             }
         }
     });
@@ -388,7 +388,7 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
         [NSFileManager.defaultManager removeItemAtURL:crashLogFileURL error:&error];
         if (error)
         {
-            CLY_LOG_W(@"[CountlyPersistency] deleteCustomCrashLogFile, Crash Log File can not be deleted, got error %@", error);
+            CLY_LOG_W(@"%s, Crash Log File can not be deleted, got error %@", __FUNCTION__, error);
         }
     }
 }
@@ -419,7 +419,7 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
             [NSFileManager.defaultManager createDirectoryAtURL:URL withIntermediateDirectories:YES attributes:nil error:&error];
             if (error)
             {
-                CLY_LOG_W(@"[CountlyPersistency] storageDirectoryURL, Application Support directory can not be created, got error %@", error);
+                CLY_LOG_W(@"%s, Application Support directory can not be created, got error %@", __FUNCTION__, error);
             }
         }
     });
