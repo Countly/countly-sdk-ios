@@ -34,7 +34,7 @@ class CountlyBaseTestCase: XCTestCase {
     }
     
     func cleanupState() {
-        Countly.sharedInstance().halt(true)
+        Countly.sharedInstance().halt(false)
     }
     
 }

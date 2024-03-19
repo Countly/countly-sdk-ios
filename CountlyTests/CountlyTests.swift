@@ -20,13 +20,14 @@ class CountlyTests: CountlyBaseTestCase {
         
         XCTAssertTrue(CountlyCommon.sharedInstance().hasStarted, "Countly initialization failed.")
         XCTAssertTrue(Countly.sharedInstance().deviceIDType() == CLYDeviceIDType.IDFV, "Countly deviced id type should be IDFV when no device id is provided during init.")
-        Countly.sharedInstance().halt(true)
+        Countly.sharedInstance().halt(false)
         XCTAssertTrue(!CountlyCommon.sharedInstance().hasStarted, "Countly halt failed.")
         
         let deviceID = String(Int.random(in: 0..<100))
     
-        config.deviceID = deviceID
-        Countly.sharedInstance().start(with: config);
+        let newConfig = createBaseConfig()
+        newConfig.deviceID = deviceID
+        Countly.sharedInstance().start(with: newConfig);
         
         XCTAssertTrue(CountlyCommon.sharedInstance().hasStarted, "Countly initialization failed.")
         XCTAssertTrue(Countly.sharedInstance().deviceID() == deviceID, "Countly device id not match with provided device id.")
