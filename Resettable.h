@@ -9,5 +9,6 @@
 
 @optional
 - (void)resetInstance;
+- (void)resetInstance:(BOOL) clearStorage;
 
 @end

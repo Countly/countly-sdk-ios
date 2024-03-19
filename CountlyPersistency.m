@@ -296,12 +296,17 @@ static dispatch_once_t onceToken;
     }
 }
 
-- (void)resetInstance {
-    CLY_LOG_I(@"%s", __FUNCTION__);
+- (void)resetInstance:(BOOL) clearStorage 
+{
+    CLY_LOG_I(@"%s Clear Storage: %d", __FUNCTION__, clearStorage);
+    [CountlyConnectionManager.sharedInstance sendEvents];
     [self flushEvents];
     [self clearAllTimedEvents];
     [self flushQueue];
-    [self saveToFile];
+    if(clearStorage)
+    {
+        [self saveToFile];
+    }
     onceToken = 0;
     s_sharedInstance = nil;
 }
