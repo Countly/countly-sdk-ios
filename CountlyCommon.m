@@ -334,6 +334,7 @@ void CountlyPrint(NSString *stringToPrint)
 const CGFloat kCountlyDismissButtonSize = 30.0;
 const CGFloat kCountlyDismissButtonMargin = 10.0;
 const CGFloat kCountlyDismissButtonStandardStatusBarHeight = 20.0;
+const CGFloat kCountlyDismissButtonMinPadding = 5.0;
 
 - (instancetype)initWithFrame:(CGRect)frame
 {
@@ -389,7 +390,7 @@ const CGFloat kCountlyDismissButtonStandardStatusBarHeight = 20.0;
     CGRect rect = self.frame;
     rect.origin.x = self.superview.bounds.size.width - self.bounds.size.width - kCountlyDismissButtonMargin;
     rect.origin.y = kCountlyDismissButtonMargin;
-
+    
     if (shouldConsiderStatusBar)
     {
         if (@available(iOS 11.0, *))
@@ -398,7 +399,7 @@ const CGFloat kCountlyDismissButtonStandardStatusBarHeight = 20.0;
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
             CGFloat top = UIApplication.sharedApplication.keyWindow.safeAreaInsets.top;
 #pragma GCC diagnostic pop
-
+            
             if (top)
             {
                 rect.origin.y += top;
@@ -413,7 +414,7 @@ const CGFloat kCountlyDismissButtonStandardStatusBarHeight = 20.0;
             rect.origin.y += kCountlyDismissButtonStandardStatusBarHeight;
         }
     }
-
+    
     self.frame = rect;
 }
 
