@@ -222,8 +222,11 @@ NSString* previousEventID;
         CountlyRemoteConfigInternal.sharedInstance.enrollABOnRCDownload = config.enrollABOnRCDownload;
     }
     [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfigAutomatically];
-    if(config.apm.getAppStartTimestampOverride) {
+    if (config.apm.getAppStartTimestampOverride) {
         appLoadStartTime = config.apm.getAppStartTimestampOverride;
+    }
+    if (config.sdkInternalLimits.getMaxKeyLength) {
+        CountlyCommon.sharedInstance.maxKeyLength = config.sdkInternalLimits.getMaxKeyLength;
     }
     
     [CountlyPerformanceMonitoring.sharedInstance startWithConfig:config.apm];

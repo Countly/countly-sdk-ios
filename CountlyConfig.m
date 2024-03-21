@@ -34,6 +34,7 @@ CLYFeature const CLYCrashReporting      = @"CLYCrashReporting";
 #endif
 
 CountlyAPMConfig *apmConfig = nil;
+CountlySDKLimitsConfig *sdkLimitsConfig = nil;
 
 //NOTE: Device ID options
 NSString* const CLYDefaultDeviceID = @""; //NOTE: It will be overridden to default device ID mechanism, depending on platform.
@@ -102,6 +103,13 @@ CLYDeviceIDType const CLYDeviceIDTypeNSUUID     = @"CLYDeviceIDTypeNSUUID";
         apmConfig = CountlyAPMConfig.new;
     }
     return apmConfig;
+}
+
+- (nonnull CountlySDKLimitsConfig *)sdkInternalLimits {
+    if (sdkLimitsConfig == nil) {
+        sdkLimitsConfig = CountlySDKLimitsConfig.new;
+    }
+    return sdkLimitsConfig;
 }
 
 @end
