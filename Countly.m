@@ -228,6 +228,12 @@ NSString* previousEventID;
     if (config.sdkInternalLimits.getMaxKeyLength) {
         CountlyCommon.sharedInstance.maxKeyLength = config.sdkInternalLimits.getMaxKeyLength;
     }
+    if (config.sdkInternalLimits.getMaxValueSize) {
+        CountlyCommon.sharedInstance.maxValueLength = config.sdkInternalLimits.getMaxValueSize;
+    }
+    if (config.sdkInternalLimits.getMaxSegmentationValues) {
+        CountlyCommon.sharedInstance.maxSegmentationValues = config.sdkInternalLimits.getMaxSegmentationValues;
+    }
     
     [CountlyPerformanceMonitoring.sharedInstance startWithConfig:config.apm];
 

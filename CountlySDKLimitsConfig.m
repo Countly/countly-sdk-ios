@@ -56,4 +56,8 @@ int _maxSegmentationValues;
 }
 
 
+- (int)getMaxSegmentationValues {
+    return _maxSegmentationValues;
+}
+
 @end
