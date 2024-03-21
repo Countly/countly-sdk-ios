@@ -98,6 +98,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     if (self = [super init])
     {
         unsentSessionLength = 0.0;
+        isSessionStarted = NO;
     }
 
     return self;
