@@ -1,3 +1,7 @@
+## X.x.x
+* Added a separate SDK Limits Config with the following options:
+...
+
 ## 24.1.0
 * Added a separate APM Configs with following options:
     * `enableForegroundBackgroundTracking`
