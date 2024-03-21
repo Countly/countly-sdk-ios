@@ -9,6 +9,8 @@
 @implementation CountlySDKLimitsConfig
 
 int _maxKeyLength;
+int _maxValueSize;
+int _maxSegmentationValues;
 
 - (instancetype)init
 {
@@ -27,9 +29,31 @@ int _maxKeyLength;
     _maxKeyLength = maxKeyLength;
 }
 
+- (void)setMaxValueSize:(int)maxValueSize
+{
+    if (maxValueSize < 1) {
+        maxValueSize = 1;
+    }
+    _maxValueSize = maxValueSize;
+}
+
+- (void)setMaxSegmentationValues:(int)maxSegmentationValues
+{
+    if (maxSegmentationValues < 1) {
+        maxSegmentationValues = 1;
+    }
+    _maxSegmentationValues = maxSegmentationValues;
+}
+
 - (int)getMaxKeyLength
 {
     return _maxKeyLength;
 }
+
+- (int)getMaxValueSize
+{
+    return _maxValueSize;
+}
+
 
 @end
