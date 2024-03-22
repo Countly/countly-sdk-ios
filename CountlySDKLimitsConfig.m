@@ -59,6 +59,28 @@
     _maxSegmentationValues = maxSegmentationValues;
 }
 
+- (void)setMaxBreadcrumbCount:(int)maxBreadcrumbCount
+{
+    if (maxBreadcrumbCount < 1) {
+        maxBreadcrumbCount = 1;
+    }
+    _maxBreadcrumbCount = maxBreadcrumbCount;
+}
+- (void)setMaxStackTraceLinesPerThread:(int)maxStackTraceLinesPerThread
+{
+    if (maxStackTraceLinesPerThread < 1) {
+        maxStackTraceLinesPerThread = 1;
+    }
+    _maxStackTraceLinesPerThread = maxStackTraceLinesPerThread;
+}
+- (void)setMaxStackTraceLineLength:(int)maxStackTraceLineLength
+{
+    if (maxStackTraceLineLength < 1) {
+        maxStackTraceLineLength = 1;
+    }
+    _maxStackTraceLineLength = maxStackTraceLineLength;
+}
+
 - (int)getMaxKeyLength
 {
     return _maxKeyLength;
@@ -69,9 +91,19 @@
     return _maxValueSize;
 }
 
-
 - (int)getMaxSegmentationValues {
     return _maxSegmentationValues;
 }
 
+- (int)getMaxBreadcrumbCount {
+    
+    return _maxBreadcrumbCount;
+    
+}
+- (int)getMaxStackTraceLinesPerThread {
+    return  _maxStackTraceLinesPerThread;
+}
+- (int)getMaxStackTraceLineLength {
+    return  _maxStackTraceLineLength;
+}
 @end

@@ -234,6 +234,9 @@ NSString* previousEventID;
     if (config.sdkInternalLimits.getMaxSegmentationValues) {
         CountlyCommon.sharedInstance.maxSegmentationValues = config.sdkInternalLimits.getMaxSegmentationValues;
     }
+    if (config.sdkInternalLimits.getMaxSegmentationValues) {
+        CountlyCrashReporter.sharedInstance.crashLogLimit = config.sdkInternalLimits.getMaxSegmentationValues;
+    }
     
     [CountlyPerformanceMonitoring.sharedInstance startWithConfig:config.apm];
 
