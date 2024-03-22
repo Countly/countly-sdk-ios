@@ -6,16 +6,30 @@
 
 #import "CountlySDKLimitsConfig.h"
 
+@interface CountlySDKLimitsConfig ()
+{
+    int _maxKeyLength;
+    int _maxValueSize;
+    int _maxSegmentationValues;
+    int _maxBreadcrumbCount;
+    int _maxStackTraceLinesPerThread;
+    int _maxStackTraceLineLength;
+}
+@end
 @implementation CountlySDKLimitsConfig
 
-int _maxKeyLength;
-int _maxValueSize;
-int _maxSegmentationValues;
+
 
 - (instancetype)init
 {
     if (self = [super init])
     {
+        _maxKeyLength = 128;
+        _maxValueSize = 256;
+        _maxSegmentationValues = 100;
+        _maxBreadcrumbCount = 100;
+        _maxStackTraceLinesPerThread = 30;
+        _maxStackTraceLineLength = 200;
     }
     
     return self;
