@@ -1,3 +1,6 @@
+## X.X.X
+* Fixed session duration inconsistency by incorporating checks for whether the session has started or not.
+
 ## 24.1.0
 * Added a separate APM Configs with following options:
     * `enableForegroundBackgroundTracking`
