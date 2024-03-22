@@ -331,7 +331,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return;
     
     if (isSessionStarted) {
-        CLY_LOG_D(@"%s A session is already running, this 'beginSession' will be ignored", __FUNCTION__);
+        CLY_LOG_W(@"%s A session is already running, this 'beginSession' will be ignored", __FUNCTION__);
         return;
     }
 
@@ -362,7 +362,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return;
     
     if (!isSessionStarted) {
-        CLY_LOG_D(@"%s No session is running, this 'updateSession' will be ignored", __FUNCTION__);
+        CLY_LOG_W(@"%s No session is running, this 'updateSession' will be ignored", __FUNCTION__);
         return;
     }
 
@@ -380,7 +380,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         return;
     
     if (!isSessionStarted) {
-        CLY_LOG_D(@"%s No session is running, this 'endSession' will be ignored", __FUNCTION__);
+        CLY_LOG_W(@"%s No session is running, this 'endSession' will be ignored", __FUNCTION__);
         return;
     }
 
