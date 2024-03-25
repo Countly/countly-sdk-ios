@@ -8,7 +8,7 @@
 
 @class CountlyEvent;
 
-@interface CountlyPersistency : NSObject
+@interface CountlyPersistency : NSObject <Resettable>
 
 + (instancetype)sharedInstance;
 

@@ -36,10 +36,10 @@ NSString* const kCountlyInternalLogPrefix = @"[Countly] ";
 
 @implementation CountlyCommon
 
+static CountlyCommon *s_sharedInstance = nil;
+static dispatch_once_t onceToken;
 + (instancetype)sharedInstance
 {
-    static CountlyCommon *s_sharedInstance = nil;
-    static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
     return s_sharedInstance;
 }
@@ -56,6 +56,13 @@ NSString* const kCountlyInternalLogPrefix = @"[Countly] ";
     }
 
     return self;
+}
+
+- (void)resetInstance {
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    onceToken = 0;
+    s_sharedInstance = nil;
+    _hasStarted = false;
 }
 
 

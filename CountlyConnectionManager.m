@@ -11,6 +11,7 @@
     NSTimeInterval unsentSessionLength;
     NSTimeInterval lastSessionStartTime;
     BOOL isCrashing;
+    BOOL isSessionStarted;
 }
 @property (nonatomic) NSURLSession* URLSession;
 @end
@@ -97,6 +98,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     if (self = [super init])
     {
         unsentSessionLength = 0.0;
+        isSessionStarted = NO;
     }
 
     return self;
@@ -327,7 +329,13 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 {
     if (!CountlyConsentManager.sharedInstance.consentForSessions)
         return;
+    
+    if (isSessionStarted) {
+        CLY_LOG_W(@"%s A session is already running, this 'beginSession' will be ignored", __FUNCTION__);
+        return;
+    }
 
+    isSessionStarted = YES;
     lastSessionStartTime = NSDate.date.timeIntervalSince1970;
     unsentSessionLength = 0.0;
 
@@ -352,6 +360,11 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 {
     if (!CountlyConsentManager.sharedInstance.consentForSessions)
         return;
+    
+    if (!isSessionStarted) {
+        CLY_LOG_W(@"%s No session is running, this 'updateSession' will be ignored", __FUNCTION__);
+        return;
+    }
 
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%d",
                              kCountlyQSKeySessionDuration, (int)[self sessionLengthInSeconds]];
@@ -365,7 +378,13 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 {
     if (!CountlyConsentManager.sharedInstance.consentForSessions)
         return;
+    
+    if (!isSessionStarted) {
+        CLY_LOG_W(@"%s No session is running, this 'endSession' will be ignored", __FUNCTION__);
+        return;
+    }
 
+    isSessionStarted = NO;
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%d",
                              kCountlyQSKeySessionEnd, @"1",
                              kCountlyQSKeySessionDuration, (int)[self sessionLengthInSeconds]];

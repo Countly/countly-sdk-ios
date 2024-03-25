@@ -28,13 +28,14 @@ NSString* const kCountlyServerConfigPersistencyKey = @"kCountlyServerConfigPersi
 
 NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 
+static CountlyPersistency* s_sharedInstance = nil;
+static dispatch_once_t onceToken;
+
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
         return nil;
 
-    static CountlyPersistency* s_sharedInstance = nil;
-    static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
     return s_sharedInstance;
 }
@@ -293,6 +294,21 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
     {
         [self.recordedEvents removeAllObjects];
     }
+}
+
+- (void)resetInstance:(BOOL) clearStorage 
+{
+    CLY_LOG_I(@"%s Clear Storage: %d", __FUNCTION__, clearStorage);
+    [CountlyConnectionManager.sharedInstance sendEvents];
+    [self flushEvents];
+    [self clearAllTimedEvents];
+    [self flushQueue];
+    if(clearStorage)
+    {
+        [self saveToFile];
+    }
+    onceToken = 0;
+    s_sharedInstance = nil;
 }
 
 #pragma mark ---

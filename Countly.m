@@ -28,12 +28,19 @@ NSString* previousEventID;
     appLoadStartTime = floor(NSDate.date.timeIntervalSince1970 * 1000);
 }
 
+static Countly *s_sharedCountly = nil;
+static dispatch_once_t onceToken;
+
 + (instancetype)sharedInstance
 {
-    static Countly *s_sharedCountly = nil;
-    static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedCountly = self.new;});
     return s_sharedCountly;
+}
+
+- (void)resetInstance {
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    onceToken = 0;
+    s_sharedCountly = nil;
 }
 
 - (instancetype)init
@@ -1278,6 +1285,28 @@ NSString* previousEventID;
     long long appLoadEndTime = floor(NSDate.date.timeIntervalSince1970 * 1000);
 
     [CountlyPerformanceMonitoring.sharedInstance recordAppStartDurationTraceWithStartTime:appLoadStartTime endTime:appLoadEndTime];
+}
+
+- (void)halt
+{
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    [self halt:true];
+}
+
+- (void)halt:(BOOL) clearStorage
+{
+    CLY_LOG_I(@"%s %d", __FUNCTION__, clearStorage);
+    [CountlyPersistency.sharedInstance resetInstance:clearStorage];
+    [CountlyDeviceInfo.sharedInstance resetInstance];
+    [self resetInstance];
+    [CountlyCommon.sharedInstance resetInstance];
+    
+    if(clearStorage)
+    {
+        NSString *appDomain = [[NSBundle mainBundle] bundleIdentifier];
+        [NSUserDefaults.standardUserDefaults removePersistentDomainForName:appDomain];
+        [NSUserDefaults.standardUserDefaults synchronize];
+    }
 }
 
 @end
