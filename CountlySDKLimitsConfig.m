@@ -76,15 +76,6 @@ const NSInteger kCountlyMaxStackTraceLineLength = 200;
     _maxBreadcrumbCount = maxBreadcrumbCount;
 }
 
-- (void)setMaxStackTraceLinesPerThread:(int)maxStackTraceLinesPerThread
-{
-    CLY_LOG_W(@"%s This setter function is currently a placeholder and doesn't actively utilize the set values.", __FUNCTION__);
-    if (maxStackTraceLinesPerThread < 1) {
-        maxStackTraceLinesPerThread = 1;
-    }
-    _maxStackTraceLinesPerThread = maxStackTraceLinesPerThread;
-}
-
 - (void)setMaxStackTraceLineLength:(int)maxStackTraceLineLength
 {
     CLY_LOG_W(@"%s This setter function is currently a placeholder and doesn't actively utilize the set values.", __FUNCTION__);
@@ -92,6 +83,15 @@ const NSInteger kCountlyMaxStackTraceLineLength = 200;
         maxStackTraceLineLength = 1;
     }
     _maxStackTraceLineLength = maxStackTraceLineLength;
+}
+
+- (void)setMaxStackTraceLinesPerThread:(int)maxStackTraceLinesPerThread
+{
+    CLY_LOG_W(@"%s This setter function is currently a placeholder and doesn't actively utilize the set values.", __FUNCTION__);
+    if (maxStackTraceLinesPerThread < 1) {
+        maxStackTraceLinesPerThread = 1;
+    }
+    _maxStackTraceLinesPerThread = maxStackTraceLinesPerThread;
 }
 
 - (int)getMaxKeyLength
@@ -114,13 +114,13 @@ const NSInteger kCountlyMaxStackTraceLineLength = 200;
     return _maxBreadcrumbCount;
 }
 
-- (int)getMaxStackTraceLinesPerThread
-{
-    return  _maxStackTraceLinesPerThread;
-}
-
 - (int)getMaxStackTraceLineLength
 {
     return  _maxStackTraceLineLength;
+}
+
+- (int)getMaxStackTraceLinesPerThread
+{
+    return  _maxStackTraceLinesPerThread;
 }
 @end

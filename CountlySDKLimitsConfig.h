@@ -9,27 +9,27 @@
 
 extern const NSInteger kCountlyMaxKeyLength;
 extern const NSInteger kCountlyMaxValueSize;
-extern const NSInteger kCountlyMaxSegmentationValues;
 extern const NSInteger kCountlyMaxBreadcrumbCount;
-extern const NSInteger kCountlyMaxStackTraceLinesPerThread;
+extern const NSInteger kCountlyMaxSegmentationValues;
 extern const NSInteger kCountlyMaxStackTraceLineLength;
+extern const NSInteger kCountlyMaxStackTraceLinesPerThread;
 
 
 @interface CountlySDKLimitsConfig : NSObject
 
 - (void)setMaxKeyLength:(int)maxKeyLength;
 - (void)setMaxValueSize:(int)maxValueSize;
-- (void)setMaxSegmentationValues:(int)maxSegmentationValues;
-
 - (void)setMaxBreadcrumbCount:(int)maxBreadcrumbCount;
-- (void)setMaxStackTraceLinesPerThread:(int)maxStackTraceLinesPerThread;
+- (void)setMaxSegmentationValues:(int)maxSegmentationValues;
 - (void)setMaxStackTraceLineLength:(int)maxStackTraceLineLength;
+- (void)setMaxStackTraceLinesPerThread:(int)maxStackTraceLinesPerThread;
+
 - (int)getMaxKeyLength;
 - (int)getMaxValueSize;
-- (int)getMaxSegmentationValues;
 - (int)getMaxBreadcrumbCount;
-- (int)getMaxStackTraceLinesPerThread;
+- (int)getMaxSegmentationValues;
 - (int)getMaxStackTraceLineLength;
+- (int)getMaxStackTraceLinesPerThread;
 
 
 @end

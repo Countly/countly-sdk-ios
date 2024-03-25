@@ -1,7 +1,18 @@
 ## X.x.x
 * Added a separate SDK Limits Config with the following options:
-...
+    * `setMaxKeyLength`
+    * `setMaxValueSize`
+    * `setMaxBreadcrumbCount`
+    * `setMaxSegmentationValues`
+    * `setMaxStackTraceLineLength`
+    * `setMaxStackTraceLinesPerThread`
+    
 * Fixed session duration inconsistency by incorporating checks for whether the session has started or not.
+
+* Deprecated `maxKeyLength` initial config flag
+* Deprecated `crashLogLimit` initial config flag
+* Deprecated `maxValueLength` initial config flag
+* Deprecated `maxSegmentationValues` initial config flag
 
 ## 24.1.0
 * Added a separate APM Configs with following options:
