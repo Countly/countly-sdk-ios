@@ -5,6 +5,15 @@
 // Please visit www.count.ly for more information.
 
 #import "CountlySDKLimitsConfig.h"
+#import "CountlyCommon.h"
+
+
+const NSInteger kCountlyMaxKeyLength = 128;
+const NSInteger kCountlyMaxValueSize = 256;
+const NSInteger kCountlyMaxSegmentationValues = 100;
+const NSInteger kCountlyMaxBreadcrumbCount = 100;
+const NSInteger kCountlyMaxStackTraceLinesPerThread = 30;
+const NSInteger kCountlyMaxStackTraceLineLength = 200;
 
 @interface CountlySDKLimitsConfig ()
 {
@@ -24,12 +33,12 @@
 {
     if (self = [super init])
     {
-        _maxKeyLength = 128;
-        _maxValueSize = 256;
-        _maxSegmentationValues = 100;
-        _maxBreadcrumbCount = 100;
-        _maxStackTraceLinesPerThread = 30;
-        _maxStackTraceLineLength = 200;
+        _maxKeyLength = kCountlyMaxKeyLength;
+        _maxValueSize = kCountlyMaxValueSize;
+        _maxSegmentationValues = kCountlyMaxSegmentationValues;
+        _maxBreadcrumbCount = kCountlyMaxBreadcrumbCount;
+        _maxStackTraceLinesPerThread = kCountlyMaxStackTraceLinesPerThread;
+        _maxStackTraceLineLength = kCountlyMaxStackTraceLineLength;
     }
     
     return self;
@@ -66,15 +75,19 @@
     }
     _maxBreadcrumbCount = maxBreadcrumbCount;
 }
+
 - (void)setMaxStackTraceLinesPerThread:(int)maxStackTraceLinesPerThread
 {
+    CLY_LOG_W(@"%s This setter function is currently a placeholder and doesn't actively utilize the set values.", __FUNCTION__);
     if (maxStackTraceLinesPerThread < 1) {
         maxStackTraceLinesPerThread = 1;
     }
     _maxStackTraceLinesPerThread = maxStackTraceLinesPerThread;
 }
+
 - (void)setMaxStackTraceLineLength:(int)maxStackTraceLineLength
 {
+    CLY_LOG_W(@"%s This setter function is currently a placeholder and doesn't actively utilize the set values.", __FUNCTION__);
     if (maxStackTraceLineLength < 1) {
         maxStackTraceLineLength = 1;
     }
@@ -91,19 +104,23 @@
     return _maxValueSize;
 }
 
-- (int)getMaxSegmentationValues {
+- (int)getMaxSegmentationValues
+{
     return _maxSegmentationValues;
 }
 
-- (int)getMaxBreadcrumbCount {
-    
+- (int)getMaxBreadcrumbCount
+{
     return _maxBreadcrumbCount;
-    
 }
-- (int)getMaxStackTraceLinesPerThread {
+
+- (int)getMaxStackTraceLinesPerThread
+{
     return  _maxStackTraceLinesPerThread;
 }
-- (int)getMaxStackTraceLineLength {
+
+- (int)getMaxStackTraceLineLength
+{
     return  _maxStackTraceLineLength;
 }
 @end

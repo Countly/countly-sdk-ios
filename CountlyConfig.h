@@ -476,7 +476,7 @@ typedef enum : NSUInteger
  * @discussion If not set, it will be 100 by default.
  * @discussion If @c shouldUsePLCrashReporter flag is set on initial config, this limit will not be applied.
  */
-@property (nonatomic) NSUInteger crashLogLimit;
+@property (nonatomic) NSUInteger crashLogLimit DEPRECATED_MSG_ATTRIBUTE("Use 'sdkInternalLimits' CountlySDKLimitsConfig object instead");
 
 /**
  * Regular expression used for filtering crash reports and preventing them from being sent to Countly Server.

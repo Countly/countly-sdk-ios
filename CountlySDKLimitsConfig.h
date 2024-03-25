@@ -7,6 +7,12 @@
 
 #import <Foundation/Foundation.h>
 
+extern const NSInteger kCountlyMaxKeyLength;
+extern const NSInteger kCountlyMaxValueSize;
+extern const NSInteger kCountlyMaxSegmentationValues;
+extern const NSInteger kCountlyMaxBreadcrumbCount;
+extern const NSInteger kCountlyMaxStackTraceLinesPerThread;
+extern const NSInteger kCountlyMaxStackTraceLineLength;
 
 
 @interface CountlySDKLimitsConfig : NSObject

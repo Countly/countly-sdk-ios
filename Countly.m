@@ -74,10 +74,22 @@ NSString* previousEventID;
     CountlyCommon.sharedInstance.shouldIgnoreTrustCheck = config.shouldIgnoreTrustCheck;
     CountlyCommon.sharedInstance.loggerDelegate = config.loggerDelegate;
     CountlyCommon.sharedInstance.internalLogLevel = config.internalLogLevel;
-    CountlyCommon.sharedInstance.maxKeyLength = config.maxKeyLength;
-    CountlyCommon.sharedInstance.maxValueLength = config.maxValueLength;
-    CountlyCommon.sharedInstance.maxSegmentationValues = config.maxSegmentationValues;
-
+    
+    CountlyCommon.sharedInstance.maxKeyLength = config.sdkInternalLimits.getMaxKeyLength;
+    CountlyCommon.sharedInstance.maxValueLength = config.sdkInternalLimits.getMaxValueSize;
+    CountlyCommon.sharedInstance.maxSegmentationValues = config.sdkInternalLimits.getMaxSegmentationValues;
+    
+    // For backward compatibility, deprecated values are only set incase new values are not provided using sdkInternalLimits interface
+    if(CountlyCommon.sharedInstance.maxKeyLength == kCountlyMaxKeyLength && config.maxKeyLength != kCountlyMaxKeyLength) {
+        CountlyCommon.sharedInstance.maxKeyLength = config.maxKeyLength;
+    }
+    if(CountlyCommon.sharedInstance.maxValueLength == kCountlyMaxValueSize && config.maxValueLength != kCountlyMaxValueSize) {
+        CountlyCommon.sharedInstance.maxValueLength = config.maxValueLength;
+    }
+    if(CountlyCommon.sharedInstance.maxSegmentationValues == kCountlyMaxSegmentationValues && config.maxSegmentationValues != kCountlyMaxSegmentationValues) {
+        CountlyCommon.sharedInstance.maxSegmentationValues = config.maxSegmentationValues;
+    }
+    
     CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
 
     if (!config.appKey.length || [config.appKey isEqualToString:@"YOUR_APP_KEY"])
@@ -183,7 +195,11 @@ NSString* previousEventID;
 #endif
 
     CountlyCrashReporter.sharedInstance.crashSegmentation = [config.crashSegmentation cly_truncated:@"Crash segmentation"];
-    CountlyCrashReporter.sharedInstance.crashLogLimit = MAX(1, config.crashLogLimit);
+    CountlyCrashReporter.sharedInstance.crashLogLimit = config.sdkInternalLimits.getMaxBreadcrumbCount;
+    // For backward compatibility, deprecated values are only set incase new values are not provided using sdkInternalLimits interface
+    if(CountlyCrashReporter.sharedInstance.crashLogLimit == kCountlyMaxBreadcrumbCount && config.crashLogLimit != kCountlyMaxBreadcrumbCount) {
+        CountlyCrashReporter.sharedInstance.crashLogLimit = MAX(1, config.crashLogLimit);
+    }
     CountlyCrashReporter.sharedInstance.crashFilter = config.crashFilter;
     CountlyCrashReporter.sharedInstance.shouldUsePLCrashReporter = config.shouldUsePLCrashReporter;
     CountlyCrashReporter.sharedInstance.shouldUseMachSignalHandler = config.shouldUseMachSignalHandler;
@@ -224,18 +240,6 @@ NSString* previousEventID;
     [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfigAutomatically];
     if (config.apm.getAppStartTimestampOverride) {
         appLoadStartTime = config.apm.getAppStartTimestampOverride;
-    }
-    if (config.sdkInternalLimits.getMaxKeyLength) {
-        CountlyCommon.sharedInstance.maxKeyLength = config.sdkInternalLimits.getMaxKeyLength;
-    }
-    if (config.sdkInternalLimits.getMaxValueSize) {
-        CountlyCommon.sharedInstance.maxValueLength = config.sdkInternalLimits.getMaxValueSize;
-    }
-    if (config.sdkInternalLimits.getMaxSegmentationValues) {
-        CountlyCommon.sharedInstance.maxSegmentationValues = config.sdkInternalLimits.getMaxSegmentationValues;
-    }
-    if (config.sdkInternalLimits.getMaxSegmentationValues) {
-        CountlyCrashReporter.sharedInstance.crashLogLimit = config.sdkInternalLimits.getMaxSegmentationValues;
     }
     
     [CountlyPerformanceMonitoring.sharedInstance startWithConfig:config.apm];

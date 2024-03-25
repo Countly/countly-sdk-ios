@@ -57,11 +57,11 @@ CLYDeviceIDType const CLYDeviceIDTypeNSUUID     = @"CLYDeviceIDTypeNSUUID";
 #endif
         self.eventSendThreshold = 100;
         self.storedRequestsLimit = 1000;
-        self.crashLogLimit = 100;
+        self.crashLogLimit = kCountlyMaxBreadcrumbCount;
         
-        self.maxKeyLength = 128;
-        self.maxValueLength = 256;
-        self.maxSegmentationValues = 100;
+        self.maxKeyLength = kCountlyMaxKeyLength;
+        self.maxValueLength = kCountlyMaxValueSize;
+        self.maxSegmentationValues = kCountlyMaxSegmentationValues;
         
         self.location = kCLLocationCoordinate2DInvalid;
         
