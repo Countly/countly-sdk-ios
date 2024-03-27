@@ -1293,4 +1293,9 @@ static dispatch_once_t onceToken;
     }
 }
 
+- (void)attemptToSendStoredRequests
+{
+    [CountlyConnectionManager.sharedInstance attemptToSendStoredRequests];
+}
+
 @end
