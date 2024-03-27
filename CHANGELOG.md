@@ -1,4 +1,5 @@
 ## X.X.X
+* Added `attemptToSendStoredRequests` method to combine all events in event queue into a request and attempt to process stored requests
 * Fixed session duration inconsistency by incorporating checks for whether the session has started or not.
 
 ## 24.1.0
