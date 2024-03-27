@@ -8,12 +8,12 @@
 #import "CountlyCommon.h"
 
 
-const NSInteger kCountlyMaxKeyLength = 128;
-const NSInteger kCountlyMaxValueSize = 256;
-const NSInteger kCountlyMaxSegmentationValues = 100;
-const NSInteger kCountlyMaxBreadcrumbCount = 100;
-const NSInteger kCountlyMaxStackTraceLinesPerThread = 30;
-const NSInteger kCountlyMaxStackTraceLineLength = 200;
+const NSUInteger kCountlyMaxKeyLength = 128;
+const NSUInteger kCountlyMaxValueSize = 256;
+const NSUInteger kCountlyMaxSegmentationValues = 100;
+const NSUInteger kCountlyMaxBreadcrumbCount = 100;
+const NSUInteger kCountlyMaxStackTraceLinesPerThread = 30;
+const NSUInteger kCountlyMaxStackTraceLineLength = 200;
 
 @interface CountlySDKLimitsConfig ()
 {
@@ -26,8 +26,6 @@ const NSInteger kCountlyMaxStackTraceLineLength = 200;
 }
 @end
 @implementation CountlySDKLimitsConfig
-
-
 
 - (instancetype)init
 {
@@ -47,7 +45,8 @@ const NSInteger kCountlyMaxStackTraceLineLength = 200;
 - (void)setMaxKeyLength:(int)maxKeyLength
 {
     if (maxKeyLength < 1) {
-        maxKeyLength = 1;
+        CLY_LOG_W(@"%s Ignoring provided value of %d for maxKeyLength because it's less than 1", __FUNCTION__, maxKeyLength);
+        return;
     }
     _maxKeyLength = maxKeyLength;
 }
@@ -55,7 +54,8 @@ const NSInteger kCountlyMaxStackTraceLineLength = 200;
 - (void)setMaxValueSize:(int)maxValueSize
 {
     if (maxValueSize < 1) {
-        maxValueSize = 1;
+        CLY_LOG_W(@"%s Ignoring provided value of %d for maxValueSize because it's less than 1", __FUNCTION__, maxValueSize);
+        return;
     }
     _maxValueSize = maxValueSize;
 }
@@ -63,7 +63,8 @@ const NSInteger kCountlyMaxStackTraceLineLength = 200;
 - (void)setMaxSegmentationValues:(int)maxSegmentationValues
 {
     if (maxSegmentationValues < 1) {
-        maxSegmentationValues = 1;
+        CLY_LOG_W(@"%s Ignoring provided value of %d for maxSegmentationValues because it's less than 1", __FUNCTION__, maxSegmentationValues);
+        return;
     }
     _maxSegmentationValues = maxSegmentationValues;
 }
@@ -71,7 +72,8 @@ const NSInteger kCountlyMaxStackTraceLineLength = 200;
 - (void)setMaxBreadcrumbCount:(int)maxBreadcrumbCount
 {
     if (maxBreadcrumbCount < 1) {
-        maxBreadcrumbCount = 1;
+        CLY_LOG_W(@"%s Ignoring provided value of %d for maxBreadcrumbCount because it's less than 1", __FUNCTION__, maxBreadcrumbCount);
+        return;
     }
     _maxBreadcrumbCount = maxBreadcrumbCount;
 }
@@ -80,7 +82,8 @@ const NSInteger kCountlyMaxStackTraceLineLength = 200;
 {
     CLY_LOG_W(@"%s This setter function is currently a placeholder and doesn't actively utilize the set values.", __FUNCTION__);
     if (maxStackTraceLineLength < 1) {
-        maxStackTraceLineLength = 1;
+        CLY_LOG_W(@"%s Ignoring provided value of %d for maxStackTraceLineLength because it's less than 1", __FUNCTION__, maxStackTraceLineLength);
+        return;
     }
     _maxStackTraceLineLength = maxStackTraceLineLength;
 }
@@ -89,7 +92,8 @@ const NSInteger kCountlyMaxStackTraceLineLength = 200;
 {
     CLY_LOG_W(@"%s This setter function is currently a placeholder and doesn't actively utilize the set values.", __FUNCTION__);
     if (maxStackTraceLinesPerThread < 1) {
-        maxStackTraceLinesPerThread = 1;
+        CLY_LOG_W(@"%s Ignoring provided value of %d for maxStackTraceLinesPerThread because it's less than 1", __FUNCTION__, maxStackTraceLinesPerThread);
+        return;
     }
     _maxStackTraceLinesPerThread = maxStackTraceLinesPerThread;
 }
