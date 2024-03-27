@@ -400,16 +400,30 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)sendEvents
 {
-    NSString* events = [CountlyPersistency.sharedInstance serializedRecordedEvents];
+    [self sendEvents:false];
+}
 
+- (void)attemptToSendStoredRequests
+{
+    [self sendEvents:true];
+}
+
+- (void)sendEvents:(BOOL) saveToFile
+{
+    NSString* events = [CountlyPersistency.sharedInstance serializedRecordedEvents];
+    
     if (!events)
         return;
-
+    
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
                              kCountlyQSKeyEvents, events];
-
+    
     [CountlyPersistency.sharedInstance addToQueue:queryString];
-
+    
+    if(saveToFile) {
+        [CountlyPersistency.sharedInstance saveToFileSync];
+    }
+    
     [self proceedOnQueue];
 }
 
