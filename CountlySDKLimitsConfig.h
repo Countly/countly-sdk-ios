@@ -17,19 +17,19 @@ extern const NSUInteger kCountlyMaxStackTraceLinesPerThread;
 
 @interface CountlySDKLimitsConfig : NSObject
 
-- (void)setMaxKeyLength:(int)maxKeyLength;
-- (void)setMaxValueSize:(int)maxValueSize;
-- (void)setMaxBreadcrumbCount:(int)maxBreadcrumbCount;
-- (void)setMaxSegmentationValues:(int)maxSegmentationValues;
-- (void)setMaxStackTraceLineLength:(int)maxStackTraceLineLength;
-- (void)setMaxStackTraceLinesPerThread:(int)maxStackTraceLinesPerThread;
+- (void)setMaxKeyLength:(NSUInteger)maxKeyLength;
+- (void)setMaxValueSize:(NSUInteger)maxValueSize;
+- (void)setMaxBreadcrumbCount:(NSUInteger)maxBreadcrumbCount;
+- (void)setMaxSegmentationValues:(NSUInteger)maxSegmentationValues;
+- (void)setMaxStackTraceLineLength:(NSUInteger)maxStackTraceLineLength;
+- (void)setMaxStackTraceLinesPerThread:(NSUInteger)maxStackTraceLinesPerThread;
 
-- (int)getMaxKeyLength;
-- (int)getMaxValueSize;
-- (int)getMaxBreadcrumbCount;
-- (int)getMaxSegmentationValues;
-- (int)getMaxStackTraceLineLength;
-- (int)getMaxStackTraceLinesPerThread;
+- (NSUInteger)getMaxKeyLength;
+- (NSUInteger)getMaxValueSize;
+- (NSUInteger)getMaxBreadcrumbCount;
+- (NSUInteger)getMaxSegmentationValues;
+- (NSUInteger)getMaxStackTraceLineLength;
+- (NSUInteger)getMaxStackTraceLinesPerThread;
 
 
 @end

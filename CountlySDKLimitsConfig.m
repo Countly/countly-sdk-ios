@@ -17,12 +17,12 @@ const NSUInteger kCountlyMaxStackTraceLineLength = 200;
 
 @interface CountlySDKLimitsConfig ()
 {
-    int _maxKeyLength;
-    int _maxValueSize;
-    int _maxSegmentationValues;
-    int _maxBreadcrumbCount;
-    int _maxStackTraceLinesPerThread;
-    int _maxStackTraceLineLength;
+    NSUInteger _maxKeyLength;
+    NSUInteger _maxValueSize;
+    NSUInteger _maxSegmentationValues;
+    NSUInteger _maxBreadcrumbCount;
+    NSUInteger _maxStackTraceLinesPerThread;
+    NSUInteger _maxStackTraceLineLength;
 }
 @end
 @implementation CountlySDKLimitsConfig
@@ -42,88 +42,62 @@ const NSUInteger kCountlyMaxStackTraceLineLength = 200;
     return self;
 }
 
-- (void)setMaxKeyLength:(int)maxKeyLength
+- (void)setMaxKeyLength:(NSUInteger)maxKeyLength
 {
-    if (maxKeyLength < 1) {
-        CLY_LOG_W(@"%s Ignoring provided value of %d for maxKeyLength because it's less than 1", __FUNCTION__, maxKeyLength);
-        return;
-    }
     _maxKeyLength = maxKeyLength;
 }
 
-- (void)setMaxValueSize:(int)maxValueSize
+- (void)setMaxValueSize:(NSUInteger)maxValueSize
 {
-    if (maxValueSize < 1) {
-        CLY_LOG_W(@"%s Ignoring provided value of %d for maxValueSize because it's less than 1", __FUNCTION__, maxValueSize);
-        return;
-    }
     _maxValueSize = maxValueSize;
 }
 
-- (void)setMaxSegmentationValues:(int)maxSegmentationValues
+- (void)setMaxSegmentationValues:(NSUInteger)maxSegmentationValues
 {
-    if (maxSegmentationValues < 1) {
-        CLY_LOG_W(@"%s Ignoring provided value of %d for maxSegmentationValues because it's less than 1", __FUNCTION__, maxSegmentationValues);
-        return;
-    }
     _maxSegmentationValues = maxSegmentationValues;
 }
 
-- (void)setMaxBreadcrumbCount:(int)maxBreadcrumbCount
+- (void)setMaxBreadcrumbCount:(NSUInteger)maxBreadcrumbCount
 {
-    if (maxBreadcrumbCount < 1) {
-        CLY_LOG_W(@"%s Ignoring provided value of %d for maxBreadcrumbCount because it's less than 1", __FUNCTION__, maxBreadcrumbCount);
-        return;
-    }
     _maxBreadcrumbCount = maxBreadcrumbCount;
 }
 
-- (void)setMaxStackTraceLineLength:(int)maxStackTraceLineLength
+- (void)setMaxStackTraceLineLength:(NSUInteger)maxStackTraceLineLength
 {
-    CLY_LOG_W(@"%s This setter function is currently a placeholder and doesn't actively utilize the set values.", __FUNCTION__);
-    if (maxStackTraceLineLength < 1) {
-        CLY_LOG_W(@"%s Ignoring provided value of %d for maxStackTraceLineLength because it's less than 1", __FUNCTION__, maxStackTraceLineLength);
-        return;
-    }
     _maxStackTraceLineLength = maxStackTraceLineLength;
 }
 
-- (void)setMaxStackTraceLinesPerThread:(int)maxStackTraceLinesPerThread
+- (void)setMaxStackTraceLinesPerThread:(NSUInteger)maxStackTraceLinesPerThread
 {
-    CLY_LOG_W(@"%s This setter function is currently a placeholder and doesn't actively utilize the set values.", __FUNCTION__);
-    if (maxStackTraceLinesPerThread < 1) {
-        CLY_LOG_W(@"%s Ignoring provided value of %d for maxStackTraceLinesPerThread because it's less than 1", __FUNCTION__, maxStackTraceLinesPerThread);
-        return;
-    }
     _maxStackTraceLinesPerThread = maxStackTraceLinesPerThread;
 }
 
-- (int)getMaxKeyLength
+- (NSUInteger)getMaxKeyLength
 {
     return _maxKeyLength;
 }
 
-- (int)getMaxValueSize
+- (NSUInteger)getMaxValueSize
 {
     return _maxValueSize;
 }
 
-- (int)getMaxSegmentationValues
+- (NSUInteger)getMaxSegmentationValues
 {
     return _maxSegmentationValues;
 }
 
-- (int)getMaxBreadcrumbCount
+- (NSUInteger)getMaxBreadcrumbCount
 {
     return _maxBreadcrumbCount;
 }
 
-- (int)getMaxStackTraceLineLength
+- (NSUInteger)getMaxStackTraceLineLength
 {
     return  _maxStackTraceLineLength;
 }
 
-- (int)getMaxStackTraceLinesPerThread
+- (NSUInteger)getMaxStackTraceLinesPerThread
 {
     return  _maxStackTraceLinesPerThread;
 }
