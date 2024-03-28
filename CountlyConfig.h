@@ -8,6 +8,7 @@
 #import <CoreLocation/CoreLocation.h>
 #import "CountlyRCData.h"
 #import "CountlyAPMConfig.h"
+#import "CountlySDKLimitsConfig.h"
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 #import <UIKit/UIKit.h>
@@ -382,7 +383,7 @@ typedef enum : NSUInteger
  * @discussion Keys longer than this limit will be truncated.
  * @discussion If not set, it will be 128 chars by default.
  */
-@property (nonatomic) NSUInteger maxKeyLength;
+@property(nonatomic) NSUInteger maxKeyLength DEPRECATED_MSG_ATTRIBUTE("Use 'sdkInternalLimits' CountlySDKLimitsConfig object instead");
 
 /**
  * Limit for the length of values in all key-value pairs.
@@ -395,7 +396,7 @@ typedef enum : NSUInteger
  * @discussion Values longer than this limit will be truncated.
  * @discussion If not set, it will be 256 chars by default.
  */
-@property (nonatomic) NSUInteger maxValueLength;
+@property(nonatomic) NSUInteger maxValueLength DEPRECATED_MSG_ATTRIBUTE("Use 'sdkInternalLimits' CountlySDKLimitsConfig object instead");
 
 /**
  * Limit for the number of key-value pairs in segmentations.
@@ -403,7 +404,13 @@ typedef enum : NSUInteger
  * @discussion As obviously there is no order among the keys of an NSDictionary, it is not defined which ones will be removed.
  * @discussion If not set, it will be 30 by default.
  */
-@property (nonatomic) NSUInteger maxSegmentationValues;
+@property(nonatomic) NSUInteger maxSegmentationValues DEPRECATED_MSG_ATTRIBUTE("Use 'sdkInternalLimits' CountlySDKLimitsConfig object instead");
+
+/**
+ * Variable to access sdkInternalLimits configurations.
+ * @discussion SDK internal limits configurations for developer to interact with SDK.
+ */
+- (CountlySDKLimitsConfig *)sdkInternalLimits;
 
 /**
  * For sending all requests using HTTP POST method.
@@ -469,7 +476,7 @@ typedef enum : NSUInteger
  * @discussion If not set, it will be 100 by default.
  * @discussion If @c shouldUsePLCrashReporter flag is set on initial config, this limit will not be applied.
  */
-@property (nonatomic) NSUInteger crashLogLimit;
+@property (nonatomic) NSUInteger crashLogLimit DEPRECATED_MSG_ATTRIBUTE("Use 'sdkInternalLimits' CountlySDKLimitsConfig object instead");
 
 /**
  * Regular expression used for filtering crash reports and preventing them from being sent to Countly Server.
