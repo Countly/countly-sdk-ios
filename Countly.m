@@ -81,10 +81,27 @@ static dispatch_once_t onceToken;
     CountlyCommon.sharedInstance.shouldIgnoreTrustCheck = config.shouldIgnoreTrustCheck;
     CountlyCommon.sharedInstance.loggerDelegate = config.loggerDelegate;
     CountlyCommon.sharedInstance.internalLogLevel = config.internalLogLevel;
-    CountlyCommon.sharedInstance.maxKeyLength = config.maxKeyLength;
-    CountlyCommon.sharedInstance.maxValueLength = config.maxValueLength;
-    CountlyCommon.sharedInstance.maxSegmentationValues = config.maxSegmentationValues;
-
+    
+    config = [self checkAndFixInternalLimitsConfig:config];
+    
+    CountlyCommon.sharedInstance.maxKeyLength = config.sdkInternalLimits.getMaxKeyLength;
+    CountlyCommon.sharedInstance.maxValueLength = config.sdkInternalLimits.getMaxValueSize;
+    CountlyCommon.sharedInstance.maxSegmentationValues = config.sdkInternalLimits.getMaxSegmentationValues;
+    
+    // For backward compatibility, deprecated values are only set incase new values are not provided using sdkInternalLimits interface
+    if(CountlyCommon.sharedInstance.maxKeyLength == kCountlyMaxKeyLength && config.maxKeyLength != kCountlyMaxKeyLength) {
+        CountlyCommon.sharedInstance.maxKeyLength = config.maxKeyLength;
+        CLY_LOG_I(@"%s provided 'maxKeyLength' override:[ %lu ]", __FUNCTION__, (unsigned long)config.maxKeyLength);
+    }
+    if(CountlyCommon.sharedInstance.maxValueLength == kCountlyMaxValueSize && config.maxValueLength != kCountlyMaxValueSize) {
+        CountlyCommon.sharedInstance.maxValueLength = config.maxValueLength;
+        CLY_LOG_I(@"%s provided 'maxValueLength' override:[ %lu ]", __FUNCTION__, (unsigned long)config.maxValueLength);
+    }
+    if(CountlyCommon.sharedInstance.maxSegmentationValues == kCountlyMaxSegmentationValues && config.maxSegmentationValues != kCountlyMaxSegmentationValues) {
+        CountlyCommon.sharedInstance.maxSegmentationValues = config.maxSegmentationValues;
+        CLY_LOG_I(@"%s provided 'maxSegmentationValues' override:[ %lu ]", __FUNCTION__, (unsigned long)config.maxSegmentationValues);
+    }
+    
     CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
 
     if (!config.appKey.length || [config.appKey isEqualToString:@"YOUR_APP_KEY"])
@@ -190,7 +207,12 @@ static dispatch_once_t onceToken;
 #endif
 
     CountlyCrashReporter.sharedInstance.crashSegmentation = [config.crashSegmentation cly_truncated:@"Crash segmentation"];
-    CountlyCrashReporter.sharedInstance.crashLogLimit = MAX(1, config.crashLogLimit);
+    CountlyCrashReporter.sharedInstance.crashLogLimit = config.sdkInternalLimits.getMaxBreadcrumbCount;
+    // For backward compatibility, deprecated values are only set incase new values are not provided using sdkInternalLimits interface
+    if(CountlyCrashReporter.sharedInstance.crashLogLimit == kCountlyMaxBreadcrumbCount && config.crashLogLimit != kCountlyMaxBreadcrumbCount) {
+        CountlyCrashReporter.sharedInstance.crashLogLimit = MAX(1, config.crashLogLimit);
+        CLY_LOG_W(@"%s provided 'maxBreadcrumbCount' override:[ %lu ]", __FUNCTION__, (unsigned long)config.crashLogLimit);
+    }
     CountlyCrashReporter.sharedInstance.crashFilter = config.crashFilter;
     CountlyCrashReporter.sharedInstance.shouldUsePLCrashReporter = config.shouldUsePLCrashReporter;
     CountlyCrashReporter.sharedInstance.shouldUseMachSignalHandler = config.shouldUseMachSignalHandler;
@@ -229,7 +251,7 @@ static dispatch_once_t onceToken;
         CountlyRemoteConfigInternal.sharedInstance.enrollABOnRCDownload = config.enrollABOnRCDownload;
     }
     [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfigAutomatically];
-    if(config.apm.getAppStartTimestampOverride) {
+    if (config.apm.getAppStartTimestampOverride) {
         appLoadStartTime = config.apm.getAppStartTimestampOverride;
     }
     
@@ -251,6 +273,56 @@ static dispatch_once_t onceToken;
 
     if (config.indirectAttribution)
         [self recordIndirectAttribution:config.indirectAttribution];
+}
+
+- (CountlyConfig *) checkAndFixInternalLimitsConfig:(CountlyConfig *)config
+{
+    if (config.sdkInternalLimits.getMaxKeyLength == 0) {
+        [config.sdkInternalLimits setMaxKeyLength:kCountlyMaxKeyLength];
+        CLY_LOG_W(@"%s Ignoring provided value of %lu for 'maxKeyLength' because it's less than 1", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxKeyLength);
+    }
+    else if(config.sdkInternalLimits.getMaxKeyLength != kCountlyMaxKeyLength)
+    {
+        CLY_LOG_I(@"%s provided 'maxKeyLength' override:[ %lu ]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxKeyLength);
+    }
+    
+    if (config.sdkInternalLimits.getMaxValueSize == 0) {
+        [config.sdkInternalLimits setMaxKeyLength:kCountlyMaxValueSize];
+        CLY_LOG_W(@"%s Ignoring provided value of %lu for 'maxValueSize' because it's less than 1", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxValueSize);
+    }
+    else if(config.sdkInternalLimits.getMaxValueSize != kCountlyMaxValueSize)
+    {
+        CLY_LOG_I(@"%s provided 'maxValueSize' override:[ %lu ]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxValueSize);
+    }
+    
+    if (config.sdkInternalLimits.getMaxSegmentationValues == 0) {
+        [config.sdkInternalLimits setMaxKeyLength:kCountlyMaxSegmentationValues];
+        CLY_LOG_W(@"%s Ignoring provided value of %lu for 'maxSegmentationValues' because it's less than 1", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxSegmentationValues);
+    }
+    else if(config.sdkInternalLimits.getMaxSegmentationValues != kCountlyMaxSegmentationValues)
+    {
+        CLY_LOG_I(@"%s provided 'maxSegmentationValues' override:[ %lu ]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxSegmentationValues);
+    }
+    
+    if (config.sdkInternalLimits.getMaxBreadcrumbCount == 0) {
+        [config.sdkInternalLimits setMaxKeyLength:kCountlyMaxBreadcrumbCount];
+        CLY_LOG_W(@"%s Ignoring provided value of %lu for 'maxBreadcrumbCount' because it's less than 1", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxBreadcrumbCount);
+    }
+    else if(config.sdkInternalLimits.getMaxBreadcrumbCount != kCountlyMaxBreadcrumbCount)
+    {
+        CLY_LOG_I(@"%s provided 'maxBreadcrumbCount' override:[ %lu ]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxBreadcrumbCount);
+    }
+    
+    if(config.sdkInternalLimits.getMaxStackTraceLineLength != kCountlyMaxStackTraceLinesPerThread)
+    {
+        CLY_LOG_W(@"%s 'maxStackTraceLineLength' is currently a placeholder and doesn't actively utilize the set values.", __FUNCTION__);
+    }
+    
+    if(config.sdkInternalLimits.getMaxStackTraceLinesPerThread != kCountlyMaxStackTraceLineLength)
+    {
+        CLY_LOG_I(@"%s 'maxStackTraceLinesPerThread' is currently a placeholder and doesn't actively utilize the set values.", __FUNCTION__);
+    }
+    return config;
 }
 
 #pragma mark -
