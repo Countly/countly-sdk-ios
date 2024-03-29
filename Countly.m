@@ -1365,4 +1365,10 @@ static dispatch_once_t onceToken;
     }
 }
 
+- (void)attemptToSendStoredRequests
+{
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    [CountlyConnectionManager.sharedInstance attemptToSendStoredRequests];
+}
+
 @end
