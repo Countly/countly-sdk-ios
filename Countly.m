@@ -283,7 +283,7 @@ static dispatch_once_t onceToken;
     }
     else if(config.sdkInternalLimits.getMaxKeyLength != kCountlyMaxKeyLength)
     {
-        CLY_LOG_W(@"%s provided 'maxKeyLength' override:[ %lu ]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxKeyLength);
+        CLY_LOG_I(@"%s provided 'maxKeyLength' override:[ %lu ]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxKeyLength);
     }
     
     if (config.sdkInternalLimits.getMaxValueSize == 0) {
@@ -292,7 +292,7 @@ static dispatch_once_t onceToken;
     }
     else if(config.sdkInternalLimits.getMaxValueSize != kCountlyMaxValueSize)
     {
-        CLY_LOG_W(@"%s provided 'maxValueSize' override:[ %lu ]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxValueSize);
+        CLY_LOG_I(@"%s provided 'maxValueSize' override:[ %lu ]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxValueSize);
     }
     
     if (config.sdkInternalLimits.getMaxSegmentationValues == 0) {
@@ -301,7 +301,7 @@ static dispatch_once_t onceToken;
     }
     else if(config.sdkInternalLimits.getMaxSegmentationValues != kCountlyMaxSegmentationValues)
     {
-        CLY_LOG_W(@"%s provided 'maxSegmentationValues' override:[ %lu ]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxSegmentationValues);
+        CLY_LOG_I(@"%s provided 'maxSegmentationValues' override:[ %lu ]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxSegmentationValues);
     }
     
     if (config.sdkInternalLimits.getMaxBreadcrumbCount == 0) {
@@ -310,7 +310,7 @@ static dispatch_once_t onceToken;
     }
     else if(config.sdkInternalLimits.getMaxBreadcrumbCount != kCountlyMaxBreadcrumbCount)
     {
-        CLY_LOG_W(@"%s provided 'maxBreadcrumbCount' override:[ %lu ]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxBreadcrumbCount);
+        CLY_LOG_I(@"%s provided 'maxBreadcrumbCount' override:[ %lu ]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxBreadcrumbCount);
     }
     
     if(config.sdkInternalLimits.getMaxStackTraceLineLength != kCountlyMaxStackTraceLinesPerThread)
@@ -320,7 +320,7 @@ static dispatch_once_t onceToken;
     
     if(config.sdkInternalLimits.getMaxStackTraceLinesPerThread != kCountlyMaxStackTraceLineLength)
     {
-        CLY_LOG_W(@"%s 'maxStackTraceLinesPerThread' is currently a placeholder and doesn't actively utilize the set values.", __FUNCTION__);
+        CLY_LOG_I(@"%s 'maxStackTraceLinesPerThread' is currently a placeholder and doesn't actively utilize the set values.", __FUNCTION__);
     }
     return config;
 }
