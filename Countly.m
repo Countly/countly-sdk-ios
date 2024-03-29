@@ -91,15 +91,15 @@ static dispatch_once_t onceToken;
     // For backward compatibility, deprecated values are only set incase new values are not provided using sdkInternalLimits interface
     if(CountlyCommon.sharedInstance.maxKeyLength == kCountlyMaxKeyLength && config.maxKeyLength != kCountlyMaxKeyLength) {
         CountlyCommon.sharedInstance.maxKeyLength = config.maxKeyLength;
-        CLY_LOG_W(@"%s provided 'maxKeyLength' override:[ %lu ]", __FUNCTION__, (unsigned long)config.maxKeyLength);
+        CLY_LOG_I(@"%s provided 'maxKeyLength' override:[ %lu ]", __FUNCTION__, (unsigned long)config.maxKeyLength);
     }
     if(CountlyCommon.sharedInstance.maxValueLength == kCountlyMaxValueSize && config.maxValueLength != kCountlyMaxValueSize) {
         CountlyCommon.sharedInstance.maxValueLength = config.maxValueLength;
-        CLY_LOG_W(@"%s provided 'maxValueLength' override:[ %lu ]", __FUNCTION__, (unsigned long)config.maxValueLength);
+        CLY_LOG_I(@"%s provided 'maxValueLength' override:[ %lu ]", __FUNCTION__, (unsigned long)config.maxValueLength);
     }
     if(CountlyCommon.sharedInstance.maxSegmentationValues == kCountlyMaxSegmentationValues && config.maxSegmentationValues != kCountlyMaxSegmentationValues) {
         CountlyCommon.sharedInstance.maxSegmentationValues = config.maxSegmentationValues;
-        CLY_LOG_W(@"%s provided 'maxSegmentationValues' override:[ %lu ]", __FUNCTION__, (unsigned long)config.maxSegmentationValues);
+        CLY_LOG_I(@"%s provided 'maxSegmentationValues' override:[ %lu ]", __FUNCTION__, (unsigned long)config.maxSegmentationValues);
     }
     
     CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
