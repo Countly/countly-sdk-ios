@@ -128,8 +128,11 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, segmentation);
     NSMutableDictionary *mutableSegmentation = segmentation.mutableCopy;
+    
     [mutableSegmentation removeObjectsForKeys:self.reservedViewTrackingSegmentationKeys];
-    self.viewSegmentation = mutableSegmentation;
+    NSDictionary* truncatedSegmentation = [mutableSegmentation cly_truncated:@"Global view segmentation"];
+    NSDictionary* limitedSegmentation = [truncatedSegmentation cly_limited:@"Global view segmentation"];
+    self.viewSegmentation = limitedSegmentation.mutableCopy;
     
 }
 
@@ -142,7 +145,9 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     
     NSMutableDictionary *mutableSegmentation = segmentation.mutableCopy;
     [mutableSegmentation removeObjectsForKeys:self.reservedViewTrackingSegmentationKeys];
-    [self.viewSegmentation addEntriesFromDictionary:mutableSegmentation];
+    NSDictionary* truncatedSegmentation = [mutableSegmentation cly_truncated:@"Global view segmentation"];
+    NSDictionary* limitedSegmentation = [truncatedSegmentation cly_limited:@"Global view segmentation"];
+    [self.viewSegmentation addEntriesFromDictionary:limitedSegmentation];
 }
 
 - (NSString *)startView:(NSString *)viewName segmentation:(NSDictionary *)segmentation
