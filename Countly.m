@@ -287,7 +287,7 @@ static dispatch_once_t onceToken;
     }
     
     if (config.sdkInternalLimits.getMaxValueSize == 0) {
-        [config.sdkInternalLimits setMaxKeyLength:kCountlyMaxValueSize];
+        [config.sdkInternalLimits setMaxValueSize:kCountlyMaxValueSize];
         CLY_LOG_W(@"%s Ignoring provided value of %lu for 'maxValueSize' because it's less than 1", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxValueSize);
     }
     else if(config.sdkInternalLimits.getMaxValueSize != kCountlyMaxValueSize)
@@ -296,7 +296,7 @@ static dispatch_once_t onceToken;
     }
     
     if (config.sdkInternalLimits.getMaxSegmentationValues == 0) {
-        [config.sdkInternalLimits setMaxKeyLength:kCountlyMaxSegmentationValues];
+        [config.sdkInternalLimits setMaxSegmentationValues:kCountlyMaxSegmentationValues];
         CLY_LOG_W(@"%s Ignoring provided value of %lu for 'maxSegmentationValues' because it's less than 1", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxSegmentationValues);
     }
     else if(config.sdkInternalLimits.getMaxSegmentationValues != kCountlyMaxSegmentationValues)
@@ -305,7 +305,7 @@ static dispatch_once_t onceToken;
     }
     
     if (config.sdkInternalLimits.getMaxBreadcrumbCount == 0) {
-        [config.sdkInternalLimits setMaxKeyLength:kCountlyMaxBreadcrumbCount];
+        [config.sdkInternalLimits setMaxBreadcrumbCount:kCountlyMaxBreadcrumbCount];
         CLY_LOG_W(@"%s Ignoring provided value of %lu for 'maxBreadcrumbCount' because it's less than 1", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxBreadcrumbCount);
     }
     else if(config.sdkInternalLimits.getMaxBreadcrumbCount != kCountlyMaxBreadcrumbCount)
