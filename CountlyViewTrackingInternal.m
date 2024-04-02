@@ -128,6 +128,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, segmentation);
     NSMutableDictionary *mutableSegmentation = segmentation.mutableCopy;
+    [mutableSegmentation removeObjectsForKeys:self.reservedViewTrackingSegmentationKeys];
     self.viewSegmentation = mutableSegmentation;
     
 }
@@ -140,6 +141,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     }
     
     NSMutableDictionary *mutableSegmentation = segmentation.mutableCopy;
+    [mutableSegmentation removeObjectsForKeys:self.reservedViewTrackingSegmentationKeys];
     [self.viewSegmentation addEntriesFromDictionary:mutableSegmentation];
 }
 
