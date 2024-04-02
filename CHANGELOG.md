@@ -1,4 +1,4 @@
-## X.X.X
+## 24.4.0
 * Added `attemptToSendStoredRequests` method to combine all events in event queue into a request and attempt to process stored requests
 * Added the iOS privacy manifest to the Countly SDK
 * Added a separate SDK Limits Config with the following options:

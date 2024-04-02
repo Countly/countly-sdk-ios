@@ -22,9 +22,9 @@
 		1A9027FE2AB197B50044EBCF /* CountlyExperimentInformation.m in Sources */ = {isa = PBXBuildFile; fileRef = 1A9027FD2AB197B50044EBCF /* CountlyExperimentInformation.m */; };
 		1ACA5DC12A309E7F001F770B /* CountlyRemoteConfigInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = 1ACA5DBF2A309E7F001F770B /* CountlyRemoteConfigInternal.h */; };
 		1ACA5DC22A309E7F001F770B /* CountlyRemoteConfigInternal.m in Sources */ = {isa = PBXBuildFile; fileRef = 1ACA5DC02A309E7F001F770B /* CountlyRemoteConfigInternal.m */; };
+		1AFD79022B3EF82C00772FBD /* CountlyTests-Bridging-Header.h in Headers */ = {isa = PBXBuildFile; fileRef = 1AFD79012B3EF82C00772FBD /* CountlyTests-Bridging-Header.h */; };
 		3948A8572BAC2E7D002D09AA /* CountlySDKLimitsConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 3948A8552BAC2E7D002D09AA /* CountlySDKLimitsConfig.m */; };
 		3948A8582BAC2E7D002D09AA /* CountlySDKLimitsConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 3948A8562BAC2E7D002D09AA /* CountlySDKLimitsConfig.h */; };
-		1AFD79022B3EF82C00772FBD /* CountlyTests-Bridging-Header.h in Headers */ = {isa = PBXBuildFile; fileRef = 1AFD79012B3EF82C00772FBD /* CountlyTests-Bridging-Header.h */; };
 		39527E152B5FD27400EE5D7B /* CountlyAPMConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 39527E142B5FD27400EE5D7B /* CountlyAPMConfig.m */; };
 		39527E182B5FD54C00EE5D7B /* CountlyAPMConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 39527E162B5FD28900EE5D7B /* CountlyAPMConfig.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		39911B672B457DBB00AC053C /* Resettable.h in Headers */ = {isa = PBXBuildFile; fileRef = 39911B662B457DB500AC053C /* Resettable.h */; };
@@ -92,9 +92,9 @@
 		1A9027FF2AB197C00044EBCF /* CountlyExperimentInformation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyExperimentInformation.h; sourceTree = "<group>"; };
 		1ACA5DBF2A309E7F001F770B /* CountlyRemoteConfigInternal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyRemoteConfigInternal.h; sourceTree = "<group>"; };
 		1ACA5DC02A309E7F001F770B /* CountlyRemoteConfigInternal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyRemoteConfigInternal.m; sourceTree = "<group>"; };
+		1AFD79012B3EF82C00772FBD /* CountlyTests-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "CountlyTests-Bridging-Header.h"; sourceTree = "<group>"; };
 		3948A8552BAC2E7D002D09AA /* CountlySDKLimitsConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlySDKLimitsConfig.m; sourceTree = "<group>"; };
 		3948A8562BAC2E7D002D09AA /* CountlySDKLimitsConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlySDKLimitsConfig.h; sourceTree = "<group>"; };
-		1AFD79012B3EF82C00772FBD /* CountlyTests-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "CountlyTests-Bridging-Header.h"; sourceTree = "<group>"; };
 		39527E142B5FD27400EE5D7B /* CountlyAPMConfig.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyAPMConfig.m; sourceTree = "<group>"; };
 		39527E162B5FD28900EE5D7B /* CountlyAPMConfig.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyAPMConfig.h; sourceTree = "<group>"; };
 		395683372BB2988300C7A06B /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
@@ -634,7 +634,7 @@
 					"@loader_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.14;
-				MARKETING_VERSION = 24.1.0;
+				MARKETING_VERSION = 24.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = ly.count.CountlyiOSSDK;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -666,7 +666,7 @@
 					"@loader_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.14;
-				MARKETING_VERSION = 24.1.0;
+				MARKETING_VERSION = 24.4.0;
 				PRODUCT_BUNDLE_IDENTIFIER = ly.count.CountlyiOSSDK;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
