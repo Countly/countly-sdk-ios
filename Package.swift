@@ -54,7 +54,7 @@ let package = Package(
                 .linkedFramework("WebKit", .when(platforms: [.iOS])),
                 .linkedFramework("CoreTelephony", .when(platforms: [.iOS])),
             ]),
-	.testTarget(
+        .testTarget(
             name: "CountlyTests",
             dependencies: ["Countly"]
         ),
