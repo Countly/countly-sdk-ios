@@ -27,7 +27,7 @@
 		3948A8582BAC2E7D002D09AA /* CountlySDKLimitsConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 3948A8562BAC2E7D002D09AA /* CountlySDKLimitsConfig.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		39527E152B5FD27400EE5D7B /* CountlyAPMConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 39527E142B5FD27400EE5D7B /* CountlyAPMConfig.m */; };
 		39527E182B5FD54C00EE5D7B /* CountlyAPMConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 39527E162B5FD28900EE5D7B /* CountlyAPMConfig.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		39911B672B457DBB00AC053C /* Resettable.h in Headers */ = {isa = PBXBuildFile; fileRef = 39911B662B457DB500AC053C /* Resettable.h */; };
+		39911B672B457DBB00AC053C /* Resettable.h in Headers */ = {isa = PBXBuildFile; fileRef = 39911B662B457DB500AC053C /* Resettable.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3B20A9872245225A00E3D7AE /* Countly.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9852245225A00E3D7AE /* Countly.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3B20A9B22245228700E3D7AE /* CountlyConnectionManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A98D2245228300E3D7AE /* CountlyConnectionManager.h */; };
 		3B20A9B32245228700E3D7AE /* CountlyNotificationService.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B20A98E2245228300E3D7AE /* CountlyNotificationService.m */; };
