@@ -1,3 +1,32 @@
+## 24.4.0
+* Added `attemptToSendStoredRequests` method to combine all events in event queue into a request and attempt to process stored requests
+* Added the iOS privacy manifest to the Countly SDK
+* Added a separate SDK Limits Config with the following options:
+    * `setMaxKeyLength`
+    * `setMaxValueSize`
+    * `setMaxBreadcrumbCount`
+    * `setMaxSegmentationValues`
+    * `setMaxStackTraceLineLength`
+    * `setMaxStackTraceLinesPerThread`
+    
+* Fixed session duration inconsistency by incorporating checks for whether the session has started or not.
+
+* Deprecated `maxKeyLength` initial config flag
+* Deprecated `crashLogLimit` initial config flag
+* Deprecated `maxValueLength` initial config flag
+* Deprecated `maxSegmentationValues` initial config flag
+
+## 24.1.0
+* Added a separate APM Configs with following options:
+    * `enableForegroundBackgroundTracking`
+    * `enableAppStartTimeTracking`
+    * `enableManualAppLoadedTrigger`
+    * `setAppStartTimestampOverride:`
+      
+* Mitigated an issue in the symbol file uploading script where some dSYM files were archived without content
+  
+* Deprecated `enablePerformanceMonitoring` initial config flag
+
 ## 23.12.1
 * dSYM uploading script now can upload multiple dSYM files if their location is provided
 * Added support for Xcode 15 DWARF file environment variable changes while using dSYM upload script

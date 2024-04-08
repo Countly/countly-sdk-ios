@@ -30,7 +30,7 @@
 countly_log () { echo "[Countly] $1"; }
 
 countly_fail () { countly_log "$1"; exit 0; }
-countly_pass () { countly_log "$1"; DSYM_FILE_NAME=$INITIAL_DSYM_FILE_NAME; DSYM_FOLDER_PATH=$INITIAL_FOLDER_PATH; continue; }
+countly_go_next_iteration () { countly_log "$1"; DSYM_FILE_NAME=$INITIAL_DSYM_FILE_NAME; DSYM_FOLDER_PATH=$INITIAL_FOLDER_PATH; continue; }
 
 countly_usage ()
 {
@@ -79,24 +79,22 @@ DSYM_PATH="${DSYM_FOLDER_PATH}/${DSYM_FILE_NAME}"
 
 for file in "$DSYM_PATH"/*; do
 printf "======\n[Countly] Processing $file \n"
+IN_DSYM=false
+IN_FOLDER=false
 
     if [[ ! $INITIAL_DSYM_FILE_NAME == *.dSYM ]]; then
-        countly_log "Provided file is not a ,dSYM file!"
-        if [[ ! $INITIAL_DSYM_FILE_NAME == *.app ]]; then
-            countly_log "Provided file is not an .app file!"
-            if [[ $file == *.dSYM ]]; then
-                countly_log "Using files inside the folder!"
-                DSYM_FILE_NAME=$(basename "${file}")
-                DSYM_PATH="${CUSTOM_DSYM_PATH}/${DSYM_FILE_NAME}"
-            else
-                countly_pass "File inside the folder is not a dSYM file!"
-            fi
+        countly_log "Provided file is not a .dSYM file!"
+        countly_log "Given Path was a Folder. Checking the files inside the folder for .dSYM files!"
+        if [[ $file == *.dSYM ]]; then
+            IN_FOLDER=true
+            DSYM_FILE_NAME=$(basename "${file}")
+            DSYM_PATH="${CUSTOM_DSYM_PATH}/${DSYM_FILE_NAME}"
         else
-            countly_log "Provided file is an app file!"
-            FILE_LENGTH=${#INITIAL_DSYM_FILE_NAME}
-            DSYM_INNER_FILE_NAME=${INITIAL_DSYM_FILE_NAME:0:FILE_LENGTH-4}
-            DSYM_PATH="${DSYM_FOLDER_PATH}/${INITIAL_DSYM_FILE_NAME}/${DSYM_INNER_FILE_NAME}"
+            countly_go_next_iteration "File inside the folder is not a .dSYM file!"
         fi
+    else
+        countly_log "Provided file is a dSYM file!"
+        IN_DSYM=true
     fi
 
     countly_log "Current dSYM path:[$DSYM_PATH]"
@@ -110,47 +108,35 @@ printf "======\n[Countly] Processing $file \n"
     BUILD_UUIDS=$(echo "${RAW_UUID}" | xargs | sed 's/ /,/g')
     if [ $? -eq 0 ]; then
         countly_log "Extracted Build UUIDs:[${BUILD_UUIDS}]"
-        # if UUIDs are empty and custom path is not provided it means that we are using new Xcode
-        # this means instead of a .app.dSYM we have a .app which has a symbol file inside without .dSYM extension 
-        # TODO: create a function instead of repeating the code
-        if [ ! "$BUILD_UUIDS" ] && [ -z $CUSTOM_DSYM_PATH ];then
-            countly_log "Will try to extract UUIDs with .app extension for new Xcode"
-            FILE_LENGTH=${#DSYM_FILE_NAME}
-            APP_NAME=${DSYM_FILE_NAME:0:FILE_LENGTH-5}
-            countly_log "App name:[$APP_NAME]"
-            # removing .app from the end
-            DSYM_FILE_NAME=${DSYM_FILE_NAME:0:FILE_LENGTH-9}
-            DSYM_PATH="${DSYM_FOLDER_PATH}/${APP_NAME}/${DSYM_FILE_NAME}"
-            countly_log "New dSYM path:[$DSYM_PATH]"
-            XCRUN_RES=$(xcrun dwarfdump --uuid "${DSYM_PATH}")
-            countly_log "Xcrun result:[$XCRUN_RES]"
-            RAW_UUID=$(echo "${XCRUN_RES}" | awk '{print $2}')
-            countly_log "Raw UUID:[$RAW_UUID]"
-            # Remove whitespace and such
-            BUILD_UUIDS=$(echo "${RAW_UUID}" | xargs | sed 's/ /,/g')
-            if [ $? -eq 0 ]; then
-                countly_log "Extracted Build UUIDs:[${BUILD_UUIDS}]"
-            else
-                countly_pass "Extracting Build UUIDs failed!"
-            fi
+        if [ ! "$BUILD_UUIDS" ]; then
+            countly_go_next_iteration "Nothing was extracted! Check if your Xcode configuration or the provided path is correct."
         fi
 
     else
-        countly_pass "Extracting Build UUIDs failed!"
+        countly_go_next_iteration "Extracting Build UUIDs failed!"
     fi
 
 
-    # Creating archive of DSYM folder using zip
+    # Creating archive of DSYM folder using zip 
+    countly_log "Creating archive of dSYM folder using zip"
+    countly_log "Current dSYM folder path:[$DSYM_FOLDER_PATH]"
+    countly_log "Current dSYM file name:[$DSYM_FILE_NAME]"
     DSYM_ZIP_PATH="/tmp/$(date +%s)_${DSYM_FILE_NAME}.zip"
-    pushd "${DSYM_FOLDER_PATH}" > /dev/null
-    zip -rq "${DSYM_ZIP_PATH}" . -i "${DSYM_FILE_NAME}"
+    if [ $IN_FOLDER == true ]; then
+        countly_log "In folder. Pushd to:[$(dirname "${DSYM_PATH}")]"
+        pushd $(dirname "${DSYM_PATH}") > /dev/null
+    fi
+    if [ $IN_DSYM == true ]; then
+        countly_log "In dSYM. Pushd to:["${DSYM_FOLDER_PATH}"]"
+        pushd "${DSYM_FOLDER_PATH}" > /dev/null
+    fi
+    zip -r "${DSYM_ZIP_PATH}" "${DSYM_FILE_NAME}"
     popd > /dev/null
     if [ $? -eq 0 ]; then
         countly_log "Created archive at $DSYM_ZIP_PATH"
     else
-        countly_pass "Creating archive failed!"
+        countly_go_next_iteration "Creating archive failed!"
     fi
-
 
     # Preparing for upload
     ENDPOINT="/i/crash_symbols/upload_symbol"
@@ -172,7 +158,7 @@ printf "======\n[Countly] Processing $file \n"
     if [ $? -eq 0 ] && [ "${UPLOAD_RESULT}" == "{\"result\":\"Success\"}" ]; then
         countly_log "dSYM upload succesfully completed."
     else
-        countly_pass "dSYM upload failed! Response from the server:[${UPLOAD_RESULT}]"
+        countly_go_next_iteration "dSYM upload failed! Response from the server:[${UPLOAD_RESULT}]"
     fi
 
 
@@ -181,6 +167,5 @@ printf "======\n[Countly] Processing $file \n"
     # return variables to default
     DSYM_FILE_NAME=$INITIAL_DSYM_FILE_NAME
     DSYM_FOLDER_PATH=$INITIAL_FOLDER_PATH
-
 done
 exit 0

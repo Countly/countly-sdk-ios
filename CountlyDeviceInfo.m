@@ -46,10 +46,10 @@ NSString* const kCountlyAppVersionKey = @"av";
 
 @implementation CountlyDeviceInfo
 
+static CountlyDeviceInfo *s_sharedInstance = nil;
+static dispatch_once_t onceToken;
 + (instancetype)sharedInstance
 {
-    static CountlyDeviceInfo *s_sharedInstance = nil;
-    static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
     return s_sharedInstance;
 }
@@ -372,7 +372,7 @@ NSString* const kCountlyAppVersionKey = @"av";
     }
     @catch (NSException *exception)
     {
-        CLY_LOG_W(@"Connection type can not be retrieved: \n%@", exception);
+        CLY_LOG_W(@"%s, Connection type can not be retrieved, got exception: %@", __FUNCTION__, exception);
     }
 
     return connType;
@@ -462,6 +462,13 @@ NSString* const kCountlyAppVersionKey = @"av";
 + (BOOL)isInBackground
 {
     return CountlyDeviceInfo.sharedInstance.isInBackground;
+}
+
+- (void)resetInstance {
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    self.deviceID = nil;
+    onceToken = 0;
+    s_sharedInstance = nil;
 }
 
 @end
