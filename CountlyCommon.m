@@ -17,11 +17,11 @@ NSString* const kCountlyOrientationKeyMode = @"mode";
 }
 @property long long lastTimestamp;
 
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION )
 @property (nonatomic) NSString* lastInterfaceOrientation;
 #endif
 
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV )
 @property (nonatomic) UIBackgroundTaskIdentifier bgTask;
 #endif
 @end
@@ -231,7 +231,7 @@ void CountlyPrint(NSString *stringToPrint)
 
 - (void)startBackgroundTask
 {
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
     if (self.bgTask != UIBackgroundTaskInvalid)
         return;
 
@@ -245,7 +245,7 @@ void CountlyPrint(NSString *stringToPrint)
 
 - (void)finishBackgroundTask
 {
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
     if (self.bgTask != UIBackgroundTaskInvalid && !CountlyConnectionManager.sharedInstance.connection)
     {
         [UIApplication.sharedApplication endBackgroundTask:self.bgTask];
