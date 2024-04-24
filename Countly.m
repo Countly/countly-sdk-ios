@@ -224,7 +224,7 @@ static dispatch_once_t onceToken;
         [CountlyCrashReporter.sharedInstance startCrashReporting];
     }
 
-#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV )
+#if (TARGET_OS_IOS || TARGET_OS_TV )
     if (config.enableAutomaticViewTracking || [config.features containsObject:CLYAutoViewTracking])
     {
         // Print deprecation flag for feature
