@@ -259,8 +259,7 @@ static dispatch_once_t onceToken;
     {
         event.key = [event.key cly_truncatedKey:@"Event key"];
         NSDictionary* truncated = [event.segmentation cly_truncated:@"Event segmentation"];
-        NSDictionary* limited = [truncated cly_limited:@"Event segmentation"];
-        event.segmentation = limited;
+        event.segmentation = [truncated cly_limited:@"Event segmentation"];
 
         [self.recordedEvents addObject:event];
 

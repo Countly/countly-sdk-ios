@@ -153,7 +153,8 @@ static dispatch_once_t onceToken;
 
     CountlyCommon.sharedInstance.attributionID = config.attributionID;
 
-    CountlyDeviceInfo.sharedInstance.customMetrics = [config.customMetrics cly_truncated:@"Custom metric"];
+    NSDictionary* customMetricsTruncated = [config.customMetrics cly_truncated:@"Custom metric"];
+    CountlyDeviceInfo.sharedInstance.customMetrics = [customMetricsTruncated cly_limited:@"Custom metric"];
 
     [Countly.user save];
     
@@ -206,7 +207,7 @@ static dispatch_once_t onceToken;
 #endif
 #endif
 
-    CountlyCrashReporter.sharedInstance.crashSegmentation = [config.crashSegmentation cly_truncated:@"Crash segmentation"];
+    CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
     CountlyCrashReporter.sharedInstance.crashLogLimit = config.sdkInternalLimits.getMaxBreadcrumbCount;
     // For backward compatibility, deprecated values are only set incase new values are not provided using sdkInternalLimits interface
     if(CountlyCrashReporter.sharedInstance.crashLogLimit == kCountlyMaxBreadcrumbCount && config.crashLogLimit != kCountlyMaxBreadcrumbCount) {

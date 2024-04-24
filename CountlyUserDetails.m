@@ -91,7 +91,10 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
         userDictionary[kCountlyUDKeyBirthyear] = self.birthYear;
 
     if ([self.custom isKindOfClass:NSDictionary.class])
-        self.custom = [((NSDictionary *)self.custom) cly_truncated:@"User details custom dictionary"];
+    {
+        NSDictionary* customTruncated = [((NSDictionary *)self.custom) cly_truncated:@"User details custom dictionary"];
+        self.custom = [customTruncated cly_limited:@"User details custom dictionary"];
+    }
 
     if (self.custom)
         userDictionary[kCountlyUDKeyCustom] = self.custom;

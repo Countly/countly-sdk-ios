@@ -218,7 +218,10 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
     {
         NSMutableDictionary* userInfo = [NSMutableDictionary dictionaryWithDictionary:exception.userInfo];
         userInfo[kCountlyExceptionUserInfoBacktraceKey] = stackTrace;
-        userInfo[kCountlyExceptionUserInfoSegmentationOverrideKey] = segmentation;
+        if(segmentation) {
+            NSDictionary* truncatedSegmentation = [segmentation cly_truncated:@"Exception segmentation"];
+            userInfo[kCountlyExceptionUserInfoSegmentationOverrideKey] = [truncatedSegmentation cly_limited:@"Exception segmentation"];
+        }
         exception = [NSException exceptionWithName:exception.name reason:exception.reason userInfo:userInfo];
     }
 
@@ -476,6 +479,13 @@ void CountlySignalHandler(int signalCode)
         return NO;
 
     return YES;
+}
+
+-(void) setCrashSegmentation:(NSDictionary<NSString *, NSString *>*) crashSegmentation
+{
+    
+    NSDictionary* truncatedSegmentation = [crashSegmentation cly_truncated:@"Crash segmentation"];
+    _crashSegmentation = [truncatedSegmentation cly_limited:@"Crash segmentation"];
 }
 
 @end

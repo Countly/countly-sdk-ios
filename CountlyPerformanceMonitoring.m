@@ -289,7 +289,8 @@ BOOL enableForegroundBackgroundTracking;
     }
 
     traceName = [traceName cly_truncatedKey:@"Custom trace name"];
-    metrics = [metrics cly_truncated:@"Custom trace metric"];
+    NSDictionary* metricsTruncated = [metrics cly_truncated:@"Custom trace metric"];
+    metrics = [metricsTruncated cly_limited:@"Custom trace metric"];
 
     NSNumber* endTime = @((long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000));
 
