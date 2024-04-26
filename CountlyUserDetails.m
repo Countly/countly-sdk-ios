@@ -399,7 +399,10 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
         [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyLocalPicturePath: self.pictureLocalPath} cly_JSONify]];
 
     if (self.modifications.count)
-        [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyUDKeyCustom: self.modifications} cly_JSONify]];
+    {
+        NSDictionary* modificationsTruncated = [self.modifications cly_truncated:@"User details modifications"];
+        [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyUDKeyCustom: modificationsTruncated} cly_JSONify]];
+    }
 
     [self clearUserDetails];
 }

@@ -257,10 +257,6 @@ static dispatch_once_t onceToken;
 {
     @synchronized (self.recordedEvents)
     {
-        event.key = [event.key cly_truncatedKey:@"Event key"];
-        NSDictionary* truncated = [event.segmentation cly_truncated:@"Event segmentation"];
-        event.segmentation = [truncated cly_limited:@"Event segmentation"];
-
         [self.recordedEvents addObject:event];
 
         if (self.recordedEvents.count >= self.eventSendThreshold)
