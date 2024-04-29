@@ -36,6 +36,8 @@ NSString* const kCountlyInternalLogPrefix = @"[Countly] ";
 
 @implementation CountlyCommon
 
+@synthesize lastTimestamp;
+
 static CountlyCommon *s_sharedInstance = nil;
 static dispatch_once_t onceToken;
 + (instancetype)sharedInstance
@@ -50,7 +52,8 @@ static dispatch_once_t onceToken;
     {
         gregorianCalendar = [NSCalendar.alloc initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
         startTime = NSDate.date.timeIntervalSince1970;
-
+        
+        self.lastTimestamp = 0;
         self.SDKVersion = kCountlySDKVersion;
         self.SDKName = kCountlySDKName;
     }
