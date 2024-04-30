@@ -805,7 +805,6 @@ static dispatch_once_t onceToken;
         return;
 
     CountlyEvent *event = CountlyEvent.new;
-    event.key = key;
     event.ID = ID;
     if (!event.ID.length)
     {
@@ -831,7 +830,7 @@ static dispatch_once_t onceToken;
         event.PEID = previousEventID ?: @"";
         previousEventID = event.ID;
     }
-    
+    event.key = key;
     event.segmentation = segmentation;
     event.count = MAX(count, 1);
     event.sum = sum;
