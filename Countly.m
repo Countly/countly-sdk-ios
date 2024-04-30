@@ -869,6 +869,7 @@ static dispatch_once_t onceToken;
 
     CountlyEvent *event = CountlyEvent.new;
     event.key = key;
+    event.timestamp = CountlyCommon.sharedInstance.uniqueTimestamp;
 
     [CountlyPersistency.sharedInstance recordTimedEvent:event];
 }
