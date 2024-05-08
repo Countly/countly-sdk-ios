@@ -199,6 +199,9 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     NSString* feedbackTypeEndpoint = [@"/" stringByAppendingString:self.type];
     [URL appendString:feedbackTypeEndpoint];
     [URL appendFormat:@"?%@", queryString];
+    
+    // Append the custom parameter "custom.tc=1"
+    [URL appendString:@"&custom.tc=1"];
 
     NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:URL]];
     return request;
