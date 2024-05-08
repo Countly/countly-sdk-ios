@@ -28,7 +28,7 @@ NSString* const kCountlyServerConfigPersistencyKey = @"kCountlyServerConfigPersi
 
 NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 
-NSUInteger const CountlyRequestRemovalLoopLimit = 100;
+NSUInteger const kCountlyRequestRemovalLoopLimit = 100;
 
 static CountlyPersistency* s_sharedInstance = nil;
 static dispatch_once_t onceToken;
@@ -98,7 +98,7 @@ static dispatch_once_t onceToken;
                 // we should remove amount of limit at max
                 // for example if exceeded count is 136 and our limit is 100 we should remove 100 items
                 // in other case if exceeded count is 36 and out limit is 100 we can only remove 36 items because we have that amount
-                NSUInteger gonnaRemoveSize = MIN(exceededSize, CountlyRequestRemovalLoopLimit);
+                NSUInteger gonnaRemoveSize = MIN(exceededSize, kCountlyRequestRemovalLoopLimit);
                 CLY_LOG_W(@"[CountlyPersistency] addToQueue, request queue size:[ %lu ] exceeded limit:[ %lu ], will remove first:[ %lu ] request(s)", self.queuedRequests.count, self.storedRequestsLimit, gonnaRemoveSize);
                 NSRange itemsToRemove = NSMakeRange(0, gonnaRemoveSize);
                 [self.queuedRequests removeObjectsInRange:itemsToRemove];
