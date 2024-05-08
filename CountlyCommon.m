@@ -331,10 +331,36 @@ void CountlyPrint(NSString *stringToPrint)
             #pragma GCC diagnostic pop
         }
 
+        self.webView.navigationDelegate = self;
         frame = UIEdgeInsetsInsetRect(frame, insets);
         self.webView.frame = frame;
     }
 }
+
+- (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
+    NSString *url = navigationAction.request.URL.absoluteString;
+    if ([url containsString:@"?cly_x_int=1"]) {
+        [[UIApplication sharedApplication] openURL:navigationAction.request.URL options:@{} completionHandler:^(BOOL success) {
+            if (success) {
+                NSLog(@"Opened url");
+            }
+        }];
+        decisionHandler(WKNavigationActionPolicyCancel);
+        return;
+    }
+    decisionHandler(WKNavigationActionPolicyAllow);
+}
+
+- (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(null_unspecified WKNavigation *)navigation
+{
+    NSLog(@"Web view has start loading");
+    
+}
+
+- (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
+    NSLog(@"Web view has finished loading");
+}
+
 
 @end
 
