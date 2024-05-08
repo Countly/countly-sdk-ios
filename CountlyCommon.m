@@ -26,7 +26,7 @@ NSString* const kCountlyOrientationKeyMode = @"mode";
 #endif
 @end
 
-NSString* const kCountlySDKVersion = @"24.4.0";
+NSString* const kCountlySDKVersion = @"24.4.1";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
@@ -35,6 +35,8 @@ NSString* const kCountlyInternalLogPrefix = @"[Countly] ";
 
 
 @implementation CountlyCommon
+
+@synthesize lastTimestamp;
 
 static CountlyCommon *s_sharedInstance = nil;
 static dispatch_once_t onceToken;
@@ -50,7 +52,8 @@ static dispatch_once_t onceToken;
     {
         gregorianCalendar = [NSCalendar.alloc initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
         startTime = NSDate.date.timeIntervalSince1970;
-
+        
+        self.lastTimestamp = 0;
         self.SDKVersion = kCountlySDKVersion;
         self.SDKName = kCountlySDKName;
     }

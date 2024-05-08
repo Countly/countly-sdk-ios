@@ -1,3 +1,16 @@
+## 24.4.1
+* Excluded internal keys and values from internal limits
+* Fixed internal limits not being applied to various data types including:
+    * Custom Metrics
+    * Crash Segmentation
+    * Segmentation provided when recording exception
+    * APM metrics
+    
+* Mitigated issues related to recording reserved events
+* Resolved the issue of checking if reserved events are linked with consent
+* Fixed issues related to start and end event functionalities
+
+
 ## 24.4.0
 * Added `attemptToSendStoredRequests` method to combine all events in event queue into a request and attempt to process stored requests
 * Added the iOS privacy manifest to the Countly SDK

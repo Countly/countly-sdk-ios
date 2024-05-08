@@ -153,7 +153,8 @@ static dispatch_once_t onceToken;
 
     CountlyCommon.sharedInstance.attributionID = config.attributionID;
 
-    CountlyDeviceInfo.sharedInstance.customMetrics = [config.customMetrics cly_truncated:@"Custom metric"];
+    NSDictionary* customMetricsTruncated = [config.customMetrics cly_truncated:@"Custom metric"];
+    CountlyDeviceInfo.sharedInstance.customMetrics = [customMetricsTruncated cly_limited:@"Custom metric"];
 
     [Countly.user save];
     
@@ -206,7 +207,7 @@ static dispatch_once_t onceToken;
 #endif
 #endif
 
-    CountlyCrashReporter.sharedInstance.crashSegmentation = [config.crashSegmentation cly_truncated:@"Crash segmentation"];
+    CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
     CountlyCrashReporter.sharedInstance.crashLogLimit = config.sdkInternalLimits.getMaxBreadcrumbCount;
     // For backward compatibility, deprecated values are only set incase new values are not provided using sdkInternalLimits interface
     if(CountlyCrashReporter.sharedInstance.crashLogLimit == kCountlyMaxBreadcrumbCount && config.crashLogLimit != kCountlyMaxBreadcrumbCount) {
@@ -759,25 +760,22 @@ static dispatch_once_t onceToken;
 {
     CLY_LOG_I(@"%s %@ %@ %lu %f %f", __FUNCTION__, key, segmentation, (unsigned long)count, sum, duration);
 
+    if (!CountlyConsentManager.sharedInstance.consentForEvents)
+    {
+        CLY_LOG_W(@"Consent for events not given! Event will not be recorded.");
+        return;
+    }
+    
     BOOL isReservedEvent = [self isReservedEvent:key];
 
     if (isReservedEvent)
     {
-        CLY_LOG_V(@"A reserved event detected: %@", key);
-
-        if (!isReservedEvent)
-        {
-            CLY_LOG_W(@"Specific consent not given for the reserved event! So, it will not be recorded.");
-            return;
-        }
-
-        CLY_LOG_V(@"Specific consent given for the reserved event! So, it will be recorded.");
-    }
-    else if (!CountlyConsentManager.sharedInstance.consentForEvents)
-    {
-        CLY_LOG_W(@"Events consent not given! Event will not be recorded.");
+        CLY_LOG_W(@"A reserved event detected for key: '%@', event will not be recorded.", key);
         return;
     }
+    
+    NSDictionary* truncated = [segmentation cly_truncated:@"Event segmentation"];
+    segmentation = [truncated cly_limited:@"Event segmentation"];
 
     [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration ID:nil timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
 }
@@ -807,7 +805,6 @@ static dispatch_once_t onceToken;
         return;
 
     CountlyEvent *event = CountlyEvent.new;
-    event.key = key;
     event.ID = ID;
     if (!event.ID.length)
     {
@@ -829,10 +826,11 @@ static dispatch_once_t onceToken;
     // If the event is not reserved, assign the previous event ID to the current event's PEID property, or an empty string if previousEventID is nil. Then, update previousEventID to the current event's ID.
     if (!isReservedEvent)
     {
+        key = [key cly_truncatedKey:@"Event key"];
         event.PEID = previousEventID ?: @"";
         previousEventID = event.ID;
     }
-    
+    event.key = key;
     event.segmentation = segmentation;
     event.count = MAX(count, 1);
     event.sum = sum;
@@ -846,18 +844,17 @@ static dispatch_once_t onceToken;
 
 - (BOOL)isReservedEvent:(NSString *)key
 {
-    NSDictionary <NSString *, NSNumber *>* reservedEvents =
-    @{
-        kCountlyReservedEventOrientation: @(CountlyConsentManager.sharedInstance.consentForUserDetails),
-        kCountlyReservedEventStarRating: @(CountlyConsentManager.sharedInstance.consentForFeedback),
-        kCountlyReservedEventSurvey: @(CountlyConsentManager.sharedInstance.consentForFeedback),
-        kCountlyReservedEventNPS: @(CountlyConsentManager.sharedInstance.consentForFeedback),
-        kCountlyReservedEventPushAction: @(CountlyConsentManager.sharedInstance.consentForPushNotifications),
-        kCountlyReservedEventView: @(CountlyConsentManager.sharedInstance.consentForViewTracking),
-    };
+    NSArray<NSString *>* reservedEvents =
+    @[
+        kCountlyReservedEventOrientation,
+        kCountlyReservedEventStarRating,
+        kCountlyReservedEventSurvey,
+        kCountlyReservedEventNPS,
+        kCountlyReservedEventPushAction,
+        kCountlyReservedEventView,
+    ];
     
-    NSNumber* aReservedEvent = reservedEvents[key];
-    return aReservedEvent.boolValue;
+    return [reservedEvents containsObject:key];
 }
 
 #pragma mark -
@@ -872,8 +869,6 @@ static dispatch_once_t onceToken;
     CountlyEvent *event = CountlyEvent.new;
     event.key = key;
     event.timestamp = CountlyCommon.sharedInstance.uniqueTimestamp;
-    event.hourOfDay = CountlyCommon.sharedInstance.hourOfDay;
-    event.dayOfWeek = CountlyCommon.sharedInstance.dayOfWeek;
 
     [CountlyPersistency.sharedInstance recordTimedEvent:event];
 }
@@ -898,12 +893,8 @@ static dispatch_once_t onceToken;
         return;
     }
 
-    event.segmentation = segmentation;
-    event.count = MAX(count, 1);
-    event.sum = sum;
-    event.duration = NSDate.date.timeIntervalSince1970 - event.timestamp;
-
-    [CountlyPersistency.sharedInstance recordEvent:event];
+    NSTimeInterval duration = NSDate.date.timeIntervalSince1970 - event.timestamp;
+    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration];
 }
 
 - (void)cancelEvent:(NSString *)key
