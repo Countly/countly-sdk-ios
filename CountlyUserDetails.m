@@ -400,11 +400,53 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
     if (self.modifications.count)
     {
-        NSDictionary* modificationsTruncated = [self.modifications cly_truncated:@"User details modifications"];
-        [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyUDKeyCustom: modificationsTruncated} cly_JSONify]];
+        [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyUDKeyCustom: [self truncateModifications]} cly_JSONify]];
     }
 
     [self clearUserDetails];
+}
+
+
+- (NSDictionary *)truncateModifications
+{
+    NSMutableDictionary* truncatedDict = self.modifications.mutableCopy;
+    [self.modifications enumerateKeysAndObjectsUsingBlock:^(NSString * key, id obj, BOOL * stop)
+     {
+        NSString* truncatedKey = [key cly_truncatedKey:@"User details modifications key"];
+        if (![truncatedKey isEqualToString:key])
+        {
+            truncatedDict[truncatedKey] = obj;
+            [truncatedDict removeObjectForKey:key];
+        }
+        
+        if ([obj isKindOfClass:NSString.class])
+        {
+            NSString* truncatedValue = [obj cly_truncatedValue:@"User details modifications value"];
+            if (![truncatedValue isEqualToString:obj])
+            {
+                truncatedDict[truncatedKey] = truncatedValue;
+            }
+        }
+        else if ([obj isKindOfClass:NSDictionary.class])
+        {
+            NSMutableDictionary* truncatedValueDict = ((NSDictionary *)obj).mutableCopy;
+            [(NSDictionary *)obj enumerateKeysAndObjectsUsingBlock:^(NSString * key, id value, BOOL * stop)
+             {
+                if ([value isKindOfClass:NSString.class])
+                {
+                    NSString* truncatedValue = [value cly_truncatedValue:@"User details modifications value"];
+                    if (![truncatedValue isEqualToString:value])
+                    {
+                        truncatedValueDict[key] = truncatedValue;
+                        truncatedDict[truncatedKey] = truncatedValueDict;
+                    }
+                }
+            }];
+        }
+        
+    }];
+    
+    return truncatedDict.copy;
 }
 
 @end
