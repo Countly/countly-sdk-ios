@@ -356,15 +356,13 @@ void CountlySignalHandler(int signalCode)
     
     log = [log cly_truncatedValue:@"Custom Crash log"];
 
-    NSString* logWithDateTime = [NSString stringWithFormat:@"<%@> %@",[self.dateFormatter stringFromDate:NSDate.date], log];
-
     if (self.shouldUsePLCrashReporter)
     {
-        [CountlyPersistency.sharedInstance writeCustomCrashLogToFile:logWithDateTime];
+        [CountlyPersistency.sharedInstance writeCustomCrashLogToFile:log];
     }
     else
     {
-        [self.customCrashLogs addObject:logWithDateTime];
+        [self.customCrashLogs addObject:log];
 
         if (self.customCrashLogs.count > self.crashLogLimit)
             [self.customCrashLogs removeObjectAtIndex:0];
