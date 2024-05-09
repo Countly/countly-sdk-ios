@@ -1,4 +1,5 @@
 ## 24.4.1
+* Enhanced feedback widget functionality to allow opening custom URLs in external browsers for improved user experience
 * Excluded internal keys and values from internal limits
 * Eliminated unnecessary timestamps from crash breadcrumbs, originally added by the SDK, as they do not provide any useful information.
 * Fixed internal limits not being applied to various data types including:
