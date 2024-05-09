@@ -84,7 +84,7 @@ BOOL enableForegroundBackgroundTracking;
 #if (TARGET_OS_OSX)
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(applicationDidBecomeActive:) name:NSApplicationDidBecomeActiveNotification object:nil];
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(applicationWillResignActive:) name:NSApplicationWillResignActiveNotification object:nil];
-#elif (TARGET_OS_IOS  || TARGET_OS_TV)
+#elif (TARGET_OS_IOS || TARGET_OS_VISION  || TARGET_OS_TV)
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(applicationDidBecomeActive:) name:UIApplicationDidBecomeActiveNotification object:nil];
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(applicationWillResignActive:) name:UIApplicationWillResignActiveNotification object:nil];
 #endif
@@ -100,7 +100,7 @@ BOOL enableForegroundBackgroundTracking;
 #if (TARGET_OS_OSX)
     [NSNotificationCenter.defaultCenter removeObserver:self name:NSApplicationDidBecomeActiveNotification object:nil];
     [NSNotificationCenter.defaultCenter removeObserver:self name:NSApplicationWillResignActiveNotification object:nil];
-#elif (TARGET_OS_IOS  || TARGET_OS_TV)
+#elif (TARGET_OS_IOS || TARGET_OS_VISION  || TARGET_OS_TV)
     [NSNotificationCenter.defaultCenter removeObserver:self name:UIApplicationDidBecomeActiveNotification object:nil];
     [NSNotificationCenter.defaultCenter removeObserver:self name:UIApplicationWillResignActiveNotification object:nil];
 #endif

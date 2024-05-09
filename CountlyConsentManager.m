@@ -311,7 +311,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 {
     _consentForPushNotifications = consentForPushNotifications;
 
-#if (TARGET_OS_IOS || TARGET_OS_OSX)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_OSX)
     if (consentForPushNotifications)
     {
         CLY_LOG_D(@"Consent for PushNotifications is given.");
@@ -352,7 +352,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 {
     _consentForViewTracking = consentForViewTracking;
 
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
     if (consentForViewTracking)
     {
         CLY_LOG_D(@"Consent for ViewTracking is given.");
@@ -390,7 +390,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 {
     _consentForPerformanceMonitoring = consentForPerformanceMonitoring;
 
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
     if (consentForPerformanceMonitoring)
     {
         CLY_LOG_D(@"Consent for PerformanceMonitoring is given.");

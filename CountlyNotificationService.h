@@ -6,7 +6,7 @@
 
 #import <Foundation/Foundation.h>
 
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 #import <UserNotifications/UserNotifications.h>
 #endif
 
@@ -24,7 +24,7 @@ extern NSString* const kCountlyPNKeyActionButtonTitle;
 extern NSString* const kCountlyPNKeyActionButtonURL;
 
 @interface CountlyNotificationService : NSObject
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 + (void)didReceiveNotificationRequest:(UNNotificationRequest *)request withContentHandler:(void (^)(UNNotificationContent *))contentHandler API_AVAILABLE(ios(10.0));
 #endif
 

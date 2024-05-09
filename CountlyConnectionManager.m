@@ -775,7 +775,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (NSMutableData *)pictureUploadDataForQueryString:(NSString *)queryString
 {
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
     NSString* localPicturePath = nil;
 
     NSString* userDetails = [queryString cly_valueForQueryStringKey:kCountlyQSKeyUserDetails];
