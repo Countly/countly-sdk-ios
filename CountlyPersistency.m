@@ -89,10 +89,10 @@ static dispatch_once_t onceToken;
     @synchronized (self)
     {
         [self.queuedRequests addObject:queryString];
-        if (self.queuedRequests.count > self.storedRequestsLimit && !CountlyConnectionManager.sharedInstance.connection)
+        if (self.queuedRequests.count > self.storedRequestsLimit)
         {
             [self removeOldAgeRequestsFromQueue];
-            if (self.queuedRequests.count > self.storedRequestsLimit && !CountlyConnectionManager.sharedInstance.connection)
+            if (self.queuedRequests.count > self.storedRequestsLimit)
             {
                 NSUInteger exceededSize = self.queuedRequests.count - self.storedRequestsLimit;
                 // we should remove amount of limit at max
