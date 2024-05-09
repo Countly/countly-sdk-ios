@@ -339,10 +339,14 @@ void CountlyPrint(NSString *stringToPrint)
 
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
     NSString *url = navigationAction.request.URL.absoluteString;
-    if ([url containsString:@"?cly_x_int=1"]) {
+    if ([url containsString:@"cly_x_int=1"]) {
+        CLY_LOG_I(@"%s Opening url [%@] in external browser", __FUNCTION__, url);
         [[UIApplication sharedApplication] openURL:navigationAction.request.URL options:@{} completionHandler:^(BOOL success) {
             if (success) {
-                NSLog(@"Opened url");
+                CLY_LOG_I(@"%s url [%@] opened in external browser", __FUNCTION__, url);
+            }
+            else {
+                CLY_LOG_I(@"%s unable to open url [%@] in external browser", __FUNCTION__, url);
             }
         }];
         decisionHandler(WKNavigationActionPolicyCancel);
@@ -353,12 +357,12 @@ void CountlyPrint(NSString *stringToPrint)
 
 - (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(null_unspecified WKNavigation *)navigation
 {
-    NSLog(@"Web view has start loading");
+    CLY_LOG_I(@"%s Web view has start loading", __FUNCTION__);
     
 }
 
 - (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
-    NSLog(@"Web view has finished loading");
+    CLY_LOG_I(@"%s Web view has finished loading", __FUNCTION__);
 }
 
 

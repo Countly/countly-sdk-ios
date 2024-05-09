@@ -200,9 +200,21 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     [URL appendString:feedbackTypeEndpoint];
     [URL appendFormat:@"?%@", queryString];
     
-    // Append the custom parameter "custom.tc=1"
-    [URL appendString:@"&custom.tc=1"];
+    // customParams is an NSDictionary containing the custom key-value pairs
+    NSDictionary *customParams = @{@"tc": @"1"};
+    
+    // Build custom parameter string
+    NSMutableString *customString = [NSMutableString stringWithString:@"&custom="];
+    [customString appendString:@"{"];
+    [customParams enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+        [customString appendFormat:@"%@:%@,", key, obj];
+    }];
+    [customString deleteCharactersInRange:NSMakeRange(customString.length - 1, 1)]; // Remove the last comma
+    [customString appendString:@"}"];
 
+    // Append custom parameter
+    [URL appendString:customString];
+    
     NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:URL]];
     return request;
 }
