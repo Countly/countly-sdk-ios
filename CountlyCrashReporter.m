@@ -257,37 +257,13 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
                         [CountlyCrashReporter.sharedInstance isMatchingFilter:exception.name];
     }
 
-    NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
+    NSMutableDictionary* crashReport = [CountlyCrashReporter.sharedInstance getCrashMetrics];
     crashReport[kCountlyCRKeyError] = stackTraceJoined;
     crashReport[kCountlyCRKeyBinaryImages] = [CountlyCrashReporter.sharedInstance binaryImagesForStackTrace:stackTrace];
-    crashReport[kCountlyCRKeyOS] = CountlyDeviceInfo.osName;
-    crashReport[kCountlyCRKeyOSVersion] = CountlyDeviceInfo.osVersion;
-    crashReport[kCountlyCRKeyDevice] = CountlyDeviceInfo.device;
-    crashReport[kCountlyCRKeyArchitecture] = CountlyDeviceInfo.architecture;
-    crashReport[kCountlyCRKeyResolution] = CountlyDeviceInfo.resolution;
-    crashReport[kCountlyCRKeyAppVersion] = CountlyDeviceInfo.appVersion;
-    crashReport[kCountlyCRKeyAppBuild] = CountlyDeviceInfo.appBuild;
-    crashReport[kCountlyCRKeyBuildUUID] = CountlyCrashReporter.sharedInstance.buildUUID ?: @"";
-    crashReport[kCountlyCRKeyExecutableName] = CountlyCrashReporter.sharedInstance.executableName ?: @"";
     crashReport[kCountlyCRKeyName] = exception.description;
     crashReport[kCountlyCRKeyType] = exception.name;
     crashReport[kCountlyCRKeyNonfatal] = @(!isFatal);
-    crashReport[kCountlyCRKeyRAMCurrent] = @((CountlyDeviceInfo.totalRAM - CountlyDeviceInfo.freeRAM) / kCLYMebibit);
-    crashReport[kCountlyCRKeyRAMTotal] = @(CountlyDeviceInfo.totalRAM / kCLYMebibit);
-    crashReport[kCountlyCRKeyDiskCurrent] = @((CountlyDeviceInfo.totalDisk - CountlyDeviceInfo.freeDisk) / kCLYMebibit);
-    crashReport[kCountlyCRKeyDiskTotal] = @(CountlyDeviceInfo.totalDisk / kCLYMebibit);
-    NSInteger batteryLevel = CountlyDeviceInfo.batteryLevel;
-    // We will add battery level only if there is a valid value.
-    if (batteryLevel >= 0)
-    {
-        crashReport[kCountlyCRKeyBattery] = @(batteryLevel);
-    }
-    crashReport[kCountlyCRKeyOrientation] = CountlyDeviceInfo.orientation;
-    crashReport[kCountlyCRKeyOnline] = @((CountlyDeviceInfo.connectionType) ? 1 : 0 );
-    crashReport[kCountlyCRKeyRoot] = @(CountlyDeviceInfo.isJailbroken);
-    crashReport[kCountlyCRKeyBackground] = @(CountlyDeviceInfo.isInBackground);
-    crashReport[kCountlyCRKeyRun] = @(CountlyCommon.sharedInstance.timeSinceLaunch);
-
+    
     NSMutableDictionary* custom = NSMutableDictionary.new;
     if (CountlyCrashReporter.sharedInstance.crashSegmentation)
         [custom addEntriesFromDictionary:CountlyCrashReporter.sharedInstance.crashSegmentation];
@@ -480,6 +456,65 @@ void CountlySignalHandler(int signalCode)
 {
     NSDictionary* truncatedSegmentation = [crashSegmentation cly_truncated:@"Crash segmentation"];
     _crashSegmentation = [truncatedSegmentation cly_limited:@"Crash segmentation"];
+}
+
+- (CrashData *)prepareCrashDataWithError:(NSString *)error handled:(BOOL)handled isNativeCrash:(BOOL)isNativeCrash customSegmentation:(NSDictionary<NSString *, id> *)customSegmentation {
+    NSAssert(error != nil, @"Error must not be nil");
+    
+    if (!isNativeCrash) {
+        NSRange range = NSMakeRange(0, MIN(20000, error.length));
+        error = [error substringWithRange:range];
+    }
+    
+    NSMutableDictionary<NSString *, id> *combinedSegmentationValues = [NSMutableDictionary dictionary];
+    if (customSegmentation != nil) {
+        [combinedSegmentationValues addEntriesFromDictionary:customSegmentation];
+    }
+    
+    // Assuming customCrashSegments is defined somewhere and it's accessible
+    if (self.crashSegmentation != nil) {
+        [combinedSegmentationValues addEntriesFromDictionary:self.crashSegmentation];
+    }
+    
+    
+    NSDictionary* truncatedSegmentation = [combinedSegmentationValues cly_truncated:@"Exception segmentation"];
+    NSDictionary* limitedSegmentation = [truncatedSegmentation cly_limited:@"[CountlyCrashReporter] prepareCrashData"];
+    
+    return [[CrashData alloc] initWithStackTrace:error crashSegmentation:limitedSegmentation breadcrumbs:self.customCrashLogs crashMetrics:[self getCrashMetrics] fatal:!handled];
+}
+
+- (NSMutableDictionary*)getCrashMetrics
+{
+    const NSInteger kCLYMebibit = 1048576;
+    NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
+    
+    crashReport[kCountlyCRKeyOS] = CountlyDeviceInfo.osName;
+    crashReport[kCountlyCRKeyOSVersion] = CountlyDeviceInfo.osVersion;
+    crashReport[kCountlyCRKeyDevice] = CountlyDeviceInfo.device;
+    crashReport[kCountlyCRKeyArchitecture] = CountlyDeviceInfo.architecture;
+    crashReport[kCountlyCRKeyResolution] = CountlyDeviceInfo.resolution;
+    crashReport[kCountlyCRKeyAppVersion] = CountlyDeviceInfo.appVersion;
+    crashReport[kCountlyCRKeyAppBuild] = CountlyDeviceInfo.appBuild;
+    crashReport[kCountlyCRKeyBuildUUID] = CountlyCrashReporter.sharedInstance.buildUUID ?: @"";
+    crashReport[kCountlyCRKeyExecutableName] = CountlyCrashReporter.sharedInstance.executableName ?: @"";
+   
+    crashReport[kCountlyCRKeyRAMCurrent] = @((CountlyDeviceInfo.totalRAM - CountlyDeviceInfo.freeRAM) / kCLYMebibit);
+    crashReport[kCountlyCRKeyRAMTotal] = @(CountlyDeviceInfo.totalRAM / kCLYMebibit);
+    crashReport[kCountlyCRKeyDiskCurrent] = @((CountlyDeviceInfo.totalDisk - CountlyDeviceInfo.freeDisk) / kCLYMebibit);
+    crashReport[kCountlyCRKeyDiskTotal] = @(CountlyDeviceInfo.totalDisk / kCLYMebibit);
+    NSInteger batteryLevel = CountlyDeviceInfo.batteryLevel;
+    // We will add battery level only if there is a valid value.
+    if (batteryLevel >= 0)
+    {
+        crashReport[kCountlyCRKeyBattery] = @(batteryLevel);
+    }
+    crashReport[kCountlyCRKeyOrientation] = CountlyDeviceInfo.orientation;
+    crashReport[kCountlyCRKeyOnline] = @((CountlyDeviceInfo.connectionType) ? 1 : 0 );
+    crashReport[kCountlyCRKeyRoot] = @(CountlyDeviceInfo.isJailbroken);
+    crashReport[kCountlyCRKeyBackground] = @(CountlyDeviceInfo.isInBackground);
+    crashReport[kCountlyCRKeyRun] = @(CountlyCommon.sharedInstance.timeSinceLaunch);
+    
+    return crashReport;
 }
 
 @end
