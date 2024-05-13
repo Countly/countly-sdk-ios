@@ -1,17 +1,13 @@
 ## 24.4.1
-* Enhanced feedback widget functionality to allow opening custom URLs in external browsers for improved user experience
-* Excluded internal keys and values from internal limits
-* Eliminated unnecessary timestamps from crash breadcrumbs, originally added by the SDK, as they do not provide any useful information.
-* Fixed internal limits not being applied to various data types including:
-    * Custom Metrics
-    * Crash Segmentation
-    * Segmentation provided when recording exception
-    * APM metrics
-    
-* Mitigated issues related to recording reserved events
-* Resolved the issue of checking if reserved events are linked with consent
-* Fixed issues related to start and end event functionalities
+* Added support for Feedback Widget terms and conditions
 
+* Mitigated an issue where SDK limits could affect internal keys
+* Mitigated an issue that enabled recording reserved events
+* Mitigated an issue where timed events could have no ID
+* Mitigated an issue where internal limits were not being applied to some values
+* Mitigated an issue where the request queue could overflow while sending a request
+
+* Removed timestamps from crash breadcrumbs
 
 ## 24.4.0
 * Added `attemptToSendStoredRequests` method to combine all events in event queue into a request and attempt to process stored requests
