@@ -3,6 +3,7 @@
   
 * Mitigated an issue where SDK limits could effect internal keys
 * Mitigated an issue that enabled recording reserved events
+* Mitigated an issue where timed events could have no ID
 * Mitigated an issue where internal limits were not being applied to some values
 * Mititgated an issue where request queue could overflow while sending a request
   
