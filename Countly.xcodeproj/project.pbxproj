@@ -28,11 +28,11 @@
 		39527E152B5FD27400EE5D7B /* CountlyAPMConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 39527E142B5FD27400EE5D7B /* CountlyAPMConfig.m */; };
 		39527E182B5FD54C00EE5D7B /* CountlyAPMConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 39527E162B5FD28900EE5D7B /* CountlyAPMConfig.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		39911B672B457DBB00AC053C /* Resettable.h in Headers */ = {isa = PBXBuildFile; fileRef = 39911B662B457DB500AC053C /* Resettable.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		39924ECE2BEBD0B700139F91 /* ConfigCrashes.h in Headers */ = {isa = PBXBuildFile; fileRef = 39924ECD2BEBD0B700139F91 /* ConfigCrashes.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		39924ED02BEBD0D400139F91 /* ConfigCrashes.m in Sources */ = {isa = PBXBuildFile; fileRef = 39924ECF2BEBD0D400139F91 /* ConfigCrashes.m */; };
-		39924ED22BEBD1BB00139F91 /* CrashFilterCallback.h in Headers */ = {isa = PBXBuildFile; fileRef = 39924ED12BEBD1BA00139F91 /* CrashFilterCallback.h */; };
-		39924ED62BEBD20F00139F91 /* CrashData.m in Sources */ = {isa = PBXBuildFile; fileRef = 39924ED52BEBD20F00139F91 /* CrashData.m */; };
-		39924ED82BEBD22100139F91 /* CrashData.h in Headers */ = {isa = PBXBuildFile; fileRef = 39924ED72BEBD22100139F91 /* CrashData.h */; };
+		39924ECE2BEBD0B700139F91 /* CountlyCrashesConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 39924ECD2BEBD0B700139F91 /* CountlyCrashesConfig.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		39924ED02BEBD0D400139F91 /* CountlyCrashesConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 39924ECF2BEBD0D400139F91 /* CountlyCrashesConfig.m */; };
+		39924ED22BEBD1BB00139F91 /* CountlyCrashFilterCallback.h in Headers */ = {isa = PBXBuildFile; fileRef = 39924ED12BEBD1BA00139F91 /* CountlyCrashFilterCallback.h */; };
+		39924ED62BEBD20F00139F91 /* CountlyCrashData.m in Sources */ = {isa = PBXBuildFile; fileRef = 39924ED52BEBD20F00139F91 /* CountlyCrashData.m */; };
+		39924ED82BEBD22100139F91 /* CountlyCrashData.h in Headers */ = {isa = PBXBuildFile; fileRef = 39924ED72BEBD22100139F91 /* CountlyCrashData.h */; };
 		3B20A9872245225A00E3D7AE /* Countly.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9852245225A00E3D7AE /* Countly.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3B20A9B22245228700E3D7AE /* CountlyConnectionManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A98D2245228300E3D7AE /* CountlyConnectionManager.h */; };
 		3B20A9B32245228700E3D7AE /* CountlyNotificationService.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B20A98E2245228300E3D7AE /* CountlyNotificationService.m */; };
@@ -104,11 +104,11 @@
 		39527E162B5FD28900EE5D7B /* CountlyAPMConfig.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyAPMConfig.h; sourceTree = "<group>"; };
 		395683372BB2988300C7A06B /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		39911B662B457DB500AC053C /* Resettable.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Resettable.h; sourceTree = "<group>"; };
-		39924ECD2BEBD0B700139F91 /* ConfigCrashes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ConfigCrashes.h; sourceTree = "<group>"; };
-		39924ECF2BEBD0D400139F91 /* ConfigCrashes.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ConfigCrashes.m; sourceTree = "<group>"; };
-		39924ED12BEBD1BA00139F91 /* CrashFilterCallback.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CrashFilterCallback.h; sourceTree = "<group>"; };
-		39924ED52BEBD20F00139F91 /* CrashData.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CrashData.m; sourceTree = "<group>"; };
-		39924ED72BEBD22100139F91 /* CrashData.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CrashData.h; sourceTree = "<group>"; };
+		39924ECD2BEBD0B700139F91 /* CountlyCrashesConfig.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyCrashesConfig.h; sourceTree = "<group>"; };
+		39924ECF2BEBD0D400139F91 /* CountlyCrashesConfig.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyCrashesConfig.m; sourceTree = "<group>"; };
+		39924ED12BEBD1BA00139F91 /* CountlyCrashFilterCallback.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyCrashFilterCallback.h; sourceTree = "<group>"; };
+		39924ED52BEBD20F00139F91 /* CountlyCrashData.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyCrashData.m; sourceTree = "<group>"; };
+		39924ED72BEBD22100139F91 /* CountlyCrashData.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyCrashData.h; sourceTree = "<group>"; };
 		3B20A9822245225A00E3D7AE /* Countly.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Countly.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B20A9852245225A00E3D7AE /* Countly.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Countly.h; sourceTree = "<group>"; };
 		3B20A9862245225A00E3D7AE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -181,11 +181,11 @@
 		3B20A9782245225A00E3D7AE = {
 			isa = PBXGroup;
 			children = (
-				39924ED72BEBD22100139F91 /* CrashData.h */,
-				39924ED52BEBD20F00139F91 /* CrashData.m */,
-				39924ED12BEBD1BA00139F91 /* CrashFilterCallback.h */,
-				39924ECD2BEBD0B700139F91 /* ConfigCrashes.h */,
-				39924ECF2BEBD0D400139F91 /* ConfigCrashes.m */,
+				39924ED72BEBD22100139F91 /* CountlyCrashData.h */,
+				39924ED52BEBD20F00139F91 /* CountlyCrashData.m */,
+				39924ED12BEBD1BA00139F91 /* CountlyCrashFilterCallback.h */,
+				39924ECD2BEBD0B700139F91 /* CountlyCrashesConfig.h */,
+				39924ECF2BEBD0D400139F91 /* CountlyCrashesConfig.m */,
 				395683372BB2988300C7A06B /* PrivacyInfo.xcprivacy */,
 				3948A8562BAC2E7D002D09AA /* CountlySDKLimitsConfig.h */,
 				3948A8552BAC2E7D002D09AA /* CountlySDKLimitsConfig.m */,
@@ -270,12 +270,12 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				39924ECE2BEBD0B700139F91 /* ConfigCrashes.h in Headers */,
+				39924ECE2BEBD0B700139F91 /* CountlyCrashesConfig.h in Headers */,
 				1A478D032AB314750056A5E7 /* CountlyExperimentInformation.h in Headers */,
 				3B20A9D32245228700E3D7AE /* CountlyPushNotifications.h in Headers */,
 				3B20A9C42245228700E3D7AE /* CountlyUserDetails.h in Headers */,
 				3B20A9CA2245228700E3D7AE /* CountlyConfig.h in Headers */,
-				39924ED22BEBD1BB00139F91 /* CrashFilterCallback.h in Headers */,
+				39924ED22BEBD1BB00139F91 /* CountlyCrashFilterCallback.h in Headers */,
 				3B20A9872245225A00E3D7AE /* Countly.h in Headers */,
 				1A423EA02A271FE0008C4757 /* CountlyRCData.h in Headers */,
 				3B20A9C12245228700E3D7AE /* CountlyRemoteConfig.h in Headers */,
@@ -298,7 +298,7 @@
 				1A3110702A7141AF001CB507 /* CountlyViewTracking.h in Headers */,
 				3B20A9B72245228700E3D7AE /* CountlyPersistency.h in Headers */,
 				D249BF5E254D3D180058A6C2 /* CountlyFeedbackWidget.h in Headers */,
-				39924ED82BEBD22100139F91 /* CrashData.h in Headers */,
+				39924ED82BEBD22100139F91 /* CountlyCrashData.h in Headers */,
 				D2CFEF972545FBE80026B044 /* CountlyFeedbacks.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -418,7 +418,7 @@
 				3B20A9B52245228700E3D7AE /* CountlyCommon.m in Sources */,
 				1ACA5DC22A309E7F001F770B /* CountlyRemoteConfigInternal.m in Sources */,
 				3B20A9CF2245228700E3D7AE /* CountlyDeviceInfo.m in Sources */,
-				39924ED02BEBD0D400139F91 /* ConfigCrashes.m in Sources */,
+				39924ED02BEBD0D400139F91 /* CountlyCrashesConfig.m in Sources */,
 				3B20A9CE2245228700E3D7AE /* CountlyCrashReporter.m in Sources */,
 				3B20A9D42245228700E3D7AE /* CountlyPersistency.m in Sources */,
 				3B20A9B32245228700E3D7AE /* CountlyNotificationService.m in Sources */,
@@ -437,7 +437,7 @@
 				3B20A9C92245228700E3D7AE /* CountlyUserDetails.m in Sources */,
 				3B20A9D12245228700E3D7AE /* CountlyConfig.m in Sources */,
 				1A9027FE2AB197B50044EBCF /* CountlyExperimentInformation.m in Sources */,
-				39924ED62BEBD20F00139F91 /* CrashData.m in Sources */,
+				39924ED62BEBD20F00139F91 /* CountlyCrashData.m in Sources */,
 				3B20A9C82245228700E3D7AE /* CountlyViewTrackingInternal.m in Sources */,
 				3B20A9D22245228700E3D7AE /* CountlyLocationManager.m in Sources */,
 			);

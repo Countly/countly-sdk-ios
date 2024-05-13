@@ -1,9 +1,9 @@
 // CrashData.m
 
-#import "CrashData.h"
+#import "CountlyCrashData.h"
 #import "CountlyCommon.h"
 
-@implementation CrashData
+@implementation CountlyCrashData
 
 - (instancetype)initWithStackTrace:(NSString *)stackTrace crashSegmentation:(NSDictionary<NSString *, id> *)crashSegmentation breadcrumbs:(NSArray<NSString *> *)breadcrumbs crashMetrics:(NSDictionary<NSString *, id> *)crashMetrics fatal:(BOOL)fatal {
     self = [super init];

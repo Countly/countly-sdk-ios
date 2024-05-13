@@ -4,13 +4,12 @@
 //
 // Please visit www.count.ly for more information.
 
-#import "ConfigCrashes.h"
+#import "CountlyCrashesConfig.h"
 
-@implementation ConfigCrashes
+@implementation CountlyCrashesConfig
 
-- (instancetype)setCrashFilterCallback:(id<CrashFilterCallback>)callback {
+- (void)setCrashFilterCallback:(id<CountlyCrashFilterCallback>)callback {
     self.crashFilterCallback = callback;
-    return self;
 }
 
 @end

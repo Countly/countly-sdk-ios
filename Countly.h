@@ -19,7 +19,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface Countly : NSObject <Resettable>
+@interface Countly : NSObject <Resettable, CountlyCrashFilterCallback>
 
 #pragma mark - Core
 

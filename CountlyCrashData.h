@@ -6,7 +6,7 @@
 
 #import <Foundation/Foundation.h>
 
-@interface CrashData : NSObject
+@interface CountlyCrashData : NSObject
 
 @property (nonatomic, copy, nonnull) NSString *stackTrace;
 @property (nonatomic, copy, nonnull) NSDictionary<NSString *, id> *crashSegmentation;

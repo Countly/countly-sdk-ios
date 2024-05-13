@@ -256,6 +256,13 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
                         [CountlyCrashReporter.sharedInstance isMatchingFilter:exception.description] ||
                         [CountlyCrashReporter.sharedInstance isMatchingFilter:exception.name];
     }
+    
+    CountlyCrashData* crashData = [CountlyCrashReporter.sharedInstance prepareCrashDataWithError:stackTraceJoined handled:!isFatal isNativeCrash:false customSegmentation:nil];
+    // Directly passing the callback as we are doing prviouslt with download variant
+    matchesFilter=  [CountlyCrashReporter.sharedInstance crashFilterCallback:crashData];
+    
+    // Need to set delegate or implement a protocol in host app
+    matchesFilter =  [CountlyCrashReporter.sharedInstance.crashFilterCallback filterCrash:crashData];
 
     NSMutableDictionary* crashReport = [CountlyCrashReporter.sharedInstance getCrashMetrics];
     crashReport[kCountlyCRKeyError] = stackTraceJoined;
@@ -458,7 +465,7 @@ void CountlySignalHandler(int signalCode)
     _crashSegmentation = [truncatedSegmentation cly_limited:@"Crash segmentation"];
 }
 
-- (CrashData *)prepareCrashDataWithError:(NSString *)error handled:(BOOL)handled isNativeCrash:(BOOL)isNativeCrash customSegmentation:(NSDictionary<NSString *, id> *)customSegmentation {
+- (CountlyCrashData *)prepareCrashDataWithError:(NSString *)error handled:(BOOL)handled isNativeCrash:(BOOL)isNativeCrash customSegmentation:(NSDictionary<NSString *, id> *)customSegmentation {
     NSAssert(error != nil, @"Error must not be nil");
     
     if (!isNativeCrash) {
@@ -480,7 +487,7 @@ void CountlySignalHandler(int signalCode)
     NSDictionary* truncatedSegmentation = [combinedSegmentationValues cly_truncated:@"Exception segmentation"];
     NSDictionary* limitedSegmentation = [truncatedSegmentation cly_limited:@"[CountlyCrashReporter] prepareCrashData"];
     
-    return [[CrashData alloc] initWithStackTrace:error crashSegmentation:limitedSegmentation breadcrumbs:self.customCrashLogs crashMetrics:[self getCrashMetrics] fatal:!handled];
+    return [[CountlyCrashData alloc] initWithStackTrace:error crashSegmentation:limitedSegmentation breadcrumbs:self.customCrashLogs crashMetrics:[self getCrashMetrics] fatal:!handled];
 }
 
 - (NSMutableDictionary*)getCrashMetrics
