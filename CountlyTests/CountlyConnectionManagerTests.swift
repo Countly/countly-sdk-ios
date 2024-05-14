@@ -10,7 +10,7 @@ import XCTest
 @testable import Countly
 
 class CountlyConnectionManagerTests: CountlyBaseTestCase {
-    
+
     /**
      * <pre>
      * 1- Init countly with the limit of 250 requests
@@ -37,32 +37,32 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         Countly.sharedInstance().start(with: config);
         
         XCTAssertEqual(0, CountlyPersistency.sharedInstance().remainingRequestCount());
-
+        
         addRequests(count: 300);
         XCTAssertEqual(250, CountlyPersistency.sharedInstance().remainingRequestCount());
-
+        
         Countly.sharedInstance().halt(false)
         config.storedRequestsLimit = 10
         Countly.sharedInstance().start(with: config)
         
         XCTAssertEqual(250, CountlyPersistency.sharedInstance().remainingRequestCount());
-
+        
         addRequests(count:1);
         XCTAssertEqual(150, CountlyPersistency.sharedInstance().remainingRequestCount());
-
+        
         addRequests(count:1);
         XCTAssertEqual(50, CountlyPersistency.sharedInstance().remainingRequestCount());
-
+        
         addRequests(count:1);
         XCTAssertEqual(10, CountlyPersistency.sharedInstance().remainingRequestCount());
-
+        
         addRequests(count:17);
         XCTAssertEqual(10, CountlyPersistency.sharedInstance().remainingRequestCount());
         
         Countly.sharedInstance().halt(true)
         
     }
-
+    
     func addRequests(count: Int) {
         for i in 0...count-1 {
             CountlyPersistency.sharedInstance().add(toQueue: "&request=REQUEST\(i)")
