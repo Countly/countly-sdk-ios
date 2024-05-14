@@ -34,30 +34,30 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         config.storedRequestsLimit = 250
         config.manualSessionHandling = true
         // No Device ID provided during init
-        Countly.sharedInstance().start(with: config);
+        Countly.sharedInstance().start(with: config)
         
-        XCTAssertEqual(0, CountlyPersistency.sharedInstance().remainingRequestCount());
+        XCTAssertEqual(0, CountlyPersistency.sharedInstance().remainingRequestCount())
         
-        addRequests(count: 300);
-        XCTAssertEqual(250, CountlyPersistency.sharedInstance().remainingRequestCount());
+        addRequests(count: 300)
+        XCTAssertEqual(250, CountlyPersistency.sharedInstance().remainingRequestCount())
         
         Countly.sharedInstance().halt(false)
         config.storedRequestsLimit = 10
         Countly.sharedInstance().start(with: config)
         
-        XCTAssertEqual(250, CountlyPersistency.sharedInstance().remainingRequestCount());
+        XCTAssertEqual(250, CountlyPersistency.sharedInstance().remainingRequestCount())
         
-        addRequests(count:1);
-        XCTAssertEqual(150, CountlyPersistency.sharedInstance().remainingRequestCount());
+        addRequests(count:1)
+        XCTAssertEqual(150, CountlyPersistency.sharedInstance().remainingRequestCount())
         
-        addRequests(count:1);
-        XCTAssertEqual(50, CountlyPersistency.sharedInstance().remainingRequestCount());
+        addRequests(count:1)
+        XCTAssertEqual(50, CountlyPersistency.sharedInstance().remainingRequestCount())
         
-        addRequests(count:1);
-        XCTAssertEqual(10, CountlyPersistency.sharedInstance().remainingRequestCount());
+        addRequests(count:1)
+        XCTAssertEqual(10, CountlyPersistency.sharedInstance().remainingRequestCount())
         
-        addRequests(count:17);
-        XCTAssertEqual(10, CountlyPersistency.sharedInstance().remainingRequestCount());
+        addRequests(count:17)
+        XCTAssertEqual(10, CountlyPersistency.sharedInstance().remainingRequestCount())
         
         Countly.sharedInstance().halt(true)
         
