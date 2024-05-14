@@ -58,6 +58,8 @@
 		3B20A9D32245228700E3D7AE /* CountlyPushNotifications.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9AE2245228600E3D7AE /* CountlyPushNotifications.h */; };
 		3B20A9D42245228700E3D7AE /* CountlyPersistency.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B20A9AF2245228600E3D7AE /* CountlyPersistency.m */; };
 		3B20A9D62245228700E3D7AE /* CountlyConsentManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9B12245228700E3D7AE /* CountlyConsentManager.h */; };
+		968426812BF2302C007B303E /* CountlyConnectionManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 968426802BF2302C007B303E /* CountlyConnectionManagerTests.swift */; };
+		968426832BF231A2007B303E /* TestUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 968426822BF231A2007B303E /* TestUtils.swift */; };
 		D219374B248AC71C00E5798B /* CountlyPerformanceMonitoring.h in Headers */ = {isa = PBXBuildFile; fileRef = D2193749248AC71C00E5798B /* CountlyPerformanceMonitoring.h */; };
 		D219374C248AC71C00E5798B /* CountlyPerformanceMonitoring.m in Sources */ = {isa = PBXBuildFile; fileRef = D219374A248AC71C00E5798B /* CountlyPerformanceMonitoring.m */; };
 		D249BF5E254D3D180058A6C2 /* CountlyFeedbackWidget.h in Headers */ = {isa = PBXBuildFile; fileRef = D249BF5C254D3D170058A6C2 /* CountlyFeedbackWidget.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -131,6 +133,8 @@
 		3B20A9AE2245228600E3D7AE /* CountlyPushNotifications.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyPushNotifications.h; sourceTree = "<group>"; };
 		3B20A9AF2245228600E3D7AE /* CountlyPersistency.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyPersistency.m; sourceTree = "<group>"; };
 		3B20A9B12245228700E3D7AE /* CountlyConsentManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyConsentManager.h; sourceTree = "<group>"; };
+		968426802BF2302C007B303E /* CountlyConnectionManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyConnectionManagerTests.swift; sourceTree = "<group>"; };
+		968426822BF231A2007B303E /* TestUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestUtils.swift; sourceTree = "<group>"; };
 		D2193749248AC71C00E5798B /* CountlyPerformanceMonitoring.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyPerformanceMonitoring.h; sourceTree = "<group>"; };
 		D219374A248AC71C00E5798B /* CountlyPerformanceMonitoring.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyPerformanceMonitoring.m; sourceTree = "<group>"; };
 		D249BF5C254D3D170058A6C2 /* CountlyFeedbackWidget.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyFeedbackWidget.h; sourceTree = "<group>"; };
@@ -164,6 +168,8 @@
 				1A5C4C962B35B0850032EE1F /* CountlyTests.swift */,
 				1A50D7042B3C5AA3009C6938 /* CountlyBaseTestCase.swift */,
 				1AFD79012B3EF82C00772FBD /* CountlyTests-Bridging-Header.h */,
+				968426802BF2302C007B303E /* CountlyConnectionManagerTests.swift */,
+				968426822BF231A2007B303E /* TestUtils.swift */,
 			);
 			path = CountlyTests;
 			sourceTree = "<group>";
@@ -387,6 +393,8 @@
 			files = (
 				1A5C4C972B35B0850032EE1F /* CountlyTests.swift in Sources */,
 				1A50D7052B3C5AA3009C6938 /* CountlyBaseTestCase.swift in Sources */,
+				968426812BF2302C007B303E /* CountlyConnectionManagerTests.swift in Sources */,
+				968426832BF231A2007B303E /* TestUtils.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
