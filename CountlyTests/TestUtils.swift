@@ -3,7 +3,7 @@
 //  CountlyTests
 //
 //  Created by Arif Burak Demiray on 13.05.2024.
-//  Copyright © 2024 Alin Radut. All rights reserved.
+//  Copyright © 2024 Countly. All rights reserved.
 //
 
 import Foundation
