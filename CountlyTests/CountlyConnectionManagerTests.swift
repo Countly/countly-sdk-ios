@@ -47,16 +47,16 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         
         XCTAssertEqual(250, CountlyPersistency.sharedInstance().remainingRequestCount())
         
-        addRequests(count:1)
+        addRequests(count: 1)
         XCTAssertEqual(150, CountlyPersistency.sharedInstance().remainingRequestCount())
         
-        addRequests(count:1)
+        addRequests(count: 1)
         XCTAssertEqual(50, CountlyPersistency.sharedInstance().remainingRequestCount())
         
-        addRequests(count:1)
+        addRequests(count: 1)
         XCTAssertEqual(10, CountlyPersistency.sharedInstance().remainingRequestCount())
         
-        addRequests(count:17)
+        addRequests(count: 17)
         XCTAssertEqual(10, CountlyPersistency.sharedInstance().remainingRequestCount())
         
         Countly.sharedInstance().halt(true)
@@ -64,8 +64,8 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
     }
     
     func addRequests(count: Int) {
-        for i in 0...count-1 {
-            CountlyPersistency.sharedInstance().add(toQueue: "&request=REQUEST\(i)")
+        for loop in 0...count-1 {
+            CountlyPersistency.sharedInstance().add(toQueue: "&request=REQUEST\(loop)")
         }
         CountlyPersistency.sharedInstance().saveToFileSync()
     }
