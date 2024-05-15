@@ -36,6 +36,7 @@ let package = Package(
                 "LICENSE",
                 "README.md",
                 "countly_dsym_uploader.sh",
+                "format.sh",
                 "CHANGELOG.md",
                 "SECURITY.md",
                 "CountlyTests/"
