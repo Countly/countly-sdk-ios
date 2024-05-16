@@ -16,7 +16,7 @@
 @property (nonatomic, strong, nonnull) NSMutableArray<NSString *> *checksums;
 @property (nonatomic, strong, nonnull) NSMutableArray<NSNumber *> *changedFields;
 
-- (instancetype)initWithStackTrace:(NSString *)stackTrace crashSegmentation:(NSDictionary<NSString *, id> *)crashSegmentation breadcrumbs:(NSArray<NSString *> *)breadcrumbs crashMetrics:(NSDictionary<NSString *, id> *)crashMetrics fatal:(BOOL)fatal;
+- (instancetype)initWithStackTrace:(NSString *)stackTrace crashSegmentation:(NSDictionary<NSString *, id> *)crashSegmentation breadcrumbs:(NSArray<NSString *> *)breadcrumbs crashMetrics:(NSDictionary<NSString *, id> *_Nullable)crashMetrics fatal:(BOOL)fatal;
 
 - (NSString *)getBreadcrumbsAsString;
 - (NSDictionary<NSString *, id> *)getCrashMetricsJSON;

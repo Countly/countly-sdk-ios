@@ -241,8 +241,6 @@ void CountlyUncaughtExceptionHandler(NSException *exception)
 
 void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDetect)
 {
-    const NSInteger kCLYMebibit = 1048576;
-
     NSArray* stackTrace = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
     if (!stackTrace)
         stackTrace = exception.callStackSymbols;
@@ -259,7 +257,7 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     
     CountlyCrashData* crashData = [CountlyCrashReporter.sharedInstance prepareCrashDataWithError:stackTraceJoined handled:!isFatal isNativeCrash:false customSegmentation:nil];
     // Directly passing the callback as we are doing prviouslt with download variant
-    matchesFilter=  [CountlyCrashReporter.sharedInstance crashFilterCallback:crashData];
+    matchesFilter =CountlyCrashReporter.sharedInstance.countlyCrashFilterCallback(crashData);
     
     // Need to set delegate or implement a protocol in host app
     matchesFilter =  [CountlyCrashReporter.sharedInstance.crashFilterCallback filterCrash:crashData];

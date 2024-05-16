@@ -17,6 +17,7 @@
 @property (nonatomic, copy) void (^crashOccuredOnPreviousSessionCallback)(NSDictionary * crashReport);
 @property (nonatomic, copy) BOOL (^shouldSendCrashReportCallback)(NSDictionary * crashReport);
 @property (nonatomic, strong) id<CountlyCrashFilterCallback> crashFilterCallback;
+@property (nonatomic, copy)  BOOL (^countlyCrashFilterCallback)(CountlyCrashData *);
 
 
 + (instancetype)sharedInstance;
