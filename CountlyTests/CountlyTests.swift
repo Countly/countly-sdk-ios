@@ -3,7 +3,7 @@
 //  CountlyTests
 //
 //  Created by Muhammad Junaid Akram on 22/12/2023.
-//  Copyright © 2023 Alin Radut. All rights reserved.
+//  Copyright © 2023 Countly. All rights reserved.
 //
 
 import XCTest
