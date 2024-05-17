@@ -14,6 +14,8 @@
     BOOL isSessionStarted;
 }
 @property (nonatomic) NSURLSession* URLSession;
+
+@property (nonatomic, strong) NSDate *startTime;
 @end
 
 NSString* const kCountlyQSKeyAppKey           = @"app_key";
@@ -137,37 +139,47 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         CLY_LOG_D(@"Proceeding on queue is aborted: SDK Networking is disabled from server config!");
         return;
     }
-
+    
     if (self.connection)
     {
         CLY_LOG_D(@"Proceeding on queue is aborted: Already has a request in process!");
         return;
     }
-
+    
     if (isCrashing)
     {
         CLY_LOG_D(@"Proceeding on queue is aborted: Application is crashing!");
         return;
     }
-
+    
     if (self.isTerminating)
     {
         CLY_LOG_D(@"Proceeding on queue is aborted: Application is terminating!");
         return;
     }
-
+    
     if (CountlyPersistency.sharedInstance.isQueueBeingModified)
     {
         CLY_LOG_D(@"Proceeding on queue is aborted: Queue is being modified!");
         return;
     }
+    
+    if (!self.startTime) {
+        self.startTime = [NSDate date]; // Record start time only when it's not already recorded
+        CLY_LOG_D(@"Proceeding on queue started, queued request count %lu", [CountlyPersistency.sharedInstance remainingRequestCount]);
+    }
 
     NSString* firstItemInQueue = [CountlyPersistency.sharedInstance firstItemInQueue];
     if (!firstItemInQueue)
     {
-        CLY_LOG_D(@"Queue is empty. All requests are processed.");
+        // Calculate total time when the queue becomes empty
+        NSTimeInterval elapsedTime = -[self.startTime timeIntervalSinceNow];
+        CLY_LOG_D(@"Queue is empty. All requests are processed. Total time taken: %.2f seconds", elapsedTime);
+        // Reset start time for future queue processing
+        self.startTime = nil;
         return;
     }
+    
     BOOL isOldRequest = [CountlyPersistency.sharedInstance isOldRequest:firstItemInQueue];
     if(isOldRequest)
     {
@@ -276,6 +288,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
             else
             {
                 CLY_LOG_D(@"%s, request:[ <%p> ] failed! response:[ %@ ]", __FUNCTION__, request, [data cly_stringUTF8]);
+                self.startTime = nil;
             }
         }
         else
@@ -284,6 +297,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 #if (TARGET_OS_WATCH)
             [CountlyPersistency.sharedInstance saveToFile];
 #endif
+            self.startTime = nil;
         }
     }];
 

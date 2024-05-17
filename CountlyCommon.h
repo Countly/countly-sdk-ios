@@ -119,7 +119,7 @@ void CountlyPrint(NSString *stringToPrint);
 
 
 #if (TARGET_OS_IOS)
-@interface CLYInternalViewController : UIViewController
+@interface CLYInternalViewController : UIViewController <WKNavigationDelegate>
 @property (nonatomic, weak) WKWebView* webView;
 @end
 
