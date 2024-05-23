@@ -269,7 +269,7 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     [userInfo removeObjectForKey:kCountlyExceptionUserInfoSegmentationOverrideKey];
     [custom addEntriesFromDictionary:userInfo];
     
-    CountlyCrashData* crashData = [CountlyCrashReporter.sharedInstance prepareCrashDataWithError:stackTraceJoined isFatal:isFatal customSegmentation:custom];
+    CountlyCrashData* crashData = [CountlyCrashReporter.sharedInstance prepareCrashDataWithError:stackTraceJoined name:exception.name description:exception.description isFatal:isFatal customSegmentation:custom];
     BOOL filterCrash = NO;
     // Directly passing the callback as we are doing prviouslt with download variant
     filterCrash = CountlyCrashReporter.sharedInstance.countlyCrashFilterCallback(crashData);
@@ -287,8 +287,8 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
         NSMutableDictionary* crashReport = [crashData.crashMetrics copy];
         crashReport[kCountlyCRKeyError] = crashData.stackTrace;
         crashReport[kCountlyCRKeyBinaryImages] = [CountlyCrashReporter.sharedInstance binaryImagesForStackTrace:stackTrace];
-        crashReport[kCountlyCRKeyName] = exception.description;
-        crashReport[kCountlyCRKeyType] = exception.name;
+        crashReport[kCountlyCRKeyName] = crashData.crashDescription;
+        crashReport[kCountlyCRKeyType] = crashData.name;
         crashReport[kCountlyCRKeyNonfatal] = @(!crashData.fatal);
         
         if (crashData.crashSegmentation)
