@@ -48,6 +48,7 @@ NSString* const kCountlyCRKeyLogs              = @"_logs";
 NSString* const kCountlyCRKeyPLCrash           = @"_plcrash";
 NSString* const kCountlyCRKeyImageLoadAddress  = @"la";
 NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
+NSString* const kCountlyCRKeyOB                = @"_ob";
 
 
 @interface CountlyCrashReporter ()
@@ -290,6 +291,10 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
         crashReport[kCountlyCRKeyType] = crashData.name;
         crashReport[kCountlyCRKeyNonfatal] = @(!crashData.fatal);
         
+        NSNumber *obValue = [crashData getChangedFieldsAsInt];
+        if(obValue) {
+            crashReport[kCountlyCRKeyOB] = obValue;
+        }
         if (crashData.crashSegmentation) {
             NSDictionary* truncatedCrashSegmentation = [crashData.crashSegmentation cly_truncated:@"Exception segmentation"];
             NSDictionary* limitedCrashSegmentation = [truncatedCrashSegmentation cly_limited:@"[CountlyCrashReporter] prepareCrashData"];

@@ -50,14 +50,14 @@
     self.changedFields = [changedFields copy];
 }
 
-- (int)getChangedFieldsAsInt {
+- (NSNumber *)getChangedFieldsAsInt {
     int result = 0;
     for (int i = (int)self.changedFields.count - 1; i >= 0; i--) {
         if (self.changedFields[i].boolValue) {
             result |= (1 << ((int)self.changedFields.count - 1 - i));
         }
     }
-    return result;
+    return @(result);
 }
 
 - (void)calculateChecksums:(NSMutableArray<NSString *> *)checksumArrayToSet {

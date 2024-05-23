@@ -23,7 +23,7 @@
 - (NSString *)getBreadcrumbsAsString;
 - (NSDictionary<NSString *, id> *)getCrashMetricsJSON;
 - (void)calculateChangedFields;
-- (int)getChangedFieldsAsInt;
+- (NSNumber *)getChangedFieldsAsInt;
 
 @end
 
