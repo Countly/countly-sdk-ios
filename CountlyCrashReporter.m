@@ -270,33 +270,34 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     [custom addEntriesFromDictionary:userInfo];
     
     CountlyCrashData* crashData = [CountlyCrashReporter.sharedInstance prepareCrashDataWithError:stackTraceJoined isFatal:isFatal customSegmentation:custom];
+    BOOL filterCrash = NO;
     // Directly passing the callback as we are doing prviouslt with download variant
-    matchesFilter = CountlyCrashReporter.sharedInstance.countlyCrashFilterCallback(crashData);
+    filterCrash = CountlyCrashReporter.sharedInstance.countlyCrashFilterCallback(crashData);
     
     // Need to set delegate or implement a protocol in host app
-    matchesFilter =  [CountlyCrashReporter.sharedInstance.crashFilterCallback filterCrash:crashData];
-
-    NSMutableDictionary* crashReport = [CountlyCrashReporter.sharedInstance getCrashMetrics];
-    crashReport[kCountlyCRKeyError] = stackTraceJoined;
-    crashReport[kCountlyCRKeyBinaryImages] = [CountlyCrashReporter.sharedInstance binaryImagesForStackTrace:stackTrace];
-    crashReport[kCountlyCRKeyName] = exception.description;
-    crashReport[kCountlyCRKeyType] = exception.name;
-    crashReport[kCountlyCRKeyNonfatal] = @(!isFatal);
-
-    if (custom.allKeys.count)
-        crashReport[kCountlyCRKeyCustom] = custom;
-
-    if (CountlyCrashReporter.sharedInstance.customCrashLogs)
-        crashReport[kCountlyCRKeyLogs] = [CountlyCrashReporter.sharedInstance.customCrashLogs componentsJoinedByString:@"\n"];
-
+    filterCrash =  [CountlyCrashReporter.sharedInstance.crashFilterCallback filterCrash:crashData];
+    
     //NOTE: Do not send crash report if it is matching optional regex filter.
-    if (!matchesFilter)
+    if (matchesFilter || filterCrash)
     {
-        [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:isAutoDetect];
+        CLY_LOG_D(@"Crash matches filter and it will not be processed.");
     }
     else
     {
-        CLY_LOG_D(@"Crash matches filter and it will not be processed.");
+        NSMutableDictionary* crashReport = [crashData.crashMetrics copy];
+        crashReport[kCountlyCRKeyError] = crashData.stackTrace;
+        crashReport[kCountlyCRKeyBinaryImages] = [CountlyCrashReporter.sharedInstance binaryImagesForStackTrace:stackTrace];
+        crashReport[kCountlyCRKeyName] = exception.description;
+        crashReport[kCountlyCRKeyType] = exception.name;
+        crashReport[kCountlyCRKeyNonfatal] = @(!crashData.fatal);
+        
+        if (crashData.crashSegmentation)
+            crashReport[kCountlyCRKeyCustom] = crashData.crashSegmentation;
+        
+        if (crashData.breadcrumbs)
+            crashReport[kCountlyCRKeyLogs] = [crashData.breadcrumbs componentsJoinedByString:@"\n"];
+
+        [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:isAutoDetect];
     }
 
     if (isAutoDetect)
@@ -463,7 +464,7 @@ void CountlySignalHandler(int signalCode)
     _crashSegmentation = [truncatedSegmentation cly_limited:@"Crash segmentation"];
 }
 
-- (CountlyCrashData *)prepareCrashDataWithError:(NSString *)error isFatal:(BOOL)isFatal customSegmentation:(NSMutableDictionary *)customSegmentation {
+- (CountlyCrashData *)prepareCrashDataWithError:(NSString *)error name:(NSString *)name description:(NSString *)description isFatal:(BOOL)isFatal customSegmentation:(NSMutableDictionary *)customSegmentation {
     if(error == nil) {
         CLY_LOG_W(@"Error must not be nil");
     }
@@ -471,7 +472,7 @@ void CountlySignalHandler(int signalCode)
     NSDictionary* truncatedSegmentation = [customSegmentation cly_truncated:@"Exception segmentation"];
     NSDictionary* limitedSegmentation = [truncatedSegmentation cly_limited:@"[CountlyCrashReporter] prepareCrashData"];
     
-    return [[CountlyCrashData alloc] initWithStackTrace:error crashSegmentation:limitedSegmentation breadcrumbs:self.customCrashLogs crashMetrics:[self getCrashMetrics] fatal:isFatal];
+    return [[CountlyCrashData alloc] initWithStackTrace:error name:name description:description crashSegmentation:limitedSegmentation breadcrumbs:self.customCrashLogs crashMetrics:[self getCrashMetrics] fatal:isFatal];
 }
 
 - (NSMutableDictionary*)getCrashMetrics

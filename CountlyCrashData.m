@@ -5,10 +5,12 @@
 
 @implementation CountlyCrashData
 
-- (instancetype)initWithStackTrace:(NSString *)stackTrace crashSegmentation:(NSDictionary<NSString *, id> *)crashSegmentation breadcrumbs:(NSArray<NSString *> *)breadcrumbs crashMetrics:(NSDictionary<NSString *, id> *)crashMetrics fatal:(BOOL)fatal {
+- (instancetype)initWithStackTrace:(NSString *)stackTrace name:(NSString *)name description:(NSString *)description crashSegmentation:(NSDictionary<NSString *, id> *)crashSegmentation breadcrumbs:(NSArray<NSString *> *)breadcrumbs crashMetrics:(NSDictionary<NSString *, id> *)crashMetrics fatal:(BOOL)fatal {
     self = [super init];
     if (self) {
         _stackTrace = [stackTrace copy];
+        _name = [name copy];
+        _crashDescription = [description copy];
         _crashSegmentation = [crashSegmentation copy];
         _breadcrumbs = [breadcrumbs copy];
         _crashMetrics = [crashMetrics copy];
