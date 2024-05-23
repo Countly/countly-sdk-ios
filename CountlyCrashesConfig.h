@@ -6,7 +6,7 @@
 
 
 #import <Foundation/Foundation.h>
-#import "CountlyCrashFilterCallback.h"
+#import "CountlyCrashData.h"
 
 @interface CountlyCrashesConfig : NSObject
 

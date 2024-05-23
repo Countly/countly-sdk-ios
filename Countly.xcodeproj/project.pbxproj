@@ -30,7 +30,6 @@
 		39911B672B457DBB00AC053C /* Resettable.h in Headers */ = {isa = PBXBuildFile; fileRef = 39911B662B457DB500AC053C /* Resettable.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		39924ECE2BEBD0B700139F91 /* CountlyCrashesConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 39924ECD2BEBD0B700139F91 /* CountlyCrashesConfig.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		39924ED02BEBD0D400139F91 /* CountlyCrashesConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 39924ECF2BEBD0D400139F91 /* CountlyCrashesConfig.m */; };
-		39924ED22BEBD1BB00139F91 /* CountlyCrashFilterCallback.h in Headers */ = {isa = PBXBuildFile; fileRef = 39924ED12BEBD1BA00139F91 /* CountlyCrashFilterCallback.h */; };
 		39924ED62BEBD20F00139F91 /* CountlyCrashData.m in Sources */ = {isa = PBXBuildFile; fileRef = 39924ED52BEBD20F00139F91 /* CountlyCrashData.m */; };
 		39924ED82BEBD22100139F91 /* CountlyCrashData.h in Headers */ = {isa = PBXBuildFile; fileRef = 39924ED72BEBD22100139F91 /* CountlyCrashData.h */; };
 		3B20A9872245225A00E3D7AE /* Countly.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9852245225A00E3D7AE /* Countly.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -107,7 +106,6 @@
 		39911B662B457DB500AC053C /* Resettable.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Resettable.h; sourceTree = "<group>"; };
 		39924ECD2BEBD0B700139F91 /* CountlyCrashesConfig.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyCrashesConfig.h; sourceTree = "<group>"; };
 		39924ECF2BEBD0D400139F91 /* CountlyCrashesConfig.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyCrashesConfig.m; sourceTree = "<group>"; };
-		39924ED12BEBD1BA00139F91 /* CountlyCrashFilterCallback.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyCrashFilterCallback.h; sourceTree = "<group>"; };
 		39924ED52BEBD20F00139F91 /* CountlyCrashData.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyCrashData.m; sourceTree = "<group>"; };
 		39924ED72BEBD22100139F91 /* CountlyCrashData.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyCrashData.h; sourceTree = "<group>"; };
 		3B20A9822245225A00E3D7AE /* Countly.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Countly.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -186,7 +184,6 @@
 			children = (
 				39924ED72BEBD22100139F91 /* CountlyCrashData.h */,
 				39924ED52BEBD20F00139F91 /* CountlyCrashData.m */,
-				39924ED12BEBD1BA00139F91 /* CountlyCrashFilterCallback.h */,
 				39924ECD2BEBD0B700139F91 /* CountlyCrashesConfig.h */,
 				39924ECF2BEBD0D400139F91 /* CountlyCrashesConfig.m */,
 				395683372BB2988300C7A06B /* PrivacyInfo.xcprivacy */,
@@ -278,7 +275,6 @@
 				3B20A9D32245228700E3D7AE /* CountlyPushNotifications.h in Headers */,
 				3B20A9C42245228700E3D7AE /* CountlyUserDetails.h in Headers */,
 				3B20A9CA2245228700E3D7AE /* CountlyConfig.h in Headers */,
-				39924ED22BEBD1BB00139F91 /* CountlyCrashFilterCallback.h in Headers */,
 				3B20A9872245225A00E3D7AE /* Countly.h in Headers */,
 				1A423EA02A271FE0008C4757 /* CountlyRCData.h in Headers */,
 				3B20A9C12245228700E3D7AE /* CountlyRemoteConfig.h in Headers */,
@@ -354,7 +350,7 @@
 			attributes = {
 				LastSwiftUpdateCheck = 1410;
 				LastUpgradeCheck = 1410;
-				ORGANIZATIONNAME = "Countly";
+				ORGANIZATIONNAME = Countly;
 				TargetAttributes = {
 					1A5C4C932B35B0850032EE1F = {
 						CreatedOnToolsVersion = 14.1;

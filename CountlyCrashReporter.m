@@ -271,11 +271,9 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     
     CountlyCrashData* crashData = [CountlyCrashReporter.sharedInstance prepareCrashDataWithError:stackTraceJoined name:exception.name description:exception.description isFatal:isFatal customSegmentation:custom];
     BOOL filterCrash = NO;
-    if(CountlyCrashReporter.sharedInstance.countlyCrashFilterCallback) {
+    if(CountlyCrashReporter.sharedInstance.crashFilterCallback) {
         // Directly passing the callback as we are doing prviouslt with download variant
-        filterCrash = CountlyCrashReporter.sharedInstance.countlyCrashFilterCallback(crashData);
-        // Need to set delegate or implement a protocol in host app
-        filterCrash =  [CountlyCrashReporter.sharedInstance.crashFilterCallback filterCrash:crashData];
+        filterCrash = CountlyCrashReporter.sharedInstance.crashFilterCallback(crashData);
     }
     
     //NOTE: Do not send crash report if it is matching optional regex filter.

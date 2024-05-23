@@ -5,7 +5,6 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
-#import "CountlyCrashFilterCallback.h"
 
 @interface CountlyCrashReporter : NSObject
 @property (nonatomic) BOOL isEnabledOnInitialConfig;
@@ -16,8 +15,7 @@
 @property (nonatomic) BOOL shouldUseMachSignalHandler;
 @property (nonatomic, copy) void (^crashOccuredOnPreviousSessionCallback)(NSDictionary * crashReport);
 @property (nonatomic, copy) BOOL (^shouldSendCrashReportCallback)(NSDictionary * crashReport);
-@property (nonatomic, strong) id<CountlyCrashFilterCallback> crashFilterCallback;
-@property (nonatomic, copy)  BOOL (^countlyCrashFilterCallback)(CountlyCrashData *);
+@property (nonatomic, copy)  BOOL (^crashFilterCallback)(CountlyCrashData *);
 
 
 + (instancetype)sharedInstance;

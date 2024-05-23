@@ -215,7 +215,7 @@ BOOL (^crashFilterBlock)(CountlyCrashData *) = ^BOOL(CountlyCrashData *crash) {
 #endif
     
     if(config.crashes.crashFilterCallback) {
-        [CountlyCrashReporter.sharedInstance setCountlyCrashFilterCallback:config.crashes.crashFilterCallback];
+        [CountlyCrashReporter.sharedInstance setCrashFilterCallback:config.crashes.crashFilterCallback];
     }
 
     CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
