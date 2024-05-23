@@ -73,8 +73,6 @@ static dispatch_once_t onceToken;
 
 - (void)startWithConfig:(CountlyConfig *)config
 {
-
-    [config.crashes setCrashFilterCallback:self];
     if (CountlyCommon.sharedInstance.hasStarted_)
         return;
 
