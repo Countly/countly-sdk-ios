@@ -290,9 +290,9 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
         crashReport[kCountlyCRKeyName] = crashData.crashDescription;
         crashReport[kCountlyCRKeyType] = crashData.name;
         crashReport[kCountlyCRKeyNonfatal] = @(!crashData.fatal);
-        
+        [crashData calculateChangedFields];
         NSNumber *obValue = [crashData getChangedFieldsAsInt];
-        if(obValue) {
+        if(obValue && obValue > 0) {
             crashReport[kCountlyCRKeyOB] = obValue;
         }
         if (crashData.crashSegmentation) {
