@@ -255,9 +255,23 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
                         [CountlyCrashReporter.sharedInstance isMatchingFilter:exception.name];
     }
     
-    CountlyCrashData* crashData = [CountlyCrashReporter.sharedInstance prepareCrashDataWithError:stackTraceJoined handled:!isFatal isNativeCrash:false customSegmentation:nil];
+    NSMutableDictionary* custom = NSMutableDictionary.new;
+    if (CountlyCrashReporter.sharedInstance.crashSegmentation)
+        [custom addEntriesFromDictionary:CountlyCrashReporter.sharedInstance.crashSegmentation];
+    
+    NSDictionary* segmentationOverride = exception.userInfo[kCountlyExceptionUserInfoSegmentationOverrideKey];
+    if (segmentationOverride)
+        [custom addEntriesFromDictionary:segmentationOverride];
+    
+    NSMutableDictionary* userInfo = exception.userInfo.mutableCopy;
+    [userInfo removeObjectForKey:kCountlyExceptionUserInfoBacktraceKey];
+    [userInfo removeObjectForKey:kCountlyExceptionUserInfoSignalCodeKey];
+    [userInfo removeObjectForKey:kCountlyExceptionUserInfoSegmentationOverrideKey];
+    [custom addEntriesFromDictionary:userInfo];
+    
+    CountlyCrashData* crashData = [CountlyCrashReporter.sharedInstance prepareCrashDataWithError:stackTraceJoined handled:!isFatal customSegmentation:custom];
     // Directly passing the callback as we are doing prviouslt with download variant
-    matchesFilter =CountlyCrashReporter.sharedInstance.countlyCrashFilterCallback(crashData);
+    matchesFilter = CountlyCrashReporter.sharedInstance.countlyCrashFilterCallback(crashData);
     
     // Need to set delegate or implement a protocol in host app
     matchesFilter =  [CountlyCrashReporter.sharedInstance.crashFilterCallback filterCrash:crashData];
@@ -268,20 +282,6 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     crashReport[kCountlyCRKeyName] = exception.description;
     crashReport[kCountlyCRKeyType] = exception.name;
     crashReport[kCountlyCRKeyNonfatal] = @(!isFatal);
-    
-    NSMutableDictionary* custom = NSMutableDictionary.new;
-    if (CountlyCrashReporter.sharedInstance.crashSegmentation)
-        [custom addEntriesFromDictionary:CountlyCrashReporter.sharedInstance.crashSegmentation];
-
-    NSDictionary* segmentationOverride = exception.userInfo[kCountlyExceptionUserInfoSegmentationOverrideKey];
-    if (segmentationOverride)
-        [custom addEntriesFromDictionary:segmentationOverride];
-
-    NSMutableDictionary* userInfo = exception.userInfo.mutableCopy;
-    [userInfo removeObjectForKey:kCountlyExceptionUserInfoBacktraceKey];
-    [userInfo removeObjectForKey:kCountlyExceptionUserInfoSignalCodeKey];
-    [userInfo removeObjectForKey:kCountlyExceptionUserInfoSegmentationOverrideKey];
-    [custom addEntriesFromDictionary:userInfo];
 
     if (custom.allKeys.count)
         crashReport[kCountlyCRKeyCustom] = custom;
@@ -463,26 +463,12 @@ void CountlySignalHandler(int signalCode)
     _crashSegmentation = [truncatedSegmentation cly_limited:@"Crash segmentation"];
 }
 
-- (CountlyCrashData *)prepareCrashDataWithError:(NSString *)error handled:(BOOL)handled isNativeCrash:(BOOL)isNativeCrash customSegmentation:(NSDictionary<NSString *, id> *)customSegmentation {
-    NSAssert(error != nil, @"Error must not be nil");
-    
-    if (!isNativeCrash) {
-        NSRange range = NSMakeRange(0, MIN(20000, error.length));
-        error = [error substringWithRange:range];
+- (CountlyCrashData *)prepareCrashDataWithError:(NSString *)error handled:(BOOL)handled customSegmentation:(NSMutableDictionary *)customSegmentation {
+    if(error == nil) {
+        CLY_LOG_W(@"Error must not be nil");
     }
     
-    NSMutableDictionary<NSString *, id> *combinedSegmentationValues = [NSMutableDictionary dictionary];
-    if (customSegmentation != nil) {
-        [combinedSegmentationValues addEntriesFromDictionary:customSegmentation];
-    }
-    
-    // Assuming customCrashSegments is defined somewhere and it's accessible
-    if (self.crashSegmentation != nil) {
-        [combinedSegmentationValues addEntriesFromDictionary:self.crashSegmentation];
-    }
-    
-    
-    NSDictionary* truncatedSegmentation = [combinedSegmentationValues cly_truncated:@"Exception segmentation"];
+    NSDictionary* truncatedSegmentation = [customSegmentation cly_truncated:@"Exception segmentation"];
     NSDictionary* limitedSegmentation = [truncatedSegmentation cly_limited:@"[CountlyCrashReporter] prepareCrashData"];
     
     return [[CountlyCrashData alloc] initWithStackTrace:error crashSegmentation:limitedSegmentation breadcrumbs:self.customCrashLogs crashMetrics:[self getCrashMetrics] fatal:!handled];
