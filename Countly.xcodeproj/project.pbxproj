@@ -31,7 +31,7 @@
 		39924ECE2BEBD0B700139F91 /* CountlyCrashesConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 39924ECD2BEBD0B700139F91 /* CountlyCrashesConfig.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		39924ED02BEBD0D400139F91 /* CountlyCrashesConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 39924ECF2BEBD0D400139F91 /* CountlyCrashesConfig.m */; };
 		39924ED62BEBD20F00139F91 /* CountlyCrashData.m in Sources */ = {isa = PBXBuildFile; fileRef = 39924ED52BEBD20F00139F91 /* CountlyCrashData.m */; };
-		39924ED82BEBD22100139F91 /* CountlyCrashData.h in Headers */ = {isa = PBXBuildFile; fileRef = 39924ED72BEBD22100139F91 /* CountlyCrashData.h */; };
+		39924ED82BEBD22100139F91 /* CountlyCrashData.h in Headers */ = {isa = PBXBuildFile; fileRef = 39924ED72BEBD22100139F91 /* CountlyCrashData.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3B20A9872245225A00E3D7AE /* Countly.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9852245225A00E3D7AE /* Countly.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3B20A9B22245228700E3D7AE /* CountlyConnectionManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A98D2245228300E3D7AE /* CountlyConnectionManager.h */; };
 		3B20A9B32245228700E3D7AE /* CountlyNotificationService.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B20A98E2245228300E3D7AE /* CountlyNotificationService.m */; };
