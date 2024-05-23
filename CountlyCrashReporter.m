@@ -244,15 +244,15 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     NSArray* stackTrace = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
     if (!stackTrace)
         stackTrace = exception.callStackSymbols;
-
+    
     NSString* stackTraceJoined = [stackTrace componentsJoinedByString:@"\n"];
-
+    
     BOOL matchesFilter = NO;
     if (CountlyCrashReporter.sharedInstance.crashFilter)
     {
         matchesFilter = [CountlyCrashReporter.sharedInstance isMatchingFilter:stackTraceJoined] ||
-                        [CountlyCrashReporter.sharedInstance isMatchingFilter:exception.description] ||
-                        [CountlyCrashReporter.sharedInstance isMatchingFilter:exception.name];
+        [CountlyCrashReporter.sharedInstance isMatchingFilter:exception.description] ||
+        [CountlyCrashReporter.sharedInstance isMatchingFilter:exception.name];
     }
     
     NSMutableDictionary* custom = NSMutableDictionary.new;
@@ -271,11 +271,12 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     
     CountlyCrashData* crashData = [CountlyCrashReporter.sharedInstance prepareCrashDataWithError:stackTraceJoined name:exception.name description:exception.description isFatal:isFatal customSegmentation:custom];
     BOOL filterCrash = NO;
-    // Directly passing the callback as we are doing prviouslt with download variant
-    filterCrash = CountlyCrashReporter.sharedInstance.countlyCrashFilterCallback(crashData);
-    
-    // Need to set delegate or implement a protocol in host app
-    filterCrash =  [CountlyCrashReporter.sharedInstance.crashFilterCallback filterCrash:crashData];
+    if(CountlyCrashReporter.sharedInstance.countlyCrashFilterCallback) {
+        // Directly passing the callback as we are doing prviouslt with download variant
+        filterCrash = CountlyCrashReporter.sharedInstance.countlyCrashFilterCallback(crashData);
+        // Need to set delegate or implement a protocol in host app
+        filterCrash =  [CountlyCrashReporter.sharedInstance.crashFilterCallback filterCrash:crashData];
+    }
     
     //NOTE: Do not send crash report if it is matching optional regex filter.
     if (matchesFilter || filterCrash)
