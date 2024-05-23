@@ -284,7 +284,7 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     }
     else
     {
-        NSMutableDictionary* crashReport = [crashData.crashMetrics copy];
+        NSMutableDictionary* crashReport = [crashData.crashMetrics mutableCopy];
         crashReport[kCountlyCRKeyError] = crashData.stackTrace;
         crashReport[kCountlyCRKeyBinaryImages] = [CountlyCrashReporter.sharedInstance binaryImagesForStackTrace:stackTrace];
         crashReport[kCountlyCRKeyName] = crashData.crashDescription;
