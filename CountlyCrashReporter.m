@@ -269,7 +269,7 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     [userInfo removeObjectForKey:kCountlyExceptionUserInfoSegmentationOverrideKey];
     [custom addEntriesFromDictionary:userInfo];
     
-    CountlyCrashData* crashData = [CountlyCrashReporter.sharedInstance prepareCrashDataWithError:stackTraceJoined handled:!isFatal customSegmentation:custom];
+    CountlyCrashData* crashData = [CountlyCrashReporter.sharedInstance prepareCrashDataWithError:stackTraceJoined isFatal:isFatal customSegmentation:custom];
     // Directly passing the callback as we are doing prviouslt with download variant
     matchesFilter = CountlyCrashReporter.sharedInstance.countlyCrashFilterCallback(crashData);
     
@@ -463,7 +463,7 @@ void CountlySignalHandler(int signalCode)
     _crashSegmentation = [truncatedSegmentation cly_limited:@"Crash segmentation"];
 }
 
-- (CountlyCrashData *)prepareCrashDataWithError:(NSString *)error handled:(BOOL)handled customSegmentation:(NSMutableDictionary *)customSegmentation {
+- (CountlyCrashData *)prepareCrashDataWithError:(NSString *)error isFatal:(BOOL)isFatal customSegmentation:(NSMutableDictionary *)customSegmentation {
     if(error == nil) {
         CLY_LOG_W(@"Error must not be nil");
     }
@@ -471,7 +471,7 @@ void CountlySignalHandler(int signalCode)
     NSDictionary* truncatedSegmentation = [customSegmentation cly_truncated:@"Exception segmentation"];
     NSDictionary* limitedSegmentation = [truncatedSegmentation cly_limited:@"[CountlyCrashReporter] prepareCrashData"];
     
-    return [[CountlyCrashData alloc] initWithStackTrace:error crashSegmentation:limitedSegmentation breadcrumbs:self.customCrashLogs crashMetrics:[self getCrashMetrics] fatal:!handled];
+    return [[CountlyCrashData alloc] initWithStackTrace:error crashSegmentation:limitedSegmentation breadcrumbs:self.customCrashLogs crashMetrics:[self getCrashMetrics] fatal:isFatal];
 }
 
 - (NSMutableDictionary*)getCrashMetrics

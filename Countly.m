@@ -71,23 +71,6 @@ static dispatch_once_t onceToken;
     return self;
 }
 
-
-
-BOOL (^crashFilterBlock)(CountlyCrashData *) = ^BOOL(CountlyCrashData *crash) {
-    if ([crash.stackTrace containsString:@"Fatal Error"]) {
-        return YES; // Filter the crash if the stack trace contains "Fatal Error"
-    }
-    return NO; // Otherwise, do not filter the crash
-};
-
-- (BOOL)filterCrash:(CountlyCrashData *)crash {
-    // Example implementation of crash filtering logic
-    if ([crash.stackTrace containsString:@"Fatal Error"]) {
-        return YES; // Filter the crash if the stack trace contains "Fatal Error"
-    }
-    return NO; // Otherwise, do not filter the crash
-}
-
 - (void)startWithConfig:(CountlyConfig *)config
 {
 
