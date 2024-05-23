@@ -292,11 +292,15 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
         crashReport[kCountlyCRKeyType] = crashData.name;
         crashReport[kCountlyCRKeyNonfatal] = @(!crashData.fatal);
         
-        if (crashData.crashSegmentation)
-            crashReport[kCountlyCRKeyCustom] = crashData.crashSegmentation;
+        if (crashData.crashSegmentation) {
+            NSDictionary* truncatedCrashSegmentation = [crashData.crashSegmentation cly_truncated:@"Exception segmentation"];
+            NSDictionary* limitedCrashSegmentation = [truncatedCrashSegmentation cly_limited:@"[CountlyCrashReporter] prepareCrashData"];
+            crashReport[kCountlyCRKeyCustom] = limitedCrashSegmentation;
+        }
         
-        if (crashData.breadcrumbs)
+        if (crashData.breadcrumbs) {
             crashReport[kCountlyCRKeyLogs] = [crashData.breadcrumbs componentsJoinedByString:@"\n"];
+        }
 
         [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:isAutoDetect];
     }

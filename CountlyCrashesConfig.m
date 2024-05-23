@@ -8,8 +8,11 @@
 
 @implementation CountlyCrashesConfig
 
-- (void)setCrashFilterCallback:(id<CountlyCrashFilterCallback>)callback {
-    self.crashFilterCallback = callback;
-}
+@synthesize crashFilterCallback = _crashFilterCallback;
 
+- (void)setCrashFilterCallback:(BOOL (^)(CountlyCrashData *))crashFilterCallback {
+    if (_crashFilterCallback != crashFilterCallback) {
+        _crashFilterCallback = [crashFilterCallback copy];
+    }
+}
 @end

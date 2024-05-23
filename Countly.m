@@ -71,6 +71,13 @@ static dispatch_once_t onceToken;
     return self;
 }
 
+BOOL (^crashFilterBlock)(CountlyCrashData *) = ^BOOL(CountlyCrashData *crash) {
+    if ([crash.stackTrace containsString:@"Fatal Error"]) {
+        return YES; // Filter the crash if the stack trace contains "Fatal Error"
+    }
+    return NO; // Otherwise, do not filter the crash
+};
+
 - (void)startWithConfig:(CountlyConfig *)config
 {
     if (CountlyCommon.sharedInstance.hasStarted_)
@@ -206,6 +213,10 @@ static dispatch_once_t onceToken;
     }
 #endif
 #endif
+    
+    if(config.crashes.crashFilterCallback) {
+        [CountlyCrashReporter.sharedInstance setCountlyCrashFilterCallback:config.crashes.crashFilterCallback];
+    }
 
     CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
     CountlyCrashReporter.sharedInstance.crashLogLimit = config.sdkInternalLimits.getMaxBreadcrumbCount;

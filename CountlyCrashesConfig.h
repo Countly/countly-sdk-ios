@@ -10,8 +10,7 @@
 
 @interface CountlyCrashesConfig : NSObject
 
-@property (nonatomic, strong, nullable) id<CountlyCrashFilterCallback> crashFilterCallback;
+@property (nonatomic, copy)  BOOL (^crashFilterCallback)(CountlyCrashData *);
 
-- (void)setCrashFilterCallback:(id<CountlyCrashFilterCallback>_Nonnull)callback;
 
 @end
