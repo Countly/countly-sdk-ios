@@ -11,13 +11,13 @@
         _stackTrace = [stackTrace copy] ?: @"";
         _name = [name copy] ?: @"";
         _crashDescription = [description copy] ?: @"";
-        _crashSegmentation = [crashSegmentation copy] ?: @{};
-        _breadcrumbs = [breadcrumbs copy] ?: @[];
-        _crashMetrics = [crashMetrics copy] ?: @{};
+        _crashSegmentation = [crashSegmentation mutableCopy] ?: @{};
+        _breadcrumbs = [breadcrumbs mutableCopy] ?: @[];
+        _crashMetrics = [crashMetrics mutableCopy] ?: @{};
         _fatal = fatal;
         
-        _checksums = [NSMutableArray arrayWithCapacity:5];
-        _changedFields = [NSMutableArray arrayWithCapacity:5];
+        _checksums = [NSMutableArray arrayWithCapacity:7];
+        _changedFields = [NSMutableArray arrayWithCapacity:7];
         [self calculateChecksums:_checksums];
     }
     return self;
@@ -40,10 +40,10 @@
 }
 
 - (void)calculateChangedFields {
-    NSMutableArray<NSString *> *checksumsNew = [NSMutableArray arrayWithCapacity:5];
+    NSMutableArray<NSString *> *checksumsNew = [NSMutableArray arrayWithCapacity:7];
     [self calculateChecksums:checksumsNew];
     
-    NSMutableArray<NSNumber *> *changedFields = [NSMutableArray arrayWithCapacity:5];
+    NSMutableArray<NSNumber *> *changedFields = [NSMutableArray arrayWithCapacity:7];
     for (int i = 0; i < checksumsNew.count; i++) {
         changedFields[i] = @(![self.checksums[i] isEqualToString:checksumsNew[i]]);
     }
@@ -62,6 +62,8 @@
 
 - (void)calculateChecksums:(NSMutableArray<NSString *> *)checksumArrayToSet {
     [checksumArrayToSet removeAllObjects];
+    [checksumArrayToSet addObject:[self.name cly_SHA256]];
+    [checksumArrayToSet addObject:[self.crashDescription cly_SHA256]];
     [checksumArrayToSet addObject:[self.stackTrace cly_SHA256]];
     [checksumArrayToSet addObject:[[self.crashSegmentation description] cly_SHA256]];
     [checksumArrayToSet addObject:[[self.breadcrumbs description] cly_SHA256]];
