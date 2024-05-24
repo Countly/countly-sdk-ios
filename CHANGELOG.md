@@ -1,3 +1,6 @@
+## 24.4.2
+* Improved crash filtering capabilities to include modifications on the crash report
+
 ## 24.4.1
 * Added support for Feedback Widget terms and conditions
 
