@@ -11,9 +11,9 @@
         _stackTrace = [stackTrace copy] ?: @"";
         _name = [name copy] ?: @"";
         _crashDescription = [description copy] ?: @"";
-        _crashSegmentation = [crashSegmentation copy] ?: @{};
-        _breadcrumbs = [breadcrumbs copy] ?: @[];
-        _crashMetrics = [crashMetrics copy] ?: @{};
+        _crashSegmentation = [crashSegmentation mutableCopy] ?: @{};
+        _breadcrumbs = [breadcrumbs mutableCopy] ?: @[];
+        _crashMetrics = [crashMetrics mutableCopy] ?: @{};
         _fatal = fatal;
         
         _checksums = [NSMutableArray arrayWithCapacity:7];
