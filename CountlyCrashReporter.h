@@ -15,6 +15,8 @@
 @property (nonatomic) BOOL shouldUseMachSignalHandler;
 @property (nonatomic, copy) void (^crashOccuredOnPreviousSessionCallback)(NSDictionary * crashReport);
 @property (nonatomic, copy) BOOL (^shouldSendCrashReportCallback)(NSDictionary * crashReport);
+@property (nonatomic, copy)  BOOL (^crashFilterCallback)(CountlyCrashData *);
+
 
 + (instancetype)sharedInstance;
 - (void)startCrashReporting;

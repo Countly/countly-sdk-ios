@@ -8,6 +8,7 @@
 #import <CoreLocation/CoreLocation.h>
 #import "CountlyRCData.h"
 #import "CountlyAPMConfig.h"
+#import "CountlyCrashesConfig.h"
 #import "CountlySDKLimitsConfig.h"
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
@@ -517,6 +518,8 @@ typedef enum : NSUInteger
  * @discussion If @c shouldUsePLCrashReporter flag is not set on initial config, it will never be executed.
  */
 @property (nonatomic, copy) BOOL (^shouldSendCrashReportCallback)(NSDictionary * crashReport);
+
+- (CountlyCrashesConfig *) crashes;
 
 #pragma mark -
 
