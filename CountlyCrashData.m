@@ -16,8 +16,8 @@
         _crashMetrics = [crashMetrics copy] ?: @{};
         _fatal = fatal;
         
-        _checksums = [NSMutableArray arrayWithCapacity:5];
-        _changedFields = [NSMutableArray arrayWithCapacity:5];
+        _checksums = [NSMutableArray arrayWithCapacity:7];
+        _changedFields = [NSMutableArray arrayWithCapacity:7];
         [self calculateChecksums:_checksums];
     }
     return self;
@@ -40,10 +40,10 @@
 }
 
 - (void)calculateChangedFields {
-    NSMutableArray<NSString *> *checksumsNew = [NSMutableArray arrayWithCapacity:5];
+    NSMutableArray<NSString *> *checksumsNew = [NSMutableArray arrayWithCapacity:7];
     [self calculateChecksums:checksumsNew];
     
-    NSMutableArray<NSNumber *> *changedFields = [NSMutableArray arrayWithCapacity:5];
+    NSMutableArray<NSNumber *> *changedFields = [NSMutableArray arrayWithCapacity:7];
     for (int i = 0; i < checksumsNew.count; i++) {
         changedFields[i] = @(![self.checksums[i] isEqualToString:checksumsNew[i]]);
     }
@@ -67,6 +67,8 @@
     [checksumArrayToSet addObject:[[self.breadcrumbs description] cly_SHA256]];
     [checksumArrayToSet addObject:[[self.crashMetrics description] cly_SHA256]];
     [checksumArrayToSet addObject:[(self.fatal ? @"true" : @"false") cly_SHA256]];
+    [checksumArrayToSet addObject:[self.name cly_SHA256]];
+    [checksumArrayToSet addObject:[self.crashDescription cly_SHA256]];
 }
 
 @end
