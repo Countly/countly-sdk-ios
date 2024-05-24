@@ -11,10 +11,11 @@
 @property (nonatomic, copy, nonnull) NSString *stackTrace;
 @property (nonatomic, copy, nonnull) NSString *name;
 @property (nonatomic, copy, nonnull) NSString *crashDescription;
-@property (nonatomic, copy, nonnull) NSDictionary<NSString *, id> *crashSegmentation;
-@property (nonatomic, copy, nonnull) NSArray<NSString *> *breadcrumbs;
 @property (nonatomic, assign) BOOL fatal;
-@property (nonatomic, copy, nonnull) NSDictionary<NSString *, id> *crashMetrics;
+@property (nonatomic, copy, nonnull) NSMutableArray<NSString *> *breadcrumbs;
+@property (nonatomic, copy, nonnull) NSMutableDictionary<NSString *, id> *crashSegmentation;
+@property (nonatomic, copy, nonnull) NSMutableDictionary<NSString *, id> *crashMetrics;
+
 @property (nonatomic, strong, nonnull) NSMutableArray<NSString *> *checksums;
 @property (nonatomic, strong, nonnull) NSMutableArray<NSNumber *> *changedFields;
 
