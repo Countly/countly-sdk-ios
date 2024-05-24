@@ -62,13 +62,13 @@
 
 - (void)calculateChecksums:(NSMutableArray<NSString *> *)checksumArrayToSet {
     [checksumArrayToSet removeAllObjects];
+    [checksumArrayToSet addObject:[self.name cly_SHA256]];
+    [checksumArrayToSet addObject:[self.crashDescription cly_SHA256]];
     [checksumArrayToSet addObject:[self.stackTrace cly_SHA256]];
     [checksumArrayToSet addObject:[[self.crashSegmentation description] cly_SHA256]];
     [checksumArrayToSet addObject:[[self.breadcrumbs description] cly_SHA256]];
     [checksumArrayToSet addObject:[[self.crashMetrics description] cly_SHA256]];
     [checksumArrayToSet addObject:[(self.fatal ? @"true" : @"false") cly_SHA256]];
-    [checksumArrayToSet addObject:[self.name cly_SHA256]];
-    [checksumArrayToSet addObject:[self.crashDescription cly_SHA256]];
 }
 
 @end
