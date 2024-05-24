@@ -29,13 +29,14 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
             if (crash!.crashDescription.contains("Secret")) {
                 return true
             }
-        
-            crash?.crashSegmentation.removeValue(forKey: "secret")
+            
+            crash?.crashSegmentation.removeObject(forKey: "secret")
             crash?.fatal = true
             crash!.crashMetrics["secret"] = "Minato"
-            crash!.crashMetrics.removeValue(forKey: "_ram_total")
+            crash!.crashMetrics.removeObject(forKey: "_ram_total")
             
-            return crash!.crashSegmentation.keys.contains("sphinx_no_1")
+            let keys = crash!.crashSegmentation.allKeys as? [String]
+            return keys!.contains("sphinx_no_1")
         }
         
         cConfig.crashes().crashFilterCallback = crashFilterBlock
