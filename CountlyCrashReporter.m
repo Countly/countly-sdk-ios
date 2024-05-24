@@ -298,8 +298,8 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
         }
         
         if (crashData.crashSegmentation) {
-            NSDictionary* truncatedCrashSegmentation = [crashData.crashSegmentation cly_truncated:@"Exception segmentation"];
-            NSDictionary* limitedCrashSegmentation = [truncatedCrashSegmentation cly_limited:@"[CountlyCrashReporter] prepareCrashData"];
+            NSDictionary* truncatedCrashSegmentation = [crashData.crashSegmentation cly_truncated:@"Crash segmentation"];
+            NSDictionary* limitedCrashSegmentation = [truncatedCrashSegmentation cly_limited:@"Crash segmentation"];
             crashReport[kCountlyCRKeyCustom] = limitedCrashSegmentation;
         }
         
