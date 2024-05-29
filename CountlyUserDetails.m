@@ -121,6 +121,13 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     [self.modifications removeAllObjects];
 }
 
+- (BOOL) isLocallyCached 
+{
+    NSString* userDetails = [self serializedUserDetails];
+    return userDetails || self.modifications.count > 0;
+    
+}
+
 #pragma mark -
 
 - (void)set:(NSString *)key value:(NSString *)value
@@ -389,7 +396,7 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     if (!CountlyConsentManager.sharedInstance.consentForUserDetails)
         return;
 
-    [CountlyConnectionManager.sharedInstance sendEvents];
+    [CountlyConnectionManager.sharedInstance sendEvents:false];
 
     NSString* userDetails = [self serializedUserDetails];
     if (userDetails)

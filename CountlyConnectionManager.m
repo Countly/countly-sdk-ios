@@ -414,15 +414,27 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 - (void)sendEvents
 {
-    [self sendEvents:false];
+    [self sendEvents:[Countly.user isLocallyCached]];
+}
+
+- (void)sendEvents:(BOOL) saveUser
+{
+    if(saveUser)
+    {
+        [Countly.user save];
+    }
+    else
+    {
+        [self sendEventsInternal:false];
+    }
 }
 
 - (void)attemptToSendStoredRequests
 {
-    [self sendEvents:true];
+    [self sendEventsInternal:true];
 }
 
-- (void)sendEvents:(BOOL) saveToFile
+- (void)sendEventsInternal:(BOOL) saveToFile
 {
     NSString* events = [CountlyPersistency.sharedInstance serializedRecordedEvents];
     
