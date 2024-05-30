@@ -1347,8 +1347,10 @@ static dispatch_once_t onceToken;
 - (void)halt:(BOOL) clearStorage
 {
     CLY_LOG_I(@"%s %d", __FUNCTION__, clearStorage);
+    [CountlyConsentManager.sharedInstance resetInstance];
     [CountlyPersistency.sharedInstance resetInstance:clearStorage];
     [CountlyDeviceInfo.sharedInstance resetInstance];
+    [CountlyConnectionManager.sharedInstance resetInstance];
     [self resetInstance];
     [CountlyCommon.sharedInstance resetInstance];
     

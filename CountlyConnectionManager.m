@@ -84,13 +84,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 @implementation CountlyConnectionManager : NSObject
 
+static CountlyConnectionManager *s_sharedInstance = nil;
+static dispatch_once_t onceToken;
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
         return nil;
-
-    static CountlyConnectionManager *s_sharedInstance = nil;
-    static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
     return s_sharedInstance;
 }
@@ -104,6 +103,13 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     }
 
     return self;
+}
+
+- (void)resetInstance {
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    onceToken = 0;
+    s_sharedInstance = nil;
+    isSessionStarted = NO;
 }
 
 - (void)setHost:(NSString *)host

@@ -249,7 +249,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     segmentation[kCountlyFBKeyWidgetID] = self.ID;
     [Countly.sharedInstance recordReservedEvent:eventName segmentation:segmentation];
 
-    [CountlyConnectionManager.sharedInstance sendEvents];
+    [CountlyConnectionManager.sharedInstance sendEvents:false];
 }
 
 - (NSString *)description

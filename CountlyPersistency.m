@@ -266,13 +266,14 @@ static dispatch_once_t onceToken;
 {
     @synchronized (self.recordedEvents)
     {
-        [self.recordedEvents addObject:event];
-
         if([Countly.user isLocallyCached])
         {
             [Countly.user save];
         }
-        else if (self.recordedEvents.count >= self.eventSendThreshold)
+        
+        [self.recordedEvents addObject:event];
+        
+        if (self.recordedEvents.count >= self.eventSendThreshold)
         {
             [CountlyConnectionManager.sharedInstance sendEvents:false];
         }
