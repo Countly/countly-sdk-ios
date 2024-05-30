@@ -28,6 +28,8 @@ NSString* const kCountlyServerConfigPersistencyKey = @"kCountlyServerConfigPersi
 
 NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 
+NSUInteger const kCountlyRequestRemovalLoopLimit = 100;
+
 static CountlyPersistency* s_sharedInstance = nil;
 static dispatch_once_t onceToken;
 
@@ -86,15 +88,22 @@ static dispatch_once_t onceToken;
 
     @synchronized (self)
     {
-        [self.queuedRequests addObject:queryString];
-        if (self.queuedRequests.count > self.storedRequestsLimit && !CountlyConnectionManager.sharedInstance.connection)
+        if (self.queuedRequests.count >= self.storedRequestsLimit)
         {
             [self removeOldAgeRequestsFromQueue];
-            if (self.queuedRequests.count > self.storedRequestsLimit && !CountlyConnectionManager.sharedInstance.connection)
+            if (self.queuedRequests.count >= self.storedRequestsLimit)
             {
-                [self.queuedRequests removeObjectAtIndex:0];
+                NSUInteger exceededSize = self.queuedRequests.count - self.storedRequestsLimit;
+                // we should remove amount of limit at max
+                // for example if exceeded count is 136 and our limit is 100 we should remove 100 items
+                // in other case if exceeded count is 36 and out limit is 100 we can only remove 36 items because we have that amount
+                NSUInteger gonnaRemoveSize = MIN(exceededSize, kCountlyRequestRemovalLoopLimit) + 1;
+                CLY_LOG_W(@"[CountlyPersistency] addToQueue, request queue size:[ %lu ] exceeded limit:[ %lu ], will remove first:[ %lu ] request(s)", self.queuedRequests.count, self.storedRequestsLimit, gonnaRemoveSize);
+                NSRange itemsToRemove = NSMakeRange(0, gonnaRemoveSize);
+                [self.queuedRequests removeObjectsInRange:itemsToRemove];
             }
         }
+        [self.queuedRequests addObject:queryString];
     }
 }
 
@@ -257,11 +266,6 @@ static dispatch_once_t onceToken;
 {
     @synchronized (self.recordedEvents)
     {
-        event.key = [event.key cly_truncatedKey:@"Event key"];
-        NSDictionary* truncated = [event.segmentation cly_truncated:@"Event segmentation"];
-        NSDictionary* limited = [truncated cly_limited:@"Event segmentation"];
-        event.segmentation = limited;
-
         [self.recordedEvents addObject:event];
 
         if (self.recordedEvents.count >= self.eventSendThreshold)

@@ -28,6 +28,10 @@
 		39527E152B5FD27400EE5D7B /* CountlyAPMConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 39527E142B5FD27400EE5D7B /* CountlyAPMConfig.m */; };
 		39527E182B5FD54C00EE5D7B /* CountlyAPMConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 39527E162B5FD28900EE5D7B /* CountlyAPMConfig.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		39911B672B457DBB00AC053C /* Resettable.h in Headers */ = {isa = PBXBuildFile; fileRef = 39911B662B457DB500AC053C /* Resettable.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		39924ECE2BEBD0B700139F91 /* CountlyCrashesConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 39924ECD2BEBD0B700139F91 /* CountlyCrashesConfig.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		39924ED02BEBD0D400139F91 /* CountlyCrashesConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 39924ECF2BEBD0D400139F91 /* CountlyCrashesConfig.m */; };
+		39924ED62BEBD20F00139F91 /* CountlyCrashData.m in Sources */ = {isa = PBXBuildFile; fileRef = 39924ED52BEBD20F00139F91 /* CountlyCrashData.m */; };
+		39924ED82BEBD22100139F91 /* CountlyCrashData.h in Headers */ = {isa = PBXBuildFile; fileRef = 39924ED72BEBD22100139F91 /* CountlyCrashData.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3B20A9872245225A00E3D7AE /* Countly.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9852245225A00E3D7AE /* Countly.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		3B20A9B22245228700E3D7AE /* CountlyConnectionManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A98D2245228300E3D7AE /* CountlyConnectionManager.h */; };
 		3B20A9B32245228700E3D7AE /* CountlyNotificationService.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B20A98E2245228300E3D7AE /* CountlyNotificationService.m */; };
@@ -58,6 +62,8 @@
 		3B20A9D32245228700E3D7AE /* CountlyPushNotifications.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9AE2245228600E3D7AE /* CountlyPushNotifications.h */; };
 		3B20A9D42245228700E3D7AE /* CountlyPersistency.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B20A9AF2245228600E3D7AE /* CountlyPersistency.m */; };
 		3B20A9D62245228700E3D7AE /* CountlyConsentManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9B12245228700E3D7AE /* CountlyConsentManager.h */; };
+		968426812BF2302C007B303E /* CountlyConnectionManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 968426802BF2302C007B303E /* CountlyConnectionManagerTests.swift */; };
+		96E680422BFF89AC0091E105 /* CountlyCrashReporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96E680412BFF89AC0091E105 /* CountlyCrashReporterTests.swift */; };
 		D219374B248AC71C00E5798B /* CountlyPerformanceMonitoring.h in Headers */ = {isa = PBXBuildFile; fileRef = D2193749248AC71C00E5798B /* CountlyPerformanceMonitoring.h */; };
 		D219374C248AC71C00E5798B /* CountlyPerformanceMonitoring.m in Sources */ = {isa = PBXBuildFile; fileRef = D219374A248AC71C00E5798B /* CountlyPerformanceMonitoring.m */; };
 		D249BF5E254D3D180058A6C2 /* CountlyFeedbackWidget.h in Headers */ = {isa = PBXBuildFile; fileRef = D249BF5C254D3D170058A6C2 /* CountlyFeedbackWidget.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -99,6 +105,10 @@
 		39527E162B5FD28900EE5D7B /* CountlyAPMConfig.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyAPMConfig.h; sourceTree = "<group>"; };
 		395683372BB2988300C7A06B /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		39911B662B457DB500AC053C /* Resettable.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Resettable.h; sourceTree = "<group>"; };
+		39924ECD2BEBD0B700139F91 /* CountlyCrashesConfig.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyCrashesConfig.h; sourceTree = "<group>"; };
+		39924ECF2BEBD0D400139F91 /* CountlyCrashesConfig.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyCrashesConfig.m; sourceTree = "<group>"; };
+		39924ED52BEBD20F00139F91 /* CountlyCrashData.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyCrashData.m; sourceTree = "<group>"; };
+		39924ED72BEBD22100139F91 /* CountlyCrashData.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyCrashData.h; sourceTree = "<group>"; };
 		3B20A9822245225A00E3D7AE /* Countly.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Countly.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B20A9852245225A00E3D7AE /* Countly.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Countly.h; sourceTree = "<group>"; };
 		3B20A9862245225A00E3D7AE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -131,6 +141,8 @@
 		3B20A9AE2245228600E3D7AE /* CountlyPushNotifications.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyPushNotifications.h; sourceTree = "<group>"; };
 		3B20A9AF2245228600E3D7AE /* CountlyPersistency.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyPersistency.m; sourceTree = "<group>"; };
 		3B20A9B12245228700E3D7AE /* CountlyConsentManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyConsentManager.h; sourceTree = "<group>"; };
+		968426802BF2302C007B303E /* CountlyConnectionManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyConnectionManagerTests.swift; sourceTree = "<group>"; };
+		96E680412BFF89AC0091E105 /* CountlyCrashReporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyCrashReporterTests.swift; sourceTree = "<group>"; };
 		D2193749248AC71C00E5798B /* CountlyPerformanceMonitoring.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyPerformanceMonitoring.h; sourceTree = "<group>"; };
 		D219374A248AC71C00E5798B /* CountlyPerformanceMonitoring.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyPerformanceMonitoring.m; sourceTree = "<group>"; };
 		D249BF5C254D3D170058A6C2 /* CountlyFeedbackWidget.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyFeedbackWidget.h; sourceTree = "<group>"; };
@@ -164,6 +176,8 @@
 				1A5C4C962B35B0850032EE1F /* CountlyTests.swift */,
 				1A50D7042B3C5AA3009C6938 /* CountlyBaseTestCase.swift */,
 				1AFD79012B3EF82C00772FBD /* CountlyTests-Bridging-Header.h */,
+				968426802BF2302C007B303E /* CountlyConnectionManagerTests.swift */,
+				96E680412BFF89AC0091E105 /* CountlyCrashReporterTests.swift */,
 			);
 			path = CountlyTests;
 			sourceTree = "<group>";
@@ -171,6 +185,10 @@
 		3B20A9782245225A00E3D7AE = {
 			isa = PBXGroup;
 			children = (
+				39924ED72BEBD22100139F91 /* CountlyCrashData.h */,
+				39924ED52BEBD20F00139F91 /* CountlyCrashData.m */,
+				39924ECD2BEBD0B700139F91 /* CountlyCrashesConfig.h */,
+				39924ECF2BEBD0D400139F91 /* CountlyCrashesConfig.m */,
 				395683372BB2988300C7A06B /* PrivacyInfo.xcprivacy */,
 				3948A8562BAC2E7D002D09AA /* CountlySDKLimitsConfig.h */,
 				3948A8552BAC2E7D002D09AA /* CountlySDKLimitsConfig.m */,
@@ -255,6 +273,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				39924ECE2BEBD0B700139F91 /* CountlyCrashesConfig.h in Headers */,
 				1A478D032AB314750056A5E7 /* CountlyExperimentInformation.h in Headers */,
 				3B20A9D32245228700E3D7AE /* CountlyPushNotifications.h in Headers */,
 				3B20A9C42245228700E3D7AE /* CountlyUserDetails.h in Headers */,
@@ -281,6 +300,7 @@
 				1A3110702A7141AF001CB507 /* CountlyViewTracking.h in Headers */,
 				3B20A9B72245228700E3D7AE /* CountlyPersistency.h in Headers */,
 				D249BF5E254D3D180058A6C2 /* CountlyFeedbackWidget.h in Headers */,
+				39924ED82BEBD22100139F91 /* CountlyCrashData.h in Headers */,
 				D2CFEF972545FBE80026B044 /* CountlyFeedbacks.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -333,7 +353,7 @@
 			attributes = {
 				LastSwiftUpdateCheck = 1410;
 				LastUpgradeCheck = 1410;
-				ORGANIZATIONNAME = "Alin Radut";
+				ORGANIZATIONNAME = Countly;
 				TargetAttributes = {
 					1A5C4C932B35B0850032EE1F = {
 						CreatedOnToolsVersion = 14.1;
@@ -387,6 +407,8 @@
 			files = (
 				1A5C4C972B35B0850032EE1F /* CountlyTests.swift in Sources */,
 				1A50D7052B3C5AA3009C6938 /* CountlyBaseTestCase.swift in Sources */,
+				968426812BF2302C007B303E /* CountlyConnectionManagerTests.swift in Sources */,
+				96E680422BFF89AC0091E105 /* CountlyCrashReporterTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -400,6 +422,7 @@
 				3B20A9B52245228700E3D7AE /* CountlyCommon.m in Sources */,
 				1ACA5DC22A309E7F001F770B /* CountlyRemoteConfigInternal.m in Sources */,
 				3B20A9CF2245228700E3D7AE /* CountlyDeviceInfo.m in Sources */,
+				39924ED02BEBD0D400139F91 /* CountlyCrashesConfig.m in Sources */,
 				3B20A9CE2245228700E3D7AE /* CountlyCrashReporter.m in Sources */,
 				3B20A9D42245228700E3D7AE /* CountlyPersistency.m in Sources */,
 				3B20A9B32245228700E3D7AE /* CountlyNotificationService.m in Sources */,
@@ -418,6 +441,7 @@
 				3B20A9C92245228700E3D7AE /* CountlyUserDetails.m in Sources */,
 				3B20A9D12245228700E3D7AE /* CountlyConfig.m in Sources */,
 				1A9027FE2AB197B50044EBCF /* CountlyExperimentInformation.m in Sources */,
+				39924ED62BEBD20F00139F91 /* CountlyCrashData.m in Sources */,
 				3B20A9C82245228700E3D7AE /* CountlyViewTrackingInternal.m in Sources */,
 				3B20A9D22245228700E3D7AE /* CountlyLocationManager.m in Sources */,
 			);
@@ -634,7 +658,7 @@
 					"@loader_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.14;
-				MARKETING_VERSION = 24.4.0;
+				MARKETING_VERSION = 24.4.2;
 				PRODUCT_BUNDLE_IDENTIFIER = ly.count.CountlyiOSSDK;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -666,7 +690,7 @@
 					"@loader_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.14;
-				MARKETING_VERSION = 24.4.0;
+				MARKETING_VERSION = 24.4.2;
 				PRODUCT_BUNDLE_IDENTIFIER = ly.count.CountlyiOSSDK;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

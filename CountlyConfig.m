@@ -34,6 +34,7 @@ CLYFeature const CLYCrashReporting      = @"CLYCrashReporting";
 #endif
 
 CountlyAPMConfig *apmConfig = nil;
+CountlyCrashesConfig *crashes = nil;
 CountlySDKLimitsConfig *sdkLimitsConfig = nil;
 
 //NOTE: Device ID options
@@ -110,6 +111,13 @@ CLYDeviceIDType const CLYDeviceIDTypeNSUUID     = @"CLYDeviceIDTypeNSUUID";
         sdkLimitsConfig = CountlySDKLimitsConfig.new;
     }
     return sdkLimitsConfig;
+}
+
+- (nonnull CountlyCrashesConfig *)crashes {
+    if (crashes == nil) {
+        crashes = CountlyCrashesConfig.new;
+    }
+    return crashes;
 }
 
 @end

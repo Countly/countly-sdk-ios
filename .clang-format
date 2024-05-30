@@ -1,0 +1,33 @@
+# Basic indentation settings
+IndentWidth: 2
+TabWidth: 2
+ContinuationIndentWidth: 4
+UseTab: Never
+IndentPPDirectives: BeforeHash
+
+# Code formatting rules
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: true
+  AfterControlStatement: true
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  AfterUnion: true
+  BeforeCatch: true
+  BeforeElse: true
+  IndentBraces: false
+ColumnLimit: 300
+
+# Blank lines
+MaxEmptyLinesToKeep: 1
+
+# Alignment
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignOperands: true
+AlignTrailingComments: true
+
+# Import statements
+SortIncludes: true

@@ -91,7 +91,10 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
         userDictionary[kCountlyUDKeyBirthyear] = self.birthYear;
 
     if ([self.custom isKindOfClass:NSDictionary.class])
-        self.custom = [((NSDictionary *)self.custom) cly_truncated:@"User details custom dictionary"];
+    {
+        NSDictionary* customTruncated = [((NSDictionary *)self.custom) cly_truncated:@"User details custom dictionary"];
+        self.custom = [customTruncated cly_limited:@"User details custom dictionary"];
+    }
 
     if (self.custom)
         userDictionary[kCountlyUDKeyCustom] = self.custom;
@@ -396,9 +399,54 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
         [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyLocalPicturePath: self.pictureLocalPath} cly_JSONify]];
 
     if (self.modifications.count)
-        [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyUDKeyCustom: self.modifications} cly_JSONify]];
+    {
+        [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyUDKeyCustom: [self truncateModifications]} cly_JSONify]];
+    }
 
     [self clearUserDetails];
+}
+
+
+- (NSDictionary *)truncateModifications
+{
+    NSMutableDictionary* truncatedDict = self.modifications.mutableCopy;
+    [self.modifications enumerateKeysAndObjectsUsingBlock:^(NSString * key, id obj, BOOL * stop)
+     {
+        NSString* truncatedKey = [key cly_truncatedKey:@"User details modifications key"];
+        if (![truncatedKey isEqualToString:key])
+        {
+            truncatedDict[truncatedKey] = obj;
+            [truncatedDict removeObjectForKey:key];
+        }
+        
+        if ([obj isKindOfClass:NSString.class])
+        {
+            NSString* truncatedValue = [obj cly_truncatedValue:@"User details modifications value"];
+            if (![truncatedValue isEqualToString:obj])
+            {
+                truncatedDict[truncatedKey] = truncatedValue;
+            }
+        }
+        else if ([obj isKindOfClass:NSDictionary.class])
+        {
+            NSMutableDictionary* truncatedValueDict = ((NSDictionary *)obj).mutableCopy;
+            [(NSDictionary *)obj enumerateKeysAndObjectsUsingBlock:^(NSString * key, id value, BOOL * stop)
+             {
+                if ([value isKindOfClass:NSString.class])
+                {
+                    NSString* truncatedValue = [value cly_truncatedValue:@"User details modifications value"];
+                    if (![truncatedValue isEqualToString:value])
+                    {
+                        truncatedValueDict[key] = truncatedValue;
+                        truncatedDict[truncatedKey] = truncatedValueDict;
+                    }
+                }
+            }];
+        }
+        
+    }];
+    
+    return truncatedDict.copy;
 }
 
 @end
