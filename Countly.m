@@ -542,7 +542,10 @@ static dispatch_once_t onceToken;
     CLY_LOG_I(@"%s", __FUNCTION__);
 
     if (CountlyCommon.sharedInstance.manualSessionHandling)
+    {
+        [CountlyConnectionManager.sharedInstance sendEvents];
         [CountlyConnectionManager.sharedInstance endSession];
+    }
 }
 
 
