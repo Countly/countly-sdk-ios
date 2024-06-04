@@ -347,7 +347,7 @@ static dispatch_once_t onceToken;
         [CountlyConnectionManager.sharedInstance updateSession];
     }
 
-    [CountlyConnectionManager.sharedInstance sendEvents];
+    [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
 }
 
 - (void)suspend
@@ -366,7 +366,7 @@ static dispatch_once_t onceToken;
 
     isSuspended = YES;
 
-    [CountlyConnectionManager.sharedInstance sendEvents];
+    [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
 
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance endSession];
@@ -424,7 +424,7 @@ static dispatch_once_t onceToken;
 
     [CountlyViewTrackingInternal.sharedInstance applicationWillTerminate];
 
-    [CountlyConnectionManager.sharedInstance sendEvents];
+    [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
 
     [CountlyPerformanceMonitoring.sharedInstance endBackgroundTrace];
 
@@ -543,7 +543,7 @@ static dispatch_once_t onceToken;
 
     if (CountlyCommon.sharedInstance.manualSessionHandling)
     {
-        [CountlyConnectionManager.sharedInstance sendEvents];
+        [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
         [CountlyConnectionManager.sharedInstance endSession];
     }
 }

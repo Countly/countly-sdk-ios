@@ -44,8 +44,8 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 - (void)updateSession;
 - (void)endSession;
 
+- (void)sendEventsWithSaveIfNeeded;
 - (void)sendEvents;
-- (void)sendEvents:(BOOL) saveUser;
 - (void)attemptToSendStoredRequests;
 - (void)sendPushToken:(NSString *)token;
 - (void)sendLocationInfo;

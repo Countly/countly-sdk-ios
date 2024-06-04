@@ -270,7 +270,7 @@ static dispatch_once_t onceToken;
     {
         CLY_LOG_D(@"Consent for Events is cancelled.");
 
-        [CountlyConnectionManager.sharedInstance sendEvents];
+        [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
         [CountlyPersistency.sharedInstance clearAllTimedEvents];
     }
 }

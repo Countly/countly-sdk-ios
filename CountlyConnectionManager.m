@@ -418,29 +418,37 @@ static dispatch_once_t onceToken;
 
 #pragma mark ---
 
-- (void)sendEvents
+- (void)sendEventsWithSaveIfNeeded
 {
-    [self sendEvents:[Countly.user isLocallyCached]];
-}
-
-- (void)sendEvents:(BOOL) saveUser
-{
-    if(saveUser)
+    if([Countly.user hasUnsyncedChanges])
     {
         [Countly.user save];
     }
     else
     {
-        [self sendEventsInternal:false];
+        [self sendEventsInternal];
     }
+}
+
+- (void)sendEvents
+{
+    [self sendEventsInternal];
 }
 
 - (void)attemptToSendStoredRequests
 {
-    [self sendEventsInternal:true];
+    [self addEventsToQueue];
+    [CountlyPersistency.sharedInstance saveToFileSync];
+    [self proceedOnQueue];
 }
 
-- (void)sendEventsInternal:(BOOL) saveToFile
+- (void)sendEventsInternal
+{
+    [self addEventsToQueue];
+    [self proceedOnQueue];
+}
+
+- (void)addEventsToQueue
 {
     NSString* events = [CountlyPersistency.sharedInstance serializedRecordedEvents];
     
@@ -452,11 +460,6 @@ static dispatch_once_t onceToken;
     
     [CountlyPersistency.sharedInstance addToQueue:queryString];
     
-    if(saveToFile) {
-        [CountlyPersistency.sharedInstance saveToFileSync];
-    }
-    
-    [self proceedOnQueue];
 }
 
 #pragma mark ---
@@ -533,7 +536,7 @@ static dispatch_once_t onceToken;
     //NOTE: Prevent `event` and `end_session` requests from being started, after `sendEvents` and `endSession` calls below.
     isCrashing = YES;
 
-    [self sendEvents];
+    [self sendEventsWithSaveIfNeeded];
 
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [self endSession];

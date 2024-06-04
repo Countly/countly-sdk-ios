@@ -266,7 +266,7 @@ static dispatch_once_t onceToken;
 {
     @synchronized (self.recordedEvents)
     {
-        if([Countly.user isLocallyCached])
+        if([Countly.user hasUnsyncedChanges])
         {
             [Countly.user save];
         }
@@ -275,7 +275,7 @@ static dispatch_once_t onceToken;
         
         if (self.recordedEvents.count >= self.eventSendThreshold)
         {
-            [CountlyConnectionManager.sharedInstance sendEvents:false];
+            [CountlyConnectionManager.sharedInstance sendEvents];
         }
     }
 }
@@ -310,7 +310,7 @@ static dispatch_once_t onceToken;
 - (void)resetInstance:(BOOL) clearStorage 
 {
     CLY_LOG_I(@"%s Clear Storage: %d", __FUNCTION__, clearStorage);
-    [CountlyConnectionManager.sharedInstance sendEvents];
+    [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
     [self flushEvents];
     [self clearAllTimedEvents];
     [self flushQueue];
