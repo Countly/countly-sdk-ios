@@ -121,12 +121,30 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     [self.modifications removeAllObjects];
 }
 
-- (BOOL) isLocallyCached 
+- (BOOL)isLocallyCached
 {
-    NSString* userDetails = [self serializedUserDetails];
-    return userDetails || self.modifications.count > 0;
+    NSArray *userDetails = @[
+        self.name,
+        self.username,
+        self.email,
+        self.organization,
+        self.phone,
+        self.gender,
+        self.pictureURL,
+        self.pictureLocalPath,
+        self.birthYear,
+        self.custom
+    ];
     
+    for (id detail in userDetails) {
+        if (detail != nil) {
+            return YES;
+        }
+    }
+    
+    return self.modifications.count > 0;
 }
+
 
 #pragma mark -
 
