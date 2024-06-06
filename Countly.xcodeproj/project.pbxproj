@@ -27,6 +27,7 @@
 		3948A8582BAC2E7D002D09AA /* CountlySDKLimitsConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 3948A8562BAC2E7D002D09AA /* CountlySDKLimitsConfig.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		39527E152B5FD27400EE5D7B /* CountlyAPMConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 39527E142B5FD27400EE5D7B /* CountlyAPMConfig.m */; };
 		39527E182B5FD54C00EE5D7B /* CountlyAPMConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 39527E162B5FD28900EE5D7B /* CountlyAPMConfig.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		3966DBCF2C11EE270002ED97 /* CountlyDeviceIDTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3966DBCE2C11EE270002ED97 /* CountlyDeviceIDTests.swift */; };
 		3972EDDB2C08A38D00EB9D3E /* CountlyEventStruct.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3972EDDA2C08A38D00EB9D3E /* CountlyEventStruct.swift */; };
 		3979E47D2C0760E900FA1CA4 /* CountlyUserProfileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3979E47C2C0760E900FA1CA4 /* CountlyUserProfileTests.swift */; };
 		39911B672B457DBB00AC053C /* Resettable.h in Headers */ = {isa = PBXBuildFile; fileRef = 39911B662B457DB500AC053C /* Resettable.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -106,6 +107,7 @@
 		39527E142B5FD27400EE5D7B /* CountlyAPMConfig.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyAPMConfig.m; sourceTree = "<group>"; };
 		39527E162B5FD28900EE5D7B /* CountlyAPMConfig.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyAPMConfig.h; sourceTree = "<group>"; };
 		395683372BB2988300C7A06B /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		3966DBCE2C11EE270002ED97 /* CountlyDeviceIDTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyDeviceIDTests.swift; sourceTree = "<group>"; };
 		3972EDDA2C08A38D00EB9D3E /* CountlyEventStruct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyEventStruct.swift; sourceTree = "<group>"; };
 		3979E47C2C0760E900FA1CA4 /* CountlyUserProfileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyUserProfileTests.swift; sourceTree = "<group>"; };
 		39911B662B457DB500AC053C /* Resettable.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Resettable.h; sourceTree = "<group>"; };
@@ -184,6 +186,7 @@
 				96E680412BFF89AC0091E105 /* CountlyCrashReporterTests.swift */,
 				3979E47C2C0760E900FA1CA4 /* CountlyUserProfileTests.swift */,
 				3972EDDA2C08A38D00EB9D3E /* CountlyEventStruct.swift */,
+				3966DBCE2C11EE270002ED97 /* CountlyDeviceIDTests.swift */,
 			);
 			path = CountlyTests;
 			sourceTree = "<group>";
@@ -415,6 +418,7 @@
 				1A50D7052B3C5AA3009C6938 /* CountlyBaseTestCase.swift in Sources */,
 				3979E47D2C0760E900FA1CA4 /* CountlyUserProfileTests.swift in Sources */,
 				968426812BF2302C007B303E /* CountlyConnectionManagerTests.swift in Sources */,
+				3966DBCF2C11EE270002ED97 /* CountlyDeviceIDTests.swift in Sources */,
 				3972EDDB2C08A38D00EB9D3E /* CountlyEventStruct.swift in Sources */,
 				96E680422BFF89AC0091E105 /* CountlyCrashReporterTests.swift in Sources */,
 			);

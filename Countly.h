@@ -186,6 +186,8 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)changeDeviceIDWithoutMerge:(NSString * _Nullable)deviceID;
 
+- (void) setID:(NSString *)deviceID;
+
 
 #pragma mark - Consents
 

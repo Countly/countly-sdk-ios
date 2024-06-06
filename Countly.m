@@ -24,7 +24,7 @@ NSString* previousEventID;
 + (void)load
 {
     [super load];
-
+    
     appLoadStartTime = floor(NSDate.date.timeIntervalSince1970 * 1000);
 }
 
@@ -67,7 +67,7 @@ static dispatch_once_t onceToken;
                                                  object:nil];
 #endif
     }
-
+    
     return self;
 }
 
@@ -75,7 +75,7 @@ static dispatch_once_t onceToken;
 {
     if (CountlyCommon.sharedInstance.hasStarted_)
         return;
-
+    
     CountlyCommon.sharedInstance.hasStarted = YES;
     CountlyCommon.sharedInstance.enableDebug = config.enableDebug;
     CountlyCommon.sharedInstance.shouldIgnoreTrustCheck = config.shouldIgnoreTrustCheck;
@@ -103,13 +103,13 @@ static dispatch_once_t onceToken;
     }
     
     CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
-
+    
     if (!config.appKey.length || [config.appKey isEqualToString:@"YOUR_APP_KEY"])
         [NSException raise:@"CountlyAppKeyNotSetException" format:@"appKey property on CountlyConfig object is not set"];
-
+    
     if (!config.host.length || [config.host isEqualToString:@"https://YOUR_COUNTLY_SERVER"])
         [NSException raise:@"CountlyHostNotSetException" format:@"host property on CountlyConfig object is not set"];
-
+    
     if ([CountlyCommon.sharedInstance.SDKName isEqualToString:kCountlySDKName] && [CountlyCommon.sharedInstance.SDKVersion isEqualToString:kCountlySDKVersion])
     {
         CLY_LOG_I(@"Initializing with %@ SDK v%@ on %@ with %@ %@",
@@ -129,33 +129,33 @@ static dispatch_once_t onceToken;
                   kCountlySDKName,
                   kCountlySDKVersion);
     }
-
+    
     if (!CountlyDeviceInfo.sharedInstance.deviceID || config.resetStoredDeviceID)
     {
         [self storeCustomDeviceIDState:config.deviceID];
-
+        
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:config.deviceID];
     }
-
+    
     CountlyConnectionManager.sharedInstance.appKey = config.appKey;
     CountlyConnectionManager.sharedInstance.host = config.host;
     CountlyConnectionManager.sharedInstance.alwaysUsePOST = config.alwaysUsePOST;
     CountlyConnectionManager.sharedInstance.pinnedCertificates = config.pinnedCertificates;
     CountlyConnectionManager.sharedInstance.secretSalt = config.secretSalt;
     CountlyConnectionManager.sharedInstance.URLSessionConfiguration = config.URLSessionConfiguration;
-
+    
     CountlyPersistency.sharedInstance.eventSendThreshold = config.eventSendThreshold;
     CountlyPersistency.sharedInstance.requestDropAgeHours = config.requestDropAgeHours;
     CountlyPersistency.sharedInstance.storedRequestsLimit = MAX(1, config.storedRequestsLimit);
-
+    
     CountlyCommon.sharedInstance.manualSessionHandling = config.manualSessionHandling;
     CountlyCommon.sharedInstance.enableManualSessionControlHybridMode = config.enableManualSessionControlHybridMode;
-
+    
     CountlyCommon.sharedInstance.attributionID = config.attributionID;
-
+    
     NSDictionary* customMetricsTruncated = [config.customMetrics cly_truncated:@"Custom metric"];
     CountlyDeviceInfo.sharedInstance.customMetrics = [customMetricsTruncated cly_limited:@"Custom metric"];
-
+    
     [Countly.user save];
     
     CountlyCommon.sharedInstance.enableServerConfiguration = config.enableServerConfiguration;
@@ -165,14 +165,14 @@ static dispatch_once_t onceToken;
     {
         [CountlyServerConfig.sharedInstance fetchServerConfig];
     }
-
+    
 #if (TARGET_OS_IOS)
     CountlyFeedbacks.sharedInstance.message = config.starRatingMessage;
     CountlyFeedbacks.sharedInstance.sessionCount = config.starRatingSessionCount;
     CountlyFeedbacks.sharedInstance.disableAskingForEachAppVersion = config.starRatingDisableAskingForEachAppVersion;
     CountlyFeedbacks.sharedInstance.ratingCompletionForAutoAsk = config.starRatingCompletion;
     [CountlyFeedbacks.sharedInstance checkForStarRatingAutoAsk];
-
+    
     if(config.disableLocation)
     {
         [CountlyLocationManager.sharedInstance disableLocation];
@@ -182,17 +182,17 @@ static dispatch_once_t onceToken;
         [CountlyLocationManager.sharedInstance updateLocation:config.location city:config.city ISOCountryCode:config.ISOCountryCode IP:config.IP];
     }
 #endif
-
+    
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
-
+    
     //NOTE: If there is no consent for sessions, location info and attribution should be sent separately, as they cannot be sent with begin_session request.
     if (!CountlyConsentManager.sharedInstance.consentForSessions)
     {
         [CountlyLocationManager.sharedInstance sendLocationInfo];
         [CountlyConnectionManager.sharedInstance sendAttribution];
     }
-
+    
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
     if ([config.features containsObject:CLYPushNotifications])
@@ -210,7 +210,7 @@ static dispatch_once_t onceToken;
     if(config.crashes.crashFilterCallback) {
         [CountlyCrashReporter.sharedInstance setCrashFilterCallback:config.crashes.crashFilterCallback];
     }
-
+    
     CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
     CountlyCrashReporter.sharedInstance.crashLogLimit = config.sdkInternalLimits.getMaxBreadcrumbCount;
     // For backward compatibility, deprecated values are only set incase new values are not provided using sdkInternalLimits interface
@@ -228,7 +228,7 @@ static dispatch_once_t onceToken;
         CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;
         [CountlyCrashReporter.sharedInstance startCrashReporting];
     }
-
+    
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (config.enableAutomaticViewTracking || [config.features containsObject:CLYAutoViewTracking])
     {
@@ -245,7 +245,7 @@ static dispatch_once_t onceToken;
     }
     timer = [NSTimer timerWithTimeInterval:config.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
     [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
-
+    
     CountlyRemoteConfigInternal.sharedInstance.isRCAutomaticTriggersEnabled = config.enableRemoteConfigAutomaticTriggers || config.enableRemoteConfig;
     CountlyRemoteConfigInternal.sharedInstance.isRCValueCachingEnabled = config.enableRemoteConfigValueCaching;
     CountlyRemoteConfigInternal.sharedInstance.remoteConfigCompletionHandler = config.remoteConfigCompletionHandler;
@@ -261,21 +261,21 @@ static dispatch_once_t onceToken;
     }
     
     [CountlyPerformanceMonitoring.sharedInstance startWithConfig:config.apm];
-
+    
     CountlyCommon.sharedInstance.enableOrientationTracking = config.enableOrientationTracking;
     [CountlyCommon.sharedInstance observeDeviceOrientationChanges];
-
+    
     [CountlyConnectionManager.sharedInstance proceedOnQueue];
-
+    
     //TODO: Should move at the top after checking the the edge cases of current implementation
     if (config.enableAllConsents)
         [self giveAllConsents];
     else if (config.consents)
         [self giveConsentForFeatures:config.consents];
-
+    
     if (config.campaignType && config.campaignData)
         [self recordDirectAttributionWithCampaignType:config.campaignType andCampaignData:config.campaignData];
-
+    
     if (config.indirectAttribution)
         [self recordIndirectAttribution:config.indirectAttribution];
 }
@@ -336,7 +336,7 @@ static dispatch_once_t onceToken;
 {
     if (isSuspended)
         return;
-
+    
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
     {
         [CountlyConnectionManager.sharedInstance updateSession];
@@ -346,7 +346,7 @@ static dispatch_once_t onceToken;
     {
         [CountlyConnectionManager.sharedInstance updateSession];
     }
-
+    
     [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
 }
 
@@ -355,24 +355,24 @@ static dispatch_once_t onceToken;
 #if (TARGET_OS_WATCH)
     CLY_LOG_I(@"%s", __FUNCTION__);
 #endif
-
+    
     if (!CountlyCommon.sharedInstance.hasStarted)
         return;
-
+    
     if (isSuspended)
         return;
-
+    
     CLY_LOG_D(@"Suspending...");
-
+    
     isSuspended = YES;
-
+    
     [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
-
+    
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance endSession];
-
+    
     [CountlyViewTrackingInternal.sharedInstance applicationDidEnterBackground];
-
+    
     [CountlyPersistency.sharedInstance saveToFile];
 }
 
@@ -381,26 +381,26 @@ static dispatch_once_t onceToken;
 #if (TARGET_OS_WATCH)
     CLY_LOG_I(@"%s", __FUNCTION__);
 #endif
-
+    
     if (!CountlyCommon.sharedInstance.hasStarted)
         return;
-
+    
 #if (TARGET_OS_WATCH)
     //NOTE: Skip first time to prevent double begin session because of applicationDidBecomeActive call on launch of watchOS apps
     static BOOL isFirstCall = YES;
-
+    
     if (isFirstCall)
     {
         isFirstCall = NO;
         return;
     }
 #endif
-
+    
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
-
+    
     [CountlyViewTrackingInternal.sharedInstance applicationWillEnterForeground];
-
+    
     isSuspended = NO;
 }
 
@@ -419,22 +419,22 @@ static dispatch_once_t onceToken;
 - (void)applicationWillTerminate:(NSNotification *)notification
 {
     CLY_LOG_D(@"App will terminate.");
-
+    
     CountlyConnectionManager.sharedInstance.isTerminating = YES;
-
+    
     [CountlyViewTrackingInternal.sharedInstance applicationWillTerminate];
-
+    
     [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
-
+    
     [CountlyPerformanceMonitoring.sharedInstance endBackgroundTrace];
-
+    
     [CountlyPersistency.sharedInstance saveToFileSync];
 }
 
 - (void)dealloc
 {
     [NSNotificationCenter.defaultCenter removeObserver:self];
-
+    
     if (timer)
     {
         [timer invalidate];
@@ -448,20 +448,20 @@ static dispatch_once_t onceToken;
 - (void)setNewHost:(NSString *)newHost
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, newHost);
-
+    
     if (!newHost.length)
     {
         CLY_LOG_W(@"New host is invalid!");
         return;
     }
-
+    
     CountlyConnectionManager.sharedInstance.host = newHost;
 }
 
 - (void)setNewURLSessionConfiguration:(NSURLSessionConfiguration *)newURLSessionConfiguration
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, newURLSessionConfiguration);
-
+    
     CountlyConnectionManager.sharedInstance.URLSessionConfiguration = newURLSessionConfiguration;
 }
 
@@ -474,13 +474,13 @@ static dispatch_once_t onceToken;
         CLY_LOG_W(@"New app key is invalid!");
         return;
     }
-
+    
     [self suspend];
-
+    
     [CountlyPerformanceMonitoring.sharedInstance clearAllCustomTraces];
-
+    
     CountlyConnectionManager.sharedInstance.appKey = newAppKey;
-
+    
     [self resume];
 }
 
@@ -491,7 +491,7 @@ static dispatch_once_t onceToken;
 - (void)flushQueues
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
-
+    
     [CountlyPersistency.sharedInstance flushEvents];
     [CountlyPersistency.sharedInstance flushQueue];
 }
@@ -499,21 +499,21 @@ static dispatch_once_t onceToken;
 - (void)replaceAllAppKeysInQueueWithCurrentAppKey
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
-
+    
     [CountlyPersistency.sharedInstance replaceAllAppKeysInQueueWithCurrentAppKey];
 }
 
 - (void)removeDifferentAppKeysFromQueue
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
-
+    
     [CountlyPersistency.sharedInstance removeDifferentAppKeysFromQueue];
 }
 
 - (void)addDirectRequest:(NSDictionary<NSString *, NSString *> * _Nullable)requestParameters
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, requestParameters);
-
+    
     [CountlyConnectionManager.sharedInstance addDirectRequest:requestParameters];
 }
 
@@ -524,7 +524,7 @@ static dispatch_once_t onceToken;
 - (void)beginSession
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
-
+    
     if (CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
 }
@@ -532,7 +532,7 @@ static dispatch_once_t onceToken;
 - (void)updateSession
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
-
+    
     if (CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance updateSession];
 }
@@ -540,7 +540,7 @@ static dispatch_once_t onceToken;
 - (void)endSession
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
-
+    
     if (CountlyCommon.sharedInstance.manualSessionHandling)
     {
         [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
@@ -556,20 +556,20 @@ static dispatch_once_t onceToken;
 - (NSString *)deviceID
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
-
+    
     return CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped;
 }
 
 - (CLYDeviceIDType)deviceIDType
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
-
+    
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
         return CLYDeviceIDTypeTemporary;
-
+    
     if ([CountlyPersistency.sharedInstance retrieveIsCustomDeviceID])
         return CLYDeviceIDTypeCustom;
-
+    
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     return CLYDeviceIDTypeIDFV;
 #else
@@ -577,15 +577,39 @@ static dispatch_once_t onceToken;
 #endif
 }
 
+- (void)setID:(NSString *)deviceID;
+{
+    if (deviceID == nil || !deviceID.length)
+    {
+        CLY_LOG_W(@"Passing `nil` or empty string as devie ID is not allowed.");
+        return;
+    }
+    
+    CLYDeviceIDType deviceIDType = [Countly.sharedInstance deviceIDType];
+    if([deviceIDType isEqualToString:CLYDeviceIDTypeCustom])
+    {
+        [Countly.sharedInstance setIDInternal:deviceID onServer: NO];
+    }
+    else
+    {
+        [Countly.sharedInstance setIDInternal:deviceID onServer: YES];
+    }
+}
+
 - (void)changeDeviceIDWithMerge:(NSString * _Nullable)deviceID {
-    [self setNewDeviceID:deviceID onServer:YES];
+    [self setIDInternal:deviceID onServer:YES];
 }
 
 - (void)changeDeviceIDWithoutMerge:(NSString * _Nullable)deviceID {
-    [self setNewDeviceID:deviceID onServer:NO];
+    [self setIDInternal:deviceID onServer:NO];
 }
 
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer
+{
+    [Countly.sharedInstance setIDInternal:deviceID onServer:onServer];
+}
+
+- (void)setIDInternal:(NSString *)deviceID onServer:(BOOL)onServer
 {
     CLY_LOG_I(@"%s %@ %d", __FUNCTION__, deviceID, onServer);
 
