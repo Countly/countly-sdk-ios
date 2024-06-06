@@ -1,3 +1,7 @@
+## 24.4.3
+* Implemented automatic sending of user properties to the server without requiring an explicit call to the `save` method
+* Mitigated an issue where the terms and conditions URL (`tc` key) was sent without double quotes 
+
 ## 24.4.2
 * Improved crash filtering capabilities to include modifications on the crash report
 

@@ -207,7 +207,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     NSMutableString *customString = [NSMutableString stringWithString:@"&custom="];
     [customString appendString:@"{"];
     [customParams enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
-        [customString appendFormat:@"%@:%@,", key, obj];
+        [customString appendFormat:@"\"%@\":%@,", key, obj];
     }];
     [customString deleteCharactersInRange:NSMakeRange(customString.length - 1, 1)]; // Remove the last comma
     [customString appendString:@"}"];
