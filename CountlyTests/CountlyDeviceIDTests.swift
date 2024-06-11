@@ -69,6 +69,11 @@ class CountlyDeviceIDTests: CountlyBaseTestCase {
         
         let newId = "New_ID"
         Countly.sharedInstance().setID(newId)
+        XCTAssertEqual(2, CountlyPersistency.sharedInstance().remainingRequestCount())
+        guard let queuedRequests =  CountlyPersistency.sharedInstance().value(forKey: "queuedRequests") as? [String] else {
+            fatalError("Failed to get queuedRequests from CountlyPersistency")
+        }
+        validateSetIdOnServerRequest(request: queuedRequests[1], newDeviceId: newId)
         validateDeveloperSuppliedID(deviceID: newId)
         
         Countly.sharedInstance().setID("")
@@ -94,6 +99,20 @@ class CountlyDeviceIDTests: CountlyBaseTestCase {
         let sdkDeviceID = Countly.sharedInstance().deviceID()
         XCTAssertTrue(Countly.sharedInstance().deviceIDType() == CLYDeviceIDType.IDFV, "Countly deviced id type should be IDFV when no device id is provided during init.")
         XCTAssertTrue(sdkDeviceID == getIDFV(), "Countly device id not match with provided device id.")
+    }
+    
+    func validateSetIdOnServerRequest(request: String, newDeviceId: String) {
+        let parsedRequest = parseQueryString(request)
+        
+        let sdkDeviceID = Countly.sharedInstance().deviceID()
+        
+        let oldDeviceID = parsedRequest["old_device_id"] as! String;
+        let deviceIDInRequest = parsedRequest["device_id"] as! String;
+        
+        XCTAssertTrue(Countly.sharedInstance().deviceIDType() == CLYDeviceIDType.custom, "Countly deviced id type should be Custom.")
+        XCTAssertTrue(oldDeviceID == getIDFV())
+        XCTAssertTrue(newDeviceId == deviceIDInRequest)
+        XCTAssertTrue(sdkDeviceID == deviceIDInRequest)
     }
     
     func getIDFV() -> String {
