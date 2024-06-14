@@ -97,7 +97,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     }
     
     NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:[self dataRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
-                              {
+    {
         NSDictionary *widgetData = nil;
         
         if (!error)
@@ -118,7 +118,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
         self.data = widgetData;
         
         dispatch_async(dispatch_get_main_queue(), ^
-                       {
+        {
             if (completionHandler)
                 completionHandler(widgetData, error);
         });
