@@ -74,7 +74,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     dismissButton.onClick = ^(id sender)
     {
         [webVC dismissViewControllerAnimated:YES completion:^
-         {
+        {
             if (dismissBlock)
                 dismissBlock();
             webVC = nil;
