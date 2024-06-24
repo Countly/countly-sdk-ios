@@ -862,7 +862,7 @@ static dispatch_once_t onceToken;
         previousEventID = event.ID;
     }
     event.key = key;
-    event.segmentation = segmentation;
+    event.segmentation = segmentation.cly_filterSupportedDataTypes;
     event.count = MAX(count, 1);
     event.sum = sum;
     event.timestamp = timestamp;

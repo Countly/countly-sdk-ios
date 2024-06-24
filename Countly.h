@@ -293,7 +293,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param key Event key, a non-zero length valid string
  * @param segmentation Segmentation key-value pairs of event
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary<NSString *, NSString *> * _Nullable)segmentation;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary<NSString *, id> * _Nullable)segmentation;
 
 /**
  * Records event with given key, segmentation and count.
@@ -304,7 +304,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param segmentation Segmentation key-value pairs of event
  * @param count Count of event occurrences
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary<NSString *, NSString *> * _Nullable)segmentation count:(NSUInteger)count;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary<NSString *, id> * _Nullable)segmentation count:(NSUInteger)count;
 
 /**
  * Records event with given key, segmentation, count and sum.
@@ -316,7 +316,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param count Count of event occurrences
  * @param sum Sum of any specific value for event
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary<NSString *, NSString *> * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary<NSString *, id> * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
 
 /**
  * Records event with given key, segmentation, count, sum and duration.
@@ -329,7 +329,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param sum Sum of any specific value for event
  * @param duration Duration of event in seconds
  */
-- (void)recordEvent:(NSString *)key segmentation:(NSDictionary<NSString *, NSString *> * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary<NSString *, id> * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
 
 /**
  * Starts a timed event with given key to be ended later. Duration of timed event will be calculated on ending.
@@ -356,7 +356,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param count Count of event occurrences
  * @param sum Sum of any specific value for event
  */
-- (void)endEvent:(NSString *)key segmentation:(NSDictionary<NSString *, NSString *> * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
+- (void)endEvent:(NSString *)key segmentation:(NSDictionary<NSString *, id> * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum;
 
 /**
  * Cancels a previously started timed event with given key.
