@@ -1,6 +1,8 @@
 ## 24.4.3
 * Implemented automatic sending of user properties to the server without requiring an explicit call to the `save` method
-* Added `setID` method for changing device ID based on the device ID type.
+* Added `setID` method for changing device ID based on the device ID type
+* Enhanced segmentation values to include additional supported data types beyond `NSString`
+* Fixed web view caching issue for widgets
 
 * Mitigated an issue where the terms and conditions URL (`tc` key) was sent without double quotes 
 

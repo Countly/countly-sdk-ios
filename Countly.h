@@ -465,7 +465,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param stackTrace Stack trace to be recorded
  * @param segmentation Crash segmentation to override @c crashSegmentation set on initial configuration
  */
-- (void)recordException:(NSException *)exception isFatal:(BOOL)isFatal stackTrace:(NSArray * _Nullable)stackTrace segmentation:(NSDictionary<NSString *, NSString *> * _Nullable)segmentation;
+- (void)recordException:(NSException *)exception isFatal:(BOOL)isFatal stackTrace:(NSArray * _Nullable)stackTrace segmentation:(NSDictionary<NSString *, id> * _Nullable)segmentation;
 
 /**
  * Records a Swift error with given stack trace.
@@ -483,7 +483,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param stackTrace Stack trace to be recorded
  * @param segmentation Crash segmentation to override @c crashSegmentation set on initial configuration
  */
-- (void)recordError:(NSString *)errorName isFatal:(BOOL)isFatal stackTrace:(NSArray * _Nullable)stackTrace segmentation:(NSDictionary<NSString *, NSString *> * _Nullable)segmentation;
+- (void)recordError:(NSString *)errorName isFatal:(BOOL)isFatal stackTrace:(NSArray * _Nullable)stackTrace segmentation:(NSDictionary<NSString *, id> * _Nullable)segmentation;
 
 /**
  * Records a handled exception manually.
@@ -542,7 +542,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @param viewName Name of the view visited, a non-zero length valid string
  * @param segmentation Custom segmentation key-value pairs
  */
-- (void)recordView:(NSString *)viewName segmentation:(NSDictionary<NSString *, NSString *> *)segmentation DEPRECATED_MSG_ATTRIBUTE("Use '[views startView/startAutoStoppedView:]' method instead!");
+- (void)recordView:(NSString *)viewName segmentation:(NSDictionary<NSString *, id> *)segmentation DEPRECATED_MSG_ATTRIBUTE("Use '[views startView/startAutoStoppedView:]' method instead!");
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 /**

@@ -1024,7 +1024,7 @@ static dispatch_once_t onceToken;
     [CountlyCrashReporter.sharedInstance recordException:exception isFatal:isFatal stackTrace:nil segmentation:nil];
 }
 
-- (void)recordException:(NSException *)exception isFatal:(BOOL)isFatal stackTrace:(NSArray *)stackTrace segmentation:(NSDictionary<NSString *, NSString *> *)segmentation
+- (void)recordException:(NSException *)exception isFatal:(BOOL)isFatal stackTrace:(NSArray *)stackTrace segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@ %d %@ %@", __FUNCTION__, exception, isFatal, stackTrace, segmentation);
 
@@ -1038,7 +1038,7 @@ static dispatch_once_t onceToken;
     [CountlyCrashReporter.sharedInstance recordError:errorName isFatal:NO stackTrace:stackTrace segmentation:nil];
 }
 
-- (void)recordError:(NSString *)errorName isFatal:(BOOL)isFatal stackTrace:(NSArray * _Nullable)stackTrace segmentation:(NSDictionary<NSString *, NSString *> * _Nullable)segmentation
+- (void)recordError:(NSString *)errorName isFatal:(BOOL)isFatal stackTrace:(NSArray * _Nullable)stackTrace segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@ %d %@ %@", __FUNCTION__, errorName, isFatal, stackTrace, segmentation);
 

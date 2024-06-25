@@ -221,7 +221,8 @@ NSString* const kCountlyCRKeyOB                = @"_ob";
         userInfo[kCountlyExceptionUserInfoBacktraceKey] = stackTrace;
         if(segmentation) {
             NSDictionary* truncatedSegmentation = [segmentation cly_truncated:@"Exception segmentation"];
-            userInfo[kCountlyExceptionUserInfoSegmentationOverrideKey] = [truncatedSegmentation cly_limited:@"Exception segmentation"];
+            NSDictionary* limitedSegmentation = [truncatedSegmentation cly_limited:@"Exception segmentation"];
+            userInfo[kCountlyExceptionUserInfoSegmentationOverrideKey] = limitedSegmentation.cly_filterSupportedDataTypes;
         }
         exception = [NSException exceptionWithName:exception.name reason:exception.reason userInfo:userInfo];
     }
