@@ -635,6 +635,8 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
             return;
         }
         
+        [self downloadRemoteConfigAutomatically];
+        
         CLY_LOG_D(@"Enroll RC Variant Request <%p> successfully completed.", request);
         
         [self updateRemoteConfigForKeys:nil omitKeys:nil completionHandler:^(NSError *updateRCError) {
