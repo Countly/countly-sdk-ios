@@ -30,13 +30,13 @@ class CountlySegmentationTests: CountlyBaseTestCase {
         
         Countly.sharedInstance().recordEvent("EventKey", segmentation: segmentation);
         
-        
-//        XCTAssertEqual(7, CountlyPersistency.sharedInstance().remainingRequestCount())
+        // get request queue
         guard let queuedRequests =  CountlyPersistency.sharedInstance().value(forKey: "queuedRequests") as? [String] else {
             fatalError("Failed to get queuedRequests from CountlyPersistency")
         }
         XCTAssertTrue(queuedRequests[0].contains("begin_session=1"), "Begin session failed.")
     
+        // get eevent queue
         guard let recordedEvents =  CountlyPersistency.sharedInstance().value(forKey: "recordedEvents") as? [CountlyEvent] else {
             fatalError("Failed to get recordedEvents from CountlyPersistency")
         }
@@ -44,10 +44,30 @@ class CountlySegmentationTests: CountlyBaseTestCase {
         
         let event = recordedEvents[0]
         XCTAssertEqual("EventKey", event.key, "Recorded event should be with key 'EventKey'")
+        
+        // One key removed
         XCTAssertEqual(6, event.segmentation.count)
-        print(event.segmentation["invalidValueKey"] ?? "nillll");
-        XCTAssertNil(event.segmentation["invalidValueKey"])
+        
+        // Primitive types
+        XCTAssertEqual(42, event.segmentation["intKey"] as! Int, "intKey issue")
+        XCTAssertEqual(true, event.segmentation["boolKey"] as! Bool, "boolKey issue")
+        XCTAssertEqual("Hello, World!", event.segmentation["stringKey"] as! String, "stringKey issue")
+        XCTAssertEqual(3.14, event.segmentation["doubleKey"] as! Double, "doubleKey issue")
+        
+        // Array values are kept
+        let arrayKey: [Any] = event.segmentation["arrayKey"] as! [Any]
+        XCTAssertEqual("one", arrayKey[0] as! String )
+        XCTAssertEqual(2, arrayKey[1] as! Int )
+        XCTAssertEqual(3.14, arrayKey[2] as! Double )
+        XCTAssertEqual(3, arrayKey.count)
+
+        // Date (unsupported type) is removed
         let invalidArray: [Any] = event.segmentation["invalidArrayKey"] as! [Any]
+        XCTAssertEqual("one", invalidArray[0] as! String )
+        XCTAssertEqual(2, invalidArray[1] as! Int )
         XCTAssertEqual(2, invalidArray.count)
+        
+        // Unsupported type removed
+        XCTAssertNil(event.segmentation["invalidValueKey"])
     }
 }
