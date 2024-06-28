@@ -2,7 +2,8 @@
 * Implemented automatic sending of user properties to the server without requiring an explicit call to the `save` method
 * Added `setID` method for changing device ID based on the device ID type.
 
-* Mitigated an issue where the terms and conditions URL (`tc` key) was sent without double quotes 
+* Mitigated an issue where the terms and conditions URL (`tc` key) was sent without double quotes
+* Mitigated an issue where remote config values are not updated after enrolling to a variant
 
 ## 24.4.2
 * Improved crash filtering capabilities to include modifications on the crash report
