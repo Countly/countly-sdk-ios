@@ -571,6 +571,18 @@ NSString* CountlyJSONFromObject(id object)
 {
     return [CountlyJSONFromObject(self) cly_URLEscaped];
 }
+
+- (NSArray *) cly_filterSupportedDataTypes {
+    NSMutableArray *filteredArray = [NSMutableArray array];
+    for (id obj in self) {
+        if ([obj isKindOfClass:[NSNumber class]] || [obj isKindOfClass:[NSString class]]) {
+            [filteredArray addObject:obj];
+        } else {
+            CLY_LOG_W(@"%s, Removed invalid type from array: %@", __FUNCTION__, [obj class]);
+        }
+    }
+    return filteredArray.copy;
+}
 @end
 
 @implementation NSDictionary (Countly)
@@ -620,6 +632,25 @@ NSString* CountlyJSONFromObject(id object)
     [limitedDict removeObjectsForKeys:excessKeys];
 
     return limitedDict.copy;
+}
+
+- (NSDictionary *) cly_filterSupportedDataTypes
+{
+    NSMutableDictionary<NSString *, id> *filteredDictionary = [NSMutableDictionary dictionary];
+    
+    for (NSString *key in self) {
+        id value = [self objectForKey:key];
+        
+        if ([value isKindOfClass:[NSNumber class]] ||
+            [value isKindOfClass:[NSString class]] ||
+            ([value isKindOfClass:[NSArray class]] && (value = [value cly_filterSupportedDataTypes]))) {
+            [filteredDictionary setObject:value forKey:key];
+        } else {
+            CLY_LOG_W(@"%s, Removed invalid type for key %@: %@", __FUNCTION__, key, [value class]);
+        }
+    }
+    
+    return filteredDictionary.copy;
 }
 
 @end
