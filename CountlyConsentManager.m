@@ -35,13 +35,13 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 
 #pragma mark -
 
+static CountlyConsentManager* s_sharedInstance = nil;
+static dispatch_once_t onceToken;
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
         return nil;
 
-    static CountlyConsentManager* s_sharedInstance = nil;
-    static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
     return s_sharedInstance;
 }
@@ -57,6 +57,12 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     return self;
 }
 
+- (void)resetInstance {
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    [self cancelConsentForAllFeatures];
+    onceToken = 0;
+    s_sharedInstance = nil;
+}
 
 #pragma mark -
 
@@ -264,7 +270,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     {
         CLY_LOG_D(@"Consent for Events is cancelled.");
 
-        [CountlyConnectionManager.sharedInstance sendEvents];
+        [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
         [CountlyPersistency.sharedInstance clearAllTimedEvents];
     }
 }

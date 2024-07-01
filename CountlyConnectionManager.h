@@ -5,6 +5,7 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
+#import "Resettable.h"
 
 extern NSString* const kCountlyQSKeyAppKey;
 extern NSString* const kCountlyQSKeyDeviceID;
@@ -25,7 +26,7 @@ extern NSString* const kCountlyQSKeyTimestamp;
 
 extern const NSInteger kCountlyGETRequestMaxLength;
 
-@interface CountlyConnectionManager : NSObject <NSURLSessionDelegate>
+@interface CountlyConnectionManager : NSObject <NSURLSessionDelegate, Resettable>
 
 @property (nonatomic) NSString* appKey;
 @property (nonatomic) NSString* host;
@@ -43,6 +44,7 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 - (void)updateSession;
 - (void)endSession;
 
+- (void)sendEventsWithSaveIfNeeded;
 - (void)sendEvents;
 - (void)attemptToSendStoredRequests;
 - (void)sendPushToken:(NSString *)token;

@@ -121,6 +121,34 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     [self.modifications removeAllObjects];
 }
 
+- (BOOL)hasUnsyncedChanges
+{
+    NSArray<NSNumber *> *userDetailsFlags = @[
+        @(self.name != nil),
+        @(self.username != nil),
+        @(self.email != nil),
+        @(self.organization != nil),
+        @(self.phone != nil),
+        @(self.gender != nil),
+        @(self.pictureURL != nil),
+        @(self.pictureLocalPath != nil),
+        @(self.birthYear != nil),
+        @(self.custom != nil)
+    ];
+    
+    __block BOOL userDetailsChanged = NO;
+    [userDetailsFlags enumerateObjectsUsingBlock:^(NSNumber * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        if (obj.boolValue) {
+            userDetailsChanged = YES;
+            *stop = YES;
+        }
+    }];
+    
+    return userDetailsChanged || self.modifications.count > 0;
+}
+
+
+
 #pragma mark -
 
 - (void)set:(NSString *)key value:(NSString *)value
@@ -389,6 +417,10 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     if (!CountlyConsentManager.sharedInstance.consentForUserDetails)
         return;
 
+    // Returns early if user properties values are not changed
+    if (![self hasUnsyncedChanges])
+        return;
+    
     [CountlyConnectionManager.sharedInstance sendEvents];
 
     NSString* userDetails = [self serializedUserDetails];

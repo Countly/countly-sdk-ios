@@ -324,6 +324,8 @@ extern NSString* const kCountlyLocalPicturePath;
  */
 - (void)save;
 
+- (BOOL) hasUnsyncedChanges;
+
 NS_ASSUME_NONNULL_END
 
 @end

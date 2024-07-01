@@ -166,6 +166,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
 
 - (void)clearCachedRemoteConfig
 {
+    CLY_LOG_D(@"'clearCachedRemoteConfig' will cache or erase all remote config values.");
     if (!self.isRCValueCachingEnabled)
     {
         [self clearAll];
@@ -178,6 +179,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
 
 -(void)clearAll
 {
+    CLY_LOG_D(@"'clearAll' will erase all remote config values.");
     self.cachedRemoteConfig = NSMutableDictionary.new;
     [CountlyPersistency.sharedInstance storeRemoteConfig:self.cachedRemoteConfig];
 }
@@ -420,6 +422,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
 
 - (void)updateMetaStateToCache
 {
+    CLY_LOG_D(@"'updateMetaStateToCache' will cache all remote config values.");
     [self.cachedRemoteConfig enumerateKeysAndObjectsUsingBlock:^(NSString * key, CountlyRCData * countlyRCMeta, BOOL * stop)
      {
         countlyRCMeta.isCurrentUsersData = NO;
@@ -605,16 +608,12 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
     
     NSURLRequest* request = [self enrollInVarianRequestForKey:key variantName:variantName];
     NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
-                              {
+    {
         NSDictionary* variants = nil;
-        
+        [self clearCachedRemoteConfig];
         if (!error)
         {
             variants = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
-        }
-        
-        if (!error)
-        {
             if (((NSHTTPURLResponse*)response).statusCode != 200)
             {
                 NSMutableDictionary* userInfo = variants.mutableCopy;
@@ -635,14 +634,10 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
             return;
         }
         
+        
         CLY_LOG_D(@"Enroll RC Variant Request <%p> successfully completed.", request);
         
-        [self updateRemoteConfigForKeys:nil omitKeys:nil completionHandler:^(NSError *updateRCError) {
-            dispatch_async(dispatch_get_main_queue(), ^
-                           {
-                completionHandler(CLYResponseSuccess, nil);
-            });
-        }];
+        [self downloadRemoteConfigAutomatically];
         
     }];
     
