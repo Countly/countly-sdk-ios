@@ -422,7 +422,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
 
 - (void)updateMetaStateToCache
 {
-    CLY_LOG_D(@"'updateMetaStateToCache' will erase all remote config values.");
+    CLY_LOG_D(@"'updateMetaStateToCache' will cache all remote config values.");
     [self.cachedRemoteConfig enumerateKeysAndObjectsUsingBlock:^(NSString * key, CountlyRCData * countlyRCMeta, BOOL * stop)
      {
         countlyRCMeta.isCurrentUsersData = NO;
