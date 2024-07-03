@@ -5,8 +5,9 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
+#import "Resettable.h"
 
-@interface CountlyConsentManager : NSObject
+@interface CountlyConsentManager : NSObject <Resettable>
 
 @property (nonatomic) BOOL requiresConsent;
 

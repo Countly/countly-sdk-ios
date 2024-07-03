@@ -146,12 +146,14 @@ void CountlyPrint(NSString *stringToPrint);
 
 @interface NSArray (Countly)
 - (NSString *)cly_JSONify;
+- (NSArray *)cly_filterSupportedDataTypes;
 @end
 
 @interface NSDictionary (Countly)
 - (NSString *)cly_JSONify;
 - (NSDictionary *)cly_truncated:(NSString *)explanation;
 - (NSDictionary *)cly_limited:(NSString *)explanation;
+- (NSDictionary *)cly_filterSupportedDataTypes;
 @end
 
 @interface NSData (Countly)
