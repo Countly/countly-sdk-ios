@@ -1,3 +1,6 @@
+## 24.7.1
+* Added `enableTemporaryIDMode` methods both at the Config level and after initialization to enable temporary device ID mode.
+
 ## 24.7.0
 * Implemented automatic sending of user properties to the server without requiring an explicit call to the `save` method
 * Added `setID` method for changing device ID based on the device ID type

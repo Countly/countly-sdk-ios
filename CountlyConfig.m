@@ -78,12 +78,16 @@ CLYDeviceIDType const CLYDeviceIDTypeNSUUID     = @"CLYDeviceIDTypeNSUUID";
     return self;
 }
 
+- (void)enableTemporaryIDMode
+{
+    self.deviceID = CLYTemporaryDeviceID;
+}
+
 -(void)remoteConfigRegisterGlobalCallback:(RCDownloadCallback) callback
 {
     [self.remoteConfigGlobalCallbacks addObject:callback];
     
 }
-
 
 - (NSMutableArray<RCDownloadCallback> *) getRemoteConfigGlobalCallbacks
 {
