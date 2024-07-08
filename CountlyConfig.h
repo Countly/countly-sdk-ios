@@ -336,6 +336,13 @@ typedef enum : NSUInteger
 @property (nonatomic, copy) NSString* deviceID;
 
 /**
+ * This menthod will enable temporary device ID mode
+ * @discussion All requests will be on hold, but they will be persistently stored.
+ * @discussion When in temporary device ID mode, method calls for presenting feedback widgets and updating remote config will be ignored.
+ */
+- (void)enableTemporaryIDMode;
+
+/**
  * For resetting persistently stored device ID on SDK start.
  * @discussion If set, persistently stored device ID will be reset and new device ID specified on @c deviceID property of @c CountlyConfig object will be stored and used.
  * @discussion It is meant to be used for debugging purposes only while developing.

@@ -604,6 +604,11 @@ static dispatch_once_t onceToken;
     [self setIDInternal:deviceID onServer:NO];
 }
 
+- (void)enableTemporaryIDMode
+{
+    [Countly.sharedInstance setIDInternal:CLYTemporaryDeviceID onServer:NO];
+}
+
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer
 {
     [Countly.sharedInstance setIDInternal:deviceID onServer:onServer];

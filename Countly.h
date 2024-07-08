@@ -186,7 +186,14 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)changeDeviceIDWithoutMerge:(NSString * _Nullable)deviceID;
 
-- (void) setID:(NSString *)deviceID;
+- (void)setID:(NSString *)deviceID;
+
+/**
+ * This menthod will enable temporary device ID mode 
+ * @discussion All requests will be on hold, but they will be persistently stored.
+ * @discussion When in temporary device ID mode, method calls for presenting feedback widgets and updating remote config will be ignored.
+ */
+- (void)enableTemporaryIDMode;
 
 
 #pragma mark - Consents
