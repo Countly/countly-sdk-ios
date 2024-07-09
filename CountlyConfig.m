@@ -34,6 +34,8 @@ CLYFeature const CLYCrashReporting      = @"CLYCrashReporting";
 #endif
 
 CountlyAPMConfig *apmConfig = nil;
+CountlyCrashesConfig *crashes = nil;
+CountlySDKLimitsConfig *sdkLimitsConfig = nil;
 
 //NOTE: Device ID options
 NSString* const CLYDefaultDeviceID = @""; //NOTE: It will be overridden to default device ID mechanism, depending on platform.
@@ -56,11 +58,11 @@ CLYDeviceIDType const CLYDeviceIDTypeNSUUID     = @"CLYDeviceIDTypeNSUUID";
 #endif
         self.eventSendThreshold = 100;
         self.storedRequestsLimit = 1000;
-        self.crashLogLimit = 100;
+        self.crashLogLimit = kCountlyMaxBreadcrumbCount;
         
-        self.maxKeyLength = 128;
-        self.maxValueLength = 256;
-        self.maxSegmentationValues = 100;
+        self.maxKeyLength = kCountlyMaxKeyLength;
+        self.maxValueLength = kCountlyMaxValueSize;
+        self.maxSegmentationValues = kCountlyMaxSegmentationValues;
         
         self.location = kCLLocationCoordinate2DInvalid;
         
@@ -76,12 +78,16 @@ CLYDeviceIDType const CLYDeviceIDTypeNSUUID     = @"CLYDeviceIDTypeNSUUID";
     return self;
 }
 
+- (void)enableTemporaryIDMode
+{
+    self.deviceID = CLYTemporaryDeviceID;
+}
+
 -(void)remoteConfigRegisterGlobalCallback:(RCDownloadCallback) callback
 {
     [self.remoteConfigGlobalCallbacks addObject:callback];
     
 }
-
 
 - (NSMutableArray<RCDownloadCallback> *) getRemoteConfigGlobalCallbacks
 {
@@ -102,6 +108,20 @@ CLYDeviceIDType const CLYDeviceIDTypeNSUUID     = @"CLYDeviceIDTypeNSUUID";
         apmConfig = CountlyAPMConfig.new;
     }
     return apmConfig;
+}
+
+- (nonnull CountlySDKLimitsConfig *)sdkInternalLimits {
+    if (sdkLimitsConfig == nil) {
+        sdkLimitsConfig = CountlySDKLimitsConfig.new;
+    }
+    return sdkLimitsConfig;
+}
+
+- (nonnull CountlyCrashesConfig *)crashes {
+    if (crashes == nil) {
+        crashes = CountlyCrashesConfig.new;
+    }
+    return crashes;
 }
 
 @end

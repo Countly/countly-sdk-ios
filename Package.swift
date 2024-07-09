@@ -33,11 +33,13 @@ let package = Package(
                 "Info.plist",
                 "Countly.podspec",
                 "Countly-PL.podspec",
-                "LICENSE.md",
+                "LICENSE",
                 "README.md",
                 "countly_dsym_uploader.sh",
+                "format.sh",
                 "CHANGELOG.md",
-                "SECURITY.md"
+                "SECURITY.md",
+                "CountlyTests/"
             ],
 
             linkerSettings: 
@@ -53,5 +55,9 @@ let package = Package(
                 .linkedFramework("WebKit", .when(platforms: [.iOS])),
                 .linkedFramework("CoreTelephony", .when(platforms: [.iOS])),
             ]),
+        .testTarget(
+            name: "CountlyTests",
+            dependencies: ["Countly"]
+        ),
     ]
 )

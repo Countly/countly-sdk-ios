@@ -26,7 +26,7 @@ NSString* const kCountlyOrientationKeyMode = @"mode";
 #endif
 @end
 
-NSString* const kCountlySDKVersion = @"24.1.0";
+NSString* const kCountlySDKVersion = @"24.7.1";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
@@ -36,10 +36,12 @@ NSString* const kCountlyInternalLogPrefix = @"[Countly] ";
 
 @implementation CountlyCommon
 
+@synthesize lastTimestamp;
+
+static CountlyCommon *s_sharedInstance = nil;
+static dispatch_once_t onceToken;
 + (instancetype)sharedInstance
 {
-    static CountlyCommon *s_sharedInstance = nil;
-    static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
     return s_sharedInstance;
 }
@@ -50,12 +52,20 @@ NSString* const kCountlyInternalLogPrefix = @"[Countly] ";
     {
         gregorianCalendar = [NSCalendar.alloc initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
         startTime = NSDate.date.timeIntervalSince1970;
-
+        
+        self.lastTimestamp = 0;
         self.SDKVersion = kCountlySDKVersion;
         self.SDKName = kCountlySDKName;
     }
 
     return self;
+}
+
+- (void)resetInstance {
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    onceToken = 0;
+    s_sharedInstance = nil;
+    _hasStarted = false;
 }
 
 
@@ -321,10 +331,40 @@ void CountlyPrint(NSString *stringToPrint)
             #pragma GCC diagnostic pop
         }
 
+        self.webView.navigationDelegate = self;
         frame = UIEdgeInsetsInsetRect(frame, insets);
         self.webView.frame = frame;
     }
 }
+
+- (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
+    NSString *url = navigationAction.request.URL.absoluteString;
+    if ([url containsString:@"cly_x_int=1"]) {
+        CLY_LOG_I(@"%s Opening url [%@] in external browser", __FUNCTION__, url);
+        [[UIApplication sharedApplication] openURL:navigationAction.request.URL options:@{} completionHandler:^(BOOL success) {
+            if (success) {
+                CLY_LOG_I(@"%s url [%@] opened in external browser", __FUNCTION__, url);
+            }
+            else {
+                CLY_LOG_I(@"%s unable to open url [%@] in external browser", __FUNCTION__, url);
+            }
+        }];
+        decisionHandler(WKNavigationActionPolicyCancel);
+        return;
+    }
+    decisionHandler(WKNavigationActionPolicyAllow);
+}
+
+- (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(null_unspecified WKNavigation *)navigation
+{
+    CLY_LOG_I(@"%s Web view has start loading", __FUNCTION__);
+    
+}
+
+- (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
+    CLY_LOG_I(@"%s Web view has finished loading", __FUNCTION__);
+}
+
 
 @end
 
@@ -457,7 +497,7 @@ NSString* CountlyJSONFromObject(id object)
     NSData *data = [NSJSONSerialization dataWithJSONObject:object options:0 error:&error];
     if (error)
     {
-        CLY_LOG_W(@"JSON can not be created: \n%@", error);
+        CLY_LOG_W(@"%s, JSON can not be created error:[ %@ ]", __FUNCTION__, error);
     }
 
     return [data cly_stringUTF8];
@@ -532,6 +572,18 @@ NSString* CountlyJSONFromObject(id object)
 {
     return [CountlyJSONFromObject(self) cly_URLEscaped];
 }
+
+- (NSArray *) cly_filterSupportedDataTypes {
+    NSMutableArray *filteredArray = [NSMutableArray array];
+    for (id obj in self) {
+        if ([obj isKindOfClass:[NSNumber class]] || [obj isKindOfClass:[NSString class]]) {
+            [filteredArray addObject:obj];
+        } else {
+            CLY_LOG_W(@"%s, Removed invalid type from array: %@", __FUNCTION__, [obj class]);
+        }
+    }
+    return filteredArray.copy;
+}
 @end
 
 @implementation NSDictionary (Countly)
@@ -575,12 +627,31 @@ NSString* CountlyJSONFromObject(id object)
     NSMutableArray* excessKeys = allKeys.mutableCopy;
     [excessKeys removeObjectsInRange:(NSRange){0, CountlyCommon.sharedInstance.maxSegmentationValues}];
 
-    CLY_LOG_W(@"Number of key-value pairs in %@ is more than the limit (%ld)! So, some of them will be removed:\n %@", explanation, (long)CountlyCommon.sharedInstance.maxSegmentationValues, [excessKeys description]);
+    CLY_LOG_W(@"%s, Number of key-value pairs in %@ is more than the limit (%ld)! So, some of them will be removed %@", __FUNCTION__, explanation, (long)CountlyCommon.sharedInstance.maxSegmentationValues, [excessKeys description]);
 
     NSMutableDictionary* limitedDict = self.mutableCopy;
     [limitedDict removeObjectsForKeys:excessKeys];
 
     return limitedDict.copy;
+}
+
+- (NSDictionary *) cly_filterSupportedDataTypes
+{
+    NSMutableDictionary<NSString *, id> *filteredDictionary = [NSMutableDictionary dictionary];
+    
+    for (NSString *key in self) {
+        id value = [self objectForKey:key];
+        
+        if ([value isKindOfClass:[NSNumber class]] ||
+            [value isKindOfClass:[NSString class]] ||
+            ([value isKindOfClass:[NSArray class]] && (value = [value cly_filterSupportedDataTypes]))) {
+            [filteredDictionary setObject:value forKey:key];
+        } else {
+            CLY_LOG_W(@"%s, Removed invalid type for key %@: %@", __FUNCTION__, key, [value class]);
+        }
+    }
+    
+    return filteredDictionary.copy;
 }
 
 @end

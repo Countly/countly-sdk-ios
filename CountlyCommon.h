@@ -27,6 +27,8 @@
 #import "CountlyViewData.h"
 #import "CountlyRemoteConfig.h"
 #import "CountlyViewTracking.h"
+#import "Resettable.h"
+#import "CountlyCrashData.h"
 
 #define CLY_LOG_E(fmt, ...) CountlyInternalLog(CLYInternalLogLevelError, fmt, ##__VA_ARGS__)
 #define CLY_LOG_W(fmt, ...) CountlyInternalLog(CLYInternalLogLevelWarning, fmt, ##__VA_ARGS__)
@@ -68,7 +70,7 @@ NS_ERROR_ENUM(kCountlyErrorDomain)
 extern NSString* const kCountlySDKVersion;
 extern NSString* const kCountlySDKName;
 
-@interface CountlyCommon : NSObject
+@interface CountlyCommon : NSObject <Resettable>
 
 @property (nonatomic, copy) NSString* SDKVersion;
 @property (nonatomic, copy) NSString* SDKName;
@@ -116,7 +118,7 @@ void CountlyPrint(NSString *stringToPrint);
 
 
 #if (TARGET_OS_IOS)
-@interface CLYInternalViewController : UIViewController
+@interface CLYInternalViewController : UIViewController <WKNavigationDelegate>
 @property (nonatomic, weak) WKWebView* webView;
 @end
 
@@ -144,12 +146,14 @@ void CountlyPrint(NSString *stringToPrint);
 
 @interface NSArray (Countly)
 - (NSString *)cly_JSONify;
+- (NSArray *)cly_filterSupportedDataTypes;
 @end
 
 @interface NSDictionary (Countly)
 - (NSString *)cly_JSONify;
 - (NSDictionary *)cly_truncated:(NSString *)explanation;
 - (NSDictionary *)cly_limited:(NSString *)explanation;
+- (NSDictionary *)cly_filterSupportedDataTypes;
 @end
 
 @interface NSData (Countly)

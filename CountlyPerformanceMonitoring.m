@@ -53,7 +53,7 @@ BOOL enableForegroundBackgroundTracking;
     enableAppStartTimeTracking = apmConfig.enableAppStartTimeTracking;
     enableManualAppLoadedTrigger = apmConfig.enableManualAppLoadedTrigger;
     if(enableAppStartTimeTracking && !enableManualAppLoadedTrigger) {
-        CLY_LOG_W(@"Automatic app start tracking is currently not supported, use manual app loaded trigger for now by setting 'config.apm.enableManualAppLoadedTrigger'\n Then call '[Countly.sharedInstance appLoadingFinished]'");
+        CLY_LOG_W(@"%s, Automatic app start tracking is currently not supported, use manual app loaded trigger for now by setting 'config.apm.enableManualAppLoadedTrigger' Then call '[Countly.sharedInstance appLoadingFinished]'", __FUNCTION__);
     }
     enableForegroundBackgroundTracking = apmConfig.enableForegroundBackgroundTracking;
     [self startPerformanceMonitoring];
@@ -289,7 +289,8 @@ BOOL enableForegroundBackgroundTracking;
     }
 
     traceName = [traceName cly_truncatedKey:@"Custom trace name"];
-    metrics = [metrics cly_truncated:@"Custom trace metric"];
+    NSDictionary* metricsTruncated = [metrics cly_truncated:@"Custom trace metric"];
+    metrics = [metricsTruncated cly_limited:@"Custom trace metric"];
 
     NSNumber* endTime = @((long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000));
 

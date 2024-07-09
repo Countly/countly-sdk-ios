@@ -8,6 +8,8 @@
 #import <CoreLocation/CoreLocation.h>
 #import "CountlyRCData.h"
 #import "CountlyAPMConfig.h"
+#import "CountlyCrashesConfig.h"
+#import "CountlySDKLimitsConfig.h"
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 #import <UIKit/UIKit.h>
@@ -334,6 +336,13 @@ typedef enum : NSUInteger
 @property (nonatomic, copy) NSString* deviceID;
 
 /**
+ * This menthod will enable temporary device ID mode
+ * @discussion All requests will be on hold, but they will be persistently stored.
+ * @discussion When in temporary device ID mode, method calls for presenting feedback widgets and updating remote config will be ignored.
+ */
+- (void)enableTemporaryIDMode;
+
+/**
  * For resetting persistently stored device ID on SDK start.
  * @discussion If set, persistently stored device ID will be reset and new device ID specified on @c deviceID property of @c CountlyConfig object will be stored and used.
  * @discussion It is meant to be used for debugging purposes only while developing.
@@ -382,7 +391,7 @@ typedef enum : NSUInteger
  * @discussion Keys longer than this limit will be truncated.
  * @discussion If not set, it will be 128 chars by default.
  */
-@property (nonatomic) NSUInteger maxKeyLength;
+@property(nonatomic) NSUInteger maxKeyLength DEPRECATED_MSG_ATTRIBUTE("Use 'sdkInternalLimits' CountlySDKLimitsConfig object instead");
 
 /**
  * Limit for the length of values in all key-value pairs.
@@ -395,7 +404,7 @@ typedef enum : NSUInteger
  * @discussion Values longer than this limit will be truncated.
  * @discussion If not set, it will be 256 chars by default.
  */
-@property (nonatomic) NSUInteger maxValueLength;
+@property(nonatomic) NSUInteger maxValueLength DEPRECATED_MSG_ATTRIBUTE("Use 'sdkInternalLimits' CountlySDKLimitsConfig object instead");
 
 /**
  * Limit for the number of key-value pairs in segmentations.
@@ -403,7 +412,13 @@ typedef enum : NSUInteger
  * @discussion As obviously there is no order among the keys of an NSDictionary, it is not defined which ones will be removed.
  * @discussion If not set, it will be 30 by default.
  */
-@property (nonatomic) NSUInteger maxSegmentationValues;
+@property(nonatomic) NSUInteger maxSegmentationValues DEPRECATED_MSG_ATTRIBUTE("Use 'sdkInternalLimits' CountlySDKLimitsConfig object instead");
+
+/**
+ * Variable to access sdkInternalLimits configurations.
+ * @discussion SDK internal limits configurations for developer to interact with SDK.
+ */
+- (CountlySDKLimitsConfig *)sdkInternalLimits;
 
 /**
  * For sending all requests using HTTP POST method.
@@ -469,7 +484,7 @@ typedef enum : NSUInteger
  * @discussion If not set, it will be 100 by default.
  * @discussion If @c shouldUsePLCrashReporter flag is set on initial config, this limit will not be applied.
  */
-@property (nonatomic) NSUInteger crashLogLimit;
+@property (nonatomic) NSUInteger crashLogLimit DEPRECATED_MSG_ATTRIBUTE("Use 'sdkInternalLimits' CountlySDKLimitsConfig object instead");
 
 /**
  * Regular expression used for filtering crash reports and preventing them from being sent to Countly Server.
@@ -510,6 +525,8 @@ typedef enum : NSUInteger
  * @discussion If @c shouldUsePLCrashReporter flag is not set on initial config, it will never be executed.
  */
 @property (nonatomic, copy) BOOL (^shouldSendCrashReportCallback)(NSDictionary * crashReport);
+
+- (CountlyCrashesConfig *) crashes;
 
 #pragma mark -
 

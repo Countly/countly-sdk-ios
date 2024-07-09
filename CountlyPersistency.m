@@ -28,13 +28,16 @@ NSString* const kCountlyServerConfigPersistencyKey = @"kCountlyServerConfigPersi
 
 NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 
+NSUInteger const kCountlyRequestRemovalLoopLimit = 100;
+
+static CountlyPersistency* s_sharedInstance = nil;
+static dispatch_once_t onceToken;
+
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
         return nil;
 
-    static CountlyPersistency* s_sharedInstance = nil;
-    static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
     return s_sharedInstance;
 }
@@ -85,15 +88,22 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 
     @synchronized (self)
     {
-        [self.queuedRequests addObject:queryString];
-        if (self.queuedRequests.count > self.storedRequestsLimit && !CountlyConnectionManager.sharedInstance.connection)
+        if (self.queuedRequests.count >= self.storedRequestsLimit)
         {
             [self removeOldAgeRequestsFromQueue];
-            if (self.queuedRequests.count > self.storedRequestsLimit && !CountlyConnectionManager.sharedInstance.connection)
+            if (self.queuedRequests.count >= self.storedRequestsLimit)
             {
-                [self.queuedRequests removeObjectAtIndex:0];
+                NSUInteger exceededSize = self.queuedRequests.count - self.storedRequestsLimit;
+                // we should remove amount of limit at max
+                // for example if exceeded count is 136 and our limit is 100 we should remove 100 items
+                // in other case if exceeded count is 36 and out limit is 100 we can only remove 36 items because we have that amount
+                NSUInteger gonnaRemoveSize = MIN(exceededSize, kCountlyRequestRemovalLoopLimit) + 1;
+                CLY_LOG_W(@"[CountlyPersistency] addToQueue, request queue size:[ %lu ] exceeded limit:[ %lu ], will remove first:[ %lu ] request(s)", self.queuedRequests.count, self.storedRequestsLimit, gonnaRemoveSize);
+                NSRange itemsToRemove = NSMakeRange(0, gonnaRemoveSize);
+                [self.queuedRequests removeObjectsInRange:itemsToRemove];
             }
         }
+        [self.queuedRequests addObject:queryString];
     }
 }
 
@@ -256,15 +266,17 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
 {
     @synchronized (self.recordedEvents)
     {
-        event.key = [event.key cly_truncatedKey:@"Event key"];
-        NSDictionary* truncated = [event.segmentation cly_truncated:@"Event segmentation"];
-        NSDictionary* limited = [truncated cly_limited:@"Event segmentation"];
-        event.segmentation = limited;
-
+        if([Countly.user hasUnsyncedChanges])
+        {
+            [Countly.user save];
+        }
+        
         [self.recordedEvents addObject:event];
-
+        
         if (self.recordedEvents.count >= self.eventSendThreshold)
+        {
             [CountlyConnectionManager.sharedInstance sendEvents];
+        }
     }
 }
 
@@ -293,6 +305,21 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
     {
         [self.recordedEvents removeAllObjects];
     }
+}
+
+- (void)resetInstance:(BOOL) clearStorage 
+{
+    CLY_LOG_I(@"%s Clear Storage: %d", __FUNCTION__, clearStorage);
+    [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
+    [self flushEvents];
+    [self clearAllTimedEvents];
+    [self flushQueue];
+    if(clearStorage)
+    {
+        [self saveToFile];
+    }
+    onceToken = 0;
+    s_sharedInstance = nil;
 }
 
 #pragma mark ---
@@ -358,7 +385,7 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
             [line writeToFile:crashLogFileURL.path atomically:YES encoding:NSUTF8StringEncoding error:&error];
             if (error)
             {
-                CLY_LOG_W(@"Crash Log File can not be created: \n%@", error);
+                CLY_LOG_W(@"%s, Crash Log File can not be created, got error %@", __FUNCTION__, error);
             }
         }
     });
@@ -388,7 +415,7 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
         [NSFileManager.defaultManager removeItemAtURL:crashLogFileURL error:&error];
         if (error)
         {
-            CLY_LOG_W(@"Crash Log File can not be deleted: \n%@", error);
+            CLY_LOG_W(@"%s, Crash Log File can not be deleted, got error %@", __FUNCTION__, error);
         }
     }
 }
@@ -419,7 +446,7 @@ NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
             [NSFileManager.defaultManager createDirectoryAtURL:URL withIntermediateDirectories:YES attributes:nil error:&error];
             if (error)
             {
-                CLY_LOG_W(@"Application Support directory can not be created: \n%@", error);
+                CLY_LOG_W(@"%s, Application Support directory can not be created, got error %@", __FUNCTION__, error);
             }
         }
     });

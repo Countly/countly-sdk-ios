@@ -24,16 +24,23 @@ NSString* previousEventID;
 + (void)load
 {
     [super load];
-
+    
     appLoadStartTime = floor(NSDate.date.timeIntervalSince1970 * 1000);
 }
 
+static Countly *s_sharedCountly = nil;
+static dispatch_once_t onceToken;
+
 + (instancetype)sharedInstance
 {
-    static Countly *s_sharedCountly = nil;
-    static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedCountly = self.new;});
     return s_sharedCountly;
+}
+
+- (void)resetInstance {
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    onceToken = 0;
+    s_sharedCountly = nil;
 }
 
 - (instancetype)init
@@ -60,7 +67,7 @@ NSString* previousEventID;
                                                  object:nil];
 #endif
     }
-
+    
     return self;
 }
 
@@ -68,24 +75,41 @@ NSString* previousEventID;
 {
     if (CountlyCommon.sharedInstance.hasStarted_)
         return;
-
+    
     CountlyCommon.sharedInstance.hasStarted = YES;
     CountlyCommon.sharedInstance.enableDebug = config.enableDebug;
     CountlyCommon.sharedInstance.shouldIgnoreTrustCheck = config.shouldIgnoreTrustCheck;
     CountlyCommon.sharedInstance.loggerDelegate = config.loggerDelegate;
     CountlyCommon.sharedInstance.internalLogLevel = config.internalLogLevel;
-    CountlyCommon.sharedInstance.maxKeyLength = config.maxKeyLength;
-    CountlyCommon.sharedInstance.maxValueLength = config.maxValueLength;
-    CountlyCommon.sharedInstance.maxSegmentationValues = config.maxSegmentationValues;
-
+    
+    config = [self checkAndFixInternalLimitsConfig:config];
+    
+    CountlyCommon.sharedInstance.maxKeyLength = config.sdkInternalLimits.getMaxKeyLength;
+    CountlyCommon.sharedInstance.maxValueLength = config.sdkInternalLimits.getMaxValueSize;
+    CountlyCommon.sharedInstance.maxSegmentationValues = config.sdkInternalLimits.getMaxSegmentationValues;
+    
+    // For backward compatibility, deprecated values are only set incase new values are not provided using sdkInternalLimits interface
+    if(CountlyCommon.sharedInstance.maxKeyLength == kCountlyMaxKeyLength && config.maxKeyLength != kCountlyMaxKeyLength) {
+        CountlyCommon.sharedInstance.maxKeyLength = config.maxKeyLength;
+        CLY_LOG_I(@"%s provided 'maxKeyLength' override:[ %lu ]", __FUNCTION__, (unsigned long)config.maxKeyLength);
+    }
+    if(CountlyCommon.sharedInstance.maxValueLength == kCountlyMaxValueSize && config.maxValueLength != kCountlyMaxValueSize) {
+        CountlyCommon.sharedInstance.maxValueLength = config.maxValueLength;
+        CLY_LOG_I(@"%s provided 'maxValueLength' override:[ %lu ]", __FUNCTION__, (unsigned long)config.maxValueLength);
+    }
+    if(CountlyCommon.sharedInstance.maxSegmentationValues == kCountlyMaxSegmentationValues && config.maxSegmentationValues != kCountlyMaxSegmentationValues) {
+        CountlyCommon.sharedInstance.maxSegmentationValues = config.maxSegmentationValues;
+        CLY_LOG_I(@"%s provided 'maxSegmentationValues' override:[ %lu ]", __FUNCTION__, (unsigned long)config.maxSegmentationValues);
+    }
+    
     CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
-
+    
     if (!config.appKey.length || [config.appKey isEqualToString:@"YOUR_APP_KEY"])
         [NSException raise:@"CountlyAppKeyNotSetException" format:@"appKey property on CountlyConfig object is not set"];
-
+    
     if (!config.host.length || [config.host isEqualToString:@"https://YOUR_COUNTLY_SERVER"])
         [NSException raise:@"CountlyHostNotSetException" format:@"host property on CountlyConfig object is not set"];
-
+    
     if ([CountlyCommon.sharedInstance.SDKName isEqualToString:kCountlySDKName] && [CountlyCommon.sharedInstance.SDKVersion isEqualToString:kCountlySDKVersion])
     {
         CLY_LOG_I(@"Initializing with %@ SDK v%@ on %@ with %@ %@",
@@ -105,32 +129,33 @@ NSString* previousEventID;
                   kCountlySDKName,
                   kCountlySDKVersion);
     }
-
+    
     if (!CountlyDeviceInfo.sharedInstance.deviceID || config.resetStoredDeviceID)
     {
         [self storeCustomDeviceIDState:config.deviceID];
-
+        
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:config.deviceID];
     }
-
+    
     CountlyConnectionManager.sharedInstance.appKey = config.appKey;
     CountlyConnectionManager.sharedInstance.host = config.host;
     CountlyConnectionManager.sharedInstance.alwaysUsePOST = config.alwaysUsePOST;
     CountlyConnectionManager.sharedInstance.pinnedCertificates = config.pinnedCertificates;
     CountlyConnectionManager.sharedInstance.secretSalt = config.secretSalt;
     CountlyConnectionManager.sharedInstance.URLSessionConfiguration = config.URLSessionConfiguration;
-
+    
     CountlyPersistency.sharedInstance.eventSendThreshold = config.eventSendThreshold;
     CountlyPersistency.sharedInstance.requestDropAgeHours = config.requestDropAgeHours;
     CountlyPersistency.sharedInstance.storedRequestsLimit = MAX(1, config.storedRequestsLimit);
-
+    
     CountlyCommon.sharedInstance.manualSessionHandling = config.manualSessionHandling;
     CountlyCommon.sharedInstance.enableManualSessionControlHybridMode = config.enableManualSessionControlHybridMode;
-
+    
     CountlyCommon.sharedInstance.attributionID = config.attributionID;
-
-    CountlyDeviceInfo.sharedInstance.customMetrics = [config.customMetrics cly_truncated:@"Custom metric"];
-
+    
+    NSDictionary* customMetricsTruncated = [config.customMetrics cly_truncated:@"Custom metric"];
+    CountlyDeviceInfo.sharedInstance.customMetrics = [customMetricsTruncated cly_limited:@"Custom metric"];
+    
     [Countly.user save];
     
     CountlyCommon.sharedInstance.enableServerConfiguration = config.enableServerConfiguration;
@@ -140,14 +165,14 @@ NSString* previousEventID;
     {
         [CountlyServerConfig.sharedInstance fetchServerConfig];
     }
-
+    
 #if (TARGET_OS_IOS)
     CountlyFeedbacks.sharedInstance.message = config.starRatingMessage;
     CountlyFeedbacks.sharedInstance.sessionCount = config.starRatingSessionCount;
     CountlyFeedbacks.sharedInstance.disableAskingForEachAppVersion = config.starRatingDisableAskingForEachAppVersion;
     CountlyFeedbacks.sharedInstance.ratingCompletionForAutoAsk = config.starRatingCompletion;
     [CountlyFeedbacks.sharedInstance checkForStarRatingAutoAsk];
-
+    
     if(config.disableLocation)
     {
         [CountlyLocationManager.sharedInstance disableLocation];
@@ -157,17 +182,17 @@ NSString* previousEventID;
         [CountlyLocationManager.sharedInstance updateLocation:config.location city:config.city ISOCountryCode:config.ISOCountryCode IP:config.IP];
     }
 #endif
-
+    
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
-
+    
     //NOTE: If there is no consent for sessions, location info and attribution should be sent separately, as they cannot be sent with begin_session request.
     if (!CountlyConsentManager.sharedInstance.consentForSessions)
     {
         [CountlyLocationManager.sharedInstance sendLocationInfo];
         [CountlyConnectionManager.sharedInstance sendAttribution];
     }
-
+    
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
     if ([config.features containsObject:CLYPushNotifications])
@@ -181,9 +206,18 @@ NSString* previousEventID;
     }
 #endif
 #endif
-
-    CountlyCrashReporter.sharedInstance.crashSegmentation = [config.crashSegmentation cly_truncated:@"Crash segmentation"];
-    CountlyCrashReporter.sharedInstance.crashLogLimit = MAX(1, config.crashLogLimit);
+    
+    if(config.crashes.crashFilterCallback) {
+        [CountlyCrashReporter.sharedInstance setCrashFilterCallback:config.crashes.crashFilterCallback];
+    }
+    
+    CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
+    CountlyCrashReporter.sharedInstance.crashLogLimit = config.sdkInternalLimits.getMaxBreadcrumbCount;
+    // For backward compatibility, deprecated values are only set incase new values are not provided using sdkInternalLimits interface
+    if(CountlyCrashReporter.sharedInstance.crashLogLimit == kCountlyMaxBreadcrumbCount && config.crashLogLimit != kCountlyMaxBreadcrumbCount) {
+        CountlyCrashReporter.sharedInstance.crashLogLimit = MAX(1, config.crashLogLimit);
+        CLY_LOG_W(@"%s provided 'maxBreadcrumbCount' override:[ %lu ]", __FUNCTION__, (unsigned long)config.crashLogLimit);
+    }
     CountlyCrashReporter.sharedInstance.crashFilter = config.crashFilter;
     CountlyCrashReporter.sharedInstance.shouldUsePLCrashReporter = config.shouldUsePLCrashReporter;
     CountlyCrashReporter.sharedInstance.shouldUseMachSignalHandler = config.shouldUseMachSignalHandler;
@@ -194,7 +228,7 @@ NSString* previousEventID;
         CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;
         [CountlyCrashReporter.sharedInstance startCrashReporting];
     }
-
+    
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (config.enableAutomaticViewTracking || [config.features containsObject:CLYAutoViewTracking])
     {
@@ -211,7 +245,7 @@ NSString* previousEventID;
     }
     timer = [NSTimer timerWithTimeInterval:config.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
     [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
-
+    
     CountlyRemoteConfigInternal.sharedInstance.isRCAutomaticTriggersEnabled = config.enableRemoteConfigAutomaticTriggers || config.enableRemoteConfig;
     CountlyRemoteConfigInternal.sharedInstance.isRCValueCachingEnabled = config.enableRemoteConfigValueCaching;
     CountlyRemoteConfigInternal.sharedInstance.remoteConfigCompletionHandler = config.remoteConfigCompletionHandler;
@@ -222,28 +256,78 @@ NSString* previousEventID;
         CountlyRemoteConfigInternal.sharedInstance.enrollABOnRCDownload = config.enrollABOnRCDownload;
     }
     [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfigAutomatically];
-    if(config.apm.getAppStartTimestampOverride) {
+    if (config.apm.getAppStartTimestampOverride) {
         appLoadStartTime = config.apm.getAppStartTimestampOverride;
     }
     
     [CountlyPerformanceMonitoring.sharedInstance startWithConfig:config.apm];
-
+    
     CountlyCommon.sharedInstance.enableOrientationTracking = config.enableOrientationTracking;
     [CountlyCommon.sharedInstance observeDeviceOrientationChanges];
-
+    
     [CountlyConnectionManager.sharedInstance proceedOnQueue];
-
+    
     //TODO: Should move at the top after checking the the edge cases of current implementation
     if (config.enableAllConsents)
         [self giveAllConsents];
     else if (config.consents)
         [self giveConsentForFeatures:config.consents];
-
+    
     if (config.campaignType && config.campaignData)
         [self recordDirectAttributionWithCampaignType:config.campaignType andCampaignData:config.campaignData];
-
+    
     if (config.indirectAttribution)
         [self recordIndirectAttribution:config.indirectAttribution];
+}
+
+- (CountlyConfig *) checkAndFixInternalLimitsConfig:(CountlyConfig *)config
+{
+    if (config.sdkInternalLimits.getMaxKeyLength == 0) {
+        [config.sdkInternalLimits setMaxKeyLength:kCountlyMaxKeyLength];
+        CLY_LOG_W(@"%s Ignoring provided value of %lu for 'maxKeyLength' because it's less than 1", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxKeyLength);
+    }
+    else if(config.sdkInternalLimits.getMaxKeyLength != kCountlyMaxKeyLength)
+    {
+        CLY_LOG_I(@"%s provided 'maxKeyLength' override:[ %lu ]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxKeyLength);
+    }
+    
+    if (config.sdkInternalLimits.getMaxValueSize == 0) {
+        [config.sdkInternalLimits setMaxValueSize:kCountlyMaxValueSize];
+        CLY_LOG_W(@"%s Ignoring provided value of %lu for 'maxValueSize' because it's less than 1", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxValueSize);
+    }
+    else if(config.sdkInternalLimits.getMaxValueSize != kCountlyMaxValueSize)
+    {
+        CLY_LOG_I(@"%s provided 'maxValueSize' override:[ %lu ]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxValueSize);
+    }
+    
+    if (config.sdkInternalLimits.getMaxSegmentationValues == 0) {
+        [config.sdkInternalLimits setMaxSegmentationValues:kCountlyMaxSegmentationValues];
+        CLY_LOG_W(@"%s Ignoring provided value of %lu for 'maxSegmentationValues' because it's less than 1", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxSegmentationValues);
+    }
+    else if(config.sdkInternalLimits.getMaxSegmentationValues != kCountlyMaxSegmentationValues)
+    {
+        CLY_LOG_I(@"%s provided 'maxSegmentationValues' override:[ %lu ]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxSegmentationValues);
+    }
+    
+    if (config.sdkInternalLimits.getMaxBreadcrumbCount == 0) {
+        [config.sdkInternalLimits setMaxBreadcrumbCount:kCountlyMaxBreadcrumbCount];
+        CLY_LOG_W(@"%s Ignoring provided value of %lu for 'maxBreadcrumbCount' because it's less than 1", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxBreadcrumbCount);
+    }
+    else if(config.sdkInternalLimits.getMaxBreadcrumbCount != kCountlyMaxBreadcrumbCount)
+    {
+        CLY_LOG_I(@"%s provided 'maxBreadcrumbCount' override:[ %lu ]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxBreadcrumbCount);
+    }
+    
+    if(config.sdkInternalLimits.getMaxStackTraceLineLength != kCountlyMaxStackTraceLinesPerThread)
+    {
+        CLY_LOG_W(@"%s 'maxStackTraceLineLength' is currently a placeholder and doesn't actively utilize the set values.", __FUNCTION__);
+    }
+    
+    if(config.sdkInternalLimits.getMaxStackTraceLinesPerThread != kCountlyMaxStackTraceLineLength)
+    {
+        CLY_LOG_I(@"%s 'maxStackTraceLinesPerThread' is currently a placeholder and doesn't actively utilize the set values.", __FUNCTION__);
+    }
+    return config;
 }
 
 #pragma mark -
@@ -252,7 +336,7 @@ NSString* previousEventID;
 {
     if (isSuspended)
         return;
-
+    
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
     {
         [CountlyConnectionManager.sharedInstance updateSession];
@@ -262,8 +346,8 @@ NSString* previousEventID;
     {
         [CountlyConnectionManager.sharedInstance updateSession];
     }
-
-    [CountlyConnectionManager.sharedInstance sendEvents];
+    
+    [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
 }
 
 - (void)suspend
@@ -271,24 +355,24 @@ NSString* previousEventID;
 #if (TARGET_OS_WATCH)
     CLY_LOG_I(@"%s", __FUNCTION__);
 #endif
-
+    
     if (!CountlyCommon.sharedInstance.hasStarted)
         return;
-
+    
     if (isSuspended)
         return;
-
+    
     CLY_LOG_D(@"Suspending...");
-
+    
     isSuspended = YES;
-
-    [CountlyConnectionManager.sharedInstance sendEvents];
-
+    
+    [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
+    
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance endSession];
-
+    
     [CountlyViewTrackingInternal.sharedInstance applicationDidEnterBackground];
-
+    
     [CountlyPersistency.sharedInstance saveToFile];
 }
 
@@ -297,26 +381,26 @@ NSString* previousEventID;
 #if (TARGET_OS_WATCH)
     CLY_LOG_I(@"%s", __FUNCTION__);
 #endif
-
+    
     if (!CountlyCommon.sharedInstance.hasStarted)
         return;
-
+    
 #if (TARGET_OS_WATCH)
     //NOTE: Skip first time to prevent double begin session because of applicationDidBecomeActive call on launch of watchOS apps
     static BOOL isFirstCall = YES;
-
+    
     if (isFirstCall)
     {
         isFirstCall = NO;
         return;
     }
 #endif
-
+    
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
-
+    
     [CountlyViewTrackingInternal.sharedInstance applicationWillEnterForeground];
-
+    
     isSuspended = NO;
 }
 
@@ -335,22 +419,22 @@ NSString* previousEventID;
 - (void)applicationWillTerminate:(NSNotification *)notification
 {
     CLY_LOG_D(@"App will terminate.");
-
+    
     CountlyConnectionManager.sharedInstance.isTerminating = YES;
-
+    
     [CountlyViewTrackingInternal.sharedInstance applicationWillTerminate];
-
-    [CountlyConnectionManager.sharedInstance sendEvents];
-
+    
+    [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
+    
     [CountlyPerformanceMonitoring.sharedInstance endBackgroundTrace];
-
+    
     [CountlyPersistency.sharedInstance saveToFileSync];
 }
 
 - (void)dealloc
 {
     [NSNotificationCenter.defaultCenter removeObserver:self];
-
+    
     if (timer)
     {
         [timer invalidate];
@@ -364,20 +448,20 @@ NSString* previousEventID;
 - (void)setNewHost:(NSString *)newHost
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, newHost);
-
+    
     if (!newHost.length)
     {
         CLY_LOG_W(@"New host is invalid!");
         return;
     }
-
+    
     CountlyConnectionManager.sharedInstance.host = newHost;
 }
 
 - (void)setNewURLSessionConfiguration:(NSURLSessionConfiguration *)newURLSessionConfiguration
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, newURLSessionConfiguration);
-
+    
     CountlyConnectionManager.sharedInstance.URLSessionConfiguration = newURLSessionConfiguration;
 }
 
@@ -390,13 +474,13 @@ NSString* previousEventID;
         CLY_LOG_W(@"New app key is invalid!");
         return;
     }
-
+    
     [self suspend];
-
+    
     [CountlyPerformanceMonitoring.sharedInstance clearAllCustomTraces];
-
+    
     CountlyConnectionManager.sharedInstance.appKey = newAppKey;
-
+    
     [self resume];
 }
 
@@ -407,7 +491,7 @@ NSString* previousEventID;
 - (void)flushQueues
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
-
+    
     [CountlyPersistency.sharedInstance flushEvents];
     [CountlyPersistency.sharedInstance flushQueue];
 }
@@ -415,21 +499,21 @@ NSString* previousEventID;
 - (void)replaceAllAppKeysInQueueWithCurrentAppKey
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
-
+    
     [CountlyPersistency.sharedInstance replaceAllAppKeysInQueueWithCurrentAppKey];
 }
 
 - (void)removeDifferentAppKeysFromQueue
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
-
+    
     [CountlyPersistency.sharedInstance removeDifferentAppKeysFromQueue];
 }
 
 - (void)addDirectRequest:(NSDictionary<NSString *, NSString *> * _Nullable)requestParameters
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, requestParameters);
-
+    
     [CountlyConnectionManager.sharedInstance addDirectRequest:requestParameters];
 }
 
@@ -440,7 +524,7 @@ NSString* previousEventID;
 - (void)beginSession
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
-
+    
     if (CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
 }
@@ -448,7 +532,7 @@ NSString* previousEventID;
 - (void)updateSession
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
-
+    
     if (CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance updateSession];
 }
@@ -456,9 +540,12 @@ NSString* previousEventID;
 - (void)endSession
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
-
+    
     if (CountlyCommon.sharedInstance.manualSessionHandling)
+    {
+        [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
         [CountlyConnectionManager.sharedInstance endSession];
+    }
 }
 
 
@@ -469,20 +556,20 @@ NSString* previousEventID;
 - (NSString *)deviceID
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
-
+    
     return CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped;
 }
 
 - (CLYDeviceIDType)deviceIDType
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
-
+    
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
         return CLYDeviceIDTypeTemporary;
-
+    
     if ([CountlyPersistency.sharedInstance retrieveIsCustomDeviceID])
         return CLYDeviceIDTypeCustom;
-
+    
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     return CLYDeviceIDTypeIDFV;
 #else
@@ -490,15 +577,44 @@ NSString* previousEventID;
 #endif
 }
 
+- (void)setID:(NSString *)deviceID;
+{
+    if (deviceID == nil || !deviceID.length)
+    {
+        CLY_LOG_W(@"Passing `nil` or empty string as devie ID is not allowed.");
+        return;
+    }
+    
+    CLYDeviceIDType deviceIDType = [Countly.sharedInstance deviceIDType];
+    if([deviceIDType isEqualToString:CLYDeviceIDTypeCustom])
+    {
+        [Countly.sharedInstance setIDInternal:deviceID onServer: NO];
+    }
+    else
+    {
+        [Countly.sharedInstance setIDInternal:deviceID onServer: YES];
+    }
+}
+
 - (void)changeDeviceIDWithMerge:(NSString * _Nullable)deviceID {
-    [self setNewDeviceID:deviceID onServer:YES];
+    [self setIDInternal:deviceID onServer:YES];
 }
 
 - (void)changeDeviceIDWithoutMerge:(NSString * _Nullable)deviceID {
-    [self setNewDeviceID:deviceID onServer:NO];
+    [self setIDInternal:deviceID onServer:NO];
+}
+
+- (void)enableTemporaryIDMode
+{
+    [Countly.sharedInstance setIDInternal:CLYTemporaryDeviceID onServer:NO];
 }
 
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer
+{
+    [Countly.sharedInstance setIDInternal:deviceID onServer:onServer];
+}
+
+- (void)setIDInternal:(NSString *)deviceID onServer:(BOOL)onServer
 {
     CLY_LOG_I(@"%s %@ %d", __FUNCTION__, deviceID, onServer);
 
@@ -680,25 +796,22 @@ NSString* previousEventID;
 {
     CLY_LOG_I(@"%s %@ %@ %lu %f %f", __FUNCTION__, key, segmentation, (unsigned long)count, sum, duration);
 
+    if (!CountlyConsentManager.sharedInstance.consentForEvents)
+    {
+        CLY_LOG_W(@"Consent for events not given! Event will not be recorded.");
+        return;
+    }
+    
     BOOL isReservedEvent = [self isReservedEvent:key];
 
     if (isReservedEvent)
     {
-        CLY_LOG_V(@"A reserved event detected: %@", key);
-
-        if (!isReservedEvent)
-        {
-            CLY_LOG_W(@"Specific consent not given for the reserved event! So, it will not be recorded.");
-            return;
-        }
-
-        CLY_LOG_V(@"Specific consent given for the reserved event! So, it will be recorded.");
-    }
-    else if (!CountlyConsentManager.sharedInstance.consentForEvents)
-    {
-        CLY_LOG_W(@"Events consent not given! Event will not be recorded.");
+        CLY_LOG_W(@"A reserved event detected for key: '%@', event will not be recorded.", key);
         return;
     }
+    
+    NSDictionary* truncated = [segmentation cly_truncated:@"Event segmentation"];
+    segmentation = [truncated cly_limited:@"Event segmentation"];
 
     [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration ID:nil timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
 }
@@ -728,7 +841,6 @@ NSString* previousEventID;
         return;
 
     CountlyEvent *event = CountlyEvent.new;
-    event.key = key;
     event.ID = ID;
     if (!event.ID.length)
     {
@@ -750,11 +862,12 @@ NSString* previousEventID;
     // If the event is not reserved, assign the previous event ID to the current event's PEID property, or an empty string if previousEventID is nil. Then, update previousEventID to the current event's ID.
     if (!isReservedEvent)
     {
+        key = [key cly_truncatedKey:@"Event key"];
         event.PEID = previousEventID ?: @"";
         previousEventID = event.ID;
     }
-    
-    event.segmentation = segmentation;
+    event.key = key;
+    event.segmentation = segmentation.cly_filterSupportedDataTypes;
     event.count = MAX(count, 1);
     event.sum = sum;
     event.timestamp = timestamp;
@@ -767,18 +880,17 @@ NSString* previousEventID;
 
 - (BOOL)isReservedEvent:(NSString *)key
 {
-    NSDictionary <NSString *, NSNumber *>* reservedEvents =
-    @{
-        kCountlyReservedEventOrientation: @(CountlyConsentManager.sharedInstance.consentForUserDetails),
-        kCountlyReservedEventStarRating: @(CountlyConsentManager.sharedInstance.consentForFeedback),
-        kCountlyReservedEventSurvey: @(CountlyConsentManager.sharedInstance.consentForFeedback),
-        kCountlyReservedEventNPS: @(CountlyConsentManager.sharedInstance.consentForFeedback),
-        kCountlyReservedEventPushAction: @(CountlyConsentManager.sharedInstance.consentForPushNotifications),
-        kCountlyReservedEventView: @(CountlyConsentManager.sharedInstance.consentForViewTracking),
-    };
+    NSArray<NSString *>* reservedEvents =
+    @[
+        kCountlyReservedEventOrientation,
+        kCountlyReservedEventStarRating,
+        kCountlyReservedEventSurvey,
+        kCountlyReservedEventNPS,
+        kCountlyReservedEventPushAction,
+        kCountlyReservedEventView,
+    ];
     
-    NSNumber* aReservedEvent = reservedEvents[key];
-    return aReservedEvent.boolValue;
+    return [reservedEvents containsObject:key];
 }
 
 #pragma mark -
@@ -793,8 +905,6 @@ NSString* previousEventID;
     CountlyEvent *event = CountlyEvent.new;
     event.key = key;
     event.timestamp = CountlyCommon.sharedInstance.uniqueTimestamp;
-    event.hourOfDay = CountlyCommon.sharedInstance.hourOfDay;
-    event.dayOfWeek = CountlyCommon.sharedInstance.dayOfWeek;
 
     [CountlyPersistency.sharedInstance recordTimedEvent:event];
 }
@@ -819,12 +929,8 @@ NSString* previousEventID;
         return;
     }
 
-    event.segmentation = segmentation;
-    event.count = MAX(count, 1);
-    event.sum = sum;
-    event.duration = NSDate.date.timeIntervalSince1970 - event.timestamp;
-
-    [CountlyPersistency.sharedInstance recordEvent:event];
+    NSTimeInterval duration = NSDate.date.timeIntervalSince1970 - event.timestamp;
+    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration];
 }
 
 - (void)cancelEvent:(NSString *)key
@@ -923,7 +1029,7 @@ NSString* previousEventID;
     [CountlyCrashReporter.sharedInstance recordException:exception isFatal:isFatal stackTrace:nil segmentation:nil];
 }
 
-- (void)recordException:(NSException *)exception isFatal:(BOOL)isFatal stackTrace:(NSArray *)stackTrace segmentation:(NSDictionary<NSString *, NSString *> *)segmentation
+- (void)recordException:(NSException *)exception isFatal:(BOOL)isFatal stackTrace:(NSArray *)stackTrace segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@ %d %@ %@", __FUNCTION__, exception, isFatal, stackTrace, segmentation);
 
@@ -937,7 +1043,7 @@ NSString* previousEventID;
     [CountlyCrashReporter.sharedInstance recordError:errorName isFatal:NO stackTrace:stackTrace segmentation:nil];
 }
 
-- (void)recordError:(NSString *)errorName isFatal:(BOOL)isFatal stackTrace:(NSArray * _Nullable)stackTrace segmentation:(NSDictionary<NSString *, NSString *> * _Nullable)segmentation
+- (void)recordError:(NSString *)errorName isFatal:(BOOL)isFatal stackTrace:(NSArray * _Nullable)stackTrace segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@ %d %@ %@", __FUNCTION__, errorName, isFatal, stackTrace, segmentation);
 
@@ -1262,6 +1368,36 @@ NSString* previousEventID;
     long long appLoadEndTime = floor(NSDate.date.timeIntervalSince1970 * 1000);
 
     [CountlyPerformanceMonitoring.sharedInstance recordAppStartDurationTraceWithStartTime:appLoadStartTime endTime:appLoadEndTime];
+}
+
+- (void)halt
+{
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    [self halt:true];
+}
+
+- (void)halt:(BOOL) clearStorage
+{
+    CLY_LOG_I(@"%s %d", __FUNCTION__, clearStorage);
+    [CountlyConsentManager.sharedInstance resetInstance];
+    [CountlyPersistency.sharedInstance resetInstance:clearStorage];
+    [CountlyDeviceInfo.sharedInstance resetInstance];
+    [CountlyConnectionManager.sharedInstance resetInstance];
+    [self resetInstance];
+    [CountlyCommon.sharedInstance resetInstance];
+    
+    if(clearStorage)
+    {
+        NSString *appDomain = [[NSBundle mainBundle] bundleIdentifier];
+        [NSUserDefaults.standardUserDefaults removePersistentDomainForName:appDomain];
+        [NSUserDefaults.standardUserDefaults synchronize];
+    }
+}
+
+- (void)attemptToSendStoredRequests
+{
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    [CountlyConnectionManager.sharedInstance attemptToSendStoredRequests];
 }
 
 @end

@@ -6,7 +6,7 @@
 
 #import <Foundation/Foundation.h>
 
-@interface CountlyDeviceInfo : NSObject
+@interface CountlyDeviceInfo : NSObject <Resettable>
 
 typedef enum : NSUInteger
 {

@@ -1,3 +1,47 @@
+## 24.7.1
+* Added `enableTemporaryIDMode` methods both at the Config level and after initialization to enable temporary device ID mode.
+
+## 24.7.0
+* Implemented automatic sending of user properties to the server without requiring an explicit call to the `save` method
+* Added `setID` method for changing device ID based on the device ID type
+* Enhanced segmentation values to include additional supported data types beyond `NSString`
+* Fixed web view caching issue for widgets
+
+* Mitigated an issue where the terms and conditions URL (`tc` key) was sent without double quotes
+* Mitigated an issue where remote config values are not updated after enrolling to a variant
+
+## 24.4.2
+* Improved crash filtering capabilities to include modifications on the crash report
+
+## 24.4.1
+* Added support for Feedback Widget terms and conditions
+
+* Mitigated an issue where SDK limits could affect internal keys
+* Mitigated an issue that enabled recording reserved events
+* Mitigated an issue where timed events could have no ID
+* Mitigated an issue where internal limits were not being applied to some values
+* Mitigated an issue where the request queue could overflow while sending a request
+
+* Removed timestamps from crash breadcrumbs
+
+## 24.4.0
+* Added `attemptToSendStoredRequests` method to combine all events in event queue into a request and attempt to process stored requests
+* Added the iOS privacy manifest to the Countly SDK
+* Added a separate SDK Limits Config with the following options:
+    * `setMaxKeyLength`
+    * `setMaxValueSize`
+    * `setMaxBreadcrumbCount`
+    * `setMaxSegmentationValues`
+    * `setMaxStackTraceLineLength`
+    * `setMaxStackTraceLinesPerThread`
+    
+* Fixed session duration inconsistency by incorporating checks for whether the session has started or not.
+
+* Deprecated `maxKeyLength` initial config flag
+* Deprecated `crashLogLimit` initial config flag
+* Deprecated `maxValueLength` initial config flag
+* Deprecated `maxSegmentationValues` initial config flag
+
 ## 24.1.0
 * Added a separate APM Configs with following options:
     * `enableForegroundBackgroundTracking`
