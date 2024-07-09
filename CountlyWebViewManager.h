@@ -42,4 +42,7 @@ typedef NS_ENUM(NSUInteger, AnimationType) {
                    atPosition:(WebViewPosition)position
                   animatation:(AnimationType)animation;
 
+- (void)createWebViewWithURL:(NSURL *)URL
+                        frame:(CGRect)frame;
+
 @end
