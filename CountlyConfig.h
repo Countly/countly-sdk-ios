@@ -340,7 +340,7 @@ typedef enum : NSUInteger
  * @discussion All requests will be on hold, but they will be persistently stored.
  * @discussion When in temporary device ID mode, method calls for presenting feedback widgets and updating remote config will be ignored.
  */
-- (void)enableTemporaryIDMode;
+- (void)enableTemporaryDeviceIDMode;
 
 /**
  * For resetting persistently stored device ID on SDK start.
