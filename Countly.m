@@ -604,7 +604,7 @@ static dispatch_once_t onceToken;
     [self setIDInternal:deviceID onServer:NO];
 }
 
-- (void)enableTemporaryIDMode
+- (void)enableTemporaryDeviceIDMode
 {
     [Countly.sharedInstance setIDInternal:CLYTemporaryDeviceID onServer:NO];
 }

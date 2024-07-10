@@ -78,7 +78,7 @@ CLYDeviceIDType const CLYDeviceIDTypeNSUUID     = @"CLYDeviceIDTypeNSUUID";
     return self;
 }
 
-- (void)enableTemporaryIDMode
+- (void)enableTemporaryDeviceIDMode
 {
     self.deviceID = CLYTemporaryDeviceID;
 }
