@@ -127,11 +127,15 @@
     
 }
 
-- (void)createWebViewWithURL:(NSURL *)URL
-                        frame:(CGRect)frame {
+- (void)createWebViewWithURL:(NSURLRequest *)request
+                        frame:(CGRect)frame
+                 appearBlock:(void(^ __nullable)(void))appearBlock
+                dismissBlock:(void(^ __nullable)(void))dismissBlock
+{
     
-    UIViewController *rootViewController = UIApplication.sharedApplication.keyWindow.rootViewController;
-    CGRect backgroundFrame =  rootViewController.view.bounds;
+    __block CLYInternalViewController* webVC = CLYInternalViewController.new;
+    UIViewController *topViewController = [CountlyCommon.sharedInstance topViewController];
+    CGRect backgroundFrame =  topViewController.view.bounds;
     
     if (@available(iOS 11.0, *))
     {
@@ -159,7 +163,7 @@
     
     PassThroughBackgroundView *backgroundView = [[PassThroughBackgroundView alloc] initWithFrame:backgroundFrame];
     backgroundView.backgroundColor = [UIColor.blackColor colorWithAlphaComponent:0.25];
-    [rootViewController.view addSubview:backgroundView];
+    [webVC.view addSubview:backgroundView];
     
     WKWebView *webView = [[WKWebView alloc] initWithFrame:frame];
     
@@ -168,14 +172,19 @@
     webView.scrollView.bounces = NO;
     webView.navigationDelegate = self;
     
-    NSURLRequest *request = [NSURLRequest requestWithURL:URL];
+//    NSURLRequest *request = [NSURLRequest requestWithURL:URL];
     [webView loadRequest:request];
     
     
     CLYButton* dismissButton = [CLYButton dismissAlertButton:@"X"];
     dismissButton.onClick = ^(id sender)
     {
-        [backgroundView removeFromSuperview];
+        [webVC dismissViewControllerAnimated:YES completion:^
+         {
+            if (dismissBlock)
+                dismissBlock();
+            webVC = nil;
+        }];
     };
     
     backgroundView.webView = webView;
@@ -196,18 +205,37 @@
             
         }
     }];
-    
+    [CountlyCommon.sharedInstance tryPresentingViewController:webVC withCompletion:appearBlock];
+}
+
+- (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
+    NSString *url = navigationAction.request.URL.absoluteString;
+    if ([url containsString:@"cly_x_int=1"]) {
+        CLY_LOG_I(@"%s Opening url [%@] in external browser", __FUNCTION__, url);
+        [[UIApplication sharedApplication] openURL:navigationAction.request.URL options:@{} completionHandler:^(BOOL success) {
+            if (success) {
+                CLY_LOG_I(@"%s url [%@] opened in external browser", __FUNCTION__, url);
+            }
+            else {
+                CLY_LOG_I(@"%s unable to open url [%@] in external browser", __FUNCTION__, url);
+            }
+        }];
+        decisionHandler(WKNavigationActionPolicyCancel);
+        return;
+    }
+    decisionHandler(WKNavigationActionPolicyAllow);
 }
 
 - (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(null_unspecified WKNavigation *)navigation
 {
-    NSLog(@"Web view has start loading");
-
+    CLY_LOG_I(@"%s Web view has start loading", __FUNCTION__);
+    
 }
 
 - (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
-    NSLog(@"Web view has finished loading");
+    CLY_LOG_I(@"%s Web view has finished loading", __FUNCTION__);
 }
+
 
 - (void)animateView:(UIView *)view withAnimationType:(AnimationType)animationType {
     NSTimeInterval animationDuration = 1.25;
