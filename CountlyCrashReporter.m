@@ -8,11 +8,15 @@
 #import <mach-o/dyld.h>
 #include <execinfo.h>
 
-#if defined(__has_include) && __has_include(<CrashReporter/CrashReporter.h>)
-    #define COUNTLY_PLCRASHREPORTER_EXISTS true
-    #import <CrashReporter/CrashReporter.h>
+#if defined(__has_include)
+    #if  __has_include(<CrashReporter/CrashReporter.h>)
+        #define COUNTLY_PLCRASHREPORTER_EXISTS true
+        #import <CrashReporter/CrashReporter.h>
+    #else
+        NSLog(@"UNDEFINED CrashReporter/CrashReporter.h");
+    #endif
 #else
-    CLY_LOG_W(@"NOT INCLUDED", error);
+        NSLog(@"UNDEFINED __has_include");
 #endif
 
 NSString* const kCountlyExceptionUserInfoBacktraceKey = @"kCountlyExceptionUserInfoBacktraceKey";
