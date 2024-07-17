@@ -6,8 +6,7 @@ Pod::Spec.new do |s|
   s.homepage = 'https://github.com/Countly/countly-sdk-ios'
   s.social_media_url = 'https://twitter.com/gocountly'
   s.author = {'Countly' => 'hello@count.ly'}
-  s.source = { :git => 'https://github.com/Countly/countly-sdk-ios.git', :tag => s.version.to_s }
-  s.static_framework = true
+  s.source = { :git => 'https://github.com/Countly/countly-sdk-ios.git', :tag => s.version.to_s, :submodules => true }
 
   s.requires_arc = true
   s.default_subspecs = 'Core'
@@ -38,7 +37,7 @@ Pod::Spec.new do |s|
     # So, we have to set it on main spec.
     # But it affects the main spec even when this subspec is not used.
     # Asked this on CocoaPods GitHub page: https://github.com/CocoaPods/CocoaPods/issues/7355#issuecomment-619261908
-    # s.static_framework = true
+    s.static_framework = true
   end
 
 end
