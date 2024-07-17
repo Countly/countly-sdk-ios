@@ -7,6 +7,7 @@ Pod::Spec.new do |s|
   s.social_media_url = 'https://twitter.com/gocountly'
   s.author = {'Countly' => 'hello@count.ly'}
   s.source = { :git => 'https://github.com/Countly/countly-sdk-ios.git', :tag => s.version.to_s }
+  s.static_framework = true
 
   s.requires_arc = true
   s.default_subspecs = 'Core'
