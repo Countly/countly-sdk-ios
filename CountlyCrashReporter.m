@@ -12,7 +12,7 @@
     #define COUNTLY_PLCRASHREPORTER_EXISTS true
     #import <CrashReporter/CrashReporter.h>
 #else
-
+    CLY_LOG_W(@"NOT INCLUDED", error);
 #endif
 
 NSString* const kCountlyExceptionUserInfoBacktraceKey = @"kCountlyExceptionUserInfoBacktraceKey";
