@@ -37,7 +37,7 @@ Pod::Spec.new do |s|
     # So, we have to set it on main spec.
     # But it affects the main spec even when this subspec is not used.
     # Asked this on CocoaPods GitHub page: https://github.com/CocoaPods/CocoaPods/issues/7355#issuecomment-619261908
-    # s.static_framework = true
+    s.static_framework = true
   end
 
 end
