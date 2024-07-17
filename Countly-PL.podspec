@@ -6,7 +6,7 @@ Pod::Spec.new do |s|
   s.homepage = 'https://github.com/Countly/countly-sdk-ios'
   s.social_media_url = 'https://twitter.com/gocountly'
   s.author = {'Countly' => 'hello@count.ly'}
-  s.source = { :git => 'https://github.com/Countly/countly-sdk-ios.git', :tag => s.version.to_s, :submodules => true }
+  s.source = { :git => 'https://github.com/Countly/countly-sdk-ios.git', :tag => s.version.to_s}
 
   s.requires_arc = true
   s.default_subspecs = 'Core'
