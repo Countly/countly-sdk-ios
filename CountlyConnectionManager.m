@@ -356,7 +356,7 @@ static dispatch_once_t onceToken;
     }
     
     if (!CountlyCommon.sharedInstance.manualSessionHandling && [UIApplication sharedApplication].applicationState == UIApplicationStateBackground) {
-        CLY_LOG_W(@"%s App is in the background, session will not be started", __FUNCTION__);
+        CLY_LOG_W(@"%s App is in the background, 'beginSession' will be ignored", __FUNCTION__);
         return;
     }
 
@@ -388,6 +388,11 @@ static dispatch_once_t onceToken;
     
     if (!isSessionStarted) {
         CLY_LOG_W(@"%s No session is running, this 'updateSession' will be ignored", __FUNCTION__);
+        return;
+    }
+    
+    if (!CountlyCommon.sharedInstance.manualSessionHandling && [UIApplication sharedApplication].applicationState == UIApplicationStateBackground) {
+        CLY_LOG_W(@"%s App is in the background, 'updateSession' will be ignored", __FUNCTION__);
         return;
     }
 
