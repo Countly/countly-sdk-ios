@@ -30,5 +30,6 @@
 - (void)cancelConsentForAllFeatures;
 - (void)cancelConsentForAllFeaturesWithoutSendingConsentsRequest;
 - (BOOL)hasAnyConsent;
+- (void)sendConsents;
 
 @end

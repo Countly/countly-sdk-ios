@@ -272,6 +272,8 @@ static dispatch_once_t onceToken;
         [self giveAllConsents];
     else if (config.consents)
         [self giveConsentForFeatures:config.consents];
+    else if (config.requiresConsent)
+        [CountlyConsentManager.sharedInstance sendConsents];
     
     if (config.campaignType && config.campaignData)
         [self recordDirectAttributionWithCampaignType:config.campaignType andCampaignData:config.campaignData];

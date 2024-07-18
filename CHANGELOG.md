@@ -1,5 +1,6 @@
 ## 24.7.1
 * Added `enableTemporaryDeviceIDMode` methods both at the Config level and after initialization to enable temporary device ID mode.
+* Fixed an issue where consent was not sent when requires consent was true, but no consent was given
 
 ## 24.7.0
 * Implemented automatic sending of user properties to the server without requiring an explicit call to the `save` method
