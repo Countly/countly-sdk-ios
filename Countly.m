@@ -427,19 +427,17 @@ static dispatch_once_t onceToken;
 - (void)applicationWillResignActive:(NSNotification *)notification
 {
     CLY_LOG_D(@"App enters background");
-    [self suspend];
 }
 
 - (void)applicationDidEnterBackground:(NSNotification *)notification
 {
     CLY_LOG_D(@"App did enter background.");
-//    [self suspend];
+    [self suspend];
 }
 
 - (void)applicationWillEnterForeground:(NSNotification *)notification
 {
     CLY_LOG_D(@"App will enter foreground.");
-//    [self resume];
 }
 
 - (void)applicationWillTerminate:(NSNotification *)notification
