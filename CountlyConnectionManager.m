@@ -390,11 +390,6 @@ static dispatch_once_t onceToken;
         CLY_LOG_W(@"%s No session is running, this 'updateSession' will be ignored", __FUNCTION__);
         return;
     }
-    
-    if (!CountlyCommon.sharedInstance.manualSessionHandling && [UIApplication sharedApplication].applicationState == UIApplicationStateBackground) {
-        CLY_LOG_W(@"%s App is in the background, 'updateSession' will be ignored", __FUNCTION__);
-        return;
-    }
 
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%d",
                              kCountlyQSKeySessionDuration, (int)[self sessionLengthInSeconds]];
