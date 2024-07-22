@@ -283,6 +283,7 @@ static dispatch_once_t onceToken;
     if (consentForUserDetails)
     {
         CLY_LOG_D(@"Consent for UserDetails is given.");
+        [CountlyCommon.sharedInstance recordOrientation];
         [Countly.user save];
     }
     else

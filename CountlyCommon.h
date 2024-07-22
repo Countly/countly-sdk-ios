@@ -113,6 +113,8 @@ void CountlyPrint(NSString *stringToPrint);
 
 - (void)observeDeviceOrientationChanges;
 
+- (void)recordOrientation;
+
 - (BOOL)hasStarted_;
 @end
 
