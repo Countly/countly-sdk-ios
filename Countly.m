@@ -172,6 +172,7 @@ static dispatch_once_t onceToken;
     CountlyFeedbacks.sharedInstance.disableAskingForEachAppVersion = config.starRatingDisableAskingForEachAppVersion;
     CountlyFeedbacks.sharedInstance.ratingCompletionForAutoAsk = config.starRatingCompletion;
     [CountlyFeedbacks.sharedInstance checkForStarRatingAutoAsk];
+#endif
     
     if(config.disableLocation)
     {
@@ -181,7 +182,6 @@ static dispatch_once_t onceToken;
     {
         [CountlyLocationManager.sharedInstance updateLocation:config.location city:config.city ISOCountryCode:config.ISOCountryCode IP:config.IP];
     }
-#endif
     
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
@@ -189,7 +189,15 @@ static dispatch_once_t onceToken;
     //NOTE: If there is no consent for sessions, location info and attribution should be sent separately, as they cannot be sent with begin_session request.
     if (!CountlyConsentManager.sharedInstance.consentForSessions)
     {
-        [CountlyLocationManager.sharedInstance sendLocationInfo];
+        //Send an empty location if location is disabled or location consent is not given, without checking for location consent.
+        if (!CountlyConsentManager.sharedInstance.consentForLocation || CountlyLocationManager.sharedInstance.isLocationInfoDisabled)
+        {
+            [CountlyConnectionManager.sharedInstance sendLocationInfo];
+        }
+        else
+        {
+            [CountlyLocationManager.sharedInstance sendLocationInfo];
+        }
         [CountlyConnectionManager.sharedInstance sendAttribution];
     }
     
