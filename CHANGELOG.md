@@ -1,7 +1,8 @@
 ## 24.7.1
 * Added `enableTemporaryDeviceIDMode` methods both at the Config level and after initialization to enable temporary device ID mode.
-* Fixed an automatic start session issue where a session could be started while the app was in the background, resulting in 0 duration sessions being sent.
 
+* Fixed an issue where consent was not sent when requires consent was true, but no consent was given
+* Fixed an automatic start session issue where a session could be started while the app was in the background, resulting in 0 duration sessions being sent.
 
 ## 24.7.0
 * Implemented automatic sending of user properties to the server without requiring an explicit call to the `save` method
