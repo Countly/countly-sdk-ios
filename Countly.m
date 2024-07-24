@@ -60,10 +60,24 @@ static dispatch_once_t onceToken;
                                                selector:@selector(applicationWillTerminate:)
                                                    name:UIApplicationWillTerminateNotification
                                                  object:nil];
+        
+        [NSNotificationCenter.defaultCenter addObserver:self 
+                                               selector:@selector(applicationDidBecomeActive:) name:UIApplicationDidBecomeActiveNotification
+                                                 object:nil];
+        [NSNotificationCenter.defaultCenter addObserver:self 
+                                               selector:@selector(applicationWillResignActive:) name:UIApplicationWillResignActiveNotification
+                                                 object:nil];
 #elif (TARGET_OS_OSX)
         [NSNotificationCenter.defaultCenter addObserver:self
                                                selector:@selector(applicationWillTerminate:)
                                                    name:NSApplicationWillTerminateNotification
+                                                 object:nil];
+        
+        [NSNotificationCenter.defaultCenter addObserver:self 
+                                               selector:@selector(applicationDidBecomeActive:) name:NSApplicationDidBecomeActiveNotification
+                                                 object:nil];
+        [NSNotificationCenter.defaultCenter addObserver:self 
+                                               selector:@selector(applicationWillResignActive:) name:NSApplicationWillResignActiveNotification
                                                  object:nil];
 #endif
     }
@@ -406,6 +420,17 @@ static dispatch_once_t onceToken;
     isSuspended = NO;
 }
 
+- (void)applicationDidBecomeActive:(NSNotification *)notification
+{
+    CLY_LOG_D(@"App enters foreground");
+    [self resume];
+}
+
+- (void)applicationWillResignActive:(NSNotification *)notification
+{
+    CLY_LOG_D(@"App enters background");
+}
+
 - (void)applicationDidEnterBackground:(NSNotification *)notification
 {
     CLY_LOG_D(@"App did enter background.");
@@ -415,7 +440,6 @@ static dispatch_once_t onceToken;
 - (void)applicationWillEnterForeground:(NSNotification *)notification
 {
     CLY_LOG_D(@"App will enter foreground.");
-    [self resume];
 }
 
 - (void)applicationWillTerminate:(NSNotification *)notification
@@ -432,6 +456,7 @@ static dispatch_once_t onceToken;
     
     [CountlyPersistency.sharedInstance saveToFileSync];
 }
+
 
 - (void)dealloc
 {

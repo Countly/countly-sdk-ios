@@ -354,6 +354,11 @@ static dispatch_once_t onceToken;
         CLY_LOG_W(@"%s A session is already running, this 'beginSession' will be ignored", __FUNCTION__);
         return;
     }
+    
+    if (!CountlyCommon.sharedInstance.manualSessionHandling && [UIApplication sharedApplication].applicationState == UIApplicationStateBackground) {
+        CLY_LOG_W(@"%s App is in the background, 'beginSession' will be ignored", __FUNCTION__);
+        return;
+    }
 
     isSessionStarted = YES;
     lastSessionStartTime = NSDate.date.timeIntervalSince1970;
