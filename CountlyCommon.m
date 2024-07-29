@@ -221,10 +221,11 @@ void CountlyPrint(NSString *stringToPrint)
     }
 
     CLY_LOG_D(@"Interface orientation is now: %@", mode);
-    self.lastInterfaceOrientation = mode;
 
     if (!CountlyConsentManager.sharedInstance.consentForUserDetails)
         return;
+    
+    self.lastInterfaceOrientation = mode;
 
     [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventOrientation segmentation:@{kCountlyOrientationKeyMode: mode}];
 #endif
