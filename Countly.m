@@ -187,20 +187,7 @@ static dispatch_once_t onceToken;
         [CountlyConnectionManager.sharedInstance beginSession];
     
     //NOTE: If there is no consent for sessions, location info and attribution should be sent separately, as they cannot be sent with begin_session request.
-    if (!CountlyConsentManager.sharedInstance.consentForSessions)
-    {
-        //Send an empty location if location is disabled or location consent is not given, without checking for location consent.
-        if (!CountlyConsentManager.sharedInstance.consentForLocation || CountlyLocationManager.sharedInstance.isLocationInfoDisabled)
-        {
-            [CountlyConnectionManager.sharedInstance sendLocationInfo];
-        }
-        else
-        {
-            [CountlyLocationManager.sharedInstance sendLocationInfo];
-        }
-        [CountlyConnectionManager.sharedInstance sendAttribution];
-    }
-    
+   
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
     if ([config.features containsObject:CLYPushNotifications])
@@ -280,6 +267,21 @@ static dispatch_once_t onceToken;
         [self giveAllConsents];
     else if (config.consents)
         [self giveConsentForFeatures:config.consents];
+    
+    if (!CountlyConsentManager.sharedInstance.consentForSessions)
+    {
+        //Send an empty location if location is disabled or location consent is not given, without checking for location consent.
+        if (!CountlyConsentManager.sharedInstance.consentForLocation || CountlyLocationManager.sharedInstance.isLocationInfoDisabled)
+        {
+            [CountlyConnectionManager.sharedInstance sendLocationInfo];
+        }
+        else
+        {
+            [CountlyLocationManager.sharedInstance sendLocationInfo];
+        }
+        [CountlyConnectionManager.sharedInstance sendAttribution];
+    }
+    
     
     if (config.campaignType && config.campaignData)
         [self recordDirectAttributionWithCampaignType:config.campaignType andCampaignData:config.campaignData];
