@@ -351,6 +351,8 @@ static dispatch_once_t onceToken;
     else
     {
         CLY_LOG_D(@"Consent for Location is cancelled.");
+        
+        [CountlyConnectionManager.sharedInstance sendLocationInfo];
     }
 }
 
