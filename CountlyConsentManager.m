@@ -143,7 +143,10 @@ static dispatch_once_t onceToken;
         return;
 
     if ([features containsObject:CLYConsentSessions] && self.consentForSessions)
+    {
+        [CountlyConnectionManager.sharedInstance endSession];
         self.consentForSessions = NO;
+    }
 
     if ([features containsObject:CLYConsentEvents] && self.consentForEvents)
         self.consentForEvents = NO;
