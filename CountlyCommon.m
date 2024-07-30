@@ -196,7 +196,13 @@ void CountlyPrint(NSString *stringToPrint)
 - (void)recordOrientation
 {
 #if (TARGET_OS_IOS)
-
+    if (!self.enableOrientationTracking)
+        return;
+    
+    if ([UIApplication sharedApplication].applicationState == UIApplicationStateBackground) {
+        CLY_LOG_W(@"%s App is in the background, 'Record Orientation' will be ignored", __FUNCTION__);
+        return;
+    }
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     UIInterfaceOrientation interfaceOrientation = UIApplication.sharedApplication.statusBarOrientation;
@@ -221,10 +227,11 @@ void CountlyPrint(NSString *stringToPrint)
     }
 
     CLY_LOG_D(@"Interface orientation is now: %@", mode);
-    self.lastInterfaceOrientation = mode;
 
     if (!CountlyConsentManager.sharedInstance.consentForUserDetails)
         return;
+    
+    self.lastInterfaceOrientation = mode;
 
     [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventOrientation segmentation:@{kCountlyOrientationKeyMode: mode}];
 #endif
