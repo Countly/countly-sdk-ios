@@ -390,7 +390,9 @@ static dispatch_once_t onceToken;
         queryString = [queryString stringByAppendingString:attributionQueryString];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
-
+    
+    [CountlyCommon.sharedInstance recordOrientation];
+    
     [self proceedOnQueue];
 }
 

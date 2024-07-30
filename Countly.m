@@ -199,8 +199,8 @@ static dispatch_once_t onceToken;
     
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
-    
-    [CountlyCommon.sharedInstance recordOrientation];
+    else
+        [CountlyCommon.sharedInstance recordOrientation];
     
     //NOTE: If there is no consent for sessions, location info and attribution should be sent separately, as they cannot be sent with begin_session request.
    
