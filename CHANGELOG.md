@@ -2,7 +2,8 @@
 * Added `enableTemporaryDeviceIDMode` methods both at the Config level and after initialization to enable temporary device ID mode.
 * Orientation is now also sent during initialization and when consent is given.
 * Mitigated an issue where consent was not sent when requires consent was true, but no consent was given
-* Mitigated an automatic start session issue where a session could be started while the app was in the background, resulting in 0 duration sessions being sent.
+* Mitigated an automatic start session issue where a session could be started while the app was in the background, resulting in 0 duration sessions being sent
+* Mitigated an issue where a session could have continued when session consent was removed
 * Mitigated an issue where empty location was not being sent when location is disabled or location consent is not given
 
 
