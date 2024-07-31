@@ -67,7 +67,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         Countly.sharedInstance().start(with: config);
         sendUserProperty()
         setUserData()
-        XCTAssertEqual(0, CountlyPersistency.sharedInstance().remainingRequestCount())
+        XCTAssertEqual(2, CountlyPersistency.sharedInstance().remainingRequestCount()) // consents, location
     }
     
     func test_203_CNR_A() {
@@ -151,8 +151,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         Countly.sharedInstance().recordEvent("D");
         setSameData()
         Countly.sharedInstance().recordEvent("E");
-        
-        XCTAssertEqual(0, CountlyPersistency.sharedInstance().remainingRequestCount())
+        XCTAssertEqual(2, CountlyPersistency.sharedInstance().remainingRequestCount()) // consents, location
     }
     
     func test_207_CNR_M() {
@@ -229,7 +228,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         Countly.sharedInstance().recordEvent("D");
         
         
-        XCTAssertEqual(9, CountlyPersistency.sharedInstance().remainingRequestCount())
+        XCTAssertEqual(10, CountlyPersistency.sharedInstance().remainingRequestCount())
         guard let queuedRequests =  CountlyPersistency.sharedInstance().value(forKey: "queuedRequests") as? [String] else {
             fatalError("Failed to get queuedRequests from CountlyPersistency")
         }
@@ -243,6 +242,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         validateCustomUserDetails(request: queuedRequests[6], propertiesToCheck: getUserDataMap())
         XCTAssertTrue(queuedRequests[7].contains("device_id=merge_id"), "Merge device id failed")
         validateCustomUserDetails(request: queuedRequests[8], propertiesToCheck: ["a12345": 4])
+        XCTAssertTrue(queuedRequests[9].contains("location="), "Empty location should send in this case.")
         
 //        XCTAssertTrue(queuedRequests[9].contains("device_id=non_merge_id"), "Non Merge device id failed")
 //        validateCustomUserDetails(request: queuedRequests[9], propertiesToCheck: ["a12345": 4])
@@ -272,12 +272,12 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         Countly.sharedInstance().recordEvent("D");
         
         
-        XCTAssertEqual(1, CountlyPersistency.sharedInstance().remainingRequestCount())
+        XCTAssertEqual(3, CountlyPersistency.sharedInstance().remainingRequestCount()) // consents, location, device id change
         guard let queuedRequests =  CountlyPersistency.sharedInstance().value(forKey: "queuedRequests") as? [String] else {
             fatalError("Failed to get queuedRequests from CountlyPersistency")
         }
-        XCTAssertTrue(queuedRequests[0].contains("device_id=merge_id"), "Merge device id failed")
-        XCTAssertTrue(queuedRequests[0].contains("old_device_id="), "Merge device id failed")
+        XCTAssertTrue(queuedRequests[2].contains("device_id=merge_id"), "Merge device id failed")
+        XCTAssertTrue(queuedRequests[2].contains("old_device_id="), "Merge device id failed")
     }
     
     // Test case for Consent Not Required with Manual Sessions enabled
