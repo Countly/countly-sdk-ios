@@ -72,13 +72,6 @@ static dispatch_once_t onceToken;
                                                selector:@selector(applicationWillTerminate:)
                                                    name:NSApplicationWillTerminateNotification
                                                  object:nil];
-        
-        [NSNotificationCenter.defaultCenter addObserver:self 
-                                               selector:@selector(applicationDidBecomeActive:) name:NSApplicationDidBecomeActiveNotification
-                                                 object:nil];
-        [NSNotificationCenter.defaultCenter addObserver:self 
-                                               selector:@selector(applicationWillResignActive:) name:NSApplicationWillResignActiveNotification
-                                                 object:nil];
 #endif
     }
     
