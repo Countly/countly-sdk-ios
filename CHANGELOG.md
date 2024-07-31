@@ -1,11 +1,10 @@
 ## 24.7.1
-* Added `enableTemporaryDeviceIDMode` methods both at the Config level and after initialization to enable temporary device ID mode.
-* Orientation is now also sent during initialization and when consent is given.
-* Mitigated an issue where consent was not sent when requires consent was true, but no consent was given
-* Mitigated an automatic start session issue where a session could be started while the app was in the background, resulting in 0 duration sessions being sent
-* Mitigated an issue where a session could have continued when session consent was removed
-* Mitigated an issue where empty location was not being sent when location is disabled or location consent is not given
-
+* Added `enableTemporaryDeviceIDMode` config and post-initialization methods to enable temporary device ID mode
+* Orientation info is now also sent during initialization
+* Mitigated an issue where consent information was not sent when no consent was given during initialization
+* Mitigated an issue where a session could have started if the SDK was initialized on the background and automatic session tracking was enabled
+* Mitigated an issue where a session did not end when session consent was removed
+* Mitigated an issue where disabling location did not work
 
 ## 24.7.0
 * Implemented automatic sending of user properties to the server without requiring an explicit call to the `save` method
