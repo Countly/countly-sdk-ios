@@ -5,6 +5,7 @@
 // Please visit www.count.ly for more information.
 
 #import "CountlyCommon.h"
+#import "CountlyWebViewManager.h"
 #if (TARGET_OS_IOS)
 #import <WebKit/WebKit.h>
 #endif
@@ -54,36 +55,21 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, appearBlock, dismissBlock);
     if (!CountlyConsentManager.sharedInstance.consentForFeedback)
         return;
-    __block CLYInternalViewController* webVC = CLYInternalViewController.new;
-    webVC.view.backgroundColor = [UIColor.blackColor colorWithAlphaComponent:0.4];
-    webVC.modalPresentationStyle = UIModalPresentationCustom;
-    // Configure WKWebView with non-persistent data store
-    WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
-    configuration.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
-    WKWebView* webView = [[WKWebView alloc] initWithFrame:webVC.view.bounds configuration:configuration];
-    webView.layer.shadowColor = UIColor.blackColor.CGColor;
-    webView.layer.shadowOpacity = 0.5;
-    webView.layer.shadowOffset = CGSizeMake(0.0f, 5.0f);
-    webView.layer.masksToBounds = NO;
-    webView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    [webVC.view addSubview:webView];
-    webVC.webView = webView;
-    NSURLRequest* request = [self displayRequest];
-    [webView loadRequest:request];
-    CLYButton* dismissButton = [CLYButton dismissAlertButton];
-    dismissButton.onClick = ^(id sender)
-    {
-        [webVC dismissViewControllerAnimated:YES completion:^
-        {
-            if (dismissBlock)
-                dismissBlock();
-            webVC = nil;
-        }];
+    
+    UIViewController *topViewController = [CountlyCommon.sharedInstance topViewController];
+    CGRect backgroundFrame =  topViewController.view.bounds;
+    
+    CountlyWebViewManager* webViewManager =  CountlyWebViewManager.new;
+    [webViewManager createWebViewWithURL:[self displayRequest] frame:backgroundFrame appearBlock:^
+     {
+        if(appearBlock)
+            appearBlock();
+    } dismissBlock:^
+     {
+        if(dismissBlock)
+            dismissBlock();
         [self recordReservedEventForDismissing];
-    };
-    [webView addSubview:dismissButton];
-    [dismissButton positionToTopRight];
-    [CountlyCommon.sharedInstance tryPresentingViewController:webVC withCompletion:appearBlock];
+    }];
 }
 
 - (void)getWidgetData:(void (^)(NSDictionary * __nullable widgetData, NSError * __nullable error))completionHandler
