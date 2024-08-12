@@ -33,6 +33,13 @@ Pod::Spec.new do |s|
     pl.dependency 'Countly/Core'
     pl.dependency 'PLCrashReporter', '~> 1'
 
+    # Add build settings
+    pl.pod_target_xcconfig = {
+      'OTHER_LDFLAGS' => '$(inherited) -framework "CrashReporter"',
+      'LIBRARY_SEARCH_PATHS' => '$(inherited) ${PODS_XCFRAMEWORKS_BUILD_DIR}/PLCrashReporter',
+      'FRAMEWORK_SEARCH_PATHS' => '$(inherited) ${PODS_XCFRAMEWORKS_BUILD_DIR}/PLCrashReporter'
+    }
+
     # It is not possible to set static_framework attribute on subspecs.
     # So, we have to set it on main spec.
     # But it affects the main spec even when this subspec is not used.
