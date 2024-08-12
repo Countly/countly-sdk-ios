@@ -12,6 +12,7 @@
 #import "CountlyRemoteConfig.h"
 #import "CountlyFeedbackWidget.h"
 #import "CountlyViewTracking.h"
+#import "CountlyContentBuilder.h"
 #import "Resettable.h"
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 #import <UserNotifications/UserNotifications.h>
@@ -828,5 +829,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)attemptToSendStoredRequests;
 
 NS_ASSUME_NONNULL_END
+
+/**
+ * Interface variable to access views tracking functionalities.
+ * @discussion Views tracking interface for developer to interact with SDK.
+ */
+- (CountlyContentBuilder *_Nonnull) content;
 
 @end

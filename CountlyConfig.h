@@ -656,6 +656,11 @@ typedef enum : NSUInteger
  * @discussion If set, Server Config values from Countly Server will be fetched at the beginning of a session.
  */
 @property (nonatomic) BOOL enableServerConfiguration;
+
+/**
+ * This  will enable to fetch content from server and display them in UI
+ */
+@property (nonatomic) BOOL enableContentUpdates;
 NS_ASSUME_NONNULL_END
 
 @end

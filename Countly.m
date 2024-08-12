@@ -264,6 +264,16 @@ static dispatch_once_t onceToken;
         appLoadStartTime = config.apm.getAppStartTimestampOverride;
     }
     
+    // Delay in seconds
+    double delayInSeconds = 1.0; // Adjust the delay time as needed
+    
+    dispatch_time_t delay = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
+    dispatch_after(delay, dispatch_get_main_queue(), ^{
+        if(config.enableContentUpdates) {
+            [[self content] openForContent];
+        }
+    });
+    
     [CountlyPerformanceMonitoring.sharedInstance startWithConfig:config.apm];
     
     CountlyCommon.sharedInstance.enableOrientationTracking = config.enableOrientationTracking;
@@ -1430,6 +1440,11 @@ static dispatch_once_t onceToken;
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
     [CountlyConnectionManager.sharedInstance attemptToSendStoredRequests];
+}
+
+- (CountlyContentBuilder *) content
+{
+    return CountlyContentBuilder.sharedInstance;
 }
 
 @end
