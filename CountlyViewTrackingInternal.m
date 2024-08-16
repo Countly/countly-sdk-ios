@@ -518,37 +518,36 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 }
 
 
-- (void)pauseAllViewsInternal
+- (void)stopRunningViewsInternal
 {
     [self.viewDataDictionary enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, CountlyViewData * _Nonnull viewData, BOOL * _Nonnull stop) {
-        [self pauseViewInternal:viewData autoPaused:YES];
+        viewData.willStartAgain = YES;
+        [self stopViewWithIDInternal:viewData.viewID customSegmentation:nil autoPaused:YES];
     }];
 }
 
 - (void)pauseViewInternal:(CountlyViewData*) viewData
 {
-    [self pauseViewInternal:viewData autoPaused:NO];
-}
-
-- (void)pauseViewInternal:(CountlyViewData*) viewData autoPaused:(BOOL) autoPaused
-{
-    if (autoPaused) {
-        [viewData autoPauseView];
-    }
-    else {
-        [viewData pauseView];
-    }
+    [viewData pauseView];
     [self stopViewWithIDInternal:viewData.viewID customSegmentation:nil autoPaused:YES];
 }
 
-- (void)resumeAllViewsInternal
+- (void)startStoppedViewsInternal
 {
+    // Create an array to store keys for views that need to be removed
+    NSMutableArray<NSString *> *keysToRemove = [NSMutableArray array];
+
     [self.viewDataDictionary enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, CountlyViewData * _Nonnull viewData, BOOL * _Nonnull stop) {
-        if (viewData.isAutoPaused)
+        if (viewData.willStartAgain)
         {
-            [viewData resumeView];
+            [self startViewInternal:viewData.viewName customSegmentation:viewData.segmentation isAutoStoppedView:viewData.isAutoStoppedView];
+            // Add the key to the array for later removal
+            [keysToRemove addObject:viewData.viewID];
         }
     }];
+    
+    // Remove the entries from the dictionary
+    [self.viewDataDictionary removeObjectsForKeys:keysToRemove];
 }
 
 - (void)stopAllViewsInternal:(NSDictionary *)segmentation
@@ -717,14 +716,11 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)applicationWillEnterForeground {
 #if (TARGET_OS_IOS || TARGET_OS_TV)
-    if (self.isAutoViewTrackingActive) {
-        
-    }
-    else {
-        [self resumeAllViewsInternal];
+    if (!self.isAutoViewTrackingActive) {
+        [self startStoppedViewsInternal];
     }
 #else
-    [self resumeAllViewsInternal];
+    [self startStoppedViewsInternal];
 #endif
 }
 - (void)applicationDidEnterBackground {
@@ -733,10 +729,10 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         [self stopCurrentView];
     }
     else {
-        [self pauseAllViewsInternal];
+        [self stopRunningViewsInternal];
     }
 #else
-    [self pauseAllViewsInternal];
+    [self stopRunningViewsInternal];
 #endif
 }
 

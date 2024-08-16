@@ -30,10 +30,10 @@
 @property (nonatomic) BOOL isAutoStoppedView;
 
 /**
- * Is this view is automaticaly paused.
- * @discussion It sets true when app goes to backround, and view will resume on the basis of that flag when app goes to foreground.
+ * Is this view is automaticaly stopped.
+ * @discussion It sets true when app goes to backround, and view will start again on the basis of that flag when app goes to foreground.
  */
-@property (nonatomic) BOOL isAutoPaused;
+@property (nonatomic) BOOL willStartAgain;
 
 
 /**
@@ -41,6 +41,12 @@
  * @discussion You can set this segmentation after the view has started using the "addSegmentationToViewWithID:" or "addSegmentationToViewWithID" methods of view interface.
  */
 @property (nonatomic) NSMutableDictionary* segmentation;
+
+/**
+ * Segmentation of start view .
+ * @discussion This segmentation will store to send again when view is start again when app goes to foreground
+ */
+@property (nonatomic) NSMutableDictionary* startSegmentation;
 
 /**
  * Initialize view data
@@ -56,11 +62,6 @@
  */
 - (NSTimeInterval)duration;
 
-/**
- * Pause view
- * @discussion View is paused automatically base on the app background event.
- */
-- (void)autoPauseView;
 
 /**
  * Pause view
