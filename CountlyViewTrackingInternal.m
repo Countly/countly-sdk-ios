@@ -441,7 +441,6 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     self.currentViewID = CountlyCommon.sharedInstance.randomEventID;
     
     CountlyViewData *viewData = [[CountlyViewData alloc] initWithID:self.currentViewID viewName:viewName];
-    viewData.startSegmentation = customSegmentation.mutableCopy;
     viewData.isAutoStoppedView = isAutoStoppedView;
     self.viewDataDictionary[self.currentViewID] = viewData;
     
@@ -541,7 +540,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     [self.viewDataDictionary enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, CountlyViewData * _Nonnull viewData, BOOL * _Nonnull stop) {
         if (viewData.willStartAgain)
         {
-            NSString *viewID = [self startViewInternal:viewData.viewName customSegmentation:viewData.startSegmentation isAutoStoppedView:viewData.isAutoStoppedView];
+            NSString *viewID = [self startViewInternal:viewData.viewName customSegmentation:nil isAutoStoppedView:viewData.isAutoStoppedView];
             
             // Retrieve the newly created viewData for the viewID
             CountlyViewData* viewDataNew = self.viewDataDictionary[viewID];
