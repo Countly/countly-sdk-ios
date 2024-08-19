@@ -4,7 +4,6 @@
 //
 // Please visit www.count.ly for more information.
 #import "CountlyContentBuilderInternal.h"
-#import "CountlyCommon.h"
 #import "CountlyWebViewManager.h"
 
 
@@ -241,6 +240,9 @@ NSString* const kCountlyCBCheckAvailbleContents  = @"check_available_contents";
         } dismissBlock:^
          {
             CLY_LOG_I(@"Webview dismissed");
+            if(self.contentCallback) {
+                self.contentCallback(CLOSED, NSDictionary.new);
+            }
         }];
     });
 }

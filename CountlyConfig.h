@@ -114,6 +114,15 @@ typedef void (^RCVariantCallback)(CLYRequestResult response, NSError *_Nullable 
 
 typedef void (^RCDownloadCallback)(CLYRequestResult response, NSError *_Nullable error, BOOL fullValueUpdate, NSDictionary<NSString *, CountlyRCData *>* downloadedValues);
 
+typedef enum : NSUInteger
+{
+    COMPLETED,
+    CLOSED,
+} ContentStatus;
+
+typedef void (^ContentCallback)(ContentStatus contentStatus, NSDictionary<NSString *, id>* contentData);
+
+
 //NOTE: Internal log levels
 typedef enum : NSUInteger
 {
@@ -661,6 +670,17 @@ typedef enum : NSUInteger
  * This  will enable to fetch content from server and display them in UI
  */
 @property (nonatomic) BOOL enableContentUpdates;
+
+ /**
+  * Register global completion blocks to be executed content.
+ */
+- (void)setGlobalContentCallback:(ContentCallback) callback;
+
+/**
+ * Get content callback
+ */
+- (ContentCallback) getGlobalContentCallback;
+
 NS_ASSUME_NONNULL_END
 
 @end

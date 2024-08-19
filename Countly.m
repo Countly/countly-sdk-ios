@@ -264,6 +264,10 @@ static dispatch_once_t onceToken;
         appLoadStartTime = config.apm.getAppStartTimestampOverride;
     }
     
+    if(config.getGlobalContentCallback) {
+        CountlyContentBuilderInternal.sharedInstance.contentCallback = config.getGlobalContentCallback;
+    }
+    
     // Delay in seconds
     double delayInSeconds = 1.0; // Adjust the delay time as needed
     
