@@ -666,11 +666,6 @@ typedef enum : NSUInteger
  */
 @property (nonatomic) BOOL enableServerConfiguration;
 
-/**
- * This  will enable to fetch content from server and display them in UI
- */
-@property (nonatomic) BOOL enableContentUpdates;
-
  /**
   * Register global completion blocks to be executed content.
  */
