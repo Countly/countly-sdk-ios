@@ -89,20 +89,25 @@
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
     NSString *url = navigationAction.request.URL.absoluteString;
     
-    if ([url containsString:@"cly_x_int=1"]) {
-        CLY_LOG_I(@"%s Opening URL [%@] in external browser", __FUNCTION__, url);
-        [[UIApplication sharedApplication] openURL:navigationAction.request.URL options:@{} completionHandler:^(BOOL success) {
-            CLY_LOG_I(success ? @"%s URL [%@] opened in external browser" : @"%s Unable to open URL [%@] in external browser", __FUNCTION__, url);
-        }];
-        decisionHandler(WKNavigationActionPolicyCancel);
-    } else if ([url containsString:@"cly_x_close=1"]) {
-        CLY_LOG_I(@"%s Closing webview", __FUNCTION__);
-        if (self.dismissBlock) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                self.dismissBlock();
-                [self.backgroundView removeFromSuperview];
-            });
+    if ([url containsString:@"cly_x_action_event=1"]) {
+        NSDictionary *queryParameters = [self parseQueryString:url];
+        NSString *action = queryParameters[@"action"];
+        
+        if ([action isEqualToString:@"event"]) {
+            NSString *event = queryParameters[@"event"];
+            [self recordEventWithJSONString:event];
+        } else if ([action isEqualToString:@"link"]) {
+            NSString *link = queryParameters[@"link"];
+            [self openExternalLink:link];
+        } else if ([action isEqualToString:@"resize_me"]) {
+            NSString *resize = queryParameters[@"resize_me"];
+            [self resizeWebViewWithJSONString:resize];
         }
+        
+        if ([queryParameters[@"close"] boolValue]) {
+            [self closeWebView];
+        }
+        
         decisionHandler(WKNavigationActionPolicyCancel);
     } else {
         decisionHandler(WKNavigationActionPolicyAllow);
@@ -152,7 +157,7 @@
     }];
 }
 
-CGSize sizeForWebViewSize(WebViewSize size, CGRect backgroundFrame, UIEdgeInsets padding) {
+- (CGSize)sizeForWebViewSize:(WebViewSize)size backgroundFrame:(CGRect)backgroundFrame padding:(UIEdgeInsets)padding {
     CGFloat width = backgroundFrame.size.width - padding.left - padding.right;
     CGFloat height = backgroundFrame.size.height - padding.top - padding.bottom;
     
@@ -167,6 +172,73 @@ CGSize sizeForWebViewSize(WebViewSize size, CGRect backgroundFrame, UIEdgeInsets
             return CGSizeMake(250, 250);
         default:
             return CGSizeMake(width, height);
+    }
+}
+
+- (NSDictionary *)parseQueryString:(NSString *)url {
+    NSMutableDictionary *queryDict = [NSMutableDictionary dictionary];
+    NSArray *urlComponents = [url componentsSeparatedByString:@"?"];
+    
+    if (urlComponents.count > 1) {
+        NSArray *queryItems = [urlComponents[1] componentsSeparatedByString:@"&"];
+        
+        for (NSString *item in queryItems) {
+            NSArray *keyValue = [item componentsSeparatedByString:@"="];
+            if (keyValue.count == 2) {
+                NSString *key = keyValue[0];
+                NSString *value = keyValue[1];
+                queryDict[key] = value;
+            }
+        }
+    }
+    
+    return queryDict;
+}
+
+- (void)recordEventWithJSONString:(NSString *)jsonString {
+    NSData *data = [jsonString dataUsingEncoding:NSUTF8StringEncoding];
+    NSDictionary *eventDict = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+    
+    NSString *key = eventDict[@"key"];
+    NSDictionary *segmentation = eventDict[@"sg"];
+    
+    [Countly.sharedInstance recordEvent:key segmentation:segmentation];
+}
+
+- (void)openExternalLink:(NSString *)urlString {
+    NSURL *url = [NSURL URLWithString:urlString];
+    if (url) {
+        [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:^(BOOL success) {
+            if (success) {
+                CLY_LOG_I(@"URL [%@] opened in external browser", urlString);
+            } else {
+                CLY_LOG_I(@"Unable to open URL [%@] in external browser", urlString);
+            }
+        }];
+    }
+}
+
+- (void)resizeWebViewWithJSONString:(NSString *)jsonString {
+    NSData *data = [jsonString dataUsingEncoding:NSUTF8StringEncoding];
+    NSDictionary *resizeDict = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+    
+    NSDictionary *portrait = resizeDict[@"p"];
+    NSDictionary *landscape = resizeDict[@"l"];
+    
+    CGFloat width = [portrait[@"w"] floatValue];
+    CGFloat height = [portrait[@"h"] floatValue];
+    
+    // Assuming you are resizing the web view here
+    CGRect newFrame = CGRectMake(self.backgroundView.webView.frame.origin.x, self.backgroundView.webView.frame.origin.y, width, height);
+    self.backgroundView.webView.frame = newFrame;
+}
+
+- (void)closeWebView {
+    if (self.dismissBlock) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            self.dismissBlock();
+            [self.backgroundView removeFromSuperview];
+        });
     }
 }
 @end

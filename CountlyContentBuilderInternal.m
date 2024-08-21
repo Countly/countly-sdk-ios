@@ -7,8 +7,8 @@
 #import "CountlyWebViewManager.h"
 
 
-NSString* const kCountlyEndpointContent = @"/i/content/queue"; //TODO: @"/content";
-NSString* const kCountlyCBFetchContent  = @"fetch_content";
+NSString* const kCountlyEndpointContent = @"/o/sdk/content";
+NSString* const kCountlyCBFetchContent  = @"queue";
 NSString* const kCountlyCBCheckAvailbleContents  = @"check_available_contents";
 
 @implementation CountlyContentBuilderInternal {
@@ -167,7 +167,7 @@ NSString* const kCountlyCBCheckAvailbleContents  = @"check_available_contents";
     queryString = [queryString stringByAppendingFormat:@"&%@=%@&%@=%@&%@=%@",
                    kCountlyQSKeyMethod, kCountlyCBFetchContent,
                    @"content_id", content_id,
-                   @"resolution", resolutionJson];
+                   @"res", resolutionJson];
     
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
     
@@ -196,12 +196,13 @@ NSString* const kCountlyCBCheckAvailbleContents  = @"check_available_contents";
         screenBounds.origin.y += 20.0;
         screenBounds.size.height -= 20.0;
     }
-    CGFloat width = screenBounds.size.width / self.density;
-    CGFloat height = screenBounds.size.height / self.density;
+    
+    CGFloat width = screenBounds.size.width;
+    CGFloat height = screenBounds.size.height;
     
     NSDictionary *resolutionDict = @{
-        @"landscape": @{@"width": @(height), @"height": @(width)},
-        @"portrait": @{@"width": @(width), @"height": @(height)}
+        @"p": @{@"h": @(height), @"w": @(width)},
+        @"l": @{@"h": @(width), @"w": @(height)}
     };
     
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:resolutionDict options:0 error:nil];
