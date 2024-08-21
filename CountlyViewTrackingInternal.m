@@ -543,6 +543,12 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         {
             NSString *viewID = [self startViewInternal:viewData.viewName customSegmentation:viewData.startSegmentation isAutoStoppedView:viewData.isAutoStoppedView];
             
+            // Retrieve the newly created viewData for the viewID
+            CountlyViewData* viewDataNew = self.viewDataDictionary[viewID];
+            
+            // Copy the segmentation data from the old view to the new view
+            viewDataNew.segmentation = viewData.segmentation.mutableCopy;
+            
             // Add the old view's ID to the array for removal later
             [keysToRemove addObject:viewData.viewID];
         }
