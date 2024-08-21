@@ -9,7 +9,6 @@
 
 NSString* const kCountlyEndpointContent = @"/o/sdk/content";
 NSString* const kCountlyCBFetchContent  = @"queue";
-NSString* const kCountlyCBCheckAvailbleContents  = @"check_available_contents";
 
 @implementation CountlyContentBuilderInternal {
     BOOL _isRequestQueueLocked;
@@ -29,9 +28,6 @@ NSString* const kCountlyCBCheckAvailbleContents  = @"check_available_contents";
 {
     if (self = [super init])
     {
-        self.isContentConsentGiven = YES;
-        self.latestChecksum = nil;
-        self.density = 1; //TODO: [UIScreen mainScreen].scale;
         self.requestInterval = 30.0;
         _requestTimer = nil;
     }
@@ -49,10 +45,10 @@ NSString* const kCountlyCBCheckAvailbleContents  = @"check_available_contents";
     }
     self.currentTags = tags;
     
-    [self fetchContentDetailsForContentId:@"contentId"]; //TODO: [self sendContentCheckRequest];
+    [self fetchContents];;
     _requestTimer = [NSTimer scheduledTimerWithTimeInterval:self.requestInterval
                                                      target:self
-                                                   selector:@selector(fetchContentDetailsForContentId) // TODO: sendContentCheckRequest
+                                                   selector:@selector(fetchContents)
                                                    userInfo:nil
                                                     repeats:YES];
 }
@@ -74,47 +70,10 @@ NSString* const kCountlyCBCheckAvailbleContents  = @"check_available_contents";
     [_requestTimer invalidate];
     _requestTimer = nil;
     self.currentTags = nil;
-    self.latestChecksum = nil;
     _isRequestQueueLocked = NO;
 }
 
-- (void)sendContentCheckRequest {
-    if (!self.isContentConsentGiven || _isRequestQueueLocked) {
-        return;
-    }
-    
-    _isRequestQueueLocked = YES;
-    
-    // Send request
-    NSURLSessionTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:[self checkContentRequest] completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-        if (error) {
-            CLY_LOG_I(@"Content check request failed: %@", error);
-            self->_isRequestQueueLocked = NO;
-            return;
-        }
-        
-        // Process the response
-        NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-        NSString *newChecksum = jsonResponse[@"checksum"];
-        NSString *contentId = jsonResponse[@"content_id"];
-        
-        if (newChecksum && ![newChecksum isEqualToString:self.latestChecksum]) {
-            self.latestChecksum = newChecksum;
-            [self fetchContentDetailsForContentId:contentId];
-        }
-        
-        self->_isRequestQueueLocked = NO;
-    }];
-    
-    [task resume];
-}
-
-//TODO: remove this method
-- (void) fetchContentDetailsForContentId {
-    [self fetchContentDetailsForContentId:@""];
-}
-- (void)fetchContentDetailsForContentId:(NSString *)contentId {
-    //TODO: removed _isRequestQueueLocked from this method when we are using 'sendContentCheckRequest'
+- (void)fetchContents {
     if (!CountlyConsentManager.sharedInstance.consentForContent)
         return;
     
@@ -124,7 +83,7 @@ NSString* const kCountlyCBCheckAvailbleContents  = @"check_available_contents";
     
     _isRequestQueueLocked = YES;
     
-    NSURLSessionTask *dataTask = [[NSURLSession sharedSession] dataTaskWithRequest:[self fetchContentDetailsRequest:contentId] completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+    NSURLSessionTask *dataTask = [[NSURLSession sharedSession] dataTaskWithRequest:[self fetchContentsRequest] completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (error) {
             CLY_LOG_I(@"Fetch content details failed: %@", error);
             self->_isRequestQueueLocked = NO;
@@ -142,33 +101,12 @@ NSString* const kCountlyCBCheckAvailbleContents  = @"check_available_contents";
     [dataTask resume];
 }
 
-- (NSURLRequest *)checkContentRequest
-{
-    NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
-    NSString *tagsString = [self.currentTags componentsJoinedByString:@","];
-    
-    queryString = [queryString stringByAppendingFormat:@"&%@=%@&%@=[%@]",
-                   kCountlyQSKeyMethod, kCountlyCBCheckAvailbleContents,
-                   @"tags", tagsString];
-    
-    queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
-    
-    NSString* URLString = [NSString stringWithFormat:@"%@%@?%@",
-                           CountlyConnectionManager.sharedInstance.host,
-                           kCountlyEndpointContent,
-                           queryString];
-    
-    NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:URLString]];
-    return request;
-}
-
-- (NSURLRequest *)fetchContentDetailsRequest:(NSString *)content_id
+- (NSURLRequest *)fetchContentsRequest
 {
     NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
     NSString *resolutionJson = [self resolutionJson];
-    queryString = [queryString stringByAppendingFormat:@"&%@=%@&%@=%@&%@=%@",
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@&%@=%@",
                    kCountlyQSKeyMethod, kCountlyCBFetchContent,
-                   @"content_id", content_id,
                    @"res", resolutionJson];
     
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
@@ -224,11 +162,10 @@ NSString* const kCountlyCBCheckAvailbleContents  = @"check_available_contents";
     // Get the appropriate coordinates based on the orientation
     NSDictionary *coordinates = isLandscape ? placementCoordinates[@"landscape"] : placementCoordinates[@"portrait"];
     
-    // Extract placement coordinates and adjust for screen density
-    CGFloat x = [coordinates[@"x"] floatValue] / self.density;
-    CGFloat y = [coordinates[@"y"] floatValue] / self.density;
-    CGFloat width = [coordinates[@"width"] floatValue] / self.density;
-    CGFloat height = [coordinates[@"height"] floatValue] / self.density;
+    CGFloat x = [coordinates[@"x"] floatValue];
+    CGFloat y = [coordinates[@"y"] floatValue];
+    CGFloat width = [coordinates[@"width"] floatValue];
+    CGFloat height = [coordinates[@"height"] floatValue];
     
     CGRect frame = CGRectMake(x, y, width, height);
     
