@@ -121,6 +121,7 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 }
 
 - (NSString *)resolutionJson {
+    //TODO: check why area is not clickable and safearea things
     CGRect screenBounds = [UIScreen mainScreen].bounds;
     if (@available(iOS 11.0, *)) {
         CGFloat top = UIApplication.sharedApplication.keyWindow.safeAreaInsets.top;

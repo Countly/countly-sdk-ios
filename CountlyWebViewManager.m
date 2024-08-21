@@ -89,7 +89,7 @@
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
     NSString *url = navigationAction.request.URL.absoluteString;
     
-    if ([url containsString:@"cly_x_action_event=1"]) {
+    if ([url hasPrefix:@"https://countly_action_event"] && [url containsString:@"cly_x_action_event=1"]) {
         NSDictionary *queryParameters = [self parseQueryString:url];
         NSString *action = queryParameters[@"action"];
         
@@ -184,6 +184,10 @@
     for (NSDictionary *event in events) {
         NSString *key = event[@"key"];
         NSDictionary *segmentation = event[@"sg"];
+        if(!segmentation) {
+            CLY_LOG_I(@"Skipping the event due to missing segmentation");
+            continue;
+        }
         
         [Countly.sharedInstance recordEvent:key segmentation:segmentation];
     }
@@ -229,11 +233,11 @@
 
 
 - (void)closeWebView {
-    if (self.dismissBlock) {
-        dispatch_async(dispatch_get_main_queue(), ^{
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (self.dismissBlock) {
             self.dismissBlock();
-            [self.backgroundView removeFromSuperview];
-        });
-    }
+        }
+        [self.backgroundView removeFromSuperview];
+    });
 }
 @end
