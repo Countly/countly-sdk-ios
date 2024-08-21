@@ -6,7 +6,7 @@
 #import "CountlyContentBuilderInternal.h"
 #import "CountlyWebViewManager.h"
 
-
+//TODO: improve logging, check edge cases
 NSString* const kCountlyEndpointContent = @"/o/sdk/content";
 NSString* const kCountlyCBFetchContent  = @"queue";
 

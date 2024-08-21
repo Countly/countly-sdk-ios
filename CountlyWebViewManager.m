@@ -2,6 +2,7 @@
 #import "PassThroughBackgroundView.h"
 #import "CountlyCommon.h"
 
+//TODO: improve logging, check edge cases
 @interface CountlyWebViewManager()
 @property (nonatomic, strong) PassThroughBackgroundView *backgroundView;
 @property (nonatomic, copy) void (^dismissBlock)(void);
