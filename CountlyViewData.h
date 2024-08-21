@@ -43,6 +43,12 @@
 @property (nonatomic) NSMutableDictionary* segmentation;
 
 /**
+ * Segmentation of start view .
+ * @discussion This segmentation will store to send again when view is start again when app goes to foreground
+ */
+@property (nonatomic) NSMutableDictionary* startSegmentation;
+
+/**
  * Initialize view data
  * @discussion If set then this view will automatically stopped when new view is started.
  * @param viewID unique id of the view.
