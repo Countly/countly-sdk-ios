@@ -40,9 +40,8 @@ NSString* const kCountlyCBCheckAvailbleContents  = @"check_available_contents";
 }
 
 - (void)openForContent:(NSArray<NSString *> *)tags {
-    if (!self.isContentConsentGiven) {
+    if (!CountlyConsentManager.sharedInstance.consentForContent)
         return;
-    }
     
     if(_requestTimer != nil) {
         CLY_LOG_I(@"Already open for content, please exit from content first to start again");
@@ -116,6 +115,9 @@ NSString* const kCountlyCBCheckAvailbleContents  = @"check_available_contents";
 }
 - (void)fetchContentDetailsForContentId:(NSString *)contentId {
     //TODO: removed _isRequestQueueLocked from this method when we are using 'sendContentCheckRequest'
+    if (!CountlyConsentManager.sharedInstance.consentForContent)
+        return;
+    
     if  (_isRequestQueueLocked) {
         return;
     }

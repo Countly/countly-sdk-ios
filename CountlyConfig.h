@@ -77,6 +77,7 @@ extern CLYConsent const CLYConsentAttribution;
 extern CLYConsent const CLYConsentPerformanceMonitoring;
 extern CLYConsent const CLYConsentFeedback;
 extern CLYConsent const CLYConsentRemoteConfig;
+extern CLYConsent const CLYConsentContent;
 
 //NOTE: Push Notification Test Modes
 typedef NSString* CLYPushTestMode NS_EXTENSIBLE_STRING_ENUM;
