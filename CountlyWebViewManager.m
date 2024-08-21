@@ -94,8 +94,8 @@
         NSString *action = queryParameters[@"action"];
         
         if ([action isEqualToString:@"event"]) {
-            NSString *event = queryParameters[@"event"];
-            [self recordEventWithJSONString:event];
+            NSString *eventsJson = queryParameters[@"event"];
+            [self recordEventsWithJSONString:eventsJson];
         } else if ([action isEqualToString:@"link"]) {
             NSString *link = queryParameters[@"link"];
             [self openExternalLink:link];
@@ -157,24 +157,6 @@
     }];
 }
 
-- (CGSize)sizeForWebViewSize:(WebViewSize)size backgroundFrame:(CGRect)backgroundFrame padding:(UIEdgeInsets)padding {
-    CGFloat width = backgroundFrame.size.width - padding.left - padding.right;
-    CGFloat height = backgroundFrame.size.height - padding.top - padding.bottom;
-    
-    switch (size) {
-        case WebViewFullScreen:
-            return CGSizeMake(width, height);
-        case WebViewHalf:
-            return CGSizeMake(width, height / 2);
-        case WebViewBanner:
-            return CGSizeMake(width, 70);
-        case WebViewSquareSmall:
-            return CGSizeMake(250, 250);
-        default:
-            return CGSizeMake(width, height);
-    }
-}
-
 - (NSDictionary *)parseQueryString:(NSString *)url {
     NSMutableDictionary *queryDict = [NSMutableDictionary dictionary];
     NSArray *urlComponents = [url componentsSeparatedByString:@"?"];
@@ -195,14 +177,16 @@
     return queryDict;
 }
 
-- (void)recordEventWithJSONString:(NSString *)jsonString {
+- (void)recordEventsWithJSONString:(NSString *)jsonString {
     NSData *data = [jsonString dataUsingEncoding:NSUTF8StringEncoding];
-    NSDictionary *eventDict = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+    NSArray *events = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
     
-    NSString *key = eventDict[@"key"];
-    NSDictionary *segmentation = eventDict[@"sg"];
-    
-    [Countly.sharedInstance recordEvent:key segmentation:segmentation];
+    for (NSDictionary *event in events) {
+        NSString *key = event[@"key"];
+        NSDictionary *segmentation = event[@"sg"];
+        
+        [Countly.sharedInstance recordEvent:key segmentation:segmentation];
+    }
 }
 
 - (void)openExternalLink:(NSString *)urlString {
@@ -222,16 +206,27 @@
     NSData *data = [jsonString dataUsingEncoding:NSUTF8StringEncoding];
     NSDictionary *resizeDict = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
     
-    NSDictionary *portrait = resizeDict[@"p"];
-    NSDictionary *landscape = resizeDict[@"l"];
+    NSDictionary *portraitDimensions = resizeDict[@"p"];
+    NSDictionary *landscapeDimensions = resizeDict[@"l"];
     
-    CGFloat width = [portrait[@"w"] floatValue];
-    CGFloat height = [portrait[@"h"] floatValue];
+    UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
+    BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
     
-    // Assuming you are resizing the web view here
-    CGRect newFrame = CGRectMake(self.backgroundView.webView.frame.origin.x, self.backgroundView.webView.frame.origin.y, width, height);
-    self.backgroundView.webView.frame = newFrame;
+    NSDictionary *dimensions = isLandscape ? landscapeDimensions : portraitDimensions;
+    
+    CGFloat width = [dimensions[@"w"] floatValue];
+    CGFloat height = [dimensions[@"h"] floatValue];
+    
+    [UIView animateWithDuration:0.3 animations:^{
+        CGRect frame = self.backgroundView.webView.frame;
+        frame.size.width = width;
+        frame.size.height = height;
+        self.backgroundView.webView.frame = frame;
+    } completion:^(BOOL finished) {
+        CLY_LOG_I(@"Resized web view to width: %f, height: %f", width, height);
+    }];
 }
+
 
 - (void)closeWebView {
     if (self.dismissBlock) {

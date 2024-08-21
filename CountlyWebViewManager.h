@@ -7,23 +7,6 @@
 #import <UIKit/UIKit.h>
 #import <WebKit/WebKit.h>
 
-typedef NS_ENUM(NSInteger, WebViewPosition) {
-    WebViewPositionTop,
-    WebViewPositionBottom,
-    WebViewPositionCenter,
-    WebViewPositionTopLeft,
-    WebViewPositionTopRight,
-    WebViewPositionBottomLeft,
-    WebViewPositionBottomRight,
-};
-
-typedef NS_ENUM(NSInteger, WebViewSize) {
-    WebViewFullScreen,
-    WebViewHalf,
-    WebViewBanner,
-    WebViewSquareSmall
-};
-
 typedef NS_ENUM(NSUInteger, AnimationType) {
     AnimationTypeSlideInFromBottom,
     AnimationTypeSlideInFromTop,
