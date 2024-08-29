@@ -1,3 +1,6 @@
+## xx.xx.xx
+* Views will now be stopped and started again when the app transitions between background and foreground, instead of being paused and resumed.
+
 ## 24.7.1
 * Added `enableTemporaryDeviceIDMode` config and post-initialization methods to enable temporary device ID mode
 * Orientation info is now also sent during initialization
