@@ -4,6 +4,7 @@
 //
 // Please visit www.count.ly for more information.
 
+#if (TARGET_OS_IOS)
 #import "PassThroughBackgroundView.h"
 
 @implementation PassThroughBackgroundView
@@ -30,3 +31,4 @@
 }
 
 @end
+#endif

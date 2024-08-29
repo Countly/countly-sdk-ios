@@ -115,6 +115,7 @@ typedef void (^RCVariantCallback)(CLYRequestResult response, NSError *_Nullable 
 
 typedef void (^RCDownloadCallback)(CLYRequestResult response, NSError *_Nullable error, BOOL fullValueUpdate, NSDictionary<NSString *, CountlyRCData *>* downloadedValues);
 
+#if (TARGET_OS_IOS)
 typedef enum : NSUInteger
 {
     COMPLETED,
@@ -122,7 +123,7 @@ typedef enum : NSUInteger
 } ContentStatus;
 
 typedef void (^ContentCallback)(ContentStatus contentStatus, NSDictionary<NSString *, id>* contentData);
-
+#endif
 
 //NOTE: Internal log levels
 typedef enum : NSUInteger
@@ -667,6 +668,7 @@ typedef enum : NSUInteger
  */
 @property (nonatomic) BOOL enableServerConfiguration;
 
+#if (TARGET_OS_IOS)
  /**
   * Register global completion blocks to be executed content.
  */
@@ -676,6 +678,7 @@ typedef enum : NSUInteger
  * Get content callback
  */
 - (ContentCallback) getGlobalContentCallback;
+#endif
 
 NS_ASSUME_NONNULL_END
 

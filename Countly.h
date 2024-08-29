@@ -678,6 +678,13 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> * __nullable feedbackWidgets, NSError * __nullable error))completionHandler;
 
+
+/**
+ * Interface variable to access views tracking functionalities.
+ * @discussion Views tracking interface for developer to interact with SDK.
+ */
+- (CountlyContentBuilder *_Nonnull) content;
+
 #endif
 
 
@@ -829,11 +836,5 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)attemptToSendStoredRequests;
 
 NS_ASSUME_NONNULL_END
-
-/**
- * Interface variable to access views tracking functionalities.
- * @discussion Views tracking interface for developer to interact with SDK.
- */
-- (CountlyContentBuilder *_Nonnull) content;
 
 @end

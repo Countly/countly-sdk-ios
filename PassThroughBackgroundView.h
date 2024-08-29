@@ -4,6 +4,7 @@
 //
 // Please visit www.count.ly for more information.
 
+#if (TARGET_OS_IOS)
 #import <UIKit/UIKit.h>
 #import <WebKit/WebKit.h>
 #import "CountlyCommon.h"
@@ -15,3 +16,4 @@
 
 
 @end
+#endif

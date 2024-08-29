@@ -4,6 +4,7 @@
 //
 // Please visit www.count.ly for more information.
 
+#if (TARGET_OS_IOS)
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #import "CountlyCommon.h"
@@ -21,4 +22,5 @@
 - (void)changeContent:(NSArray<NSString *> *)tags;
 
 @end
+#endif
 

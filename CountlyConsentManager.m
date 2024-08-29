@@ -473,7 +473,9 @@ static dispatch_once_t onceToken;
     else
     {
         CLY_LOG_D(@"Consent for Content is cancelled.");
+#if (TARGET_OS_IOS)
         [CountlyContentBuilderInternal.sharedInstance exitFromContent];
+#endif
     }
 }
 
