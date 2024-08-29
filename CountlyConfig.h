@@ -10,6 +10,7 @@
 #import "CountlyAPMConfig.h"
 #import "CountlyCrashesConfig.h"
 #import "CountlySDKLimitsConfig.h"
+#import "CountlyExperimentalConfig.h"
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 #import <UIKit/UIKit.h>
@@ -656,6 +657,12 @@ typedef enum : NSUInteger
  * @discussion If set, Server Config values from Countly Server will be fetched at the beginning of a session.
  */
 @property (nonatomic) BOOL enableServerConfiguration;
+
+/**
+ * Variable to access experimental configurations.
+ * @discussion Experimental configurations for developer to interact with SDK.
+ */
+- (CountlyExperimentalConfig *) experimental;
 NS_ASSUME_NONNULL_END
 
 @end

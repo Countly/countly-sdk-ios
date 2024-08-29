@@ -244,6 +244,13 @@ static dispatch_once_t onceToken;
         [CountlyViewTrackingInternal.sharedInstance addAutoViewTrackingExclutionList:config.automaticViewTrackingExclusionList];
     }
 #endif
+    
+    if(config.experimental.enableViewNameRecording) {
+        CountlyViewTrackingInternal.sharedInstance.enableViewNameRecording = YES;
+    }
+    if(config.experimental.enableVisibiltyTracking) {
+        CountlyCommon.sharedInstance.enableVisibiltyTracking = YES;
+    }
     if (config.globalViewSegmentation) {
         [CountlyViewTrackingInternal.sharedInstance setGlobalViewSegmentation:config.globalViewSegmentation];
     }
@@ -879,11 +886,9 @@ static dispatch_once_t onceToken;
         event.ID = CountlyCommon.sharedInstance.randomEventID;
     }
 
-    if ([key isEqualToString:kCountlyReservedEventView])
-    {
-        event.PVID = CountlyViewTrackingInternal.sharedInstance.previousViewID ?: @"";
-    }
-    else
+    event.PVID = CountlyViewTrackingInternal.sharedInstance.previousViewID ?: @"";
+
+    if(![key isEqualToString:kCountlyReservedEventView])
     {
         event.CVID = CountlyViewTrackingInternal.sharedInstance.currentViewID ?: @"";
     }
@@ -899,7 +904,20 @@ static dispatch_once_t onceToken;
         previousEventID = event.ID;
     }
     event.key = key;
-    event.segmentation = segmentation.cly_filterSupportedDataTypes;
+    NSMutableDictionary *filteredSegmentations = segmentation.cly_filterSupportedDataTypes;
+    if(CountlyViewTrackingInternal.sharedInstance.enableViewNameRecording) {
+        if(CountlyViewTrackingInternal.sharedInstance.currentViewName && ![key isEqualToString:kCountlyReservedEventView]) {
+            filteredSegmentations[kCountlyCurrentView] = CountlyViewTrackingInternal.sharedInstance.currentViewName;
+        }
+        if(CountlyViewTrackingInternal.sharedInstance.previousViewName) {
+            filteredSegmentations[kCountlyPreviousView] = CountlyViewTrackingInternal.sharedInstance.previousViewName;
+        }
+    }
+    
+    if(CountlyCommon.sharedInstance.enableVisibiltyTracking) {
+        filteredSegmentations[kCountlyVisibility] = @([self isAppInForeground]);
+    }
+    event.segmentation = filteredSegmentations;
     event.count = MAX(count, 1);
     event.sum = sum;
     event.timestamp = timestamp;
@@ -909,6 +927,22 @@ static dispatch_once_t onceToken;
 
     [CountlyPersistency.sharedInstance recordEvent:event];
 }
+
+- (BOOL)isAppInForeground {
+#if TARGET_OS_IOS || TARGET_OS_TV
+    UIApplicationState state = [UIApplication sharedApplication].applicationState;
+    return state == UIApplicationStateActive;
+#elif TARGET_OS_OSX
+    NSApplication *app = [NSApplication sharedApplication];
+    return app.isActive;
+#elif TARGET_OS_WATCH
+    WKExtension *extension = [WKExtension sharedExtension];
+    return extension.applicationState == WKApplicationStateActive;
+#else
+    return NO;
+#endif
+}
+
 
 - (BOOL)isReservedEvent:(NSString *)key
 {

@@ -17,6 +17,9 @@
 
 NSString* const kCountlyReservedEventView = @"[CLY]_view";
 
+NSString* const kCountlyCurrentView = @"cly_cvn";
+NSString* const kCountlyPreviousView = @"cly_pvn";
+
 NSString* const kCountlyVTKeyName     = @"name";
 NSString* const kCountlyVTKeySegment  = @"segment";
 NSString* const kCountlyVTKeyVisit    = @"visit";

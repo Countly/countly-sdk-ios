@@ -10,6 +10,9 @@
 NSString* const kCountlyReservedEventOrientation = @"[CLY]_orientation";
 NSString* const kCountlyOrientationKeyMode = @"mode";
 
+NSString* const kCountlyVisibility = @"cly_v";
+
+
 @interface CountlyCommon ()
 {
     NSCalendar* gregorianCalendar;
@@ -641,7 +644,7 @@ NSString* CountlyJSONFromObject(id object)
     return limitedDict.copy;
 }
 
-- (NSDictionary *) cly_filterSupportedDataTypes
+- (NSMutableDictionary *) cly_filterSupportedDataTypes
 {
     NSMutableDictionary<NSString *, id> *filteredDictionary = [NSMutableDictionary dictionary];
     
