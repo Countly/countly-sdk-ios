@@ -886,9 +886,11 @@ static dispatch_once_t onceToken;
         event.ID = CountlyCommon.sharedInstance.randomEventID;
     }
 
-    event.PVID = CountlyViewTrackingInternal.sharedInstance.previousViewID ?: @"";
-
-    if(![key isEqualToString:kCountlyReservedEventView])
+    if ([key isEqualToString:kCountlyReservedEventView])
+    {
+        event.PVID = CountlyViewTrackingInternal.sharedInstance.previousViewID ?: @"";
+    }
+    else
     {
         event.CVID = CountlyViewTrackingInternal.sharedInstance.currentViewID ?: @"";
     }
@@ -904,20 +906,7 @@ static dispatch_once_t onceToken;
         previousEventID = event.ID;
     }
     event.key = key;
-    NSMutableDictionary *filteredSegmentations = segmentation.cly_filterSupportedDataTypes;
-    if(CountlyViewTrackingInternal.sharedInstance.enableViewNameRecording) {
-        if(CountlyViewTrackingInternal.sharedInstance.currentViewName && ![key isEqualToString:kCountlyReservedEventView]) {
-            filteredSegmentations[kCountlyCurrentView] = CountlyViewTrackingInternal.sharedInstance.currentViewName;
-        }
-        if(CountlyViewTrackingInternal.sharedInstance.previousViewName) {
-            filteredSegmentations[kCountlyPreviousView] = CountlyViewTrackingInternal.sharedInstance.previousViewName;
-        }
-    }
-    
-    if(CountlyCommon.sharedInstance.enableVisibiltyTracking) {
-        filteredSegmentations[kCountlyVisibility] = @([self isAppInForeground]);
-    }
-    event.segmentation = filteredSegmentations;
+    event.segmentation = [self processSegmentation:segmentation eventKey:key];
     event.count = MAX(count, 1);
     event.sum = sum;
     event.timestamp = timestamp;
@@ -926,6 +915,24 @@ static dispatch_once_t onceToken;
     event.duration = duration;
 
     [CountlyPersistency.sharedInstance recordEvent:event];
+}
+
+- (NSDictionary*) processSegmentation:(NSDictionary *) segmentation eventKey:(NSString *)eventKey
+{
+    NSMutableDictionary *filteredSegmentations = segmentation.cly_filterSupportedDataTypes;
+    if(CountlyViewTrackingInternal.sharedInstance.enableViewNameRecording) {
+        if([eventKey isEqualToString:kCountlyReservedEventView]) {
+            filteredSegmentations[kCountlyPreviousView] = CountlyViewTrackingInternal.sharedInstance.previousViewName;
+        }
+        else {
+            filteredSegmentations[kCountlyCurrentView] = CountlyViewTrackingInternal.sharedInstance.currentViewName;
+        }
+    }
+    
+    if(CountlyCommon.sharedInstance.enableVisibiltyTracking) {
+        filteredSegmentations[kCountlyVisibility] = @([self isAppInForeground]);
+    }
+    return filteredSegmentations;
 }
 
 - (BOOL)isAppInForeground {
