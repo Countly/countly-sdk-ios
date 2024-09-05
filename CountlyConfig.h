@@ -670,11 +670,13 @@ typedef enum : NSUInteger
 
 #if (TARGET_OS_IOS)
  /**
-  * Register global completion blocks to be executed content.
+  * This is an experimental feature and it can have breaking changes
+  * Register global completion blocks to be executed on content.
  */
 - (void)setGlobalContentCallback:(ContentCallback) callback;
 
 /**
+ * This is an experimental feature and it can have breaking changes
  * Get content callback
  */
 - (ContentCallback) getGlobalContentCallback;

@@ -680,8 +680,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 /**
- * Interface variable to access views tracking functionalities.
- * @discussion Views tracking interface for developer to interact with SDK.
+ * This is an experimental feature and it can have breaking changes
+ * Interface variable to access content  functionalities.
+ * @discussion Content interface for developer to interact with SDK.
  */
 - (CountlyContentBuilder *_Nonnull) content;
 

@@ -29,18 +29,18 @@
     return self;
 }
 
-- (void)openForContent
+- (void)subscribeToContentBlock
 {
     [self openForContent:@[]];
 }
 
-- (void)openForContent:(NSArray<NSString *> *)tags
+- (void)subscribeToContentBlock:(NSArray<NSString *> *)tags
 {
-    [CountlyContentBuilderInternal.sharedInstance openForContent:tags];
+    [CountlyContentBuilderInternal.sharedInstance subscribeToContentBlock:tags];
 }
-- (void)exitFromContent
+- (void)exitFromContentBlock
 {
-    [CountlyContentBuilderInternal.sharedInstance exitFromContent];
+    [CountlyContentBuilderInternal.sharedInstance exitFromContentBlock];
 }
 - (void)changeContent:(NSArray<NSString *> *)tags
 {

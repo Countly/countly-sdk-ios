@@ -12,10 +12,17 @@
 
 + (instancetype)sharedInstance;
 
-- (void)openForContent;
-- (void)openForContent:(NSArray<NSString *> *)tags;
-- (void)exitFromContent;
-- (void)changeContent:(NSArray<NSString *> *)tags;
+/**
+ * This is an experimental feature and it can have breaking changes
+ * Opt in user for the content fetching and updates
+ */
+- (void)subscribeToContentBlock;
+
+/**
+ * This is an experimental feature and it can have breaking changes
+ * Opt out user for the content fetching and updates
+ */
+- (void)exitFromContentBlock;
 
 @end
 #endif

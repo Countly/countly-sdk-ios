@@ -36,12 +36,12 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     return self;
 }
 
-- (void)openForContent:(NSArray<NSString *> *)tags {
+- (void)subscribeToContentBlock:(NSArray<NSString *> *)tags {
     if (!CountlyConsentManager.sharedInstance.consentForContent)
         return;
     
     if(_requestTimer != nil) {
-        CLY_LOG_I(@"Already open for content, please exit from content first to start again");
+        CLY_LOG_I(@"Already subscribed for content, please exit from content first to start again");
         return;
     }
     self.currentTags = tags;
@@ -54,14 +54,14 @@ NSString* const kCountlyCBFetchContent  = @"queue";
                                                     repeats:YES];
 }
 
-- (void)exitFromContent {
+- (void)exitFromContentBlock {
     [self clearContentState];
 }
 
 - (void)changeContent:(NSArray<NSString *> *)tags {
     if (![tags isEqualToArray:self.currentTags]) {
         [self exitFromContent];
-        [self openForContent:tags];
+        [self subscribeToContentBlock:tags];
     }
 }
 

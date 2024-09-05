@@ -17,8 +17,8 @@
 
 + (instancetype)sharedInstance;
 
-- (void)openForContent:(NSArray<NSString *> *)tags;
-- (void)exitFromContent;
+- (void)subscribeToContentBlock:(NSArray<NSString *> *)tags;
+- (void)exitFromContentBlock;
 - (void)changeContent:(NSArray<NSString *> *)tags;
 
 @end
