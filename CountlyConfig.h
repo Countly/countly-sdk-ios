@@ -652,13 +652,14 @@ typedef enum : NSUInteger
 @property (nonatomic) BOOL enableOrientationTracking;
 
 /**
- * This is an experimental feature
+ * This is an experimental feature and it can have breaking changes
  * For enabling fetching and application of server config values.
  * @discussion If set, Server Config values from Countly Server will be fetched at the beginning of a session.
  */
 @property (nonatomic) BOOL enableServerConfiguration;
 
 /**
+ * This is an experimental feature and it can have breaking changes
  * Variable to access experimental configurations.
  * @discussion Experimental configurations for developer to interact with SDK.
  */

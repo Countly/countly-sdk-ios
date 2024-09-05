@@ -922,10 +922,10 @@ static dispatch_once_t onceToken;
     NSMutableDictionary *filteredSegmentations = segmentation.cly_filterSupportedDataTypes;
     if(CountlyViewTrackingInternal.sharedInstance.enableViewNameRecording) {
         if([eventKey isEqualToString:kCountlyReservedEventView]) {
-            filteredSegmentations[kCountlyPreviousView] = CountlyViewTrackingInternal.sharedInstance.previousViewName;
+            filteredSegmentations[kCountlyPreviousView] = CountlyViewTrackingInternal.sharedInstance.previousViewName ?: @"";
         }
         else {
-            filteredSegmentations[kCountlyCurrentView] = CountlyViewTrackingInternal.sharedInstance.currentViewName;
+            filteredSegmentations[kCountlyCurrentView] = CountlyViewTrackingInternal.sharedInstance.currentViewName ?: @"";
         }
     }
     

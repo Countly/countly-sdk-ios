@@ -443,6 +443,9 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     self.previousViewID = self.currentViewID;
     self.currentViewID = CountlyCommon.sharedInstance.randomEventID;
     
+    self.previousViewName = self.currentViewName;
+    self.currentViewName = viewName;
+    
     CountlyViewData *viewData = [[CountlyViewData alloc] initWithID:self.currentViewID viewName:viewName];
     viewData.startSegmentation = customSegmentation.mutableCopy;
     viewData.isAutoStoppedView = isAutoStoppedView;

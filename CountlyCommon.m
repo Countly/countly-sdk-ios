@@ -660,7 +660,7 @@ NSString* CountlyJSONFromObject(id object)
         }
     }
     
-    return filteredDictionary.copy;
+    return filteredDictionary.mutableCopy;
 }
 
 @end
