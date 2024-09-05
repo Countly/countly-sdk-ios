@@ -34,13 +34,13 @@
     [self openForContent:@[]];
 }
 
-- (void)subscribeToContentBlock:(NSArray<NSString *> *)tags
+- (void)enterContentZone:(NSArray<NSString *> *)tags
 {
-    [CountlyContentBuilderInternal.sharedInstance subscribeToContentBlock:tags];
+    [CountlyContentBuilderInternal.sharedInstance enterContentZone:tags];
 }
-- (void)exitFromContentBlock
+- (void)exitContentZone
 {
-    [CountlyContentBuilderInternal.sharedInstance exitFromContentBlock];
+    [CountlyContentBuilderInternal.sharedInstance exitContentZone];
 }
 - (void)changeContent:(NSArray<NSString *> *)tags
 {

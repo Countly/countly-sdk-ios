@@ -16,13 +16,13 @@
  * This is an experimental feature and it can have breaking changes
  * Opt in user for the content fetching and updates
  */
-- (void)subscribeToContentBlock;
+- (void)enterContentZone;
 
 /**
  * This is an experimental feature and it can have breaking changes
  * Opt out user for the content fetching and updates
  */
-- (void)exitFromContentBlock;
+- (void)exitContentZone;
 
 @end
 #endif
