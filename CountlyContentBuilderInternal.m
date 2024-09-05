@@ -14,6 +14,7 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 @implementation CountlyContentBuilderInternal {
     BOOL _isRequestQueueLocked;
     NSTimer *_requestTimer;
+    NSTimer *_minuteTimer;
 }
 
 + (instancetype)sharedInstance {
@@ -36,7 +37,14 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     return self;
 }
 
+- (void)enterContentZone {
+    [self enterContentZone:@[]];
+}
+
 - (void)enterContentZone:(NSArray<NSString *> *)tags {
+    [_minuteTimer invalidate];
+    _minuteTimer = nil;
+    
     if (!CountlyConsentManager.sharedInstance.consentForContent)
         return;
     
@@ -44,6 +52,7 @@ NSString* const kCountlyCBFetchContent  = @"queue";
         CLY_LOG_I(@"Already entered for content zone, please exit from content zone first to start again");
         return;
     }
+    
     self.currentTags = tags;
     
     [self fetchContents];;
@@ -70,6 +79,9 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 - (void)clearContentState {
     [_requestTimer invalidate];
     _requestTimer = nil;
+    
+    [_minuteTimer invalidate];
+    _minuteTimer = nil;
     self.currentTags = nil;
     _isRequestQueueLocked = NO;
 }
@@ -179,9 +191,15 @@ NSString* const kCountlyCBFetchContent  = @"queue";
         [webViewManager createWebViewWithURL:url frame:frame appearBlock:^
          {
             CLY_LOG_I(@"Webview appeared");
+            [self clearContentState];
         } dismissBlock:^
          {
             CLY_LOG_I(@"Webview dismissed");
+            self->_minuteTimer = [NSTimer scheduledTimerWithTimeInterval:60.0
+                                                             target:self
+                                                           selector:@selector(enterContentZone)
+                                                           userInfo:nil
+                                                            repeats:NO];
             if(self.contentCallback) {
                 self.contentCallback(CLOSED, NSDictionary.new);
             }
