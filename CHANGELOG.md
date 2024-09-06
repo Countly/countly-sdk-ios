@@ -1,6 +1,8 @@
 ## 24.7.2
-* Views will now be stopped and started again when the app transitions between background and foreground, instead of being paused and resumed.
-* Added Content feature methods:
+* Automatic view pause/resumes are changed with stop/start for better data consistency.
+* Added the config interface 'experimental' to group experimental features.
+* Added a flag (enableViewNameRecording) to add view names to each event. (Experimental!)
+* Added a flag (enableVisibilityTracking) to add app visibility info to views * Added Content feature methods:
 	- enterContentZone, to start Content checks(Experimental!)
 	- exitContentZone, to stop content checks (Experimental!)
 
