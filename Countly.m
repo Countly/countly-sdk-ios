@@ -16,7 +16,8 @@
 long long appLoadStartTime;
 // It holds the event id of previous recorded custom event.
 NSString* previousEventID;
-
+// It holds the event name of previous recorded custom event.
+NSString* previousEventName;
 @implementation Countly
 
 #pragma mark - Core
@@ -903,15 +904,20 @@ static dispatch_once_t onceToken;
     // Check if the event is a reserved event
     BOOL isReservedEvent = [self isReservedEvent:key];
 
-    // If the event is not reserved, assign the previous event ID to the current event's PEID property, or an empty string if previousEventID is nil. Then, update previousEventID to the current event's ID.
+    NSMutableDictionary *filteredSegmentations = segmentation.cly_filterSupportedDataTypes;
+    
+    // If the event is not reserved, assign the previous event ID and Name to the current event's PEID property, or an empty string if previousEventID is nil. Then, update previousEventID to the current event's ID.
     if (!isReservedEvent)
     {
         key = [key cly_truncatedKey:@"Event key"];
         event.PEID = previousEventID ?: @"";
         previousEventID = event.ID;
+        
+        filteredSegmentations[kCountlyPreviousEventName] = previousEventName ?: @"";
+        previousEventName = key;
     }
     event.key = key;
-    event.segmentation = [self processSegmentation:segmentation eventKey:key];
+    event.segmentation = [self processSegmentation:filteredSegmentations eventKey:key];
     event.count = MAX(count, 1);
     event.sum = sum;
     event.timestamp = timestamp;
@@ -922,22 +928,18 @@ static dispatch_once_t onceToken;
     [CountlyPersistency.sharedInstance recordEvent:event];
 }
 
-- (NSDictionary*) processSegmentation:(NSDictionary *) segmentation eventKey:(NSString *)eventKey
+- (NSDictionary*) processSegmentation:(NSMutableDictionary *) segmentation eventKey:(NSString *)eventKey
 {
-    NSMutableDictionary *filteredSegmentations = segmentation.cly_filterSupportedDataTypes;
     if(CountlyViewTrackingInternal.sharedInstance.enableViewNameRecording) {
         if([eventKey isEqualToString:kCountlyReservedEventView]) {
-            filteredSegmentations[kCountlyPreviousView] = CountlyViewTrackingInternal.sharedInstance.previousViewName ?: @"";
-        }
-        else {
-            filteredSegmentations[kCountlyCurrentView] = CountlyViewTrackingInternal.sharedInstance.currentViewName ?: @"";
+            segmentation[kCountlyPreviousView] = CountlyViewTrackingInternal.sharedInstance.previousViewName ?: @"";
         }
     }
     
     if(CountlyCommon.sharedInstance.enableVisibiltyTracking) {
-        filteredSegmentations[kCountlyVisibility] = @([self isAppInForeground]);
+        segmentation[kCountlyVisibility] = @([self isAppInForeground]);
     }
-    return filteredSegmentations;
+    return segmentation;
 }
 
 - (BOOL)isAppInForeground {
