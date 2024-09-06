@@ -3,7 +3,6 @@
 // This code is provided under the MIT License.
 //
 // Please visit www.count.ly for more information.
-#if (TARGET_OS_IOS)
 #import "CountlyContentBuilderInternal.h"
 #import "CountlyWebViewManager.h"
 
@@ -16,7 +15,7 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     NSTimer *_requestTimer;
     NSTimer *_minuteTimer;
 }
-
+#if (TARGET_OS_IOS)
 + (instancetype)sharedInstance {
     static CountlyContentBuilderInternal *instance = nil;
     static dispatch_once_t onceToken;
@@ -206,5 +205,5 @@ NSString* const kCountlyCBFetchContent  = @"queue";
         }];
     });
 }
-@end
 #endif
+@end
