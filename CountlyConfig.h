@@ -10,6 +10,7 @@
 #import "CountlyAPMConfig.h"
 #import "CountlyCrashesConfig.h"
 #import "CountlySDKLimitsConfig.h"
+#import "CountlyExperimentalConfig.h"
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 #import <UIKit/UIKit.h>
@@ -662,7 +663,7 @@ typedef enum : NSUInteger
 @property (nonatomic) BOOL enableOrientationTracking;
 
 /**
- * This is an experimental feature
+ * This is an experimental feature and it can have breaking changes
  * For enabling fetching and application of server config values.
  * @discussion If set, Server Config values from Countly Server will be fetched at the beginning of a session.
  */
@@ -682,6 +683,12 @@ typedef enum : NSUInteger
 - (ContentCallback) getGlobalContentCallback;
 #endif
 
+/**
+ * This is an experimental feature and it can have breaking changes
+ * Variable to access experimental configurations.
+ * @discussion Experimental configurations for developer to interact with SDK.
+ */
+- (CountlyExperimentalConfig *) experimental;
 NS_ASSUME_NONNULL_END
 
 @end
