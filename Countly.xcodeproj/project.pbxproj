@@ -23,6 +23,8 @@
 		1ACA5DC12A309E7F001F770B /* CountlyRemoteConfigInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = 1ACA5DBF2A309E7F001F770B /* CountlyRemoteConfigInternal.h */; };
 		1ACA5DC22A309E7F001F770B /* CountlyRemoteConfigInternal.m in Sources */ = {isa = PBXBuildFile; fileRef = 1ACA5DC02A309E7F001F770B /* CountlyRemoteConfigInternal.m */; };
 		1AFD79022B3EF82C00772FBD /* CountlyTests-Bridging-Header.h in Headers */ = {isa = PBXBuildFile; fileRef = 1AFD79012B3EF82C00772FBD /* CountlyTests-Bridging-Header.h */; };
+		39002D0B2C8B2E450049394F /* CountlyContentConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 39002D092C8B2E450049394F /* CountlyContentConfig.h */; };
+		39002D0C2C8B2E450049394F /* CountlyContentConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 39002D0A2C8B2E450049394F /* CountlyContentConfig.m */; };
 		3903429D2C8051C700238C96 /* CountlyExperimentalConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 3903429C2C8051C700238C96 /* CountlyExperimentalConfig.m */; };
 		3948A8572BAC2E7D002D09AA /* CountlySDKLimitsConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 3948A8552BAC2E7D002D09AA /* CountlySDKLimitsConfig.m */; };
 		3948A8582BAC2E7D002D09AA /* CountlySDKLimitsConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 3948A8562BAC2E7D002D09AA /* CountlySDKLimitsConfig.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -113,6 +115,8 @@
 		1ACA5DBF2A309E7F001F770B /* CountlyRemoteConfigInternal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyRemoteConfigInternal.h; sourceTree = "<group>"; };
 		1ACA5DC02A309E7F001F770B /* CountlyRemoteConfigInternal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyRemoteConfigInternal.m; sourceTree = "<group>"; };
 		1AFD79012B3EF82C00772FBD /* CountlyTests-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "CountlyTests-Bridging-Header.h"; sourceTree = "<group>"; };
+		39002D092C8B2E450049394F /* CountlyContentConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyContentConfig.h; sourceTree = "<group>"; };
+		39002D0A2C8B2E450049394F /* CountlyContentConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyContentConfig.m; sourceTree = "<group>"; };
 		3903429B2C8051B400238C96 /* CountlyExperimentalConfig.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyExperimentalConfig.h; sourceTree = "<group>"; };
 		3903429C2C8051C700238C96 /* CountlyExperimentalConfig.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyExperimentalConfig.m; sourceTree = "<group>"; };
 		3948A8552BAC2E7D002D09AA /* CountlySDKLimitsConfig.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlySDKLimitsConfig.m; sourceTree = "<group>"; };
@@ -219,6 +223,8 @@
 		3B20A9782245225A00E3D7AE = {
 			isa = PBXGroup;
 			children = (
+				39002D092C8B2E450049394F /* CountlyContentConfig.h */,
+				39002D0A2C8B2E450049394F /* CountlyContentConfig.m */,
 				3961C6AF2C6633C000DD38BA /* CountlyWebViewManager.h */,
 				3961C6B42C6633C000DD38BA /* CountlyWebViewManager.m */,
 				3961C6B12C6633C000DD38BA /* PassThroughBackgroundView.h */,
@@ -350,6 +356,7 @@
 				39924ED82BEBD22100139F91 /* CountlyCrashData.h in Headers */,
 				399117D22C69F73D00DC4C66 /* CountlyContentBuilderInternal.h in Headers */,
 				D2CFEF972545FBE80026B044 /* CountlyFeedbacks.h in Headers */,
+				39002D0B2C8B2E450049394F /* CountlyContentConfig.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -487,6 +494,7 @@
 				1A423E9E2A271E46008C4757 /* CountlyRCData.m in Sources */,
 				3B20A9CB2245228700E3D7AE /* CountlyRemoteConfig.m in Sources */,
 				3B20A9BD2245228700E3D7AE /* CountlyConnectionManager.m in Sources */,
+				39002D0C2C8B2E450049394F /* CountlyContentConfig.m in Sources */,
 				3B20A9C02245228700E3D7AE /* CountlyConsentManager.m in Sources */,
 				39527E152B5FD27400EE5D7B /* CountlyAPMConfig.m in Sources */,
 				1A3110712A7141AF001CB507 /* CountlyViewTracking.m in Sources */,
