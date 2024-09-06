@@ -6,10 +6,9 @@
 
 
 #import <Foundation/Foundation.h>
-#import <UIKit/UIKit.h>
+#if (TARGET_OS_IOS)
 NS_ASSUME_NONNULL_BEGIN
 @interface CountlyContentBuilder: NSObject
-#if (TARGET_OS_IOS)
 + (instancetype)sharedInstance;
 
 /**
@@ -24,6 +23,9 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)exitContentZone;
 
-#endif
 NS_ASSUME_NONNULL_END
 @end
+#else
+@interface CountlyContentBuilder: NSObject
+@end
+#endif

@@ -3,7 +3,7 @@
 // This code is provided under the MIT License.
 //
 // Please visit www.count.ly for more information.
-
+#if (TARGET_OS_IOS)
 #import "PassThroughBackgroundView.h"
 
 @implementation PassThroughBackgroundView
@@ -11,7 +11,6 @@
 @synthesize webView;
 
 - (instancetype)initWithFrame:(CGRect)frame {
-#if (TARGET_OS_IOS)
     self = [super initWithFrame:frame];
     if (self) {
     }
@@ -29,6 +28,5 @@
     
     return NO;
 }
-
-#endif
 @end
+#endif
