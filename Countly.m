@@ -912,10 +912,9 @@ static dispatch_once_t onceToken;
         key = [key cly_truncatedKey:@"Event key"];
         event.PEID = previousEventID ?: @"";
         previousEventID = event.ID;
-        if(CountlyViewTrackingInternal.sharedInstance.enablePreviousNameRecording) {
-            filteredSegmentations[kCountlyPreviousEventName] = previousEventName ?: @"";
-            previousEventName = key;
-        }
+        
+        filteredSegmentations[kCountlyPreviousEventName] = previousEventName ?: @"";
+        previousEventName = key;
     }
     event.key = key;
     event.segmentation = [self processSegmentation:filteredSegmentations eventKey:key];
