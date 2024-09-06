@@ -17,8 +17,11 @@
 
 NSString* const kCountlyReservedEventView = @"[CLY]_view";
 
+//TODO: Need discussion for its usage and then we decide to keep it or remove it
 NSString* const kCountlyCurrentView = @"cly_cvn";
 NSString* const kCountlyPreviousView = @"cly_pvn";
+
+NSString* const kCountlyPreviousEventName = @"cly_pen";
 
 NSString* const kCountlyVTKeyName     = @"name";
 NSString* const kCountlyVTKeySegment  = @"segment";
