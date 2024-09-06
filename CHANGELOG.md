@@ -1,8 +1,9 @@
 ## 24.7.2
 * Automatic view pause/resumes are changed with stop/start for better data consistency.
 * Added the config interface 'experimental' to group experimental features.
-* Added a flag (enableViewNameRecording) to add view names to each event. (Experimental!)
-* Added a flag (enableVisibilityTracking) to add app visibility info to views * Added Content feature methods:
+* Added a flag (enablePreviousNameRecording) to add previous event and view names as segmentation. (Experimental!)
+* Added a flag (enableVisibilityTracking) to add app visibility info to views 
+* Added Content feature methods:
 	- enterContentZone, to start Content checks(Experimental!)
 	- exitContentZone, to stop content checks (Experimental!)
 

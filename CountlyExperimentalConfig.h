@@ -10,7 +10,7 @@ extern NSString* const kCountlySCKeySC;
 
 @interface CountlyExperimentalConfig : NSObject
 
-@property (nonatomic) BOOL enableViewNameRecording;
+@property (nonatomic) BOOL enablePreviousNameRecording;
 @property (nonatomic) BOOL enableVisibiltyTracking;
 
 @end

@@ -246,8 +246,8 @@ static dispatch_once_t onceToken;
     }
 #endif
     
-    if(config.experimental.enableViewNameRecording) {
-        CountlyViewTrackingInternal.sharedInstance.enableViewNameRecording = YES;
+    if(config.experimental.enablePreviousNameRecording) {
+        CountlyViewTrackingInternal.sharedInstance.enablePreviousNameRecording = YES;
     }
     if(config.experimental.enableVisibiltyTracking) {
         CountlyCommon.sharedInstance.enableVisibiltyTracking = YES;
@@ -930,7 +930,7 @@ static dispatch_once_t onceToken;
 
 - (NSDictionary*) processSegmentation:(NSMutableDictionary *) segmentation eventKey:(NSString *)eventKey
 {
-    if(CountlyViewTrackingInternal.sharedInstance.enableViewNameRecording) {
+    if(CountlyViewTrackingInternal.sharedInstance.enablePreviousNameRecording) {
         if([eventKey isEqualToString:kCountlyReservedEventView]) {
             segmentation[kCountlyPreviousView] = CountlyViewTrackingInternal.sharedInstance.previousViewName ?: @"";
         }
