@@ -12,6 +12,7 @@
 #import "CountlyRemoteConfig.h"
 #import "CountlyFeedbackWidget.h"
 #import "CountlyViewTracking.h"
+#import "CountlyContentBuilder.h"
 #import "Resettable.h"
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 #import <UserNotifications/UserNotifications.h>
@@ -676,6 +677,14 @@ NS_ASSUME_NONNULL_BEGIN
  * @param completionHandler A completion handler block to be executed when list is fetched successfully or there is an error.
  */
 - (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> * __nullable feedbackWidgets, NSError * __nullable error))completionHandler;
+
+
+/**
+ * This is an experimental feature and it can have breaking changes
+ * Interface variable to access content  functionalities.
+ * @discussion Content interface for developer to interact with SDK.
+ */
+- (CountlyContentBuilder *_Nonnull) content;
 
 #endif
 

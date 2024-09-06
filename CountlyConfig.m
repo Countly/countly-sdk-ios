@@ -8,6 +8,9 @@
 
 @interface CountlyConfig ()
 @property (nonatomic) NSMutableArray<RCDownloadCallback> *remoteConfigGlobalCallbacks;
+#if (TARGET_OS_IOS)
+@property (nonatomic) ContentCallback contentCallback;
+#endif
 @end
 
 @interface CountlyAPMConfig ()
@@ -124,6 +127,18 @@ CLYDeviceIDType const CLYDeviceIDTypeNSUUID     = @"CLYDeviceIDTypeNSUUID";
     }
     return crashes;
 }
+
+#if (TARGET_OS_IOS)
+-(void)setGlobalContentCallback:(ContentCallback) callback
+{
+    self.contentCallback = callback;
+}
+
+- (ContentCallback) getGlobalContentCallback
+{
+    return self.contentCallback;
+}
+#endif
 
 - (nonnull CountlyExperimentalConfig *)experimental {
     if (experimental == nil) {

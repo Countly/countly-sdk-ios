@@ -22,6 +22,8 @@
 @property (nonatomic, readonly) BOOL consentForPerformanceMonitoring;
 @property (nonatomic, readonly) BOOL consentForFeedback;
 @property (nonatomic, readonly) BOOL consentForRemoteConfig;
+@property (nonatomic, readonly) BOOL consentForContent;
+
 
 + (instancetype)sharedInstance;
 - (void)giveConsentForFeatures:(NSArray *)features;

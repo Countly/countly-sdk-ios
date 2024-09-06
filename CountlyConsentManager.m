@@ -17,6 +17,7 @@ CLYConsent const CLYConsentAttribution          = @"attribution";
 CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
 CLYConsent const CLYConsentFeedback             = @"feedback";
 CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
+CLYConsent const CLYConsentContent              = @"content";
 
 
 @implementation CountlyConsentManager
@@ -32,6 +33,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 @synthesize consentForPerformanceMonitoring = _consentForPerformanceMonitoring;
 @synthesize consentForFeedback = _consentForFeedback;
 @synthesize consentForRemoteConfig = _consentForRemoteConfig;
+@synthesize consentForContent = _consentForContent;
 
 #pragma mark -
 
@@ -114,6 +116,9 @@ static dispatch_once_t onceToken;
 
     if ([features containsObject:CLYConsentRemoteConfig] && !self.consentForRemoteConfig)
         self.consentForRemoteConfig = YES;
+    
+    if ([features containsObject:CLYConsentContent] && !self.consentForContent)
+        self.consentForContent = YES;
 
     [self sendConsents];
 }
@@ -177,6 +182,9 @@ static dispatch_once_t onceToken;
 
     if ([features containsObject:CLYConsentRemoteConfig] && self.consentForRemoteConfig)
         self.consentForRemoteConfig = NO;
+    
+    if ([features containsObject:CLYConsentContent] && self.consentForContent)
+        self.consentForContent = NO;
 
     if (!shouldSkipSendingConsentsRequest)
         [self sendConsents];
@@ -198,6 +206,7 @@ static dispatch_once_t onceToken;
         CLYConsentPerformanceMonitoring: @(self.consentForPerformanceMonitoring),
         CLYConsentFeedback: @(self.consentForFeedback),
         CLYConsentRemoteConfig: @(self.consentForRemoteConfig),
+        CLYConsentContent: @(self.consentForContent),
     };
 
     [CountlyConnectionManager.sharedInstance sendConsents:[consents cly_JSONify]];
@@ -236,7 +245,8 @@ static dispatch_once_t onceToken;
     self.consentForAttribution ||
     self.consentForPerformanceMonitoring ||
     self.consentForFeedback ||
-    self.consentForRemoteConfig;
+    self.consentForRemoteConfig ||
+    self.consentForContent;
 }
 
 
@@ -452,6 +462,23 @@ static dispatch_once_t onceToken;
     }
 }
 
+- (void)setConsentForContent:(BOOL)consentForContent
+{
+    _consentForContent = consentForContent;
+    
+    if (consentForContent)
+    {
+        CLY_LOG_D(@"Consent for Content is given.");
+    }
+    else
+    {
+        CLY_LOG_D(@"Consent for Content is cancelled.");
+#if (TARGET_OS_IOS)
+        [CountlyContentBuilderInternal.sharedInstance exitFromContent];
+#endif
+    }
+}
+
 #pragma mark -
 
 - (BOOL)consentForSessions
@@ -548,6 +575,14 @@ static dispatch_once_t onceToken;
       return YES;
 
     return _consentForRemoteConfig;
+}
+
+- (BOOL)consentForContent
+{
+    if (!self.requiresConsent)
+        return YES;
+    
+    return _consentForContent;
 }
 
 @end

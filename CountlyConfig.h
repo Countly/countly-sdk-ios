@@ -78,6 +78,7 @@ extern CLYConsent const CLYConsentAttribution;
 extern CLYConsent const CLYConsentPerformanceMonitoring;
 extern CLYConsent const CLYConsentFeedback;
 extern CLYConsent const CLYConsentRemoteConfig;
+extern CLYConsent const CLYConsentContent;
 
 //NOTE: Push Notification Test Modes
 typedef NSString* CLYPushTestMode NS_EXTENSIBLE_STRING_ENUM;
@@ -114,6 +115,16 @@ extern CLYRequestResult const CLYResponseError;
 typedef void (^RCVariantCallback)(CLYRequestResult response, NSError *_Nullable error);
 
 typedef void (^RCDownloadCallback)(CLYRequestResult response, NSError *_Nullable error, BOOL fullValueUpdate, NSDictionary<NSString *, CountlyRCData *>* downloadedValues);
+
+#if (TARGET_OS_IOS)
+typedef enum : NSUInteger
+{
+    COMPLETED,
+    CLOSED,
+} ContentStatus;
+
+typedef void (^ContentCallback)(ContentStatus contentStatus, NSDictionary<NSString *, id>* contentData);
+#endif
 
 //NOTE: Internal log levels
 typedef enum : NSUInteger
@@ -657,6 +668,20 @@ typedef enum : NSUInteger
  * @discussion If set, Server Config values from Countly Server will be fetched at the beginning of a session.
  */
 @property (nonatomic) BOOL enableServerConfiguration;
+
+#if (TARGET_OS_IOS)
+ /**
+  * This is an experimental feature and it can have breaking changes
+  * Register global completion blocks to be executed on content.
+ */
+- (void)setGlobalContentCallback:(ContentCallback) callback;
+
+/**
+ * This is an experimental feature and it can have breaking changes
+ * Get content callback
+ */
+- (ContentCallback) getGlobalContentCallback;
+#endif
 
 /**
  * This is an experimental feature and it can have breaking changes

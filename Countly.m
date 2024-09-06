@@ -270,6 +270,11 @@ static dispatch_once_t onceToken;
     if (config.apm.getAppStartTimestampOverride) {
         appLoadStartTime = config.apm.getAppStartTimestampOverride;
     }
+#if (TARGET_OS_IOS)
+    if(config.getGlobalContentCallback) {
+        CountlyContentBuilderInternal.sharedInstance.contentCallback = config.getGlobalContentCallback;
+    }
+#endif
     
     [CountlyPerformanceMonitoring.sharedInstance startWithConfig:config.apm];
     
@@ -1268,6 +1273,11 @@ static dispatch_once_t onceToken;
     CLY_LOG_I(@"%s %@", __FUNCTION__, completionHandler);
 
     [CountlyFeedbacks.sharedInstance getFeedbackWidgets:completionHandler];
+}
+
+- (CountlyContentBuilder *) content
+{
+    return CountlyContentBuilder.sharedInstance;
 }
 
 #endif

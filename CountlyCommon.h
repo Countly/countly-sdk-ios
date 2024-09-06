@@ -29,6 +29,7 @@
 #import "CountlyViewTracking.h"
 #import "Resettable.h"
 #import "CountlyCrashData.h"
+#import "CountlyContentBuilderInternal.h"
 #import "CountlyExperimentalConfig.h"
 
 #define CLY_LOG_E(fmt, ...) CountlyInternalLog(CLYInternalLogLevelError, fmt, ##__VA_ARGS__)
