@@ -4,13 +4,12 @@
 //
 // Please visit www.count.ly for more information.
 
-#if (TARGET_OS_IOS)
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 #import "CountlyCommon.h"
-
+NS_ASSUME_NONNULL_BEGIN
 @interface CountlyContentBuilderInternal: NSObject
-
+#if (TARGET_OS_IOS)
 @property (nonatomic, strong) NSArray<NSString *> *currentTags;
 @property (nonatomic, assign) NSTimeInterval requestInterval;
 @property (nonatomic) ContentCallback contentCallback;
@@ -21,6 +20,7 @@
 - (void)exitContentZone;
 - (void)changeContent:(NSArray<NSString *> *)tags;
 
-@end
 #endif
+NS_ASSUME_NONNULL_END
+@end
 
