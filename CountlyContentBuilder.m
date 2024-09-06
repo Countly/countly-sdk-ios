@@ -4,13 +4,12 @@
 //
 // Please visit www.count.ly for more information.
 
-#if (TARGET_OS_IOS)
 #import "CountlyContentBuilder.h"
 #import "CountlyContentBuilderInternal.h"
 #import "CountlyCommon.h"
 
 @implementation CountlyContentBuilder
-
+#if (TARGET_OS_IOS)
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
@@ -29,9 +28,9 @@
     return self;
 }
 
-- (void)subscribeToContentBlock
+- (void)enterContentZone
 {
-    [self openForContent:@[]];
+    [self enterContentZone:@[]];
 }
 
 - (void)enterContentZone:(NSArray<NSString *> *)tags
@@ -47,5 +46,5 @@
     [CountlyContentBuilder.sharedInstance changeContent:tags];
 }
 
-@end
 #endif
+@end

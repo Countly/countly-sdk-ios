@@ -4,12 +4,12 @@
 //
 // Please visit www.count.ly for more information.
 
-#if (TARGET_OS_IOS)
+
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
-
+NS_ASSUME_NONNULL_BEGIN
 @interface CountlyContentBuilder: NSObject
-
+#if (TARGET_OS_IOS)
 + (instancetype)sharedInstance;
 
 /**
@@ -24,5 +24,6 @@
  */
 - (void)exitContentZone;
 
-@end
 #endif
+NS_ASSUME_NONNULL_END
+@end
