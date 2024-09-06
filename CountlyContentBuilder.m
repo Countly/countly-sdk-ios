@@ -3,13 +3,12 @@
 // This code is provided under the MIT License.
 //
 // Please visit www.count.ly for more information.
-
+#if (TARGET_OS_IOS)
 #import "CountlyContentBuilder.h"
 #import "CountlyContentBuilderInternal.h"
 #import "CountlyCommon.h"
 
 @implementation CountlyContentBuilder
-#if (TARGET_OS_IOS)
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
@@ -46,5 +45,9 @@
     [CountlyContentBuilder.sharedInstance changeContent:tags];
 }
 
-#endif
 @end
+#else
+#import "CountlyContentBuilder.h"
+@implementation CountlyContentBuilder
+@end
+#endif

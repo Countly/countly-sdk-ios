@@ -11,6 +11,7 @@
 #import "CountlyCrashesConfig.h"
 #import "CountlySDKLimitsConfig.h"
 #import "CountlyExperimentalConfig.h"
+#import "CountlyContentConfig.h"
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 #import <UIKit/UIKit.h>
@@ -116,15 +117,6 @@ typedef void (^RCVariantCallback)(CLYRequestResult response, NSError *_Nullable 
 
 typedef void (^RCDownloadCallback)(CLYRequestResult response, NSError *_Nullable error, BOOL fullValueUpdate, NSDictionary<NSString *, CountlyRCData *>* downloadedValues);
 
-#if (TARGET_OS_IOS)
-typedef enum : NSUInteger
-{
-    COMPLETED,
-    CLOSED,
-} ContentStatus;
-
-typedef void (^ContentCallback)(ContentStatus contentStatus, NSDictionary<NSString *, id>* contentData);
-#endif
 
 //NOTE: Internal log levels
 typedef enum : NSUInteger
@@ -669,19 +661,11 @@ typedef enum : NSUInteger
  */
 @property (nonatomic) BOOL enableServerConfiguration;
 
-#if (TARGET_OS_IOS)
- /**
-  * This is an experimental feature and it can have breaking changes
-  * Register global completion blocks to be executed on content.
- */
-- (void)setGlobalContentCallback:(ContentCallback) callback;
-
 /**
- * This is an experimental feature and it can have breaking changes
- * Get content callback
+ * Variable to access content configurations.
+ * @discussion Content configurations for developer to interact with SDK.
  */
-- (ContentCallback) getGlobalContentCallback;
-#endif
+- (CountlyContentConfig *) content;
 
 /**
  * This is an experimental feature and it can have breaking changes

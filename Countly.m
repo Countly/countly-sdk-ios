@@ -272,8 +272,8 @@ static dispatch_once_t onceToken;
         appLoadStartTime = config.apm.getAppStartTimestampOverride;
     }
 #if (TARGET_OS_IOS)
-    if(config.getGlobalContentCallback) {
-        CountlyContentBuilderInternal.sharedInstance.contentCallback = config.getGlobalContentCallback;
+    if(config.content.getGlobalContentCallback) {
+        CountlyContentBuilderInternal.sharedInstance.contentCallback = config.content.getGlobalContentCallback;
     }
 #endif
     
@@ -912,9 +912,10 @@ static dispatch_once_t onceToken;
         key = [key cly_truncatedKey:@"Event key"];
         event.PEID = previousEventID ?: @"";
         previousEventID = event.ID;
-        
-        filteredSegmentations[kCountlyPreviousEventName] = previousEventName ?: @"";
-        previousEventName = key;
+        if(CountlyViewTrackingInternal.sharedInstance.enablePreviousNameRecording) {
+            filteredSegmentations[kCountlyPreviousEventName] = previousEventName ?: @"";
+            previousEventName = key;
+        }
     }
     event.key = key;
     event.segmentation = [self processSegmentation:filteredSegmentations eventKey:key];
