@@ -13,7 +13,7 @@
     if (self = [super init])
     {
         self.enableVisibiltyTracking = NO;
-        self.enableViewNameRecording = NO;
+        self.enablePreviousNameRecording = NO;
     }
     
     return self;
