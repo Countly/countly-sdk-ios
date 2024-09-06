@@ -1,6 +1,8 @@
 ## 24.7.2
 * Views will now be stopped and started again when the app transitions between background and foreground, instead of being paused and resumed.
-* Introduced a new content feature aimed at boosting user engagement. (Experimental)
+* Added Content feature methods:
+	- enterContentZone, to start Content checks(Experimental!)
+	- exitContentZone, to stop content checks (Experimental!)
 
 ## 24.7.1
 * Added `enableTemporaryDeviceIDMode` config and post-initialization methods to enable temporary device ID mode
