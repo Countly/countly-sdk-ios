@@ -23,7 +23,7 @@
 		1ACA5DC12A309E7F001F770B /* CountlyRemoteConfigInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = 1ACA5DBF2A309E7F001F770B /* CountlyRemoteConfigInternal.h */; };
 		1ACA5DC22A309E7F001F770B /* CountlyRemoteConfigInternal.m in Sources */ = {isa = PBXBuildFile; fileRef = 1ACA5DC02A309E7F001F770B /* CountlyRemoteConfigInternal.m */; };
 		1AFD79022B3EF82C00772FBD /* CountlyTests-Bridging-Header.h in Headers */ = {isa = PBXBuildFile; fileRef = 1AFD79012B3EF82C00772FBD /* CountlyTests-Bridging-Header.h */; };
-		39002D0B2C8B2E450049394F /* CountlyContentConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 39002D092C8B2E450049394F /* CountlyContentConfig.h */; };
+		39002D0B2C8B2E450049394F /* CountlyContentConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 39002D092C8B2E450049394F /* CountlyContentConfig.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		39002D0C2C8B2E450049394F /* CountlyContentConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 39002D0A2C8B2E450049394F /* CountlyContentConfig.m */; };
 		3903429D2C8051C700238C96 /* CountlyExperimentalConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 3903429C2C8051C700238C96 /* CountlyExperimentalConfig.m */; };
 		3948A8572BAC2E7D002D09AA /* CountlySDKLimitsConfig.m in Sources */ = {isa = PBXBuildFile; fileRef = 3948A8552BAC2E7D002D09AA /* CountlySDKLimitsConfig.m */; };
