@@ -228,6 +228,7 @@ static dispatch_once_t onceToken;
         CLYConsentPerformanceMonitoring,
         CLYConsentFeedback,
         CLYConsentRemoteConfig,
+        CLYConsentContent
     ];
 }
 
