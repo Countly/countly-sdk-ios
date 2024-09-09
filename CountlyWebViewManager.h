@@ -7,8 +7,11 @@
 #if (TARGET_OS_IOS)
 #import <UIKit/UIKit.h>
 #import <WebKit/WebKit.h>
+#endif
+#import "CountlyCommon.h"
 
 NS_ASSUME_NONNULL_BEGIN
+#if (TARGET_OS_IOS)
 typedef NS_ENUM(NSUInteger, AnimationType) {
     AnimationTypeSlideInFromBottom,
     AnimationTypeSlideInFromTop,
@@ -18,6 +21,8 @@ typedef NS_ENUM(NSUInteger, AnimationType) {
     AnimationTypeIncreaseHeightFromBottom
 };
 
+
+
 @interface CountlyWebViewManager : NSObject <WKNavigationDelegate>
 
 - (void)createWebViewWithURL:(NSURL *)url
@@ -26,10 +31,7 @@ typedef NS_ENUM(NSUInteger, AnimationType) {
                 dismissBlock:(void(^ __nullable)(void))dismissBlock;
 
 
-NS_ASSUME_NONNULL_END
-@end
-#else
-#import <Foundation/Foundation.h>
-@interface CountlyWebViewManager : NSObject
+
 @end
 #endif
+NS_ASSUME_NONNULL_END

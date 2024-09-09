@@ -1,15 +1,18 @@
-#if (TARGET_OS_IOS)
+
 #import "CountlyWebViewManager.h"
 #import "PassThroughBackgroundView.h"
 #import "CountlyCommon.h"
 
 //TODO: improve logging, check edge cases
+#if (TARGET_OS_IOS)
 @interface CountlyWebViewManager()
+
 @property (nonatomic, strong) PassThroughBackgroundView *backgroundView;
 @property (nonatomic, copy) void (^dismissBlock)(void);
 @end
 
 @implementation CountlyWebViewManager
+#if (TARGET_OS_IOS)
 - (void)createWebViewWithURL:(NSURL *)url
                        frame:(CGRect)frame
                  appearBlock:(void(^ __nullable)(void))appearBlock
@@ -241,9 +244,6 @@
         [self.backgroundView removeFromSuperview];
     });
 }
-@end
-#else
-#import "CountlyWebViewManager.h"
-@implementation CountlyWebViewManager
+#endif
 @end
 #endif

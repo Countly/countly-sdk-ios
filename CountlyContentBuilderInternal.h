@@ -5,10 +5,13 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
-#import "CountlyCommon.h"
 #if (TARGET_OS_IOS)
+#import <UIKit/UIKit.h>
+#endif
+#import "CountlyCommon.h"
 NS_ASSUME_NONNULL_BEGIN
 @interface CountlyContentBuilderInternal: NSObject
+#if (TARGET_OS_IOS)
 @property (nonatomic, strong) NSArray<NSString *> *currentTags;
 @property (nonatomic, assign) NSTimeInterval requestInterval;
 @property (nonatomic) ContentCallback contentCallback;
@@ -19,9 +22,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)exitContentZone;
 - (void)changeContent:(NSArray<NSString *> *)tags;
 
+#endif
 NS_ASSUME_NONNULL_END
 @end
-#else
-@interface CountlyContentBuilderInternal: NSObject
-@end
-#endif
+
