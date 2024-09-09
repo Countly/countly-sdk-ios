@@ -5,7 +5,9 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
+#if (TARGET_OS_IOS)
 #import <UIKit/UIKit.h>
+#endif
 #import "CountlyCommon.h"
 NS_ASSUME_NONNULL_BEGIN
 @interface CountlyContentBuilderInternal: NSObject

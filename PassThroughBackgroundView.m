@@ -6,12 +6,13 @@
 
 #import "PassThroughBackgroundView.h"
 
+#if (TARGET_OS_IOS)
 @implementation PassThroughBackgroundView
 
 @synthesize webView;
 
 - (instancetype)initWithFrame:(CGRect)frame {
-#if (TARGET_OS_IOS)
+
     self = [super initWithFrame:frame];
     if (self) {
     }
@@ -30,5 +31,6 @@
     return NO;
 }
 
-#endif
+
 @end
+#endif

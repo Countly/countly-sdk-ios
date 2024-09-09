@@ -4,11 +4,11 @@
 #import "CountlyCommon.h"
 
 //TODO: improve logging, check edge cases
-@interface CountlyWebViewManager()
 #if (TARGET_OS_IOS)
+@interface CountlyWebViewManager()
+
 @property (nonatomic, strong) PassThroughBackgroundView *backgroundView;
 @property (nonatomic, copy) void (^dismissBlock)(void);
-#endif
 @end
 
 @implementation CountlyWebViewManager
@@ -246,3 +246,4 @@
 }
 #endif
 @end
+#endif

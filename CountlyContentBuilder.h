@@ -6,7 +6,9 @@
 
 
 #import <Foundation/Foundation.h>
+#if (TARGET_OS_IOS)
 #import <UIKit/UIKit.h>
+#endif
 NS_ASSUME_NONNULL_BEGIN
 @interface CountlyContentBuilder: NSObject
 #if (TARGET_OS_IOS)
