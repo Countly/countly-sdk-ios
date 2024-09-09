@@ -105,8 +105,9 @@ NSString* const kCountlyCBFetchContent  = @"queue";
         NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
         NSString *pathToHtml = jsonResponse[@"pathToHtml"];
         NSDictionary *placementCoordinates = jsonResponse[@"placementCoordinates"];
-        
-        [self showContentWithHtmlPath:pathToHtml placementCoordinates:placementCoordinates];
+        if(pathToHtml) {
+            [self showContentWithHtmlPath:pathToHtml placementCoordinates:placementCoordinates];
+        }
         self->_isRequestQueueLocked = NO;
     }];
     
@@ -162,9 +163,15 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
 }
 
-- (void)showContentWithHtmlPath:(NSString *)pathToHtml placementCoordinates:(NSDictionary *)placementCoordinates {
+- (void)showContentWithHtmlPath:(NSString *)urlString placementCoordinates:(NSDictionary *)placementCoordinates {
     // Convert pathToHtml to NSURL
-    NSURL *url = [NSURL URLWithString:pathToHtml];
+    NSURL *url = [NSURL URLWithString:urlString];
+    
+    if (!url || !url.scheme || !url.host) {
+        NSLog(@"The URL is not valid: %@", urlString);
+        return;
+    }
+
     
     dispatch_async(dispatch_get_main_queue(), ^ {
     // Detect screen orientation

@@ -661,11 +661,13 @@ typedef enum : NSUInteger
  */
 @property (nonatomic) BOOL enableServerConfiguration;
 
+#if (TARGET_OS_IOS)
 /**
  * Variable to access content configurations.
  * @discussion Content configurations for developer to interact with SDK.
  */
 - (CountlyContentConfig *) content;
+#endif
 
 /**
  * This is an experimental feature and it can have breaking changes
