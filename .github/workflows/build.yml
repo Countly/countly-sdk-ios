@@ -1,0 +1,28 @@
+name: Build for iOS, MacOS, TvOS, and WatchOS
+
+permissions:
+  checks: write
+  pull-requests: write
+
+on:
+    push:
+      branches:
+        - master
+        - staging
+    pull_request:
+      branches:
+        - master
+        - staging
+jobs:
+  build:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        sdk: [macos, iphoneos, tvos, watchos]
+    steps:
+      # To check the github context
+      - name: Checkout SDK code
+        uses: actions/checkout@v4
+    
+      - name: Build for ${{ matrix.sdk }}
+        run: xcodebuild -project Countly.xcodeproj build -sdk ${{ matrix.sdk }}
