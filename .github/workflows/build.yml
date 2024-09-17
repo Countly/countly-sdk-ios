@@ -1,4 +1,4 @@
-name: Build for iOS, MacOS, TvOS, and WatchOS
+name: Build the SDK
 
 permissions:
   checks: write
