@@ -21,6 +21,9 @@ jobs:
         sdk: [macos, iphoneos, tvos, watchos]
     steps:
       # To check the github context
+      - name: Show SDK list
+        uses: xcodebuild -showsdks
+
       - name: Checkout SDK code
         uses: actions/checkout@v4
     
