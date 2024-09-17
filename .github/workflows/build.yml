@@ -18,12 +18,9 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        sdk: [macos, iphoneos, tvos, watchos]
+        sdk: [macosx14.5, iphoneos17.5, appletvos17.5, watchos10.5]
     steps:
       # To check the github context
-      - name: Show SDK list
-        run: xcodebuild -showsdks
-
       - name: Checkout SDK code
         uses: actions/checkout@v4
     
