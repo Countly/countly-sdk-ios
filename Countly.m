@@ -915,6 +915,7 @@ static dispatch_once_t onceToken;
         if(CountlyViewTrackingInternal.sharedInstance.enablePreviousNameRecording) {
             filteredSegmentations[kCountlyPreviousEventName] = previousEventName ?: @"";
             previousEventName = key;
+            filteredSegmentations[kCountlyCurrentView] = CountlyViewTrackingInternal.sharedInstance.currentViewName ?: @"";
         }
     }
     event.key = key;
