@@ -10,6 +10,9 @@
 NSString* const kCountlyEndpointContent = @"/o/sdk/content";
 NSString* const kCountlyCBFetchContent  = @"queue";
 
+NSString* const kCountlyReservedEventContentShown = @"[CLY]_content_shown";
+NSString* const kCountlyReservedEventContentInteracted = @"[CLY]_content_interacted";
+
 @implementation CountlyContentBuilderInternal {
     BOOL _isRequestQueueLocked;
     NSTimer *_requestTimer;

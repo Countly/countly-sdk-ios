@@ -10,6 +10,10 @@
 #endif
 #import "CountlyCommon.h"
 NS_ASSUME_NONNULL_BEGIN
+
+extern NSString* const kCountlyReservedEventContentShown;
+extern NSString* const kCountlyReservedEventContentInteracted;
+
 @interface CountlyContentBuilderInternal: NSObject
 #if (TARGET_OS_IOS)
 @property (nonatomic, strong) NSArray<NSString *> *currentTags;

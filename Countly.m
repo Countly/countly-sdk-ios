@@ -969,6 +969,8 @@ static dispatch_once_t onceToken;
         kCountlyReservedEventNPS,
         kCountlyReservedEventPushAction,
         kCountlyReservedEventView,
+        kCountlyReservedEventContentShown,
+        kCountlyReservedEventContentInteracted,
     ];
     
     return [reservedEvents containsObject:key];

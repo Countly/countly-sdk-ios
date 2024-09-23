@@ -21,6 +21,16 @@ typedef NS_ENUM(NSUInteger, AnimationType) {
     AnimationTypeIncreaseHeightFromBottom
 };
 
+typedef enum : NSUInteger
+{
+    APPEARED,
+    DIMISSED,
+    INTERACTED
+} WebViewtStatus;
+
+typedef void (^WebViewCallback)(WebViewtStatus webViewStatus, NSDictionary<NSString *, id>* contentData);
+
+
 
 
 @interface CountlyWebViewManager : NSObject <WKNavigationDelegate>

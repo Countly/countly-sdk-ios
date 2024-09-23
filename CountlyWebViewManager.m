@@ -13,7 +13,7 @@
 
 @implementation CountlyWebViewManager
 #if (TARGET_OS_IOS)
-- (void)createWebViewWithURL:(NSURL *)url
+- (void) createWebViewWithURL:(NSURL *)url
                        frame:(CGRect)frame
                  appearBlock:(void(^ __nullable)(void))appearBlock
                 dismissBlock:(void(^ __nullable)(void))dismissBlock {
