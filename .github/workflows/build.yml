@@ -18,12 +18,11 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        sdk: [macosx14.5]
-        target: [macosx13.0]
+        sdk: [macosx14.5, iphoneos17.5, appletvos17.5, watchos10.5]
     steps:
       # To check the github context
       - name: Checkout SDK code
         uses: actions/checkout@v4
     
-      - name: Build for ${{ matrix.sdk }} target ${{ matrix.target }}
-        run: xcodebuild -project Countly.xcodeproj build -sdk ${{ matrix.sdk }} -target ${{ matrix.target }}
+      - name: Build for ${{ matrix.sdk }}
+        run: xcodebuild -project Countly.xcodeproj build -sdk ${{ matrix.sdk }}
