@@ -1,30 +1,24 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
+name: Build the SDK with tests
 
-# GitHub recommends pinning actions to a commit SHA.
-# To get a newer version, you will need to update the SHA.
-# You can also reference a tag or branch, but the action may change without warning.
+permissions:
+  checks: write
+  pull-requests: write
 
-name: Swift
-
-on: [push]
+on:
+    push:
+      branches:
+        - master
+        - staging
+    pull_request:
+      branches:
+        - master
+        - staging
 
 jobs:
   build:
-    name: Swift ${{ matrix.swift }} on ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-        swift: ["5.2", "5.3"]
-    runs-on: ${{ matrix.os }}
+    name: Run test
+    runs-on: macos-latest
     steps:
-      - uses: swift-actions/setup-swift@65540b95f51493d65f5e59e97dcef9629ddf11bf
-        with:
-          swift-version: ${{ matrix.swift }}
       - uses: actions/checkout@v4
       - name: Build
-        run: swift build
-      - name: Run tests
-        run: swift test
+        run: xcodebuild -project Countly.xcodeproj -scheme CountlyTests -sdk macosx14.5 test
