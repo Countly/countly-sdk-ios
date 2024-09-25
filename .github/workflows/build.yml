@@ -15,14 +15,12 @@ on:
         - staging
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-${{ matrix.os_version }}
     strategy:
       matrix:
-        sdk: [macosx14.5, iphoneos17.5, appletvos17.5, watchos10.5]
+        os_version: [12,13,14]
+
     steps:
-      # To check the github context
-      - name: Checkout SDK code
-        uses: actions/checkout@v4
     
-      - name: Build for ${{ matrix.sdk }}
-        run: xcodebuild -project Countly.xcodeproj build -sdk ${{ matrix.sdk }}
+      - name: Build for ${{ matrix.os_version }}
+        run: xcodebuild -showsdks
