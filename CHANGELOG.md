@@ -1,3 +1,6 @@
+## 24.7.3
+* Added current view names to event segmentation based on the `enablePreviousNameRecording` (Experimental!)
+
 ## 24.7.2
 * Automatic view pause/resumes are changed with stop/start for better data consistency.
 * Added the config interface 'experimental' to group experimental features.

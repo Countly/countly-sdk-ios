@@ -8,7 +8,6 @@
 
 extern NSString* const kCountlyReservedEventView;
 
-//TODO: Need discussion for its usage and then we decide to keep it or remove it
 extern NSString* const kCountlyCurrentView;
 extern NSString* const kCountlyPreviousView;
 extern NSString* const kCountlyPreviousEventName;
@@ -19,7 +18,6 @@ extern NSString* const kCountlyPreviousEventName;
 @property (nonatomic) NSString* previousViewID;
 
 @property (nonatomic) BOOL enablePreviousNameRecording;
-//TODO: Need discussion for its usage and then we decide to keep it or remove it
 @property (nonatomic) NSString* currentViewName;
 @property (nonatomic) NSString* previousViewName;
 
