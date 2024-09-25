@@ -15,7 +15,7 @@ on:
         - staging
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-14
     strategy:
       matrix:
         sdk: [macosx14.5, iphoneos17.5, appletvos17.5, watchos10.5]
