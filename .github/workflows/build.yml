@@ -20,15 +20,31 @@ jobs:
       matrix:
         sdk: [macosx14.5, iphoneos17.5, appletvos17.5, watchos10.5]
         target: [macosx10.14, iphoneos10.0, appletvos10.0, watchos4.0]
-        include: 
+        exclude:
           - sdk: macosx14.5
+            target: iphoneos10.0
+          - sdk: macosx14.5
+            target: appletvos10.0
+          - sdk: macosx14.5
+            target: watchos4.0
+          - sdk: iphoneos17.5
             target: macosx10.14
           - sdk: iphoneos17.5
+            target: appletvos10.0
+          - sdk: iphoneos17.5
+            target: watchos4.0
+          - sdk: appletvos17.5
+            target: macosx10.14
+          - sdk: appletvos17.5
             target: iphoneos10.0
           - sdk: appletvos17.5
-            target: appletvos10.0
-          - sdk: watchos10.5
             target: watchos4.0
+          - sdk: watchos10.5
+            target: macosx10.14
+          - sdk: watchos10.5
+            target: iphoneos10.0
+          - sdk: watchos10.5
+            target: appletvos10.0
     steps:
       # To check the github context
       - name: Checkout SDK code
