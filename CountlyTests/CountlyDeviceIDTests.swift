@@ -121,7 +121,7 @@ class CountlyDeviceIDTests: CountlyBaseTestCase {
 #else
         var UUID = CountlyPersistency.sharedInstance().retrieveNSUUID()
         if UUID == nil {
-            UUID = NSUUID().uuidString
+            UUID = UUID().uuidString
             CountlyPersistency.sharedInstance().storeNSUUID(UUID)
         }
         
