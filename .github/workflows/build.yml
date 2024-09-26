@@ -24,5 +24,8 @@ jobs:
       - name: Checkout SDK code
         uses: actions/checkout@v4
     
-      - name: Build for ${{ matrix.env.sdk }}
+      - name: Build for the sdk ${{ matrix.env.sdk }} on macOS ${{ matrix.env.os_version }}
         run: xcodebuild -project Countly.xcodeproj build -sdk ${{ matrix.env.sdk }}
+
+      - name: Run the tests for the sdk ${{ matrix.env.sdk }} on macOS ${{ matrix.env.os_version }}
+        run: xcodebuild -project Countly.xcodeproj test -sdk ${{ matrix.env.sdk }} -scheme CountlyTests
