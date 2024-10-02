@@ -102,9 +102,23 @@ NSString* const kCountlyCBFetchContent  = @"queue";
             return;
         }
         
-        NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-        NSString *pathToHtml = jsonResponse[@"pathToHtml"];
-        NSDictionary *placementCoordinates = jsonResponse[@"placementCoordinates"];
+        NSError *jsonError;
+        NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
+        
+        if (jsonError) {
+            CLY_LOG_I(@"Failed to parse JSON: %@", jsonError);
+            self->_isRequestQueueLocked = NO;
+            return;
+        }
+        
+        if (!jsonResponse) {
+            CLY_LOG_I(@"Received empty or null response.");
+            self->_isRequestQueueLocked = NO;
+            return;
+        }
+        
+        NSString *pathToHtml = jsonResponse[@"html"];
+        NSDictionary *placementCoordinates = jsonResponse[@"geo"];
         if(pathToHtml) {
             [self showContentWithHtmlPath:pathToHtml placementCoordinates:placementCoordinates];
         }
@@ -119,8 +133,8 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
     NSString *resolutionJson = [self resolutionJson];
     queryString = [queryString stringByAppendingFormat:@"&%@=%@&%@=%@",
-                   kCountlyQSKeyMethod, kCountlyCBFetchContent,
-                   @"res", resolutionJson];
+                   @"app_id", @"66fa992b8757e0f5c3a52cfb",
+                   @"resolution", resolutionJson];
     
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
     
@@ -155,8 +169,8 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     CGFloat height = screenBounds.size.height;
     
     NSDictionary *resolutionDict = @{
-        @"p": @{@"h": @(height), @"w": @(width)},
-        @"l": @{@"h": @(width), @"w": @(height)}
+        @"portrait": @{@"height": @(height), @"width": @(width)},
+        @"landscape": @{@"height": @(width), @"width": @(height)}
     };
     
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:resolutionDict options:0 error:nil];
@@ -180,12 +194,12 @@ NSString* const kCountlyCBFetchContent  = @"queue";
         
     
     // Get the appropriate coordinates based on the orientation
-    NSDictionary *coordinates = isLandscape ? placementCoordinates[@"landscape"] : placementCoordinates[@"portrait"];
+    NSDictionary *coordinates = isLandscape ? placementCoordinates[@"l"] : placementCoordinates[@"p"];
     
     CGFloat x = [coordinates[@"x"] floatValue];
     CGFloat y = [coordinates[@"y"] floatValue];
-    CGFloat width = [coordinates[@"width"] floatValue];
-    CGFloat height = [coordinates[@"height"] floatValue];
+    CGFloat width = [coordinates[@"w"] floatValue];
+    CGFloat height = [coordinates[@"h"] floatValue];
     
     CGRect frame = CGRectMake(x, y, width, height);
     
