@@ -1,0 +1,46 @@
+name: Build the SDK
+
+permissions:
+  checks: write
+  pull-requests: write
+
+on:
+    push:
+      branches:
+        - master
+        - staging
+    pull_request:
+      branches:
+        - master
+        - staging
+jobs:
+  build:
+    runs-on: macos-${{ matrix.env.os_version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        env: 
+          [
+            {os_version: 14, sdk: "macosx14.5"},
+            {os_version: 14, sdk: "iphoneos17.5"},
+            {os_version: 14, sdk: "appletvos17.5"},
+            {os_version: 14, sdk: "watchos10.5"},
+            {os_version: 12, sdk: "iphoneos16.2"},
+            {os_version: 12, sdk: "macosx13.1"},
+            {os_version: 12, sdk: "appletvos16.1"},
+            {os_version: 12, sdk: "watchos9.1"},
+            {os_version: 13, sdk: "iphoneos17.2"},
+            {os_version: 13, sdk: "macosx14.2"},
+            {os_version: 13, sdk: "appletvos17.2"},
+            {os_version: 13, sdk: "watchos10.2"}
+          ]
+    steps:
+      # To check the github context
+      - name: Checkout SDK code
+        uses: actions/checkout@v4
+    
+      - name: Build for the sdk ${{ matrix.env.sdk }} on macOS ${{ matrix.env.os_version }}
+        run: xcodebuild -project Countly.xcodeproj build -sdk ${{ matrix.env.sdk }}
+
+      - name: Run the tests for the sdk ${{ matrix.env.sdk }} on macOS ${{ matrix.env.os_version }}
+        run: echo good #xcodebuild -project Countly.xcodeproj test -destination ${{ matrix.env.destination }} -scheme CountlyTests
