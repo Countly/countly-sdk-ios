@@ -1,5 +1,6 @@
 ## 24.7.3
 * Added current view names to event segmentation based on the `enablePreviousNameRecording` (Experimental!)
+* Updated the SDK to ensure compatibility with the latest server response models
 
 ## 24.7.2
 * Automatic view pause/resumes are changed with stop/start for better data consistency.
