@@ -282,22 +282,26 @@ static dispatch_once_t onceToken;
 
 - (NSString *)serializedRecordedEvents
 {
-    NSMutableArray* tempArray = NSMutableArray.new;
-
+    NSMutableArray *tempArray = NSMutableArray.new;
+    
     @synchronized (self.recordedEvents)
     {
         if (self.recordedEvents.count == 0)
             return nil;
-
-        for (CountlyEvent* event in self.recordedEvents.copy)
+        
+        NSArray *eventsCopy = self.recordedEvents.copy;
+        
+        for (CountlyEvent *event in eventsCopy)
         {
             [tempArray addObject:[event dictionaryRepresentation]];
-            [self.recordedEvents removeObject:event];
         }
+        
+        [self.recordedEvents removeObjectsInArray:eventsCopy];
     }
-
+    
     return [tempArray cly_JSONify];
 }
+
 
 - (void)flushEvents
 {
