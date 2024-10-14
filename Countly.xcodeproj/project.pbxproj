@@ -36,6 +36,7 @@
 		3961C6BA2C6633C000DD38BA /* CountlyWebViewManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 3961C6B42C6633C000DD38BA /* CountlyWebViewManager.m */; };
 		3964A3E72C2AF8E90091E677 /* CountlySegmentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3964A3E62C2AF8E90091E677 /* CountlySegmentationTests.swift */; };
 		3966DBCF2C11EE270002ED97 /* CountlyDeviceIDTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3966DBCE2C11EE270002ED97 /* CountlyDeviceIDTests.swift */; };
+		3969D0232CB80848000F8A32 /* CountlyViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3969D0222CB80848000F8A32 /* CountlyViewTests.swift */; };
 		3972EDDB2C08A38D00EB9D3E /* CountlyEventStruct.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3972EDDA2C08A38D00EB9D3E /* CountlyEventStruct.swift */; };
 		3979E47D2C0760E900FA1CA4 /* CountlyUserProfileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3979E47C2C0760E900FA1CA4 /* CountlyUserProfileTests.swift */; };
 		399117D12C69F73D00DC4C66 /* CountlyContentBuilder.m in Sources */ = {isa = PBXBuildFile; fileRef = 399117CD2C69F73D00DC4C66 /* CountlyContentBuilder.m */; };
@@ -131,6 +132,7 @@
 		3961C6B42C6633C000DD38BA /* CountlyWebViewManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyWebViewManager.m; sourceTree = "<group>"; };
 		3964A3E62C2AF8E90091E677 /* CountlySegmentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlySegmentationTests.swift; sourceTree = "<group>"; };
 		3966DBCE2C11EE270002ED97 /* CountlyDeviceIDTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyDeviceIDTests.swift; sourceTree = "<group>"; };
+		3969D0222CB80848000F8A32 /* CountlyViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyViewTests.swift; sourceTree = "<group>"; };
 		3972EDDA2C08A38D00EB9D3E /* CountlyEventStruct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyEventStruct.swift; sourceTree = "<group>"; };
 		3979E47C2C0760E900FA1CA4 /* CountlyUserProfileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyUserProfileTests.swift; sourceTree = "<group>"; };
 		399117CD2C69F73D00DC4C66 /* CountlyContentBuilder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyContentBuilder.m; sourceTree = "<group>"; };
@@ -217,6 +219,7 @@
 				3966DBCE2C11EE270002ED97 /* CountlyDeviceIDTests.swift */,
 				3964A3E62C2AF8E90091E677 /* CountlySegmentationTests.swift */,
 				399B464F2C52813700AD384E /* CountlyLocationTests.swift */,
+				3969D0222CB80848000F8A32 /* CountlyViewTests.swift */,
 			);
 			path = CountlyTests;
 			sourceTree = "<group>";
@@ -463,6 +466,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1A5C4C972B35B0850032EE1F /* CountlyTests.swift in Sources */,
+				3969D0232CB80848000F8A32 /* CountlyViewTests.swift in Sources */,
 				399B46502C52813700AD384E /* CountlyLocationTests.swift in Sources */,
 				1A50D7052B3C5AA3009C6938 /* CountlyBaseTestCase.swift in Sources */,
 				3979E47D2C0760E900FA1CA4 /* CountlyUserProfileTests.swift in Sources */,
