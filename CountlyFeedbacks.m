@@ -507,5 +507,78 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     }
 }
 
+- (void)presentNPS {
+    [self presentNPS:nil];
+}
+
+- (void)presentNPS:(NSString *)nameIDorTag {
+    CLY_LOG_D(@"Presenting NPS widget with nameIDorTag: %@", nameIDorTag);
+    [self presentFeedbackWidget:CLYFeedbackWidgetTypeNPS nameIDorTag:nameIDorTag];
+}
+
+- (void)presentSurvey {
+    [self presentSurvey:nil];
+}
+
+- (void)presentSurvey:(NSString *)nameIDorTag {
+    CLY_LOG_D(@"Presenting Survey widget with nameIDorTag: %@", nameIDorTag);
+    [self presentFeedbackWidget:CLYFeedbackWidgetTypeSurvey nameIDorTag:nameIDorTag];
+}
+
+- (void)presentRating {
+    [self presentRating:nil];
+}
+
+- (void)presentRating:(NSString *)nameIDorTag {
+    CLY_LOG_D(@"Presenting Rating widget with nameIDorTag: %@", nameIDorTag);
+    [self presentFeedbackWidget:CLYFeedbackWidgetTypeRating nameIDorTag:nameIDorTag];
+}
+
+
+-(void)presentFeedbackWidget:(CLYFeedbackWidgetType)widgetType nameIDorTag:(NSString *)nameIDorTag {
+    [Countly.sharedInstance getFeedbackWidgets:^(NSArray *feedbackWidgets, NSError *error) {
+        if (error) {
+            CLY_LOG_D(@"Getting widgets list failed. Error: %@", error);
+            return;
+        }
+        
+        CLY_LOG_D(@"Successfully retrieved feedback widgets. Total widgets count: %lu", (unsigned long)feedbackWidgets.count);
+        
+        NSPredicate *typePredicate = [NSPredicate predicateWithFormat:@"type == %@", widgetType];
+        NSArray *filteredWidgets = [feedbackWidgets filteredArrayUsingPredicate:typePredicate];
+        
+        CLY_LOG_D(@"Filtered widgets count for type '%@': %lu", widgetType, (unsigned long)filteredWidgets.count);
+        
+        CountlyFeedbackWidget *widgetToPresent = nil;
+        
+        if (nameIDorTag && nameIDorTag.length > 0) {
+            for (CountlyFeedbackWidget *feedbackWidget in filteredWidgets) {
+                if ([nameIDorTag isEqualToString:feedbackWidget.name] ||
+                    [nameIDorTag isEqualToString:feedbackWidget.ID] ||
+                    [feedbackWidget.tags containsObject:nameIDorTag]) {
+                    widgetToPresent = feedbackWidget;
+                    CLY_LOG_D(@"Exact match found for nameIDorTag '%@'. Widget ID: %@, Name: %@", nameIDorTag, feedbackWidget.ID, feedbackWidget.name);
+                    break;
+                }
+            }
+        }
+        
+        if (!widgetToPresent && filteredWidgets.count > 0) {
+            widgetToPresent = filteredWidgets.firstObject;
+            CLY_LOG_D(@"No exact match found for nameIDorTag '%@'. Falling back to the first widget of type '%@'. Widget ID: %@, Name: %@", nameIDorTag, widgetType, widgetToPresent.ID, widgetToPresent.name);
+        }
+        
+        if (widgetToPresent) {
+            [widgetToPresent presentWithAppearBlock:^{
+                CLY_LOG_D(@"Feedback widget presented. Widget ID: %@, Name: %@", widgetToPresent.ID, widgetToPresent.name);
+            } andDismissBlock:^{
+                CLY_LOG_D(@"Feedback widget dismissed. Widget ID: %@, Name: %@", widgetToPresent.ID, widgetToPresent.name);
+            }];
+        } else {
+            CLY_LOG_D(@"No feedback widget found for the specified type: %@", widgetType);
+        }
+    }];
+}
+
 #endif
 @end

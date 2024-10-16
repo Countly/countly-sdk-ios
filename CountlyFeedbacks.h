@@ -26,6 +26,15 @@ extern NSString* const kCountlyReservedEventStarRating;
 
 - (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> *feedbackWidgets, NSError *error))completionHandler;
 
+- (void) presentNPS;
+- (void) presentNPS:(NSString *)nameIDorTag;
+
+- (void) presentSurvey;
+- (void) presentSurvey:(NSString *)nameIDorTag;
+
+- (void) presentRating;
+- (void) presentRating:(NSString *)nameIDorTag;
+
 @property (nonatomic) NSString* message;
 @property (nonatomic) NSString* dismissButtonTitle;
 @property (nonatomic) NSUInteger sessionCount;
