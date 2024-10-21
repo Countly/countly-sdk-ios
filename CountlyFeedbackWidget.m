@@ -199,8 +199,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     // customParams is an NSDictionary containing the custom key-value pairs
     NSDictionary *customParams = @{@"tc": @"1"};
     
-    // Build custom parameter string
-    NSMutableString *customString = [NSMutableString stringWithString:@"&custom="];
+    NSMutableString *customString = [NSMutableString new];
     [customString appendString:@"{"];
     [customParams enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
         [customString appendFormat:@"\"%@\":%@,", key, obj];
@@ -208,8 +207,8 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     [customString deleteCharactersInRange:NSMakeRange(customString.length - 1, 1)]; // Remove the last comma
     [customString appendString:@"}"];
     
-    // Append custom parameter
-    [URL appendString:customString];
+    // Append the custom parameter to the URL
+    [URL appendFormat:@"&custom=%@", customString.cly_URLEscaped];
     
     NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:URL]];
     return request;
