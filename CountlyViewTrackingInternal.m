@@ -10,7 +10,7 @@
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 @property (nonatomic) NSMutableSet* automaticViewTrackingExclusionList;
 #endif
-@property (nonatomic) NSMutableDictionary<NSString*, CountlyViewData *> * viewDataDictionary;
+@property (nonatomic, strong) NSMutableDictionary<NSString*, CountlyViewData *> * viewDataDictionary;
 @property (nonatomic) NSMutableDictionary* viewSegmentation;
 @property (nonatomic) BOOL isFirstView;
 @end
