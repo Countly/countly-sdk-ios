@@ -42,7 +42,7 @@
 }
 
 - (void) presentNPS:(NSString *)nameIDorTag widgetCallback:(WidgetCallback) widgetCallback {
-    [CountlyFeedbacksInternal.sharedInstance presentNPS:nameIDorTag widgetCallback:widgetCallback];
+    [CountlyFeedbacks.sharedInstance presentNPS:nameIDorTag widgetCallback:widgetCallback];
 }
 
 - (void)presentSurvey {
@@ -54,7 +54,7 @@
 }
 
 - (void) presentSurvey:(NSString *)nameIDorTag widgetCallback:(WidgetCallback) widgetCallback {
-    [CountlyFeedbacksInternal.sharedInstance presentSurvey:nameIDorTag widgetCallback:widgetCallback];
+    [CountlyFeedbacks.sharedInstance presentSurvey:nameIDorTag widgetCallback:widgetCallback];
 }
 
 - (void)presentRating {
@@ -66,13 +66,13 @@
 }
 
 - (void) presentRating:(NSString *)nameIDorTag widgetCallback:(WidgetCallback) widgetCallback {
-    [CountlyFeedbacksInternal.sharedInstance presentRating:nameIDorTag widgetCallback:widgetCallback];
+    [CountlyFeedbacks.sharedInstance presentRating:nameIDorTag widgetCallback:widgetCallback];
 }
 
 - (void)getAvailableFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> *feedbackWidgets, NSError * error))completionHandler
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, completionHandler);
-    [CountlyFeedbacksInternal.sharedInstance getFeedbackWidgets:completionHandler];
+    [CountlyFeedbacks.sharedInstance getFeedbackWidgets:completionHandler];
 }
 #endif
 @end
