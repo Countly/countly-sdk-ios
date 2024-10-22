@@ -1,3 +1,9 @@
+## x.x.x
+* Added `CountlyFeedbacks` interface to manage feedback widgets, including NPS, Surveys, and Ratings.
+    * `presentNPS`, `presentSurvey`, and `presentRating` methods now allow displaying specific widgets by name, ID, or tag.
+    * Optional widget callback support for handling custom logic after displaying feedback widgets.
+    * Added `getAvailableFeedbackWidgets` method to retrieve available feedback widgets with a completion handler.
+
 ## 24.7.3
 * Added current view names to event segmentation based on the `enablePreviousNameRecording` (Experimental!)
 * Updated the SDK to ensure compatibility with the latest server response models
