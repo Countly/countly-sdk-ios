@@ -208,9 +208,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     [URL appendFormat:@"?%@", queryString];
     
     // Create custom parameters
-    NSDictionary *customParams = @{@"tc": @"1",
-                                   @"rw": @"1",
-                                   @"xb": @"1"};
+    NSDictionary *customParams = @{@"tc": @"1"};
     
     // Create JSON data from custom parameters
     NSError *error;
