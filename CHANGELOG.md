@@ -1,3 +1,6 @@
+## 24.7.4
+* Mitigated an issue with the feedback widget that caused it to display a blank white page on devices running iOS versions earlier than 17
+
 ## 24.7.3
 * Added current view names to event segmentation based on the `enablePreviousNameRecording` (Experimental!)
 * Updated the SDK to ensure compatibility with the latest server response models
