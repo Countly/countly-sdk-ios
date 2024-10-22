@@ -15,7 +15,7 @@
 #import "CountlyCrashReporter.h"
 #import "CountlyConfig.h"
 #import "CountlyViewTrackingInternal.h"
-#import "CountlyFeedbacksInternal.h"
+#import "CountlyFeedbacksNewInternal.h"
 #import "CountlyFeedbackWidget.h"
 #import "CountlyPushNotifications.h"
 #import "CountlyNotificationService.h"

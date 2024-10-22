@@ -13,7 +13,7 @@
 #import "CountlyFeedbackWidget.h"
 #import "CountlyViewTracking.h"
 #import "CountlyContentBuilder.h"
-#import "CountlyFeedbacks.h"
+#import "CountlyFeedbacksNew.h"
 #import "Resettable.h"
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 #import <UserNotifications/UserNotifications.h>
@@ -690,7 +690,7 @@ NS_ASSUME_NONNULL_BEGIN
  * Interface variable to access feedback widget functionalities.
  * @discussion Feedback widget  interface for developer to interact with SDK.
  */
-- (CountlyFeedbacks *) feedback;
+- (CountlyFeedbacksNew *) feedback;
 #endif
 
 

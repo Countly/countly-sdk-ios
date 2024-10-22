@@ -175,11 +175,11 @@ static dispatch_once_t onceToken;
     }
     
 #if (TARGET_OS_IOS)
-    CountlyFeedbacksInternal.sharedInstance.message = config.starRatingMessage;
-    CountlyFeedbacksInternal.sharedInstance.sessionCount = config.starRatingSessionCount;
-    CountlyFeedbacksInternal.sharedInstance.disableAskingForEachAppVersion = config.starRatingDisableAskingForEachAppVersion;
-    CountlyFeedbacksInternal.sharedInstance.ratingCompletionForAutoAsk = config.starRatingCompletion;
-    [CountlyFeedbacksInternal.sharedInstance checkForStarRatingAutoAsk];
+    CountlyFeedbacks.sharedInstance.message = config.starRatingMessage;
+    CountlyFeedbacks.sharedInstance.sessionCount = config.starRatingSessionCount;
+    CountlyFeedbacks.sharedInstance.disableAskingForEachAppVersion = config.starRatingDisableAskingForEachAppVersion;
+    CountlyFeedbacks.sharedInstance.ratingCompletionForAutoAsk = config.starRatingCompletion;
+    [CountlyFeedbacks.sharedInstance checkForStarRatingAutoAsk];
 #endif
     
     if(config.disableLocation)
@@ -1240,7 +1240,7 @@ static dispatch_once_t onceToken;
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, completion);
 
-    [CountlyFeedbacksInternal.sharedInstance showDialog:completion];
+    [CountlyFeedbacks.sharedInstance showDialog:completion];
 }
 
 - (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
@@ -1262,21 +1262,21 @@ static dispatch_once_t onceToken;
     
     CLY_LOG_I(@"%s %@ %@ %@", __FUNCTION__, widgetID, closeButtonText, completionHandler);
     
-    [CountlyFeedbacksInternal.sharedInstance presentRatingWidgetWithID:widgetID closeButtonText:closeButtonText completionHandler:completionHandler];
+    [CountlyFeedbacks.sharedInstance presentRatingWidgetWithID:widgetID closeButtonText:closeButtonText completionHandler:completionHandler];
 }
 
 - (void)recordRatingWidgetWithID:(NSString *)widgetID rating:(NSInteger)rating email:(NSString * _Nullable)email comment:(NSString * _Nullable)comment userCanBeContacted:(BOOL)userCanBeContacted
 {
     CLY_LOG_I(@"%s %@ %ld %@ %@ %d", __FUNCTION__, widgetID, (long)rating, email, comment, userCanBeContacted);
 
-    [CountlyFeedbacksInternal.sharedInstance recordRatingWidgetWithID:widgetID rating:rating email:email comment:comment userCanBeContacted:userCanBeContacted];
+    [CountlyFeedbacks.sharedInstance recordRatingWidgetWithID:widgetID rating:rating email:email comment:comment userCanBeContacted:userCanBeContacted];
 }
 
 - (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> *feedbackWidgets, NSError * error))completionHandler
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, completionHandler);
 
-    [CountlyFeedbacksInternal.sharedInstance getFeedbackWidgets:completionHandler];
+    [CountlyFeedbacks.sharedInstance getFeedbackWidgets:completionHandler];
 }
 
 - (CountlyContentBuilder *) content
