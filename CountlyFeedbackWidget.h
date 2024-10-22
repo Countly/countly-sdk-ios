@@ -45,9 +45,9 @@ extern NSString* const kCountlyReservedEventRating;
 /**
  * Modally presents the feedback widget above the top visible view controller and executes given blocks.
  * @discussion Calls to this method will be ignored if consent for @c CLYConsentFeedback is not given while @c requiresConsent flag is set on initial configuration.
- * @param wigetCallback Block to be executed when widget is displayed/dismissed
+ * @param widgetCallback Block to be executed when widget is displayed/dismissed
  */
-- (void)presentWithCallback:(WidgetCallback) wigetCallback;
+- (void)presentWithCallback:(WidgetCallback) widgetCallback;
 /**
  * Fetches feedback widget's data to be used for manually presenting it.
  * @discussion When feedback widget's data is fetched successfully, @c completionHandler will be executed with an @c NSDictionary

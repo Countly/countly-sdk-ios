@@ -26,11 +26,11 @@ extern NSString* const kCountlyReservedEventStarRating;
 
 - (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> *feedbackWidgets, NSError *error))completionHandler;
 
-- (void) presentNPS:(NSString *)nameIDorTag widgetCallback:(WidgetCallback) wigetCallback;
+- (void) presentNPS:(NSString *)nameIDorTag widgetCallback:(WidgetCallback) widgetCallback;
 
-- (void) presentSurvey:(NSString *)nameIDorTag widgetCallback:(WidgetCallback) wigetCallback;
+- (void) presentSurvey:(NSString *)nameIDorTag widgetCallback:(WidgetCallback) widgetCallback;
 
-- (void) presentRating:(NSString *)nameIDorTag widgetCallback:(WidgetCallback) wigetCallback;
+- (void) presentRating:(NSString *)nameIDorTag widgetCallback:(WidgetCallback) widgetCallback;
 
 @property (nonatomic) NSString* message;
 @property (nonatomic) NSString* dismissButtonTitle;
