@@ -438,7 +438,7 @@ static dispatch_once_t onceToken;
     {
         CLY_LOG_D(@"Consent for Feedback is given.");
 
-        [CountlyFeedbacks.sharedInstance checkForStarRatingAutoAsk];
+        [CountlyFeedbacksInternal.sharedInstance checkForStarRatingAutoAsk];
     }
     else
     {
