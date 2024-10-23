@@ -524,7 +524,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 
 -(void)presentFeedbackWidget:(CLYFeedbackWidgetType)widgetType nameIDorTag:(NSString *)nameIDorTag  widgetCallback:(WidgetCallback) widgetCallback {
-    [Countly.sharedInstance getFeedbackWidgets:^(NSArray *feedbackWidgets, NSError *error) {
+    [self getFeedbackWidgets:^(NSArray *feedbackWidgets, NSError *error) {
         if (error) {
             CLY_LOG_D(@"Getting widgets list failed. Error: %@", error);
             return;

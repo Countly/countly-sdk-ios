@@ -1284,6 +1284,11 @@ static dispatch_once_t onceToken;
     return CountlyContentBuilder.sharedInstance;
 }
 
+- (CountlyFeedbacksNew *) feedback
+{
+    return CountlyFeedbacksNew.sharedInstance;
+}
+
 #endif
 
 
