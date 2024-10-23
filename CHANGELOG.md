@@ -1,8 +1,12 @@
 ## x.x.x
-* Added `CountlyFeedbacks` interface to manage feedback widgets, including NPS, Surveys, and Ratings.
-    * `presentNPS`, `presentSurvey`, and `presentRating` methods now allow displaying specific widgets by name, ID, or tag.
-    * Optional widget callback support for handling custom logic after displaying feedback widgets.
-    * Added `getAvailableFeedbackWidgets` method to retrieve available feedback widgets with a completion handler.
+* Added `CountlyFeedbacks:` interface with new view methods (Access with `Countly.sharedInstance.feedback`):
+    * Method to present feedback widget (wih an optional widget selector(name, ID or tag) string and a Callback):
+        * `presentNPS`
+        * `presentSurvey`
+        * `presentRating`
+    * `getAvailableFeedbackWidgets` method to retrieve available feedback widgets with a completion handler.
+    
+* Deprecated `getFeedbackWidgets` method, you should use `[feedback getAvailableFeedbackWidgets:]` method instead
 
 ## 24.7.3
 * Added current view names to event segmentation based on the `enablePreviousNameRecording` (Experimental!)
