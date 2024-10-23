@@ -1,35 +1,30 @@
-// CountlyFeedbacks.h
+//  CountlyFeedbacks.h
 //
 // This code is provided under the MIT License.
 //
 // Please visit www.count.ly for more information.
+//
 
 #import <Foundation/Foundation.h>
+#import "CountlyConfig.h"
+#import "CountlyFeedbackWidget.h"
 
-@class CountlyFeedbackWidget;
-
-extern NSString* const kCountlyFBKeyPlatform;
-extern NSString* const kCountlyFBKeyAppVersion;
-extern NSString* const kCountlyFBKeyWidgetID;
-extern NSString* const kCountlyFBKeyID;
-
-extern NSString* const kCountlyReservedEventStarRating;
-
-@interface CountlyFeedbacks : NSObject
+@interface CountlyFeedbacks: NSObject
 #if (TARGET_OS_IOS)
 + (instancetype)sharedInstance;
 
-- (void)showDialog:(void(^)(NSInteger rating))completion;
-- (void)presentRatingWidgetWithID:(NSString *)widgetID closeButtonText:(NSString *)closeButtonText completionHandler:(void (^)(NSError * error))completionHandler;
-- (void)recordRatingWidgetWithID:(NSString *)widgetID rating:(NSInteger)rating email:(NSString *)email comment:(NSString *)comment userCanBeContacted:(BOOL)userCanBeContacted;
-- (void)checkForStarRatingAutoAsk;
+- (void) presentNPS;
+- (void) presentNPS:(NSString *)nameIDorTag;
+- (void) presentNPS:(NSString *)nameIDorTag widgetCallback:(WidgetCallback) widgetCallback;
 
-- (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> *feedbackWidgets, NSError *error))completionHandler;
+- (void) presentSurvey;
+- (void) presentSurvey:(NSString *)nameIDorTag;
+- (void) presentSurvey:(NSString *)nameIDorTag widgetCallback:(WidgetCallback) widgetCallback;
 
-@property (nonatomic) NSString* message;
-@property (nonatomic) NSString* dismissButtonTitle;
-@property (nonatomic) NSUInteger sessionCount;
-@property (nonatomic) BOOL disableAskingForEachAppVersion;
-@property (nonatomic, copy) void (^ratingCompletionForAutoAsk)(NSInteger);
+- (void) presentRating;
+- (void) presentRating:(NSString *)nameIDorTag;
+- (void) presentRating:(NSString *)nameIDorTag widgetCallback:(WidgetCallback) widgetCallback;
+
+- (void)getAvailableFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> *feedbackWidgets, NSError * error))completionHandler;
 #endif
 @end

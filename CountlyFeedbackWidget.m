@@ -52,6 +52,20 @@ NSString* const kCountlyFBKeyShown          = @"shown";
 - (void)presentWithAppearBlock:(void(^ __nullable)(void))appearBlock andDismissBlock:(void(^ __nullable)(void))dismissBlock
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, appearBlock, dismissBlock);
+    [self presentWithCallback:^(WidgetState widgetState) {
+        if(appearBlock && widgetState == WIDGET_APPEARED) {
+            appearBlock();
+        }
+        
+        if(dismissBlock && widgetState == WIDGET_CLOSED) {
+            dismissBlock();
+        }
+    }];
+}
+
+- (void)presentWithCallback:(WidgetCallback) widgetCallback;
+{
+    CLY_LOG_I(@"%s %@", __FUNCTION__, widgetCallback);
     if (!CountlyConsentManager.sharedInstance.consentForFeedback)
         return;
     __block CLYInternalViewController* webVC = CLYInternalViewController.new;
@@ -75,15 +89,20 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     {
         [webVC dismissViewControllerAnimated:YES completion:^
         {
-            if (dismissBlock)
-                dismissBlock();
+            CLY_LOG_D(@"Feedback widget dismissed. Widget ID: %@, Name: %@", self.ID, self.name);
+            if (widgetCallback)
+                widgetCallback(WIDGET_CLOSED);
             webVC = nil;
         }];
         [self recordReservedEventForDismissing];
     };
     [webView addSubview:dismissButton];
     [dismissButton positionToTopRight];
-    [CountlyCommon.sharedInstance tryPresentingViewController:webVC withCompletion:appearBlock];
+    [CountlyCommon.sharedInstance tryPresentingViewController:webVC withCompletion:^{
+        CLY_LOG_D(@"Feedback widget presented. Widget ID: %@, Name: %@", self.ID, self.name);
+        if(widgetCallback)
+            widgetCallback(WIDGET_APPEARED);
+    }];
 }
 
 - (void)getWidgetData:(void (^)(NSDictionary * __nullable widgetData, NSError * __nullable error))completionHandler

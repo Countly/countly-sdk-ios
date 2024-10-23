@@ -5,6 +5,7 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
+#import "CountlyConfig.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -41,6 +42,12 @@ extern NSString* const kCountlyReservedEventRating;
  */
 - (void)presentWithAppearBlock:(void(^ __nullable)(void))appearBlock andDismissBlock:(void(^ __nullable)(void))dismissBlock;
 
+/**
+ * Modally presents the feedback widget above the top visible view controller and executes given blocks.
+ * @discussion Calls to this method will be ignored if consent for @c CLYConsentFeedback is not given while @c requiresConsent flag is set on initial configuration.
+ * @param widgetCallback Block to be executed when widget is displayed/dismissed
+ */
+- (void)presentWithCallback:(WidgetCallback) widgetCallback;
 /**
  * Fetches feedback widget's data to be used for manually presenting it.
  * @discussion When feedback widget's data is fetched successfully, @c completionHandler will be executed with an @c NSDictionary
