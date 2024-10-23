@@ -13,6 +13,7 @@
 #import "CountlyFeedbackWidget.h"
 #import "CountlyViewTracking.h"
 #import "CountlyContentBuilder.h"
+#import "CountlyFeedbacks.h"
 #import "Resettable.h"
 #if (TARGET_OS_IOS || TARGET_OS_OSX)
 #import <UserNotifications/UserNotifications.h>
@@ -676,8 +677,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion - Current device ID is @c CLYTemporaryDeviceID.
  * @param completionHandler A completion handler block to be executed when list is fetched successfully or there is an error.
  */
-- (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> * __nullable feedbackWidgets, NSError * __nullable error))completionHandler;
-
+- (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> * __nullable feedbackWidgets, NSError * __nullable error))completionHandler DEPRECATED_MSG_ATTRIBUTE("Use '[feedback getAvailableFeedbackWidgets:]' method instead!");
 
 /**
  * This is an experimental feature and it can have breaking changes
@@ -686,6 +686,11 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (CountlyContentBuilder *_Nonnull) content;
 
+/**
+ * Interface variable to access feedback widget functionalities.
+ * @discussion Feedback widget  interface for developer to interact with SDK.
+ */
+- (CountlyFeedbacks *) feedback;
 #endif
 
 

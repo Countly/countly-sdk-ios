@@ -20,6 +20,14 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+typedef enum : NSUInteger
+{
+    WIDGET_APPEARED,
+    WIDGET_CLOSED,
+} WidgetState;
+
+typedef void (^WidgetCallback)(WidgetState widgetState);
+
 //NOTE: Countly features
 typedef NSString* CLYFeature NS_EXTENSIBLE_STRING_ENUM;
 #if (TARGET_OS_IOS)
