@@ -14,6 +14,8 @@
     BOOL isSessionStarted;
 }
 @property (nonatomic) NSURLSession* URLSession;
+
+@property (nonatomic, strong) NSDate *startTime;
 @end
 
 NSString* const kCountlyQSKeyAppKey           = @"app_key";
@@ -82,13 +84,12 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 @implementation CountlyConnectionManager : NSObject
 
+static CountlyConnectionManager *s_sharedInstance = nil;
+static dispatch_once_t onceToken;
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
         return nil;
-
-    static CountlyConnectionManager *s_sharedInstance = nil;
-    static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
     return s_sharedInstance;
 }
@@ -102,6 +103,13 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     }
 
     return self;
+}
+
+- (void)resetInstance {
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    onceToken = 0;
+    s_sharedInstance = nil;
+    isSessionStarted = NO;
 }
 
 - (void)setHost:(NSString *)host
@@ -137,37 +145,47 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         CLY_LOG_D(@"Proceeding on queue is aborted: SDK Networking is disabled from server config!");
         return;
     }
-
+    
     if (self.connection)
     {
         CLY_LOG_D(@"Proceeding on queue is aborted: Already has a request in process!");
         return;
     }
-
+    
     if (isCrashing)
     {
         CLY_LOG_D(@"Proceeding on queue is aborted: Application is crashing!");
         return;
     }
-
+    
     if (self.isTerminating)
     {
         CLY_LOG_D(@"Proceeding on queue is aborted: Application is terminating!");
         return;
     }
-
+    
     if (CountlyPersistency.sharedInstance.isQueueBeingModified)
     {
         CLY_LOG_D(@"Proceeding on queue is aborted: Queue is being modified!");
         return;
     }
+    
+    if (!self.startTime) {
+        self.startTime = [NSDate date]; // Record start time only when it's not already recorded
+        CLY_LOG_D(@"Proceeding on queue started, queued request count %lu", [CountlyPersistency.sharedInstance remainingRequestCount]);
+    }
 
     NSString* firstItemInQueue = [CountlyPersistency.sharedInstance firstItemInQueue];
     if (!firstItemInQueue)
     {
-        CLY_LOG_D(@"Queue is empty. All requests are processed.");
+        // Calculate total time when the queue becomes empty
+        NSTimeInterval elapsedTime = -[self.startTime timeIntervalSinceNow];
+        CLY_LOG_D(@"Queue is empty. All requests are processed. Total time taken: %.2f seconds", elapsedTime);
+        // Reset start time for future queue processing
+        self.startTime = nil;
         return;
     }
+    
     BOOL isOldRequest = [CountlyPersistency.sharedInstance isOldRequest:firstItemInQueue];
     if(isOldRequest)
     {
@@ -276,6 +294,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
             else
             {
                 CLY_LOG_D(@"%s, request:[ <%p> ] failed! response:[ %@ ]", __FUNCTION__, request, [data cly_stringUTF8]);
+                self.startTime = nil;
             }
         }
         else
@@ -284,6 +303,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 #if (TARGET_OS_WATCH)
             [CountlyPersistency.sharedInstance saveToFile];
 #endif
+            self.startTime = nil;
         }
     }];
 
@@ -334,6 +354,24 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         CLY_LOG_W(@"%s A session is already running, this 'beginSession' will be ignored", __FUNCTION__);
         return;
     }
+    
+#if TARGET_OS_IOS || TARGET_OS_TV
+    if (!CountlyCommon.sharedInstance.manualSessionHandling && [UIApplication sharedApplication].applicationState == UIApplicationStateBackground) {
+        CLY_LOG_W(@"%s App is in the background, 'beginSession' will be ignored", __FUNCTION__);
+        return;
+    }
+#elif TARGET_OS_OSX
+    if (!CountlyCommon.sharedInstance.manualSessionHandling && ![NSApplication sharedApplication].isActive) {
+        CLY_LOG_W(@"%s App is not active, 'beginSession' will be ignored", __FUNCTION__);
+        return;
+    }
+#elif TARGET_OS_WATCH
+    if (!CountlyCommon.sharedInstance.manualSessionHandling && [WKExtension sharedExtension].applicationState == WKApplicationStateBackground) {
+        CLY_LOG_W(@"%s App is in the background, 'beginSession' will be ignored", __FUNCTION__);
+        return;
+    }
+#endif
+
 
     isSessionStarted = YES;
     lastSessionStartTime = NSDate.date.timeIntervalSince1970;
@@ -352,7 +390,9 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
         queryString = [queryString stringByAppendingString:attributionQueryString];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
-
+    
+    [CountlyCommon.sharedInstance recordOrientation];
+    
     [self proceedOnQueue];
 }
 
@@ -398,17 +438,37 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
 
 #pragma mark ---
 
+- (void)sendEventsWithSaveIfNeeded
+{
+    if([Countly.user hasUnsyncedChanges])
+    {
+        [Countly.user save];
+    }
+    else
+    {
+        [self sendEventsInternal];
+    }
+}
+
 - (void)sendEvents
 {
-    [self sendEvents:false];
+    [self sendEventsInternal];
 }
 
 - (void)attemptToSendStoredRequests
 {
-    [self sendEvents:true];
+    [self addEventsToQueue];
+    [CountlyPersistency.sharedInstance saveToFileSync];
+    [self proceedOnQueue];
 }
 
-- (void)sendEvents:(BOOL) saveToFile
+- (void)sendEventsInternal
+{
+    [self addEventsToQueue];
+    [self proceedOnQueue];
+}
+
+- (void)addEventsToQueue
 {
     NSString* events = [CountlyPersistency.sharedInstance serializedRecordedEvents];
     
@@ -420,11 +480,6 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     
     [CountlyPersistency.sharedInstance addToQueue:queryString];
     
-    if(saveToFile) {
-        [CountlyPersistency.sharedInstance saveToFileSync];
-    }
-    
-    [self proceedOnQueue];
 }
 
 #pragma mark ---
@@ -501,7 +556,7 @@ const NSInteger kCountlyGETRequestMaxLength = 2048;
     //NOTE: Prevent `event` and `end_session` requests from being started, after `sendEvents` and `endSession` calls below.
     isCrashing = YES;
 
-    [self sendEvents];
+    [self sendEventsWithSaveIfNeeded];
 
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [self endSession];

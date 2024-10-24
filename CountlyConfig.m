@@ -34,7 +34,13 @@ CLYFeature const CLYCrashReporting      = @"CLYCrashReporting";
 #endif
 
 CountlyAPMConfig *apmConfig = nil;
+CountlyCrashesConfig *crashes = nil;
 CountlySDKLimitsConfig *sdkLimitsConfig = nil;
+CountlyExperimentalConfig *experimental = nil;
+
+#if (TARGET_OS_IOS)
+CountlyContentConfig *content = nil;
+#endif
 
 //NOTE: Device ID options
 NSString* const CLYDefaultDeviceID = @""; //NOTE: It will be overridden to default device ID mechanism, depending on platform.
@@ -77,12 +83,16 @@ CLYDeviceIDType const CLYDeviceIDTypeNSUUID     = @"CLYDeviceIDTypeNSUUID";
     return self;
 }
 
+- (void)enableTemporaryDeviceIDMode
+{
+    self.deviceID = CLYTemporaryDeviceID;
+}
+
 -(void)remoteConfigRegisterGlobalCallback:(RCDownloadCallback) callback
 {
     [self.remoteConfigGlobalCallbacks addObject:callback];
     
 }
-
 
 - (NSMutableArray<RCDownloadCallback> *) getRemoteConfigGlobalCallbacks
 {
@@ -111,5 +121,28 @@ CLYDeviceIDType const CLYDeviceIDTypeNSUUID     = @"CLYDeviceIDTypeNSUUID";
     }
     return sdkLimitsConfig;
 }
+
+- (nonnull CountlyCrashesConfig *)crashes {
+    if (crashes == nil) {
+        crashes = CountlyCrashesConfig.new;
+    }
+    return crashes;
+}
+
+- (nonnull CountlyExperimentalConfig *)experimental {
+    if (experimental == nil) {
+        experimental = CountlyExperimentalConfig.new;
+    }
+    return experimental;
+}
+
+#if (TARGET_OS_IOS)
+- (nonnull CountlyContentConfig *)content {
+    if (content == nil) {
+        content = CountlyContentConfig.new;
+    }
+    return content;
+}
+#endif
 
 @end

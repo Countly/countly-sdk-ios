@@ -48,6 +48,7 @@ NSString* const kCountlyCRKeyLogs              = @"_logs";
 NSString* const kCountlyCRKeyPLCrash           = @"_plcrash";
 NSString* const kCountlyCRKeyImageLoadAddress  = @"la";
 NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
+NSString* const kCountlyCRKeyOB                = @"_ob";
 
 
 @interface CountlyCrashReporter ()
@@ -218,7 +219,11 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
     {
         NSMutableDictionary* userInfo = [NSMutableDictionary dictionaryWithDictionary:exception.userInfo];
         userInfo[kCountlyExceptionUserInfoBacktraceKey] = stackTrace;
-        userInfo[kCountlyExceptionUserInfoSegmentationOverrideKey] = segmentation;
+        if(segmentation) {
+            NSDictionary* truncatedSegmentation = [segmentation cly_truncated:@"Exception segmentation"];
+            NSDictionary* limitedSegmentation = [truncatedSegmentation cly_limited:@"Exception segmentation"];
+            userInfo[kCountlyExceptionUserInfoSegmentationOverrideKey] = limitedSegmentation.cly_filterSupportedDataTypes;
+        }
         exception = [NSException exceptionWithName:exception.name reason:exception.reason userInfo:userInfo];
     }
 
@@ -238,81 +243,72 @@ void CountlyUncaughtExceptionHandler(NSException *exception)
 
 void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDetect)
 {
-    const NSInteger kCLYMebibit = 1048576;
-
     NSArray* stackTrace = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
     if (!stackTrace)
         stackTrace = exception.callStackSymbols;
-
+    
     NSString* stackTraceJoined = [stackTrace componentsJoinedByString:@"\n"];
-
+    
     BOOL matchesFilter = NO;
     if (CountlyCrashReporter.sharedInstance.crashFilter)
     {
         matchesFilter = [CountlyCrashReporter.sharedInstance isMatchingFilter:stackTraceJoined] ||
-                        [CountlyCrashReporter.sharedInstance isMatchingFilter:exception.description] ||
-                        [CountlyCrashReporter.sharedInstance isMatchingFilter:exception.name];
+        [CountlyCrashReporter.sharedInstance isMatchingFilter:exception.description] ||
+        [CountlyCrashReporter.sharedInstance isMatchingFilter:exception.name];
     }
-
-    NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
-    crashReport[kCountlyCRKeyError] = stackTraceJoined;
-    crashReport[kCountlyCRKeyBinaryImages] = [CountlyCrashReporter.sharedInstance binaryImagesForStackTrace:stackTrace];
-    crashReport[kCountlyCRKeyOS] = CountlyDeviceInfo.osName;
-    crashReport[kCountlyCRKeyOSVersion] = CountlyDeviceInfo.osVersion;
-    crashReport[kCountlyCRKeyDevice] = CountlyDeviceInfo.device;
-    crashReport[kCountlyCRKeyArchitecture] = CountlyDeviceInfo.architecture;
-    crashReport[kCountlyCRKeyResolution] = CountlyDeviceInfo.resolution;
-    crashReport[kCountlyCRKeyAppVersion] = CountlyDeviceInfo.appVersion;
-    crashReport[kCountlyCRKeyAppBuild] = CountlyDeviceInfo.appBuild;
-    crashReport[kCountlyCRKeyBuildUUID] = CountlyCrashReporter.sharedInstance.buildUUID ?: @"";
-    crashReport[kCountlyCRKeyExecutableName] = CountlyCrashReporter.sharedInstance.executableName ?: @"";
-    crashReport[kCountlyCRKeyName] = exception.description;
-    crashReport[kCountlyCRKeyType] = exception.name;
-    crashReport[kCountlyCRKeyNonfatal] = @(!isFatal);
-    crashReport[kCountlyCRKeyRAMCurrent] = @((CountlyDeviceInfo.totalRAM - CountlyDeviceInfo.freeRAM) / kCLYMebibit);
-    crashReport[kCountlyCRKeyRAMTotal] = @(CountlyDeviceInfo.totalRAM / kCLYMebibit);
-    crashReport[kCountlyCRKeyDiskCurrent] = @((CountlyDeviceInfo.totalDisk - CountlyDeviceInfo.freeDisk) / kCLYMebibit);
-    crashReport[kCountlyCRKeyDiskTotal] = @(CountlyDeviceInfo.totalDisk / kCLYMebibit);
-    NSInteger batteryLevel = CountlyDeviceInfo.batteryLevel;
-    // We will add battery level only if there is a valid value.
-    if (batteryLevel >= 0)
-    {
-        crashReport[kCountlyCRKeyBattery] = @(batteryLevel);
-    }
-    crashReport[kCountlyCRKeyOrientation] = CountlyDeviceInfo.orientation;
-    crashReport[kCountlyCRKeyOnline] = @((CountlyDeviceInfo.connectionType) ? 1 : 0 );
-    crashReport[kCountlyCRKeyRoot] = @(CountlyDeviceInfo.isJailbroken);
-    crashReport[kCountlyCRKeyBackground] = @(CountlyDeviceInfo.isInBackground);
-    crashReport[kCountlyCRKeyRun] = @(CountlyCommon.sharedInstance.timeSinceLaunch);
-
+    
     NSMutableDictionary* custom = NSMutableDictionary.new;
     if (CountlyCrashReporter.sharedInstance.crashSegmentation)
         [custom addEntriesFromDictionary:CountlyCrashReporter.sharedInstance.crashSegmentation];
-
+    
     NSDictionary* segmentationOverride = exception.userInfo[kCountlyExceptionUserInfoSegmentationOverrideKey];
     if (segmentationOverride)
         [custom addEntriesFromDictionary:segmentationOverride];
-
+    
     NSMutableDictionary* userInfo = exception.userInfo.mutableCopy;
     [userInfo removeObjectForKey:kCountlyExceptionUserInfoBacktraceKey];
     [userInfo removeObjectForKey:kCountlyExceptionUserInfoSignalCodeKey];
     [userInfo removeObjectForKey:kCountlyExceptionUserInfoSegmentationOverrideKey];
     [custom addEntriesFromDictionary:userInfo];
-
-    if (custom.allKeys.count)
-        crashReport[kCountlyCRKeyCustom] = custom;
-
-    if (CountlyCrashReporter.sharedInstance.customCrashLogs)
-        crashReport[kCountlyCRKeyLogs] = [CountlyCrashReporter.sharedInstance.customCrashLogs componentsJoinedByString:@"\n"];
-
+    
+    CountlyCrashData* crashData = [CountlyCrashReporter.sharedInstance prepareCrashDataWithError:stackTraceJoined name:exception.name description:exception.description isFatal:isFatal customSegmentation:custom];
+    BOOL filterCrash = NO;
+    if(CountlyCrashReporter.sharedInstance.crashFilterCallback) {
+        // Directly passing the callback as we are doing prviouslt with download variant
+        filterCrash = CountlyCrashReporter.sharedInstance.crashFilterCallback(crashData);
+    }
+    
     //NOTE: Do not send crash report if it is matching optional regex filter.
-    if (!matchesFilter)
+    if (matchesFilter || filterCrash)
     {
-        [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:isAutoDetect];
+        CLY_LOG_D(@"Crash matches filter and it will not be processed.");
     }
     else
     {
-        CLY_LOG_D(@"Crash matches filter and it will not be processed.");
+        NSMutableDictionary* crashReport = [crashData.crashMetrics mutableCopy];
+        crashReport[kCountlyCRKeyError] = crashData.stackTrace;
+        crashReport[kCountlyCRKeyBinaryImages] = [CountlyCrashReporter.sharedInstance binaryImagesForStackTrace:stackTrace];
+        crashReport[kCountlyCRKeyName] = crashData.crashDescription;
+        crashReport[kCountlyCRKeyType] = crashData.name;
+        crashReport[kCountlyCRKeyNonfatal] = @(!crashData.fatal);
+        
+        [crashData calculateChangedFields];
+        NSNumber *obValue = [crashData getChangedFieldsAsInt];
+        if(obValue && [obValue intValue] > 0) {
+            crashReport[kCountlyCRKeyOB] = obValue;
+        }
+        
+        if (crashData.crashSegmentation) {
+            NSDictionary* truncatedCrashSegmentation = [crashData.crashSegmentation cly_truncated:@"Crash segmentation"];
+            NSDictionary* limitedCrashSegmentation = [truncatedCrashSegmentation cly_limited:@"Crash segmentation"];
+            crashReport[kCountlyCRKeyCustom] = limitedCrashSegmentation;
+        }
+        
+        if (crashData.breadcrumbs) {
+            crashReport[kCountlyCRKeyLogs] = [crashData.breadcrumbs componentsJoinedByString:@"\n"];
+        }
+
+        [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:isAutoDetect];
     }
 
     if (isAutoDetect)
@@ -321,7 +317,7 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
 
 void CountlySignalHandler(int signalCode)
 {
-    const NSInteger kCountlyStackFramesMax = 128;
+    const unsigned int kCountlyStackFramesMax = 128;
     void *stack[kCountlyStackFramesMax];
     NSInteger frameCount = backtrace(stack, kCountlyStackFramesMax);
     char **lines = backtrace_symbols(stack, (int)frameCount);
@@ -350,21 +346,16 @@ void CountlySignalHandler(int signalCode)
 {
     if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
         return;
-
-    const NSInteger kCountlyCustomCrashLogLengthLimit = 1000;
-
-    if (log.length > kCountlyCustomCrashLogLengthLimit)
-        log = [log substringToIndex:kCountlyCustomCrashLogLengthLimit];
-
-    NSString* logWithDateTime = [NSString stringWithFormat:@"<%@> %@",[self.dateFormatter stringFromDate:NSDate.date], log];
+    
+    log = [log cly_truncatedValue:@"Custom Crash log"];
 
     if (self.shouldUsePLCrashReporter)
     {
-        [CountlyPersistency.sharedInstance writeCustomCrashLogToFile:logWithDateTime];
+        [CountlyPersistency.sharedInstance writeCustomCrashLogToFile:log];
     }
     else
     {
-        [self.customCrashLogs addObject:logWithDateTime];
+        [self.customCrashLogs addObject:log];
 
         if (self.customCrashLogs.count > self.crashLogLimit)
             [self.customCrashLogs removeObjectAtIndex:0];
@@ -476,6 +467,57 @@ void CountlySignalHandler(int signalCode)
         return NO;
 
     return YES;
+}
+
+-(void) setCrashSegmentation:(NSDictionary<NSString *, NSString *>*) crashSegmentation
+{
+    NSDictionary* truncatedSegmentation = [crashSegmentation cly_truncated:@"Crash segmentation"];
+    _crashSegmentation = [truncatedSegmentation cly_limited:@"Crash segmentation"];
+}
+
+- (CountlyCrashData *)prepareCrashDataWithError:(NSString *)error name:(NSString *)name description:(NSString *)description isFatal:(BOOL)isFatal customSegmentation:(NSMutableDictionary *)customSegmentation {
+    if(error == nil) {
+        CLY_LOG_W(@"Error must not be nil");
+    }
+    
+    NSDictionary* truncatedSegmentation = [customSegmentation cly_truncated:@"Exception segmentation"];
+    NSDictionary* limitedSegmentation = [truncatedSegmentation cly_limited:@"[CountlyCrashReporter] prepareCrashData"];
+    
+    return [[CountlyCrashData alloc] initWithStackTrace:error name:name description:description crashSegmentation:limitedSegmentation breadcrumbs:self.customCrashLogs crashMetrics:[self getCrashMetrics] fatal:isFatal];
+}
+
+- (NSMutableDictionary*)getCrashMetrics
+{
+    const NSInteger kCLYMebibit = 1048576;
+    NSMutableDictionary* crashReport = NSMutableDictionary.dictionary;
+    
+    crashReport[kCountlyCRKeyOS] = CountlyDeviceInfo.osName;
+    crashReport[kCountlyCRKeyOSVersion] = CountlyDeviceInfo.osVersion;
+    crashReport[kCountlyCRKeyDevice] = CountlyDeviceInfo.device;
+    crashReport[kCountlyCRKeyArchitecture] = CountlyDeviceInfo.architecture;
+    crashReport[kCountlyCRKeyResolution] = CountlyDeviceInfo.resolution;
+    crashReport[kCountlyCRKeyAppVersion] = CountlyDeviceInfo.appVersion;
+    crashReport[kCountlyCRKeyAppBuild] = CountlyDeviceInfo.appBuild;
+    crashReport[kCountlyCRKeyBuildUUID] = CountlyCrashReporter.sharedInstance.buildUUID ?: @"";
+    crashReport[kCountlyCRKeyExecutableName] = CountlyCrashReporter.sharedInstance.executableName ?: @"";
+   
+    crashReport[kCountlyCRKeyRAMCurrent] = @((CountlyDeviceInfo.totalRAM - CountlyDeviceInfo.freeRAM) / kCLYMebibit);
+    crashReport[kCountlyCRKeyRAMTotal] = @(CountlyDeviceInfo.totalRAM / kCLYMebibit);
+    crashReport[kCountlyCRKeyDiskCurrent] = @((CountlyDeviceInfo.totalDisk - CountlyDeviceInfo.freeDisk) / kCLYMebibit);
+    crashReport[kCountlyCRKeyDiskTotal] = @(CountlyDeviceInfo.totalDisk / kCLYMebibit);
+    NSInteger batteryLevel = CountlyDeviceInfo.batteryLevel;
+    // We will add battery level only if there is a valid value.
+    if (batteryLevel >= 0)
+    {
+        crashReport[kCountlyCRKeyBattery] = @(batteryLevel);
+    }
+    crashReport[kCountlyCRKeyOrientation] = CountlyDeviceInfo.orientation;
+    crashReport[kCountlyCRKeyOnline] = @((CountlyDeviceInfo.connectionType) ? 1 : 0 );
+    crashReport[kCountlyCRKeyRoot] = @(CountlyDeviceInfo.isJailbroken);
+    crashReport[kCountlyCRKeyBackground] = @(CountlyDeviceInfo.isInBackground);
+    crashReport[kCountlyCRKeyRun] = @(CountlyCommon.sharedInstance.timeSinceLaunch);
+    
+    return crashReport;
 }
 
 @end

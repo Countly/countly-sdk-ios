@@ -5,8 +5,9 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
+#import "Resettable.h"
 
-@interface CountlyConsentManager : NSObject
+@interface CountlyConsentManager : NSObject <Resettable>
 
 @property (nonatomic) BOOL requiresConsent;
 
@@ -21,6 +22,8 @@
 @property (nonatomic, readonly) BOOL consentForPerformanceMonitoring;
 @property (nonatomic, readonly) BOOL consentForFeedback;
 @property (nonatomic, readonly) BOOL consentForRemoteConfig;
+@property (nonatomic, readonly) BOOL consentForContent;
+
 
 + (instancetype)sharedInstance;
 - (void)giveConsentForFeatures:(NSArray *)features;
@@ -29,5 +32,6 @@
 - (void)cancelConsentForAllFeatures;
 - (void)cancelConsentForAllFeaturesWithoutSendingConsentsRequest;
 - (BOOL)hasAnyConsent;
+- (void)sendConsents;
 
 @end

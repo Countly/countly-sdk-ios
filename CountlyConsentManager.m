@@ -17,6 +17,7 @@ CLYConsent const CLYConsentAttribution          = @"attribution";
 CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
 CLYConsent const CLYConsentFeedback             = @"feedback";
 CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
+CLYConsent const CLYConsentContent              = @"content";
 
 
 @implementation CountlyConsentManager
@@ -32,16 +33,17 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 @synthesize consentForPerformanceMonitoring = _consentForPerformanceMonitoring;
 @synthesize consentForFeedback = _consentForFeedback;
 @synthesize consentForRemoteConfig = _consentForRemoteConfig;
+@synthesize consentForContent = _consentForContent;
 
 #pragma mark -
 
+static CountlyConsentManager* s_sharedInstance = nil;
+static dispatch_once_t onceToken;
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
         return nil;
 
-    static CountlyConsentManager* s_sharedInstance = nil;
-    static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
     return s_sharedInstance;
 }
@@ -57,6 +59,12 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     return self;
 }
 
+- (void)resetInstance {
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    [self cancelConsentForAllFeatures];
+    onceToken = 0;
+    s_sharedInstance = nil;
+}
 
 #pragma mark -
 
@@ -108,6 +116,9 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 
     if ([features containsObject:CLYConsentRemoteConfig] && !self.consentForRemoteConfig)
         self.consentForRemoteConfig = YES;
+    
+    if ([features containsObject:CLYConsentContent] && !self.consentForContent)
+        self.consentForContent = YES;
 
     [self sendConsents];
 }
@@ -137,7 +148,10 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
         return;
 
     if ([features containsObject:CLYConsentSessions] && self.consentForSessions)
+    {
+        [CountlyConnectionManager.sharedInstance endSession];
         self.consentForSessions = NO;
+    }
 
     if ([features containsObject:CLYConsentEvents] && self.consentForEvents)
         self.consentForEvents = NO;
@@ -168,6 +182,9 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 
     if ([features containsObject:CLYConsentRemoteConfig] && self.consentForRemoteConfig)
         self.consentForRemoteConfig = NO;
+    
+    if ([features containsObject:CLYConsentContent] && self.consentForContent)
+        self.consentForContent = NO;
 
     if (!shouldSkipSendingConsentsRequest)
         [self sendConsents];
@@ -189,6 +206,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
         CLYConsentPerformanceMonitoring: @(self.consentForPerformanceMonitoring),
         CLYConsentFeedback: @(self.consentForFeedback),
         CLYConsentRemoteConfig: @(self.consentForRemoteConfig),
+        CLYConsentContent: @(self.consentForContent),
     };
 
     [CountlyConnectionManager.sharedInstance sendConsents:[consents cly_JSONify]];
@@ -210,6 +228,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
         CLYConsentPerformanceMonitoring,
         CLYConsentFeedback,
         CLYConsentRemoteConfig,
+        CLYConsentContent
     ];
 }
 
@@ -227,7 +246,8 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     self.consentForAttribution ||
     self.consentForPerformanceMonitoring ||
     self.consentForFeedback ||
-    self.consentForRemoteConfig;
+    self.consentForRemoteConfig ||
+    self.consentForContent;
 }
 
 
@@ -264,7 +284,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     {
         CLY_LOG_D(@"Consent for Events is cancelled.");
 
-        [CountlyConnectionManager.sharedInstance sendEvents];
+        [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
         [CountlyPersistency.sharedInstance clearAllTimedEvents];
     }
 }
@@ -277,6 +297,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     if (consentForUserDetails)
     {
         CLY_LOG_D(@"Consent for UserDetails is given.");
+        [CountlyCommon.sharedInstance recordOrientation];
         [Countly.user save];
     }
     else
@@ -344,6 +365,8 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     else
     {
         CLY_LOG_D(@"Consent for Location is cancelled.");
+        
+        [CountlyConnectionManager.sharedInstance sendLocationInfo];
     }
 }
 
@@ -415,7 +438,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     {
         CLY_LOG_D(@"Consent for Feedback is given.");
 
-        [CountlyFeedbacks.sharedInstance checkForStarRatingAutoAsk];
+        [CountlyFeedbacksInternal.sharedInstance checkForStarRatingAutoAsk];
     }
     else
     {
@@ -437,6 +460,23 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
     else
     {
         CLY_LOG_D(@"Consent for RemoteConfig is cancelled.");
+    }
+}
+
+- (void)setConsentForContent:(BOOL)consentForContent
+{
+    _consentForContent = consentForContent;
+    
+    if (consentForContent)
+    {
+        CLY_LOG_D(@"Consent for Content is given.");
+    }
+    else
+    {
+        CLY_LOG_D(@"Consent for Content is cancelled.");
+#if (TARGET_OS_IOS)
+        [CountlyContentBuilderInternal.sharedInstance exitContentZone];
+#endif
     }
 }
 
@@ -536,6 +576,14 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
       return YES;
 
     return _consentForRemoteConfig;
+}
+
+- (BOOL)consentForContent
+{
+    if (!self.requiresConsent)
+        return YES;
+    
+    return _consentForContent;
 }
 
 @end

@@ -15,7 +15,7 @@
 #import "CountlyCrashReporter.h"
 #import "CountlyConfig.h"
 #import "CountlyViewTrackingInternal.h"
-#import "CountlyFeedbacks.h"
+#import "CountlyFeedbacksInternal.h"
 #import "CountlyFeedbackWidget.h"
 #import "CountlyPushNotifications.h"
 #import "CountlyNotificationService.h"
@@ -28,6 +28,9 @@
 #import "CountlyRemoteConfig.h"
 #import "CountlyViewTracking.h"
 #import "Resettable.h"
+#import "CountlyCrashData.h"
+#import "CountlyContentBuilderInternal.h"
+#import "CountlyExperimentalConfig.h"
 
 #define CLY_LOG_E(fmt, ...) CountlyInternalLog(CLYInternalLogLevelError, fmt, ##__VA_ARGS__)
 #define CLY_LOG_W(fmt, ...) CountlyInternalLog(CLYInternalLogLevelWarning, fmt, ##__VA_ARGS__)
@@ -56,6 +59,7 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString* const kCountlyErrorDomain;
 
 extern NSString* const kCountlyReservedEventOrientation;
+extern NSString* const kCountlyVisibility;
 
 NS_ERROR_ENUM(kCountlyErrorDomain)
 {
@@ -76,6 +80,7 @@ extern NSString* const kCountlySDKName;
 
 @property (nonatomic) BOOL hasStarted;
 @property (nonatomic) BOOL enableDebug;
+
 @property (nonatomic) BOOL shouldIgnoreTrustCheck;
 @property (nonatomic, weak) id <CountlyLoggerDelegate> loggerDelegate;
 @property (nonatomic) CLYInternalLogLevel internalLogLevel;
@@ -84,6 +89,8 @@ extern NSString* const kCountlySDKName;
 @property (nonatomic) BOOL enableManualSessionControlHybridMode;
 @property (nonatomic) BOOL enableOrientationTracking;
 @property (nonatomic) BOOL enableServerConfiguration;
+
+@property (nonatomic) BOOL enableVisibiltyTracking;
 
 
 @property (nonatomic) NSUInteger maxKeyLength;
@@ -112,12 +119,14 @@ void CountlyPrint(NSString *stringToPrint);
 
 - (void)observeDeviceOrientationChanges;
 
+- (void)recordOrientation;
+
 - (BOOL)hasStarted_;
 @end
 
 
 #if (TARGET_OS_IOS)
-@interface CLYInternalViewController : UIViewController
+@interface CLYInternalViewController : UIViewController <WKNavigationDelegate>
 @property (nonatomic, weak) WKWebView* webView;
 @end
 
@@ -145,12 +154,14 @@ void CountlyPrint(NSString *stringToPrint);
 
 @interface NSArray (Countly)
 - (NSString *)cly_JSONify;
+- (NSArray *)cly_filterSupportedDataTypes;
 @end
 
 @interface NSDictionary (Countly)
 - (NSString *)cly_JSONify;
 - (NSDictionary *)cly_truncated:(NSString *)explanation;
 - (NSDictionary *)cly_limited:(NSString *)explanation;
+- (NSMutableDictionary *)cly_filterSupportedDataTypes;
 @end
 
 @interface NSData (Countly)

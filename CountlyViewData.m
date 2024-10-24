@@ -17,7 +17,7 @@
         self.viewName = viewName;
         self.viewStartTime = CountlyCommon.sharedInstance.uniqueTimestamp;
         self.isAutoStoppedView = false;
-        self.isAutoPaused = false;
+        self.willStartAgain = false;
     }
     
     return self;
@@ -27,15 +27,6 @@
 {
     NSTimeInterval duration = NSDate.date.timeIntervalSince1970 - self.viewStartTime;
     return duration;
-}
-
-- (void)autoPauseView
-{
-    if (self.viewStartTime) // To check that view is not paused already manually
-    {
-        self.isAutoPaused = true;
-    }
-    [self pauseView];
 }
 
 - (void)pauseView
@@ -48,7 +39,6 @@
 
 - (void)resumeView
 {
-    self.isAutoPaused = false;
     self.viewStartTime = CountlyCommon.sharedInstance.uniqueTimestamp;
 }
 

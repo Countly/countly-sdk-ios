@@ -8,7 +8,10 @@
 #import <CoreLocation/CoreLocation.h>
 #import "CountlyRCData.h"
 #import "CountlyAPMConfig.h"
+#import "CountlyCrashesConfig.h"
 #import "CountlySDKLimitsConfig.h"
+#import "CountlyExperimentalConfig.h"
+#import "CountlyContentConfig.h"
 
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV )
 #import <UIKit/UIKit.h>
@@ -16,6 +19,14 @@
 
 
 NS_ASSUME_NONNULL_BEGIN
+
+typedef enum : NSUInteger
+{
+    WIDGET_APPEARED,
+    WIDGET_CLOSED,
+} WidgetState;
+
+typedef void (^WidgetCallback)(WidgetState widgetState);
 
 //NOTE: Countly features
 typedef NSString* CLYFeature NS_EXTENSIBLE_STRING_ENUM;
@@ -76,6 +87,7 @@ extern CLYConsent const CLYConsentAttribution;
 extern CLYConsent const CLYConsentPerformanceMonitoring;
 extern CLYConsent const CLYConsentFeedback;
 extern CLYConsent const CLYConsentRemoteConfig;
+extern CLYConsent const CLYConsentContent;
 
 //NOTE: Push Notification Test Modes
 typedef NSString* CLYPushTestMode NS_EXTENSIBLE_STRING_ENUM;
@@ -112,6 +124,7 @@ extern CLYRequestResult const CLYResponseError;
 typedef void (^RCVariantCallback)(CLYRequestResult response, NSError *_Nullable error);
 
 typedef void (^RCDownloadCallback)(CLYRequestResult response, NSError *_Nullable error, BOOL fullValueUpdate, NSDictionary<NSString *, CountlyRCData *>* downloadedValues);
+
 
 //NOTE: Internal log levels
 typedef enum : NSUInteger
@@ -335,6 +348,13 @@ typedef enum : NSUInteger
 @property (nonatomic, copy) NSString* deviceID;
 
 /**
+ * This menthod will enable temporary device ID mode
+ * @discussion All requests will be on hold, but they will be persistently stored.
+ * @discussion When in temporary device ID mode, method calls for presenting feedback widgets and updating remote config will be ignored.
+ */
+- (void)enableTemporaryDeviceIDMode;
+
+/**
  * For resetting persistently stored device ID on SDK start.
  * @discussion If set, persistently stored device ID will be reset and new device ID specified on @c deviceID property of @c CountlyConfig object will be stored and used.
  * @discussion It is meant to be used for debugging purposes only while developing.
@@ -518,6 +538,8 @@ typedef enum : NSUInteger
  */
 @property (nonatomic, copy) BOOL (^shouldSendCrashReportCallback)(NSDictionary * crashReport);
 
+- (CountlyCrashesConfig *) crashes;
+
 #pragma mark -
 
 /**
@@ -641,11 +663,26 @@ typedef enum : NSUInteger
 @property (nonatomic) BOOL enableOrientationTracking;
 
 /**
- * This is an experimental feature
+ * This is an experimental feature and it can have breaking changes
  * For enabling fetching and application of server config values.
  * @discussion If set, Server Config values from Countly Server will be fetched at the beginning of a session.
  */
 @property (nonatomic) BOOL enableServerConfiguration;
+
+#if (TARGET_OS_IOS)
+/**
+ * Variable to access content configurations.
+ * @discussion Content configurations for developer to interact with SDK.
+ */
+- (CountlyContentConfig *) content;
+#endif
+
+/**
+ * This is an experimental feature and it can have breaking changes
+ * Variable to access experimental configurations.
+ * @discussion Experimental configurations for developer to interact with SDK.
+ */
+- (CountlyExperimentalConfig *) experimental;
 NS_ASSUME_NONNULL_END
 
 @end
