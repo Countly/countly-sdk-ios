@@ -34,8 +34,9 @@ jobs:
             {os_version: 13, sdk: "macosx14.2"},
             {os_version: 13, sdk: "appletvos17.2"},
             {os_version: 13, sdk: "watchos10.2"},
-            {os_version: 15, sdk: "xros1.2"},
-            {os_version: 15, sdk: "xros2.0"}
+            {os_version: 13, sdk: "xros1.0"},
+            {os_version: 15, sdk: "xros2.0"},
+            {os_version: 15, sdk: "xros2.1"}
           ]
     steps:
       # To check the github context
