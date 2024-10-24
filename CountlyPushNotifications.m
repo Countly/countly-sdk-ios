@@ -17,7 +17,7 @@ NSString* const kCountlyPNKeymacOS = @"m";
 CLYPushTestMode const CLYPushTestModeDevelopment = @"CLYPushTestModeDevelopment";
 CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFlightOrAdHoc";
 
-#if (TARGET_OS_IOS || TARGET_OS_OSX)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_OSX)
 @interface CountlyPushNotifications () <UNUserNotificationCenterDelegate>
 @property (nonatomic) NSString* token;
 #else
@@ -25,7 +25,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 #endif
 @end
 
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
     #define CLYApplication UIApplication
 #elif (TARGET_OS_OSX)
     #define CLYApplication NSApplication
@@ -58,7 +58,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
 #pragma mark ---
 
-#if (TARGET_OS_IOS || TARGET_OS_OSX)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_OSX)
 - (void)startPushNotifications
 {
     if (!self.isEnabledOnInitialConfig)
@@ -198,7 +198,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.01 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
     {
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
         [UIApplication.sharedApplication openURL:[NSURL URLWithString:URLString] options:@{} completionHandler:nil];
 #elif (TARGET_OS_OSX)
         [NSWorkspace.sharedWorkspace openURL:[NSURL URLWithString:URLString]];
@@ -223,7 +223,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
         return;
 
     NSString* platform = @"unknown";
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
     platform = kCountlyPNKeyiOS;
 #elif (TARGET_OS_OSX)
     platform = kCountlyPNKeymacOS;
@@ -338,7 +338,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
 
 @implementation NSObject (CountlyPushNotifications)
-#if (TARGET_OS_IOS || TARGET_OS_OSX)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_OSX)
 - (void)Countly_application:(CLYApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken
 {
     CLY_LOG_D(@"App didRegisterForRemoteNotificationsWithDeviceToken: %@", deviceToken);

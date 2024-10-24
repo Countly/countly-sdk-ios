@@ -23,7 +23,7 @@ extern NSString* const kCountlyPreviousEventName;
 
 + (instancetype)sharedInstance;
 
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
 - (void)startAutoViewTracking;
 - (void)stopAutoViewTracking;
 - (void)addExceptionForAutoViewTracking:(NSString *)exception;
@@ -49,7 +49,7 @@ extern NSString* const kCountlyPreviousEventName;
 - (void)addSegmentationToViewWithID:(NSString *)viewID segmentation:(NSDictionary *)segmentation;
 - (void)addSegmentationToViewWithName:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
 
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
 - (void)addAutoViewTrackingExclutionList:(NSArray *)viewTrackingExclusionList;
 #endif
 @end

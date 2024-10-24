@@ -48,7 +48,7 @@ static dispatch_once_t onceToken;
 {
     if (self = [super init])
     {
-#if (TARGET_OS_IOS  || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION  || TARGET_OS_TV )
         [NSNotificationCenter.defaultCenter addObserver:self
                                                selector:@selector(applicationDidEnterBackground:)
                                                    name:UIApplicationDidEnterBackgroundNotification
@@ -197,8 +197,8 @@ static dispatch_once_t onceToken;
         [CountlyCommon.sharedInstance recordOrientation];
     
     //NOTE: If there is no consent for sessions, location info and attribution should be sent separately, as they cannot be sent with begin_session request.
-   
-#if (TARGET_OS_IOS || TARGET_OS_OSX)
+
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_OSX )
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
     if ([config.features containsObject:CLYPushNotifications])
     {
@@ -233,8 +233,8 @@ static dispatch_once_t onceToken;
         CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;
         [CountlyCrashReporter.sharedInstance startCrashReporting];
     }
-    
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+
+#if (TARGET_OS_IOS || TARGET_OS_TV )
     if (config.enableAutomaticViewTracking || [config.features containsObject:CLYAutoViewTracking])
     {
         // Print deprecation flag for feature
@@ -614,8 +614,8 @@ static dispatch_once_t onceToken;
     
     if ([CountlyPersistency.sharedInstance retrieveIsCustomDeviceID])
         return CLYDeviceIDTypeCustom;
-    
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV )
     return CLYDeviceIDTypeIDFV;
 #else
     return CLYDeviceIDTypeNSUUID;
@@ -1035,7 +1035,7 @@ static dispatch_once_t onceToken;
 
 
 #pragma mark - Push Notifications
-#if (TARGET_OS_IOS || TARGET_OS_OSX)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_OSX )
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
 
 - (void)askForNotificationPermission
@@ -1188,7 +1188,7 @@ static dispatch_once_t onceToken;
     [CountlyViewTrackingInternal.sharedInstance startAutoStoppedView:viewName segmentation:segmentation];
 }
 
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV )
 - (void)addExceptionForAutoViewTracking:(NSString *)exception
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, exception);

@@ -13,7 +13,7 @@
 #import "CountlyExperimentalConfig.h"
 #import "CountlyContentConfig.h"
 
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV )
 #import <UIKit/UIKit.h>
 #endif
 
@@ -30,7 +30,7 @@ typedef void (^WidgetCallback)(WidgetState widgetState);
 
 //NOTE: Countly features
 typedef NSString* CLYFeature NS_EXTENSIBLE_STRING_ENUM;
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION )
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
 extern CLYFeature const CLYPushNotifications;
 #endif
@@ -226,7 +226,7 @@ typedef enum : NSUInteger
 
 #pragma mark -
 
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
 /**
  * For enabling automatic view tacking.
  * @discussion If set, views will automatically track.

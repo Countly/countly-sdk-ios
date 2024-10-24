@@ -25,7 +25,7 @@ NSString* const kCountlyPNKeyActionButtonTitle  = @"t";
 NSString* const kCountlyPNKeyActionButtonURL    = @"l";
 
 @implementation CountlyNotificationService
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 + (void)didReceiveNotificationRequest:(UNNotificationRequest *)request withContentHandler:(void (^)(UNNotificationContent *))contentHandler
 {
     COUNTLY_EXT_LOG(@"didReceiveNotificationRequest:withContentHandler:");
