@@ -1,5 +1,5 @@
 ## 24.7.4
-* Mitigated an issue with the feedback widget that caused it to display a blank white page on devices running iOS versions earlier than 17
+* Mitigated an issue with URL parameter encoding in the feedback widget that resulted in a blank page on devices running iOS versions prior to 17
 
 * Added `CountlyFeedbacks:` interface with new view methods (Access with `Countly.sharedInstance.feedback`):
     * Method to present feedback widget (wih an optional widget selector(name, ID or tag) string and a Callback):
