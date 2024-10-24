@@ -400,12 +400,12 @@ static dispatch_once_t onceToken;
     
     isSuspended = YES;
     
+    [CountlyViewTrackingInternal.sharedInstance applicationDidEnterBackground];
+    
     [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
     
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance endSession];
-    
-    [CountlyViewTrackingInternal.sharedInstance applicationDidEnterBackground];
     
     [CountlyPersistency.sharedInstance saveToFile];
 }

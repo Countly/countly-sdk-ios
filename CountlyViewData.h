@@ -60,7 +60,7 @@
  * Duration of the view
  * @discussion it returns the duration of view in foreground after view started.
  */
-- (NSTimeInterval)duration;
+- (NSInteger)duration;
 
 
 /**
