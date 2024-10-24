@@ -1,4 +1,7 @@
-## x.x.x
+## 24.7.4
+* Mitigated an issue with the feedback widget URL encoding on iOS 16 and earlier, which prevented the widget from displaying
+* Mitigated an issue with content fetch URL encoding on iOS 16 and earlier, which caused the request to fail
+
 * Added `CountlyFeedbacks:` interface with new view methods (Access with `Countly.sharedInstance.feedback`):
     * Method to present feedback widget (wih an optional widget selector(name, ID or tag) string and a Callback):
         * `presentNPS`
