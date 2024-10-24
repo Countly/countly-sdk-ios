@@ -1,5 +1,9 @@
-name: XCTest
+name: Build Tests the SDK
 
+permissions:
+  checks: write
+  pull-requests: write
+  
 on:
     push:
       branches:
@@ -13,6 +17,8 @@ on:
 jobs:
   test-ios:
     runs-on: macos-latest
+    strategy:
+      fail-fast: false
 
     steps:
     # Checkout the repository
