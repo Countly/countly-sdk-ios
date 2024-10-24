@@ -1,12 +1,14 @@
 name: XCTest
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+    push:
+      branches:
+        - master
+        - staging
+    pull_request:
+      branches:
+        - master
+        - staging
 
 jobs:
   test-ios:
