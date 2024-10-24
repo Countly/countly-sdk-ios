@@ -1,5 +1,6 @@
 ## 24.7.4
-* Mitigated an issue with URL parameter encoding in the feedback widget that resulted in a blank page on devices running iOS versions prior to 17
+* Mitigated an issue with the feedback widget URL encoding on iOS 16 and earlier, which prevented the widget from displaying
+* Mitigated an issue with content fetch URL encoding on iOS 16 and earlier, which caused the request to fail
 
 * Added `CountlyFeedbacks:` interface with new view methods (Access with `Countly.sharedInstance.feedback`):
     * Method to present feedback widget (wih an optional widget selector(name, ID or tag) string and a Callback):
