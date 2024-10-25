@@ -8,28 +8,45 @@
 import XCTest
 @testable import Countly
 
-class CountlyViewTrackingTests: CountlyBaseTestCase {
+class CountlyViewTrackingTests: CountlyViewBaseTest {
     
     func testStartAndStopView() throws {
         let config = createBaseConfig()
         Countly.sharedInstance().start(with: config)
         
+        // Start the first view with "View1" and set an expectation to stop after 3 seconds
         let viewID = Countly.sharedInstance().views().startView("View1")
         XCTAssertNotNil(viewID, "View should be started successfully.")
         
-        let expectation = XCTestExpectation(description: "View should be stopped after 3 seconds.")
+        let expectation = XCTestExpectation(description: "First view should be stopped after 3 seconds.")
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             Countly.sharedInstance().views().stopView(withName: "View1")
             expectation.fulfill()
         }
         
-        // Wait for the expectation to be fulfilled within 5 seconds
-        wait(for: [expectation], timeout: 5.0)
+        // Start the second view with "View1" and set an expectation to stop after 5 seconds
+        let viewID1 = Countly.sharedInstance().views().startView("View1")
+        XCTAssertNotNil(viewID1, "View should be started successfully.")
         
-        // Check recorded events after view has been stopped
-        checkRecordedEventsForView(viewName: "View1")
+        let expectation1 = XCTestExpectation(description: "Second view should be stopped after 5 seconds.")
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+            Countly.sharedInstance().views().stopView(withName: "View1")
+            expectation1.fulfill()
+        }
+        
+        // Wait for both expectations to be fulfilled within 10 seconds
+        wait(for: [expectation, expectation1], timeout: 10.0)
+        
+        // Verify recorded events
+        let startedEventsCount = ["View1": 2] // Expecting 2 start events for "View1"
+        let endedEventsDurations = ["View1": [3, 5]] // Expecting 2 stop events with durations 3 and 5 seconds
+        
+        // Call validateRecordedEvents to check if the events match expectations
+        validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
     }
+
     
     func testStartAndStopViewWithSegmentation() throws {
         let config = createBaseConfig()
@@ -50,8 +67,12 @@ class CountlyViewTrackingTests: CountlyBaseTestCase {
         // Wait for the stop operation to complete within the timeout
         wait(for: [expectation], timeout: 5.0)
         
-        // Check recorded events for the view with segmentation
-        checkRecordedEventsForView(viewName: "View1", segmentation: ["key": "value"])
+        // Verify recorded events
+        let startedEventsCount = ["View1": 1] // Expecting 1 start events for "View1"
+        let endedEventsDurations = ["View1": [4]] // Expecting 1 stop events with durations 4 seconds
+        
+        // Call validateRecordedEvents to check if the events match expectations
+        validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
     }
     
     func testStartViewAndStopViewWithID() throws {
@@ -74,8 +95,12 @@ class CountlyViewTrackingTests: CountlyBaseTestCase {
         // Wait for the expectation to be fulfilled within 5 seconds
         wait(for: [expectation], timeout: 5.0)
         
-        // Check recorded events for the view using the viewID
-        checkRecordedEventsForView(withID: viewID)
+        // Verify recorded events
+        let startedEventsCount = ["View1": 1] // Expecting 1 start events for "View1"
+        let endedEventsDurations = ["View1": [3]] // Expecting 1 stop events with durations 3 seconds
+        
+        // Call validateRecordedEvents to check if the events match expectations
+        validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
     }
     
     func testStartAndStopMultipleViewsIncludingAutoStoppedViews() throws {
@@ -88,17 +113,15 @@ class CountlyViewTrackingTests: CountlyBaseTestCase {
             return
         }
         
-        guard let viewID2 = Countly.sharedInstance().views().startAutoStoppedView("View2") else {
-            XCTFail("View2 should be started successfully.")
-            return
-        }
+       Countly.sharedInstance().views().startAutoStoppedView("View2")
         
         let expectation = XCTestExpectation(description: "Views should be stopped after 5 seconds.")
         
         // Stop the views after 5 seconds
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-            Countly.sharedInstance().views().stopView(withName: "View1")
-            Countly.sharedInstance().views().stopView(withID: viewID2)
+            Countly.sharedInstance().views().startView("View3")
+            
+            Countly.sharedInstance().views().stopView(withID: viewID1)
             expectation.fulfill()
         }
         
@@ -106,8 +129,16 @@ class CountlyViewTrackingTests: CountlyBaseTestCase {
         wait(for: [expectation], timeout: 7.0)  // Increased timeout to ensure sufficient time
         
         // Check recorded events for both views
-        checkRecordedEventsForView(viewName: "View1")
-        checkRecordedEventsForView(withID: viewID2)
+        // Verify recorded events
+        let startedEventsCount = ["View1": 1,
+                                  "View2" : 1,
+                                  "View3" : 1]
+        
+        let endedEventsDurations = ["View1": [5],
+                                    "View2": [5]]
+        
+        // Call validateRecordedEvents to check if the events match expectations
+        validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
     }
     
     func testPauseAndResumeViewsForMultipleViews() throws {
@@ -145,8 +176,8 @@ class CountlyViewTrackingTests: CountlyBaseTestCase {
             resumeExpectation.fulfill()
         }
         
-        // Stop both views after 4 more seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 11) {
+        // Stop both views after 5 more seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 12) {
             Countly.sharedInstance().views().stopView(withName: "View1")
             Countly.sharedInstance().views().stopView(withID: viewID2)
             stopExpectation.fulfill()
@@ -156,8 +187,15 @@ class CountlyViewTrackingTests: CountlyBaseTestCase {
         wait(for: [pauseExpectation, resumeExpectation, stopExpectation], timeout: 15.0)
         
         // Check recorded events for both views
-        checkRecordedEventsForView(viewName: "View1")
-        checkRecordedEventsForView(withID: viewID2)
+        // Verify recorded events
+        let startedEventsCount = ["View1": 1,
+                                  "View2" : 1]
+        
+        let endedEventsDurations = ["View1": [4, 5],
+                                    "View2": [12]]
+        
+        // Call validateRecordedEvents to check if the events match expectations
+        validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
     }
     
     func testMultiplePauseAndResumeCyclesOnSameView() throws {
@@ -174,7 +212,11 @@ class CountlyViewTrackingTests: CountlyBaseTestCase {
         // Create expectations
         let pauseExpectation = XCTestExpectation(description: "Pause View1 after 4 seconds.")
         let resumeExpectation = XCTestExpectation(description: "Resume View1 after 3 seconds of pause.")
-        let stopExpectation = XCTestExpectation(description: "Stop View1 after another 4 seconds of resuming.")
+        
+        let pauseExpectation1 = XCTestExpectation(description: "Pause View1 after 3 seconds.")
+        let resumeExpectation1 = XCTestExpectation(description: "Resume View1 after 5 seconds of pause.")
+        
+        let stopExpectation = XCTestExpectation(description: "Stop View1 after another 5 seconds of resuming.")
         
         // Pause the view after 4 seconds
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
@@ -188,17 +230,37 @@ class CountlyViewTrackingTests: CountlyBaseTestCase {
             resumeExpectation.fulfill()
         }
         
+        // Pause the view after 4 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+            Countly.sharedInstance().views().pauseView(withID: viewID)
+            pauseExpectation1.fulfill()
+        }
+        
+        // Resume the view after 3 more seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 15) { // 4 + 3 seconds
+            Countly.sharedInstance().views().resumeView(withID: viewID)
+            resumeExpectation1.fulfill()
+        }
+        
         // Stop the view after another 4 seconds of resuming
-        DispatchQueue.main.asyncAfter(deadline: .now() + 11) { // 4 + 3 + 4 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 20) { // 4 + 3 + 4 seconds
             Countly.sharedInstance().views().stopView(withName: "View1")
             stopExpectation.fulfill()
         }
         
-        // Wait for all expectations to be fulfilled
-        wait(for: [pauseExpectation, resumeExpectation, stopExpectation], timeout: 12.0)
+        Countly.sharedInstance().views().startView("View1")
+        Countly.sharedInstance().views().stopView(withName: "View1")
         
-        // Check recorded events for the view
-        checkRecordedEventsForView(viewName: "View1")
+        // Wait for all expectations to be fulfilled
+        wait(for: [pauseExpectation, resumeExpectation,pauseExpectation1, resumeExpectation1, stopExpectation], timeout: 35.0)
+        
+        // Verify recorded events
+        let startedEventsCount = ["View1": 2]
+        
+        let endedEventsDurations = ["View1": [4, 3, 5, 0]]
+        
+        // Call validateRecordedEvents to check if the events match expectations
+        validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
     }
     
     func testStartViewWhileAutoViewTrackingEnabled() throws {
@@ -208,9 +270,17 @@ class CountlyViewTrackingTests: CountlyBaseTestCase {
         
         // Start a manual view tracking call
         let viewID = Countly.sharedInstance().views().startView("View1")
-        
+        Countly.sharedInstance().views().stopView(withName: "View1")
+        Countly.sharedInstance().views().stopView(withID: viewID)
         // Assert that manual view tracking returns nil when auto tracking is enabled
         XCTAssertNil(viewID, "Manual view tracking should be ignored when auto view tracking is enabled.")
+        // Verify recorded events
+        let startedEventsCount: [String: Int] = [:]
+        
+        let endedEventsDurations : [String: [Int]] = [:]
+        
+        // Call validateRecordedEvents to check if the events match expectations
+        validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
     }
     
     func testStartAndStopAutoStoppedViewWithSegmentation() throws {
@@ -237,8 +307,12 @@ class CountlyViewTrackingTests: CountlyBaseTestCase {
         // Wait for the stop expectation
         wait(for: [stopExpectation], timeout: 6.0) // Allow a small buffer beyond the 4-second delay
         
-        // Check the recorded events for the view, including segmentation
-        checkRecordedEventsForView(withID: viewID, segmentation: ["key": "value"])
+        let startedEventsCount = ["View1": 1]
+        
+        let endedEventsDurations = ["View1": [4]]
+        
+        // Call validateRecordedEvents to check if the events match expectations
+        validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
     }
 
     func testStartAutoStoppedViewAndInitiateAnother() throws {
@@ -273,9 +347,14 @@ class CountlyViewTrackingTests: CountlyBaseTestCase {
         // Wait for both expectations
         wait(for: [startExpectation, stopExpectation], timeout: 10.0)
         
-        // Check recorded events after views have been stopped
-        checkRecordedEventsForView(withID: viewID1)
-        checkRecordedEventsForView(withID: viewID2)
+        let startedEventsCount = ["View1": 1,
+                                  "View2": 1]
+        
+        let endedEventsDurations = ["View1": [4],
+                                    "View2": [3]]
+        
+        // Call validateRecordedEvents to check if the events match expectations
+        validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
     }
     
     func testStartRegularViewPauseAndResumeMultipleTimesThenStop() throws {
@@ -285,35 +364,44 @@ class CountlyViewTrackingTests: CountlyBaseTestCase {
         // Start the view
         let viewID = Countly.sharedInstance().views().startView("View1")
         XCTAssertNotNil(viewID, "View should be started successfully.")
-        
+        var viewID2 = "";
         // Create expectations
         let pauseExpectation = XCTestExpectation(description: "Pause the view after 3 seconds")
-        let resumeExpectation = XCTestExpectation(description: "Resume the view after another 3 seconds")
-        let stopExpectation = XCTestExpectation(description: "Stop the view after 4 seconds")
+        let resumeExpectation = XCTestExpectation(description: "Resume the view after another 4 seconds")
+        let stopExpectation = XCTestExpectation(description: "Stop the view after 5 seconds")
         
         // Pause the view after 3 seconds
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             Countly.sharedInstance().views().pauseView(withID: viewID)
+            viewID2 = Countly.sharedInstance().views().startView("View2")
             pauseExpectation.fulfill()
         }
         
         // Resume the view after another 3 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 6) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 7) {
             Countly.sharedInstance().views().resumeView(withID: viewID)
+            Countly.sharedInstance().views().pauseView(withID: viewID2)
             resumeExpectation.fulfill()
         }
         
         // Stop the view after 4 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 12) {
             Countly.sharedInstance().views().stopView(withName: "View1")
+            Countly.sharedInstance().views().resumeView(withID: viewID2)
             stopExpectation.fulfill()
         }
         
         // Wait for all expectations to be fulfilled
-        wait(for: [pauseExpectation, resumeExpectation, stopExpectation], timeout: 12.0)
+        wait(for: [pauseExpectation, resumeExpectation, stopExpectation], timeout: 20)
         
-        // Check recorded events after stopping the view
-        checkRecordedEventsForView(viewName: "View1")
+        let startedEventsCount = ["View1": 1,
+                                  "View2": 1]
+        
+        let endedEventsDurations = ["View1": [3, 5],
+                                    "View2": [4]]
+        
+        // Call validateRecordedEvents to check if the events match expectations
+        validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
     }
     
     func testStopAllViewsWithSpecificSegmentation() throws {
@@ -336,10 +424,16 @@ class CountlyViewTrackingTests: CountlyBaseTestCase {
         }
         
         // Wait for the expectation to be fulfilled
-        wait(for: [stopAllViewsExpectation], timeout: 5.0)
+        wait(for: [stopAllViewsExpectation], timeout: 6.0)
         
-        // Verify that all views have been stopped with the specified segmentation
-        checkAllViewsStoppedWithSegmentation(["key": "value"])
+        let startedEventsCount = ["View1": 1,
+                                  "View2": 1]
+        
+        let endedEventsDurations = ["View1": [4],
+                                    "View2": [4]]
+        
+        // Call validateRecordedEvents to check if the events match expectations
+        validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
     }
     
     func testAddSegmentationToAlreadyStartedViewUsingViewName() throws {
@@ -498,6 +592,9 @@ class CountlyViewTrackingTests: CountlyBaseTestCase {
         checkGlobalSegmentationApplied(expected: ["key": "newValue"])
     }
 
+}
+
+class CountlyViewForegroundBackgroundTests: CountlyViewBaseTest {
     func testAppTransitionsToBackgroundAndForegroundWithActiveViews() throws {
         let config = createBaseConfig()
         Countly.sharedInstance().start(with: config)
@@ -564,7 +661,7 @@ class CountlyViewTrackingTests: CountlyBaseTestCase {
                 waitForBackground.fulfill() // Fulfill the background expectation
                 
                 // Wait after foreground for 3 seconds
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
                     // Stop the views after returning to foreground
                     Countly.sharedInstance().views().stopView(withName: "View1")
                     Countly.sharedInstance().views().stopView(withName: "View2")
@@ -574,11 +671,25 @@ class CountlyViewTrackingTests: CountlyBaseTestCase {
         }
         
         // Wait for all expectations to be fulfilled
-        wait(for: [waitForStart, waitForBackground, waitForForeground], timeout: 12.0)
+        wait(for: [waitForStart, waitForBackground, waitForForeground], timeout: 20)
         
-        // Check recorded events for the views after transitions
-        checkRecordedEventsForView(viewName: "View1")
-        checkRecordedEventsForView(viewName: "View2")
+        let startedQueuedEventsCount = ["View1": 1,
+                                        "View2": 1]
+        
+        let endedQueuedEventsDurations = ["View1": [3],
+                                          "View2": [3]]
+        
+        // Call validateRecordedEvents to check if the events match expectations
+        validateQueuedViews(startedEventsCount: startedQueuedEventsCount, endedEventsDurations: endedQueuedEventsDurations)
+        
+        let startedEventsCount = ["View1": 1,
+                                  "View2": 1]
+        
+        let endedEventsDurations = ["View1": [5],
+                                    "View2": [5]]
+        
+        // Call validateRecordedEvents to check if the events match expectations
+        validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
     }
     
     func testStartViewBackgroundAppResumeViewWhenReturningToForeground() throws {
@@ -620,17 +731,17 @@ class CountlyViewTrackingTests: CountlyBaseTestCase {
         // Check recorded events for the view after transitions
         checkRecordedEventsForView(viewName: "View1")
     }
-
+    
     func testAttemptToStopANonStartedView() throws {
         let config = createBaseConfig()
         Countly.sharedInstance().start(with: config)
         
         // Attempt to stop a non-started view
-//        let beforeEventCount = getRecordedEventCount()
+        //        let beforeEventCount = getRecordedEventCount()
         Countly.sharedInstance().views().stopView(withName: "ViewNotStarted")
-//        let afterEventCount = getRecordedEventCount()
+        //        let afterEventCount = getRecordedEventCount()
         
-//        XCTAssertEqual(beforeEventCount, afterEventCount, "Stopping a non-started view should not change the state.")
+        //        XCTAssertEqual(beforeEventCount, afterEventCount, "Stopping a non-started view should not change the state.")
     }
     
     func testBackgroundAndForegroundTriggers() throws {
@@ -666,25 +777,155 @@ class CountlyViewTrackingTests: CountlyBaseTestCase {
         // Wait for all expectations to be fulfilled
         wait(for: [waitForStart, waitForBackground, waitForForeground], timeout: 12.0)
     }
+}
 
+class CountlyViewBaseTest: CountlyBaseTestCase {
+    
     // Helper methods to validate results
-    private func checkRecordedEventsForView(viewName: String, segmentation: [String: String]? = nil) {
+    func checkRecordedEventsForView(viewName: String, segmentation: [String: String]? = nil) {
         // Implement your logic to check recorded events for the specified view
     }
     
-    private func checkRecordedEventsForView(withID viewID: String!, segmentation: [String: String]? = nil) {
+    func checkRecordedEventsForView(withID viewID: String!, segmentation: [String: String]? = nil) {
         // Implement your logic to check recorded events for the specified view ID
     }
     
-    private func checkAllViewsStoppedWithSegmentation(_ segmentation: [String: String]) {
+    func checkAllViewsStoppedWithSegmentation(_ segmentation: [String: String]) {
         // Implement your logic to check that all views have been stopped with specific segmentation
     }
     
-    private func checkGlobalSegmentationApplied(expected: [String: String]) {
+    func checkGlobalSegmentationApplied(expected: [String: String]) {
         // Implement your logic to verify global segmentation applied correctly
     }
     
-    private func checkNoRecordedEvents() {
+    func checkNoRecordedEvents() {
         // Implement logic to verify no recorded events
     }
+    
+    func validateRecordedViews(startedEventsCount: [String: Int], endedEventsDurations: [String: [Int]]) {
+        // Access recorded events
+        guard let recordedEvents = CountlyPersistency.sharedInstance().value(forKey: "recordedEvents") as? [CountlyEvent] else {
+            fatalError("Failed to get recordedEvents from CountlyPersistency")
+        }
+        
+        //        XCTAssertNotEqual(recordedEvents.count, 0, "No recorded events found")
+        
+        // Track occurrences for started and ended events
+        var actualStartedEventsCount: [String: Int] = [:]
+        var actualEndedEventsDurations: [String: [Int]] = [:]
+        
+        // Iterate through recorded events to populate actual counts and durations
+        for event in recordedEvents {
+            // Check for start events with "visit": "1"
+            if event.key == kCountlyReservedEventView
+            {
+                if let eventKey = event.segmentation?["name"] as? String {
+                    if let visit = event.segmentation?["visit"], visit as! Int == 1 {
+                        actualStartedEventsCount[eventKey, default: 0] += 1
+                    }
+                    else{
+                        actualEndedEventsDurations[eventKey, default: []].append(Int(event.duration))
+                    }
+                }
+            }
+        }
+        
+        // Validate started events count
+        for (key, expectedCount) in startedEventsCount {
+            let actualCount = actualStartedEventsCount[key] ?? 0
+            XCTAssertEqual(actualCount, expectedCount, "Started events count for key \(key) does not match expected count \(expectedCount)")
+        }
+        
+        // Validate ended events durations
+        for (key, expectedDurations) in endedEventsDurations {
+            let actualDurations = actualEndedEventsDurations[key] ?? []
+            
+            // First, ensure the counts match
+            XCTAssertEqual(actualDurations.count, expectedDurations.count, "Ended events count for key \(key) does not match expected count \(expectedDurations.count)")
+            
+            // Create a mutable copy of actualDurations to modify
+            var mutableActualDurations = actualDurations
+            
+            // Check each duration matches
+            for (index, expectedDuration) in expectedDurations.enumerated() {
+                // Check if the expected duration exists in the actual durations
+                XCTAssertTrue(mutableActualDurations.contains(expectedDuration), "Duration at index \(index) for key \(key) does not match expected duration \(expectedDuration)")
+                
+                // Remove the expectedDuration from mutableActualDurations
+                if let foundIndex = mutableActualDurations.firstIndex(of: expectedDuration) {
+                    mutableActualDurations.remove(at: foundIndex)
+                }
+            }
+            
+            // Optionally, check if all expected durations have been matched
+            XCTAssertTrue(mutableActualDurations.isEmpty, "Not all actual durations were matched with expected durations for key \(key)")
+        }
+        
+    }
+    
+    func validateQueuedViews(startedEventsCount: [String: Int], endedEventsDurations: [String: [Int]]) {
+        guard let queuedRequests = CountlyPersistency.sharedInstance().value(forKey: "queuedRequests") as? [String] else {
+            fatalError("Failed to get queuedRequests from CountlyPersistency")
+        }
+        
+        // Filter out requests containing "events="
+        let eventRequests = queuedRequests.filter { $0.contains("events=") }
+        
+        // Initialize dictionaries to track actual counts and durations for verification
+        var actualStartedEventsCount: [String: Int] = [:]
+        var actualEndedEventsDurations: [String: [Int]] = [:]
+        
+        // Loop through each event request to process events
+        for request in eventRequests {
+            // Parse the query parameters
+            let parsedRequest = parseQueryString(request)
+            
+            // Check if "events" parameter exists and parse it
+            if let eventsJSON = parsedRequest["events"] as? String,
+               let jsonData = eventsJSON.data(using: .utf8) {
+                do {
+                    // Decode JSON data into an array of events
+                    let events = try JSONDecoder().decode([CountlyEventStruct].self, from: jsonData)
+                    
+                    // Process each event to check if it’s a start or stop event
+                    for event in events {
+                        if event.key == kCountlyReservedEventView {
+                            let eventKey = event.segmentation?["name"] as? String ?? ""
+                            
+                            // Check for start events with "visit": "1"
+                            if let visit = event.segmentation?["visit"] as? Int, visit == 1 {
+                                actualStartedEventsCount[eventKey, default: 0] += 1
+                            }
+                            // Check for stop events with "dur" for duration
+                            else {
+                                actualEndedEventsDurations[eventKey, default: []].append(Int(event.duration))
+                            }
+                        }
+                    }
+                } catch {
+                    print("Failed to decode events JSON: \(error.localizedDescription)")
+                }
+            }
+        }
+        
+        // Validate started events count
+        for (key, expectedCount) in startedEventsCount {
+            let actualCount = actualStartedEventsCount[key] ?? 0
+            XCTAssertEqual(actualCount, expectedCount, "Started events count for key \(key) does not match expected count \(expectedCount)")
+        }
+        
+        // Validate ended events durations
+        for (key, expectedDurations) in endedEventsDurations {
+            let actualDurations = actualEndedEventsDurations[key] ?? []
+            XCTAssertEqual(actualDurations.count, expectedDurations.count, "Ended events count for key \(key) does not match expected count \(expectedDurations.count)")
+            
+            // Check each duration matches
+            for (index, expectedDuration) in expectedDurations.enumerated() {
+                XCTAssertEqual(actualDurations[index], expectedDuration, "Duration at index \(index) for key \(key) does not match expected duration \(expectedDuration)")
+            }
+        }
+    }
 }
+
+
+
