@@ -10,6 +10,16 @@ import XCTest
 
 class CountlyViewTrackingTests: CountlyViewBaseTest {
     
+    // Run this test first if you are facing cache not clear or instances are not reset properly
+    // This is a dummy test to cover the edge case clear the cache when SDK is not initialized
+    func testDummy() {
+        let config = createBaseConfig()
+        config.requiresConsent = false;
+        config.manualSessionHandling = true;
+        Countly.sharedInstance().start(with: config);
+        Countly.sharedInstance().halt(true)
+    }
+    
     func testStartAndStopView() throws {
         let config = createBaseConfig()
         Countly.sharedInstance().start(with: config)
