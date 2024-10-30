@@ -348,7 +348,6 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
             
             // Stop both views after 3 seconds
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                Countly.sharedInstance().views().stopView(withID: viewID1)
                 Countly.sharedInstance().views().stopView(withID: viewID2)
                 
                 // Fulfill stopExpectation after stopping both views
@@ -446,6 +445,7 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
         
         // Call validateRecordedEvents to check if the events match expectations
         validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
+        //TODO: check segmentations also
     }
     
     func testUpdateSegmentationMultipleTimesOnTheSameView() throws {
@@ -498,6 +498,11 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
         
         Countly.sharedInstance().views().stopView(withName: "View1") // This should also not affect recorded events
         
+        let viewID2 = Countly.sharedInstance().views().startView("View2")
+        Countly.sharedInstance().views().stopView(withID: viewID2)
+        //TODO: Add all the public methods
+        
+        
         let afterEventCount = getRecordedViews().count
         
         XCTAssertEqual(beforeEventCount, afterEventCount, "Stopping a non-started view should not record any new event.")
@@ -510,6 +515,7 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
         
         // Start the first view
         Countly.sharedInstance().views().startView("View1")
+        //TODO: validate that view or remove it
         
         // Create expectations for various events
         let stopView1Expectation = XCTestExpectation(description: "Expect View1 to be stopped after 4 seconds.")
@@ -527,6 +533,7 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
             // Start View2 after 3 seconds
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                 viewID2 = Countly.sharedInstance().views().startView("View2")
+                //TODO: also start with segmentation to check the precedence of user provided and global segmentation
                 startView2Expectation.fulfill() // Fulfill View2 start expectation
                 
                 // Update global view segmentation
@@ -555,13 +562,15 @@ class CountlyViewForegroundBackgroundTests: CountlyViewBaseTest {
         Countly.sharedInstance().start(with: config)
         
         // Start the views
-        Countly.sharedInstance().views().startView("View1")
-        Countly.sharedInstance().views().startAutoStoppedView("View2")
+        Countly.sharedInstance().views().startView("V1")
+        Countly.sharedInstance().views().startAutoStoppedView("A1")
         
         // Create expectations for various events
         let waitForStart = XCTestExpectation(description: "Wait for 3 seconds before backgrounding app.")
         let waitForBackground = XCTestExpectation(description: "Wait for 4 seconds in background.")
         let waitForForeground = XCTestExpectation(description: "Wait for 3 seconds after foregrounding.")
+        let waitBGStartView = XCTestExpectation(description: "Wait for 1 seconds after background.")
+        let waitFGStartView = XCTestExpectation(description: "Wait for 1 seconds after background.")
         
         // Start the timer for moving the app to the background
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -569,17 +578,28 @@ class CountlyViewForegroundBackgroundTests: CountlyViewBaseTest {
             NotificationCenter.default.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
             waitForStart.fulfill() // Fulfill the start expectation
             
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                Countly.sharedInstance().views().startView("BGV1")
+                Countly.sharedInstance().views().startAutoStoppedView("BGA1")
+                waitBGStartView.fulfill() // Fulfill the foreground expectation
+            }
+            
+            
             // Wait in background for 4 seconds
             DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
                 // Simulate app returning to foreground
                 NotificationCenter.default.post(name: UIApplication.didBecomeActiveNotification, object: nil)
                 waitForBackground.fulfill() // Fulfill the background expectation
                 
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    Countly.sharedInstance().views().startView("FGV1")
+                    Countly.sharedInstance().views().startAutoStoppedView("FGA1")
+                    waitFGStartView.fulfill() // Fulfill the foreground expectation
+                }
                 // Wait after foreground for 3 seconds
                 DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
                     // Stop the views after returning to foreground
-                    Countly.sharedInstance().views().stopView(withName: "View1")
-                    Countly.sharedInstance().views().stopView(withName: "View2")
+                    Countly.sharedInstance().views().stopAllViews(nil);
                     waitForForeground.fulfill() // Fulfill the foreground expectation
                 }
             }
@@ -588,20 +608,28 @@ class CountlyViewForegroundBackgroundTests: CountlyViewBaseTest {
         // Wait for all expectations to be fulfilled
         wait(for: [waitForStart, waitForBackground, waitForForeground], timeout: 20)
         
-        let startedQueuedEventsCount = ["View1": 1,
-                                        "View2": 1]
+        let startedQueuedEventsCount = ["V1": 1,
+                                        "A1": 1]
         
-        let endedQueuedEventsDurations = ["View1": [3],
-                                          "View2": [3]]
+        let endedQueuedEventsDurations = ["V1": [3],
+                                          "A1": [3]]
         
         // Call validateRecordedEvents to check if the events match expectations
         validateQueuedViews(startedEventsCount: startedQueuedEventsCount, endedEventsDurations: endedQueuedEventsDurations)
         
-        let startedEventsCount = ["View1": 1,
-                                  "View2": 1]
+        let startedEventsCount = ["BGV1": 1,
+                                  "BGA1": 1,
+                                  "V1": 1,
+                                  "A1": 1,
+                                  "FGV1": 1,
+                                  "FGA1": 1]
         
-        let endedEventsDurations = ["View1": [5],
-                                    "View2": [5]]
+        let endedEventsDurations = ["BGA1": [3],
+                                    "A1": [1],
+                                    "V1": [5],
+                                    "BGV1": [8],
+                                    "FGV1": [4],
+                                    "FGA1": [4]]
         
         // Call validateRecordedEvents to check if the events match expectations
         validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
