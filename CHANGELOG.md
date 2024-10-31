@@ -1,3 +1,8 @@
+## xx.xx.xx
+* Mitigated an issue where pausing a view resulted in a '0' view duration.
+* Mitigated an issue where an `autoStoppedView` would stop again upon returning to the foreground, after already being stopped by the SDK when the app went to the background.
+* Improved view duration reporting by sending it as an `NSInteger`, eliminating lengthy decimal sequences previously sent as `NSTimeInterval`
+
 ## 24.7.3
 * Added current view names to event segmentation based on the `enablePreviousNameRecording` (Experimental!)
 * Updated the SDK to ensure compatibility with the latest server response models
