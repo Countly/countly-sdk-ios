@@ -1,4 +1,4 @@
-## xx.xx.xx
+## 24.7.5
 * Mitigated an issue with content action json parsing due to json encoding
 * Mitigated an issue where pausing a view resulted in a '0' view duration.
 * Mitigated an issue where an internal timer was not reset when going to foreground for `autoStoppedViews`
