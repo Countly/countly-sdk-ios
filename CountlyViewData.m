@@ -23,17 +23,18 @@
     return self;
 }
 
-- (NSTimeInterval)duration
+- (NSInteger)duration
 {
     NSTimeInterval duration = NSDate.date.timeIntervalSince1970 - self.viewStartTime;
-    return duration;
+    return (NSInteger)round(duration); // Rounds to the nearest integer, to fix long value converted to 0 on server side.
 }
 
 - (void)pauseView
 {
     if (self.viewStartTime)
     {
-        self.viewStartTime = 0;
+        // For safe side we have set the value to current time stamp instead of 0 when pausing the view, as setting it to 0 could result in an invalid duration value.
+        self.viewStartTime = CountlyCommon.sharedInstance.uniqueTimestamp;
     }
 }
 
