@@ -96,16 +96,23 @@
     if ([url hasPrefix:@"https://countly_action_event"] && [url containsString:@"cly_x_action_event=1"]) {
         NSDictionary *queryParameters = [self parseQueryString:url];
         NSString *action = queryParameters[@"action"];
-        
-        if ([action isEqualToString:@"event"]) {
-            NSString *eventsJson = queryParameters[@"event"];
-            [self recordEventsWithJSONString:eventsJson];
-        } else if ([action isEqualToString:@"link"]) {
-            NSString *link = queryParameters[@"link"];
-            [self openExternalLink:link];
-        } else if ([action isEqualToString:@"resize_me"]) {
-            NSString *resize = queryParameters[@"resize_me"];
-            [self resizeWebViewWithJSONString:resize];
+        if(action) {
+            if ([action isEqualToString:@"event"]) {
+                NSString *eventsJson = queryParameters[@"event"];
+                if(eventsJson) {
+                    [self recordEventsWithJSONString:eventsJson];
+                }
+            } else if ([action isEqualToString:@"link"]) {
+                NSString *link = queryParameters[@"link"];
+                if(link) {
+                    [self openExternalLink:link];
+                }
+            } else if ([action isEqualToString:@"resize_me"]) {
+                NSString *resize = queryParameters[@"resize_me"];
+                if(resize) {
+                    [self resizeWebViewWithJSONString:resize];
+                }
+            }
         }
         
         if ([queryParameters[@"close"] boolValue]) {
@@ -182,12 +189,30 @@
 }
 
 - (void)recordEventsWithJSONString:(NSString *)jsonString {
-    NSData *data = [jsonString dataUsingEncoding:NSUTF8StringEncoding];
-    NSArray *events = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+    // Decode the URL-encoded JSON string
+    NSString *decodedString = [jsonString stringByRemovingPercentEncoding];
+    
+    // Convert the decoded string to NSData
+    NSData *data = [decodedString dataUsingEncoding:NSUTF8StringEncoding];
+    
+    // Parse the JSON data
+    NSError *error = nil;
+    NSArray *events = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+    
+    if (error) {
+        NSLog(@"Error parsing JSON: %@", error);
+    } else {
+        NSLog(@"Parsed JSON: %@", events);
+    }
+
     
     for (NSDictionary *event in events) {
         NSString *key = event[@"key"];
         NSDictionary *segmentation = event[@"sg"];
+        if(!key) {
+            CLY_LOG_I(@"Skipping the event due to key is empty or nil");
+            continue;
+        }
         if(!segmentation) {
             CLY_LOG_I(@"Skipping the event due to missing segmentation");
             continue;
@@ -211,22 +236,55 @@
 }
 
 - (void)resizeWebViewWithJSONString:(NSString *)jsonString {
-    NSData *data = [jsonString dataUsingEncoding:NSUTF8StringEncoding];
-    NSDictionary *resizeDict = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
     
+    // Decode the URL-encoded JSON string
+    NSString *decodedString = [jsonString stringByRemovingPercentEncoding];
+    
+    // Convert the decoded string to NSData
+    NSData *data = [decodedString dataUsingEncoding:NSUTF8StringEncoding];
+    
+    // Parse the JSON data
+    NSError *error = nil;
+    NSDictionary *resizeDict = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+    
+    if (!resizeDict) {
+        CLY_LOG_I(@"Resize dictionary should not be empty or nil. Error: %@", error);
+        return;
+    }
+    
+    // Ensure resizeDict is a dictionary
+    if (![resizeDict isKindOfClass:[NSDictionary class]]) {
+        CLY_LOG_I(@"Resize dictionary should be of type NSDictionary");
+        return;
+    }
+    
+    // Retrieve portrait and landscape dimensions
     NSDictionary *portraitDimensions = resizeDict[@"p"];
     NSDictionary *landscapeDimensions = resizeDict[@"l"];
     
+    if (!portraitDimensions && !landscapeDimensions) {
+        CLY_LOG_I(@"Resize dimensions should not be empty or nil");
+        return;
+    }
+    
+    // Determine the current orientation
     UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
     BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
     
+    // Select the appropriate dimensions based on orientation
     NSDictionary *dimensions = isLandscape ? landscapeDimensions : portraitDimensions;
     
+    // Get the dimension values
+    CGFloat x = [dimensions[@"x"] floatValue];
+    CGFloat y = [dimensions[@"y"] floatValue];
     CGFloat width = [dimensions[@"w"] floatValue];
     CGFloat height = [dimensions[@"h"] floatValue];
     
+    // Animate the resizing of the web view
     [UIView animateWithDuration:0.3 animations:^{
         CGRect frame = self.backgroundView.webView.frame;
+        frame.origin.x = x;
+        frame.origin.y = y;
         frame.size.width = width;
         frame.size.height = height;
         self.backgroundView.webView.frame = frame;
@@ -234,6 +292,7 @@
         CLY_LOG_I(@"Resized web view to width: %f, height: %f", width, height);
     }];
 }
+
 
 
 - (void)closeWebView {
