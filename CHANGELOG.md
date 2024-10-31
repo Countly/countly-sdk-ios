@@ -1,3 +1,6 @@
+## xx.xx.xx
+* Mitigated an issue with content action json parsing due to json encoding
+
 ## 24.7.4
 * Added visionOS build support
 * Added `CountlyFeedbacks:` interface with new view methods (Access with `Countly.sharedInstance.feedback`):
