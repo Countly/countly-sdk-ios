@@ -20,16 +20,16 @@ NSString* const kCountlyVisibility = @"cly_v";
 }
 @property long long lastTimestamp;
 
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION )
 @property (nonatomic) NSString* lastInterfaceOrientation;
 #endif
 
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV )
 @property (nonatomic) UIBackgroundTaskIdentifier bgTask;
 #endif
 @end
 
-NSString* const kCountlySDKVersion = @"24.7.3";
+NSString* const kCountlySDKVersion = @"24.7.4";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
@@ -244,7 +244,7 @@ void CountlyPrint(NSString *stringToPrint)
 
 - (void)startBackgroundTask
 {
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
     if (self.bgTask != UIBackgroundTaskInvalid)
         return;
 
@@ -258,7 +258,7 @@ void CountlyPrint(NSString *stringToPrint)
 
 - (void)finishBackgroundTask
 {
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
     if (self.bgTask != UIBackgroundTaskInvalid && !CountlyConnectionManager.sharedInstance.connection)
     {
         [UIApplication.sharedApplication endBackgroundTask:self.bgTask];

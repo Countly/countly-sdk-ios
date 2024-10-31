@@ -731,7 +731,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 #pragma mark - Public function for application state
 
 - (void)applicationWillEnterForeground {
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS  || TARGET_OS_VISION || TARGET_OS_TV)
     if (!self.isAutoViewTrackingActive) {
         [self startStoppedViewsInternal];
     }
@@ -740,7 +740,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 #endif
 }
 - (void)applicationDidEnterBackground {
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         [self stopCurrentView];
     }

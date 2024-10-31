@@ -15,7 +15,7 @@
 #import "CountlyCrashReporter.h"
 #import "CountlyConfig.h"
 #import "CountlyViewTrackingInternal.h"
-#import "CountlyFeedbacks.h"
+#import "CountlyFeedbacksInternal.h"
 #import "CountlyFeedbackWidget.h"
 #import "CountlyPushNotifications.h"
 #import "CountlyNotificationService.h"
@@ -111,7 +111,7 @@ void CountlyPrint(NSString *stringToPrint);
 - (void)startBackgroundTask;
 - (void)finishBackgroundTask;
 
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV )
 - (UIViewController *)topViewController;
 - (void)tryPresentingViewController:(UIViewController *)viewController;
 - (void)tryPresentingViewController:(UIViewController *)viewController withCompletion:(void (^ __nullable) (void))completion;

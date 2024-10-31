@@ -133,7 +133,7 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
     NSString *resolutionJson = [self resolutionJson];
     queryString = [queryString stringByAppendingFormat:@"&%@=%@",
-                   @"resolution", resolutionJson];
+                   @"resolution", resolutionJson.cly_URLEscaped];
     
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
     

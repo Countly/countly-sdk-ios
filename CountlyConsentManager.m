@@ -332,7 +332,7 @@ static dispatch_once_t onceToken;
 {
     _consentForPushNotifications = consentForPushNotifications;
 
-#if (TARGET_OS_IOS || TARGET_OS_OSX)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_OSX)
     if (consentForPushNotifications)
     {
         CLY_LOG_D(@"Consent for PushNotifications is given.");
@@ -375,7 +375,7 @@ static dispatch_once_t onceToken;
 {
     _consentForViewTracking = consentForViewTracking;
 
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
     if (consentForViewTracking)
     {
         CLY_LOG_D(@"Consent for ViewTracking is given.");
@@ -413,7 +413,7 @@ static dispatch_once_t onceToken;
 {
     _consentForPerformanceMonitoring = consentForPerformanceMonitoring;
 
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
     if (consentForPerformanceMonitoring)
     {
         CLY_LOG_D(@"Consent for PerformanceMonitoring is given.");
@@ -438,7 +438,7 @@ static dispatch_once_t onceToken;
     {
         CLY_LOG_D(@"Consent for Feedback is given.");
 
-        [CountlyFeedbacks.sharedInstance checkForStarRatingAutoAsk];
+        [CountlyFeedbacksInternal.sharedInstance checkForStarRatingAutoAsk];
     }
     else
     {
