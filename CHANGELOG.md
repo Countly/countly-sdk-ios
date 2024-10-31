@@ -1,3 +1,8 @@
+## xx.xx.xx
+* Mitigated an issue where pausing a view resulted in a '0' view duration.
+* Mitigated an issue where an internal timer was not reset when going to foreground for `autoStoppedViews`
+* Mitigated an issue for `autoStoppedViews` could have not started when multiple views were open at the same time while going to foreground
+
 ## 24.7.4
 * Added visionOS build support
 * Added `CountlyFeedbacks:` interface with new view methods (Access with `Countly.sharedInstance.feedback`):

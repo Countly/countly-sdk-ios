@@ -61,9 +61,9 @@ struct AnyCodable: Codable {
 struct CountlyEventStruct: Codable {
     let key: String
     let ID: String
-    let CVID: String
+    let CVID: String?
     let PVID: String?
-    let PEID: String
+    let PEID: String?
     let segmentation: [String: Any]?
     let count: UInt
     let sum: Double
@@ -81,9 +81,9 @@ struct CountlyEventStruct: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         key = try container.decode(String.self, forKey: .key)
         ID = try container.decode(String.self, forKey: .ID)
-        CVID = try container.decode(String.self, forKey: .CVID)
+        CVID = try container.decodeIfPresent(String.self, forKey: .CVID)
         PVID = try container.decodeIfPresent(String.self, forKey: .PVID)
-        PEID = try container.decode(String.self, forKey: .PEID)
+        PEID = try container.decodeIfPresent(String.self, forKey: .PEID)
         count = try container.decode(UInt.self, forKey: .count)
         sum = try container.decode(Double.self, forKey: .sum)
         timestamp = try container.decode(TimeInterval.self, forKey: .timestamp)

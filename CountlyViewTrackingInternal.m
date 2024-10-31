@@ -10,7 +10,7 @@
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 @property (nonatomic) NSMutableSet* automaticViewTrackingExclusionList;
 #endif
-@property (nonatomic) NSMutableDictionary<NSString*, CountlyViewData *> * viewDataDictionary;
+@property (nonatomic, strong) NSMutableDictionary<NSString*, CountlyViewData *> * viewDataDictionary;
 @property (nonatomic) NSMutableDictionary* viewSegmentation;
 @property (nonatomic) BOOL isFirstView;
 @end
@@ -377,10 +377,10 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         segmentation[kCountlyVTKeyName] = viewData.viewName;
         segmentation[kCountlyVTKeySegment] = CountlyDeviceInfo.osName;
         
-        NSTimeInterval duration = viewData.duration;
+        NSInteger duration = viewData.duration;
         [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventView segmentation:segmentation count:1 sum:0 duration:duration ID:viewData.viewID timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
         
-        CLY_LOG_D(@"%s View tracking ended: %@ duration: %.17g", __FUNCTION__, viewData.viewName, duration);
+        CLY_LOG_D(@"%s View tracking ended: %@ duration: %ld", __FUNCTION__, viewData.viewName, (long)duration);
         if (!autoPaused) {
             [self.viewDataDictionary removeObjectForKey:viewKey];
         }
@@ -511,7 +511,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 - (void)stopAutoStoppedView
 {
     CountlyViewData* currentView = self.currentView;
-    if (currentView && currentView.isAutoStoppedView)
+    if (currentView && currentView.isAutoStoppedView && !currentView.willStartAgain)
     {
         [self stopViewWithIDInternal:self.currentView.viewID customSegmentation:nil];
     }
@@ -537,8 +537,8 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)pauseViewInternal:(CountlyViewData*) viewData
 {
-    [viewData pauseView];
     [self stopViewWithIDInternal:viewData.viewID customSegmentation:nil autoPaused:YES];
+    [viewData pauseView];
 }
 
 - (void)startStoppedViewsInternal

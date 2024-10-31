@@ -13,7 +13,7 @@ class CountlyBaseTestCase: XCTestCase {
     var countly: Countly!
     var deviceID: String = ""
     let appKey: String = "appkey"
-    var host: String = "https://test.count.ly/"
+    var host: String = "https://testing.count.ly/"
     
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
