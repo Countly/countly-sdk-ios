@@ -1,5 +1,5 @@
 ## xx.xx.xx
-* Mitigated an issue with experimental visibility tracking and previous name recording, ensuring they’re included when no segmentation is provided in event or view recording.
+* Mitigated an issue with experimental visibility tracking and previous name recording, ensuring they’re included even when no segmentation is provided in event or view recording.
 
 ## 24.7.5
 * Mitigated an issue with content action json parsing due to json encoding
