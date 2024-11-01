@@ -1,3 +1,6 @@
+## xx.xx.xx
+* Mitigated an issue with experimental visibility tracking and previous name recording, ensuring they’re included when no segmentation is provided in event or view recording.
+
 ## 24.7.5
 * Mitigated an issue with content action json parsing due to json encoding
 * Mitigated an issue where pausing a view resulted in a '0' view duration.
