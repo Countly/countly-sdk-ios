@@ -1,4 +1,4 @@
-## xx.xx.xx
+## 24.7.6
 * Mitigated an issue with experimental visibility tracking and previous name recording, ensuring they’re included even when no segmentation is provided in event or view recording.
 
 ## 24.7.5
