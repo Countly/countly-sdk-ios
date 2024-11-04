@@ -354,6 +354,24 @@ static dispatch_once_t onceToken;
         CLY_LOG_W(@"%s A session is already running, this 'beginSession' will be ignored", __FUNCTION__);
         return;
     }
+    
+#if TARGET_OS_IOS || TARGET_OS_TV
+    if (!CountlyCommon.sharedInstance.manualSessionHandling && [UIApplication sharedApplication].applicationState == UIApplicationStateBackground) {
+        CLY_LOG_W(@"%s App is in the background, 'beginSession' will be ignored", __FUNCTION__);
+        return;
+    }
+#elif TARGET_OS_OSX
+    if (!CountlyCommon.sharedInstance.manualSessionHandling && ![NSApplication sharedApplication].isActive) {
+        CLY_LOG_W(@"%s App is not active, 'beginSession' will be ignored", __FUNCTION__);
+        return;
+    }
+#elif TARGET_OS_WATCH
+    if (!CountlyCommon.sharedInstance.manualSessionHandling && [WKExtension sharedExtension].applicationState == WKApplicationStateBackground) {
+        CLY_LOG_W(@"%s App is in the background, 'beginSession' will be ignored", __FUNCTION__);
+        return;
+    }
+#endif
+
 
     isSessionStarted = YES;
     lastSessionStartTime = NSDate.date.timeIntervalSince1970;
@@ -372,7 +390,9 @@ static dispatch_once_t onceToken;
         queryString = [queryString stringByAppendingString:attributionQueryString];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
-
+    
+    [CountlyCommon.sharedInstance recordOrientation];
+    
     [self proceedOnQueue];
 }
 
@@ -810,7 +830,7 @@ static dispatch_once_t onceToken;
 
 - (NSMutableData *)pictureUploadDataForQueryString:(NSString *)queryString
 {
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
     NSString* localPicturePath = nil;
 
     NSString* userDetails = [queryString cly_valueForQueryStringKey:kCountlyQSKeyUserDetails];

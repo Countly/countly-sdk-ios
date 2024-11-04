@@ -16,7 +16,8 @@
 long long appLoadStartTime;
 // It holds the event id of previous recorded custom event.
 NSString* previousEventID;
-
+// It holds the event name of previous recorded custom event.
+NSString* previousEventName;
 @implementation Countly
 
 #pragma mark - Core
@@ -47,7 +48,7 @@ static dispatch_once_t onceToken;
 {
     if (self = [super init])
     {
-#if (TARGET_OS_IOS  || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION  || TARGET_OS_TV )
         [NSNotificationCenter.defaultCenter addObserver:self
                                                selector:@selector(applicationDidEnterBackground:)
                                                    name:UIApplicationDidEnterBackgroundNotification
@@ -59,6 +60,13 @@ static dispatch_once_t onceToken;
         [NSNotificationCenter.defaultCenter addObserver:self
                                                selector:@selector(applicationWillTerminate:)
                                                    name:UIApplicationWillTerminateNotification
+                                                 object:nil];
+        
+        [NSNotificationCenter.defaultCenter addObserver:self 
+                                               selector:@selector(applicationDidBecomeActive:) name:UIApplicationDidBecomeActiveNotification
+                                                 object:nil];
+        [NSNotificationCenter.defaultCenter addObserver:self 
+                                               selector:@selector(applicationWillResignActive:) name:UIApplicationWillResignActiveNotification
                                                  object:nil];
 #elif (TARGET_OS_OSX)
         [NSNotificationCenter.defaultCenter addObserver:self
@@ -167,11 +175,12 @@ static dispatch_once_t onceToken;
     }
     
 #if (TARGET_OS_IOS)
-    CountlyFeedbacks.sharedInstance.message = config.starRatingMessage;
-    CountlyFeedbacks.sharedInstance.sessionCount = config.starRatingSessionCount;
-    CountlyFeedbacks.sharedInstance.disableAskingForEachAppVersion = config.starRatingDisableAskingForEachAppVersion;
-    CountlyFeedbacks.sharedInstance.ratingCompletionForAutoAsk = config.starRatingCompletion;
-    [CountlyFeedbacks.sharedInstance checkForStarRatingAutoAsk];
+    CountlyFeedbacksInternal.sharedInstance.message = config.starRatingMessage;
+    CountlyFeedbacksInternal.sharedInstance.sessionCount = config.starRatingSessionCount;
+    CountlyFeedbacksInternal.sharedInstance.disableAskingForEachAppVersion = config.starRatingDisableAskingForEachAppVersion;
+    CountlyFeedbacksInternal.sharedInstance.ratingCompletionForAutoAsk = config.starRatingCompletion;
+    [CountlyFeedbacksInternal.sharedInstance checkForStarRatingAutoAsk];
+#endif
     
     if(config.disableLocation)
     {
@@ -181,19 +190,15 @@ static dispatch_once_t onceToken;
     {
         [CountlyLocationManager.sharedInstance updateLocation:config.location city:config.city ISOCountryCode:config.ISOCountryCode IP:config.IP];
     }
-#endif
     
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
+    else
+        [CountlyCommon.sharedInstance recordOrientation];
     
     //NOTE: If there is no consent for sessions, location info and attribution should be sent separately, as they cannot be sent with begin_session request.
-    if (!CountlyConsentManager.sharedInstance.consentForSessions)
-    {
-        [CountlyLocationManager.sharedInstance sendLocationInfo];
-        [CountlyConnectionManager.sharedInstance sendAttribution];
-    }
-    
-#if (TARGET_OS_IOS || TARGET_OS_OSX)
+
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_OSX )
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
     if ([config.features containsObject:CLYPushNotifications])
     {
@@ -228,8 +233,8 @@ static dispatch_once_t onceToken;
         CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;
         [CountlyCrashReporter.sharedInstance startCrashReporting];
     }
-    
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+
+#if (TARGET_OS_IOS || TARGET_OS_TV )
     if (config.enableAutomaticViewTracking || [config.features containsObject:CLYAutoViewTracking])
     {
         // Print deprecation flag for feature
@@ -240,6 +245,13 @@ static dispatch_once_t onceToken;
         [CountlyViewTrackingInternal.sharedInstance addAutoViewTrackingExclutionList:config.automaticViewTrackingExclusionList];
     }
 #endif
+    
+    if(config.experimental.enablePreviousNameRecording) {
+        CountlyViewTrackingInternal.sharedInstance.enablePreviousNameRecording = YES;
+    }
+    if(config.experimental.enableVisibiltyTracking) {
+        CountlyCommon.sharedInstance.enableVisibiltyTracking = YES;
+    }
     if (config.globalViewSegmentation) {
         [CountlyViewTrackingInternal.sharedInstance setGlobalViewSegmentation:config.globalViewSegmentation];
     }
@@ -259,6 +271,11 @@ static dispatch_once_t onceToken;
     if (config.apm.getAppStartTimestampOverride) {
         appLoadStartTime = config.apm.getAppStartTimestampOverride;
     }
+#if (TARGET_OS_IOS)
+    if(config.content.getGlobalContentCallback) {
+        CountlyContentBuilderInternal.sharedInstance.contentCallback = config.content.getGlobalContentCallback;
+    }
+#endif
     
     [CountlyPerformanceMonitoring.sharedInstance startWithConfig:config.apm];
     
@@ -272,6 +289,23 @@ static dispatch_once_t onceToken;
         [self giveAllConsents];
     else if (config.consents)
         [self giveConsentForFeatures:config.consents];
+    else if (config.requiresConsent)
+        [CountlyConsentManager.sharedInstance sendConsents];
+    
+    if (!CountlyConsentManager.sharedInstance.consentForSessions)
+    {
+        //Send an empty location if location is disabled or location consent is not given, without checking for location consent.
+        if (!CountlyConsentManager.sharedInstance.consentForLocation || CountlyLocationManager.sharedInstance.isLocationInfoDisabled)
+        {
+            [CountlyConnectionManager.sharedInstance sendLocationInfo];
+        }
+        else
+        {
+            [CountlyLocationManager.sharedInstance sendLocationInfo];
+        }
+        [CountlyConnectionManager.sharedInstance sendAttribution];
+    }
+    
     
     if (config.campaignType && config.campaignData)
         [self recordDirectAttributionWithCampaignType:config.campaignType andCampaignData:config.campaignData];
@@ -366,12 +400,12 @@ static dispatch_once_t onceToken;
     
     isSuspended = YES;
     
+    [CountlyViewTrackingInternal.sharedInstance applicationDidEnterBackground];
+    
     [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
     
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance endSession];
-    
-    [CountlyViewTrackingInternal.sharedInstance applicationDidEnterBackground];
     
     [CountlyPersistency.sharedInstance saveToFile];
 }
@@ -404,6 +438,17 @@ static dispatch_once_t onceToken;
     isSuspended = NO;
 }
 
+- (void)applicationDidBecomeActive:(NSNotification *)notification
+{
+    CLY_LOG_D(@"App enters foreground");
+    [self resume];
+}
+
+- (void)applicationWillResignActive:(NSNotification *)notification
+{
+    CLY_LOG_D(@"App enters background");
+}
+
 - (void)applicationDidEnterBackground:(NSNotification *)notification
 {
     CLY_LOG_D(@"App did enter background.");
@@ -413,7 +458,6 @@ static dispatch_once_t onceToken;
 - (void)applicationWillEnterForeground:(NSNotification *)notification
 {
     CLY_LOG_D(@"App will enter foreground.");
-    [self resume];
 }
 
 - (void)applicationWillTerminate:(NSNotification *)notification
@@ -430,6 +474,7 @@ static dispatch_once_t onceToken;
     
     [CountlyPersistency.sharedInstance saveToFileSync];
 }
+
 
 - (void)dealloc
 {
@@ -569,8 +614,8 @@ static dispatch_once_t onceToken;
     
     if ([CountlyPersistency.sharedInstance retrieveIsCustomDeviceID])
         return CLYDeviceIDTypeCustom;
-    
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV )
     return CLYDeviceIDTypeIDFV;
 #else
     return CLYDeviceIDTypeNSUUID;
@@ -602,6 +647,11 @@ static dispatch_once_t onceToken;
 
 - (void)changeDeviceIDWithoutMerge:(NSString * _Nullable)deviceID {
     [self setIDInternal:deviceID onServer:NO];
+}
+
+- (void)enableTemporaryDeviceIDMode
+{
+    [Countly.sharedInstance setIDInternal:CLYTemporaryDeviceID onServer:NO];
 }
 
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer
@@ -854,15 +904,24 @@ static dispatch_once_t onceToken;
     // Check if the event is a reserved event
     BOOL isReservedEvent = [self isReservedEvent:key];
 
-    // If the event is not reserved, assign the previous event ID to the current event's PEID property, or an empty string if previousEventID is nil. Then, update previousEventID to the current event's ID.
+    NSMutableDictionary *filteredSegmentations = segmentation.cly_filterSupportedDataTypes;
+    if(filteredSegmentations == nil)
+        filteredSegmentations = NSMutableDictionary.new;
+    
+    // If the event is not reserved, assign the previous event ID and Name to the current event's PEID property, or an empty string if previousEventID is nil. Then, update previousEventID to the current event's ID.
     if (!isReservedEvent)
     {
         key = [key cly_truncatedKey:@"Event key"];
         event.PEID = previousEventID ?: @"";
         previousEventID = event.ID;
+        if(CountlyViewTrackingInternal.sharedInstance.enablePreviousNameRecording) {
+            filteredSegmentations[kCountlyPreviousEventName] = previousEventName ?: @"";
+            previousEventName = key;
+            filteredSegmentations[kCountlyCurrentView] = CountlyViewTrackingInternal.sharedInstance.currentViewName ?: @"";
+        }
     }
     event.key = key;
-    event.segmentation = segmentation.cly_filterSupportedDataTypes;
+    event.segmentation = [self processSegmentation:filteredSegmentations eventKey:key];
     event.count = MAX(count, 1);
     event.sum = sum;
     event.timestamp = timestamp;
@@ -872,6 +931,37 @@ static dispatch_once_t onceToken;
 
     [CountlyPersistency.sharedInstance recordEvent:event];
 }
+
+- (NSDictionary*) processSegmentation:(NSMutableDictionary *) segmentation eventKey:(NSString *)eventKey
+{
+    if(CountlyViewTrackingInternal.sharedInstance.enablePreviousNameRecording) {
+        if([eventKey isEqualToString:kCountlyReservedEventView]) {
+            segmentation[kCountlyPreviousView] = CountlyViewTrackingInternal.sharedInstance.previousViewName ?: @"";
+        }
+    }
+    
+    if(CountlyCommon.sharedInstance.enableVisibiltyTracking) {
+        segmentation[kCountlyVisibility] = @([self isAppInForeground]);
+    }
+    
+    return segmentation.count == 0 ? nil : segmentation;
+}
+
+- (BOOL)isAppInForeground {
+#if TARGET_OS_IOS || TARGET_OS_TV
+    UIApplicationState state = [UIApplication sharedApplication].applicationState;
+    return state == UIApplicationStateActive;
+#elif TARGET_OS_OSX
+    NSApplication *app = [NSApplication sharedApplication];
+    return app.isActive;
+#elif TARGET_OS_WATCH
+    WKExtension *extension = [WKExtension sharedExtension];
+    return extension.applicationState == WKApplicationStateActive;
+#else
+    return NO;
+#endif
+}
+
 
 - (BOOL)isReservedEvent:(NSString *)key
 {
@@ -948,7 +1038,7 @@ static dispatch_once_t onceToken;
 
 
 #pragma mark - Push Notifications
-#if (TARGET_OS_IOS || TARGET_OS_OSX)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_OSX )
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
 
 - (void)askForNotificationPermission
@@ -1101,7 +1191,7 @@ static dispatch_once_t onceToken;
     [CountlyViewTrackingInternal.sharedInstance startAutoStoppedView:viewName segmentation:segmentation];
 }
 
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV )
 - (void)addExceptionForAutoViewTracking:(NSString *)exception
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, exception);
@@ -1153,7 +1243,7 @@ static dispatch_once_t onceToken;
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, completion);
 
-    [CountlyFeedbacks.sharedInstance showDialog:completion];
+    [CountlyFeedbacksInternal.sharedInstance showDialog:completion];
 }
 
 - (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
@@ -1175,21 +1265,31 @@ static dispatch_once_t onceToken;
     
     CLY_LOG_I(@"%s %@ %@ %@", __FUNCTION__, widgetID, closeButtonText, completionHandler);
     
-    [CountlyFeedbacks.sharedInstance presentRatingWidgetWithID:widgetID closeButtonText:closeButtonText completionHandler:completionHandler];
+    [CountlyFeedbacksInternal.sharedInstance presentRatingWidgetWithID:widgetID closeButtonText:closeButtonText completionHandler:completionHandler];
 }
 
 - (void)recordRatingWidgetWithID:(NSString *)widgetID rating:(NSInteger)rating email:(NSString * _Nullable)email comment:(NSString * _Nullable)comment userCanBeContacted:(BOOL)userCanBeContacted
 {
     CLY_LOG_I(@"%s %@ %ld %@ %@ %d", __FUNCTION__, widgetID, (long)rating, email, comment, userCanBeContacted);
 
-    [CountlyFeedbacks.sharedInstance recordRatingWidgetWithID:widgetID rating:rating email:email comment:comment userCanBeContacted:userCanBeContacted];
+    [CountlyFeedbacksInternal.sharedInstance recordRatingWidgetWithID:widgetID rating:rating email:email comment:comment userCanBeContacted:userCanBeContacted];
 }
 
 - (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> *feedbackWidgets, NSError * error))completionHandler
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, completionHandler);
 
-    [CountlyFeedbacks.sharedInstance getFeedbackWidgets:completionHandler];
+    [CountlyFeedbacksInternal.sharedInstance getFeedbackWidgets:completionHandler];
+}
+
+- (CountlyContentBuilder *) content
+{
+    return CountlyContentBuilder.sharedInstance;
+}
+
+- (CountlyFeedbacks *) feedback
+{
+    return CountlyFeedbacks.sharedInstance;
 }
 
 #endif

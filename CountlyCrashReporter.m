@@ -108,7 +108,7 @@ NSString* const kCountlyCRKeyOB                = @"_ob";
 
     NSSetUncaughtExceptionHandler(&CountlyUncaughtExceptionHandler);
 
-#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_OSX)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV || TARGET_OS_OSX)
     signal(SIGABRT, CountlySignalHandler);
     signal(SIGILL, CountlySignalHandler);
     signal(SIGSEGV, CountlySignalHandler);
@@ -127,7 +127,7 @@ NSString* const kCountlyCRKeyOB                = @"_ob";
 
     NSSetUncaughtExceptionHandler(NULL);
 
-#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_OSX)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV || TARGET_OS_OSX)
     signal(SIGABRT, SIG_DFL);
     signal(SIGILL, SIG_DFL);
     signal(SIGSEGV, SIG_DFL);

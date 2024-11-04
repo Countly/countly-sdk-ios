@@ -8,14 +8,22 @@
 
 extern NSString* const kCountlyReservedEventView;
 
+extern NSString* const kCountlyCurrentView;
+extern NSString* const kCountlyPreviousView;
+extern NSString* const kCountlyPreviousEventName;
+
 @interface CountlyViewTrackingInternal : NSObject
 @property (nonatomic) BOOL isEnabledOnInitialConfig;
 @property (nonatomic) NSString* currentViewID;
 @property (nonatomic) NSString* previousViewID;
 
+@property (nonatomic) BOOL enablePreviousNameRecording;
+@property (nonatomic) NSString* currentViewName;
+@property (nonatomic) NSString* previousViewName;
+
 + (instancetype)sharedInstance;
 
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
 - (void)startAutoViewTracking;
 - (void)stopAutoViewTracking;
 - (void)addExceptionForAutoViewTracking:(NSString *)exception;
@@ -41,7 +49,7 @@ extern NSString* const kCountlyReservedEventView;
 - (void)addSegmentationToViewWithID:(NSString *)viewID segmentation:(NSDictionary *)segmentation;
 - (void)addSegmentationToViewWithName:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
 
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
 - (void)addAutoViewTrackingExclutionList:(NSArray *)viewTrackingExclusionList;
 #endif
 @end

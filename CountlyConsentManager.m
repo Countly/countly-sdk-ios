@@ -17,6 +17,7 @@ CLYConsent const CLYConsentAttribution          = @"attribution";
 CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
 CLYConsent const CLYConsentFeedback             = @"feedback";
 CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
+CLYConsent const CLYConsentContent              = @"content";
 
 
 @implementation CountlyConsentManager
@@ -32,6 +33,7 @@ CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 @synthesize consentForPerformanceMonitoring = _consentForPerformanceMonitoring;
 @synthesize consentForFeedback = _consentForFeedback;
 @synthesize consentForRemoteConfig = _consentForRemoteConfig;
+@synthesize consentForContent = _consentForContent;
 
 #pragma mark -
 
@@ -114,6 +116,9 @@ static dispatch_once_t onceToken;
 
     if ([features containsObject:CLYConsentRemoteConfig] && !self.consentForRemoteConfig)
         self.consentForRemoteConfig = YES;
+    
+    if ([features containsObject:CLYConsentContent] && !self.consentForContent)
+        self.consentForContent = YES;
 
     [self sendConsents];
 }
@@ -143,7 +148,10 @@ static dispatch_once_t onceToken;
         return;
 
     if ([features containsObject:CLYConsentSessions] && self.consentForSessions)
+    {
+        [CountlyConnectionManager.sharedInstance endSession];
         self.consentForSessions = NO;
+    }
 
     if ([features containsObject:CLYConsentEvents] && self.consentForEvents)
         self.consentForEvents = NO;
@@ -174,6 +182,9 @@ static dispatch_once_t onceToken;
 
     if ([features containsObject:CLYConsentRemoteConfig] && self.consentForRemoteConfig)
         self.consentForRemoteConfig = NO;
+    
+    if ([features containsObject:CLYConsentContent] && self.consentForContent)
+        self.consentForContent = NO;
 
     if (!shouldSkipSendingConsentsRequest)
         [self sendConsents];
@@ -195,6 +206,7 @@ static dispatch_once_t onceToken;
         CLYConsentPerformanceMonitoring: @(self.consentForPerformanceMonitoring),
         CLYConsentFeedback: @(self.consentForFeedback),
         CLYConsentRemoteConfig: @(self.consentForRemoteConfig),
+        CLYConsentContent: @(self.consentForContent),
     };
 
     [CountlyConnectionManager.sharedInstance sendConsents:[consents cly_JSONify]];
@@ -216,6 +228,7 @@ static dispatch_once_t onceToken;
         CLYConsentPerformanceMonitoring,
         CLYConsentFeedback,
         CLYConsentRemoteConfig,
+        CLYConsentContent
     ];
 }
 
@@ -233,7 +246,8 @@ static dispatch_once_t onceToken;
     self.consentForAttribution ||
     self.consentForPerformanceMonitoring ||
     self.consentForFeedback ||
-    self.consentForRemoteConfig;
+    self.consentForRemoteConfig ||
+    self.consentForContent;
 }
 
 
@@ -283,6 +297,7 @@ static dispatch_once_t onceToken;
     if (consentForUserDetails)
     {
         CLY_LOG_D(@"Consent for UserDetails is given.");
+        [CountlyCommon.sharedInstance recordOrientation];
         [Countly.user save];
     }
     else
@@ -317,7 +332,7 @@ static dispatch_once_t onceToken;
 {
     _consentForPushNotifications = consentForPushNotifications;
 
-#if (TARGET_OS_IOS || TARGET_OS_OSX)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_OSX)
     if (consentForPushNotifications)
     {
         CLY_LOG_D(@"Consent for PushNotifications is given.");
@@ -350,6 +365,8 @@ static dispatch_once_t onceToken;
     else
     {
         CLY_LOG_D(@"Consent for Location is cancelled.");
+        
+        [CountlyConnectionManager.sharedInstance sendLocationInfo];
     }
 }
 
@@ -358,7 +375,7 @@ static dispatch_once_t onceToken;
 {
     _consentForViewTracking = consentForViewTracking;
 
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
     if (consentForViewTracking)
     {
         CLY_LOG_D(@"Consent for ViewTracking is given.");
@@ -396,7 +413,7 @@ static dispatch_once_t onceToken;
 {
     _consentForPerformanceMonitoring = consentForPerformanceMonitoring;
 
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
     if (consentForPerformanceMonitoring)
     {
         CLY_LOG_D(@"Consent for PerformanceMonitoring is given.");
@@ -421,7 +438,7 @@ static dispatch_once_t onceToken;
     {
         CLY_LOG_D(@"Consent for Feedback is given.");
 
-        [CountlyFeedbacks.sharedInstance checkForStarRatingAutoAsk];
+        [CountlyFeedbacksInternal.sharedInstance checkForStarRatingAutoAsk];
     }
     else
     {
@@ -443,6 +460,23 @@ static dispatch_once_t onceToken;
     else
     {
         CLY_LOG_D(@"Consent for RemoteConfig is cancelled.");
+    }
+}
+
+- (void)setConsentForContent:(BOOL)consentForContent
+{
+    _consentForContent = consentForContent;
+    
+    if (consentForContent)
+    {
+        CLY_LOG_D(@"Consent for Content is given.");
+    }
+    else
+    {
+        CLY_LOG_D(@"Consent for Content is cancelled.");
+#if (TARGET_OS_IOS)
+        [CountlyContentBuilderInternal.sharedInstance exitContentZone];
+#endif
     }
 }
 
@@ -542,6 +576,14 @@ static dispatch_once_t onceToken;
       return YES;
 
     return _consentForRemoteConfig;
+}
+
+- (BOOL)consentForContent
+{
+    if (!self.requiresConsent)
+        return YES;
+    
+    return _consentForContent;
 }
 
 @end

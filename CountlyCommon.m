@@ -10,6 +10,9 @@
 NSString* const kCountlyReservedEventOrientation = @"[CLY]_orientation";
 NSString* const kCountlyOrientationKeyMode = @"mode";
 
+NSString* const kCountlyVisibility = @"cly_v";
+
+
 @interface CountlyCommon ()
 {
     NSCalendar* gregorianCalendar;
@@ -17,16 +20,16 @@ NSString* const kCountlyOrientationKeyMode = @"mode";
 }
 @property long long lastTimestamp;
 
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION )
 @property (nonatomic) NSString* lastInterfaceOrientation;
 #endif
 
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV )
 @property (nonatomic) UIBackgroundTaskIdentifier bgTask;
 #endif
 @end
 
-NSString* const kCountlySDKVersion = @"24.7.0";
+NSString* const kCountlySDKVersion = @"24.7.6";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
@@ -196,7 +199,13 @@ void CountlyPrint(NSString *stringToPrint)
 - (void)recordOrientation
 {
 #if (TARGET_OS_IOS)
-
+    if (!self.enableOrientationTracking)
+        return;
+    
+    if ([UIApplication sharedApplication].applicationState == UIApplicationStateBackground) {
+        CLY_LOG_W(@"%s App is in the background, 'Record Orientation' will be ignored", __FUNCTION__);
+        return;
+    }
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     UIInterfaceOrientation interfaceOrientation = UIApplication.sharedApplication.statusBarOrientation;
@@ -221,10 +230,11 @@ void CountlyPrint(NSString *stringToPrint)
     }
 
     CLY_LOG_D(@"Interface orientation is now: %@", mode);
-    self.lastInterfaceOrientation = mode;
 
     if (!CountlyConsentManager.sharedInstance.consentForUserDetails)
         return;
+    
+    self.lastInterfaceOrientation = mode;
 
     [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventOrientation segmentation:@{kCountlyOrientationKeyMode: mode}];
 #endif
@@ -234,7 +244,7 @@ void CountlyPrint(NSString *stringToPrint)
 
 - (void)startBackgroundTask
 {
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
     if (self.bgTask != UIBackgroundTaskInvalid)
         return;
 
@@ -248,7 +258,7 @@ void CountlyPrint(NSString *stringToPrint)
 
 - (void)finishBackgroundTask
 {
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
     if (self.bgTask != UIBackgroundTaskInvalid && !CountlyConnectionManager.sharedInstance.connection)
     {
         [UIApplication.sharedApplication endBackgroundTask:self.bgTask];
@@ -634,7 +644,7 @@ NSString* CountlyJSONFromObject(id object)
     return limitedDict.copy;
 }
 
-- (NSDictionary *) cly_filterSupportedDataTypes
+- (NSMutableDictionary *) cly_filterSupportedDataTypes
 {
     NSMutableDictionary<NSString *, id> *filteredDictionary = [NSMutableDictionary dictionary];
     
@@ -650,7 +660,7 @@ NSString* CountlyJSONFromObject(id object)
         }
     }
     
-    return filteredDictionary.copy;
+    return filteredDictionary.mutableCopy;
 }
 
 @end

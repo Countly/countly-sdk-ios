@@ -12,8 +12,10 @@
 #import "CountlyRemoteConfig.h"
 #import "CountlyFeedbackWidget.h"
 #import "CountlyViewTracking.h"
+#import "CountlyContentBuilder.h"
+#import "CountlyFeedbacks.h"
 #import "Resettable.h"
-#if (TARGET_OS_IOS || TARGET_OS_OSX)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_OSX )
 #import <UserNotifications/UserNotifications.h>
 #endif
 
@@ -186,7 +188,14 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)changeDeviceIDWithoutMerge:(NSString * _Nullable)deviceID;
 
-- (void) setID:(NSString *)deviceID;
+- (void)setID:(NSString *)deviceID;
+
+/**
+ * This menthod will enable temporary device ID mode 
+ * @discussion All requests will be on hold, but they will be persistently stored.
+ * @discussion When in temporary device ID mode, method calls for presenting feedback widgets and updating remote config will be ignored.
+ */
+- (void)enableTemporaryDeviceIDMode;
 
 
 #pragma mark - Consents
@@ -368,7 +377,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 #pragma mark - Push Notification
-#if (TARGET_OS_IOS || TARGET_OS_OSX)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_OSX )
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
 /**
  * Shows default system dialog that asks for user's permission to display notifications.
@@ -544,7 +553,7 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)recordView:(NSString *)viewName segmentation:(NSDictionary<NSString *, id> *)segmentation DEPRECATED_MSG_ATTRIBUTE("Use '[views startView/startAutoStoppedView:]' method instead!");
 
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV )
 /**
  * Adds exception for AutoViewTracking.
  * @discussion @c UIViewControllers with specified title or class name will be ignored by AutoViewTracking and their appearances and disappearances will not be recorded.
@@ -585,7 +594,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 #pragma mark - Feedbacks
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION )
 /**
  * Shows star-rating dialog manually and executes completion block after user's action.
  * @discussion Completion block has a single NSInteger parameter that indicates 1 to 5 star-rating given by user.
@@ -668,8 +677,20 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion - Current device ID is @c CLYTemporaryDeviceID.
  * @param completionHandler A completion handler block to be executed when list is fetched successfully or there is an error.
  */
-- (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> * __nullable feedbackWidgets, NSError * __nullable error))completionHandler;
+- (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> * __nullable feedbackWidgets, NSError * __nullable error))completionHandler DEPRECATED_MSG_ATTRIBUTE("Use '[feedback getAvailableFeedbackWidgets:]' method instead!");
 
+/**
+ * This is an experimental feature and it can have breaking changes
+ * Interface variable to access content  functionalities.
+ * @discussion Content interface for developer to interact with SDK.
+ */
+- (CountlyContentBuilder *_Nonnull) content;
+
+/**
+ * Interface variable to access feedback widget functionalities.
+ * @discussion Feedback widget  interface for developer to interact with SDK.
+ */
+- (CountlyFeedbacks *) feedback;
 #endif
 
 

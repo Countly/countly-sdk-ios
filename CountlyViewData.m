@@ -17,38 +17,29 @@
         self.viewName = viewName;
         self.viewStartTime = CountlyCommon.sharedInstance.uniqueTimestamp;
         self.isAutoStoppedView = false;
-        self.isAutoPaused = false;
+        self.willStartAgain = false;
     }
     
     return self;
 }
 
-- (NSTimeInterval)duration
+- (NSInteger)duration
 {
     NSTimeInterval duration = NSDate.date.timeIntervalSince1970 - self.viewStartTime;
-    return duration;
-}
-
-- (void)autoPauseView
-{
-    if (self.viewStartTime) // To check that view is not paused already manually
-    {
-        self.isAutoPaused = true;
-    }
-    [self pauseView];
+    return (NSInteger)round(duration); // Rounds to the nearest integer, to fix long value converted to 0 on server side.
 }
 
 - (void)pauseView
 {
     if (self.viewStartTime)
     {
-        self.viewStartTime = 0;
+        // For safe side we have set the value to current time stamp instead of 0 when pausing the view, as setting it to 0 could result in an invalid duration value.
+        self.viewStartTime = CountlyCommon.sharedInstance.uniqueTimestamp;
     }
 }
 
 - (void)resumeView
 {
-    self.isAutoPaused = false;
     self.viewStartTime = CountlyCommon.sharedInstance.uniqueTimestamp;
 }
 
