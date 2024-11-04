@@ -905,6 +905,8 @@ static dispatch_once_t onceToken;
     BOOL isReservedEvent = [self isReservedEvent:key];
 
     NSMutableDictionary *filteredSegmentations = segmentation.cly_filterSupportedDataTypes;
+    if(filteredSegmentations == nil)
+        filteredSegmentations = NSMutableDictionary.new;
     
     // If the event is not reserved, assign the previous event ID and Name to the current event's PEID property, or an empty string if previousEventID is nil. Then, update previousEventID to the current event's ID.
     if (!isReservedEvent)
@@ -941,7 +943,8 @@ static dispatch_once_t onceToken;
     if(CountlyCommon.sharedInstance.enableVisibiltyTracking) {
         segmentation[kCountlyVisibility] = @([self isAppInForeground]);
     }
-    return segmentation;
+    
+    return segmentation.count == 0 ? nil : segmentation;
 }
 
 - (BOOL)isAppInForeground {
