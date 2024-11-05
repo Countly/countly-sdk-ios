@@ -941,7 +941,7 @@ static dispatch_once_t onceToken;
     }
     
     if(CountlyCommon.sharedInstance.enableVisibiltyTracking) {
-        segmentation[kCountlyVisibility] = @([self isAppInForeground]);
+        segmentation[kCountlyVisibility] = @([self isAppInForeground] ? 1 : 0);
     }
     
     return segmentation.count == 0 ? nil : segmentation;
