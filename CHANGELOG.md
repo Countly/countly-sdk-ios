@@ -1,5 +1,5 @@
 ## 24.7.7
-* Mitigated an issue where the experimental `enableVisibilityTracking` flag was recorded as true/false instead of 0/1
+* Changed the visibility tracking segmentation values to binary
 
 ## 24.7.6
 * Mitigated an issue with experimental visibility tracking and previous name recording, ensuring they’re included even when no segmentation is provided in event or view recording.
