@@ -5,6 +5,7 @@
 // Please visit www.count.ly for more information.
 
 #import "CountlyNotificationService.h"
+#import "CountlyCommon.h"
 
 #if DEBUG
 #define COUNTLY_EXT_LOG(fmt, ...) NSLog([@"%@ " stringByAppendingString:fmt], @"[CountlyNSE]", ##__VA_ARGS__)
@@ -85,7 +86,7 @@ NSString* const kCountlyPNKeyActionButtonURL    = @"l";
 
     COUNTLY_EXT_LOG(@"Attachment specified in Countly payload: %@", attachmentURL);
 
-    [[NSURLSession.sharedSession downloadTaskWithURL:[NSURL URLWithString:attachmentURL] completionHandler:^(NSURL * location, NSURLResponse * response, NSError * error)
+    [[CountlyCommon.sharedInstance.URLSession downloadTaskWithURL:[NSURL URLWithString:attachmentURL] completionHandler:^(NSURL * location, NSURLResponse * response, NSError * error)
     {
         if (!error)
         {

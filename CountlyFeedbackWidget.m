@@ -115,7 +115,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
         return;
     }
     
-    NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:[self dataRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self dataRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
         NSDictionary *widgetData = nil;
         
