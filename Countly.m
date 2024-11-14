@@ -932,19 +932,26 @@ static dispatch_once_t onceToken;
     [CountlyPersistency.sharedInstance recordEvent:event];
 }
 
-- (NSDictionary*) processSegmentation:(NSMutableDictionary *) segmentation eventKey:(NSString *)eventKey
-{
-    if(CountlyViewTrackingInternal.sharedInstance.enablePreviousNameRecording) {
-        if([eventKey isEqualToString:kCountlyReservedEventView]) {
-            segmentation[kCountlyPreviousView] = CountlyViewTrackingInternal.sharedInstance.previousViewName ?: @"";
+- (NSDictionary *)processSegmentation:(NSMutableDictionary *)segmentation eventKey:(NSString *)eventKey {
+    BOOL isViewEvent = [eventKey isEqualToString:kCountlyReservedEventView];
+    
+    // Add previous view name if enabled and the event is a view event
+    if (isViewEvent && CountlyViewTrackingInternal.sharedInstance.enablePreviousNameRecording) {
+        segmentation[kCountlyPreviousView] = CountlyViewTrackingInternal.sharedInstance.previousViewName ?: @"";
+    }
+    
+    // Add visibility tracking information if enabled
+    if (CountlyCommon.sharedInstance.enableVisibiltyTracking) {
+        BOOL isViewStart = [segmentation[kCountlyVTKeyVisit] isEqual:@1];
+        
+        // Add visibility if it's not a view event or it's a view start event
+        if (!isViewEvent || isViewStart) {
+            segmentation[kCountlyVisibility] = @([self isAppInForeground] ? 1 : 0);
         }
     }
     
-    if(CountlyCommon.sharedInstance.enableVisibiltyTracking) {
-        segmentation[kCountlyVisibility] = @([self isAppInForeground] ? 1 : 0);
-    }
-    
-    return segmentation.count == 0 ? nil : segmentation;
+    // Return segmentation dictionary if not empty, otherwise return nil
+    return segmentation.count > 0 ? segmentation : nil;
 }
 
 - (BOOL)isAppInForeground {

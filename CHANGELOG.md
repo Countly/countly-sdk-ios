@@ -1,3 +1,6 @@
+## XX.XX.XX
+* Mitigated an issue where visibility could have been wrongly assigned if a view was closed while going to background. (Experimental!)
+
 ## 24.7.7
 * Changed the visibility tracking segmentation values to binary
 
