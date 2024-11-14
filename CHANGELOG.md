@@ -1,4 +1,4 @@
-## XX.XX.XX
+## 24.7.8
 * Mitigated an issue where visibility could have been wrongly assigned if a view was closed while going to background. (Experimental!)
 * Mitigated an issue where the user provided URLSessionConfiguration was not applied to direct requests
 
