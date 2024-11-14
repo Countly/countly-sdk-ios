@@ -197,7 +197,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         return;
     
     NSURLRequest* request = [self remoteConfigRequestForKeys:keys omitKeys:omitKeys isLegacy:isLegacy];
-    NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
                               {
         NSDictionary* remoteConfig = nil;
         
@@ -496,7 +496,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         return;
     
     NSURLRequest* request = [self downloadVariantsRequest];
-    NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
                               {
         NSMutableDictionary* variants = NSMutableDictionary.new;
         
@@ -607,7 +607,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
     }
     
     NSURLRequest* request = [self enrollInVarianRequestForKey:key variantName:variantName];
-    NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
         NSDictionary* variants = nil;
         [self clearCachedRemoteConfig];
@@ -721,7 +721,7 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         return;
     
     NSURLRequest* request = [self downloadExperimentInfoRequest];
-    NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
                               {
         
         NSMutableDictionary<NSString*, CountlyExperimentInformation*> * experiments = NSMutableDictionary.new;

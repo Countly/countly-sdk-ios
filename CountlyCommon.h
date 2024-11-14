@@ -122,6 +122,8 @@ void CountlyPrint(NSString *stringToPrint);
 - (void)recordOrientation;
 
 - (BOOL)hasStarted_;
+
+- (NSURLSession *)URLSession;
 @end
 
 

@@ -317,6 +317,18 @@ void CountlyPrint(NSString *stringToPrint)
 }
 #endif
 
+- (NSURLSession *)URLSession
+{
+    if (CountlyConnectionManager.sharedInstance.URLSessionConfiguration)
+    {
+        return [NSURLSession sessionWithConfiguration:CountlyConnectionManager.sharedInstance.URLSessionConfiguration];
+    }
+    else
+    {
+        return NSURLSession.sharedSession;
+    }
+}
+
 @end
 
 
