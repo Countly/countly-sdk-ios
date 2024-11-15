@@ -1,6 +1,7 @@
 ## 24.7.8
 * Mitigated an issue where visibility could have been wrongly assigned if a view was closed while going to background. (Experimental!)
 * Mitigated an issue where the user provided URLSessionConfiguration was not applied to direct requests
+* Mitigated an issue where a concurrent modification error could have happen when starting multiple stopped views
 
 ## 24.7.7
 * Changed the visibility tracking segmentation values to binary

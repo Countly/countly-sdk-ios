@@ -545,26 +545,32 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 {
     // Create an array to store keys for views that need to be removed
     NSMutableArray<NSString *> *keysToRemove = [NSMutableArray array];
-
+    NSMutableArray<NSString *> *keysToStart = [NSMutableArray array];
+    
+    // Collect keys without modifying the dictionary
     [self.viewDataDictionary enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, CountlyViewData * _Nonnull viewData, BOOL * _Nonnull stop) {
         if (viewData.willStartAgain)
         {
-            NSString *viewID = [self startViewInternal:viewData.viewName customSegmentation:viewData.startSegmentation isAutoStoppedView:viewData.isAutoStoppedView];
-            
-            // Retrieve the newly created viewData for the viewID
-            CountlyViewData* viewDataNew = self.viewDataDictionary[viewID];
-            
-            // Copy the segmentation data from the old view to the new view
-            viewDataNew.segmentation = viewData.segmentation.mutableCopy;
-            
-            // Add the old view's ID to the array for removal later
+            [keysToStart addObject:key];
             [keysToRemove addObject:viewData.viewID];
         }
     }];
     
+    // Start the collected views after enumeration
+    for (NSString *key in keysToStart)
+    {
+        CountlyViewData *viewData = self.viewDataDictionary[key];
+        NSString *viewID = [self startViewInternal:viewData.viewName customSegmentation:viewData.startSegmentation isAutoStoppedView:viewData.isAutoStoppedView];
+        
+        // Retrieve and update the newly created viewData
+        CountlyViewData *viewDataNew = self.viewDataDictionary[viewID];
+        viewDataNew.segmentation = viewData.segmentation.mutableCopy;
+    }
+    
     // Remove the entries from the dictionary
     [self.viewDataDictionary removeObjectsForKeys:keysToRemove];
 }
+
 
 - (void)stopAllViewsInternal:(NSDictionary *)segmentation
 {
