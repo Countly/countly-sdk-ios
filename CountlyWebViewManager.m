@@ -208,10 +208,14 @@
     
     for (NSDictionary *event in events) {
         NSString *key = event[@"key"];
-        NSDictionary *segmentation = event[@"sg"];
+        NSDictionary *segmentation = event[@"segmentation"];
+        NSDictionary *sg = event[@"sg"];
         if(!key) {
             CLY_LOG_I(@"Skipping the event due to key is empty or nil");
             continue;
+        }
+        if(sg) {
+            segmentation = sg;
         }
         if(!segmentation) {
             CLY_LOG_I(@"Skipping the event due to missing segmentation");
