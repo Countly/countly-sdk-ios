@@ -29,7 +29,7 @@ NSString* const kCountlyVisibility = @"cly_v";
 #endif
 @end
 
-NSString* const kCountlySDKVersion = @"24.7.8";
+NSString* const kCountlySDKVersion = @"24.7.9";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
