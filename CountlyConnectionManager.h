@@ -69,4 +69,6 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 - (NSString *)queryEssentials;
 - (NSString *)appendChecksum:(NSString *)queryString;
 
+- (BOOL)isSessionStarted;
+
 @end
