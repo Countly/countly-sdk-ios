@@ -1,3 +1,6 @@
+## 24.7.9
+* Improved view tracking capabilities
+
 ## 24.7.8
 * Added support for localization of content blocks.
 
