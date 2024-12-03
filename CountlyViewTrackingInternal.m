@@ -436,7 +436,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     segmentation[kCountlyVTKeySegment] = CountlyDeviceInfo.osName;
     segmentation[kCountlyVTKeyVisit] = @1;
     
-    if (self.isFirstView)
+    if (self.isFirstView && [CountlyConnectionManager.sharedInstance isSessionStarted])
     {
         self.isFirstView = NO;
         segmentation[kCountlyVTKeyStart] = @1;
@@ -765,7 +765,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)resetFirstView
 {
-    self.isFirstView = NO;
+    self.isFirstView = YES;
 }
 
 
