@@ -137,6 +137,11 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
     
+    NSArray *components = [CountlyDeviceInfo.locale componentsSeparatedByCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"_-"]];
+
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@",
+                   @"la", components.firstObject];
+    
     NSString* URLString = [NSString stringWithFormat:@"%@%@?%@",
                            CountlyConnectionManager.sharedInstance.host,
                            kCountlyEndpointContent,

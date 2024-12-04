@@ -29,7 +29,7 @@ NSString* const kCountlyVisibility = @"cly_v";
 #endif
 @end
 
-NSString* const kCountlySDKVersion = @"24.7.6";
+NSString* const kCountlySDKVersion = @"24.7.9";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
@@ -316,6 +316,18 @@ void CountlyPrint(NSString *stringToPrint)
     });
 }
 #endif
+
+- (NSURLSession *)URLSession
+{
+    if (CountlyConnectionManager.sharedInstance.URLSessionConfiguration)
+    {
+        return [NSURLSession sessionWithConfiguration:CountlyConnectionManager.sharedInstance.URLSessionConfiguration];
+    }
+    else
+    {
+        return NSURLSession.sharedSession;
+    }
+}
 
 @end
 

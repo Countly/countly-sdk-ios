@@ -16,6 +16,7 @@
 @property (nonatomic) NSURLSession* URLSession;
 
 @property (nonatomic, strong) NSDate *startTime;
+
 @end
 
 NSString* const kCountlyQSKeyAppKey           = @"app_key";
@@ -103,6 +104,11 @@ static dispatch_once_t onceToken;
     }
 
     return self;
+}
+
+
+- (BOOL)isSessionStarted {
+    return isSessionStarted;
 }
 
 - (void)resetInstance {

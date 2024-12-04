@@ -84,7 +84,7 @@ NSString* const kCountlySCKeySC = @"sc";
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
         return;
     
-    NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:[self serverConfigRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self serverConfigRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
                               {
         NSDictionary *serverConfigResponse = nil;
         

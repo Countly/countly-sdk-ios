@@ -252,7 +252,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         return;
 
     NSURLRequest* feedbackWidgetCheckRequest = [self widgetCheckURLRequest:widgetID];
-    NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:feedbackWidgetCheckRequest completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:feedbackWidgetCheckRequest completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
         NSDictionary* widgetInfo = nil;
 
@@ -425,7 +425,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
         return;
 
-    NSURLSessionTask* task = [NSURLSession.sharedSession dataTaskWithRequest:[self feedbacksRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self feedbacksRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
         NSDictionary *feedbacksResponse = nil;
 
