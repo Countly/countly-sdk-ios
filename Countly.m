@@ -275,6 +275,9 @@ static dispatch_once_t onceToken;
     if(config.content.getGlobalContentCallback) {
         CountlyContentBuilderInternal.sharedInstance.contentCallback = config.content.getGlobalContentCallback;
     }
+    if(config.content.getZoneTimerInterval){
+        CountlyContentBuilderInternal.sharedInstance.zoneTimerInterval = config.content.getZoneTimerInterval;
+    }
 #endif
     
     [CountlyPerformanceMonitoring.sharedInstance startWithConfig:config.apm];
