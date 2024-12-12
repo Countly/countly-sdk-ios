@@ -32,6 +32,20 @@ typedef void (^ContentCallback)(ContentStatus contentStatus, NSDictionary<NSStri
  * Get content callback
  */
 - (ContentCallback) getGlobalContentCallback;
+
+/**
+ * This is an experimental feature and it can have breaking changes
+ * Set the interval for the automatic content update calls
+ * @param zoneTimerIntervalSeconds in seconds
+ *
+ */
+-(void)setZoneTimerInterval:(NSUInteger)zoneTimerIntervalSeconds;
+
+/**
+ * This is an experimental feature and it can have breaking changes
+ * Get zone timer interval
+ */
+- (NSUInteger) getZoneTimerInterval;
 #endif
 
 NS_ASSUME_NONNULL_END
