@@ -43,6 +43,11 @@
     NSURLRequest *request = [NSURLRequest requestWithURL:url];
     [webView loadRequest:request];
     
+#if (TARGET_OS_IOS)
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleScreenChange) name:UIDeviceOrientationDidChangeNotification object:nil];
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleScreenChange) name:UIScreenModeDidChangeNotification object:nil];
+#endif
+    
     CLYButton *dismissButton = [CLYButton dismissAlertButton:@"X"];
     [self configureDismissButton:dismissButton forWebView:webView];
     
@@ -57,6 +62,35 @@
             }
         }
     }];
+}
+
+- (void)handleScreenChange {
+    CGRect screenBounds = [UIScreen mainScreen].bounds;
+    if (@available(iOS 11.0, *)) {
+        CGFloat top = UIApplication.sharedApplication.keyWindow.safeAreaInsets.top;
+        
+        if (top) {
+            screenBounds.origin.y += top + 5;
+            screenBounds.size.height -= top + 5;
+        } else {
+            screenBounds.origin.y += 20.0;
+            screenBounds.size.height -= 20.0;
+        }
+    } else {
+        screenBounds.origin.y += 20.0;
+        screenBounds.size.height -= 20.0;
+    }
+    
+    CGFloat width = screenBounds.size.width;
+    CGFloat height = screenBounds.size.height;
+    
+    NSString *postMessage = [NSString stringWithFormat:
+                            @"javascript:window.postMessage({type: 'resize', width: %f, height: %f}, '*');",
+                             width,
+                             height];
+    NSURL *uri = [NSURL URLWithString:postMessage];
+    NSURLRequest *request = [NSURLRequest requestWithURL:uri];
+    [self.backgroundView.webView loadRequest:request];
 }
 
 - (void)configureWebView:(WKWebView *)webView {
@@ -297,9 +331,11 @@
     }];
 }
 
-
-
 - (void)closeWebView {
+#if (TARGET_OS_IOS)
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIDeviceOrientationDidChangeNotification object:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:UIScreenModeDidChangeNotification object:nil];
+#endif
     dispatch_async(dispatch_get_main_queue(), ^{
         if (self.dismissBlock) {
             self.dismissBlock();
