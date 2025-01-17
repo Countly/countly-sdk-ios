@@ -17,6 +17,7 @@
 #if (TARGET_OS_IOS)
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleScreenChange) name:UIDeviceOrientationDidChangeNotification object:nil];
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleScreenChange) name:UIScreenModeDidChangeNotification object:nil];
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleScreenChange) name:UIApplicationDidBecomeActiveNotification object:nil];
 #endif
     return self;
 }
@@ -47,35 +48,58 @@
     }
 }
 
-- (void)handleScreenChange {
-    CGRect screenBounds = [UIScreen mainScreen].bounds;
-    if (@available(iOS 11.0, *)) {
-        CGFloat top = UIApplication.sharedApplication.keyWindow.safeAreaInsets.top;
-        
-        if (top) {
-            screenBounds.origin.y += top + 5;
-            screenBounds.size.height -= top + 5;
-        } else {
-            screenBounds.origin.y += 20.0;
-            screenBounds.size.height -= 20.0;
+CGSize getWindowSize(void) {
+    CGSize size = CGSizeZero;
+
+    // Attempt to retrieve the size from the connected scenes (for modern apps)
+    if (@available(iOS 13.0, *)) {
+        NSSet<UIScene *> *scenes = [[UIApplication sharedApplication] connectedScenes];
+        for (UIScene *scene in scenes) {
+            if ([scene isKindOfClass:[UIWindowScene class]]) {
+                UIWindowScene *windowScene = (UIWindowScene *)scene;
+                UIWindow *window = windowScene.windows.firstObject;
+                if (window) {
+                    size = window.bounds.size;
+                    return size; // Return immediately if we find a valid size
+                }
+            }
         }
-    } else {
-        screenBounds.origin.y += 20.0;
-        screenBounds.size.height -= 20.0;
     }
-    
-    CGFloat width = screenBounds.size.width;
-    CGFloat height = screenBounds.size.height;
+
+    // Fallback for legacy apps using AppDelegate
+    id<UIApplicationDelegate> appDelegate = [[UIApplication sharedApplication] delegate];
+    if ([appDelegate respondsToSelector:@selector(window)]) {
+        UIWindow *legacyWindow = [appDelegate performSelector:@selector(window)];
+        if (legacyWindow) {
+            size = legacyWindow.bounds.size;
+        }
+    }
+
+    return size;
+}
+
+- (void)handleScreenChange {
+    // Execute after a short delay to ensure properties are updated
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self updateWindowSize];
+    });
+}
+
+- (void)updateWindowSize {
+    CGSize size = getWindowSize();
+    CGFloat width = size.width;
+    CGFloat height = size.height;
     
     NSString *postMessage = [NSString stringWithFormat:
                             @"javascript:window.postMessage({type: 'resize', width: %f, height: %f}, '*');",
                              width,
                              height];
-    NSURL *uri = [NSURL URLWithString:postMessage];
-    NSURLRequest *request = [NSURLRequest requestWithURL:uri];
-    [self.webView loadRequest:request];
+    [self.webView evaluateJavaScript:postMessage completionHandler:^(id result, NSError *err) {
+        if (err != nil) {
+            CLY_LOG_E(@"[PassThroughBackgroundView] updateWindowSize, %@", err);
+        }
+    }];
 }
-
 
 // Always remove observers when the view is deallocated
 - (void)dealloc {
