@@ -1,3 +1,7 @@
+## XX.XX.XX
+* Added dynamic resizing functionality for the content zone
+* Improved management of content zone size for better responsiveness
+
 ## 24.7.9
 * Improved view tracking capabilities
 
