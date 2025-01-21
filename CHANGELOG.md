@@ -1,3 +1,9 @@
+## XX.XX.XX
+* Added dynamic resizing functionality for the content zone
+* Improved management of content zone size for better responsiveness
+
+* Fixed an issue where the build UUID and executable name were missing from crash reports
+
 ## 24.7.9
 * Improved view tracking capabilities
 
