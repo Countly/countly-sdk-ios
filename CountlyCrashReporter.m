@@ -288,6 +288,8 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
         NSMutableDictionary* crashReport = [crashData.crashMetrics mutableCopy];
         crashReport[kCountlyCRKeyError] = crashData.stackTrace;
         crashReport[kCountlyCRKeyBinaryImages] = [CountlyCrashReporter.sharedInstance binaryImagesForStackTrace:stackTrace];
+        crashReport[kCountlyCRKeyBuildUUID] = CountlyCrashReporter.sharedInstance.buildUUID ?: @"";
+        crashReport[kCountlyCRKeyExecutableName] = CountlyCrashReporter.sharedInstance.executableName ?: @"";
         crashReport[kCountlyCRKeyName] = crashData.crashDescription;
         crashReport[kCountlyCRKeyType] = crashData.name;
         crashReport[kCountlyCRKeyNonfatal] = @(!crashData.fatal);
@@ -498,8 +500,6 @@ void CountlySignalHandler(int signalCode)
     crashReport[kCountlyCRKeyResolution] = CountlyDeviceInfo.resolution;
     crashReport[kCountlyCRKeyAppVersion] = CountlyDeviceInfo.appVersion;
     crashReport[kCountlyCRKeyAppBuild] = CountlyDeviceInfo.appBuild;
-    crashReport[kCountlyCRKeyBuildUUID] = CountlyCrashReporter.sharedInstance.buildUUID ?: @"";
-    crashReport[kCountlyCRKeyExecutableName] = CountlyCrashReporter.sharedInstance.executableName ?: @"";
    
     crashReport[kCountlyCRKeyRAMCurrent] = @((CountlyDeviceInfo.totalRAM - CountlyDeviceInfo.freeRAM) / kCLYMebibit);
     crashReport[kCountlyCRKeyRAMTotal] = @(CountlyDeviceInfo.totalRAM / kCLYMebibit);
