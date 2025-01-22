@@ -21,15 +21,6 @@
     UIViewController *rootViewController = UIApplication.sharedApplication.keyWindow.rootViewController;
     CGRect backgroundFrame = rootViewController.view.bounds;
     
-    if (@available(iOS 11.0, *)) {
-        CGFloat top = UIApplication.sharedApplication.keyWindow.safeAreaInsets.top;
-        backgroundFrame.origin.y += top ? top + 5 : 20.0;
-        backgroundFrame.size.height -= top ? top + 5 : 20.0;
-    } else {
-        backgroundFrame.origin.y += 20.0;
-        backgroundFrame.size.height -= 20.0;
-    }
-    
     self.backgroundView = [[PassThroughBackgroundView alloc] initWithFrame:backgroundFrame];
     self.backgroundView.backgroundColor = [UIColor clearColor];
     [rootViewController.view addSubview:self.backgroundView];
@@ -296,8 +287,6 @@
         CLY_LOG_I(@"Resized web view to width: %f, height: %f", width, height);
     }];
 }
-
-
 
 - (void)closeWebView {
     dispatch_async(dispatch_get_main_queue(), ^{
