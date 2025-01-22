@@ -13,7 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface CountlyContentBuilderInternal: NSObject
 #if (TARGET_OS_IOS)
 @property (nonatomic, strong) NSArray<NSString *> *currentTags;
-@property (nonatomic, assign) NSTimeInterval requestInterval;
+@property (nonatomic, assign) NSTimeInterval zoneTimerInterval;
 @property (nonatomic) ContentCallback contentCallback;
 
 + (instancetype)sharedInstance;

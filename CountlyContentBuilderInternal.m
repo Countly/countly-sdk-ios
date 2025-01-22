@@ -29,7 +29,7 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 {
     if (self = [super init])
     {
-        self.requestInterval = 30.0;
+        self.zoneTimerInterval = 30.0;
         _requestTimer = nil;
     }
     
@@ -55,7 +55,7 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     self.currentTags = tags;
     
     [self fetchContents];;
-    _requestTimer = [NSTimer scheduledTimerWithTimeInterval:self.requestInterval
+    _requestTimer = [NSTimer scheduledTimerWithTimeInterval:self.zoneTimerInterval
                                                      target:self
                                                    selector:@selector(fetchContents)
                                                    userInfo:nil

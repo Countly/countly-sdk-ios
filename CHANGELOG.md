@@ -1,3 +1,6 @@
+## XX.XX.XX
+* Added a config option to content (setZoneTimerInterval) to set content zone timer. (Experimental!)
+
 ## 24.7.9
 * Improved view tracking capabilities
 
