@@ -1,4 +1,6 @@
 ## XX.XX.XX
+* Added dynamic resizing functionality for the content zone
+* Improved management of content zone size for better responsiveness
 * Added a config option to content (setZoneTimerInterval) to set content zone timer. (Experimental!)
 
 ## 24.7.9
