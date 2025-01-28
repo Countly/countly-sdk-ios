@@ -1,3 +1,6 @@
+## XX.XX.XX
+* Mitigated an issue while setting zone timer interval.
+
 ## 25.1.0
 * Added dynamic resizing functionality for the content zone
 * Added a config option to content (setZoneTimerInterval) to set content zone timer. (Experimental!)
