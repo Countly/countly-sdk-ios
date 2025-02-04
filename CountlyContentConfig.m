@@ -27,25 +27,25 @@
 #if (TARGET_OS_IOS)
 -(void)setGlobalContentCallback:(ContentCallback) callback
 {
-    self.contentCallback = callback;
+    _contentCallback = callback;
 }
 
 - (ContentCallback) getGlobalContentCallback
 {
-    return self.contentCallback;
+    return _contentCallback;
 }
 
 
 -(void)setZoneTimerInterval:(NSUInteger)zoneTimerIntervalSeconds
 {
     if (zoneTimerIntervalSeconds > 15) {
-        self.zoneTimerInterval = zoneTimerIntervalSeconds;
+        _zoneTimerInterval = zoneTimerIntervalSeconds;
     }
 }
 
 - (NSUInteger) getZoneTimerInterval
 {
-    return self.zoneTimerInterval;
+    return _zoneTimerInterval;
 }
 #endif
 
