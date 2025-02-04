@@ -1,4 +1,4 @@
-## XX.XX.XX
+## 25.1.1
 * Mitigated an issue while setting zone timer interval.
 
 ## 25.1.0
