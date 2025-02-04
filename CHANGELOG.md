@@ -1,5 +1,5 @@
 ## XX.XX.XX
-* Mitigated an issue while setting zone timer interval.
+* Mitigated an issue while setting zone timer interval for content.
 
 ## 25.1.0
 * Added dynamic resizing functionality for the content zone
