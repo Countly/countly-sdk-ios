@@ -29,7 +29,7 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 {
     if (self = [super init])
     {
-        self.requestInterval = 30.0;
+        self.zoneTimerInterval = 30.0;
         _requestTimer = nil;
     }
     
@@ -55,7 +55,7 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     self.currentTags = tags;
     
     [self fetchContents];;
-    _requestTimer = [NSTimer scheduledTimerWithTimeInterval:self.requestInterval
+    _requestTimer = [NSTimer scheduledTimerWithTimeInterval:self.zoneTimerInterval
                                                      target:self
                                                    selector:@selector(fetchContents)
                                                    userInfo:nil
@@ -151,30 +151,49 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     return request;
 }
 
+- (CGSize)getWindowSize {
+    CGSize size = CGSizeZero;
+
+    // Attempt to retrieve the size from the connected scenes (for modern apps)
+    if (@available(iOS 13.0, *)) {
+        NSSet<UIScene *> *scenes = [[UIApplication sharedApplication] connectedScenes];
+        for (UIScene *scene in scenes) {
+            if ([scene isKindOfClass:[UIWindowScene class]]) {
+                UIWindowScene *windowScene = (UIWindowScene *)scene;
+                UIWindow *window = windowScene.windows.firstObject;
+                if (window) {
+                    size = window.bounds.size;
+                    return size; // Return immediately if we find a valid size
+                }
+            }
+        }
+    }
+
+    // Fallback for legacy apps using AppDelegate
+    id<UIApplicationDelegate> appDelegate = [[UIApplication sharedApplication] delegate];
+    if ([appDelegate respondsToSelector:@selector(window)]) {
+        UIWindow *legacyWindow = [appDelegate performSelector:@selector(window)];
+        if (legacyWindow) {
+            size = legacyWindow.bounds.size;
+        }
+    }
+
+    return size;
+}
+
 - (NSString *)resolutionJson {
     //TODO: check why area is not clickable and safearea things
-    CGRect screenBounds = [UIScreen mainScreen].bounds;
-    if (@available(iOS 11.0, *)) {
-        CGFloat top = UIApplication.sharedApplication.keyWindow.safeAreaInsets.top;
-        
-        if (top) {
-            screenBounds.origin.y += top + 5;
-            screenBounds.size.height -= top + 5;
-        } else {
-            screenBounds.origin.y += 20.0;
-            screenBounds.size.height -= 20.0;
-        }
-    } else {
-        screenBounds.origin.y += 20.0;
-        screenBounds.size.height -= 20.0;
-    }
+    CGSize size = [self getWindowSize];
     
-    CGFloat width = screenBounds.size.width;
-    CGFloat height = screenBounds.size.height;
+    UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
+    BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
+
+    CGFloat lHpW = isLandscape ? size.height : size.width;
+    CGFloat lWpH =  isLandscape ? size.width : size.height;
     
     NSDictionary *resolutionDict = @{
-        @"portrait": @{@"height": @(height), @"width": @(width)},
-        @"landscape": @{@"height": @(width), @"width": @(height)}
+        @"portrait": @{@"height": @(lWpH), @"width": @(lHpW)},
+        @"landscape": @{@"height": @(lHpW), @"width": @(lWpH)}
     };
     
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:resolutionDict options:0 error:nil];

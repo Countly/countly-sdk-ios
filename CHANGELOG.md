@@ -1,3 +1,13 @@
+## 25.1.1
+* Mitigated an issue while setting zone timer interval for content.
+
+## 25.1.0
+* Added dynamic resizing functionality for the content zone
+* Added a config option to content (setZoneTimerInterval) to set content zone timer. (Experimental!)
+
+* Improved management of content zone size for better responsiveness
+* Fixed an issue where the build UUID and executable name were missing from crash reports
+
 ## 24.7.9
 * Improved view tracking capabilities
 
