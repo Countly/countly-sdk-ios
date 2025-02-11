@@ -75,15 +75,12 @@
         CGFloat screenScale = [UIScreen mainScreen].scale;
         UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
         if(!UIInterfaceOrientationIsLandscape(orientation) && !self.topMarginApplied){
-            CLY_LOG_E(@"HERE NOW 1");
             self.topMarginApplied = YES;
             CGRect newFrame = self.backgroundView.frame;
             newFrame.origin.y += safeArea.top;
             self.backgroundView.frame = newFrame;
             self.topMargin = safeArea.top;
-            //backgroundFrame.size.height -= safeArea.top;
         } else if(UIInterfaceOrientationIsLandscape(orientation) && self.topMarginApplied){
-            CLY_LOG_E(@"HERE NOW 2");
             self.topMarginApplied = NO;
             CGRect newFrame = self.backgroundView.frame;
             newFrame.origin.y -= self.topMargin;
