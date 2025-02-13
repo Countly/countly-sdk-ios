@@ -850,6 +850,12 @@ static dispatch_once_t onceToken;
         CLY_LOG_W(@"A reserved event detected for key: '%@', event will not be recorded.", key);
         return;
     }
+
+    if (!CountlyServerConfig.sharedInstance.customEventTrackingEnabled)
+    {
+        CLY_LOG_D(@"'recordEvent' is aborted: Custom Event Tracking is disabled from server config!");
+        return;
+    }
     
     NSDictionary* truncated = [segmentation cly_truncated:@"Event segmentation"];
     segmentation = [truncated cly_limited:@"Event segmentation"];
