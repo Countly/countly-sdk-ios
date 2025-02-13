@@ -15,6 +15,25 @@ extern NSString* const kCountlySCKeySC;
 
 - (BOOL)trackingEnabled;
 - (BOOL)networkingEnabled;
+- (NSInteger)sessionInterval;
+- (NSInteger)eventQueueSize;
+- (BOOL)crashReportingEnabled;
+- (BOOL)loggingEnabled;
+- (NSInteger)limitKeyLength;
+- (NSInteger)limitValueSize;
+- (NSInteger)limitSegValues;
+- (NSInteger)limitBreadcrumb;
+- (NSInteger)limitTraceLine;
+- (NSInteger)limitTraceLength;
+- (BOOL)customEventTrackingEnabled;
+- (BOOL)enterContentZone;
+- (NSInteger)contentZoneInterval;
+- (BOOL)consentRequired;
+- (NSInteger)dropOldRequestTime;
+- (BOOL)viewTrackingEnabled;
+- (NSInteger)requestQueueSize;
+- (BOOL)sessionTrackingEnabled;
+
 
 @end
 

@@ -9,9 +9,55 @@
 @interface CountlyServerConfig ()
 @property (nonatomic) BOOL trackingEnabled;
 @property (nonatomic) BOOL networkingEnabled;
+@property (nonatomic) NSInteger sessionInterval;
+@property (nonatomic) NSInteger eventQueueSize;
+@property (nonatomic) NSInteger requestQueueSize;
+@property (nonatomic) BOOL crashReportingEnabled;
+@property (nonatomic) BOOL loggingEnabled;
+
+@property (nonatomic) NSInteger limitKeyLength;
+@property (nonatomic) NSInteger limitValueSize;
+@property (nonatomic) NSInteger limitSegValues;
+@property (nonatomic) NSInteger limitBreadcrumb;
+@property (nonatomic) NSInteger limitTraceLine;
+@property (nonatomic) NSInteger limitTraceLength;
+@property (nonatomic) BOOL customEventTrackingEnabled;
+@property (nonatomic) BOOL viewTrackingEnabled;
+@property (nonatomic) BOOL sessionTrackingEnabled;
+@property (nonatomic) BOOL enterContentZone;
+@property (nonatomic) NSInteger contentZoneInterval;
+@property (nonatomic) BOOL consentRequired;
+@property (nonatomic) NSInteger dropOldRequestTime;
 @end
 
 NSString* const kCountlySCKeySC = @"sc";
+NSString* const kTracking = @"tracking";
+NSString* const kNetworking = @"networking";
+
+// request keys
+NSString* const kRTimestamp = @"t";
+NSString* const kRVersion = @"v";
+NSString* const kRConfig = @"c";
+NSString* const kRReqQueueSize = @"rqs";
+NSString* const kREventQueueSize = @"eqs";
+NSString* const kRLogging = @"log";
+NSString* const kRSessionUpdateInterval = @"sui";
+NSString* const kRSessionTracking = @"st";
+NSString* const kRViewTracking = @"vt";
+
+NSString* const kRLimitKeyLength = @"lkl";
+NSString* const kRLimitValueSize = @"lvs";
+NSString* const kRLimitSegValues = @"lsv";
+NSString* const kRLimitBreadcrumb = @"lbc";
+NSString* const kRLimitTraceLine = @"ltlpt";
+NSString* const kRLimitTraceLength = @"ltl";
+NSString* const kRCustomEventTracking = @"cet";
+NSString* const kREnterContentZone = @"ecz";
+NSString* const kRContentZoneInterval = @"czi";
+NSString* const kRConsentRequired = @"cr";
+NSString* const kRDropOldRequestTime = @"dort";
+NSString* const kRCrashReporting = @"crt";
+
 
 @implementation CountlyServerConfig
 
@@ -28,59 +74,117 @@ NSString* const kCountlySCKeySC = @"sc";
 
 - (instancetype)init
 {
-    if (self = [super init])
-    {
-        self.trackingEnabled = YES;
-        self.networkingEnabled = YES;
+    self = [super init];
+    if (self) {
+        // Set default values
+        _trackingEnabled = YES;
+        _networkingEnabled = YES;
+        _crashReportingEnabled = YES;
+        _customEventTrackingEnabled = YES;
+        _enterContentZone = NO;
+        
         NSDictionary* serverConfigObject = [CountlyPersistency.sharedInstance retrieveServerConfig];
         if (serverConfigObject) {
             [self populateServerConfig:serverConfigObject];
         }
     }
-    
     return self;
-}
-
-- (BOOL)trackingEnabled
-{
-    if (!CountlyCommon.sharedInstance.enableServerConfiguration)
-        return YES;
-    
-    return _trackingEnabled;
-}
-
-- (BOOL)networkingEnabled
-{
-    if (!CountlyCommon.sharedInstance.enableServerConfiguration)
-        return YES;
-    
-    return _networkingEnabled;
 }
 
 - (void)populateServerConfig:(NSDictionary *)dictionary
 {
-    if (dictionary[@"tracking"])
-    {
-        self.trackingEnabled = [dictionary[@"tracking"] boolValue];
+    if (dictionary[kTracking]) {
+        self.trackingEnabled = [dictionary[kTracking] boolValue];
     }
-    if (dictionary[@"networking"])
-    {
-        self.networkingEnabled = [dictionary[@"networking"] boolValue];
+
+    if (dictionary[kNetworking]) {
+        self.networkingEnabled = [dictionary[kNetworking] boolValue];
     }
+
+    if (dictionary[kRSessionUpdateInterval]) {
+        self.sessionInterval = [dictionary[kRSessionUpdateInterval] integerValue];
+    }
+    
+    if (dictionary[kRReqQueueSize]) {
+        self.requestQueueSize = [dictionary[kRReqQueueSize] integerValue];
+    }
+
+    if (dictionary[kREventQueueSize]) {
+        self.eventQueueSize = [dictionary[kREventQueueSize] integerValue];
+    }
+
+    if (dictionary[kRCrashReporting]) {
+        self.crashReportingEnabled = [dictionary[kRCrashReporting] boolValue];
+    }
+
+    if (dictionary[kRSessionTracking]) {
+        self.sessionTrackingEnabled = [dictionary[kRSessionTracking] boolValue];
+    }
+    
+    if (dictionary[kRLogging]) {
+        self.loggingEnabled = [dictionary[kRLogging] boolValue];
+    }
+
+    if (dictionary[kRLimitKeyLength]) {
+        self.limitKeyLength = [dictionary[kRLimitKeyLength] integerValue];
+    }
+
+    if (dictionary[kRLimitValueSize]) {
+        self.limitValueSize = [dictionary[kRLimitValueSize] integerValue];
+    }
+
+    if (dictionary[kRLimitSegValues]) {
+        self.limitSegValues = [dictionary[kRLimitSegValues] integerValue];
+    }
+
+    if (dictionary[kRLimitBreadcrumb]) {
+        self.limitBreadcrumb = [dictionary[kRLimitBreadcrumb] integerValue];
+    }
+
+    if (dictionary[kRLimitTraceLine]) {
+        self.limitTraceLine = [dictionary[kRLimitTraceLine] integerValue];
+    }
+
+    if (dictionary[kRLimitTraceLength]) {
+        self.limitTraceLength = [dictionary[kRLimitTraceLength] integerValue];
+    }
+
+    if (dictionary[kRCustomEventTracking]) {
+        self.customEventTrackingEnabled = [dictionary[kRCustomEventTracking] boolValue];
+    }
+    
+    if (dictionary[kRViewTracking]) {
+        self.viewTrackingEnabled = [dictionary[kRViewTracking] boolValue];
+    }
+
+    if (dictionary[kREnterContentZone]) {
+        self.enterContentZone = [dictionary[kREnterContentZone] boolValue];
+    }
+
+    if (dictionary[kRContentZoneInterval]) {
+        self.contentZoneInterval = [dictionary[kRContentZoneInterval] integerValue];
+    }
+
+    if (dictionary[kRConsentRequired]) {
+        self.consentRequired = [dictionary[kRConsentRequired] boolValue];
+    }
+
+    if (dictionary[kRDropOldRequestTime]) {
+        self.dropOldRequestTime = [dictionary[kRDropOldRequestTime] integerValue];
+    }
+
     
     CLY_LOG_D(@"tracking : %@", self.trackingEnabled ? @"YES" : @"NO");
     CLY_LOG_D(@"networking : %@", self.networkingEnabled ? @"YES" : @"NO");
+    CLY_LOG_D(@"sessionInterval : %ld", (long)self.sessionInterval);
+    CLY_LOG_D(@"eventQueueSize : %ld", (long)self.eventQueueSize);
+    CLY_LOG_D(@"crashReporting : %@", self.crashReportingEnabled ? @"YES" : @"NO");
+    CLY_LOG_D(@"logging : %@", self.loggingEnabled ? @"YES" : @"NO");
 }
 
 - (void)fetchServerConfig
 {
     CLY_LOG_D(@"Fetching server configs...");
-    if (!CountlyCommon.sharedInstance.enableServerConfiguration)
-    {
-        CLY_LOG_D(@"'fetchServerConfig' enable server configuration during init time configuration.");
-        return;
-    }
-    
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
         return;
     
@@ -110,7 +214,7 @@ NSString* const kCountlySCKeySC = @"sc";
             return;
         }
         
-        NSDictionary* serverConfigObject = serverConfigResponse[@"c"];
+        NSDictionary* serverConfigObject = serverConfigResponse[kRConfig];
         if (serverConfigObject) {
             [self populateServerConfig:serverConfigObject];
             [CountlyPersistency.sharedInstance storeServerConfig:serverConfigObject];
@@ -155,5 +259,85 @@ NSString* const kCountlySCKeySC = @"sc";
     
     CLY_LOG_D(@"serverConfigRequest URL :%@", URL);
 }
+
+- (BOOL)trackingEnabled {
+    return _trackingEnabled;
+}
+
+- (BOOL)networkingEnabled {
+    return _networkingEnabled;
+}
+
+- (NSInteger)sessionInterval {
+    return _sessionInterval;
+}
+
+- (NSInteger)requestQueueSize {
+    return _requestQueueSize;
+}
+
+- (NSInteger)eventQueueSize {
+    return _eventQueueSize;
+}
+
+- (BOOL)crashReportingEnabled {
+    return _crashReportingEnabled;
+}
+
+- (BOOL)sessionTrackingEnabled {
+    return _sessionTrackingEnabled;
+}
+- (BOOL)loggingEnabled {
+    return _loggingEnabled;
+}
+
+- (NSInteger)limitKeyLength {
+    return _limitKeyLength;
+}
+
+- (NSInteger)limitValueSize {
+    return _limitValueSize;
+}
+
+- (NSInteger)limitSegValues {
+    return _limitSegValues;
+}
+
+- (NSInteger)limitBreadcrumb {
+    return _limitBreadcrumb;
+}
+
+- (NSInteger)limitTraceLine {
+    return _limitTraceLine;
+}
+
+- (NSInteger)limitTraceLength {
+    return _limitTraceLength;
+}
+
+- (BOOL)customEventTrackingEnabled {
+    return _customEventTrackingEnabled;
+}
+
+- (BOOL)viewTrackingEnabled {
+    return _viewTrackingEnabled;
+}
+
+- (BOOL)enterContentZone {
+    return _enterContentZone;
+}
+
+- (NSInteger)contentZoneInterval {
+    return _contentZoneInterval;
+}
+
+- (BOOL)consentRequired {
+    return _consentRequired;
+}
+
+- (NSInteger)dropOldRequestTime {
+    return _dropOldRequestTime;
+}
+
 
 @end
