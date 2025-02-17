@@ -356,6 +356,9 @@ static dispatch_once_t onceToken;
     if (!CountlyConsentManager.sharedInstance.consentForSessions)
         return;
     
+    if(!CountlyServerConfig.sharedInstance.sessionTrackingEnabled)
+        return;
+    
     if (isSessionStarted) {
         CLY_LOG_W(@"%s A session is already running, this 'beginSession' will be ignored", __FUNCTION__);
         return;
@@ -407,6 +410,9 @@ static dispatch_once_t onceToken;
     if (!CountlyConsentManager.sharedInstance.consentForSessions)
         return;
     
+    if(!CountlyServerConfig.sharedInstance.sessionTrackingEnabled)
+        return;
+    
     if (!isSessionStarted) {
         CLY_LOG_W(@"%s No session is running, this 'updateSession' will be ignored", __FUNCTION__);
         return;
@@ -423,6 +429,9 @@ static dispatch_once_t onceToken;
 - (void)endSession
 {
     if (!CountlyConsentManager.sharedInstance.consentForSessions)
+        return;
+    
+    if(!CountlyServerConfig.sharedInstance.sessionTrackingEnabled)
         return;
     
     if (!isSessionStarted) {
