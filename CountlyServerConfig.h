@@ -11,7 +11,7 @@ extern NSString* const kCountlySCKeySC;
 @interface CountlyServerConfig : NSObject
 + (instancetype)sharedInstance;
 
-- (void)fetchServerConfig;
+- (void)fetchServerConfig:(CountlyConfig *)config;
 
 - (BOOL)trackingEnabled;
 - (BOOL)networkingEnabled;

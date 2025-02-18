@@ -91,102 +91,116 @@ NSString* const kRCrashReporting = @"crt";
     return self;
 }
 
-- (void)populateServerConfig:(NSDictionary *)dictionary
+- (void)setBoolProperty:(BOOL *)property fromDictionary:(NSDictionary *)dictionary key:(NSString *)key logString:(NSMutableString *)logString
 {
-    if (dictionary[kTracking]) {
-        self.trackingEnabled = [dictionary[kTracking] boolValue];
+    NSNumber *value = dictionary[key];
+    if (value) {
+        *property = value.boolValue;
+        [logString appendFormat:@"%@: %@, ", key, *property ? @"YES" : @"NO"];
     }
-
-    if (dictionary[kNetworking]) {
-        self.networkingEnabled = [dictionary[kNetworking] boolValue];
-    }
-
-    if (dictionary[kRSessionUpdateInterval]) {
-        self.sessionInterval = [dictionary[kRSessionUpdateInterval] integerValue];
-    }
-    
-    if (dictionary[kRReqQueueSize]) {
-        self.requestQueueSize = [dictionary[kRReqQueueSize] integerValue];
-    }
-
-    if (dictionary[kREventQueueSize]) {
-        self.eventQueueSize = [dictionary[kREventQueueSize] integerValue];
-    }
-
-    if (dictionary[kRCrashReporting]) {
-        self.crashReportingEnabled = [dictionary[kRCrashReporting] boolValue];
-    }
-
-    if (dictionary[kRSessionTracking]) {
-        self.sessionTrackingEnabled = [dictionary[kRSessionTracking] boolValue];
-    }
-    
-    if (dictionary[kRLogging]) {
-        self.loggingEnabled = [dictionary[kRLogging] boolValue];
-    }
-
-    if (dictionary[kRLimitKeyLength]) {
-        self.limitKeyLength = [dictionary[kRLimitKeyLength] integerValue];
-    }
-
-    if (dictionary[kRLimitValueSize]) {
-        self.limitValueSize = [dictionary[kRLimitValueSize] integerValue];
-    }
-
-    if (dictionary[kRLimitSegValues]) {
-        self.limitSegValues = [dictionary[kRLimitSegValues] integerValue];
-    }
-
-    if (dictionary[kRLimitBreadcrumb]) {
-        self.limitBreadcrumb = [dictionary[kRLimitBreadcrumb] integerValue];
-    }
-
-    if (dictionary[kRLimitTraceLine]) {
-        self.limitTraceLine = [dictionary[kRLimitTraceLine] integerValue];
-    }
-
-    if (dictionary[kRLimitTraceLength]) {
-        self.limitTraceLength = [dictionary[kRLimitTraceLength] integerValue];
-    }
-
-    if (dictionary[kRCustomEventTracking]) {
-        self.customEventTrackingEnabled = [dictionary[kRCustomEventTracking] boolValue];
-    }
-    
-    if (dictionary[kRViewTracking]) {
-        self.viewTrackingEnabled = [dictionary[kRViewTracking] boolValue];
-    }
-
-    if (dictionary[kREnterContentZone]) {
-        self.enterContentZone = [dictionary[kREnterContentZone] boolValue];
-    }
-
-    if (dictionary[kRContentZoneInterval]) {
-        self.contentZoneInterval = [dictionary[kRContentZoneInterval] integerValue];
-    }
-
-    if (dictionary[kRConsentRequired]) {
-        self.consentRequired = [dictionary[kRConsentRequired] boolValue];
-    }
-
-    if (dictionary[kRDropOldRequestTime]) {
-        self.dropOldRequestTime = [dictionary[kRDropOldRequestTime] integerValue];
-    }
-
-    
-    CLY_LOG_D(@"tracking : %@", self.trackingEnabled ? @"YES" : @"NO");
-    CLY_LOG_D(@"networking : %@", self.networkingEnabled ? @"YES" : @"NO");
-    CLY_LOG_D(@"sessionInterval : %ld", (long)self.sessionInterval);
-    CLY_LOG_D(@"eventQueueSize : %ld", (long)self.eventQueueSize);
-    CLY_LOG_D(@"crashReporting : %@", self.crashReportingEnabled ? @"YES" : @"NO");
-    CLY_LOG_D(@"logging : %@", self.loggingEnabled ? @"YES" : @"NO");
 }
 
-- (void)fetchServerConfig
+- (void)setIntegerProperty:(NSInteger *)property fromDictionary:(NSDictionary *)dictionary key:(NSString *)key logString:(NSMutableString *)logString
+{
+    NSNumber *value = dictionary[key];
+    if (value) {
+        *property = value.integerValue;
+        [logString appendFormat:@"%@: %ld, ", key, (long)*property];
+    }
+}
+
+- (void)populateServerConfig:(NSDictionary *)dictionary
+{
+    NSMutableString *logString = [NSMutableString stringWithString:@"Server Config: "];
+
+    [self setBoolProperty:&_trackingEnabled fromDictionary:dictionary key:kTracking logString:logString];
+    [self setBoolProperty:&_networkingEnabled fromDictionary:dictionary key:kNetworking logString:logString];
+    [self setIntegerProperty:&_sessionInterval fromDictionary:dictionary key:kRSessionUpdateInterval logString:logString];
+    [self setIntegerProperty:&_requestQueueSize fromDictionary:dictionary key:kRReqQueueSize logString:logString];
+    [self setIntegerProperty:&_eventQueueSize fromDictionary:dictionary key:kREventQueueSize logString:logString];
+    [self setBoolProperty:&_crashReportingEnabled fromDictionary:dictionary key:kRCrashReporting logString:logString];
+    [self setBoolProperty:&_sessionTrackingEnabled fromDictionary:dictionary key:kRSessionTracking logString:logString];
+    [self setBoolProperty:&_loggingEnabled fromDictionary:dictionary key:kRLogging logString:logString];
+    [self setIntegerProperty:&_limitKeyLength fromDictionary:dictionary key:kRLimitKeyLength logString:logString];
+    [self setIntegerProperty:&_limitValueSize fromDictionary:dictionary key:kRLimitValueSize logString:logString];
+    [self setIntegerProperty:&_limitSegValues fromDictionary:dictionary key:kRLimitSegValues logString:logString];
+    [self setIntegerProperty:&_limitBreadcrumb fromDictionary:dictionary key:kRLimitBreadcrumb logString:logString];
+    [self setIntegerProperty:&_limitTraceLine fromDictionary:dictionary key:kRLimitTraceLine logString:logString];
+    [self setIntegerProperty:&_limitTraceLength fromDictionary:dictionary key:kRLimitTraceLength logString:logString];
+    [self setBoolProperty:&_customEventTrackingEnabled fromDictionary:dictionary key:kRCustomEventTracking logString:logString];
+    [self setBoolProperty:&_viewTrackingEnabled fromDictionary:dictionary key:kRViewTracking logString:logString];
+    [self setBoolProperty:&_enterContentZone fromDictionary:dictionary key:kREnterContentZone logString:logString];
+    [self setIntegerProperty:&_contentZoneInterval fromDictionary:dictionary key:kRContentZoneInterval logString:logString];
+    [self setBoolProperty:&_consentRequired fromDictionary:dictionary key:kRConsentRequired logString:logString];
+    [self setIntegerProperty:&_dropOldRequestTime fromDictionary:dictionary key:kRDropOldRequestTime logString:logString];
+
+    CLY_LOG_D(@"%s, %@", __FUNCTION__, logString);
+}
+
+- (void)notifySdkConfigChange:(CountlyConfig *)config
+{
+    config.enableDebug = _loggingEnabled ?: config.enableDebug;
+    CountlyCommon.sharedInstance.enableDebug = config.enableDebug;
+    
+    if (config.maxKeyLength) {
+        [config.sdkInternalLimits setMaxKeyLength: config.maxKeyLength];
+    }
+    
+    if (config.maxValueLength) {
+        [config.sdkInternalLimits setMaxValueSize: config.maxValueLength];
+    }
+    
+    if (config.maxSegmentationValues) {
+        [config.sdkInternalLimits setMaxSegmentationValues: config.maxSegmentationValues];
+    }
+    
+    if (config.crashLogLimit) {
+        [config.sdkInternalLimits setMaxBreadcrumbCount: config.crashLogLimit];
+    }
+    
+    [config.sdkInternalLimits setMaxKeyLength: _limitKeyLength ?: config.sdkInternalLimits.getMaxKeyLength];
+    [config.sdkInternalLimits setMaxValueSize: _limitValueSize ?: config.sdkInternalLimits.getMaxValueSize];
+    [config.sdkInternalLimits setMaxSegmentationValues: _limitSegValues ?: config.sdkInternalLimits.getMaxSegmentationValues];
+    [config.sdkInternalLimits setMaxBreadcrumbCount: _limitBreadcrumb ?: config.sdkInternalLimits.getMaxBreadcrumbCount];
+    [config.sdkInternalLimits setMaxStackTraceLineLength: _limitTraceLength ?: config.sdkInternalLimits.getMaxStackTraceLineLength];
+    [config.sdkInternalLimits setMaxStackTraceLinesPerThread: _limitTraceLine ?: config.sdkInternalLimits.getMaxStackTraceLinesPerThread];
+        
+    //[self checkAndFixInternalLimitsConfig:config]; TODO
+    
+    CountlyCommon.sharedInstance.maxKeyLength = config.sdkInternalLimits.getMaxKeyLength;
+    CountlyCommon.sharedInstance.maxValueLength = config.sdkInternalLimits.getMaxValueSize;
+    CountlyCommon.sharedInstance.maxSegmentationValues = config.sdkInternalLimits.getMaxSegmentationValues;
+    
+    config.requiresConsent = _consentRequired ?: config.requiresConsent;
+    CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
+    
+    config.eventSendThreshold = _eventQueueSize ?: config.eventSendThreshold;
+    config.requestDropAgeHours = _dropOldRequestTime ?: config.requestDropAgeHours;
+    config.storedRequestsLimit = _requestQueueSize ?: config.storedRequestsLimit;
+    CountlyPersistency.sharedInstance.eventSendThreshold = config.eventSendThreshold;
+    CountlyPersistency.sharedInstance.requestDropAgeHours = config.requestDropAgeHours;
+    CountlyPersistency.sharedInstance.storedRequestsLimit = MAX(1, config.storedRequestsLimit);
+    
+    config.updateSessionPeriod = _sessionInterval ?: config.updateSessionPeriod;
+    
+    [config.content setZoneTimerInterval: _contentZoneInterval ?: config.content.getZoneTimerInterval];
+    
+    CountlyCrashReporter.sharedInstance.crashLogLimit = config.sdkInternalLimits.getMaxBreadcrumbCount;
+}
+
+- (void)fetchServerConfig:(CountlyConfig *)config
 {
     CLY_LOG_D(@"Fetching server configs...");
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
         return;
+    
+    // Set default values
+    _trackingEnabled = YES;
+    _networkingEnabled = YES;
+    _crashReportingEnabled = YES;
+    _customEventTrackingEnabled = YES;
+    _enterContentZone = NO;
+    _loggingEnabled = NO;
     
     NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self serverConfigRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
                               {
@@ -223,6 +237,7 @@ NSString* const kRCrashReporting = @"crt";
     }];
     
     [task resume];
+    [self notifySdkConfigChange: config];
 }
 
 - (NSURLRequest *)serverConfigRequest

@@ -165,7 +165,7 @@ static dispatch_once_t onceToken;
     CountlyDeviceInfo.sharedInstance.customMetrics = [customMetricsTruncated cly_limited:@"Custom metric"];
     
     [Countly.user save];
-    [CountlyServerConfig.sharedInstance fetchServerConfig];
+    [CountlyServerConfig.sharedInstance fetchServerConfig: config];
     
 #if (TARGET_OS_IOS)
     CountlyFeedbacksInternal.sharedInstance.message = config.starRatingMessage;
@@ -224,7 +224,10 @@ static dispatch_once_t onceToken;
     if ([config.features containsObject:CLYCrashReporting])
     {
         CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;
-        [CountlyCrashReporter.sharedInstance startCrashReporting];
+        
+        if (CountlyServerConfig.sharedInstance.crashReportingEnabled) {
+            [CountlyCrashReporter.sharedInstance startCrashReporting];
+        }
     }
 
 #if (TARGET_OS_IOS || TARGET_OS_TV )
@@ -232,6 +235,9 @@ static dispatch_once_t onceToken;
     {
         // Print deprecation flag for feature
         CountlyViewTrackingInternal.sharedInstance.isEnabledOnInitialConfig = YES;
+        if (CountlyServerConfig.sharedInstance.viewTrackingEnabled) {
+            [CountlyViewTrackingInternal.sharedInstance startAutoViewTracking];
+        }
         [CountlyViewTrackingInternal.sharedInstance startAutoViewTracking];
     }
     if (config.automaticViewTrackingExclusionList) {
@@ -248,6 +254,7 @@ static dispatch_once_t onceToken;
     if (config.globalViewSegmentation) {
         [CountlyViewTrackingInternal.sharedInstance setGlobalViewSegmentation:config.globalViewSegmentation];
     }
+    
     timer = [NSTimer timerWithTimeInterval:config.updateSessionPeriod target:self selector:@selector(onTimer:) userInfo:nil repeats:YES];
     [NSRunLoop.mainRunLoop addTimer:timer forMode:NSRunLoopCommonModes];
     
