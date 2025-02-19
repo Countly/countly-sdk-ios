@@ -150,7 +150,7 @@ NSString* const kRCrashReporting = @"crt";
 
 - (void)notifySdkConfigChange:(CountlyConfig *)config
 {
-    config.enableDebug = _loggingEnabled ?: config.enableDebug;
+    config.enableDebug = _loggingEnabled || config.enableDebug;
     CountlyCommon.sharedInstance.enableDebug = config.enableDebug;
     
     // Limits could be moved to another function, but letting them stay here serves us a monopolized view of notify
@@ -198,7 +198,9 @@ NSString* const kRCrashReporting = @"crt";
     CountlyCrashReporter.sharedInstance.crashLogLimit = config.sdkInternalLimits.getMaxBreadcrumbCount;
     
     if(_enterContentZone){
-        [CountlyContentBuilder.sharedInstance enterContentZone];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [CountlyContentBuilder.sharedInstance enterContentZone];
+        });
     }
 }
 
@@ -239,18 +241,17 @@ NSString* const kRCrashReporting = @"crt";
         if (error)
         {
             CLY_LOG_E(@"Error while fetching server configs: %@",error.description);
-            return;
         }
         
         if (serverConfigResponse[kRConfig] != nil) {
             [self populateServerConfig:serverConfigResponse];
             [CountlyPersistency.sharedInstance storeServerConfig:serverConfigResponse];
         }
-    
+        
+        [self notifySdkConfigChange: config]; // if no config let stored ones to be set
     }];
     
     [task resume];
-    [self notifySdkConfigChange: config];
 }
 
 - (NSURLRequest *)serverConfigRequest
