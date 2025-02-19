@@ -142,6 +142,7 @@ NSString* const kRCrashReporting = @"crt";
     config.enableDebug = _loggingEnabled ?: config.enableDebug;
     CountlyCommon.sharedInstance.enableDebug = config.enableDebug;
     
+    // Limits could be moved to another function, but letting them stay here serves us a monopolized view of notify
     if (config.maxKeyLength) {
         [config.sdkInternalLimits setMaxKeyLength: config.maxKeyLength];
     }
