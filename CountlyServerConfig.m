@@ -119,8 +119,8 @@ NSString* const kRCrashReporting = @"crt";
 {
     NSDictionary* dictionary = serverConfig[kRConfig];
     
-    _version = [dictionary[kRVersion] integerValue];
-    _timestamp = [dictionary[kRTimestamp] longLongValue];
+    _version = [serverConfig[kRVersion] integerValue];
+    _timestamp = [serverConfig[kRTimestamp] longLongValue];
     
     NSMutableString *logString = [NSMutableString stringWithString:@"Server Config: "];
 
