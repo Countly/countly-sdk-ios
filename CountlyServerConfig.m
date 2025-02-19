@@ -28,6 +28,9 @@
 @property (nonatomic) NSInteger requestQueueSize;
 @property (nonatomic) NSInteger contentZoneInterval;
 @property (nonatomic) NSInteger dropOldRequestTime;
+
+@property (nonatomic) NSInteger version;
+@property (nonatomic) long long timestamp;
 @end
 
 NSString* const kCountlySCKeySC = @"sc";
@@ -83,6 +86,9 @@ NSString* const kRCrashReporting = @"crt";
         _customEventTrackingEnabled = YES;
         _enterContentZone = NO;
         
+        _timestamp = 0;
+        _version = 0;
+        
         NSDictionary* serverConfigObject = [CountlyPersistency.sharedInstance retrieveServerConfig];
         if (serverConfigObject) {
             [self populateServerConfig:serverConfigObject];
@@ -109,8 +115,13 @@ NSString* const kRCrashReporting = @"crt";
     }
 }
 
-- (void)populateServerConfig:(NSDictionary *)dictionary
+- (void)populateServerConfig:(NSDictionary *)serverConfig
 {
+    NSDictionary* dictionary = serverConfig[kRConfig];
+    
+    _version = [dictionary[kRVersion] integerValue];
+    _timestamp = [dictionary[kRTimestamp] longLongValue];
+    
     NSMutableString *logString = [NSMutableString stringWithString:@"Server Config: "];
 
     [self setBoolProperty:&_trackingEnabled fromDictionary:dictionary key:kTracking logString:logString];
@@ -134,7 +145,7 @@ NSString* const kRCrashReporting = @"crt";
     [self setBoolProperty:&_consentRequired fromDictionary:dictionary key:kRConsentRequired logString:logString];
     [self setIntegerProperty:&_dropOldRequestTime fromDictionary:dictionary key:kRDropOldRequestTime logString:logString];
 
-    CLY_LOG_D(@"%s, %@", __FUNCTION__, logString);
+    CLY_LOG_D(@"%s, version:[%li], timestamp:[%lli], %@", __FUNCTION__, _version, _timestamp, logString);
 }
 
 - (void)notifySdkConfigChange:(CountlyConfig *)config
@@ -231,10 +242,9 @@ NSString* const kRCrashReporting = @"crt";
             return;
         }
         
-        NSDictionary* serverConfigObject = serverConfigResponse[kRConfig];
-        if (serverConfigObject) {
-            [self populateServerConfig:serverConfigObject];
-            [CountlyPersistency.sharedInstance storeServerConfig:serverConfigObject];
+        if (serverConfigResponse[kRConfig] != nil) {
+            [self populateServerConfig:serverConfigResponse];
+            [CountlyPersistency.sharedInstance storeServerConfig:serverConfigResponse];
         }
     
     }];
