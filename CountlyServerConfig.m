@@ -9,11 +9,13 @@
 @interface CountlyServerConfig ()
 @property (nonatomic) BOOL trackingEnabled;
 @property (nonatomic) BOOL networkingEnabled;
-@property (nonatomic) NSInteger sessionInterval;
-@property (nonatomic) NSInteger eventQueueSize;
-@property (nonatomic) NSInteger requestQueueSize;
 @property (nonatomic) BOOL crashReportingEnabled;
 @property (nonatomic) BOOL loggingEnabled;
+@property (nonatomic) BOOL customEventTrackingEnabled;
+@property (nonatomic) BOOL viewTrackingEnabled;
+@property (nonatomic) BOOL sessionTrackingEnabled;
+@property (nonatomic) BOOL enterContentZone;
+@property (nonatomic) BOOL consentRequired;
 
 @property (nonatomic) NSInteger limitKeyLength;
 @property (nonatomic) NSInteger limitValueSize;
@@ -21,12 +23,10 @@
 @property (nonatomic) NSInteger limitBreadcrumb;
 @property (nonatomic) NSInteger limitTraceLine;
 @property (nonatomic) NSInteger limitTraceLength;
-@property (nonatomic) BOOL customEventTrackingEnabled;
-@property (nonatomic) BOOL viewTrackingEnabled;
-@property (nonatomic) BOOL sessionTrackingEnabled;
-@property (nonatomic) BOOL enterContentZone;
+@property (nonatomic) NSInteger sessionInterval;
+@property (nonatomic) NSInteger eventQueueSize;
+@property (nonatomic) NSInteger requestQueueSize;
 @property (nonatomic) NSInteger contentZoneInterval;
-@property (nonatomic) BOOL consentRequired;
 @property (nonatomic) NSInteger dropOldRequestTime;
 @end
 
@@ -164,9 +164,7 @@ NSString* const kRCrashReporting = @"crt";
     [config.sdkInternalLimits setMaxBreadcrumbCount: _limitBreadcrumb ?: config.sdkInternalLimits.getMaxBreadcrumbCount];
     [config.sdkInternalLimits setMaxStackTraceLineLength: _limitTraceLength ?: config.sdkInternalLimits.getMaxStackTraceLineLength];
     [config.sdkInternalLimits setMaxStackTraceLinesPerThread: _limitTraceLine ?: config.sdkInternalLimits.getMaxStackTraceLinesPerThread];
-        
-    //[self checkAndFixInternalLimitsConfig:config]; TODO
-    
+            
     CountlyCommon.sharedInstance.maxKeyLength = config.sdkInternalLimits.getMaxKeyLength;
     CountlyCommon.sharedInstance.maxValueLength = config.sdkInternalLimits.getMaxValueSize;
     CountlyCommon.sharedInstance.maxSegmentationValues = config.sdkInternalLimits.getMaxSegmentationValues;
@@ -186,6 +184,10 @@ NSString* const kRCrashReporting = @"crt";
     [config.content setZoneTimerInterval: _contentZoneInterval ?: config.content.getZoneTimerInterval];
     
     CountlyCrashReporter.sharedInstance.crashLogLimit = config.sdkInternalLimits.getMaxBreadcrumbCount;
+    
+    if(_enterContentZone){
+        [CountlyContentBuilder.sharedInstance enterContentZone];
+    }
 }
 
 - (void)fetchServerConfig:(CountlyConfig *)config

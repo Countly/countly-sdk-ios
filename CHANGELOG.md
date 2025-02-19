@@ -1,3 +1,8 @@
+## XX.XX.XX
+* ! Minor breaking change ! The experimental configuration function enableServerConfiguration has been removed. It is now enabled by default and can be controlled directly from the server.
+
+* Extended server configuration capabilities of the SDK.
+
 ## 25.1.1
 * Mitigated an issue while setting zone timer interval for content.
 
