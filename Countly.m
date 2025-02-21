@@ -111,6 +111,7 @@ static dispatch_once_t onceToken;
     }
     
     CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
+    CountlyServerConfig.sharedInstance.providedServerConfiguration = config.serverConfiguration;
     
     if (!config.appKey.length || [config.appKey isEqualToString:@"YOUR_APP_KEY"])
         [NSException raise:@"CountlyAppKeyNotSetException" format:@"appKey property on CountlyConfig object is not set"];

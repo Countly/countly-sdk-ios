@@ -662,6 +662,13 @@ typedef enum : NSUInteger
  */
 @property (nonatomic) BOOL enableOrientationTracking;
 
+#pragma mark -
+
+/**
+ * Set the server configuration to be set while initializing the SDK
+ */
+@property (nonatomic, copy) NSString* serverConfiguration;
+
 #if (TARGET_OS_IOS)
 /**
  * Variable to access content configurations.

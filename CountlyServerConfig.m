@@ -89,7 +89,14 @@ NSString* const kRCrashReporting = @"crt";
         _timestamp = 0;
         _version = 0;
         
-        NSDictionary* serverConfigObject = [CountlyPersistency.sharedInstance retrieveServerConfig];
+        NSError* error = nil;
+        NSDictionary* serverConfigObject;
+        serverConfigObject = [NSJSONSerialization JSONObjectWithData:[_providedServerConfiguration cly_dataUTF8] options:0 error:&error];
+        
+        if(error){
+            serverConfigObject = [CountlyPersistency.sharedInstance retrieveServerConfig];
+        }
+        
         if (serverConfigObject) {
             [self populateServerConfig:serverConfigObject];
         }
@@ -117,7 +124,17 @@ NSString* const kRCrashReporting = @"crt";
 
 - (void)populateServerConfig:(NSDictionary *)serverConfig
 {
+    if(!serverConfig[kRConfig]) {
+        CLY_LOG_D(@"%s, config key is missing in the server configuration omitting", __FUNCTION__);
+        return;
+    }
+    
     NSDictionary* dictionary = serverConfig[kRConfig];
+    
+    if(!dictionary[kRVersion] || !dictionary[kRTimestamp]) {
+        CLY_LOG_D(@"%s, version or timestamps is missing in the server configuration omitting", __FUNCTION__);
+        return;
+    }
     
     _version = [serverConfig[kRVersion] integerValue];
     _timestamp = [serverConfig[kRTimestamp] longLongValue];
