@@ -447,6 +447,7 @@ static dispatch_once_t onceToken;
 - (void)applicationDidBecomeActive:(NSNotification *)notification
 {
     CLY_LOG_D(@"App enters foreground");
+    [CountlyServerConfig.sharedInstance fetchServerConfigIfTimeIsUp];
     [self resume];
 }
 

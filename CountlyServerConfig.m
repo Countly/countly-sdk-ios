@@ -35,6 +35,7 @@
 
 @property (nonatomic) NSInteger version;
 @property (nonatomic) long long timestamp;
+@property (nonatomic) long long lastFetchTimestamp;
 
 @end
 
@@ -94,6 +95,7 @@ NSString* const kRServerConfigUpdateInterval = @"scui";
         _timestamp = 0;
         _version = 0;
         _currentServerConfigUpdateInterval = 4;
+        _requestTimer = nil;
     }
     return self;
 }
@@ -225,11 +227,17 @@ NSString* const kRServerConfigUpdateInterval = @"scui";
     
     [config.content setZoneTimerInterval: _contentZoneInterval ?: config.content.getZoneTimerInterval];
     
+    CountlyContentBuilderInternal.sharedInstance.zoneTimerInterval = config.content.getZoneTimerInterval;
     CountlyCrashReporter.sharedInstance.crashLogLimit = config.sdkInternalLimits.getMaxBreadcrumbCount;
     
-    if(_enterContentZone){
+    if(!_enterContentZone){
         dispatch_async(dispatch_get_main_queue(), ^{
-            [CountlyContentBuilder.sharedInstance enterContentZone];
+            [CountlyContentBuilderInternal.sharedInstance exitContentZone];
+        });
+    } else {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [CountlyContentBuilderInternal.sharedInstance exitContentZone];
+            [CountlyContentBuilderInternal.sharedInstance enterContentZone:@[]];
         });
     }
     
@@ -237,11 +245,29 @@ NSString* const kRServerConfigUpdateInterval = @"scui";
         _currentServerConfigUpdateInterval = _serverConfigUpdateInterval;
         [_requestTimer invalidate];
         _requestTimer = nil;
-        _requestTimer = [NSTimer scheduledTimerWithTimeInterval:_currentServerConfigUpdateInterval * 60 * 60
-                                                        repeats:YES
-                                                          block:^(NSTimer * _Nonnull timer) {
-            [self fetchServerConfig:config];
-        }];
+        _requestTimer = [NSTimer timerWithTimeInterval:_currentServerConfigUpdateInterval * 60 * 60
+                                                         target:self selector:@selector(fetchServerConfigTimer:) userInfo:config repeats:YES];
+        [NSRunLoop.mainRunLoop addTimer:_requestTimer forMode:NSRunLoopCommonModes];
+    }
+}
+
+- (void)fetchServerConfigTimer:(NSTimer *)timer
+{
+    CountlyConfig *config = (CountlyConfig *)timer.userInfo; // Retrieve CountlyConfig from userInfo
+    if (config) {
+        [self fetchServerConfig:config];
+    }
+}
+
+- (void)fetchServerConfigIfTimeIsUp
+{
+    if(_lastFetchTimestamp) {
+        long long currentTime = NSDate.date.timeIntervalSince1970 * 1000;
+        long long timePassed = currentTime - _lastFetchTimestamp;
+        
+        if(timePassed > _currentServerConfigUpdateInterval * 60 * 60 * 1000){
+            [self fetchServerConfig:CountlyConfig.new];
+        }
     }
 }
 
@@ -251,12 +277,12 @@ NSString* const kRServerConfigUpdateInterval = @"scui";
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
         return;
     
+    _lastFetchTimestamp = NSDate.date.timeIntervalSince1970 * 1000;
+    
     if(!_requestTimer){
-        _requestTimer = [NSTimer scheduledTimerWithTimeInterval:_currentServerConfigUpdateInterval * 60 * 60
-                                                        repeats:YES
-                                                          block:^(NSTimer * _Nonnull timer) {
-            [self fetchServerConfig:config];
-        }];;
+        _requestTimer = [NSTimer timerWithTimeInterval:_currentServerConfigUpdateInterval * 60 * 60
+                                                         target:self selector:@selector(fetchServerConfigTimer:) userInfo:config repeats:YES];
+        [NSRunLoop.mainRunLoop addTimer:_requestTimer forMode:NSRunLoopCommonModes];
     }
     
     // Set default values

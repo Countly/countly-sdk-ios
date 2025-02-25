@@ -14,6 +14,7 @@ extern NSString* const kCountlySCKeySC;
 
 - (void)fetchServerConfig:(CountlyConfig *)config;
 - (void)retrieveServerConfigFromStorage:(NSString*) providedServerConfiguration;
+- (void)fetchServerConfigIfTimeIsUp;
 
 - (BOOL)trackingEnabled;
 - (BOOL)networkingEnabled;
