@@ -1,5 +1,5 @@
 ## XX.XX.XX
-* ! Minor breaking change ! The experimental configuration function enableServerConfiguration has been removed. It is now enabled by default and can be controlled directly from the server.
+* Deprecated the experimental configuration function enableServerConfiguration and it will do nothing. It is now enabled by default and can be controlled directly from the server.
 
 * Extended server configuration capabilities of the SDK.
 
