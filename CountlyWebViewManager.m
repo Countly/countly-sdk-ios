@@ -9,6 +9,8 @@
 
 @property (nonatomic, strong) PassThroughBackgroundView *backgroundView;
 @property (nonatomic, copy) void (^dismissBlock)(void);
+@property (nonatomic) BOOL topMarginApplied;
+@property (nonatomic) float topMargin;
 @end
 
 @implementation CountlyWebViewManager
@@ -19,9 +21,11 @@
                 dismissBlock:(void(^ __nullable)(void))dismissBlock {
     self.dismissBlock = dismissBlock;
     UIViewController *rootViewController = UIApplication.sharedApplication.keyWindow.rootViewController;
+    self.topMarginApplied = NO;
+    self.topMargin = 0;
     CGRect backgroundFrame = rootViewController.view.bounds;
-    
     self.backgroundView = [[PassThroughBackgroundView alloc] initWithFrame:backgroundFrame];
+    [self applyTopMargin];
     self.backgroundView.backgroundColor = [UIColor clearColor];
     [rootViewController.view addSubview:self.backgroundView];
     
@@ -48,6 +52,41 @@
             }
         }
     }];
+}
+
+- (void)applyTopMargin{
+    UIViewController *rootViewController = UIApplication.sharedApplication.keyWindow.rootViewController;
+    
+    CGRect backgroundFrame = rootViewController.view.bounds;
+    UIWindow *window = nil;
+    if (@available(iOS 13.0, *)) {
+        for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+            if ([scene isKindOfClass:[UIWindowScene class]]) {
+                window = ((UIWindowScene *)scene).windows.firstObject;
+                break;
+            }
+        }
+    } else {
+        window = [[UIApplication sharedApplication].delegate window];
+    }
+    
+    if (@available(iOS 11.0, *)) {
+        UIEdgeInsets safeArea = window.safeAreaInsets;
+        CGFloat screenScale = [UIScreen mainScreen].scale;
+        UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
+        if(!UIInterfaceOrientationIsLandscape(orientation) && !self.topMarginApplied){
+            self.topMarginApplied = YES;
+            CGRect newFrame = self.backgroundView.frame;
+            newFrame.origin.y += safeArea.top;
+            self.backgroundView.frame = newFrame;
+            self.topMargin = safeArea.top;
+        } else if(UIInterfaceOrientationIsLandscape(orientation) && self.topMarginApplied){
+            self.topMarginApplied = NO;
+            CGRect newFrame = self.backgroundView.frame;
+            newFrame.origin.y -= self.topMargin;
+            self.backgroundView.frame = newFrame;
+        }
+    }
 }
 
 - (void)configureWebView:(WKWebView *)webView {
@@ -274,6 +313,8 @@
     CGFloat y = [dimensions[@"y"] floatValue];
     CGFloat width = [dimensions[@"w"] floatValue];
     CGFloat height = [dimensions[@"h"] floatValue];
+        
+    [self applyTopMargin];
     
     // Animate the resizing of the web view
     [UIView animateWithDuration:0.3 animations:^{
@@ -284,7 +325,7 @@
         frame.size.height = height;
         self.backgroundView.webView.frame = frame;
     } completion:^(BOOL finished) {
-        CLY_LOG_I(@"Resized web view to width: %f, height: %f", width, height);
+        CLY_LOG_I(@"%s, Resized web view to width: %f, height: %f", __FUNCTION__, width, height);
     }];
 }
 

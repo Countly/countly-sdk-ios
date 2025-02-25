@@ -48,7 +48,7 @@ NSString* const kCountlyCBFetchContent  = @"queue";
         return;
     
     if(_requestTimer != nil) {
-        CLY_LOG_I(@"Already entered for content zone, please exit from content zone first to start again");
+        CLY_LOG_I(@"%s, Already entered for content zone, please exit from content zone first to start again", __FUNCTION__);
         return;
     }
     
@@ -97,7 +97,7 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     
     NSURLSessionTask *dataTask = [[NSURLSession sharedSession] dataTaskWithRequest:[self fetchContentsRequest] completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (error) {
-            CLY_LOG_I(@"Fetch content details failed: %@", error);
+            CLY_LOG_I(@"%s, Fetch content details failed: %@", __FUNCTION__, error);
             self->_isRequestQueueLocked = NO;
             return;
         }
@@ -106,13 +106,13 @@ NSString* const kCountlyCBFetchContent  = @"queue";
         NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
         
         if (jsonError) {
-            CLY_LOG_I(@"Failed to parse JSON: %@", jsonError);
+            CLY_LOG_I(@"%s, Failed to parse JSON: %@", __FUNCTION__, jsonError);
             self->_isRequestQueueLocked = NO;
             return;
         }
         
         if (!jsonResponse) {
-            CLY_LOG_I(@"Received empty or null response.");
+            CLY_LOG_I(@"%s, Received empty or null response.", __FUNCTION__);
             self->_isRequestQueueLocked = NO;
             return;
         }
@@ -152,30 +152,38 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 }
 
 - (CGSize)getWindowSize {
-    CGSize size = CGSizeZero;
+    UIWindow *window = nil;
 
-    // Attempt to retrieve the size from the connected scenes (for modern apps)
     if (@available(iOS 13.0, *)) {
-        NSSet<UIScene *> *scenes = [[UIApplication sharedApplication] connectedScenes];
-        for (UIScene *scene in scenes) {
+        for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
             if ([scene isKindOfClass:[UIWindowScene class]]) {
-                UIWindowScene *windowScene = (UIWindowScene *)scene;
-                UIWindow *window = windowScene.windows.firstObject;
-                if (window) {
-                    size = window.bounds.size;
-                    return size; // Return immediately if we find a valid size
-                }
+                window = ((UIWindowScene *)scene).windows.firstObject;
+                break;
             }
         }
+    } else {
+        window = [[UIApplication sharedApplication].delegate window];
     }
 
-    // Fallback for legacy apps using AppDelegate
-    id<UIApplicationDelegate> appDelegate = [[UIApplication sharedApplication] delegate];
-    if ([appDelegate respondsToSelector:@selector(window)]) {
-        UIWindow *legacyWindow = [appDelegate performSelector:@selector(window)];
-        if (legacyWindow) {
-            size = legacyWindow.bounds.size;
-        }
+    if (!window) return CGSizeZero;
+    
+    UIEdgeInsets safeArea = UIEdgeInsetsZero;
+    CGFloat screenScale = [UIScreen mainScreen].scale;
+    if (@available(iOS 11.0, *)) {
+        safeArea = window.safeAreaInsets;
+        safeArea.left /= screenScale;
+        safeArea.bottom /= screenScale;
+        safeArea.right /= screenScale;
+    }
+    
+    UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
+    BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
+    
+    CGSize size = CGSizeMake(window.bounds.size.width, window.bounds.size.height);
+    
+    if(!isLandscape){
+        size.width -= safeArea.left + safeArea.right;
+        size.height -= safeArea.top + safeArea.bottom;
     }
 
     return size;
@@ -196,6 +204,8 @@ NSString* const kCountlyCBFetchContent  = @"queue";
         @"landscape": @{@"height": @(lHpW), @"width": @(lWpH)}
     };
     
+    CLY_LOG_D(@"%s, %@", __FUNCTION__, resolutionDict);
+    
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:resolutionDict options:0 error:nil];
     return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
 }
@@ -205,7 +215,7 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     NSURL *url = [NSURL URLWithString:urlString];
     
     if (!url || !url.scheme || !url.host) {
-        NSLog(@"The URL is not valid: %@", urlString);
+        CLY_LOG_E(@"%s, The URL is not valid: %@", __FUNCTION__, urlString);
         return;
     }
 
@@ -227,17 +237,17 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     CGRect frame = CGRectMake(x, y, width, height);
     
     // Log the URL and the frame
-    CLY_LOG_I(@"Showing content from URL: %@", url);
-    CLY_LOG_I(@"Placement frame: %@", NSStringFromCGRect(frame));
+    CLY_LOG_I(@"%s, Showing content from URL: %@", __FUNCTION__, url);
+    CLY_LOG_I(@"%s, Placement frame: %@", __FUNCTION__, NSStringFromCGRect(frame));
     
     CountlyWebViewManager* webViewManager =  CountlyWebViewManager.new;
         [webViewManager createWebViewWithURL:url frame:frame appearBlock:^
          {
-            CLY_LOG_I(@"Webview appeared");
+            CLY_LOG_I(@"%s, Webview appeared", __FUNCTION__);
             [self clearContentState];
         } dismissBlock:^
          {
-            CLY_LOG_I(@"Webview dismissed");
+            CLY_LOG_I(@"%s, Webview dismissed", __FUNCTION__);
             self->_minuteTimer = [NSTimer scheduledTimerWithTimeInterval:60.0
                                                              target:self
                                                            selector:@selector(enterContentZone)
