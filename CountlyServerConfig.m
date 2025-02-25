@@ -60,6 +60,8 @@ NSString* const kRContentZoneInterval = @"czi";
 NSString* const kRConsentRequired = @"cr";
 NSString* const kRDropOldRequestTime = @"dort";
 NSString* const kRCrashReporting = @"crt";
+NSString* const kRServerConfigUpdateInterval = @"scui";
+
 
 
 @implementation CountlyServerConfig
@@ -89,20 +91,27 @@ NSString* const kRCrashReporting = @"crt";
         _timestamp = 0;
         _version = 0;
         
-        NSError* error = nil;
-        NSDictionary* serverConfigObject;
-        serverConfigObject = [NSJSONSerialization JSONObjectWithData:[_providedServerConfiguration cly_dataUTF8] options:0 error:&error];
-        
-        if(error){
-            serverConfigObject = [CountlyPersistency.sharedInstance retrieveServerConfig];
-        }
-        
-        if (serverConfigObject) {
-            [self populateServerConfig:serverConfigObject];
-        }
     }
     return self;
 }
+
+- (void)retrieveServerConfigFromStorage:(NSString*) providedServerConfiguration
+{
+    NSError* error = nil;
+    NSDictionary* serverConfigObject;
+    if(providedServerConfiguration) {
+        serverConfigObject = [NSJSONSerialization JSONObjectWithData:[providedServerConfiguration cly_dataUTF8] options:0 error:&error];
+    }
+    
+    if(error){
+        serverConfigObject = [CountlyPersistency.sharedInstance retrieveServerConfig];
+    }
+    
+    if (serverConfigObject) {
+        [self populateServerConfig:serverConfigObject];
+    }
+}
+
 
 - (void)setBoolProperty:(BOOL *)property fromDictionary:(NSDictionary *)dictionary key:(NSString *)key logString:(NSMutableString *)logString
 {
@@ -131,8 +140,8 @@ NSString* const kRCrashReporting = @"crt";
     
     NSDictionary* dictionary = serverConfig[kRConfig];
     
-    if(!dictionary[kRVersion] || !dictionary[kRTimestamp]) {
-        CLY_LOG_D(@"%s, version or timestamps is missing in the server configuration omitting", __FUNCTION__);
+    if(!serverConfig[kRVersion] || !serverConfig[kRTimestamp]) {
+        CLY_LOG_D(@"%s, version or timestamp is missing in the server configuration omitting", __FUNCTION__);
         return;
     }
     

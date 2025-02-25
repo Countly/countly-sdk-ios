@@ -92,6 +92,8 @@ static dispatch_once_t onceToken;
     
     config = [self checkAndFixInternalLimitsConfig:config];
     
+    [CountlyServerConfig.sharedInstance retrieveServerConfigFromStorage: config.serverConfiguration];
+    
     CountlyCommon.sharedInstance.maxKeyLength = config.sdkInternalLimits.getMaxKeyLength;
     CountlyCommon.sharedInstance.maxValueLength = config.sdkInternalLimits.getMaxValueSize;
     CountlyCommon.sharedInstance.maxSegmentationValues = config.sdkInternalLimits.getMaxSegmentationValues;
@@ -111,7 +113,6 @@ static dispatch_once_t onceToken;
     }
     
     CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
-    CountlyServerConfig.sharedInstance.providedServerConfiguration = config.serverConfiguration;
     
     if (!config.appKey.length || [config.appKey isEqualToString:@"YOUR_APP_KEY"])
         [NSException raise:@"CountlyAppKeyNotSetException" format:@"appKey property on CountlyConfig object is not set"];

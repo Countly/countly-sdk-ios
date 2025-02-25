@@ -9,11 +9,11 @@
 extern NSString* const kCountlySCKeySC;
 
 @interface CountlyServerConfig : NSObject
-@property (nonatomic, copy) NSString* providedServerConfiguration;
 
 + (instancetype)sharedInstance;
 
 - (void)fetchServerConfig:(CountlyConfig *)config;
+- (void)retrieveServerConfigFromStorage:(NSString*) providedServerConfiguration;
 
 - (BOOL)trackingEnabled;
 - (BOOL)networkingEnabled;
