@@ -6,7 +6,9 @@
 
 #import "CountlyCommon.h"
 
-@interface CountlyServerConfig ()
+@interface CountlyServerConfig () {
+    NSTimer *_requestTimer;
+}
 @property (nonatomic) BOOL trackingEnabled;
 @property (nonatomic) BOOL networkingEnabled;
 @property (nonatomic) BOOL crashReportingEnabled;
@@ -28,9 +30,12 @@
 @property (nonatomic) NSInteger requestQueueSize;
 @property (nonatomic) NSInteger contentZoneInterval;
 @property (nonatomic) NSInteger dropOldRequestTime;
+@property (nonatomic) NSInteger serverConfigUpdateInterval;
+@property (nonatomic) NSInteger currentServerConfigUpdateInterval;
 
 @property (nonatomic) NSInteger version;
 @property (nonatomic) long long timestamp;
+
 @end
 
 NSString* const kCountlySCKeySC = @"sc";
@@ -62,8 +67,6 @@ NSString* const kRDropOldRequestTime = @"dort";
 NSString* const kRCrashReporting = @"crt";
 NSString* const kRServerConfigUpdateInterval = @"scui";
 
-
-
 @implementation CountlyServerConfig
 
 + (instancetype)sharedInstance
@@ -90,7 +93,7 @@ NSString* const kRServerConfigUpdateInterval = @"scui";
         
         _timestamp = 0;
         _version = 0;
-        
+        _currentServerConfigUpdateInterval = 4;
     }
     return self;
 }
@@ -149,7 +152,7 @@ NSString* const kRServerConfigUpdateInterval = @"scui";
     _timestamp = [serverConfig[kRTimestamp] longLongValue];
     
     NSMutableString *logString = [NSMutableString stringWithString:@"Server Config: "];
-
+    
     [self setBoolProperty:&_trackingEnabled fromDictionary:dictionary key:kTracking logString:logString];
     [self setBoolProperty:&_networkingEnabled fromDictionary:dictionary key:kNetworking logString:logString];
     [self setIntegerProperty:&_sessionInterval fromDictionary:dictionary key:kRSessionUpdateInterval logString:logString];
@@ -170,7 +173,8 @@ NSString* const kRServerConfigUpdateInterval = @"scui";
     [self setIntegerProperty:&_contentZoneInterval fromDictionary:dictionary key:kRContentZoneInterval logString:logString];
     [self setBoolProperty:&_consentRequired fromDictionary:dictionary key:kRConsentRequired logString:logString];
     [self setIntegerProperty:&_dropOldRequestTime fromDictionary:dictionary key:kRDropOldRequestTime logString:logString];
-
+    [self setIntegerProperty:&_serverConfigUpdateInterval fromDictionary:dictionary key:kRServerConfigUpdateInterval logString:logString];
+    
     CLY_LOG_D(@"%s, version:[%li], timestamp:[%lli], %@", __FUNCTION__, _version, _timestamp, logString);
 }
 
@@ -202,7 +206,7 @@ NSString* const kRServerConfigUpdateInterval = @"scui";
     [config.sdkInternalLimits setMaxBreadcrumbCount: _limitBreadcrumb ?: config.sdkInternalLimits.getMaxBreadcrumbCount];
     [config.sdkInternalLimits setMaxStackTraceLineLength: _limitTraceLength ?: config.sdkInternalLimits.getMaxStackTraceLineLength];
     [config.sdkInternalLimits setMaxStackTraceLinesPerThread: _limitTraceLine ?: config.sdkInternalLimits.getMaxStackTraceLinesPerThread];
-            
+    
     CountlyCommon.sharedInstance.maxKeyLength = config.sdkInternalLimits.getMaxKeyLength;
     CountlyCommon.sharedInstance.maxValueLength = config.sdkInternalLimits.getMaxValueSize;
     CountlyCommon.sharedInstance.maxSegmentationValues = config.sdkInternalLimits.getMaxSegmentationValues;
@@ -228,6 +232,17 @@ NSString* const kRServerConfigUpdateInterval = @"scui";
             [CountlyContentBuilder.sharedInstance enterContentZone];
         });
     }
+    
+    if(_serverConfigUpdateInterval && _serverConfigUpdateInterval != _currentServerConfigUpdateInterval && _requestTimer){
+        _currentServerConfigUpdateInterval = _serverConfigUpdateInterval;
+        [_requestTimer invalidate];
+        _requestTimer = nil;
+        _requestTimer = [NSTimer scheduledTimerWithTimeInterval:_currentServerConfigUpdateInterval * 60 * 60
+                                                        repeats:YES
+                                                          block:^(NSTimer * _Nonnull timer) {
+            [self fetchServerConfig:config];
+        }];
+    }
 }
 
 - (void)fetchServerConfig:(CountlyConfig *)config
@@ -235,6 +250,14 @@ NSString* const kRServerConfigUpdateInterval = @"scui";
     CLY_LOG_D(@"Fetching server configs...");
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
         return;
+    
+    if(!_requestTimer){
+        _requestTimer = [NSTimer scheduledTimerWithTimeInterval:_currentServerConfigUpdateInterval * 60 * 60
+                                                        repeats:YES
+                                                          block:^(NSTimer * _Nonnull timer) {
+            [self fetchServerConfig:config];
+        }];;
+    }
     
     // Set default values
     _trackingEnabled = YES;
