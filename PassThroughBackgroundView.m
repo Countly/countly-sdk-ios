@@ -49,30 +49,38 @@
 }
 
 CGSize getWindowSize(void) {
-    CGSize size = CGSizeZero;
+    UIWindow *window = nil;
 
-    // Attempt to retrieve the size from the connected scenes (for modern apps)
     if (@available(iOS 13.0, *)) {
-        NSSet<UIScene *> *scenes = [[UIApplication sharedApplication] connectedScenes];
-        for (UIScene *scene in scenes) {
+        for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
             if ([scene isKindOfClass:[UIWindowScene class]]) {
-                UIWindowScene *windowScene = (UIWindowScene *)scene;
-                UIWindow *window = windowScene.windows.firstObject;
-                if (window) {
-                    size = window.bounds.size;
-                    return size; // Return immediately if we find a valid size
-                }
+                window = ((UIWindowScene *)scene).windows.firstObject;
+                break;
             }
         }
+    } else {
+        window = [[UIApplication sharedApplication].delegate window];
     }
 
-    // Fallback for legacy apps using AppDelegate
-    id<UIApplicationDelegate> appDelegate = [[UIApplication sharedApplication] delegate];
-    if ([appDelegate respondsToSelector:@selector(window)]) {
-        UIWindow *legacyWindow = [appDelegate performSelector:@selector(window)];
-        if (legacyWindow) {
-            size = legacyWindow.bounds.size;
-        }
+    if (!window) return CGSizeZero;
+    
+    UIEdgeInsets safeArea = UIEdgeInsetsZero;
+    CGFloat screenScale = [UIScreen mainScreen].scale;
+    if (@available(iOS 11.0, *)) {
+        safeArea = window.safeAreaInsets;
+        safeArea.left /= screenScale;
+        safeArea.bottom /= screenScale;
+        safeArea.right /= screenScale;
+    }
+    
+    UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
+    BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
+    
+    CGSize size = CGSizeMake(window.bounds.size.width, window.bounds.size.height);
+    
+    if(!isLandscape){
+        size.width -= safeArea.left + safeArea.right;
+        size.height -= safeArea.top + safeArea.bottom;
     }
 
     return size;
@@ -96,7 +104,7 @@ CGSize getWindowSize(void) {
                              height];
     [self.webView evaluateJavaScript:postMessage completionHandler:^(id result, NSError *err) {
         if (err != nil) {
-            CLY_LOG_E(@"[PassThroughBackgroundView] updateWindowSize, %@", err);
+            CLY_LOG_E(@"%s updateWindowSize, %@", __FUNCTION__, err);
         }
     }];
 }
