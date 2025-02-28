@@ -153,6 +153,13 @@ NSInteger const contentInitialDelay = 4;
     queryString = [queryString stringByAppendingFormat:@"&%@=%@",
                    @"la", components.firstObject];
     
+    NSString* deviceType = CountlyDeviceInfo.deviceType;
+    
+    if(deviceType){
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"dt", deviceType];
+    }
+
+    
     NSString* URLString = [NSString stringWithFormat:@"%@%@?%@",
                            CountlyConnectionManager.sharedInstance.host,
                            kCountlyEndpointContent,

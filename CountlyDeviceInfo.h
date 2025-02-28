@@ -27,6 +27,7 @@ typedef enum : NSUInteger
 - (CLYDeviceIDTypeValue)deviceIDTypeValue;
 
 + (NSString *)device;
++ (NSString *)deviceType;
 + (NSString *)architecture;
 + (NSString *)osName;
 + (NSString *)osVersion;
