@@ -15,6 +15,9 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     NSTimer *_requestTimer;
     NSTimer *_minuteTimer;
 }
+
+NSInteger const contentInitialDelay = 4;
+
 #if (TARGET_OS_IOS)
 + (instancetype)sharedInstance {
     static CountlyContentBuilderInternal *instance = nil;
@@ -53,13 +56,21 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     }
     
     self.currentTags = tags;
+    int contentDelay = 0;
     
-    [self fetchContents];;
-    _requestTimer = [NSTimer scheduledTimerWithTimeInterval:self.zoneTimerInterval
-                                                     target:self
-                                                   selector:@selector(fetchContents)
-                                                   userInfo:nil
-                                                    repeats:YES];
+    if (CountlyCommon.sharedInstance.timeSinceLaunch < contentInitialDelay) {
+        contentDelay = contentInitialDelay;
+    }
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(contentDelay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
+    {
+        [self fetchContents];;
+        self->_requestTimer = [NSTimer scheduledTimerWithTimeInterval:self->_zoneTimerInterval
+                                                         target:self
+                                                       selector:@selector(fetchContents)
+                                                       userInfo:nil
+                                                        repeats:YES];
+    });
 }
 
 - (void)exitContentZone {
