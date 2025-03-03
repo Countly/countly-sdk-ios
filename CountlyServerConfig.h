@@ -36,6 +36,6 @@ extern NSString* const kCountlySCKeySC;
 - (BOOL)viewTrackingEnabled;
 - (NSInteger)requestQueueSize;
 - (BOOL)sessionTrackingEnabled;
-
+- (BOOL)locationTrackingEnabled;
 @end
 

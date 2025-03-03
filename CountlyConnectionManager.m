@@ -390,9 +390,11 @@ static dispatch_once_t onceToken;
                              kCountlyQSKeySessionBegin, @"1",
                              kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
 
-    NSString* locationRelatedInfoQueryString = [self locationRelatedInfoQueryString];
-    if (locationRelatedInfoQueryString)
-        queryString = [queryString stringByAppendingString:locationRelatedInfoQueryString];
+    if(CountlyServerConfig.sharedInstance.locationTrackingEnabled) {
+        NSString* locationRelatedInfoQueryString = [self locationRelatedInfoQueryString];
+        if (locationRelatedInfoQueryString)
+            queryString = [queryString stringByAppendingString:locationRelatedInfoQueryString];
+    }
 
     NSString* attributionQueryString = [self attributionQueryString];
     if (attributionQueryString)

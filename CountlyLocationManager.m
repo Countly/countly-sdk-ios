@@ -37,6 +37,9 @@
     if (!CountlyConsentManager.sharedInstance.consentForLocation)
         return;
 
+    if(!CountlyServerConfig.sharedInstance.locationTrackingEnabled)
+        return;
+    
     [self updateLocation:location city:city ISOCountryCode:ISOCountryCode IP:IP];
 
     [CountlyConnectionManager.sharedInstance sendLocationInfo];
@@ -70,6 +73,9 @@
 {
     if (!CountlyConsentManager.sharedInstance.consentForLocation)
         return;
+    
+    if(!CountlyServerConfig.sharedInstance.locationTrackingEnabled)
+        return;
 
     [CountlyConnectionManager.sharedInstance sendLocationInfo];
 }
@@ -80,6 +86,7 @@
         return;
 
     [self disableLocation];
+    CLY_LOG_D(@"%s, disabling location info!", __FUNCTION__);
 
     [CountlyConnectionManager.sharedInstance sendLocationInfo];
 }
