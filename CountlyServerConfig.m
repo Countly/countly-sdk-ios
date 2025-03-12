@@ -94,6 +94,9 @@ NSString* const kRServerConfigUpdateInterval = @"scui";
         _customEventTrackingEnabled = YES;
         _enterContentZone = NO;
         _locationTracking= YES;
+        _viewTrackingEnabled = YES;
+        _sessionTrackingEnabled = YES;
+        _loggingEnabled = NO;
         
         _timestamp = 0;
         _version = 0;
