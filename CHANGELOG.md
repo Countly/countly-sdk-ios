@@ -1,3 +1,6 @@
+## XX.XX.XX
+* Added a Content feature method "refreshContentZone" that does a manual refresh.
+
 ## 25.1.2
 * Mitigated an issue where the safe area resolution was not correctly calculated for the content zone on certain iOS devices.
 
