@@ -12,6 +12,7 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 
 @implementation CountlyContentBuilderInternal {
     BOOL _isRequestQueueLocked;
+    BOOL _isCurrentlyContentShown;
     NSTimer *_requestTimer;
     NSTimer *_minuteTimer;
 }
@@ -34,12 +35,18 @@ NSInteger const contentInitialDelay = 4;
     {
         self.zoneTimerInterval = 30.0;
         _requestTimer = nil;
+        _isCurrentlyContentShown = NO;
     }
     
     return self;
 }
 
 - (void)enterContentZone {
+    
+    if(_isCurrentlyContentShown){
+        CLY_LOG_I(@"%s, a content is already shown, skipping" ,__FUNCTION__);
+    }
+    
     [self enterContentZone:@[]];
 }
 
@@ -82,6 +89,17 @@ NSInteger const contentInitialDelay = 4;
         [self exitContentZone];
         [self enterContentZone:tags];
     }
+}
+
+- (void)refreshContentZone {
+    // TODO server config
+    if(_isCurrentlyContentShown){
+        CLY_LOG_I(@"%s, a content is already shown, skipping" ,__FUNCTION__);
+    }
+    
+    [self exitContentZone];
+    [CountlyConnectionManager.sharedInstance attemptToSendStoredRequests];
+    [self enterContentZone];
 }
 
 #pragma mark - Private Methods
@@ -262,11 +280,13 @@ NSInteger const contentInitialDelay = 4;
         [webViewManager createWebViewWithURL:url frame:frame appearBlock:^
          {
             CLY_LOG_I(@"%s, Webview appeared", __FUNCTION__);
+            self->_isCurrentlyContentShown = YES;
             [self clearContentState];
         } dismissBlock:^
          {
             CLY_LOG_I(@"%s, Webview dismissed", __FUNCTION__);
-            self->_minuteTimer = [NSTimer scheduledTimerWithTimeInterval:60.0
+            self->_isCurrentlyContentShown = NO;
+            self->_minuteTimer = [NSTimer scheduledTimerWithTimeInterval:self->_zoneTimerInterval
                                                              target:self
                                                            selector:@selector(enterContentZone)
                                                            userInfo:nil
