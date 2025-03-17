@@ -19,6 +19,7 @@
 @property (nonatomic) BOOL enterContentZone;
 @property (nonatomic) BOOL consentRequired;
 @property (nonatomic) BOOL locationTracking;
+@property (nonatomic) BOOL refreshContentZone;
 
 @property (nonatomic) NSInteger limitKeyLength;
 @property (nonatomic) NSInteger limitValueSize;
@@ -55,6 +56,7 @@ NSString* const kRSessionUpdateInterval = @"sui";
 NSString* const kRSessionTracking = @"st";
 NSString* const kRViewTracking = @"vt";
 NSString* const kRLocationTracking = @"lt";
+NSString* const kRRefreshContentZone = @"rcz";
 
 NSString* const kRLimitKeyLength = @"lkl";
 NSString* const kRLimitValueSize = @"lvs";
@@ -97,6 +99,7 @@ NSString* const kRServerConfigUpdateInterval = @"scui";
         _viewTrackingEnabled = YES;
         _sessionTrackingEnabled = YES;
         _loggingEnabled = NO;
+        _refreshContentZone = YES;
         
         _timestamp = 0;
         _version = 0;
@@ -183,6 +186,7 @@ NSString* const kRServerConfigUpdateInterval = @"scui";
     [self setIntegerProperty:&_dropOldRequestTime fromDictionary:dictionary key:kRDropOldRequestTime logString:logString];
     [self setIntegerProperty:&_serverConfigUpdateInterval fromDictionary:dictionary key:kRServerConfigUpdateInterval logString:logString];
     [self setBoolProperty:&_locationTracking fromDictionary:dictionary key:kRLocationTracking logString:logString];
+    [self setBoolProperty:&_refreshContentZone fromDictionary:dictionary key:kRRefreshContentZone logString:logString];
 
     CLY_LOG_D(@"%s, version:[%li], timestamp:[%lli], %@", __FUNCTION__, _version, _timestamp, logString);
 }
@@ -302,7 +306,11 @@ NSString* const kRServerConfigUpdateInterval = @"scui";
     _crashReportingEnabled = YES;
     _customEventTrackingEnabled = YES;
     _enterContentZone = NO;
+    _locationTracking= YES;
+    _viewTrackingEnabled = YES;
+    _sessionTrackingEnabled = YES;
     _loggingEnabled = NO;
+    _refreshContentZone = YES;
     
     NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self serverConfigRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
                               {
@@ -456,6 +464,10 @@ NSString* const kRServerConfigUpdateInterval = @"scui";
 
 - (BOOL)locationTrackingEnabled {
     return _locationTracking;
+}
+
+- (BOOL)refreshContentZoneEnabled {
+    return _refreshContentZone;
 }
 
 @end
