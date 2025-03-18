@@ -356,6 +356,9 @@ static dispatch_once_t onceToken;
     if (!CountlyConsentManager.sharedInstance.consentForSessions)
         return;
     
+    if(!CountlyServerConfig.sharedInstance.sessionTrackingEnabled)
+        return;
+    
     if (isSessionStarted) {
         CLY_LOG_W(@"%s A session is already running, this 'beginSession' will be ignored", __FUNCTION__);
         return;
@@ -387,9 +390,11 @@ static dispatch_once_t onceToken;
                              kCountlyQSKeySessionBegin, @"1",
                              kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
 
-    NSString* locationRelatedInfoQueryString = [self locationRelatedInfoQueryString];
-    if (locationRelatedInfoQueryString)
-        queryString = [queryString stringByAppendingString:locationRelatedInfoQueryString];
+    if(CountlyServerConfig.sharedInstance.locationTrackingEnabled) {
+        NSString* locationRelatedInfoQueryString = [self locationRelatedInfoQueryString];
+        if (locationRelatedInfoQueryString)
+            queryString = [queryString stringByAppendingString:locationRelatedInfoQueryString];
+    }
 
     NSString* attributionQueryString = [self attributionQueryString];
     if (attributionQueryString)
@@ -405,6 +410,9 @@ static dispatch_once_t onceToken;
 - (void)updateSession
 {
     if (!CountlyConsentManager.sharedInstance.consentForSessions)
+        return;
+    
+    if(!CountlyServerConfig.sharedInstance.sessionTrackingEnabled)
         return;
     
     if (!isSessionStarted) {
@@ -423,6 +431,9 @@ static dispatch_once_t onceToken;
 - (void)endSession
 {
     if (!CountlyConsentManager.sharedInstance.consentForSessions)
+        return;
+    
+    if(!CountlyServerConfig.sharedInstance.sessionTrackingEnabled)
         return;
     
     if (!isSessionStarted) {

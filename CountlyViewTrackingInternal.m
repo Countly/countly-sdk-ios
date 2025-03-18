@@ -348,6 +348,10 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
+    
+    if (!CountlyServerConfig.sharedInstance.viewTrackingEnabled)
+        return;
+    
     CountlyViewData* viewData = self.viewDataDictionary[viewKey];
     if (viewData)
     {
@@ -404,6 +408,9 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     }
     
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
+        return nil;
+    
+    if (!CountlyServerConfig.sharedInstance.viewTrackingEnabled)
         return nil;
     
     [self stopAutoStoppedView];
@@ -470,6 +477,10 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
+    
+    if (!CountlyServerConfig.sharedInstance.viewTrackingEnabled)
+        return;
+    
     CountlyViewData* viewData = self.viewDataDictionary[viewID];
     if (viewData)
     {
@@ -490,6 +501,10 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
+    
+    if (!CountlyServerConfig.sharedInstance.viewTrackingEnabled)
+        return;
+    
     CountlyViewData* viewData = self.viewDataDictionary[viewID];
     if (viewData)
     {

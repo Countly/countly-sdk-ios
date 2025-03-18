@@ -662,12 +662,20 @@ typedef enum : NSUInteger
  */
 @property (nonatomic) BOOL enableOrientationTracking;
 
+#pragma mark -
+
 /**
  * This is an experimental feature and it can have breaking changes
  * For enabling fetching and application of server config values.
  * @discussion If set, Server Config values from Countly Server will be fetched at the beginning of a session.
+ * @deprecated and will do nothing
  */
 @property (nonatomic) BOOL enableServerConfiguration;
+
+/**
+ * Set the server configuration to be set while initializing the SDK
+ */
+@property (nonatomic, copy) NSString* serverConfiguration;
 
 #if (TARGET_OS_IOS)
 /**

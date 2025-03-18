@@ -1,5 +1,8 @@
 ## XX.XX.XX
 * Added a Content feature method "refreshContentZone" that does a manual refresh.
+* Extended server configuration capabilities of the SDK.
+
+* Deprecated the experimental configuration function enableServerConfiguration and it will do nothing. It is now enabled by default and can be controlled directly from the server.
 
 ## 25.1.2
 * Mitigated an issue where the safe area resolution was not correctly calculated for the content zone on certain iOS devices.
