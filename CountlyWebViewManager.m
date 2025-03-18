@@ -254,6 +254,8 @@
         
         [Countly.sharedInstance recordEvent:key segmentation:segmentation];
     }
+    
+    [CountlyConnectionManager.sharedInstance attemptToSendStoredRequests];
 }
 
 - (void)openExternalLink:(NSString *)urlString {

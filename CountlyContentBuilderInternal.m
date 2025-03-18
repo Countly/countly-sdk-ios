@@ -12,9 +12,13 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 
 @implementation CountlyContentBuilderInternal {
     BOOL _isRequestQueueLocked;
+    BOOL _isCurrentlyContentShown;
     NSTimer *_requestTimer;
     NSTimer *_minuteTimer;
 }
+
+NSInteger const contentInitialDelay = 4;
+
 #if (TARGET_OS_IOS)
 + (instancetype)sharedInstance {
     static CountlyContentBuilderInternal *instance = nil;
@@ -31,12 +35,18 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     {
         self.zoneTimerInterval = 30.0;
         _requestTimer = nil;
+        _isCurrentlyContentShown = NO;
     }
     
     return self;
 }
 
 - (void)enterContentZone {
+    
+    if(_isCurrentlyContentShown){
+        CLY_LOG_I(@"%s, a content is already shown, skipping" ,__FUNCTION__);
+    }
+    
     [self enterContentZone:@[]];
 }
 
@@ -53,13 +63,21 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     }
     
     self.currentTags = tags;
+    int contentDelay = 0;
     
-    [self fetchContents];;
-    _requestTimer = [NSTimer scheduledTimerWithTimeInterval:self.zoneTimerInterval
-                                                     target:self
-                                                   selector:@selector(fetchContents)
-                                                   userInfo:nil
-                                                    repeats:YES];
+    if (CountlyCommon.sharedInstance.timeSinceLaunch < contentInitialDelay) {
+        contentDelay = contentInitialDelay;
+    }
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(contentDelay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
+    {
+        [self fetchContents];;
+        self->_requestTimer = [NSTimer scheduledTimerWithTimeInterval:self->_zoneTimerInterval
+                                                         target:self
+                                                       selector:@selector(fetchContents)
+                                                       userInfo:nil
+                                                        repeats:YES];
+    });
 }
 
 - (void)exitContentZone {
@@ -71,6 +89,17 @@ NSString* const kCountlyCBFetchContent  = @"queue";
         [self exitContentZone];
         [self enterContentZone:tags];
     }
+}
+
+- (void)refreshContentZone {
+    // TODO server config
+    if(_isCurrentlyContentShown){
+        CLY_LOG_I(@"%s, a content is already shown, skipping" ,__FUNCTION__);
+    }
+    
+    [self exitContentZone];
+    [CountlyConnectionManager.sharedInstance attemptToSendStoredRequests];
+    [self enterContentZone];
 }
 
 #pragma mark - Private Methods
@@ -141,6 +170,13 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 
     queryString = [queryString stringByAppendingFormat:@"&%@=%@",
                    @"la", components.firstObject];
+    
+    NSString* deviceType = CountlyDeviceInfo.deviceType;
+    
+    if(deviceType){
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"dt", deviceType];
+    }
+
     
     NSString* URLString = [NSString stringWithFormat:@"%@%@?%@",
                            CountlyConnectionManager.sharedInstance.host,
@@ -244,11 +280,13 @@ NSString* const kCountlyCBFetchContent  = @"queue";
         [webViewManager createWebViewWithURL:url frame:frame appearBlock:^
          {
             CLY_LOG_I(@"%s, Webview appeared", __FUNCTION__);
+            self->_isCurrentlyContentShown = YES;
             [self clearContentState];
         } dismissBlock:^
          {
             CLY_LOG_I(@"%s, Webview dismissed", __FUNCTION__);
-            self->_minuteTimer = [NSTimer scheduledTimerWithTimeInterval:60.0
+            self->_isCurrentlyContentShown = NO;
+            self->_minuteTimer = [NSTimer scheduledTimerWithTimeInterval:self->_zoneTimerInterval
                                                              target:self
                                                            selector:@selector(enterContentZone)
                                                            userInfo:nil
