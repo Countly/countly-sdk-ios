@@ -62,7 +62,7 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
         XCTAssertEqual(1, CountlyPersistency.sharedInstance().remainingRequestCount())
         
         try validateCrash(
-            extractStackTrace(exception3),
+            CountlyCrashReporterTests.extractStackTrace(exception3),
             breadcrumbs: "Breadcrumb_1\nBreadcrumb_2",
             isFatal: true,
             changedBits: 11,
@@ -162,7 +162,7 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
         }
     }
     
-    func extractStackTrace(_ exception: NSException) -> String? {
+    static func extractStackTrace(_ exception: NSException) -> String? {
         return exception.callStackSymbols.joined(separator: "\n")
     }
     
