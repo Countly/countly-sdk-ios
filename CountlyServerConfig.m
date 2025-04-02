@@ -121,7 +121,7 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
     serverConfigObject = [NSJSONSerialization JSONObjectWithData:[providedServerConfiguration cly_dataUTF8] options:0 error:&error];
   }
 
-  if (error)
+  if (error || !serverConfigObject)
   {
     serverConfigObject = [CountlyPersistency.sharedInstance retrieveServerConfig];
   }
@@ -239,6 +239,10 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
 
   config.requiresConsent                               = _consentRequired ?: config.requiresConsent;
   CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
+  if (_consentRequired)
+  {
+    [CountlyConsentManager.sharedInstance sendConsents];
+  }
 
   config.eventSendThreshold                             = _eventQueueSize ?: config.eventSendThreshold;
   config.requestDropAgeHours                            = _dropOldRequestTime ?: config.requestDropAgeHours;
@@ -248,12 +252,14 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
   CountlyPersistency.sharedInstance.storedRequestsLimit = MAX(1, config.storedRequestsLimit);
 
   config.updateSessionPeriod = _sessionInterval ?: config.updateSessionPeriod;
+  _sessionInterval           = config.updateSessionPeriod;
 
 #if (TARGET_OS_IOS)
   [config.content setZoneTimerInterval:_contentZoneInterval ?: config.content.getZoneTimerInterval];
-
-  CountlyContentBuilderInternal.sharedInstance.zoneTimerInterval = config.content.getZoneTimerInterval;
-
+  if (config.content.getZoneTimerInterval)
+  {
+    CountlyContentBuilderInternal.sharedInstance.zoneTimerInterval = config.content.getZoneTimerInterval;
+  }
   if (!_enterContentZone)
   {
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -323,21 +329,9 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
   }
 
   // Set default values
-  _trackingEnabled            = YES;
-  _networkingEnabled          = YES;
-  _crashReportingEnabled      = YES;
-  _customEventTrackingEnabled = YES;
-  _enterContentZone           = NO;
-  _locationTracking           = YES;
-  _viewTrackingEnabled        = YES;
-  _sessionTrackingEnabled     = YES;
-  _loggingEnabled             = NO;
-  _refreshContentZone         = YES;
-
   NSURLSessionTask *task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self serverConfigRequest]
                                                                       completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
                                                                         NSDictionary *serverConfigResponse = nil;
-
                                                                         if (!error)
                                                                         {
                                                                           serverConfigResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
@@ -361,8 +355,18 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
 
                                                                         if (serverConfigResponse[kRConfig] != nil)
                                                                         {
-                                                                          [self populateServerConfig:serverConfigResponse];
                                                                           [CountlyPersistency.sharedInstance storeServerConfig:serverConfigResponse];
+                                                                          self->_trackingEnabled            = YES;
+                                                                          self->_networkingEnabled          = YES;
+                                                                          self->_crashReportingEnabled      = YES;
+                                                                          self->_customEventTrackingEnabled = YES;
+                                                                          self->_enterContentZone           = NO;
+                                                                          self->_locationTracking           = YES;
+                                                                          self->_viewTrackingEnabled        = YES;
+                                                                          self->_sessionTrackingEnabled     = YES;
+                                                                          self->_loggingEnabled             = NO;
+                                                                          self->_refreshContentZone         = YES;
+                                                                          [self populateServerConfig:serverConfigResponse];
                                                                         }
 
                                                                         [self notifySdkConfigChange:config]; // if no config let stored ones to be set
