@@ -139,40 +139,40 @@ NSInteger const contentInitialDelay = 4;
 
   _isRequestQueueLocked = YES;
 
-  NSURLSessionTask *dataTask = [[NSURLSession sharedSession] dataTaskWithRequest:[self fetchContentsRequest]
-                                                               completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-                                                                 if (error)
-                                                                 {
-                                                                   CLY_LOG_I(@"%s, Fetch content details failed: %@", __FUNCTION__, error);
-                                                                   self->_isRequestQueueLocked = NO;
-                                                                   return;
-                                                                 }
+  NSURLSessionTask *dataTask = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self fetchContentsRequest]
+                                                                          completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+                                                                            if (error)
+                                                                            {
+                                                                              CLY_LOG_I(@"%s, Fetch content details failed: %@", __FUNCTION__, error);
+                                                                              self->_isRequestQueueLocked = NO;
+                                                                              return;
+                                                                            }
 
-                                                                 NSError      *jsonError;
-                                                                 NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
+                                                                            NSError      *jsonError;
+                                                                            NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
 
-                                                                 if (jsonError)
-                                                                 {
-                                                                   CLY_LOG_I(@"%s, Failed to parse JSON: %@", __FUNCTION__, jsonError);
-                                                                   self->_isRequestQueueLocked = NO;
-                                                                   return;
-                                                                 }
+                                                                            if (jsonError)
+                                                                            {
+                                                                              CLY_LOG_I(@"%s, Failed to parse JSON: %@", __FUNCTION__, jsonError);
+                                                                              self->_isRequestQueueLocked = NO;
+                                                                              return;
+                                                                            }
 
-                                                                 if (!jsonResponse)
-                                                                 {
-                                                                   CLY_LOG_I(@"%s, Received empty or null response.", __FUNCTION__);
-                                                                   self->_isRequestQueueLocked = NO;
-                                                                   return;
-                                                                 }
+                                                                            if (!jsonResponse)
+                                                                            {
+                                                                              CLY_LOG_I(@"%s, Received empty or null response.", __FUNCTION__);
+                                                                              self->_isRequestQueueLocked = NO;
+                                                                              return;
+                                                                            }
 
-                                                                 NSString     *pathToHtml           = jsonResponse[@"html"];
-                                                                 NSDictionary *placementCoordinates = jsonResponse[@"geo"];
-                                                                 if (pathToHtml)
-                                                                 {
-                                                                   [self showContentWithHtmlPath:pathToHtml placementCoordinates:placementCoordinates];
-                                                                 }
-                                                                 self->_isRequestQueueLocked = NO;
-                                                               }];
+                                                                            NSString     *pathToHtml           = jsonResponse[@"html"];
+                                                                            NSDictionary *placementCoordinates = jsonResponse[@"geo"];
+                                                                            if (pathToHtml)
+                                                                            {
+                                                                              [self showContentWithHtmlPath:pathToHtml placementCoordinates:placementCoordinates];
+                                                                            }
+                                                                            self->_isRequestQueueLocked = NO;
+                                                                          }];
 
   [dataTask resume];
 }

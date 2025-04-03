@@ -21,6 +21,17 @@ import XCTest
 
 class CountlyUserProfileTests: CountlyBaseTestCase {
     
+    override func setUp() {
+        super.setUp()
+        // Initialize or reset necessary objects here
+        Countly.sharedInstance().halt(true)
+    }
+
+    override func tearDown() {
+        // Ensure everything is cleaned up properly
+        super.tearDown()
+        Countly.sharedInstance().halt(true)
+    }
     // Run this test first if you are facing cache not clear or instances are not reset properly
     // This is a dummy test to cover the edge case clear the cache when SDK is not initialized
     func testDummy() {
@@ -54,7 +65,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         XCTAssertEqual(3, CountlyPersistency.sharedInstance().remainingRequestCount())
         if let queuedRequests = CountlyPersistency.sharedInstance().value(forKey: "queuedRequests") as? [String] {
             XCTAssertTrue(queuedRequests[0].contains("begin_session=1"), "Begin session failed.")
-            XCTAssertTrue(queuedRequests[1].contains("consent="), "Set all consets failed.")
+            XCTAssertTrue(queuedRequests[1].contains("consent="), "Set all consents failed.")
             validateUserDetails(request: queuedRequests[2]);
         }
     }

@@ -63,7 +63,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     /**
      * Test configuration when server config is enabled and all properties are forbidding
      */
-    func testServerConfigWhenEnabledAndAllPropertiesForbidding() async throws {
+    func testServerConfigWhenEnabledAndAllPropertiesForbidding() {
         setServerConfig(createStorageConfig(tracking: false, networking: false, crashes: false))
         let config = createBaseConfig()
         config.enableServerConfiguration = true
@@ -71,14 +71,12 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         
         Countly.sharedInstance().start(with: config)
         
-        Task {
-            try await Task.sleep(nanoseconds: 2_000_000_000) // 1 second
+        sleep(2, {
             XCTAssertFalse(retrieveServerConfig().isEmpty)
-            
             XCTAssertFalse(CountlyServerConfig.sharedInstance().networkingEnabled())
             XCTAssertFalse(CountlyServerConfig.sharedInstance().trackingEnabled())
             XCTAssertFalse(CountlyServerConfig.sharedInstance().crashReportingEnabled())
-        }
+        })
     }
     
     /**
@@ -101,22 +99,18 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      * Verifies that all default values match the expected configuration.
      */
     func testServerConfigDefaultValues() throws {
-        clearAllUserDefaults()
         let config = createBaseConfig()
         config.enableDebug = false
         Countly.sharedInstance().start(with: config)
-        Task {
-            try await Task.sleep(nanoseconds: 2_000_000_000) // 1 second
-            ServerConfigBuilder().defaults().validateAgainst()
-        }
+        sleep(2, {ServerConfigBuilder().defaults().validateAgainst()})
     }
     
     /**
      * Tests that custom server configuration values are correctly applied when provided directly.
      * Verifies that the configuration is properly parsed and applied to the SDK.
      */
-    func testServerConfigProvidedValues() async throws {
-        try await initServerConfigWithValues { config, serverConfig in
+    func testServerConfigProvidedValues() throws {
+        try initServerConfigWithValues { config, serverConfig in
             config.serverConfiguration = serverConfig
         }
     }
@@ -125,8 +119,8 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      * Tests that server configuration values are correctly applied when using an immediate request generator.
      * Verifies that the configuration is properly handled when received through the request generator.
      */
-    func testServerConfigWithImmediateRequestGenerator() async throws {
-        try await initServerConfigWithValues { config, serverConfig in
+    func testServerConfigWithImmediateRequestGenerator() throws {
+        try initServerConfigWithValues { config, serverConfig in
             config.urlSessionConfiguration = createUrlSessionConfigForResponse(serverConfig)
         }
     }
@@ -136,15 +130,15 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      * Verifies that all SDK features (sessions, events, views, crashes, etc.) function as expected
      * when using default configuration values.
      */
-    func testServerConfigDefaultsAllFeatures() async throws {
-        try await baseAllFeatures({ _ in }, hc: 0, fc: 1, rc: 1, cc: 2, scc: 1)
+    func testServerConfigDefaultsAllFeatures() throws {
+        try baseAllFeatures({ _ in }, hc: 0, fc: 1, rc: 1, cc: 2, scc: 1)
     }
     
     /**
      * Tests that all features are properly disabled when explicitly configured to be disabled.
      * Verifies that no requests are generated and no data is collected when all features are disabled.
      */
-    func testDisableAllFeatures() async throws {
+    func testDisableAllFeatures() {
         let sc = ServerConfigBuilder()
         sc.networking(false)
             .sessionTracking(false)
@@ -165,7 +159,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         flowAllFeatures()
         XCTAssertEqual(0, getCurrentRQ()?.count)
         
-        try await immediateFlowAllFeatures()
+        immediateFlowAllFeatures()
         XCTAssertEqual(0, getCurrentEQ()?.count)
 
         feedbackFlowAllFeatures()
@@ -182,7 +176,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      * 2. No data is collected until consent is given
      * 3. Location is properly handled with empty value
      */
-    func testConsentEnabledAllFeatures() async throws {
+    func testConsentEnabledAllFeatures() {
         Countly.sharedInstance().halt(true)
         let sc = ServerConfigBuilder()
         sc.consentRequired(true)
@@ -195,17 +189,9 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         // VALIDATE DISABLE LOCATION idx 1
         
         flowAllFeatures()
-        try await immediateFlowAllFeatures()
+        immediateFlowAllFeatures()
         XCTAssertEqual(0, getCurrentEQ()?.count)
         feedbackFlowAllFeatures()
-        print("###################################################")
-        if let unwrappedArray = getCurrentRQ(){
-            for item in  unwrappedArray{
-                    print(item)
-                }
-        }
-        print("###################################################")
-
         
         XCTAssertEqual(2, getCurrentRQ()?.count)
         XCTAssertEqual(0, getCurrentEQ()?.count)
@@ -220,7 +206,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      * 2. Other features (events, views, crashes) continue to work
      * 3. Request counts and order are maintained correctly
      */
-    func testSessionsDisabledAllFeatures() async throws {
+    func testSessionsDisabledAllFeatures() throws {
         let sc = ServerConfigBuilder()
         sc.sessionTracking(false)
         let counts = setupTestAllFeatures(sc.buildJson())
@@ -240,8 +226,8 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         //TestUtils.validateRequest(TestUtils.commonDeviceId, ["key": "value"], 6)
         
         XCTAssertEqual(8, getCurrentRQ()?.count)
+        immediateFlowAllFeatures()
         
-        try await immediateFlowAllFeatures()
         XCTAssertEqual(0, getCurrentEQ()?.count)
         feedbackFlowAllFeatures()
         XCTAssertEqual(1, getCurrentEQ()?.count)
@@ -264,7 +250,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         ], 7, 8, 1, 2)
         
         XCTAssertEqual(8, getCurrentRQ()?.count)
-        try await Task.sleep(nanoseconds: 2_000_000_000) // Sleeps for 1 second
 
         validateCounts(counts, hc: 0, fc: 1, rc: 1, cc: 2, sc: 1)
     }
@@ -393,7 +378,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         return config
     }
     
-    private func initServerConfigWithValues(_ configSetter: (CountlyConfig, String) -> Void) async throws {
+    private func initServerConfigWithValues(_ configSetter: (CountlyConfig, String) -> Void) throws {
         let builder = ServerConfigBuilder()
             // Feature flags
             .tracking(false)
@@ -429,10 +414,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         let countly = Countly()
         countly.start(with: countlyConfig)
         
-        Task {
-            try await Task.sleep(nanoseconds: 2_000_000_000) // 1 second
-            builder.validateAgainst()
-        }
+        sleep(2, {builder.validateAgainst()})
         
     }
     
@@ -469,7 +451,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
                                                 headerFields: nil), nil)
             }
 
-            return ("{\"response\":\"success\"}".data(using: .utf8), HTTPURLResponse(url: request.url!,
+            return ("{\"result\":\"success\"}".data(using: .utf8), HTTPURLResponse(url: request.url!,
                                             statusCode: 200,
                                             httpVersion: nil,
                                             headerFields: nil), nil)
@@ -491,11 +473,13 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     }
     
     private func validateCounts(_ counts: [Int], hc: Int, fc: Int, rc: Int, cc: Int, sc: Int) {
-        XCTAssertEqual(hc, counts[0]) // health check request
-        //XCTAssertEqual(fc, counts[1]) // feedback request
-        //XCTAssertEqual(rc, counts[2]) // remote config request
-        //XCTAssertEqual(cc, counts[3]) // content request
-        XCTAssertEqual(sc, counts[4]) // server config request
+        sleep(2) {
+            XCTAssertEqual(hc, counts[0]) // health check request
+            XCTAssertEqual(fc, counts[1]) // feedback request
+            XCTAssertEqual(rc, counts[2]) // remote config request
+            XCTAssertEqual(cc, counts[3]) // content request
+            XCTAssertEqual(sc, counts[4]) // server config request
+        }
     }
     
     private func flowAllFeatures() -> String {
@@ -519,9 +503,13 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         return CountlyCrashReporterTests.extractStackTrace(e)!
     }
     
-    private func immediateFlowAllFeatures() async throws {
+    private func immediateFlowAllFeatures() {
+        let expectation = expectation(description: "Wait for all network requests")
+        expectation.expectedFulfillmentCount = 2
         Countly.sharedInstance().remoteConfig().downloadKeys { response, error, fullValueUpdate, downloadedValues in
-            //...
+            if(error == nil){
+                expectation.fulfill()
+            }
          }
         Countly.sharedInstance().feedback().getAvailableFeedbackWidgets { (feedbackWidgets: [CountlyFeedbackWidget]?, error) in
             if (error != nil)
@@ -530,15 +518,17 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             }
             else
             {
+                expectation.fulfill()
               print("Getting widgets list successfully completed. \(String(describing: feedbackWidgets))")
             }
           }
         Countly.sharedInstance().content().enterContentZone()
-        
-        Task {
-            try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+        waitForExpectations(timeout: 10)
+
+        sleep(2) {
             Countly.sharedInstance().content().refreshContentZone()
         }
+        
     }
     
     private func feedbackFlowAllFeatures() {
@@ -566,8 +556,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
        // )
     }
     
-    private func baseAllFeatures(_ consumer: (ServerConfigBuilder) -> Void, hc: Int, fc: Int, rc: Int, cc: Int, scc: Int) async throws {
-        clearAllUserDefaults()
+    private func baseAllFeatures(_ consumer: (ServerConfigBuilder) -> Void, hc: Int, fc: Int, rc: Int, cc: Int, scc: Int) throws {
         let sc = ServerConfigBuilder()
         consumer(sc)
         let counts = setupTestAllFeatures(sc.buildJson())
@@ -590,7 +579,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         
         XCTAssertEqual(8, getCurrentRQ()?.count)
         
-        try await immediateFlowAllFeatures()
+        immediateFlowAllFeatures()
         XCTAssertEqual(0, getCurrentEQ()?.count)
         feedbackFlowAllFeatures()
         XCTAssertEqual(1, getCurrentEQ()?.count)
@@ -625,45 +614,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         return CountlyPersistency.sharedInstance().value(forKey: "recordedEvents") as? [CountlyEvent];
     }
     
-    private func urlSessinConfigurator() -> URLSessionConfiguration {
-        var counts = [0, 0, 0, 0, 0]
-                
-        // Define the mock behavior
-        MockURLProtocol.requestHandler = { request in
-            let requestString = request.url?.absoluteString ?? ""
-
-            if requestString.contains("&hc=") {
-                counts[0] += 1
-            } else if requestString.contains("&method=feedback") {
-                counts[1] += 1
-            } else if requestString.contains("&method=rc") {
-                counts[2] += 1
-            } else if requestString.contains("&method=queue") {
-                counts[3] += 1
-            } else if requestString.contains("&method=sc") {
-                // Do nothing
-            } else {
-                XCTFail("Unexpected request: \(requestString)")
-            }
-
-            if requestString.contains("&method=sc") {
-                counts[4] += 1
-                XCTAssertTrue(true) // Replace with actual networking check
-            }
-
-            return ("{}".data(using: .utf8), HTTPURLResponse(url: request.url!,
-                                            statusCode: 200,
-                                            httpVersion: nil,
-                                            headerFields: nil), nil)
-        }
-
-        // Create a URLSession using the mock protocol
-        let config = URLSessionConfiguration.ephemeral
-        config.protocolClasses = [MockURLProtocol.self]
-        
-        return config;
-    }
-    
     private func setServerConfig(_ serverConfig: [String: Any]){
         UserDefaults.standard.set(serverConfig, forKey: "kCountlyServerConfigPersistencyKey")
         UserDefaults.standard.synchronize() // Not needed in modern Swift
@@ -671,6 +621,16 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     
     func retrieveServerConfig() -> [String: Any] {
         return UserDefaults.standard.object(forKey: "kCountlyServerConfigPersistencyKey") as? [String: Any] ?? [:]
+    }
+    
+    private func sleep(_ seconds: TimeInterval, _ job: () -> Void){
+        let exp = expectation(description: "Run after \(seconds) seconds")
+        let result = XCTWaiter.wait(for: [exp], timeout: seconds)
+        if result == XCTWaiter.Result.timedOut {
+            job()
+        } else {
+            XCTFail("Delay interrupted")
+        }
     }
 
 }

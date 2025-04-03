@@ -23,7 +23,8 @@ class MockURLProtocol: URLProtocol {
 
     override func startLoading() {
         guard let handler = MockURLProtocol.requestHandler else {
-            fatalError("Request handler not set!")
+            XCTFail("Request handler not set!")
+            return
         }
         
         let (data, response, error) = handler(request)
