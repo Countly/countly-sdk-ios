@@ -125,7 +125,7 @@ class CountlyLocationTests: CountlyBaseTestCase {
         }
         XCTAssertTrue(queuedRequests[0].contains("begin_session=1"), "Begin session failed.")
         
-        let parsedRequest = parseQueryString(queuedRequests[0])
+        let parsedRequest = TestUtils.parseQueryString(queuedRequests[0])
         
         XCTAssertTrue((parsedRequest["location"] as! String) == "35.689500,139.691700", "Begin session should contains provided location")
         XCTAssertTrue((parsedRequest["city"] as! String) == "Tokyo", "Begin session should contains provided city")
@@ -247,7 +247,7 @@ class CountlyLocationTests: CountlyBaseTestCase {
         }
         XCTAssertTrue(queuedRequests[0].contains("begin_session=1"), "Begin session failed.")
         
-        let parsedRequest = parseQueryString(queuedRequests[0])
+        let parsedRequest = TestUtils.parseQueryString(queuedRequests[0])
         
         XCTAssertTrue((parsedRequest["location"] as! String) == "35.689500,139.691700", "Begin session should contains provided location")
         XCTAssertTrue((parsedRequest["city"] as! String) == "Tokyo", "Begin session should contains provided city")

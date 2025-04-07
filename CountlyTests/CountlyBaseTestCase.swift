@@ -36,42 +36,6 @@ class CountlyBaseTestCase: XCTestCase {
     func cleanupState() {
         Countly.sharedInstance().halt(true)
     }
-    
-    func parseQueryString(_ queryString: String) -> [String: Any] {
-        var result: [String: Any] = [:]
-        
-        // Split the query string by '&' to get individual key-value pairs
-        let pairs = queryString.split(separator: "&")
-        
-        for pair in pairs {
-            // Split each pair by '=' to separate the key and value
-            let components = pair.split(separator: "=", maxSplits: 1)
-            
-            if components.count == 2 {
-                let key = String(components[0])
-                let value = String(components[1])
-                
-                // If the value is a JSON string (starts and ends with '%7B' and '%7D' respectively after URL decoding), decode it
-                if let decodedValue = value.removingPercentEncoding, decodedValue.hasPrefix("{"), decodedValue.hasSuffix("}") {
-                    if let jsonData = decodedValue.data(using: .utf8) {
-                        do {
-                            let jsonObject = try JSONSerialization.jsonObject(with: jsonData, options: [])
-                            result[key] = jsonObject
-                            continue
-                        } catch {
-                            print("Error decoding JSON for key \(key): \(error)")
-                        }
-                    }
-                }
-                
-                // Otherwise, simply assign the value to the key in the result dictionary
-                result[key] = value.removingPercentEncoding ?? value
-            }
-        }
-        
-        return result
-    }
-    
 }
 
 

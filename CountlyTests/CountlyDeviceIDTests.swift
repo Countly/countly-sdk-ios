@@ -102,7 +102,7 @@ class CountlyDeviceIDTests: CountlyBaseTestCase {
     }
     
     func validateSetIdOnServerRequest(request: String, newDeviceId: String) {
-        let parsedRequest = parseQueryString(request)
+        let parsedRequest = TestUtils.parseQueryString(request)
         
         let sdkDeviceID = Countly.sharedInstance().deviceID()
         

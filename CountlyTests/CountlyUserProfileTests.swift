@@ -322,7 +322,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
     }
     
     func validateEvents(request: String, keysToCheck: [String]) {
-        let parsedRequest = parseQueryString(request)
+        let parsedRequest = TestUtils.parseQueryString(request)
         let events = parsedRequest["events"];
         XCTAssertNotNil(events, "events are nil");
         if((events) != nil) {
@@ -363,7 +363,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
     
     
     func validateCustomUserDetails(request: String, propertiesToCheck: [String: Any]) {
-        let parsedRequest = parseQueryString(request)
+        let parsedRequest = TestUtils.parseQueryString(request)
         let userDetails = parsedRequest["user_details"];
         XCTAssertNotNil(userDetails, "user details are nil");
         if((userDetails) != nil) {
@@ -434,7 +434,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
     }
     
     func validateUserDetails(request: String) {
-        let parsedRequest = parseQueryString(request)
+        let parsedRequest = TestUtils.parseQueryString(request)
         let userDetails = parsedRequest["user_details"];
         XCTAssertNotNil(userDetails, "user details is nil");
         let userDetailsMap =  userDetails as! [String: Any]

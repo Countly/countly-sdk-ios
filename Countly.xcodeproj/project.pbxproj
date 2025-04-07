@@ -82,10 +82,12 @@
 		3B20A9D32245228700E3D7AE /* CountlyPushNotifications.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9AE2245228600E3D7AE /* CountlyPushNotifications.h */; };
 		3B20A9D42245228700E3D7AE /* CountlyPersistency.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B20A9AF2245228600E3D7AE /* CountlyPersistency.m */; };
 		3B20A9D62245228700E3D7AE /* CountlyConsentManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9B12245228700E3D7AE /* CountlyConsentManager.h */; };
+		962485BA2D9E971800FA3C20 /* TestUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 962485B92D9E971400FA3C20 /* TestUtils.swift */; };
 		96329DE02D9426F300BFD641 /* CountlyServerConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96329DDF2D9426F300BFD641 /* CountlyServerConfigTests.swift */; };
 		96329DE22D94299D00BFD641 /* ServerConfigBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96329DE12D94299D00BFD641 /* ServerConfigBuilder.swift */; };
 		96329DE42D952F1500BFD641 /* MockURLProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96329DE32D952F1500BFD641 /* MockURLProtocol.swift */; };
 		968426812BF2302C007B303E /* CountlyConnectionManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 968426802BF2302C007B303E /* CountlyConnectionManagerTests.swift */; };
+		96DA74BB2D9FB687006FA6FF /* MockFeedbackWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96DA74BA2D9FB687006FA6FF /* MockFeedbackWidget.swift */; };
 		96E680422BFF89AC0091E105 /* CountlyCrashReporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96E680412BFF89AC0091E105 /* CountlyCrashReporterTests.swift */; };
 		D219374B248AC71C00E5798B /* CountlyPerformanceMonitoring.h in Headers */ = {isa = PBXBuildFile; fileRef = D2193749248AC71C00E5798B /* CountlyPerformanceMonitoring.h */; };
 		D219374C248AC71C00E5798B /* CountlyPerformanceMonitoring.m in Sources */ = {isa = PBXBuildFile; fileRef = D219374A248AC71C00E5798B /* CountlyPerformanceMonitoring.m */; };
@@ -184,11 +186,13 @@
 		3B20A9AE2245228600E3D7AE /* CountlyPushNotifications.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyPushNotifications.h; sourceTree = "<group>"; };
 		3B20A9AF2245228600E3D7AE /* CountlyPersistency.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyPersistency.m; sourceTree = "<group>"; };
 		3B20A9B12245228700E3D7AE /* CountlyConsentManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyConsentManager.h; sourceTree = "<group>"; };
+		962485B92D9E971400FA3C20 /* TestUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestUtils.swift; sourceTree = "<group>"; };
 		96329DDF2D9426F300BFD641 /* CountlyServerConfigTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyServerConfigTests.swift; sourceTree = "<group>"; };
 		96329DE12D94299D00BFD641 /* ServerConfigBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerConfigBuilder.swift; sourceTree = "<group>"; };
 		96329DE32D952F1500BFD641 /* MockURLProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockURLProtocol.swift; sourceTree = "<group>"; };
 		96681A9B2D97D9B300A4845A /* CountlyTests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = CountlyTests.xctestplan; sourceTree = "<group>"; };
 		968426802BF2302C007B303E /* CountlyConnectionManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyConnectionManagerTests.swift; sourceTree = "<group>"; };
+		96DA74BA2D9FB687006FA6FF /* MockFeedbackWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockFeedbackWidget.swift; sourceTree = "<group>"; };
 		96E680412BFF89AC0091E105 /* CountlyCrashReporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyCrashReporterTests.swift; sourceTree = "<group>"; };
 		D2193749248AC71C00E5798B /* CountlyPerformanceMonitoring.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyPerformanceMonitoring.h; sourceTree = "<group>"; };
 		D219374A248AC71C00E5798B /* CountlyPerformanceMonitoring.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyPerformanceMonitoring.m; sourceTree = "<group>"; };
@@ -220,6 +224,8 @@
 		1A5C4C952B35B0850032EE1F /* CountlyTests */ = {
 			isa = PBXGroup;
 			children = (
+				96DA74BA2D9FB687006FA6FF /* MockFeedbackWidget.swift */,
+				962485B92D9E971400FA3C20 /* TestUtils.swift */,
 				96329DE32D952F1500BFD641 /* MockURLProtocol.swift */,
 				96329DE12D94299D00BFD641 /* ServerConfigBuilder.swift */,
 				96329DDF2D9426F300BFD641 /* CountlyServerConfigTests.swift */,
@@ -494,6 +500,8 @@
 				96329DE02D9426F300BFD641 /* CountlyServerConfigTests.swift in Sources */,
 				3966DBCF2C11EE270002ED97 /* CountlyDeviceIDTests.swift in Sources */,
 				3964A3E72C2AF8E90091E677 /* CountlySegmentationTests.swift in Sources */,
+				96DA74BB2D9FB687006FA6FF /* MockFeedbackWidget.swift in Sources */,
+				962485BA2D9E971800FA3C20 /* TestUtils.swift in Sources */,
 				3972EDDB2C08A38D00EB9D3E /* CountlyEventStruct.swift in Sources */,
 				96E680422BFF89AC0091E105 /* CountlyCrashReporterTests.swift in Sources */,
 			);

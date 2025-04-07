@@ -241,7 +241,7 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
   CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
   if (_consentRequired)
   {
-    [CountlyConsentManager.sharedInstance sendConsents];
+      [CountlyConsentManager.sharedInstance cancelConsentForAllFeatures];
   }
 
   config.eventSendThreshold                             = _eventQueueSize ?: config.eventSendThreshold;

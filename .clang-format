@@ -31,3 +31,10 @@ AlignTrailingComments: true
 
 # Import statements
 SortIncludes: true
+
+# Objective-C specific rules
+ObjCBlockIndentWidth: 4
+ObjCSpaceAfterProperty: true
+ObjCBracesOnNextLine: false
+ObjCBlockLiteralsAsStructs: false
+IndentCaseLabels: false
