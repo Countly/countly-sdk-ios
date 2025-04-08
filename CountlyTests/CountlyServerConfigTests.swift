@@ -620,20 +620,20 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             Countly.sharedInstance().recordEvent(longKey, segmentation: segmentation)
             
             TestUtils.sleep(2) {
+                let eq = TestUtils.getCurrentEQ()!
+                let event = eq[0]
+
                 // Verify key is truncated to 5 chars
-                XCTAssertTrue(self.containsEventWithKey(TestUtils.getCurrentRQ()!, "veryL"))
+                XCTAssertEqual(event.key, "veryL")
                 
                 // Verify only 2 segmentation values
-                let event = self.getEventWithKey(TestUtils.getCurrentRQ()!, "veryL")
-                if let event = event {
-                    let segmentationCount = (event["segmentation"] as? [String: Any])?.count ?? 0
-                    XCTAssertEqual(2, segmentationCount)
-                    
-                    // Verify value is truncated
-                    if let segmentation = event["segmentation"] as? [String: Any],
-                       let longValue = segmentation["key3"] as? String {
-                        XCTAssertEqual(10, longValue.count)
-                    }
+                let segmentationCount = event.segmentation.count
+                XCTAssertEqual(2, segmentationCount)
+                
+                // Verify value is truncated
+                if let segmentation = event.segmentation,
+                   let longValue = segmentation["key3"] as? String {
+                    XCTAssertEqual(10, longValue.count)
                 }
             }
             
