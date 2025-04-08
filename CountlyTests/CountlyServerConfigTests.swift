@@ -584,14 +584,26 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         let stackTrace = flowAllFeatures()
         XCTAssertEqual(8, TestUtils.getCurrentRQ()?.count)
 
-        //ModuleSessionsTests.validateSessionBeginRequest(0, TestUtils.commonDeviceId)
+        XCTAssertTrue(TestUtils.getCurrentRQ()![0].contains("begin_session"))
         //ModuleCrashTests.validateCrash(stackTrace, "", false, false, 8, 1, [:], 0, [:], [])
-        //try TestUtils.validateEventInRQ("[CLY]_orientation", ["mode": "portrait"], 2, 8, 0, 3)
+        try TestUtils.validateEventInRQ("[CLY]_orientation", ["mode": "portrait"], 2, 8, 0, 3)
         try TestUtils.validateEventInRQ("test_event", [:], 2, 8, 0, 2)
         try TestUtils.validateEventInRQ("[CLY]_view", ["name": "test_view", "segment": "iOS", "visit": "1", "start": "1"], 2, 8, 1, 2)
-        //ModuleUserProfileTests.validateUserProfileRequest(3, 8, [:], ["test_property": "test_value"])
+        TestUtils.validateRequest([:], 3, { request in
+            let userDetails = request["user_details"] as! [String: Any]
+            XCTAssertTrue(TestUtils.compareDictionaries(userDetails["custom"] as! [String: Any], ["test_property": "test_value"]))
+        })
         TestUtils.validateRequest(["location": "33.689500,139.691700"], 4)
-        //ModuleAPMTests.validateNetworkRequest(5, 8, "test_trace", 1111, 400, 2000, 1111)
+        TestUtils.validateRequest([:], 5, { request in
+            let apm = request["apm"] as! [String: Any]
+            XCTAssertEqual("test_trace", apm["name"] as! String)
+            XCTAssertEqual("network", apm["type"] as! String)
+            XCTAssertTrue(TestUtils.compareDictionaries(apm["apm_metrics"] as! [String: Any],
+                                                        ["response_time": 1111,
+                                                         "response_code": 400,
+                                                         "request_payload_size": 2000,
+                                                         "response_payload_size": 2000]))
+        })
         TestUtils.validateRequest(["attribution_data": "test_data"], 6)
         TestUtils.validateRequest(["key": "value"], 7)
         
