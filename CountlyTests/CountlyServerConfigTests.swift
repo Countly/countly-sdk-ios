@@ -503,9 +503,9 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     private func validateCounts(_ counts: [Int], hc: Int, fc: Int, rc: Int, cc: Int, sc: Int) {
         TestUtils.sleep(2) {
             XCTAssertEqual(hc, counts[0]) // health check request
-            //XCTAssertEqual(fc, counts[1]) // feedback request
-            //XCTAssertEqual(rc, counts[2]) // remote config request
-            //XCTAssertEqual(cc, counts[3]) // content request
+            XCTAssertEqual(fc, counts[1]) // feedback request
+            XCTAssertEqual(rc, counts[2]) // remote config request
+            XCTAssertEqual(cc, counts[3]) // content request ?? when it debugged counts increasing but some sleep it needs
             XCTAssertEqual(sc, counts[4]) // server config request
         }
     }

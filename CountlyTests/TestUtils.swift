@@ -60,7 +60,7 @@ class TestUtils {
                 }
                 XCTAssertEqual(nestedMap.count, nestedReqValue.count)
             } else {
-                XCTAssertEqual("\(String(describing: reqValue))", "\(value)")
+                XCTAssertEqual("\(String(describing: reqValue!))", "\(value)")
             }
         }
     }
