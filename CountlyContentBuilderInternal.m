@@ -77,7 +77,6 @@ NSInteger const contentInitialDelay = 4;
 
   dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(contentDelay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
     [self fetchContents];
-    ;
     self->_requestTimer = [NSTimer scheduledTimerWithTimeInterval:self->_zoneTimerInterval target:self selector:@selector(fetchContents) userInfo:nil repeats:YES];
   });
 }
@@ -181,20 +180,19 @@ NSInteger const contentInitialDelay = 4;
 {
   NSString *queryString    = [CountlyConnectionManager.sharedInstance queryEssentials];
   NSString *resolutionJson = [self resolutionJson];
+    queryString              = [queryString stringByAppendingFormat:@"&%@=%@", @"method", kCountlyCBFetchContent];
   queryString              = [queryString stringByAppendingFormat:@"&%@=%@", @"resolution", resolutionJson.cly_URLEscaped];
+    
+    NSArray *components = [CountlyDeviceInfo.locale componentsSeparatedByCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"_-"]];
+  queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"la", components.firstObject];
+    
+    NSString *deviceType = CountlyDeviceInfo.deviceType;
+    if (deviceType)
+    {
+      queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"dt", deviceType];
+    }
 
   queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
-
-  NSArray *components = [CountlyDeviceInfo.locale componentsSeparatedByCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"_-"]];
-
-  queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"la", components.firstObject];
-
-  NSString *deviceType = CountlyDeviceInfo.deviceType;
-
-  if (deviceType)
-  {
-    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"dt", deviceType];
-  }
 
   NSString *URLString = [NSString stringWithFormat:@"%@%@?%@", CountlyConnectionManager.sharedInstance.host, kCountlyEndpointContent, queryString];
 
