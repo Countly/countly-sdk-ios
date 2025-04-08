@@ -221,7 +221,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      * 3. Request counts and order are maintained correctly
      */
     func test_sessionsDisabled_allFeatures() throws {
-        
         let sc = ServerConfigBuilder()
         sc.sessionTracking(false)
         let tracker = setupTestAllFeatures(sc.buildJson())
@@ -353,6 +352,19 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         XCTAssertFalse(TestUtils.getCurrentRQ()![0].contains("begin_session"))
     }
     
+    func test_validateServerConfigParsing_invalid(){
+        XCTAssertTrue(retrieveServerConfig().isEmpty)
+        // Test various invalid configurations
+        initAndValidateConfigParsingResult("", false)
+        initAndValidateConfigParsingResult("{}", false)
+        initAndValidateConfigParsingResult("{'t':2,'c':{'aa':'bb'}}", false)
+        initAndValidateConfigParsingResult("{'v':1,'c':{'aa':'bb'}}", false)
+        initAndValidateConfigParsingResult("{'v':1,'t':2}", false)
+        initAndValidateConfigParsingResult("{'v':1,'t':2,'c':123}", false)
+        initAndValidateConfigParsingResult("{'v':1,'t':2,'c':false}", false)
+        initAndValidateConfigParsingResult("{'v':1,'t':2,'c':'fdf'}", false)
+    }
+    
     // MARK: - Helper Methods
     
     private func assertDefaultConfigValues(_ countly: Countly) {
@@ -369,24 +381,23 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         return builder.buildJson()
     }
     
-    private func initAndValidateConfigParsingResult(_ targetResponse: String?, responseAccepted: Bool) -> Countly {
+    private func initAndValidateConfigParsingResult(_ targetResponse: String, _ responseAccepted: Bool) -> Countly {
         let config = TestUtils.createBaseConfig()
         config.enableServerConfiguration = true
-        
-        if let response = targetResponse {
-            config.urlSessionConfiguration = createUrlSessionConfigForResponse(response)
-        }
+        config.urlSessionConfiguration = createUrlSessionConfigForResponse(targetResponse)
         
         let countly = Countly()
         countly.start(with: config)
         
-        let serverConfig = retrieveServerConfig()
-        
-        if !responseAccepted {
-            XCTAssertNil(serverConfig)
-            assertDefaultConfigValues(countly)
-        } else {
-            XCTAssertNotNil(serverConfig)
+        TestUtils.sleep(2){
+            let serverConfig = retrieveServerConfig()
+            
+            if !responseAccepted {
+                XCTAssertTrue(serverConfig.isEmpty)
+                assertDefaultConfigValues(countly)
+            } else {
+                XCTAssertFalse(serverConfig.isEmpty)
+            }
         }
         
         return countly
