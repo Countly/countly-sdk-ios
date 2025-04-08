@@ -383,7 +383,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
                     // Check if both values are dictionaries
                     if let customDict = customValue as? [String: Any], let checkDict = value as? [String: Any] {
                         // Check if the dictionaries are equal
-                           XCTAssertTrue(compareDictionaries(dict1: customDict, dict2: checkDict),"Value for key \(key) does not match. Expected: \(checkDict), Found: \(customDict)")
+                        XCTAssertTrue(TestUtils.compareDictionaries(customDict, checkDict),"Value for key \(key) does not match. Expected: \(checkDict), Found: \(customDict)")
                         
                     } else { // Convert to string for comparison
                         XCTAssertNotEqual("\(customValue)", "\(value)","Value for key \(key) does not match. Expected: \(value), Found: \(customValue)")
@@ -409,28 +409,6 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
                 }
             }
         }
-    }
-    
-    func compareDictionaries(dict1: [String: Any], dict2: [String: Any]) -> Bool {
-        guard dict1.count == dict2.count else {
-            return false
-        }
-        
-        for (key, value) in dict1 {
-            guard let otherValue = dict2[key] else {
-                return false
-            }
-            
-            if let nestedDict1 = value as? [String: Any], let nestedDict2 = otherValue as? [String: Any] {
-                if !compareDictionaries(dict1: nestedDict1, dict2: nestedDict2) {
-                    return false
-                }
-            } else if "\(value)" != "\(otherValue)" {
-                return false
-            }
-        }
-        
-        return true
     }
     
     func validateUserDetails(request: String) {

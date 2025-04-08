@@ -46,6 +46,10 @@ class TestUtils {
     }
     
     static func validateRequest(_ params: [String: Any], _ idx: Int){
+        validateRequest(params, idx, { request in })
+    }
+    
+    static func validateRequest(_ params: [String: Any], _ idx: Int, _ customValidator: ([String: Any]) -> Void){
         let requestStr = getCurrentRQ()![idx]
         let request = parseQueryString(requestStr)
         validateRequiredParams(request)
@@ -63,6 +67,8 @@ class TestUtils {
                 XCTAssertEqual("\(String(describing: reqValue!))", "\(value)")
             }
         }
+        
+        customValidator(request)
     }
     
     static func validateEventInRQ(_ eventName: String, _ segmentation: [String: Any], _ idx: Int, _ rqCount: Int, _ eventIdx: Int, _ eventCount: Int) throws {
@@ -243,6 +249,27 @@ class TestUtils {
         return result
     }
     
+    static func compareDictionaries(_ dict1: [String: Any],_ dict2: [String: Any]) -> Bool {
+        guard dict1.count == dict2.count else {
+            return false
+        }
+        
+        for (key, value) in dict1 {
+            guard let otherValue = dict2[key] else {
+                return false
+            }
+            
+            if let nestedDict1 = value as? [String: Any], let nestedDict2 = otherValue as? [String: Any] {
+                if !compareDictionaries(nestedDict1, nestedDict2) {
+                    return false
+                }
+            } else if "\(value)" != "\(otherValue)" {
+                return false
+            }
+        }
+        
+        return true
+    }
     
     static func createBaseConfig() -> CountlyConfig {
         let config: CountlyConfig = CountlyConfig()
