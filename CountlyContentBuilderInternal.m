@@ -178,7 +178,6 @@ NSInteger const contentInitialDelay = 4;
 
 - (NSURLRequest *)fetchContentsRequest
 {
-
     NSString *queryString    = [CountlyConnectionManager.sharedInstance queryEssentials];
     NSString *resolutionJson = [self resolutionJson];
     queryString              = [queryString stringByAppendingFormat:@"&%@=%@", @"method", kCountlyCBFetchContent];
