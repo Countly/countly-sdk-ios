@@ -25,7 +25,7 @@ NSInteger const contentInitialDelay = 4;
     static CountlyContentBuilderInternal *instance = nil;
     static dispatch_once_t                onceToken;
     dispatch_once(&onceToken, ^{
-      instance = [[self alloc] init];
+        instance = [[self alloc] init];
     });
     return instance;
 }
@@ -76,8 +76,8 @@ NSInteger const contentInitialDelay = 4;
     }
 
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(contentDelay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-      [self fetchContents];
-      self->_requestTimer = [NSTimer scheduledTimerWithTimeInterval:self->_zoneTimerInterval target:self selector:@selector(fetchContents) userInfo:nil repeats:YES];
+        [self fetchContents];
+        self->_requestTimer = [NSTimer scheduledTimerWithTimeInterval:self->_zoneTimerInterval target:self selector:@selector(fetchContents) userInfo:nil repeats:YES];
     });
 }
 
@@ -140,37 +140,37 @@ NSInteger const contentInitialDelay = 4;
 
     NSURLSessionTask *dataTask = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self fetchContentsRequest]
                                                                             completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-                                                                              if (error)
-                                                                              {
-                                                                                  CLY_LOG_I(@"%s, Fetch content details failed: %@", __FUNCTION__, error);
-                                                                                  self->_isRequestQueueLocked = NO;
-                                                                                  return;
-                                                                              }
+                                                                                if (error)
+                                                                                {
+                                                                                    CLY_LOG_I(@"%s, Fetch content details failed: %@", __FUNCTION__, error);
+                                                                                    self->_isRequestQueueLocked = NO;
+                                                                                    return;
+                                                                                }
 
-                                                                              NSError      *jsonError;
-                                                                              NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
+                                                                                NSError      *jsonError;
+                                                                                NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
 
-                                                                              if (jsonError)
-                                                                              {
-                                                                                  CLY_LOG_I(@"%s, Failed to parse JSON: %@", __FUNCTION__, jsonError);
-                                                                                  self->_isRequestQueueLocked = NO;
-                                                                                  return;
-                                                                              }
+                                                                                if (jsonError)
+                                                                                {
+                                                                                    CLY_LOG_I(@"%s, Failed to parse JSON: %@", __FUNCTION__, jsonError);
+                                                                                    self->_isRequestQueueLocked = NO;
+                                                                                    return;
+                                                                                }
 
-                                                                              if (!jsonResponse)
-                                                                              {
-                                                                                  CLY_LOG_I(@"%s, Received empty or null response.", __FUNCTION__);
-                                                                                  self->_isRequestQueueLocked = NO;
-                                                                                  return;
-                                                                              }
+                                                                                if (!jsonResponse)
+                                                                                {
+                                                                                    CLY_LOG_I(@"%s, Received empty or null response.", __FUNCTION__);
+                                                                                    self->_isRequestQueueLocked = NO;
+                                                                                    return;
+                                                                                }
 
-                                                                              NSString     *pathToHtml           = jsonResponse[@"html"];
-                                                                              NSDictionary *placementCoordinates = jsonResponse[@"geo"];
-                                                                              if (pathToHtml)
-                                                                              {
-                                                                                  [self showContentWithHtmlPath:pathToHtml placementCoordinates:placementCoordinates];
-                                                                              }
-                                                                              self->_isRequestQueueLocked = NO;
+                                                                                NSString     *pathToHtml           = jsonResponse[@"html"];
+                                                                                NSDictionary *placementCoordinates = jsonResponse[@"geo"];
+                                                                                if (pathToHtml)
+                                                                                {
+                                                                                    [self showContentWithHtmlPath:pathToHtml placementCoordinates:placementCoordinates];
+                                                                                }
+                                                                                self->_isRequestQueueLocked = NO;
                                                                             }];
 
     [dataTask resume];
@@ -178,10 +178,7 @@ NSInteger const contentInitialDelay = 4;
 
 - (NSURLRequest *)fetchContentsRequest
 {
-    
-    
-    
-    
+
     NSString *queryString    = [CountlyConnectionManager.sharedInstance queryEssentials];
     NSString *resolutionJson = [self resolutionJson];
     queryString              = [queryString stringByAppendingFormat:@"&%@=%@", @"method", kCountlyCBFetchContent];
@@ -282,41 +279,41 @@ NSInteger const contentInitialDelay = 4;
     }
 
     dispatch_async(dispatch_get_main_queue(), ^{
-      // Detect screen orientation
-      UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
-      BOOL                   isLandscape = UIInterfaceOrientationIsLandscape(orientation);
+        // Detect screen orientation
+        UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
+        BOOL                   isLandscape = UIInterfaceOrientationIsLandscape(orientation);
 
-      // Get the appropriate coordinates based on the orientation
-      NSDictionary *coordinates = isLandscape ? placementCoordinates[@"l"] : placementCoordinates[@"p"];
+        // Get the appropriate coordinates based on the orientation
+        NSDictionary *coordinates = isLandscape ? placementCoordinates[@"l"] : placementCoordinates[@"p"];
 
-      CGFloat x      = [coordinates[@"x"] floatValue];
-      CGFloat y      = [coordinates[@"y"] floatValue];
-      CGFloat width  = [coordinates[@"w"] floatValue];
-      CGFloat height = [coordinates[@"h"] floatValue];
+        CGFloat x      = [coordinates[@"x"] floatValue];
+        CGFloat y      = [coordinates[@"y"] floatValue];
+        CGFloat width  = [coordinates[@"w"] floatValue];
+        CGFloat height = [coordinates[@"h"] floatValue];
 
-      CGRect frame = CGRectMake(x, y, width, height);
+        CGRect frame = CGRectMake(x, y, width, height);
 
-      // Log the URL and the frame
-      CLY_LOG_I(@"%s, Showing content from URL: %@", __FUNCTION__, url);
-      CLY_LOG_I(@"%s, Placement frame: %@", __FUNCTION__, NSStringFromCGRect(frame));
+        // Log the URL and the frame
+        CLY_LOG_I(@"%s, Showing content from URL: %@", __FUNCTION__, url);
+        CLY_LOG_I(@"%s, Placement frame: %@", __FUNCTION__, NSStringFromCGRect(frame));
 
-      CountlyWebViewManager *webViewManager = CountlyWebViewManager.new;
-      [webViewManager createWebViewWithURL:url
-          frame:frame
-          appearBlock:^{
-            CLY_LOG_I(@"%s, Webview appeared", __FUNCTION__);
-            self->_isCurrentlyContentShown = YES;
-            [self clearContentState];
-          }
-          dismissBlock:^{
-            CLY_LOG_I(@"%s, Webview dismissed", __FUNCTION__);
-            self->_isCurrentlyContentShown = NO;
-            self->_minuteTimer             = [NSTimer scheduledTimerWithTimeInterval:self->_zoneTimerInterval target:self selector:@selector(enterContentZone) userInfo:nil repeats:NO];
-            if (self.contentCallback)
-            {
-                self.contentCallback(CLOSED, NSDictionary.new);
+        CountlyWebViewManager *webViewManager = CountlyWebViewManager.new;
+        [webViewManager createWebViewWithURL:url
+            frame:frame
+            appearBlock:^{
+                CLY_LOG_I(@"%s, Webview appeared", __FUNCTION__);
+                self->_isCurrentlyContentShown = YES;
+                [self clearContentState];
             }
-          }];
+            dismissBlock:^{
+                CLY_LOG_I(@"%s, Webview dismissed", __FUNCTION__);
+                self->_isCurrentlyContentShown = NO;
+                self->_minuteTimer             = [NSTimer scheduledTimerWithTimeInterval:self->_zoneTimerInterval target:self selector:@selector(enterContentZone) userInfo:nil repeats:NO];
+                if (self.contentCallback)
+                {
+                    self.contentCallback(CLOSED, NSDictionary.new);
+                }
+            }];
     });
 }
 #endif

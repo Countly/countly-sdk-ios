@@ -41,5 +41,4 @@ SortIncludes: true
 Language: ObjC
 ObjCBlockIndentWidth: 4
 ObjCSpaceAfterProperty: true
-ObjCBlockLiteralsAsStructs: false
 IndentCaseLabels: false
