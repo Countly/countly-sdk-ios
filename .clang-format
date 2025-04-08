@@ -29,9 +29,6 @@ ColumnLimit: 300
 MaxEmptyLinesToKeep: 1
 
 # Alignment rules
-AlignConsecutiveAssignments: true
-AlignConsecutiveDeclarations: true
-AlignOperands: true
 AlignTrailingComments: true
 
 # Include sorting
