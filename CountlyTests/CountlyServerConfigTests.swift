@@ -365,7 +365,300 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         initAndValidateConfigParsingResult("{'v':1,'t':2,'c':'fdf'}", false)
     }
     
+    func test_serverConfig_missingOrInvalidKeys() {
+        let invalidConfigs: [String] = [
+            "{}",
+            "{\"v\":1}", // Missing "t" and "c"
+            "{\"v\":1,\"t\":2}", // Missing "c"
+            "{\"v\":1,\"t\":2,\"c\":123}", // Invalid "c" type
+            "{\"v\":1,\"t\":2,\"c\":false}", // Invalid "c" type
+            "{\"v\":1,\"t\":2,\"c\":\"invalid\"}" // Invalid "c" type
+        ]
+        
+        for config in invalidConfigs {
+            let countly = initAndValidateConfigParsingResult(config, false)
+            XCTAssertTrue(retrieveServerConfig().isEmpty)
+            assertDefaultConfigValues(countly)
+        }
+    }
+    
+    func test_serverConfig_emptyConfig() {
+        setServerConfig([:])
+        let config = TestUtils.createBaseConfig()
+        config.enableServerConfiguration = true
+        let countly = Countly()
+        countly.start(with: config)
+        
+        XCTAssertTrue(retrieveServerConfig().isEmpty)
+        assertDefaultConfigValues(countly)
+    }
+    
+    func test_serverConfig_overrideDefaultValues() {
+        let customConfig = createStorageConfig(tracking: false, networking: false, crashes: false)
+        setServerConfig(customConfig)
+        
+        let config = TestUtils.createBaseConfig()
+        config.enableServerConfiguration = true
+        let countly = Countly()
+        countly.start(with: config)
+        
+        XCTAssertFalse(CountlyServerConfig.sharedInstance().trackingEnabled())
+        XCTAssertFalse(CountlyServerConfig.sharedInstance().networkingEnabled())
+        XCTAssertFalse(CountlyServerConfig.sharedInstance().crashReportingEnabled())
+    }
+    
+    func test_serverConfig_consentRequirement() {
+        let customConfig = ServerConfigBuilder()
+            .consentRequired(true)
+            .buildJson()
+        setServerConfig(customConfig)
+        
+        let config = TestUtils.createBaseConfig()
+        config.enableServerConfiguration = true
+        let countly = Countly()
+        countly.start(with: config)
+        
+        XCTAssertTrue(CountlyServerConfig.sharedInstance().consentRequired())
+    }
+    
+    func test_serverConfig_loggingEnabled() {
+        let customConfig = ServerConfigBuilder()
+            .logging(true)
+            .buildJson()
+        setServerConfig(customConfig)
+        
+        let config = TestUtils.createBaseConfig()
+        config.enableServerConfiguration = true
+        let countly = Countly()
+        countly.start(with: config)
+        
+        XCTAssertTrue(CountlyServerConfig.sharedInstance().loggingEnabled())
+    }
+    
+    func test_serverConfig_queueSizeLimits() {
+        let customConfig = ServerConfigBuilder()
+            .eventQueueSize(5)
+            .requestQueueSize(10)
+            .buildJson()
+        setServerConfig(customConfig)
+        
+        let config = TestUtils.createBaseConfig()
+        config.enableServerConfiguration = true
+        let countly = Countly()
+        countly.start(with: config)
+        
+        XCTAssertEqual(CountlyServerConfig.sharedInstance().eventQueueSize(), 5)
+        XCTAssertEqual(CountlyServerConfig.sharedInstance().requestQueueSize(), 10)
+    }
+    
+    /**
+         * Tests that event tracking is properly disabled when configured.
+         * Verifies that:
+         * 1. No event requests are generated
+         * 2. Other features (sessions, views, crashes) continue to work
+         * 3. Request counts and order are maintained correctly
+         */
+        func test_eventsDisabled_allFeatures() throws {
+            let sc = ServerConfigBuilder()
+                .customEventTracking(false)
+            let tracker = setupTestAllFeatures(sc.buildJson())
+            
+            XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count)
+            XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
+            
+            let stackTrace = flowAllFeatures()
+            
+            XCTAssertTrue(TestUtils.getCurrentRQ()![0].contains("begin_session"))
+            // Events should not be tracked
+            XCTAssertFalse(containsEventWithKey(TestUtils.getCurrentRQ()!, "test_event"))
+            
+            // But other features should work
+            try TestUtils.validateEventInRQ("[CLY]_view", ["name": "test_view", "segment": "iOS", "visit": "1", "start": "1"], 2, 7, 0, 1)
+            TestUtils.validateRequest([:], 3, { request in
+                let userDetails = request["user_details"] as! [String: Any]
+                XCTAssertTrue(TestUtils.compareDictionaries(userDetails["custom"] as! [String: Any], ["test_property": "test_value"]))
+            })
+            
+            XCTAssertEqual(8, TestUtils.getCurrentRQ()?.count)
+            XCTAssertFalse(containsEventWithKey(TestUtils.getCurrentRQ()!, "test_event"))
+            XCTAssertTrue(TestUtils.getCurrentEQ()!.isEmpty)
+            validateCounts(tracker.counts, hc: 0, fc: 1, rc: 1, cc: 2, sc: 1)
+        }
+    
+    /**
+         * Tests that crashes are properly disabled when configured.
+         * Verifies that:
+         * 1. No crash reports are sent
+         * 2. Other features (sessions, events, views) continue to work
+         */
+        func test_crashesDisabled_allFeatures() throws {
+            let sc = ServerConfigBuilder()
+                .crashReporting(false)
+            let tracker = setupTestAllFeatures(sc.buildJson())
+            
+            XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count)
+            
+            let stackTrace = flowAllFeatures()
+            
+            // Verify that crash is not recorded
+            for request in TestUtils.getCurrentRQ()! {
+                XCTAssertFalse(request.contains("crash="))
+            }
+            
+            // But other features should work
+            XCTAssertTrue(TestUtils.getCurrentRQ()![0].contains("begin_session"))
+            try TestUtils.validateEventInRQ("test_event", [:], 2, 7, 0, 2)
+            
+            validateCounts(tracker.counts, hc: 0, fc: 1, rc: 1, cc: 2, sc: 1)
+        }
+        
+        /**
+         * Tests the behavior when multiple features are disabled simultaneously.
+         * Verifies correct handling when sessions, events, and views are all disabled.
+         */
+        func test_multipleDisabledFeatures_allFeatures() throws {
+            let sc = ServerConfigBuilder()
+                .sessionTracking(false)
+                .customEventTracking(false)
+                .viewTracking(false)
+            let tracker = setupTestAllFeatures(sc.buildJson())
+            
+            XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count)
+            
+            let stackTrace = flowAllFeatures()
+            
+            // Verify no sessions, events, or views are recorded
+            for request in TestUtils.getCurrentRQ()! {
+                XCTAssertFalse(request.contains("begin_session"))
+                XCTAssertFalse(containsEventWithKey(TestUtils.getCurrentRQ()!, "test_event"))
+                XCTAssertFalse(containsEventWithKey(TestUtils.getCurrentRQ()!, "[CLY]_view"))
+            }
+            
+            XCTAssertEqual(6, TestUtils.getCurrentRQ()?.count)
+            
+            TestUtils.validateRequest([:], 0, { request in
+                XCTAssertTrue(request.contains(where: { (key: String, value: Any) in
+                    return key.elementsEqual("crash")
+                }))
+            })
+            TestUtils.validateRequest([:], 1, { request in
+                let userDetails = request["user_details"] as! [String: Any]
+                XCTAssertTrue(TestUtils.compareDictionaries(userDetails["custom"] as! [String: Any], ["test_property": "test_value"]))
+            })
+            TestUtils.validateRequest(["location": "33.689500,139.691700"], 2)
+
+            
+            validateCounts(tracker.counts, hc: 0, fc: 1, rc: 1, cc: 2, sc: 1)
+        }
+        
+    /**
+     * Tests the behavior when server configuration changes between app launches.
+     * Verifies that the SDK correctly applies the new configuration when starting.
+     */
+    func test_configChangesBetweenLaunches() {
+        // First "launch" with default config
+        let initialConfig = ServerConfigBuilder().buildJson()
+        setServerConfig(initialConfig)
+        
+        let config1 = TestUtils.createBaseConfig()
+        let countly1 = Countly()
+        countly1.start(with: config1)
+        
+        // Record an event to verify it works
+        Countly.sharedInstance().recordEvent("test_event_launch_1")
+        
+        TestUtils.sleep(2) {
+            XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count)
+        }
+        
+        // Clean up for "second launch"
+        TestUtils.cleanup()
+        
+        // Change config to disable events before "second launch"
+        let updatedConfig = ServerConfigBuilder()
+            .customEventTracking(false)
+            .buildJson()
+        setServerConfig(updatedConfig)
+        
+        // "Second launch"
+        let config2 = TestUtils.createBaseConfig()
+        let countly2 = Countly()
+        countly2.start(with: config2)
+        
+        // Try to record an event
+        Countly.sharedInstance().recordEvent("test_event_launch_2")
+        
+        TestUtils.sleep(2) {
+            // Event shouldn't be recorded since custom events are disabled
+            XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
+        }
+    }
+        
+        /**
+         * Tests the behavior when key length and value size limits are enforced.
+         * Verifies that:
+         * 1. Keys exceeding the length limit are truncated
+         * 2. Values exceeding the size limit are truncated
+         * 3. The number of segmentation values is limited as specified
+         */
+        func test_keyLengthAndValueSizeLimits() throws {
+            let sc = ServerConfigBuilder()
+                .limitKeyLength(5)  // Limit key length to 5 characters
+                .limitValueSize(10) // Limit value size to 10 characters
+                .limitSegmentationValues(2) // Limit segmentation values to 2
+            let tracker = setupTestAllFeatures(sc.buildJson())
+            
+            // Record event with long key and values
+            let longKey = "veryLongEventKey"
+            let segmentation = [
+                "key1": "value1",
+                "key2": "value2",
+                "key3": "value3VeryLong",
+                "veryLongKey": "value4"
+            ]
+            
+            Countly.sharedInstance().recordEvent(longKey, segmentation: segmentation)
+            
+            TestUtils.sleep(2) {
+                // Verify key is truncated to 5 chars
+                XCTAssertTrue(self.containsEventWithKey(TestUtils.getCurrentRQ()!, "veryL"))
+                
+                // Verify only 2 segmentation values
+                let event = self.getEventWithKey(TestUtils.getCurrentRQ()!, "veryL")
+                if let event = event {
+                    let segmentationCount = (event["segmentation"] as? [String: Any])?.count ?? 0
+                    XCTAssertEqual(2, segmentationCount)
+                    
+                    // Verify value is truncated
+                    if let segmentation = event["segmentation"] as? [String: Any],
+                       let longValue = segmentation["key3"] as? String {
+                        XCTAssertEqual(10, longValue.count)
+                    }
+                }
+            }
+            
+            validateCounts(tracker.counts, hc: 0, fc: 0, rc: 0, cc: 0, sc: 1)
+        }
     // MARK: - Helper Methods
+    
+    private func containsEventWithKey(_ requests: [String], _ key: String) -> Bool {
+        return getEventWithKey(requests, key) != nil
+    }
+    
+    private func getEventWithKey(_ requests: [String], _ key: String) -> [String: Any]? {
+        for request in requests {
+            if let data = request.data(using: .utf8),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let events = json["events"] as? [[String: Any]] {
+                for event in events {
+                    if let eventKey = event["key"] as? String, eventKey == key {
+                        return event
+                    }
+                }
+            }
+        }
+        return nil
+    }
     
     private func assertDefaultConfigValues(_ countly: Countly) {
         XCTAssertTrue(CountlyServerConfig.sharedInstance().networkingEnabled())
