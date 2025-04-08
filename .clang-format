@@ -36,11 +36,3 @@ AlignTrailingComments: true
 
 # Include sorting
 SortIncludes: true
-
-# Objective-C specific rules
-Language: ObjC
-ObjCBlockIndentWidth: 4
-ObjCSpaceAfterProperty: true
-ObjCBracesOnNextLine: false
-ObjCBlockLiteralsAsStructs: false
-IndentCaseLabels: false
