@@ -131,6 +131,9 @@ NSInteger const contentInitialDelay = 4;
     if (!CountlyConsentManager.sharedInstance.consentForContent)
         return;
 
+    if (!CountlyServerConfig.sharedInstance.networkingEnabled)
+        return;
+
     if (_isRequestQueueLocked)
     {
         return;
