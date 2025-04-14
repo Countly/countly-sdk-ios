@@ -116,7 +116,7 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
 {
     NSError *error = nil;
     NSDictionary *serverConfigObject = [CountlyPersistency.sharedInstance retrieveServerConfig];
-    if (!serverConfigObject && providedServerConfiguration)
+    if (serverConfigObject.count == 0 && providedServerConfiguration)
     {
         serverConfigObject = [NSJSONSerialization JSONObjectWithData:[providedServerConfiguration cly_dataUTF8] options:0 error:&error];
     }
