@@ -121,7 +121,7 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
         serverConfigObject = [NSJSONSerialization JSONObjectWithData:[providedServerConfiguration cly_dataUTF8] options:0 error:&error];
     }
 
-    if (serverConfigObject)
+    if (serverConfigObject.count > 0 && !error)
     {
         [self populateServerConfig:serverConfigObject];
     }
