@@ -201,22 +201,22 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
     CountlyCommon.sharedInstance.enableDebug = config.enableDebug;
 
     // Limits could be moved to another function, but letting them stay here serves us a monopolized view of notify
-    if (config.maxKeyLength)
+    if (config.maxKeyLength != kCountlyMaxKeyLength)
     {
         [config.sdkInternalLimits setMaxKeyLength:config.maxKeyLength];
     }
 
-    if (config.maxValueLength)
+    if (config.maxValueLength != kCountlyMaxValueSize)
     {
         [config.sdkInternalLimits setMaxValueSize:config.maxValueLength];
     }
 
-    if (config.maxSegmentationValues)
+    if (config.maxSegmentationValues != kCountlyMaxSegmentationValues)
     {
         [config.sdkInternalLimits setMaxSegmentationValues:config.maxSegmentationValues];
     }
 
-    if (config.crashLogLimit)
+    if (config.crashLogLimit != kCountlyMaxBreadcrumbCount)
     {
         [config.sdkInternalLimits setMaxBreadcrumbCount:config.crashLogLimit];
     }
