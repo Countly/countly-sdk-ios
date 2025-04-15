@@ -15,16 +15,25 @@ NS_ASSUME_NONNULL_BEGIN
 + (instancetype)sharedInstance;
 
 /**
- * This is an experimental feature and it can have breaking changes
- * Opt in user for the content fetching and updates
+ * Enables content fetching and updates for the user.
+ * This method opts the user into receiving content updates
+ * and ensures that relevant data is fetched accordingly.
  */
 - (void)enterContentZone;
 
 /**
- * This is an experimental feature and it can have breaking changes
- * Opt out user for the content fetching and updates
+ * Disables content fetching and updates for the user.
+ * This method opts the user out of receiving content updates
+ * and stops any ongoing content retrieval processes.
  */
 - (void)exitContentZone;
+
+/**
+ * Triggers a manual refresh of the content zone.
+ * This method forces an update by fetching the latest content,
+ * ensuring the user receives the most up-to-date information.
+ */
+- (void)refreshContentZone;
 
 #endif
 NS_ASSUME_NONNULL_END

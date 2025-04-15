@@ -41,6 +41,11 @@
 {
     [CountlyContentBuilderInternal.sharedInstance exitContentZone];
 }
+- (void)refreshContentZone
+{
+    [CountlyContentBuilderInternal.sharedInstance refreshContentZone];
+
+}
 - (void)changeContent:(NSArray<NSString *> *)tags
 {
     [CountlyContentBuilder.sharedInstance changeContent:tags];
