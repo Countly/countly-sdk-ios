@@ -665,7 +665,7 @@ typedef enum : NSUInteger
 /**
  * Set the server configuration to be set while initializing the SDK
  */
-@property(nonatomic, copy) NSString *serverConfiguration;
+@property(nonatomic, copy) NSString *sdkBehaviorSettings;
 
 #if (TARGET_OS_IOS)
 /**

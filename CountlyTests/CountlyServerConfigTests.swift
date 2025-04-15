@@ -109,7 +109,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     func test_serverConfig_providedValues() throws {
         
         try initServerConfigWithValues { config, serverConfig in
-            config.serverConfiguration = serverConfig
+            config.sdkBehaviorSettings = serverConfig
         }
     }
     

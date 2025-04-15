@@ -112,13 +112,13 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
     return self;
 }
 
-- (void)retrieveServerConfigFromStorage:(NSString *)providedServerConfiguration
+- (void)retrieveServerConfigFromStorage:(NSString *)sdkBehaviorSettings
 {
     NSError *error = nil;
     NSDictionary *serverConfigObject = [CountlyPersistency.sharedInstance retrieveServerConfig];
-    if (serverConfigObject.count == 0 && providedServerConfiguration)
+    if (serverConfigObject.count == 0 && sdkBehaviorSettings)
     {
-        serverConfigObject = [NSJSONSerialization JSONObjectWithData:[providedServerConfiguration cly_dataUTF8] options:0 error:&error];
+        serverConfigObject = [NSJSONSerialization JSONObjectWithData:[sdkBehaviorSettings cly_dataUTF8] options:0 error:&error];
     }
 
     if (serverConfigObject.count > 0 && !error)
