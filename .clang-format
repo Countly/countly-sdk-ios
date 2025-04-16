@@ -1,14 +1,11 @@
-# Base style
-BasedOnStyle: LLVM
-
 # Basic indentation settings
-IndentWidth: 4
-TabWidth: 4
+IndentWidth: 2
+TabWidth: 2
 ContinuationIndentWidth: 4
 UseTab: Never
 IndentPPDirectives: BeforeHash
 
-# Braces and wrapping
+# Code formatting rules
 BreakBeforeBraces: Custom
 BraceWrapping:
   AfterClass: true
@@ -21,21 +18,16 @@ BraceWrapping:
   BeforeCatch: true
   BeforeElse: true
   IndentBraces: false
-
-# Column limits
 ColumnLimit: 300
 
 # Blank lines
 MaxEmptyLinesToKeep: 1
 
-# Alignment rules
+# Alignment
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignOperands: true
 AlignTrailingComments: true
 
-# Include sorting
+# Import statements
 SortIncludes: true
-
-# Objective-C specific rules
-Language: ObjC
-ObjCBlockIndentWidth: 4
-ObjCSpaceAfterProperty: true
-IndentCaseLabels: false
