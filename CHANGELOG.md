@@ -1,6 +1,7 @@
 ## XX.XX.XX
 * Added a Content feature method "refreshContentZone" that does a manual refresh.
 * Extended server configuration capabilities of the SDK.
+* Added a config parameter to provide server config in the initialization "sdkBehaviorSettings: NSString".
 
 * Deprecated the experimental configuration function enableServerConfiguration and it will do nothing. It is now enabled by default and can be controlled directly from the server.
 
