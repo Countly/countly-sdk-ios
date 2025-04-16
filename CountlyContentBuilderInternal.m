@@ -92,7 +92,10 @@ NSInteger const contentInitialDelay = 4;
 }
 
 - (void)refreshContentZone {
-    // TODO server config
+    if (![CountlyServerConfig.sharedInstance refreshContentZoneEnabled])
+    {
+        return;
+    }
     if(_isCurrentlyContentShown){
         CLY_LOG_I(@"%s, a content is already shown, skipping" ,__FUNCTION__);
     }
@@ -122,7 +125,9 @@ NSInteger const contentInitialDelay = 4;
 - (void)fetchContents {
     if (!CountlyConsentManager.sharedInstance.consentForContent)
         return;
-    
+
+    if (!CountlyServerConfig.sharedInstance.networkingEnabled)
+        return;
     if  (_isRequestQueueLocked) {
         return;
     }
@@ -164,31 +169,25 @@ NSInteger const contentInitialDelay = 4;
 
 - (NSURLRequest *)fetchContentsRequest
 {
-    NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
+    NSString *queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
     NSString *resolutionJson = [self resolutionJson];
-    queryString = [queryString stringByAppendingFormat:@"&%@=%@",
-                   @"resolution", resolutionJson.cly_URLEscaped];
-    
-    queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
-    
-    NSArray *components = [CountlyDeviceInfo.locale componentsSeparatedByCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"_-"]];
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"method", kCountlyCBFetchContent];
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"resolution", resolutionJson.cly_URLEscaped];
 
-    queryString = [queryString stringByAppendingFormat:@"&%@=%@",
-                   @"la", components.firstObject];
-    
-    NSString* deviceType = CountlyDeviceInfo.deviceType;
-    
-    if(deviceType){
+    NSArray *components = [CountlyDeviceInfo.locale componentsSeparatedByCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"_-"]];
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"la", components.firstObject];
+
+    NSString *deviceType = CountlyDeviceInfo.deviceType;
+    if (deviceType)
+    {
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"dt", deviceType];
     }
 
-    
-    NSString* URLString = [NSString stringWithFormat:@"%@%@?%@",
-                           CountlyConnectionManager.sharedInstance.host,
-                           kCountlyEndpointContent,
-                           queryString];
-    
-    NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:URLString]];
+    queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
+
+    NSString *URLString = [NSString stringWithFormat:@"%@%@?%@", CountlyConnectionManager.sharedInstance.host, kCountlyEndpointContent, queryString];
+
+    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:URLString]];
     return request;
 }
 

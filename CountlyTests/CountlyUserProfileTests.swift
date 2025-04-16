@@ -21,6 +21,17 @@ import XCTest
 
 class CountlyUserProfileTests: CountlyBaseTestCase {
     
+    override func setUp() {
+        super.setUp()
+        // Initialize or reset necessary objects here
+        Countly.sharedInstance().halt(true)
+    }
+
+    override func tearDown() {
+        // Ensure everything is cleaned up properly
+        super.tearDown()
+        Countly.sharedInstance().halt(true)
+    }
     // Run this test first if you are facing cache not clear or instances are not reset properly
     // This is a dummy test to cover the edge case clear the cache when SDK is not initialized
     func testDummy() {
@@ -54,7 +65,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         XCTAssertEqual(3, CountlyPersistency.sharedInstance().remainingRequestCount())
         if let queuedRequests = CountlyPersistency.sharedInstance().value(forKey: "queuedRequests") as? [String] {
             XCTAssertTrue(queuedRequests[0].contains("begin_session=1"), "Begin session failed.")
-            XCTAssertTrue(queuedRequests[1].contains("consent="), "Set all consets failed.")
+            XCTAssertTrue(queuedRequests[1].contains("consent="), "Set all consents failed.")
             validateUserDetails(request: queuedRequests[2]);
         }
     }
@@ -311,7 +322,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
     }
     
     func validateEvents(request: String, keysToCheck: [String]) {
-        let parsedRequest = parseQueryString(request)
+        let parsedRequest = TestUtils.parseQueryString(request)
         let events = parsedRequest["events"];
         XCTAssertNotNil(events, "events are nil");
         if((events) != nil) {
@@ -352,7 +363,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
     
     
     func validateCustomUserDetails(request: String, propertiesToCheck: [String: Any]) {
-        let parsedRequest = parseQueryString(request)
+        let parsedRequest = TestUtils.parseQueryString(request)
         let userDetails = parsedRequest["user_details"];
         XCTAssertNotNil(userDetails, "user details are nil");
         if((userDetails) != nil) {
@@ -372,7 +383,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
                     // Check if both values are dictionaries
                     if let customDict = customValue as? [String: Any], let checkDict = value as? [String: Any] {
                         // Check if the dictionaries are equal
-                           XCTAssertTrue(compareDictionaries(dict1: customDict, dict2: checkDict),"Value for key \(key) does not match. Expected: \(checkDict), Found: \(customDict)")
+                        XCTAssertTrue(TestUtils.compareDictionaries(customDict, checkDict),"Value for key \(key) does not match. Expected: \(checkDict), Found: \(customDict)")
                         
                     } else { // Convert to string for comparison
                         XCTAssertNotEqual("\(customValue)", "\(value)","Value for key \(key) does not match. Expected: \(value), Found: \(customValue)")
@@ -400,30 +411,8 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         }
     }
     
-    func compareDictionaries(dict1: [String: Any], dict2: [String: Any]) -> Bool {
-        guard dict1.count == dict2.count else {
-            return false
-        }
-        
-        for (key, value) in dict1 {
-            guard let otherValue = dict2[key] else {
-                return false
-            }
-            
-            if let nestedDict1 = value as? [String: Any], let nestedDict2 = otherValue as? [String: Any] {
-                if !compareDictionaries(dict1: nestedDict1, dict2: nestedDict2) {
-                    return false
-                }
-            } else if "\(value)" != "\(otherValue)" {
-                return false
-            }
-        }
-        
-        return true
-    }
-    
     func validateUserDetails(request: String) {
-        let parsedRequest = parseQueryString(request)
+        let parsedRequest = TestUtils.parseQueryString(request)
         let userDetails = parsedRequest["user_details"];
         XCTAssertNotNil(userDetails, "user details is nil");
         let userDetailsMap =  userDetails as! [String: Any]

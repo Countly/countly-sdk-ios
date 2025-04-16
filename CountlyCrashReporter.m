@@ -243,6 +243,9 @@ void CountlyUncaughtExceptionHandler(NSException *exception)
 
 void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDetect)
 {
+    if (!CountlyServerConfig.sharedInstance.crashReportingEnabled)
+        return;
+    
     NSArray* stackTrace = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
     if (!stackTrace)
         stackTrace = exception.callStackSymbols;
