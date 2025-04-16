@@ -1,4 +1,4 @@
-## XX.XX.XX
+## 25.4.0
 * Added a Content feature method "refreshContentZone" that does a manual refresh.
 
 ## 25.1.2
