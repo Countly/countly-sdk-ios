@@ -107,9 +107,6 @@ static dispatch_once_t onceToken;
     if (deviceID.length)
         return deviceID;
 
-#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
-    return UIDevice.currentDevice.identifierForVendor.UUIDString;
-#else
     NSString* UUID = [CountlyPersistency.sharedInstance retrieveNSUUID];
     if (!UUID)
     {
@@ -118,7 +115,6 @@ static dispatch_once_t onceToken;
     }
 
     return UUID;
-#endif
 }
 
 - (BOOL)isDeviceIDTemporary

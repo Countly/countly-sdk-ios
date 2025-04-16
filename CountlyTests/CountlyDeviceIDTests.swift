@@ -116,9 +116,6 @@ class CountlyDeviceIDTests: CountlyBaseTestCase {
     }
     
     func getIDFV() -> String {
-#if (os(iOS) || os(tvOS))
-        return UIDevice.current.identifierForVendor?.uuidString ?? ""
-#else
         var UUID = CountlyPersistency.sharedInstance().retrieveNSUUID()
         if UUID == nil {
             UUID = UUID().uuidString
@@ -126,7 +123,6 @@ class CountlyDeviceIDTests: CountlyBaseTestCase {
         }
         
         return UUID ?? ""
-#endif
     }
     
 }

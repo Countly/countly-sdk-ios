@@ -1,4 +1,6 @@
 ## 25.4.0
+* ! Minor breaking change ! Removed UIDevice.currentDevice.identifierForVendor usage in device id generation. The SDK now exclusively uses random UUIDs for device id generation.
+
 * Added a Content feature method "refreshContentZone" that does a manual refresh.
 
 ## 25.1.2
