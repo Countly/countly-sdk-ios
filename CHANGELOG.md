@@ -1,11 +1,12 @@
 ## 25.4.0
 * ! Minor breaking change ! Removed UIDevice.currentDevice.identifierForVendor usage in device id generation. The SDK now exclusively uses random UUIDs for device id generation.
+* ! Minor breaking change ! Server Configuration is now enabled by default. Changes made on SDK Manager > SDK Configuration on your server will affect SDK behavior directly.
 
 * Added a Content feature method "refreshContentZone" that does a manual refresh.
 * Extended server configuration capabilities of the SDK.
 * Added a config parameter to provide server config in the initialization "sdkBehaviorSettings: NSString".
 
-* Deprecated the experimental configuration function enableServerConfiguration and it will do nothing. It is now enabled by default and can be controlled directly from the server.
+* Deprecated the experimental configuration function enableServerConfiguration and it will do nothing.
 
 ## 25.1.2
 * Mitigated an issue where the safe area resolution was not correctly calculated for the content zone on certain iOS devices.
