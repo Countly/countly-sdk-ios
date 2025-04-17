@@ -7,7 +7,7 @@
 * Added a config parameter to provide server config in the initialization "sdkBehaviorSettings: NSString".
 
 * Deprecated the experimental configuration function enableServerConfiguration and it will do nothing.
-  
+
 ## 25.1.2
 * Mitigated an issue where the safe area resolution was not correctly calculated for the content zone on certain iOS devices.
 
