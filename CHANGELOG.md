@@ -1,3 +1,6 @@
+## XX.XX.XX
+* Mitigated an issue that could occur while serializing events to improve stability, performance and memory usage.
+
 ## 25.4.0
 * ! Minor breaking change ! Removed UIDevice.currentDevice.identifierForVendor usage in device id generation. The SDK now exclusively uses random UUIDs for device id generation.
 * ! Minor breaking change ! Server Configuration is now enabled by default. Changes made on SDK Manager > SDK Configuration on your server will affect SDK behavior directly.
