@@ -12,6 +12,7 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 
 @implementation CountlyContentBuilderInternal {
     BOOL _isRequestQueueLocked;
+    BOOL _isCurrentlyContentShown;
     NSTimer *_requestTimer;
     NSTimer *_minuteTimer;
 }
@@ -34,12 +35,18 @@ NSInteger const contentInitialDelay = 4;
     {
         self.zoneTimerInterval = 30.0;
         _requestTimer = nil;
+        _isCurrentlyContentShown = NO;
     }
     
     return self;
 }
 
 - (void)enterContentZone {
+    
+    if(_isCurrentlyContentShown){
+        CLY_LOG_I(@"%s, a content is already shown, skipping" ,__FUNCTION__);
+    }
+    
     [self enterContentZone:@[]];
 }
 
@@ -84,6 +91,25 @@ NSInteger const contentInitialDelay = 4;
     }
 }
 
+- (void)refreshContentZone {
+    if (![CountlyServerConfig.sharedInstance refreshContentZoneEnabled])
+    {
+        return;
+    }
+    if(_isCurrentlyContentShown){
+        CLY_LOG_I(@"%s, a content is already shown, skipping" ,__FUNCTION__);
+    }
+    
+    [self exitContentZone];
+    [CountlyConnectionManager.sharedInstance attemptToSendStoredRequests];
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
+    {
+        [self enterContentZone];
+    });
+    
+}
+
 #pragma mark - Private Methods
 
 - (void)clearContentState {
@@ -99,7 +125,9 @@ NSInteger const contentInitialDelay = 4;
 - (void)fetchContents {
     if (!CountlyConsentManager.sharedInstance.consentForContent)
         return;
-    
+
+    if (!CountlyServerConfig.sharedInstance.networkingEnabled)
+        return;
     if  (_isRequestQueueLocked) {
         return;
     }
@@ -141,31 +169,25 @@ NSInteger const contentInitialDelay = 4;
 
 - (NSURLRequest *)fetchContentsRequest
 {
-    NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
+    NSString *queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
     NSString *resolutionJson = [self resolutionJson];
-    queryString = [queryString stringByAppendingFormat:@"&%@=%@",
-                   @"resolution", resolutionJson.cly_URLEscaped];
-    
-    queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
-    
-    NSArray *components = [CountlyDeviceInfo.locale componentsSeparatedByCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"_-"]];
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"method", kCountlyCBFetchContent];
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"resolution", resolutionJson.cly_URLEscaped];
 
-    queryString = [queryString stringByAppendingFormat:@"&%@=%@",
-                   @"la", components.firstObject];
-    
-    NSString* deviceType = CountlyDeviceInfo.deviceType;
-    
-    if(deviceType){
+    NSArray *components = [CountlyDeviceInfo.locale componentsSeparatedByCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"_-"]];
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"la", components.firstObject];
+
+    NSString *deviceType = CountlyDeviceInfo.deviceType;
+    if (deviceType)
+    {
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"dt", deviceType];
     }
 
-    
-    NSString* URLString = [NSString stringWithFormat:@"%@%@?%@",
-                           CountlyConnectionManager.sharedInstance.host,
-                           kCountlyEndpointContent,
-                           queryString];
-    
-    NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:URLString]];
+    queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
+
+    NSString *URLString = [NSString stringWithFormat:@"%@%@?%@", CountlyConnectionManager.sharedInstance.host, kCountlyEndpointContent, queryString];
+
+    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:URLString]];
     return request;
 }
 
@@ -262,11 +284,13 @@ NSInteger const contentInitialDelay = 4;
         [webViewManager createWebViewWithURL:url frame:frame appearBlock:^
          {
             CLY_LOG_I(@"%s, Webview appeared", __FUNCTION__);
+            self->_isCurrentlyContentShown = YES;
             [self clearContentState];
         } dismissBlock:^
          {
             CLY_LOG_I(@"%s, Webview dismissed", __FUNCTION__);
-            self->_minuteTimer = [NSTimer scheduledTimerWithTimeInterval:60.0
+            self->_isCurrentlyContentShown = NO;
+            self->_minuteTimer = [NSTimer scheduledTimerWithTimeInterval:self->_zoneTimerInterval
                                                              target:self
                                                            selector:@selector(enterContentZone)
                                                            userInfo:nil

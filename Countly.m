@@ -92,6 +92,8 @@ static dispatch_once_t onceToken;
     
     config = [self checkAndFixInternalLimitsConfig:config];
     
+  [CountlyServerConfig.sharedInstance retrieveServerConfigFromStorage:config.sdkBehaviorSettings];
+
     CountlyCommon.sharedInstance.maxKeyLength = config.sdkInternalLimits.getMaxKeyLength;
     CountlyCommon.sharedInstance.maxValueLength = config.sdkInternalLimits.getMaxValueSize;
     CountlyCommon.sharedInstance.maxSegmentationValues = config.sdkInternalLimits.getMaxSegmentationValues;
@@ -165,14 +167,8 @@ static dispatch_once_t onceToken;
     CountlyDeviceInfo.sharedInstance.customMetrics = [customMetricsTruncated cly_limited:@"Custom metric"];
     
     [Countly.user save];
-    
-    CountlyCommon.sharedInstance.enableServerConfiguration = config.enableServerConfiguration;
-    
-    // Fetch server configs if 'enableServerConfiguration' is true.
-    if (config.enableServerConfiguration)
-    {
-        [CountlyServerConfig.sharedInstance fetchServerConfig];
-    }
+  // If something added related to server config, make sure to check CountlyServerConfig.notifySdkConfigChange
+    [CountlyServerConfig.sharedInstance fetchServerConfig:config];
     
 #if (TARGET_OS_IOS)
     CountlyFeedbacksInternal.sharedInstance.message = config.starRatingMessage;
@@ -231,7 +227,10 @@ static dispatch_once_t onceToken;
     if ([config.features containsObject:CLYCrashReporting])
     {
         CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;
+        if (CountlyServerConfig.sharedInstance.crashReportingEnabled)
+        {
         [CountlyCrashReporter.sharedInstance startCrashReporting];
+        }
     }
 
 #if (TARGET_OS_IOS || TARGET_OS_TV )
@@ -239,7 +238,10 @@ static dispatch_once_t onceToken;
     {
         // Print deprecation flag for feature
         CountlyViewTrackingInternal.sharedInstance.isEnabledOnInitialConfig = YES;
-        [CountlyViewTrackingInternal.sharedInstance startAutoViewTracking];
+        if (CountlyServerConfig.sharedInstance.viewTrackingEnabled)
+        {
+            [CountlyViewTrackingInternal.sharedInstance startAutoViewTracking];
+        }
     }
     if (config.automaticViewTrackingExclusionList) {
         [CountlyViewTrackingInternal.sharedInstance addAutoViewTrackingExclutionList:config.automaticViewTrackingExclusionList];
@@ -444,6 +446,7 @@ static dispatch_once_t onceToken;
 - (void)applicationDidBecomeActive:(NSNotification *)notification
 {
     CLY_LOG_D(@"App enters foreground");
+  [CountlyServerConfig.sharedInstance fetchServerConfigIfTimeIsUp];
     [self resume];
 }
 
@@ -857,7 +860,12 @@ static dispatch_once_t onceToken;
         CLY_LOG_W(@"A reserved event detected for key: '%@', event will not be recorded.", key);
         return;
     }
-    
+    if (!CountlyServerConfig.sharedInstance.customEventTrackingEnabled)
+    {
+        CLY_LOG_D(@"'recordEvent' is aborted: Custom Event Tracking is disabled from server config!");
+        return;
+    }
+
     NSDictionary* truncated = [segmentation cly_truncated:@"Event segmentation"];
     segmentation = [truncated cly_limited:@"Event segmentation"];
 

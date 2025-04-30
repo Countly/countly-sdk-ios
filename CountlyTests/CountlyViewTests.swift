@@ -827,7 +827,7 @@ class CountlyViewBaseTest: CountlyBaseTestCase {
         // Loop through each event request to process events
         for request in eventRequests {
             // Parse the query parameters
-            let parsedRequest = parseQueryString(request)
+            let parsedRequest = TestUtils.parseQueryString(request)
             
             // Check if "events" parameter exists and parse it
             if let eventsJSON = parsedRequest["events"] as? String,
@@ -897,7 +897,7 @@ class CountlyViewBaseTest: CountlyBaseTestCase {
         // Process each event request to extract and filter events
         for request in eventRequests {
             // Parse the query parameters
-            let parsedRequest = parseQueryString(request)
+            let parsedRequest = TestUtils.parseQueryString(request)
             
             // Check if "events" parameter exists and parse it
             if let eventsJSON = parsedRequest["events"] as? String,

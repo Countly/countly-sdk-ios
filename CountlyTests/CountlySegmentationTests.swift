@@ -14,6 +14,7 @@ import XCTest
 class CountlySegmentationTests: CountlyBaseTestCase {
     
     func test_Event_Segmentation() {
+        cleanupState()
         let config = createBaseConfig()
         config.requiresConsent = false;
         Countly.sharedInstance().start(with: config)

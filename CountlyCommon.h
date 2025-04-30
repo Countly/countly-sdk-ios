@@ -88,7 +88,6 @@ extern NSString* const kCountlySDKName;
 @property (nonatomic) BOOL manualSessionHandling;
 @property (nonatomic) BOOL enableManualSessionControlHybridMode;
 @property (nonatomic) BOOL enableOrientationTracking;
-@property (nonatomic) BOOL enableServerConfiguration;
 
 @property (nonatomic) BOOL enableVisibiltyTracking;
 
