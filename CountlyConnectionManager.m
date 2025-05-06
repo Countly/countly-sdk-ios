@@ -16,6 +16,7 @@
 @property (nonatomic) NSURLSession* URLSession;
 
 @property (nonatomic, strong) NSDate *startTime;
+@property (nonatomic, strong) NSMutableArray<NSNumber *> *lastTwoDurations;
 
 @end
 
@@ -101,6 +102,7 @@ static dispatch_once_t onceToken;
     {
         unsentSessionLength = 0.0;
         isSessionStarted = NO;
+        self.lastTwoDurations = [NSMutableArray array];
     }
 
     return self;
@@ -271,10 +273,20 @@ static dispatch_once_t onceToken;
     }
 
     request.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
-
+    NSDate *startTimeRequest = [NSDate date];
+    int acceptedTimeoutSeconds = 60 / 2;
     self.connection = [self.URLSession dataTaskWithRequest:request completionHandler:^(NSData * data, NSURLResponse * response, NSError * error)
     {
         self.connection = nil;
+        NSDate *endTimeRequest = [NSDate date];
+        NSTimeInterval duration = [endTimeRequest timeIntervalSinceDate:startTimeRequest];
+        if (self.lastTwoDurations.count >= 2) {
+           [self.lastTwoDurations removeObjectAtIndex:0]; // remove oldest
+        }
+        [self.lastTwoDurations addObject:@(duration)];
+        NSLog(@"Request took %.3f seconds", duration);
+
+        
 
         
         CLY_LOG_V(@"Approximate received data size for request <%p> is %ld bytes.", (id)request, (long)data.length);
@@ -294,8 +306,42 @@ static dispatch_once_t onceToken;
                 [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
 
                 [CountlyPersistency.sharedInstance saveToFile];
+                
+                BOOL shouldProceed = YES;
 
-                [self proceedOnQueue];
+                if (duration >= acceptedTimeoutSeconds) {
+                    // Sum the durations of the last two responses
+                    long totalDuration = 0;
+                    for (NSNumber *responseTime in self.lastTwoDurations) {
+                        totalDuration += responseTime.longValue;
+                    }
+
+                    // Check if the current duration is less than or equal to the total of the last two
+                    if (duration <= totalDuration) {
+                        NSUInteger remainingRequests = [CountlyPersistency.sharedInstance remainingRequestCount];
+                        NSUInteger threshold = (NSUInteger)(CountlyPersistency.sharedInstance.storedRequestsLimit * 0.1);
+
+                        if (remainingRequests <= threshold) {
+                            // Extract timestamp from request and calculate how long ago it was made
+                            double requestTimestamp = [[queryString cly_valueForQueryStringKey:kCountlyQSKeyTimestamp] longLongValue] / 1000.0;
+                            double requestAgeInSeconds = [NSDate date].timeIntervalSince1970 - requestTimestamp;
+                            double requestAgeInHours = requestAgeInSeconds / 3600.0;
+
+                            if (requestAgeInHours <= 12.0) {
+                                // Consider server too busy; drop proceeding the queue
+                                [self.lastTwoDurations removeAllObjects];
+                                shouldProceed = NO;
+                                CLY_LOG_D(@"%s, server seems to be busy dropping proceeding the queue", __FUNCTION__);
+                                self.startTime = nil;
+                            }
+                        }
+                    }
+                }
+
+                if (shouldProceed) {
+                    [self proceedOnQueue];
+                }
+
             }
             else
             {
