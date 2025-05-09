@@ -1,4 +1,4 @@
-## XX.XX.XX
+## 25.4.1
 * Mitigated an issue that could occur while serializing events to improve stability, performance and memory usage.
 
 ## 25.4.0
