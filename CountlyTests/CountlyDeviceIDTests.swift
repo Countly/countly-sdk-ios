@@ -116,13 +116,13 @@ class CountlyDeviceIDTests: CountlyBaseTestCase {
     }
     
     func getIDFV() -> String {
-        var UUID = CountlyPersistency.sharedInstance().retrieveNSUUID()
-        if UUID == nil {
-            UUID = UUID().uuidString
-            CountlyPersistency.sharedInstance().storeNSUUID(UUID)
+        var uuid = CountlyPersistency.sharedInstance().retrieveNSUUID()
+        if uuid == nil {
+            uuid = UUID().uuidString
+            CountlyPersistency.sharedInstance().storeNSUUID(uuid)
         }
         
-        return UUID ?? ""
+        return uuid ?? ""
     }
     
 }
