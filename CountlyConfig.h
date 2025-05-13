@@ -675,6 +675,12 @@ typedef enum : NSUInteger
  */
 @property(nonatomic, copy) NSString *sdkBehaviorSettings;
 
+/**
+ * Will disable back off mechanism
+ */
+@property (nonatomic) BOOL disableBackoffMechanism;
+
+
 #if (TARGET_OS_IOS)
 /**
  * Variable to access content configurations.
