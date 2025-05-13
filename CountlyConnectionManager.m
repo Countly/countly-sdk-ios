@@ -303,7 +303,7 @@ static dispatch_once_t onceToken;
 
                 [CountlyPersistency.sharedInstance saveToFile];
                 
-                if([self backoff:duration queryString:queryString]){
+                if(CountlyServerConfig.sharedInstance.backoffMechanism && [self backoff:duration queryString:queryString]){
                     CLY_LOG_D(@"%s, server seems to be busy dropping proceeding the queue", __FUNCTION__);
                     self.startTime = nil;
                 } else {
