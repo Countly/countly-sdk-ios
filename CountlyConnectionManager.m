@@ -278,7 +278,6 @@ static dispatch_once_t onceToken;
 
     request.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
     NSDate *startTimeRequest = [NSDate date];
-    int acceptedTimeoutSeconds = 30 / 2;
     self.connection = [self.URLSession dataTaskWithRequest:request completionHandler:^(NSData * data, NSURLResponse * response, NSError * error)
     {
         self.connection = nil;
