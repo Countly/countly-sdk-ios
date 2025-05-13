@@ -274,20 +274,12 @@ static dispatch_once_t onceToken;
 
     request.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
     NSDate *startTimeRequest = [NSDate date];
-    int acceptedTimeoutSeconds = 60 / 2;
+    int acceptedTimeoutSeconds = 30 / 2;
     self.connection = [self.URLSession dataTaskWithRequest:request completionHandler:^(NSData * data, NSURLResponse * response, NSError * error)
     {
         self.connection = nil;
         NSDate *endTimeRequest = [NSDate date];
-        NSTimeInterval duration = [endTimeRequest timeIntervalSinceDate:startTimeRequest];
-        if (self.lastTwoDurations.count >= 2) {
-           [self.lastTwoDurations removeObjectAtIndex:0]; // remove oldest
-        }
-        [self.lastTwoDurations addObject:@(duration)];
-        NSLog(@"Request took %.3f seconds", duration);
-
-        
-
+        long duration = (long)[endTimeRequest timeIntervalSinceDate:startTimeRequest];
         
         CLY_LOG_V(@"Approximate received data size for request <%p> is %ld bytes.", (id)request, (long)data.length);
         
@@ -309,12 +301,14 @@ static dispatch_once_t onceToken;
                 
                 BOOL shouldProceed = YES;
 
-                if (duration >= acceptedTimeoutSeconds) {
+                if (duration >= acceptedTimeoutSeconds && self.lastTwoDurations.count >= 2) {
                     // Sum the durations of the last two responses
                     long totalDuration = 0;
                     for (NSNumber *responseTime in self.lastTwoDurations) {
                         totalDuration += responseTime.longValue;
                     }
+                    totalDuration = totalDuration / 2;
+
 
                     // Check if the current duration is less than or equal to the total of the last two
                     if (duration <= totalDuration) {
@@ -337,6 +331,11 @@ static dispatch_once_t onceToken;
                         }
                     }
                 }
+                
+                if (self.lastTwoDurations.count >= 2) {
+                   [self.lastTwoDurations removeObjectAtIndex:0]; // remove oldest
+                }
+                [self.lastTwoDurations addObject:@(duration)];
 
                 if (shouldProceed) {
                     [self proceedOnQueue];
