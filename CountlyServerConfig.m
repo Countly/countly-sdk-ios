@@ -20,6 +20,7 @@
 @property (nonatomic) BOOL consentRequired;
 @property (nonatomic) BOOL locationTracking;
 @property (nonatomic) BOOL refreshContentZone;
+@property (nonatomic) BOOL backoffMechanism;
 
 @property (nonatomic) NSInteger limitKeyLength;
 @property (nonatomic) NSInteger limitValueSize;
@@ -57,6 +58,7 @@ NSString *const kRSessionTracking = @"st";
 NSString *const kRViewTracking = @"vt";
 NSString *const kRLocationTracking = @"lt";
 NSString *const kRRefreshContentZone = @"rcz";
+NSString *const kRbackoffMechanism = @"bom";
 
 NSString *const kRLimitKeyLength = @"lkl";
 NSString *const kRLimitValueSize = @"lvs";
@@ -103,6 +105,7 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
         _sessionTrackingEnabled = YES;
         _loggingEnabled = NO;
         _refreshContentZone = YES;
+        _backoffMechanism = YES;
 
         _timestamp = 0;
         _version = 0;
@@ -191,6 +194,7 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
     [self setIntegerProperty:&_serverConfigUpdateInterval fromDictionary:dictionary key:kRServerConfigUpdateInterval logString:logString];
     [self setBoolProperty:&_locationTracking fromDictionary:dictionary key:kRLocationTracking logString:logString];
     [self setBoolProperty:&_refreshContentZone fromDictionary:dictionary key:kRRefreshContentZone logString:logString];
+    [self setBoolProperty:&_backoffMechanism fromDictionary:dictionary key:kRbackoffMechanism logString:logString];
 
     CLY_LOG_D(@"%s, version:[%li], timestamp:[%lli], %@", __FUNCTION__, _version, _timestamp, logString);
 }
@@ -284,6 +288,10 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
     {
         [CountlyLocationManager.sharedInstance disableLocationInfo];
     }
+    
+    if(_backoffMechanism && config.disableBackoffMechanism){
+        _backoffMechanism = NO;
+    }
 }
 
 - (void)fetchServerConfigTimer:(NSTimer *)timer
@@ -359,6 +367,7 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
             self->_sessionTrackingEnabled = YES;
             self->_loggingEnabled = NO;
             self->_refreshContentZone = YES;
+            self->_backoffMechanism = YES;
             [self populateServerConfig:serverConfigResponse];
         }
 
@@ -506,6 +515,11 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
 - (BOOL)refreshContentZoneEnabled
 {
     return _refreshContentZone;
+}
+
+- (BOOL)backoffMechanism
+{
+    return _backoffMechanism;
 }
 
 @end
