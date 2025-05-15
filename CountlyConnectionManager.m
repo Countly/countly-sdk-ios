@@ -83,8 +83,8 @@ NSString* const kCountlyEndpointWidget = @"/widget";
 NSString* const kCountlyEndpointSurveys = @"/surveys";
 
 const NSInteger kCountlyGETRequestMaxLength = 2048;
-static const NSTimeInterval CONNECTION_TIMEOUT = 10.0;
-static const NSTimeInterval ACCEPTED_TIMEOUT = CONNECTION_TIMEOUT / 2;
+static const NSTimeInterval CONNECTION_TIMEOUT = 30.0;
+static const NSTimeInterval ACCEPTED_TIMEOUT = 10.0;
 
 @implementation CountlyConnectionManager : NSObject
 
@@ -357,8 +357,7 @@ static dispatch_once_t onceToken;
                 double requestAgeInSeconds = [NSDate date].timeIntervalSince1970 - requestTimestamp;
                 
                 if (requestAgeInSeconds <= 12 * 3600.0) {
-                    // Server is too busy, clear history and back off
-                    [self.lastTwoDurations removeAllObjects];
+                    // Server is too busy, back off
                     return YES;
                 }
             }
