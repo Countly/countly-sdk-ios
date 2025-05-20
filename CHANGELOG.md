@@ -1,3 +1,6 @@
+## XX.XX.XX
+* Adding SDK health check requests after init
+
 ## 25.4.1
 * Mitigated an issue that could occur while serializing events to improve stability, performance and memory usage.
 
