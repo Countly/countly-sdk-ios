@@ -30,4 +30,6 @@
 
 - (void)saveState;
 
+- (void)sendHealthCheck;
+
 @end

@@ -17,6 +17,8 @@
 @property (nonatomic, assign) long countBackoffRequest;
 @property (nonatomic, assign) NSInteger statusCode;
 @property (nonatomic, strong) NSString *errorMessage;
+@property (nonatomic, assign) BOOL healthCheckEnabled;
+@property (nonatomic, assign) BOOL healthCheckSent;
 
 @end
 
@@ -48,6 +50,8 @@ NSString * const requestKeyBackoffRequest = @"br";
     if (self) {
         _errorMessage = @"";
         _statusCode = -1;
+        _healthCheckSent = NO;
+        _healthCheckEnabled = YES;
 
         NSDictionary *initialState = [CountlyPersistency.sharedInstance retrieveHealtCheckTrackerState];
         [self setupInitialCounters:initialState];
@@ -126,17 +130,42 @@ NSString * const requestKeyBackoffRequest = @"br";
     self.countBackoffRequest = 0;
 }
 
-- (NSString *)createRequestParam {
-    NSMutableString *sb = [NSMutableString stringWithString:@"&hc="];
+- (void)sendHealthCheck {
+    if (!_healthCheckEnabled || _healthCheckSent) {
+        CLY_LOG_W(@"%s, healt check status, sent: %d, not_enabled: %d", __FUNCTION__, _healthCheckSent, _healthCheckEnabled);
+    }
+    
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self healtCheckRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    {
+        NSDictionary* widgetInfo = nil;
 
-    NSDictionary *json = @{
-        requestKeyErrorCount: @(self.countLogError),
-        requestKeyWarningCount: @(self.countLogWarning),
-        requestKeyStatusCode: @(self.statusCode),
-        requestKeyRequestError: self.errorMessage ?: @"",
-        requestKeyBackoffRequest: @(self.countBackoffRequest)
-    };
+        if (error)
+        {
+            CLY_LOG_W(@"%s, error while sending health checks error: %@", __FUNCTION__, error);
+            return;
+        }
+        
+        NSError *jsonError;
+        NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
+        
+        if (jsonError || !jsonResponse) {
+            CLY_LOG_I(@"%s, error while sending health checks, Failed to parse JSON response: %@", __FUNCTION__, jsonError);
+            return;
+        }
+        
+        if (!jsonResponse[@"result"]) {
+            CLY_LOG_D(@"%s, Retrieved request response does not match expected pattern %@", __FUNCTION__, jsonResponse);
+            return;
+        }
+        
+        [self clearAndSave];
+        self->_healthCheckSent = YES;
+    }];
 
+    [task resume];
+}
+
+- (NSString *)dictionaryToJsonString:(NSDictionary *)json {
     NSError *error;
     NSData *data = [NSJSONSerialization dataWithJSONObject:json options:0 error:&error];
     NSString *encodedData = @"";
@@ -145,11 +174,42 @@ NSString * const requestKeyBackoffRequest = @"br";
         NSString *jsonString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
         encodedData = [jsonString stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
     } else {
-        CLY_LOG_W(@"%s, Failed to create param for hc request, %@", __FUNCTION__, error);
+        CLY_LOG_W(@"%s, Failed to create json for hc request, %@", __FUNCTION__, error);
     }
 
-    [sb appendString:encodedData];
-    return sb;
+    return encodedData;
 }
 
+- (NSURLRequest *)healtCheckRequest {
+    NSString *queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
+
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"hc", [self dictionaryToJsonString:@{
+        requestKeyErrorCount: @(self.countLogError),
+        requestKeyWarningCount: @(self.countLogWarning),
+        requestKeyStatusCode: @(self.statusCode),
+        requestKeyRequestError: self.errorMessage ?: @"",
+        requestKeyBackoffRequest: @(self.countBackoffRequest)
+    }]];
+    
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"metrics", [self dictionaryToJsonString:@{
+        kCountlyAppVersionKey: CountlyDeviceInfo.appVersion
+    }]];
+
+    queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
+    NSString* hcSendURL = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"%@",kCountlyEndpointI];
+
+    if (queryString.length > kCountlyGETRequestMaxLength || CountlyConnectionManager.sharedInstance.alwaysUsePOST)
+    {
+        NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:hcSendURL]];
+        request.HTTPMethod = @"POST";
+        request.HTTPBody = [queryString cly_dataUTF8];
+        return request.copy;
+    }
+    else
+    {
+        NSString* withQueryString = [hcSendURL stringByAppendingFormat:@"?%@", queryString];
+        NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:withQueryString]];
+        return request;
+    }
+}
 @end
