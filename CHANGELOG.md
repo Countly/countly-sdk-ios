@@ -1,3 +1,6 @@
+## XX.XX.XX
+* The feedback widgets now have fullscreen and transparent backgrounds for a cleaner look.
+
 ## 25.4.1
 * Mitigated an issue that could occur while serializing events to improve stability, performance and memory usage.
 
