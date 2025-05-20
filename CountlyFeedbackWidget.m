@@ -24,8 +24,11 @@ NSString* const kCountlyFBKeyShown          = @"shown";
 @property (nonatomic) CLYFeedbackWidgetType type;
 @property (nonatomic) NSString* ID;
 @property (nonatomic) NSString* name;
+@property (nonatomic) NSString* widgetVersion;
 @property (nonatomic) NSArray<NSString*>* tags;
 @property (nonatomic) NSDictionary* data;
+@property (nonatomic) WidgetCallback widgetCallback;
+@property (nonatomic) CLYInternalViewController* webVC;
 @end
 
 
@@ -39,6 +42,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     feedback.type = dictionary[@"type"];
     feedback.name = dictionary[@"name"];
     feedback.tags = dictionary[@"tg"];
+    feedback.widgetVersion = dictionary[@"wv"];
     return feedback;
 }
 
@@ -68,41 +72,88 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     CLY_LOG_I(@"%s %@", __FUNCTION__, widgetCallback);
     if (!CountlyConsentManager.sharedInstance.consentForFeedback)
         return;
-    __block CLYInternalViewController* webVC = CLYInternalViewController.new;
-    webVC.view.backgroundColor = [UIColor.blackColor colorWithAlphaComponent:0.4];
-    webVC.modalPresentationStyle = UIModalPresentationCustom;
+    
+    BOOL isWidgetOld = ![self.widgetVersion length];
+    
+    _webVC = CLYInternalViewController.new;
+    _widgetCallback = widgetCallback;
+    
+    if (isWidgetOld) {
+        _webVC.view.backgroundColor = [UIColor.blackColor colorWithAlphaComponent:0.4];
+        _webVC.modalPresentationStyle = UIModalPresentationCustom;
+    } else {
+        _webVC.modalPresentationStyle = UIModalPresentationFullScreen;
+    }
+    
     // Configure WKWebView with non-persistent data store
     WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
     configuration.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
-    WKWebView* webView = [[WKWebView alloc] initWithFrame:webVC.view.bounds configuration:configuration];
-    webView.layer.shadowColor = UIColor.blackColor.CGColor;
-    webView.layer.shadowOpacity = 0.5;
-    webView.layer.shadowOffset = CGSizeMake(0.0f, 5.0f);
-    webView.layer.masksToBounds = NO;
+    WKWebView* webView = [[WKWebView alloc] initWithFrame:_webVC.view.bounds configuration:configuration];
+    webView.navigationDelegate = (id<WKNavigationDelegate>)self;
+    
+    if (isWidgetOld) {
+        webView.layer.shadowColor = UIColor.blackColor.CGColor;
+        webView.layer.shadowOpacity = 0.5;
+        webView.layer.shadowOffset = CGSizeMake(0.0f, 5.0f);
+        webView.layer.masksToBounds = NO;
+    }
+    
     webView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    [webVC.view addSubview:webView];
-    webVC.webView = webView;
+    [_webVC.view addSubview:webView];
+    _webVC.webView = webView;
     NSURLRequest* request = [self displayRequest];
     [webView loadRequest:request];
-    CLYButton* dismissButton = [CLYButton dismissAlertButton];
-    dismissButton.onClick = ^(id sender)
-    {
-        [webVC dismissViewControllerAnimated:YES completion:^
+    
+    
+    if (isWidgetOld) {
+        CLYButton* dismissButton = [CLYButton dismissAlertButton];
+        dismissButton.onClick = ^(id sender)
         {
-            CLY_LOG_D(@"Feedback widget dismissed. Widget ID: %@, Name: %@", self.ID, self.name);
-            if (widgetCallback)
-                widgetCallback(WIDGET_CLOSED);
-            webVC = nil;
-        }];
-        [self recordReservedEventForDismissing];
-    };
-    [webView addSubview:dismissButton];
-    [dismissButton positionToTopRight];
-    [CountlyCommon.sharedInstance tryPresentingViewController:webVC withCompletion:^{
+            [self closeFeedbackWidget];
+        };
+        [webView addSubview:dismissButton];
+        [dismissButton positionToTopRight];
+    }
+    
+    [CountlyCommon.sharedInstance tryPresentingViewController:self.webVC withCompletion:^{
         CLY_LOG_D(@"Feedback widget presented. Widget ID: %@, Name: %@", self.ID, self.name);
         if(widgetCallback)
             widgetCallback(WIDGET_APPEARED);
     }];
+}
+
+- (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
+    NSString *url = navigationAction.request.URL.absoluteString;
+    
+    if ([url hasPrefix:@"https://countly_action_event"] && [url containsString:@"cly_widget_command=1"]) {
+        if ([url containsString:@"close=1"]) {
+            [self closeFeedbackWidget];
+        }
+        
+        decisionHandler(WKNavigationActionPolicyCancel);
+    } else {
+        decisionHandler(WKNavigationActionPolicyAllow);
+    }
+}
+
+- (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(WKNavigation *)navigation {
+    CLY_LOG_I(@"%s Web view has started loading", __FUNCTION__);
+}
+
+- (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
+    CLY_LOG_I(@"%s Web view has finished loading", __FUNCTION__);
+}
+
+- (void)closeFeedbackWidget{
+    [self.webVC dismissViewControllerAnimated:YES completion:^
+    {
+        CLY_LOG_D(@"Feedback widget dismissed. Widget ID: %@, Name: %@", self.ID, self.name);
+        if (self.widgetCallback)
+            self.widgetCallback(WIDGET_CLOSED);
+        self.webVC = nil;
+        self.widgetCallback = nil;
+    }];
+    [self recordReservedEventForDismissing];
 }
 
 - (void)getWidgetData:(void (^)(NSDictionary * __nullable widgetData, NSError * __nullable error))completionHandler

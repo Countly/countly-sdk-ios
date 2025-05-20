@@ -5,6 +5,7 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
+#import <WebKit/WebKit.h>
 #import "CountlyConfig.h"
 
 NS_ASSUME_NONNULL_BEGIN
@@ -18,7 +19,7 @@ extern NSString* const kCountlyReservedEventSurvey;
 extern NSString* const kCountlyReservedEventNPS;
 extern NSString* const kCountlyReservedEventRating;
 
-@interface CountlyFeedbackWidget : NSObject
+@interface CountlyFeedbackWidget : NSObject <WKNavigationDelegate>
 #if (TARGET_OS_IOS)
 
 @property (nonatomic, readonly) CLYFeedbackWidgetType type;
