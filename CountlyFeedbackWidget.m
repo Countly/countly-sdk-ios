@@ -82,9 +82,9 @@ NSString* const kCountlyFBKeyShown          = @"shown";
         _webVC.view.backgroundColor = [UIColor.blackColor colorWithAlphaComponent:0.4];
         _webVC.modalPresentationStyle = UIModalPresentationCustom;
     } else {
-        _webVC.modalPresentationStyle = UIModalPresentationFullScreen;
-        _webVC.view.backgroundColor = UIColor.whiteColor;
+        _webVC.modalPresentationStyle = UIModalPresentationOverFullScreen;
         _webVC.view.bounds = UIScreen.mainScreen.bounds;
+        _webVC.view.backgroundColor = [UIColor clearColor];
     }
     
     // Configure WKWebView with non-persistent data store
