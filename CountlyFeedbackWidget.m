@@ -83,13 +83,15 @@ NSString* const kCountlyFBKeyShown          = @"shown";
         _webVC.modalPresentationStyle = UIModalPresentationCustom;
     } else {
         _webVC.modalPresentationStyle = UIModalPresentationFullScreen;
+        _webVC.view.backgroundColor = UIColor.whiteColor;
+        _webVC.view.bounds = UIScreen.mainScreen.bounds;
     }
     
     // Configure WKWebView with non-persistent data store
     WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
     configuration.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
     WKWebView* webView = [[WKWebView alloc] initWithFrame:_webVC.view.bounds configuration:configuration];
-    webView.navigationDelegate = (id<WKNavigationDelegate>)self;
+    webView.navigationDelegate = self;
     
     if (isWidgetOld) {
         webView.layer.shadowColor = UIColor.blackColor.CGColor;
