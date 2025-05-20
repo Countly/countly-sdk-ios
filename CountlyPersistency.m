@@ -16,6 +16,7 @@
 @implementation CountlyPersistency
 NSString* const kCountlyQueuedRequestsPersistencyKey = @"kCountlyQueuedRequestsPersistencyKey";
 NSString* const kCountlyStartedEventsPersistencyKey = @"kCountlyStartedEventsPersistencyKey";
+NSString* const kCountlyHealthCheckStatePersistencyKey = @"kCountlyHealthCheckStatePersistencyKey";
 NSString* const kCountlyStoredDeviceIDKey = @"kCountlyStoredDeviceIDKey";
 NSString* const kCountlyStoredNSUUIDKey = @"kCountlyStoredNSUUIDKey";
 NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKey";
@@ -604,6 +605,21 @@ static dispatch_once_t onceToken;
 - (void)storeServerConfig:(NSDictionary *)serverConfig
 {
     [NSUserDefaults.standardUserDefaults setObject:serverConfig forKey:kCountlyServerConfigPersistencyKey];
+    [NSUserDefaults.standardUserDefaults synchronize];
+}
+
+- (NSDictionary *)retrieveHealtCheckTrackerState
+{
+    NSDictionary* healthCheckTrackerState = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyHealthCheckStatePersistencyKey];
+    if (!healthCheckTrackerState)
+        healthCheckTrackerState = NSDictionary.new;
+    
+    return healthCheckTrackerState;
+}
+
+- (void)storeHealtCheckTrackerState:(NSDictionary *)healthCheckTrackerState
+{
+    [NSUserDefaults.standardUserDefaults setObject:healthCheckTrackerState forKey:kCountlyHealthCheckStatePersistencyKey];
     [NSUserDefaults.standardUserDefaults synchronize];
 }
 
