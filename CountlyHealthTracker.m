@@ -131,8 +131,12 @@ NSString * const requestKeyBackoffRequest = @"br";
 }
 
 - (void)sendHealthCheck {
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary) {
+        CLY_LOG_W(@"%s, currently in temporary id mode, omitting", __FUNCTION__);
+    }
+    
     if (!_healthCheckEnabled || _healthCheckSent) {
-        CLY_LOG_W(@"%s, healt check status, sent: %d, not_enabled: %d", __FUNCTION__, _healthCheckSent, _healthCheckEnabled);
+        CLY_LOG_D(@"%s, healt check status, sent: %d, not_enabled: %d", __FUNCTION__, _healthCheckSent, _healthCheckEnabled);
     }
     
     NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self healtCheckRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
