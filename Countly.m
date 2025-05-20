@@ -455,11 +455,13 @@ static dispatch_once_t onceToken;
 - (void)applicationWillResignActive:(NSNotification *)notification
 {
     CLY_LOG_D(@"App enters background");
+    [CountlyHealthTracker.sharedInstance saveState];
 }
 
 - (void)applicationDidEnterBackground:(NSNotification *)notification
 {
     CLY_LOG_D(@"App did enter background.");
+    [CountlyHealthTracker.sharedInstance saveState];
     [self suspend];
 }
 
@@ -471,6 +473,8 @@ static dispatch_once_t onceToken;
 - (void)applicationWillTerminate:(NSNotification *)notification
 {
     CLY_LOG_D(@"App will terminate.");
+    
+    [CountlyHealthTracker.sharedInstance saveState];
     
     CountlyConnectionManager.sharedInstance.isTerminating = YES;
     
