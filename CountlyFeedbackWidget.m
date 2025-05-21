@@ -28,7 +28,9 @@ NSString* const kCountlyFBKeyShown          = @"shown";
 @property (nonatomic) NSArray<NSString*>* tags;
 @property (nonatomic) NSDictionary* data;
 @property (nonatomic) WidgetCallback widgetCallback;
+#if (TARGET_OS_IOS)
 @property (nonatomic) CLYInternalViewController* webVC;
+#endif
 @end
 
 
