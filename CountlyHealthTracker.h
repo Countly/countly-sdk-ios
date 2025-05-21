@@ -18,12 +18,6 @@
 - (void)logFailedNetworkRequestWithStatusCode:(NSInteger)statusCode
                                 errorResponse:(NSString *)errorResponse;
 
-- (void)logSessionStartedWhileRunning;
-
-- (void)logSessionEndedWhileNotRunning;
-
-- (void)logSessionUpdatedWhileNotRunning;
-
 - (void)logBackoffRequest;
 
 - (void)clearAndSave;

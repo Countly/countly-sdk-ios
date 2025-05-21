@@ -95,10 +95,6 @@ NSString * const requestKeyBackoffRequest = @"br";
     }
 }
 
-- (void)logSessionStartedWhileRunning {}
-- (void)logSessionEndedWhileNotRunning {}
-- (void)logSessionUpdatedWhileNotRunning {}
-
 - (void)logBackoffRequest {
     self.countBackoffRequest++;
 }
@@ -141,8 +137,6 @@ NSString * const requestKeyBackoffRequest = @"br";
     
     NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self healtCheckRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
-        NSDictionary* widgetInfo = nil;
-
         if (error)
         {
             CLY_LOG_W(@"%s, error while sending health checks error: %@", __FUNCTION__, error);
@@ -201,6 +195,8 @@ NSString * const requestKeyBackoffRequest = @"br";
 
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
     NSString* hcSendURL = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"%@",kCountlyEndpointI];
+    
+    CLY_LOG_D(@"%s, generated health check request: %@", __FUNCTION__, queryString);
 
     if (queryString.length > kCountlyGETRequestMaxLength || CountlyConnectionManager.sharedInstance.alwaysUsePOST)
     {
