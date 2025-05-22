@@ -16,7 +16,7 @@
 @property (nonatomic) NSURLSession* URLSession;
 
 @property (nonatomic, strong) NSDate *startTime;
-@property (nonatomic, strong) NSMutableArray<NSNumber *> *lastTwoDurations;
+@property (nonatomic, strong) NSMutableArray<NSNumber *> *previousResponseTime;
 
 @end
 
@@ -104,7 +104,7 @@ static dispatch_once_t onceToken;
     {
         unsentSessionLength = 0.0;
         isSessionStarted = NO;
-        self.lastTwoDurations = [NSMutableArray array];
+        self.previousResponseTime = [NSMutableArray arrayWithObjects:@-1, nil];
     }
 
     return self;
@@ -333,44 +333,30 @@ static dispatch_once_t onceToken;
 
 - (BOOL)backoff:(long)responseTimeSeconds queryString:(NSString *)queryString
 {
+    BOOL result = NO;
     // Check if response time exceeds threshold and we have enough duration history
-    if (responseTimeSeconds >= ACCEPTED_TIMEOUT && self.lastTwoDurations.count >= 2) {
+    // Check if the current response time is within acceptable limits
+    if (responseTimeSeconds >= ACCEPTED_TIMEOUT && responseTimeSeconds <= self.previousResponseTime[0].longValue) {
+        // Check if the remaining request count is within acceptable limits
+        NSUInteger remainingRequests = [CountlyPersistency.sharedInstance remainingRequestCount];
+        NSUInteger threshold = (NSUInteger)(CountlyPersistency.sharedInstance.storedRequestsLimit * 0.1);
         
-        // Calculate the average duration of the last two responses
-        long totalDuration = 0;
-        for (NSNumber *responseTime in self.lastTwoDurations) {
-            totalDuration += responseTime.longValue;
-        }
-        long averageDuration = totalDuration / self.lastTwoDurations.count;
-        
-        // Check if the current response time is within acceptable limits
-        if (responseTimeSeconds <= averageDuration) {
+        if (remainingRequests <= threshold) {
             
-            // Check if the remaining request count is within acceptable limits
-            NSUInteger remainingRequests = [CountlyPersistency.sharedInstance remainingRequestCount];
-            NSUInteger threshold = (NSUInteger)(CountlyPersistency.sharedInstance.storedRequestsLimit * 0.1);
+            // Calculate the age of the current request
+            double requestTimestamp = [[queryString cly_valueForQueryStringKey:kCountlyQSKeyTimestamp] longLongValue] / 1000.0;
+            double requestAgeInSeconds = [NSDate date].timeIntervalSince1970 - requestTimestamp;
             
-            if (remainingRequests <= threshold) {
-                
-                // Calculate the age of the current request
-                double requestTimestamp = [[queryString cly_valueForQueryStringKey:kCountlyQSKeyTimestamp] longLongValue] / 1000.0;
-                double requestAgeInSeconds = [NSDate date].timeIntervalSince1970 - requestTimestamp;
-                
-                if (requestAgeInSeconds <= 12 * 3600.0) {
-                    // Server is too busy, back off
-                    return YES;
-                }
+            if (requestAgeInSeconds <= 12 * 3600.0) {
+                // Server is too busy, back off
+                result = YES;
             }
         }
+        
     }
     
-    // Update duration history, maintaining a maximum size of 2
-    if (self.lastTwoDurations.count >= 2) {
-        [self.lastTwoDurations removeObjectAtIndex:0];
-    }
-    [self.lastTwoDurations addObject:@(responseTimeSeconds)];
-    
-    return NO;
+    self.previousResponseTime[0] = @(responseTimeSeconds);
+    return result;
 }
 
 
