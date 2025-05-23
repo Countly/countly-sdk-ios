@@ -6,9 +6,6 @@
 
 #import <Foundation/Foundation.h>
 #import "CountlyConfig.h"
-#if (TARGET_OS_IOS)
-#import <WebKit/WebKit.h>
-#endif
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -21,11 +18,7 @@ extern NSString* const kCountlyReservedEventSurvey;
 extern NSString* const kCountlyReservedEventNPS;
 extern NSString* const kCountlyReservedEventRating;
 
-#if TARGET_OS_IOS
-@interface CountlyFeedbackWidget : NSObject <WKNavigationDelegate>
-#else
 @interface CountlyFeedbackWidget : NSObject
-#endif
 #if (TARGET_OS_IOS)
 
 @property (nonatomic, readonly) CLYFeedbackWidgetType type;

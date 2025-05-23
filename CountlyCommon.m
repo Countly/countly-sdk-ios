@@ -330,6 +330,7 @@ void CountlyPrint(NSString *stringToPrint)
 }
 
 - (CGSize)getWindowSize {
+#if (TARGET_OS_IOS)
     UIWindow *window = nil;
 
     if (@available(iOS 13.0, *)) {
@@ -365,6 +366,8 @@ void CountlyPrint(NSString *stringToPrint)
     }
 
     return size;
+#endif
+    return CGSizeZero;
 }
 
 @end
