@@ -329,6 +329,44 @@ void CountlyPrint(NSString *stringToPrint)
     }
 }
 
+- (CGSize)getWindowSize {
+    UIWindow *window = nil;
+
+    if (@available(iOS 13.0, *)) {
+        for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+            if ([scene isKindOfClass:[UIWindowScene class]]) {
+                window = ((UIWindowScene *)scene).windows.firstObject;
+                break;
+            }
+        }
+    } else {
+        window = [[UIApplication sharedApplication].delegate window];
+    }
+
+    if (!window) return CGSizeZero;
+    
+    UIEdgeInsets safeArea = UIEdgeInsetsZero;
+    CGFloat screenScale = [UIScreen mainScreen].scale;
+    if (@available(iOS 11.0, *)) {
+        safeArea = window.safeAreaInsets;
+        safeArea.left /= screenScale;
+        safeArea.bottom /= screenScale;
+        safeArea.right /= screenScale;
+    }
+    
+    UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
+    BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
+    
+    CGSize size = CGSizeMake(window.bounds.size.width, window.bounds.size.height);
+    
+    if(!isLandscape){
+        size.width -= safeArea.left + safeArea.right;
+        size.height -= safeArea.top + safeArea.bottom;
+    }
+
+    return size;
+}
+
 @end
 
 

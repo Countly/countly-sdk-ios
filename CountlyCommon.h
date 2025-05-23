@@ -123,6 +123,8 @@ void CountlyPrint(NSString *stringToPrint);
 - (BOOL)hasStarted_;
 
 - (NSURLSession *)URLSession;
+
+- (CGSize)getWindowSize;
 @end
 
 
