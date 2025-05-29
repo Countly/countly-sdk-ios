@@ -61,8 +61,8 @@
 - (NSDictionary *)retrieveServerConfig;
 - (void)storeServerConfig:(NSDictionary *)serverConfig;
 
-- (NSDictionary *)retrieveHealtCheckTrackerState;
-- (void)storeHealtCheckTrackerState:(NSDictionary *)healthCheckTrackerState;
+- (NSDictionary *)retrieveHealthCheckTrackerState;
+- (void)storeHealthCheckTrackerState:(NSDictionary *)healthCheckTrackerState;
 
 -(BOOL)isOldRequest:(NSString*) queryString;
 
