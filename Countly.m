@@ -92,7 +92,10 @@ static dispatch_once_t onceToken;
     
     config = [self checkAndFixInternalLimitsConfig:config];
     
-  [CountlyServerConfig.sharedInstance retrieveServerConfigFromStorage:config.sdkBehaviorSettings];
+    if (config.disableSDKBehaviorSettings) {
+        [CountlyServerConfig.sharedInstance disableSDKBehaviourSettings];
+    }
+    [CountlyServerConfig.sharedInstance retrieveServerConfigFromStorage:config.sdkBehaviorSettings];
 
     CountlyCommon.sharedInstance.maxKeyLength = config.sdkInternalLimits.getMaxKeyLength;
     CountlyCommon.sharedInstance.maxValueLength = config.sdkInternalLimits.getMaxValueSize;
