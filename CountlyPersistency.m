@@ -617,7 +617,7 @@ static dispatch_once_t onceToken;
     return healthCheckTrackerState;
 }
 
-- (void)storeHealtCheckTrackerState:(NSDictionary *)healthCheckTrackerState
+- (void)storeHealthCheckTrackerState:(NSDictionary *)healthCheckTrackerState
 {
     [NSUserDefaults.standardUserDefaults setObject:healthCheckTrackerState forKey:kCountlyHealthCheckStatePersistencyKey];
     [NSUserDefaults.standardUserDefaults synchronize];
