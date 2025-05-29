@@ -53,7 +53,7 @@ NSString * const requestKeyBackoffRequest = @"br";
         _healthCheckSent = NO;
         _healthCheckEnabled = YES;
 
-        NSDictionary *initialState = [CountlyPersistency.sharedInstance retrieveHealtCheckTrackerState];
+        NSDictionary *initialState = [CountlyPersistency.sharedInstance retrieveHealthCheckTrackerState];
         [self setupInitialCounters:initialState];
     }
     return self;
@@ -101,11 +101,11 @@ NSString * const requestKeyBackoffRequest = @"br";
 
 - (void)clearAndSave {
     [self clearValues];
-    [CountlyPersistency.sharedInstance storeHealtCheckTrackerState:@{}];
+    [CountlyPersistency.sharedInstance storeHealthCheckTrackerState:@{}];
 }
 
 - (void)saveState {
-    NSDictionary *healtCheckState = @{
+    NSDictionary *healthCheckState = @{
         keyLogWarning: @(self.countLogWarning),
         keyLogError: @(self.countLogError),
         keyStatusCode: @(self.statusCode),
@@ -113,7 +113,7 @@ NSString * const requestKeyBackoffRequest = @"br";
         keyBackoffRequest: @(self.countBackoffRequest)
     };
     
-    [CountlyPersistency.sharedInstance storeHealtCheckTrackerState:healtCheckState];
+    [CountlyPersistency.sharedInstance storeHealthCheckTrackerState:healthCheckState];
 }
 
 - (void)clearValues {
@@ -132,10 +132,10 @@ NSString * const requestKeyBackoffRequest = @"br";
     }
     
     if (!_healthCheckEnabled || _healthCheckSent) {
-        CLY_LOG_D(@"%s, healt check status, sent: %d, not_enabled: %d", __FUNCTION__, _healthCheckSent, _healthCheckEnabled);
+        CLY_LOG_D(@"%s, health check status, sent: %d, not_enabled: %d", __FUNCTION__, _healthCheckSent, _healthCheckEnabled);
     }
     
-    NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self healtCheckRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self healthCheckRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
         if (error)
         {
@@ -178,7 +178,7 @@ NSString * const requestKeyBackoffRequest = @"br";
     return encodedData;
 }
 
-- (NSURLRequest *)healtCheckRequest {
+- (NSURLRequest *)healthCheckRequest {
     NSString *queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
 
     queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"hc", [self dictionaryToJsonString:@{
