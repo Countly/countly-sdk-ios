@@ -69,12 +69,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
         }
     };
     
-    if (self.widgetVersion) {
-        [self presentWidget_new:widgetCallback];
-    } else {
-        [self presentWithCallback:widgetCallback];
-    }
-    
+    [self presentWithCallback:widgetCallback];
 }
 
 - (void)presentWidget_new:(WidgetCallback) widgetCallback;
@@ -112,8 +107,8 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     CLY_LOG_I(@"%s %@", __FUNCTION__, widgetCallback);
     if (!CountlyConsentManager.sharedInstance.consentForFeedback)
         return;
-    
-    if (self.widgetVersion) {
+        
+    if (self.widgetVersion && ![self.widgetVersion isKindOfClass:[NSNull class]]) {
         [self presentWidget_new:widgetCallback];
         return;
     }
@@ -280,7 +275,12 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     [URL appendFormat:@"?%@", queryString];
     
     // Create custom parameters
-    NSDictionary *customParams = @{@"tc": @"1", @"rw": @"1", @"xb": @"1"};
+    NSMutableDictionary *customParams = [@{@"tc": @"1"} mutableCopy];
+    
+    if (self.widgetVersion && ![self.widgetVersion isKindOfClass:[NSNull class]]) {
+        customParams[@"rw"] = @"1";
+        customParams[@"xb"] = @"1";
+    }
     
     // Create JSON data from custom parameters
     NSError *error;
