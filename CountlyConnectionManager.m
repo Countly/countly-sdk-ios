@@ -300,7 +300,7 @@ static dispatch_once_t onceToken;
             else
             {
                 CLY_LOG_D(@"%s, request:[ <%p> ] failed! response:[ %@ ]", __FUNCTION__, request, [data cly_stringUTF8]);
-                [CountlyHealthTracker.sharedInstance logFailedNetworkRequestWithStatusCode:((NSHTTPURLResponse*)response).statusCode errorResponse:[NSString stringWithUTF8String:[data bytes]]];
+                [CountlyHealthTracker.sharedInstance logFailedNetworkRequestWithStatusCode:((NSHTTPURLResponse*)response).statusCode errorResponse: [data cly_stringUTF8]];
                 [CountlyHealthTracker.sharedInstance saveState];
                 self.startTime = nil;
             }
@@ -311,8 +311,6 @@ static dispatch_once_t onceToken;
 #if (TARGET_OS_WATCH)
             [CountlyPersistency.sharedInstance saveToFile];
 #endif
-            [CountlyHealthTracker.sharedInstance logFailedNetworkRequestWithStatusCode:((NSHTTPURLResponse*)response).statusCode errorResponse: [NSString stringWithFormat:@"%@", error]];
-            [CountlyHealthTracker.sharedInstance saveState];
             self.startTime = nil;
         }
     }];
