@@ -675,6 +675,11 @@ typedef enum : NSUInteger
  */
 @property(nonatomic, copy) NSString *sdkBehaviorSettings;
 
+/**
+ * Disable the server configuration
+ */
+@property(nonatomic) BOOL disableSDKBehaviorSettings;
+
 #if (TARGET_OS_IOS)
 /**
  * Variable to access content configurations.
