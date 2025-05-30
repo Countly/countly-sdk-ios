@@ -5,6 +5,7 @@
 // Please visit www.count.ly for more information.
 
 #import "CountlyCommon.h"
+#import <stdatomic.h>
 
 @interface CountlyConnectionManager ()
 {
@@ -16,7 +17,8 @@
 @property (nonatomic) NSURLSession* URLSession;
 
 @property (nonatomic, strong) NSDate *startTime;
-@property (nonatomic, strong) NSMutableArray<NSNumber *> *previousResponseTime;
+@property (nonatomic, assign) atomic_bool backoff;
+
 
 @end
 
@@ -85,6 +87,7 @@ NSString* const kCountlyEndpointSurveys = @"/surveys";
 const NSInteger kCountlyGETRequestMaxLength = 2048;
 static const NSTimeInterval CONNECTION_TIMEOUT = 30.0;
 static const NSTimeInterval ACCEPTED_TIMEOUT = 10.0;
+static const NSTimeInterval BACKOFF_DURATION = 60.0;
 
 @implementation CountlyConnectionManager : NSObject
 
@@ -104,7 +107,7 @@ static dispatch_once_t onceToken;
     {
         unsentSessionLength = 0.0;
         isSessionStarted = NO;
-        self.previousResponseTime = [NSMutableArray arrayWithObjects:@-1, nil];
+        atomic_init(&_backoff, NO);
     }
 
     return self;
@@ -177,6 +180,12 @@ static dispatch_once_t onceToken;
     if (CountlyPersistency.sharedInstance.isQueueBeingModified)
     {
         CLY_LOG_D(@"Proceeding on queue is aborted: Queue is being modified!");
+        return;
+    }
+    
+    BOOL backoffFlag = atomic_load(&_backoff) ? YES : NO;
+    if (backoffFlag) {
+        CLY_LOG_I(@"%s, currently backed off, skipping proceeding the queue", __FUNCTION__);
         return;
     }
     
@@ -303,8 +312,9 @@ static dispatch_once_t onceToken;
                 [CountlyPersistency.sharedInstance saveToFile];
                 
                 if(CountlyServerConfig.sharedInstance.backoffMechanism && [self backoff:duration queryString:queryString]){
-                    CLY_LOG_D(@"%s, server seems to be busy dropping proceeding the queue", __FUNCTION__);
+                    CLY_LOG_D(@"%s, backed off dropping proceeding the queue", __FUNCTION__);
                     self.startTime = nil;
+                    [self backoffCountdown];
                 } else {
                     [self proceedOnQueue];
 
@@ -334,9 +344,8 @@ static dispatch_once_t onceToken;
 - (BOOL)backoff:(long)responseTimeSeconds queryString:(NSString *)queryString
 {
     BOOL result = NO;
-    // Check if response time exceeds threshold and we have enough duration history
     // Check if the current response time is within acceptable limits
-    if (responseTimeSeconds >= ACCEPTED_TIMEOUT && responseTimeSeconds <= self.previousResponseTime[0].longValue) {
+    if (responseTimeSeconds >= ACCEPTED_TIMEOUT) {
         // Check if the remaining request count is within acceptable limits
         NSUInteger remainingRequests = [CountlyPersistency.sharedInstance remainingRequestCount];
         NSUInteger threshold = (NSUInteger)(CountlyPersistency.sharedInstance.storedRequestsLimit * 0.1);
@@ -355,8 +364,25 @@ static dispatch_once_t onceToken;
         
     }
     
-    self.previousResponseTime[0] = @(responseTimeSeconds);
     return result;
+}
+
+- (void)backoffCountdown
+{
+    __weak typeof(self) weakSelf = self;
+    CLY_LOG_D(@"%s, backed off, countdown start for %f seconds", __FUNCTION__, BACKOFF_DURATION);
+
+    atomic_store(&_backoff, YES);
+    dispatch_time_t delay = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(BACKOFF_DURATION * NSEC_PER_SEC));
+    dispatch_after(delay, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+        
+        
+        CLY_LOG_D(@"%s, countdown finished, running tick in background thread", __FUNCTION__);
+        atomic_store(&strongSelf->_backoff, NO);
+        [strongSelf proceedOnQueue];
+    });
 }
 
 
