@@ -361,9 +361,14 @@ static dispatch_once_t onceToken;
             if (requestAgeInSeconds <= 12 * 3600.0) {
                 // Server is too busy, back off
                 result = YES;
+                [CountlyHealthTracker.sharedInstance logBackoffRequest];
             }
         }
         
+    }
+    
+    if (!result) {
+        [CountlyHealthTracker.sharedInstance logConsecutiveBackoffRequest];
     }
     
     return result;
