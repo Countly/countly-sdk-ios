@@ -92,7 +92,7 @@ static dispatch_once_t onceToken;
     
     config = [self checkAndFixInternalLimitsConfig:config];
     
-    if (config.disableSDKBehaviorSettings) {
+    if (config.disableSDKBehaviorSettingsUpdates) {
         [CountlyServerConfig.sharedInstance disableSDKBehaviourSettings];
     }
     [CountlyServerConfig.sharedInstance retrieveServerConfigFromStorage:config.sdkBehaviorSettings];
@@ -170,7 +170,7 @@ static dispatch_once_t onceToken;
     CountlyDeviceInfo.sharedInstance.customMetrics = [customMetricsTruncated cly_limited:@"Custom metric"];
     
     [Countly.user save];
-  // If something added related to server config, make sure to check CountlyServerConfig.notifySdkConfigChange
+    // If something added related to server config, make sure to check CountlyServerConfig.notifySdkConfigChange
     [CountlyServerConfig.sharedInstance fetchServerConfig:config];
     
 #if (TARGET_OS_IOS)
