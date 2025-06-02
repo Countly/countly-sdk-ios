@@ -322,6 +322,7 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
     if (_serverConfigUpdatesDisabled) {
         return;
     }
+    CLY_LOG_D(@"Fetching server configs...");
     
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
         return;

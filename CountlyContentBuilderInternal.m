@@ -191,47 +191,9 @@ NSInteger const contentInitialDelay = 4;
     return request;
 }
 
-- (CGSize)getWindowSize {
-    UIWindow *window = nil;
-
-    if (@available(iOS 13.0, *)) {
-        for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
-            if ([scene isKindOfClass:[UIWindowScene class]]) {
-                window = ((UIWindowScene *)scene).windows.firstObject;
-                break;
-            }
-        }
-    } else {
-        window = [[UIApplication sharedApplication].delegate window];
-    }
-
-    if (!window) return CGSizeZero;
-    
-    UIEdgeInsets safeArea = UIEdgeInsetsZero;
-    CGFloat screenScale = [UIScreen mainScreen].scale;
-    if (@available(iOS 11.0, *)) {
-        safeArea = window.safeAreaInsets;
-        safeArea.left /= screenScale;
-        safeArea.bottom /= screenScale;
-        safeArea.right /= screenScale;
-    }
-    
-    UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
-    BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
-    
-    CGSize size = CGSizeMake(window.bounds.size.width, window.bounds.size.height);
-    
-    if(!isLandscape){
-        size.width -= safeArea.left + safeArea.right;
-        size.height -= safeArea.top + safeArea.bottom;
-    }
-
-    return size;
-}
-
 - (NSString *)resolutionJson {
     //TODO: check why area is not clickable and safearea things
-    CGSize size = [self getWindowSize];
+    CGSize size = [CountlyCommon.sharedInstance getWindowSize];
     
     UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
     BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
@@ -261,44 +223,43 @@ NSInteger const contentInitialDelay = 4;
 
     
     dispatch_async(dispatch_get_main_queue(), ^ {
-    // Detect screen orientation
-    UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
-    BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
+        // Detect screen orientation
+        UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
+        BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
+            
+        // Get the appropriate coordinates based on the orientation
+        NSDictionary *coordinates = isLandscape ? placementCoordinates[@"l"] : placementCoordinates[@"p"];
         
-    
-    // Get the appropriate coordinates based on the orientation
-    NSDictionary *coordinates = isLandscape ? placementCoordinates[@"l"] : placementCoordinates[@"p"];
-    
-    CGFloat x = [coordinates[@"x"] floatValue];
-    CGFloat y = [coordinates[@"y"] floatValue];
-    CGFloat width = [coordinates[@"w"] floatValue];
-    CGFloat height = [coordinates[@"h"] floatValue];
-    
-    CGRect frame = CGRectMake(x, y, width, height);
-    
-    // Log the URL and the frame
-    CLY_LOG_I(@"%s, Showing content from URL: %@", __FUNCTION__, url);
-    CLY_LOG_I(@"%s, Placement frame: %@", __FUNCTION__, NSStringFromCGRect(frame));
-    
-    CountlyWebViewManager* webViewManager =  CountlyWebViewManager.new;
-        [webViewManager createWebViewWithURL:url frame:frame appearBlock:^
-         {
-            CLY_LOG_I(@"%s, Webview appeared", __FUNCTION__);
-            self->_isCurrentlyContentShown = YES;
-            [self clearContentState];
-        } dismissBlock:^
-         {
-            CLY_LOG_I(@"%s, Webview dismissed", __FUNCTION__);
-            self->_isCurrentlyContentShown = NO;
-            self->_minuteTimer = [NSTimer scheduledTimerWithTimeInterval:self->_zoneTimerInterval
-                                                             target:self
-                                                           selector:@selector(enterContentZone)
-                                                           userInfo:nil
-                                                            repeats:NO];
-            if(self.contentCallback) {
-                self.contentCallback(CLOSED, NSDictionary.new);
-            }
-        }];
+        CGFloat x = [coordinates[@"x"] floatValue];
+        CGFloat y = [coordinates[@"y"] floatValue];
+        CGFloat width = [coordinates[@"w"] floatValue];
+        CGFloat height = [coordinates[@"h"] floatValue];
+        
+        CGRect frame = CGRectMake(x, y, width, height);
+        
+        // Log the URL and the frame
+        CLY_LOG_I(@"%s, Showing content from URL: %@", __FUNCTION__, url);
+        CLY_LOG_I(@"%s, Placement frame: %@", __FUNCTION__, NSStringFromCGRect(frame));
+        
+        CountlyWebViewManager* webViewManager =  CountlyWebViewManager.new;
+            [webViewManager createWebViewWithURL:url frame:frame appearBlock:^
+             {
+                CLY_LOG_I(@"%s, Webview appeared", __FUNCTION__);
+                self->_isCurrentlyContentShown = YES;
+                [self clearContentState];
+            } dismissBlock:^
+             {
+                CLY_LOG_I(@"%s, Webview dismissed", __FUNCTION__);
+                self->_isCurrentlyContentShown = NO;
+                self->_minuteTimer = [NSTimer scheduledTimerWithTimeInterval:self->_zoneTimerInterval
+                                                                 target:self
+                                                               selector:@selector(enterContentZone)
+                                                               userInfo:nil
+                                                                repeats:NO];
+                if(self.contentCallback) {
+                    self.contentCallback(CLOSED, NSDictionary.new);
+                }
+            }];
     });
 }
 #endif

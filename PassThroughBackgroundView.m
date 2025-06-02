@@ -48,44 +48,6 @@
     }
 }
 
-CGSize getWindowSize(void) {
-    UIWindow *window = nil;
-
-    if (@available(iOS 13.0, *)) {
-        for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
-            if ([scene isKindOfClass:[UIWindowScene class]]) {
-                window = ((UIWindowScene *)scene).windows.firstObject;
-                break;
-            }
-        }
-    } else {
-        window = [[UIApplication sharedApplication].delegate window];
-    }
-
-    if (!window) return CGSizeZero;
-    
-    UIEdgeInsets safeArea = UIEdgeInsetsZero;
-    CGFloat screenScale = [UIScreen mainScreen].scale;
-    if (@available(iOS 11.0, *)) {
-        safeArea = window.safeAreaInsets;
-        safeArea.left /= screenScale;
-        safeArea.bottom /= screenScale;
-        safeArea.right /= screenScale;
-    }
-    
-    UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
-    BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
-    
-    CGSize size = CGSizeMake(window.bounds.size.width, window.bounds.size.height);
-    
-    if(!isLandscape){
-        size.width -= safeArea.left + safeArea.right;
-        size.height -= safeArea.top + safeArea.bottom;
-    }
-
-    return size;
-}
-
 - (void)handleScreenChange {
     // Execute after a short delay to ensure properties are updated
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -94,7 +56,7 @@ CGSize getWindowSize(void) {
 }
 
 - (void)updateWindowSize {
-    CGSize size = getWindowSize();
+    CGSize size = [CountlyCommon.sharedInstance getWindowSize];
     CGFloat width = size.width;
     CGFloat height = size.height;
     

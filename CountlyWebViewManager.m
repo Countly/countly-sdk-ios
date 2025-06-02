@@ -55,9 +55,6 @@
 }
 
 - (void)applyTopMargin{
-    UIViewController *rootViewController = UIApplication.sharedApplication.keyWindow.rootViewController;
-    
-    CGRect backgroundFrame = rootViewController.view.bounds;
     UIWindow *window = nil;
     if (@available(iOS 13.0, *)) {
         for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
@@ -72,7 +69,6 @@
     
     if (@available(iOS 11.0, *)) {
         UIEdgeInsets safeArea = window.safeAreaInsets;
-        CGFloat screenScale = [UIScreen mainScreen].scale;
         UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
         if(!UIInterfaceOrientationIsLandscape(orientation) && !self.topMarginApplied){
             self.topMarginApplied = YES;
@@ -123,26 +119,27 @@
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
     NSString *url = navigationAction.request.URL.absoluteString;
     
-    if ([url hasPrefix:@"https://countly_action_event"] && [url containsString:@"cly_x_action_event=1"]) {
-        NSDictionary *queryParameters = [self parseQueryString:url];
-        NSString *action = queryParameters[@"action"];
-        if(action) {
-            if ([action isEqualToString:@"event"]) {
-                NSString *eventsJson = queryParameters[@"event"];
-                if(eventsJson) {
-                    [self recordEventsWithJSONString:eventsJson];
-                }
-            } else if ([action isEqualToString:@"link"]) {
-                NSString *link = queryParameters[@"link"];
-                if(link) {
-                    [self openExternalLink:link];
-                }
-            } else if ([action isEqualToString:@"resize_me"]) {
-                NSString *resize = queryParameters[@"resize_me"];
-                if(resize) {
-                    [self resizeWebViewWithJSONString:resize];
-                }
+    if ([url containsString:@"cly_x_int=1"]) {
+        CLY_LOG_I(@"%s Opening url [%@] in external browser", __FUNCTION__, url);
+        [[UIApplication sharedApplication] openURL:navigationAction.request.URL options:@{} completionHandler:^(BOOL success) {
+            if (success) {
+                CLY_LOG_I(@"%s url [%@] opened in external browser", __FUNCTION__, url);
             }
+            else {
+                CLY_LOG_I(@"%s unable to open url [%@] in external browser", __FUNCTION__, url);
+            }
+        }];
+        decisionHandler(WKNavigationActionPolicyCancel);
+        return;
+    }
+    
+    if ([url hasPrefix:@"https://countly_action_event"]) {
+        NSDictionary *queryParameters = [self parseQueryString:url];
+        
+        if([url containsString:@"cly_x_action_event=1"]){
+            [self contentURLAction:queryParameters];
+        } else if([url containsString:@"cly_widget_command=1"]){
+            [self widgetURLAction:queryParameters];
         }
         
         if ([queryParameters[@"close"] boolValue]) {
@@ -196,6 +193,32 @@
     [UIView animateWithDuration:animationDuration animations:^{
         view.transform = CGAffineTransformIdentity;
     }];
+}
+
+- (void)contentURLAction:(NSDictionary *)queryParameters {
+    NSString *action = queryParameters[@"action"];
+    if(action) {
+        if ([action isEqualToString:@"event"]) {
+            NSString *eventsJson = queryParameters[@"event"];
+            if(eventsJson) {
+                [self recordEventsWithJSONString:eventsJson];
+            }
+        } else if ([action isEqualToString:@"link"]) {
+            NSString *link = queryParameters[@"link"];
+            if(link) {
+                [self openExternalLink:link];
+            }
+        } else if ([action isEqualToString:@"resize_me"]) {
+            NSString *resize = queryParameters[@"resize_me"];
+            if(resize) {
+                [self resizeWebViewWithJSONString:resize];
+            }
+        }
+    }
+}
+
+- (void)widgetURLAction:(NSDictionary *)queryParameters {
+    // none action yet
 }
 
 - (NSDictionary *)parseQueryString:(NSString *)url {

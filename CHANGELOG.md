@@ -1,4 +1,5 @@
 ## XX.XX.XX
+* The feedback widgets now have fullscreen and transparent backgrounds for a cleaner look.
 * Added a config method to disable server config in the initialization "disableSDKBehaviorSettingsUpdates()".
 
 ## 25.4.1
