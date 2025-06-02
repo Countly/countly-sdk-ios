@@ -1,4 +1,5 @@
 ## XX.XX.XX
+* Adding SDK health check requests after init
 * The feedback widgets now have fullscreen and transparent backgrounds for a cleaner look.
 * Added a config method to disable server config in the initialization "disableSDKBehaviorSettings()".
 

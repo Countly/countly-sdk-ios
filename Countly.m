@@ -320,6 +320,8 @@ static dispatch_once_t onceToken;
     
     if (config.indirectAttribution)
         [self recordIndirectAttribution:config.indirectAttribution];
+    
+    [CountlyHealthTracker.sharedInstance sendHealthCheck];
 }
 
 - (CountlyConfig *) checkAndFixInternalLimitsConfig:(CountlyConfig *)config
@@ -456,11 +458,13 @@ static dispatch_once_t onceToken;
 - (void)applicationWillResignActive:(NSNotification *)notification
 {
     CLY_LOG_D(@"App enters background");
+    [CountlyHealthTracker.sharedInstance saveState];
 }
 
 - (void)applicationDidEnterBackground:(NSNotification *)notification
 {
     CLY_LOG_D(@"App did enter background.");
+    [CountlyHealthTracker.sharedInstance saveState];
     [self suspend];
 }
 
@@ -472,6 +476,8 @@ static dispatch_once_t onceToken;
 - (void)applicationWillTerminate:(NSNotification *)notification
 {
     CLY_LOG_D(@"App will terminate.");
+    
+    [CountlyHealthTracker.sharedInstance saveState];
     
     CountlyConnectionManager.sharedInstance.isTerminating = YES;
     
@@ -695,12 +701,14 @@ static dispatch_once_t onceToken;
         CLY_LOG_I(@"Going out of CLYTemporaryDeviceID mode and switching back to normal mode.");
 
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
-
+        
         [CountlyPersistency.sharedInstance replaceAllTemporaryDeviceIDsInQueueWithDeviceID:deviceID];
 
         [CountlyConnectionManager.sharedInstance proceedOnQueue];
 
         [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfigAutomatically];
+        
+        [CountlyHealthTracker.sharedInstance sendHealthCheck];
 
         return;
     }

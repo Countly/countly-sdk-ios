@@ -88,6 +88,12 @@ static dispatch_once_t onceToken;
 
 void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...)
 {
+    if (level == CLYInternalLogLevelError) {
+        [CountlyHealthTracker.sharedInstance logError];
+    } else if(level == CLYInternalLogLevelWarning) {
+        [CountlyHealthTracker.sharedInstance logWarning];
+    }
+    
     if (!CountlyCommon.sharedInstance.enableDebug && !CountlyCommon.sharedInstance.loggerDelegate)
         return;
 

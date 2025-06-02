@@ -86,6 +86,8 @@
 		96329DE02D9426F300BFD641 /* CountlyServerConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96329DDF2D9426F300BFD641 /* CountlyServerConfigTests.swift */; };
 		96329DE22D94299D00BFD641 /* ServerConfigBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96329DE12D94299D00BFD641 /* ServerConfigBuilder.swift */; };
 		96329DE42D952F1500BFD641 /* MockURLProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96329DE32D952F1500BFD641 /* MockURLProtocol.swift */; };
+		965A2E9C2DDDCDAC00F28F6A /* CountlyHealthTracker.m in Sources */ = {isa = PBXBuildFile; fileRef = 965A2E9B2DDDCDAC00F28F6A /* CountlyHealthTracker.m */; };
+		965A2E9D2DDDCDAC00F28F6A /* CountlyHealthTracker.h in Headers */ = {isa = PBXBuildFile; fileRef = 965A2E9A2DDDCDAC00F28F6A /* CountlyHealthTracker.h */; };
 		968426812BF2302C007B303E /* CountlyConnectionManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 968426802BF2302C007B303E /* CountlyConnectionManagerTests.swift */; };
 		96DA74BB2D9FB687006FA6FF /* MockFeedbackWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96DA74BA2D9FB687006FA6FF /* MockFeedbackWidget.swift */; };
 		96E680422BFF89AC0091E105 /* CountlyCrashReporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96E680412BFF89AC0091E105 /* CountlyCrashReporterTests.swift */; };
@@ -190,6 +192,8 @@
 		96329DDF2D9426F300BFD641 /* CountlyServerConfigTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyServerConfigTests.swift; sourceTree = "<group>"; };
 		96329DE12D94299D00BFD641 /* ServerConfigBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerConfigBuilder.swift; sourceTree = "<group>"; };
 		96329DE32D952F1500BFD641 /* MockURLProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockURLProtocol.swift; sourceTree = "<group>"; };
+		965A2E9A2DDDCDAC00F28F6A /* CountlyHealthTracker.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyHealthTracker.h; sourceTree = "<group>"; };
+		965A2E9B2DDDCDAC00F28F6A /* CountlyHealthTracker.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyHealthTracker.m; sourceTree = "<group>"; };
 		96681A9B2D97D9B300A4845A /* CountlyTests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = CountlyTests.xctestplan; sourceTree = "<group>"; };
 		968426802BF2302C007B303E /* CountlyConnectionManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyConnectionManagerTests.swift; sourceTree = "<group>"; };
 		96DA74BA2D9FB687006FA6FF /* MockFeedbackWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockFeedbackWidget.swift; sourceTree = "<group>"; };
@@ -320,6 +324,8 @@
 				3B20A9A42245228500E3D7AE /* CountlyUserDetails.m */,
 				3B20A9A72245228500E3D7AE /* CountlyViewTrackingInternal.h */,
 				3B20A9A32245228500E3D7AE /* CountlyViewTrackingInternal.m */,
+				965A2E9A2DDDCDAC00F28F6A /* CountlyHealthTracker.h */,
+				965A2E9B2DDDCDAC00F28F6A /* CountlyHealthTracker.m */,
 				3B20A9862245225A00E3D7AE /* Info.plist */,
 				1A5C4C952B35B0850032EE1F /* CountlyTests */,
 				3B20A9832245225A00E3D7AE /* Products */,
@@ -355,6 +361,7 @@
 				39BDF7572CC7CA870066DE7C /* CountlyFeedbacks.h in Headers */,
 				3B20A9D32245228700E3D7AE /* CountlyPushNotifications.h in Headers */,
 				3B20A9C42245228700E3D7AE /* CountlyUserDetails.h in Headers */,
+				965A2E9D2DDDCDAC00F28F6A /* CountlyHealthTracker.h in Headers */,
 				3961C6B72C6633C000DD38BA /* PassThroughBackgroundView.h in Headers */,
 				3B20A9CA2245228700E3D7AE /* CountlyConfig.h in Headers */,
 				3B20A9872245225A00E3D7AE /* Countly.h in Headers */,
@@ -536,6 +543,7 @@
 				1A3110712A7141AF001CB507 /* CountlyViewTracking.m in Sources */,
 				3903429D2C8051C700238C96 /* CountlyExperimentalConfig.m in Sources */,
 				1A3A576329ED47A20041B7BE /* CountlyServerConfig.m in Sources */,
+				965A2E9C2DDDCDAC00F28F6A /* CountlyHealthTracker.m in Sources */,
 				D219374C248AC71C00E5798B /* CountlyPerformanceMonitoring.m in Sources */,
 				3B20A9B42245228700E3D7AE /* CountlyPushNotifications.m in Sources */,
 				3B20A9C92245228700E3D7AE /* CountlyUserDetails.m in Sources */,
