@@ -29,7 +29,7 @@ NSString* const kCountlyVisibility = @"cly_v";
 #endif
 @end
 
-NSString* const kCountlySDKVersion = @"25.4.0";
+NSString* const kCountlySDKVersion = @"25.4.1";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
@@ -88,6 +88,12 @@ static dispatch_once_t onceToken;
 
 void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...)
 {
+    if (level == CLYInternalLogLevelError) {
+        [CountlyHealthTracker.sharedInstance logError];
+    } else if(level == CLYInternalLogLevelWarning) {
+        [CountlyHealthTracker.sharedInstance logWarning];
+    }
+    
     if (!CountlyCommon.sharedInstance.enableDebug && !CountlyCommon.sharedInstance.loggerDelegate)
         return;
 
@@ -327,6 +333,47 @@ void CountlyPrint(NSString *stringToPrint)
     {
         return NSURLSession.sharedSession;
     }
+}
+
+- (CGSize)getWindowSize {
+#if (TARGET_OS_IOS)
+    UIWindow *window = nil;
+
+    if (@available(iOS 13.0, *)) {
+        for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+            if ([scene isKindOfClass:[UIWindowScene class]]) {
+                window = ((UIWindowScene *)scene).windows.firstObject;
+                break;
+            }
+        }
+    } else {
+        window = [[UIApplication sharedApplication].delegate window];
+    }
+
+    if (!window) return CGSizeZero;
+    
+    UIEdgeInsets safeArea = UIEdgeInsetsZero;
+    CGFloat screenScale = [UIScreen mainScreen].scale;
+    if (@available(iOS 11.0, *)) {
+        safeArea = window.safeAreaInsets;
+        safeArea.left /= screenScale;
+        safeArea.bottom /= screenScale;
+        safeArea.right /= screenScale;
+    }
+    
+    UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
+    BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
+    
+    CGSize size = CGSizeMake(window.bounds.size.width, window.bounds.size.height);
+    
+    if(!isLandscape){
+        size.width -= safeArea.left + safeArea.right;
+        size.height -= safeArea.top + safeArea.bottom;
+    }
+
+    return size;
+#endif
+    return CGSizeZero;
 }
 
 @end

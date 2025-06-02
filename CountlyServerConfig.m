@@ -39,6 +39,7 @@
 @property (nonatomic) NSInteger version;
 @property (nonatomic) long long timestamp;
 @property (nonatomic) long long lastFetchTimestamp;
+@property (nonatomic) BOOL serverConfigDisabled;
 
 @end
 
@@ -111,12 +112,16 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
         _version = 0;
         _currentServerConfigUpdateInterval = 4;
         _requestTimer = nil;
+        _serverConfigDisabled = NO;
     }
     return self;
 }
 
 - (void)retrieveServerConfigFromStorage:(NSString *)sdkBehaviorSettings
 {
+    if (_serverConfigDisabled) {
+        return;
+    }
     NSError *error = nil;
     NSDictionary *serverConfigObject = [CountlyPersistency.sharedInstance retrieveServerConfig];
     if (serverConfigObject.count == 0 && sdkBehaviorSettings)
@@ -201,6 +206,10 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
 
 - (void)notifySdkConfigChange:(CountlyConfig *)config
 {
+    if (_serverConfigDisabled) {
+        return;
+    }
+    
     config.enableDebug = _loggingEnabled || config.enableDebug;
     CountlyCommon.sharedInstance.enableDebug = config.enableDebug;
 
@@ -305,6 +314,10 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
 
 - (void)fetchServerConfigIfTimeIsUp
 {
+    if (_serverConfigDisabled) {
+        return;
+    }
+    
     if (_lastFetchTimestamp)
     {
         long long currentTime = NSDate.date.timeIntervalSince1970 * 1000;
@@ -319,7 +332,11 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
 
 - (void)fetchServerConfig:(CountlyConfig *)config
 {
+    if (_serverConfigDisabled) {
+        return;
+    }
     CLY_LOG_D(@"Fetching server configs...");
+    
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
         return;
 
@@ -406,6 +423,10 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
     }
 
     CLY_LOG_D(@"serverConfigRequest URL :%@", URL);
+}
+
+- (void)disableSDKBehaviourSettings {
+    _serverConfigDisabled = YES;
 }
 
 - (BOOL)trackingEnabled

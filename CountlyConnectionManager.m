@@ -323,6 +323,8 @@ static dispatch_once_t onceToken;
             else
             {
                 CLY_LOG_D(@"%s, request:[ <%p> ] failed! response:[ %@ ]", __FUNCTION__, request, [data cly_stringUTF8]);
+                [CountlyHealthTracker.sharedInstance logFailedNetworkRequestWithStatusCode:((NSHTTPURLResponse*)response).statusCode errorResponse: [data cly_stringUTF8]];
+                [CountlyHealthTracker.sharedInstance saveState];
                 self.startTime = nil;
             }
         }

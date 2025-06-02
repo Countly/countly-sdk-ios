@@ -61,6 +61,9 @@
 - (NSDictionary *)retrieveServerConfig;
 - (void)storeServerConfig:(NSDictionary *)serverConfig;
 
+- (NSDictionary *)retrieveHealthCheckTrackerState;
+- (void)storeHealthCheckTrackerState:(NSDictionary *)healthCheckTrackerState;
+
 -(BOOL)isOldRequest:(NSString*) queryString;
 
 @property (nonatomic) NSUInteger eventSendThreshold;
