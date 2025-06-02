@@ -86,8 +86,6 @@ NSString* const kCountlyEndpointSurveys = @"/surveys";
 
 const NSInteger kCountlyGETRequestMaxLength = 2048;
 static const NSTimeInterval CONNECTION_TIMEOUT = 30.0;
-static const NSTimeInterval ACCEPTED_TIMEOUT = 10.0;
-static const NSTimeInterval BACKOFF_DURATION = 60.0;
 
 @implementation CountlyConnectionManager : NSObject
 
@@ -347,24 +345,22 @@ static dispatch_once_t onceToken;
 {
     BOOL result = NO;
     // Check if the current response time is within acceptable limits
-    if (responseTimeSeconds >= ACCEPTED_TIMEOUT) {
+    if (responseTimeSeconds >= [CountlyServerConfig.sharedInstance bomAcceptedTimeoutSeconds]) {
         // Check if the remaining request count is within acceptable limits
         NSUInteger remainingRequests = [CountlyPersistency.sharedInstance remainingRequestCount];
-        NSUInteger threshold = (NSUInteger)(CountlyPersistency.sharedInstance.storedRequestsLimit * 0.1);
+        NSUInteger threshold = (NSUInteger)(CountlyPersistency.sharedInstance.storedRequestsLimit * [CountlyServerConfig.sharedInstance bomRQPercentage]);
         
         if (remainingRequests <= threshold) {
-            
             // Calculate the age of the current request
             double requestTimestamp = [[queryString cly_valueForQueryStringKey:kCountlyQSKeyTimestamp] longLongValue] / 1000.0;
             double requestAgeInSeconds = [NSDate date].timeIntervalSince1970 - requestTimestamp;
             
-            if (requestAgeInSeconds <= 12 * 3600.0) {
+            if (requestAgeInSeconds <= [CountlyServerConfig.sharedInstance bomRequestAge] * 3600.0) {
                 // Server is too busy, back off
                 result = YES;
                 [CountlyHealthTracker.sharedInstance logBackoffRequest];
             }
         }
-        
     }
     
     if (!result) {
@@ -377,10 +373,10 @@ static dispatch_once_t onceToken;
 - (void)backoffCountdown
 {
     __weak typeof(self) weakSelf = self;
-    CLY_LOG_D(@"%s, backed off, countdown start for %f seconds", __FUNCTION__, BACKOFF_DURATION);
+    CLY_LOG_D(@"%s, backed off, countdown start for %f seconds", __FUNCTION__, [CountlyServerConfig.sharedInstance bomDuration]);
 
     atomic_store(&_backoff, YES);
-    dispatch_time_t delay = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(BACKOFF_DURATION * NSEC_PER_SEC));
+    dispatch_time_t delay = dispatch_time(DISPATCH_TIME_NOW, (int64_t)([CountlyServerConfig.sharedInstance bomDuration] * NSEC_PER_SEC));
     dispatch_after(delay, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
