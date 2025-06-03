@@ -317,12 +317,12 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
 
 - (void)fetchServerConfig:(CountlyConfig *)config
 {
-    CLY_LOG_D(@"Fetching server configs...");
+    CLY_LOG_D(@"%s, fetching sdk behavior settings", __FUNCTION__);
     
     if (_serverConfigUpdatesDisabled) {
+        CLY_LOG_D(@"%s, sdk behavior settings updates disabled, omitting fetch", __FUNCTION__);
         return;
     }
-    CLY_LOG_D(@"Fetching server configs...");
     
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
         return;
