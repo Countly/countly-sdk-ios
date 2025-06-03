@@ -38,7 +38,7 @@
 @property (nonatomic) NSInteger version;
 @property (nonatomic) long long timestamp;
 @property (nonatomic) long long lastFetchTimestamp;
-@property (nonatomic) BOOL serverConfigDisabled;
+@property (nonatomic) BOOL serverConfigUpdatesDisabled;
 
 @end
 
@@ -109,16 +109,13 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
         _version = 0;
         _currentServerConfigUpdateInterval = 4;
         _requestTimer = nil;
-        _serverConfigDisabled = NO;
+        _serverConfigUpdatesDisabled = NO;
     }
     return self;
 }
 
 - (void)retrieveServerConfigFromStorage:(NSString *)sdkBehaviorSettings
 {
-    if (_serverConfigDisabled) {
-        return;
-    }
     NSError *error = nil;
     NSDictionary *serverConfigObject = [CountlyPersistency.sharedInstance retrieveServerConfig];
     if (serverConfigObject.count == 0 && sdkBehaviorSettings)
@@ -202,10 +199,6 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
 
 - (void)notifySdkConfigChange:(CountlyConfig *)config
 {
-    if (_serverConfigDisabled) {
-        return;
-    }
-    
     config.enableDebug = _loggingEnabled || config.enableDebug;
     CountlyCommon.sharedInstance.enableDebug = config.enableDebug;
 
@@ -306,7 +299,7 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
 
 - (void)fetchServerConfigIfTimeIsUp
 {
-    if (_serverConfigDisabled) {
+    if (_serverConfigUpdatesDisabled) {
         return;
     }
     
@@ -324,10 +317,12 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
 
 - (void)fetchServerConfig:(CountlyConfig *)config
 {
-    if (_serverConfigDisabled) {
+    CLY_LOG_D(@"%s, fetching sdk behavior settings", __FUNCTION__);
+    
+    if (_serverConfigUpdatesDisabled) {
+        CLY_LOG_D(@"%s, sdk behavior settings updates disabled, omitting fetch", __FUNCTION__);
         return;
     }
-    CLY_LOG_D(@"Fetching server configs...");
     
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
         return;
@@ -417,7 +412,7 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
 }
 
 - (void)disableSDKBehaviourSettings {
-    _serverConfigDisabled = YES;
+    _serverConfigUpdatesDisabled = YES;
 }
 
 - (BOOL)trackingEnabled
