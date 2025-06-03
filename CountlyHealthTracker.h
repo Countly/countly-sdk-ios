@@ -20,6 +20,8 @@
 
 - (void)logBackoffRequest;
 
+- (void)logConsecutiveBackoffRequest;
+
 - (void)clearAndSave;
 
 - (void)saveState;

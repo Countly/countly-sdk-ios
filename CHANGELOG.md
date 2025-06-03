@@ -2,6 +2,8 @@
 * Adding SDK health check requests after init
 * The feedback widgets now have fullscreen and transparent backgrounds for a cleaner look.
 * Added a config method to disable server config in the initialization "disableSDKBehaviorSettingsUpdates()".
+* Improved request queue handling, added a backoff mechanism to the SDK to better handle cases where the server responds slowly, enabled by default.
+* Added a config method to disable backoff mechanism "disableBackoffMechanism"
 
 ## 25.4.1
 * Mitigated an issue that could occur while serializing events to improve stability, performance and memory usage.

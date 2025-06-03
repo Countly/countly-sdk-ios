@@ -15,6 +15,8 @@
 @property (nonatomic, assign) long countLogWarning;
 @property (nonatomic, assign) long countLogError;
 @property (nonatomic, assign) long countBackoffRequest;
+@property (nonatomic, assign) long countConsecutiveBackoffRequest;
+@property (nonatomic, assign) long consecutiveBackoffRequest;
 @property (nonatomic, assign) NSInteger statusCode;
 @property (nonatomic, strong) NSString *errorMessage;
 @property (nonatomic, assign) BOOL healthCheckEnabled;
@@ -29,12 +31,14 @@ NSString * const keyLogWarning = @"LWar";
 NSString * const keyStatusCode = @"RStatC";
 NSString * const keyErrorMessage = @"REMsg";
 NSString * const keyBackoffRequest = @"BReq";
+NSString * const keyConsecutiveBackoffRequest = @"CBReq";
 
 NSString * const requestKeyErrorCount = @"el";
 NSString * const requestKeyWarningCount = @"wl";
 NSString * const requestKeyStatusCode = @"sc";
 NSString * const requestKeyRequestError = @"em";
-NSString * const requestKeyBackoffRequest = @"br";
+NSString * const requestKeyBackoffRequest = @"bom";
+NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
 
 + (instancetype)sharedInstance {
     static CountlyHealthTracker *instance = nil;
@@ -69,6 +73,7 @@ NSString * const requestKeyBackoffRequest = @"br";
     self.statusCode = [initialState[keyStatusCode] integerValue];
     self.errorMessage = initialState[keyErrorMessage] ?: @"";
     self.countBackoffRequest = [initialState[keyBackoffRequest] longValue];
+    self.consecutiveBackoffRequest = [initialState[keyConsecutiveBackoffRequest] longValue];
 
     CLY_LOG_D(@"%s, Loaded initial health check state: [%@]", __FUNCTION__, initialState);
 }
@@ -97,6 +102,12 @@ NSString * const requestKeyBackoffRequest = @"br";
 
 - (void)logBackoffRequest {
     self.countBackoffRequest++;
+    self.countConsecutiveBackoffRequest++;
+}
+
+- (void)logConsecutiveBackoffRequest {
+    self.consecutiveBackoffRequest = MAX(self.consecutiveBackoffRequest, self.countConsecutiveBackoffRequest);
+    self.countConsecutiveBackoffRequest = 0;
 }
 
 - (void)clearAndSave {
@@ -105,12 +116,15 @@ NSString * const requestKeyBackoffRequest = @"br";
 }
 
 - (void)saveState {
+    [self logConsecutiveBackoffRequest];
+    
     NSDictionary *healthCheckState = @{
         keyLogWarning: @(self.countLogWarning),
         keyLogError: @(self.countLogError),
         keyStatusCode: @(self.statusCode),
         keyErrorMessage: self.errorMessage ?: @"",
-        keyBackoffRequest: @(self.countBackoffRequest)
+        keyBackoffRequest: @(self.countBackoffRequest),
+        keyConsecutiveBackoffRequest: @(self.consecutiveBackoffRequest)
     };
     
     [CountlyPersistency.sharedInstance storeHealthCheckTrackerState:healthCheckState];
@@ -124,6 +138,8 @@ NSString * const requestKeyBackoffRequest = @"br";
     self.statusCode = -1;
     self.errorMessage = @"";
     self.countBackoffRequest = 0;
+    self.consecutiveBackoffRequest = 0;
+    self.countConsecutiveBackoffRequest = 0;
 }
 
 - (void)sendHealthCheck {
@@ -186,7 +202,8 @@ NSString * const requestKeyBackoffRequest = @"br";
         requestKeyWarningCount: @(self.countLogWarning),
         requestKeyStatusCode: @(self.statusCode),
         requestKeyRequestError: self.errorMessage ?: @"",
-        requestKeyBackoffRequest: @(self.countBackoffRequest)
+        requestKeyBackoffRequest: @(self.countBackoffRequest),
+        requestKeyConsecutiveBackoffRequest: @(self.consecutiveBackoffRequest)
     }]];
     
     queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"metrics", [self dictionaryToJsonString:@{

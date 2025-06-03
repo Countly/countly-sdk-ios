@@ -680,6 +680,11 @@ typedef enum : NSUInteger
  */
 @property(nonatomic) BOOL disableSDKBehaviorSettingsUpdates;
 
+/**
+ * Will disable back off mechanism
+ */
+@property (nonatomic) BOOL disableBackoffMechanism;
+
 #if (TARGET_OS_IOS)
 /**
  * Variable to access content configurations.

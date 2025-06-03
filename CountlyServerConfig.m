@@ -20,6 +20,7 @@
 @property (nonatomic) BOOL consentRequired;
 @property (nonatomic) BOOL locationTracking;
 @property (nonatomic) BOOL refreshContentZone;
+@property (nonatomic) BOOL backoffMechanism;
 
 @property (nonatomic) NSInteger limitKeyLength;
 @property (nonatomic) NSInteger limitValueSize;
@@ -34,6 +35,11 @@
 @property (nonatomic) NSInteger dropOldRequestTime;
 @property (nonatomic) NSInteger serverConfigUpdateInterval;
 @property (nonatomic) NSInteger currentServerConfigUpdateInterval;
+
+@property (nonatomic) NSInteger bomAcceptedTimeoutSeconds;
+@property (nonatomic) double bomRQPercentage;
+@property (nonatomic) NSInteger bomRequestAge;
+@property (nonatomic) NSInteger bomDuration;
 
 @property (nonatomic) NSInteger version;
 @property (nonatomic) long long timestamp;
@@ -58,6 +64,7 @@ NSString *const kRSessionTracking = @"st";
 NSString *const kRViewTracking = @"vt";
 NSString *const kRLocationTracking = @"lt";
 NSString *const kRRefreshContentZone = @"rcz";
+NSString *const kRbackoffMechanism = @"bom";
 
 NSString *const kRLimitKeyLength = @"lkl";
 NSString *const kRLimitValueSize = @"lvs";
@@ -72,6 +79,10 @@ NSString *const kRConsentRequired = @"cr";
 NSString *const kRDropOldRequestTime = @"dort";
 NSString *const kRCrashReporting = @"crt";
 NSString *const kRServerConfigUpdateInterval = @"scui";
+NSString *const kRBOMAcceptedTimeout = @"bom_at";
+NSString *const kRBOMRQPercentage = @"bom_rqp";
+NSString *const kRBOMRequestAge = @"bom_ra";
+NSString *const kRBOMDuration = @"bom_d";
 
 @implementation CountlyServerConfig
 
@@ -93,23 +104,12 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
     self = [super init];
     if (self)
     {
-        // Set default values
-        _trackingEnabled = YES;
-        _networkingEnabled = YES;
-        _crashReportingEnabled = YES;
-        _customEventTrackingEnabled = YES;
-        _enterContentZone = NO;
-        _locationTracking = YES;
-        _viewTrackingEnabled = YES;
-        _sessionTrackingEnabled = YES;
-        _loggingEnabled = NO;
-        _refreshContentZone = YES;
-
         _timestamp = 0;
         _version = 0;
         _currentServerConfigUpdateInterval = 4;
         _requestTimer = nil;
         _serverConfigUpdatesDisabled = NO;
+        [self setDefaultValues];
     }
     return self;
 }
@@ -146,6 +146,16 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
     {
         *property = value.integerValue;
         [logString appendFormat:@"%@: %ld, ", key, (long)*property];
+    }
+}
+
+- (void)setDoubleProperty:(double *)property fromDictionary:(NSDictionary *)dictionary key:(NSString *)key logString:(NSMutableString *)logString
+{
+    NSNumber *value = dictionary[key];
+    if (value)
+    {
+        *property = value.doubleValue;
+        [logString appendFormat:@"%@: %lf, ", key, (double)*property];
     }
 }
 
@@ -193,6 +203,11 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
     [self setIntegerProperty:&_serverConfigUpdateInterval fromDictionary:dictionary key:kRServerConfigUpdateInterval logString:logString];
     [self setBoolProperty:&_locationTracking fromDictionary:dictionary key:kRLocationTracking logString:logString];
     [self setBoolProperty:&_refreshContentZone fromDictionary:dictionary key:kRRefreshContentZone logString:logString];
+    [self setBoolProperty:&_backoffMechanism fromDictionary:dictionary key:kRbackoffMechanism logString:logString];
+    [self setIntegerProperty:&_bomAcceptedTimeoutSeconds fromDictionary:dictionary key:kRBOMAcceptedTimeout logString:logString];
+    [self setDoubleProperty:&_bomRQPercentage fromDictionary:dictionary key:kRBOMRQPercentage logString:logString];
+    [self setIntegerProperty:&_bomRequestAge fromDictionary:dictionary key:kRBOMRequestAge logString:logString];
+    [self setIntegerProperty:&_bomDuration fromDictionary:dictionary key:kRBOMDuration logString:logString];
 
     CLY_LOG_D(@"%s, version:[%li], timestamp:[%lli], %@", __FUNCTION__, _version, _timestamp, logString);
 }
@@ -286,6 +301,10 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
     {
         [CountlyLocationManager.sharedInstance disableLocationInfo];
     }
+    
+    if(_backoffMechanism && config.disableBackoffMechanism){
+        _backoffMechanism = NO;
+    }
 }
 
 - (void)fetchServerConfigTimer:(NSTimer *)timer
@@ -361,16 +380,7 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
         if (serverConfigResponse[kRConfig] != nil)
         {
             [CountlyPersistency.sharedInstance storeServerConfig:serverConfigResponse];
-            self->_trackingEnabled = YES;
-            self->_networkingEnabled = YES;
-            self->_crashReportingEnabled = YES;
-            self->_customEventTrackingEnabled = YES;
-            self->_enterContentZone = NO;
-            self->_locationTracking = YES;
-            self->_viewTrackingEnabled = YES;
-            self->_sessionTrackingEnabled = YES;
-            self->_loggingEnabled = NO;
-            self->_refreshContentZone = YES;
+            [self setDefaultValues];
             [self populateServerConfig:serverConfigResponse];
         }
 
@@ -409,6 +419,24 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
     }
 
     CLY_LOG_D(@"serverConfigRequest URL :%@", URL);
+}
+
+- (void)setDefaultValues {
+    _trackingEnabled = YES;
+    _networkingEnabled = YES;
+    _crashReportingEnabled = YES;
+    _customEventTrackingEnabled = YES;
+    _enterContentZone = NO;
+    _locationTracking = YES;
+    _viewTrackingEnabled = YES;
+    _sessionTrackingEnabled = YES;
+    _loggingEnabled = NO;
+    _refreshContentZone = YES;
+    _backoffMechanism = YES;
+    _bomAcceptedTimeoutSeconds = 10;
+    _bomRQPercentage = 0.5;
+    _bomRequestAge = 24;
+    _bomDuration = 60;
 }
 
 - (void)disableSDKBehaviourSettings {
@@ -522,6 +550,31 @@ NSString *const kRServerConfigUpdateInterval = @"scui";
 - (BOOL)refreshContentZoneEnabled
 {
     return _refreshContentZone;
+}
+
+- (BOOL)backoffMechanism
+{
+    return _backoffMechanism;
+}
+
+- (NSInteger)bomAcceptedTimeoutSeconds
+{
+    return _bomAcceptedTimeoutSeconds;
+}
+
+- (double)bomRQPercentage
+{
+    return _bomRQPercentage;
+}
+
+- (NSInteger)bomRequestAge
+{
+    return _bomRequestAge;
+}
+
+- (NSInteger)bomDuration
+{
+    return _bomDuration;
 }
 
 @end
