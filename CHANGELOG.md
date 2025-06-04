@@ -1,8 +1,8 @@
 ## 25.4.2
 * Added fullscreen support for feedback widgets.
-* Added "disableSDKBehaviorSettingsUpdates()" init config method to disable server config updates.
+* Added "disableSDKBehaviorSettingsUpdates" init config parameter to disable server config updates.
 * Improved request queue handling with a built-in backoff mechanism which is enabled by default.
-* Added "disableBackoffMechanism()" init config method to disable backoff behavior.
+* Added "disableBackoffMechanism" init config parameter to disable backoff behavior.
 * Added support for SDK health checks after initialization
 
 ## 25.4.1
