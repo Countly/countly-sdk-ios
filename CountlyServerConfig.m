@@ -380,7 +380,6 @@ NSString *const kRBOMDuration = @"bom_d";
         if (serverConfigResponse[kRConfig] != nil)
         {
             [CountlyPersistency.sharedInstance storeServerConfig:serverConfigResponse];
-            [self setDefaultValues];
             [self populateServerConfig:serverConfigResponse];
         }
 

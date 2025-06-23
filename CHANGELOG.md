@@ -1,3 +1,6 @@
+## XX.XX.XX
+* Mitigated an issue where SDK behavior settings were resetting before fetching new ones.
+
 ## 25.4.2
 * Added fullscreen support for feedback widgets.
 * Added "disableSDKBehaviorSettingsUpdates" init config parameter to disable server config updates.
