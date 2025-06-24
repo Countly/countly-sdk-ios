@@ -1,4 +1,4 @@
-## XX.XX.XX
+## 25.4.3
 * Mitigated an issue where SDK behavior settings were resetting before fetching new ones.
 * Mitigated an issue where latest Behavior settings were overriding previous, now it will be merged.
 
