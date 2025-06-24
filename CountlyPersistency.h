@@ -58,8 +58,8 @@
 - (NSDictionary *)retrieveRemoteConfig;
 - (void)storeRemoteConfig:(NSDictionary *)remoteConfig;
 
-- (NSDictionary *)retrieveServerConfig;
-- (void)storeServerConfig:(NSDictionary *)serverConfig;
+- (NSMutableDictionary *)retrieveServerConfig;
+- (void)storeServerConfig:(NSMutableDictionary *)serverConfig;
 
 - (NSDictionary *)retrieveHealthCheckTrackerState;
 - (void)storeHealthCheckTrackerState:(NSDictionary *)healthCheckTrackerState;
