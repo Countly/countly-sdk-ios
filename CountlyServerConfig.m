@@ -117,7 +117,7 @@ NSString *const kRBOMDuration = @"bom_d";
 - (void)retrieveServerConfigFromStorage:(NSString *)sdkBehaviorSettings
 {
     NSMutableDictionary *persistentBehaviorSettings = [CountlyPersistency.sharedInstance retrieveServerConfig];
-    if (sdkBehaviorSettings)
+    if (persistentBehaviorSettings.count == 0 && sdkBehaviorSettings)
     {
         NSError *error = nil;
         NSDictionary* behaviorSettingsProvided = [NSJSONSerialization JSONObjectWithData:[sdkBehaviorSettings cly_dataUTF8] options:0 error:&error];
