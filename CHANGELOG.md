@@ -1,6 +1,6 @@
 ## 25.4.3
-* Mitigated an issue where SDK behavior settings were resetting before fetching new ones.
-* Mitigated an issue where latest Behavior settings were overriding previous, now it will be merged.
+* Mitigated an issue where SDK behavior settings were set to default when fetching for new config.
+* Mitigated an issue where latest fetched behavior settings were replacing the current settings instead of merging.
 
 ## 25.4.2
 * Added fullscreen support for feedback widgets.
