@@ -1,5 +1,6 @@
 ## XX.XX.XX
 * Mitigated an issue where SDK behavior settings were resetting before fetching new ones.
+* Mitigated an issue where latest Behavior settings were overriding previous, now it will be merged.
 
 ## 25.4.2
 * Added fullscreen support for feedback widgets.
