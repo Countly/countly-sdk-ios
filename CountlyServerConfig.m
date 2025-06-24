@@ -116,16 +116,66 @@ NSString *const kRBOMDuration = @"bom_d";
 
 - (void)retrieveServerConfigFromStorage:(NSString *)sdkBehaviorSettings
 {
-    NSError *error = nil;
-    NSDictionary *serverConfigObject = [CountlyPersistency.sharedInstance retrieveServerConfig];
-    if (serverConfigObject.count == 0 && sdkBehaviorSettings)
+    NSMutableDictionary *persistentBehaviorSettings = [CountlyPersistency.sharedInstance retrieveServerConfig];
+    if (persistentBehaviorSettings.count == 0 && sdkBehaviorSettings)
     {
-        serverConfigObject = [NSJSONSerialization JSONObjectWithData:[sdkBehaviorSettings cly_dataUTF8] options:0 error:&error];
+        NSError *error = nil;
+        id parsed = [NSJSONSerialization JSONObjectWithData:[sdkBehaviorSettings cly_dataUTF8] options:0 error:&error];
+
+        if ([parsed isKindOfClass:[NSDictionary class]]) {
+            persistentBehaviorSettings = [(NSDictionary *)parsed mutableCopy];
+            [CountlyPersistency.sharedInstance storeServerConfig:persistentBehaviorSettings];
+        } else {
+            CLY_LOG_W(@"%s, Failed to parse sdkBehaviorSettings or not a dictionary: %@", __FUNCTION__, error);
+        }
     }
 
-    if (serverConfigObject.count > 0 && !error)
+    [self populateServerConfig:persistentBehaviorSettings];
+}
+
+- (void)mergeBehaviorSettings:(NSMutableDictionary *)baseConfig
+                          withConfig:(NSDictionary *)newConfig
+{
+    // c, t and v paramters must exist
+    if(newConfig.count != 3 || !newConfig[kRConfig]) {
+        CLY_LOG_D(@"%s, missing entries for a behavior settings omitting", __FUNCTION__);
+        return;
+    }
+    
+    if (!newConfig[kRVersion] || !newConfig[kRTimestamp])
     {
-        [self populateServerConfig:serverConfigObject];
+        CLY_LOG_D(@"%s, version or timestamp is missing in the behavioır settings omitting", __FUNCTION__);
+        return;
+    }
+    
+    if(!([newConfig[kRConfig] isKindOfClass:[NSDictionary class]]) || ((NSDictionary *)newConfig[kRConfig]).count == 0){
+        CLY_LOG_D(@"%s, invalid behavior settings omitting", __FUNCTION__);
+        return;
+    }
+            
+    id timestamp = newConfig[kRTimestamp];
+    if (timestamp) {
+        baseConfig[kRTimestamp] = timestamp;
+    }
+
+    id version = newConfig[kRVersion];
+    if (version) {
+        baseConfig[kRVersion] = version;
+    }
+    
+    NSDictionary *cBase = baseConfig[kRConfig] ?: NSMutableDictionary.new;
+    NSDictionary *cNew = newConfig[kRConfig];
+
+    if ([cBase isKindOfClass:[NSDictionary class]] || [cNew isKindOfClass:[NSDictionary class]]) {
+        NSMutableDictionary *cMerged = [cBase mutableCopy];
+
+        [cNew enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+            if (obj != nil && obj != [NSNull null]) {
+                cMerged[key] = obj;
+            }
+        }];
+
+        baseConfig[kRConfig] = cMerged;
     }
 }
 
@@ -379,9 +429,10 @@ NSString *const kRBOMDuration = @"bom_d";
 
         if (serverConfigResponse[kRConfig] != nil)
         {
-            [CountlyPersistency.sharedInstance storeServerConfig:serverConfigResponse];
-            [self setDefaultValues];
-            [self populateServerConfig:serverConfigResponse];
+            NSMutableDictionary *persistentBehaviorSettings = [CountlyPersistency.sharedInstance retrieveServerConfig];
+            [self mergeBehaviorSettings:persistentBehaviorSettings withConfig:serverConfigResponse];
+            [CountlyPersistency.sharedInstance storeServerConfig:persistentBehaviorSettings];
+            [self populateServerConfig:persistentBehaviorSettings];
         }
 
         [self notifySdkConfigChange:config]; // if no config let stored ones to be set

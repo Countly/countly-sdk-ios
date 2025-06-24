@@ -593,16 +593,17 @@ static dispatch_once_t onceToken;
     [NSUserDefaults.standardUserDefaults synchronize];
 }
 
-- (NSDictionary *)retrieveServerConfig
+- (NSMutableDictionary *)retrieveServerConfig
 {
     NSDictionary* serverConfig = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyServerConfigPersistencyKey];
-    if (!serverConfig)
-        serverConfig = NSDictionary.new;
-    
-    return serverConfig;
+    if ([serverConfig isKindOfClass:[NSDictionary class]]) {
+         return [serverConfig mutableCopy];
+     }
+
+     return [NSMutableDictionary new];
 }
 
-- (void)storeServerConfig:(NSDictionary *)serverConfig
+- (void)storeServerConfig:(NSMutableDictionary *)serverConfig
 {
     [NSUserDefaults.standardUserDefaults setObject:serverConfig forKey:kCountlyServerConfigPersistencyKey];
     [NSUserDefaults.standardUserDefaults synchronize];
