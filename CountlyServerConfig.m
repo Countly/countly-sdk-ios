@@ -120,11 +120,13 @@ NSString *const kRBOMDuration = @"bom_d";
     if (persistentBehaviorSettings.count == 0 && sdkBehaviorSettings)
     {
         NSError *error = nil;
-        NSDictionary* behaviorSettingsProvided = [NSJSONSerialization JSONObjectWithData:[sdkBehaviorSettings cly_dataUTF8] options:0 error:&error];
-        if(!error){
-            [self mergeBehaviorSettings:persistentBehaviorSettings withConfig:behaviorSettingsProvided];
-            [CountlyPersistency.sharedInstance storeServerConfig:persistentBehaviorSettings];
+        id parsed = [NSJSONSerialization JSONObjectWithData:[sdkBehaviorSettings cly_dataUTF8] options:0 error:&error];
 
+        if ([parsed isKindOfClass:[NSDictionary class]]) {
+            persistentBehaviorSettings = [(NSDictionary *)parsed mutableCopy];
+            [CountlyPersistency.sharedInstance storeServerConfig:persistentBehaviorSettings];
+        } else {
+            CLY_LOG_W(@"%s, Failed to parse sdkBehaviorSettings or not a dictionary: %@", __FUNCTION__, error);
         }
     }
 
