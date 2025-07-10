@@ -304,13 +304,6 @@ NSString *const kRBOMDuration = @"bom_d";
     CountlyCommon.sharedInstance.maxValueLength = config.sdkInternalLimits.getMaxValueSize;
     CountlyCommon.sharedInstance.maxSegmentationValues = config.sdkInternalLimits.getMaxSegmentationValues;
 
-    config.requiresConsent = _consentRequired ?: config.requiresConsent;
-    CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
-    if (_consentRequired)
-    {
-        [CountlyConsentManager.sharedInstance cancelConsentForAllFeatures];
-    }
-
     config.eventSendThreshold = _eventQueueSize ?: config.eventSendThreshold;
     config.requestDropAgeHours = _dropOldRequestTime ?: config.requestDropAgeHours;
     config.storedRequestsLimit = _requestQueueSize ?: config.storedRequestsLimit;
@@ -320,6 +313,13 @@ NSString *const kRBOMDuration = @"bom_d";
 
     config.updateSessionPeriod = _sessionInterval ?: config.updateSessionPeriod;
     _sessionInterval = config.updateSessionPeriod;
+    
+    config.requiresConsent = _consentRequired ?: config.requiresConsent;
+    CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
+    if (_consentRequired)
+    {
+        [CountlyConsentManager.sharedInstance cancelConsentForAllFeatures];
+    }
 
 #if (TARGET_OS_IOS)
     [config.content setZoneTimerInterval:_contentZoneInterval ?: config.content.getZoneTimerInterval];
