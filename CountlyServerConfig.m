@@ -316,10 +316,6 @@ NSString *const kRBOMDuration = @"bom_d";
     
     config.requiresConsent = _consentRequired ?: config.requiresConsent;
     CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
-    if (_consentRequired)
-    {
-        [CountlyConsentManager.sharedInstance cancelConsentForAllFeatures];
-    }
 
 #if (TARGET_OS_IOS)
     [config.content setZoneTimerInterval:_contentZoneInterval ?: config.content.getZoneTimerInterval];
