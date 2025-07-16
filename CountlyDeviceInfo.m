@@ -184,16 +184,23 @@ static dispatch_once_t    onceToken;
 
 + (NSString *)architecture
 {
-  const NXArchInfo *info = NXGetLocalArchInfo();
-  if (info == NULL || info->description == NULL)
-  {
-    return @"unknown";
-  }
+    cpu_type_t type;
+    size_t size = sizeof(type);
+    sysctlbyname("hw.cputype", &type, &size, NULL, 0);
 
-  NSString *typeOfCpu = [NSString stringWithUTF8String:info->description];
-  typeOfCpu           = [[typeOfCpu lowercaseString] stringByReplacingOccurrencesOfString:@" " withString:@""];
+    if (type == CPU_TYPE_ARM64)
+        return @"arm64";
 
-  return typeOfCpu;
+    if (type == CPU_TYPE_ARM)
+        return @"armv7";
+
+    if (type == CPU_TYPE_ARM64_32)
+        return @"arm64_32";
+
+    if (type == CPU_TYPE_X86)
+        return @"x86_64";
+
+    return nil;
 }
 
 + (NSString *)osName
@@ -454,6 +461,48 @@ static dispatch_once_t    onceToken;
 {
   return CountlyDeviceInfo.sharedInstance.isInBackground;
 }
+
++ (NSString *)architectureNameForCPUType:(cpu_type_t)cpuType subtype:(cpu_subtype_t)cpuSubtype {
+    cpu_subtype_t baseSubtype = cpuSubtype & ~CPU_SUBTYPE_PTRAUTH_ABI;
+    switch (cpuType) {
+        case CPU_TYPE_ARM:
+            switch (baseSubtype) {
+                case CPU_SUBTYPE_ARM_V7: return @"armv7";
+                case CPU_SUBTYPE_ARM_V7K: return @"armv7k"; // watchOS
+                case CPU_SUBTYPE_ARM_V8: return @"armv8";
+                default: return @"arm";
+            }
+
+        case CPU_TYPE_ARM64:
+            switch (baseSubtype) {
+                case CPU_SUBTYPE_ARM64_ALL: return @"arm64";
+                case CPU_SUBTYPE_ARM64_V8: return @"arm64v8";
+                case CPU_SUBTYPE_ARM64E: return @"arm64e";
+                default: return @"arm64";
+            }
+
+        case CPU_TYPE_ARM64_32:
+            switch (baseSubtype) {
+                case CPU_SUBTYPE_ARM64_32_ALL: return @"arm64_32";
+                case CPU_SUBTYPE_ARM64_32_V8: return @"arm64_32v8";
+                default: return @"arm64_32";
+            }
+
+        case CPU_TYPE_X86:
+            return @"i386";
+
+        case CPU_TYPE_X86_64:
+            switch (baseSubtype) {
+                case CPU_SUBTYPE_X86_64_ALL: return @"x86_64";
+                case CPU_SUBTYPE_X86_64_H: return @"x86_64h";
+                default: return @"x86_64";
+            }
+
+        default:
+            return @"unknown";
+    }
+}
+
 
 - (void)resetInstance
 {
