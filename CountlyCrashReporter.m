@@ -433,7 +433,7 @@ void CountlySignalHandler(int signalCode)
         if(imageHeader->cputype){
             cpuType = imageHeader->cputype;
         }
-        if (imageHeader->cpusubtype) {
+        if (imageHeader->cpusubtype && (cpuSubType == 0 || imageHeader->cpusubtype > cpuSubType)) {
             cpuSubType = imageHeader->cpusubtype;
         }
 
