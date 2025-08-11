@@ -207,7 +207,7 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
     }]];
     
     queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"metrics", [self dictionaryToJsonString:@{
-        kCountlyAppVersionKey: CountlyDeviceInfo.appVersion
+        CLYMetricKeyAppVersion: CountlyDeviceInfo.appVersion
     }]];
 
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
