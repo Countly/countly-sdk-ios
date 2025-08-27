@@ -159,7 +159,8 @@ NSInteger const contentInitialDelay = 4;
         NSString *pathToHtml = jsonResponse[@"html"];
         NSDictionary *placementCoordinates = jsonResponse[@"geo"];
         if(pathToHtml) {
-            [self showContentWithHtmlPath:pathToHtml placementCoordinates:placementCoordinates];
+            // Perform HEAD request to validate URL and content type
+            [self validateHtmlUrlWithHeadRequest:pathToHtml placementCoordinates:placementCoordinates];
         }
         self->_isRequestQueueLocked = NO;
     }];
@@ -210,6 +211,39 @@ NSInteger const contentInitialDelay = 4;
     
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:resolutionDict options:0 error:nil];
     return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+}
+
+- (void)validateHtmlUrlWithHeadRequest:(NSString *)urlString placementCoordinates:(NSDictionary *)placementCoordinates {
+    NSURL *url = [NSURL URLWithString:urlString];
+    
+    if (!url || !url.scheme || !url.host) {
+        CLY_LOG_E(@"%s, The URL is not valid for HEAD request: %@", __FUNCTION__, urlString);
+        return;
+    }
+    
+    NSMutableURLRequest *headRequest = [NSMutableURLRequest requestWithURL:url];
+    headRequest.HTTPMethod = @"HEAD";
+    headRequest.timeoutInterval = [CountlyServerConfig.sharedInstance bomAcceptedTimeoutSeconds];
+    NSURLSession *session = [CountlyCommon.sharedInstance URLSession];
+    
+    NSURLSessionTask *headTask = [session dataTaskWithRequest:headRequest completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        if (error) {
+            CLY_LOG_E(@"%s, HEAD request failed for URL %@: %@", __FUNCTION__, urlString, error);
+            return;
+        }
+        
+        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+        
+        if (httpResponse.statusCode < 200 || httpResponse.statusCode >= 400) {
+            CLY_LOG_E(@"%s, HEAD request returned status %ld for URL: %@", __FUNCTION__, (long)httpResponse.statusCode, urlString);
+            return;
+        }
+        
+        // If validation passes, proceed to show content using the final URL
+        [self showContentWithHtmlPath:urlString placementCoordinates:placementCoordinates];
+    }];
+    
+    [headTask resume];
 }
 
 - (void)showContentWithHtmlPath:(NSString *)urlString placementCoordinates:(NSDictionary *)placementCoordinates {
