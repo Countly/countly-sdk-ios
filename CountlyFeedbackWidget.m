@@ -102,17 +102,8 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     });
 }
 
-- (void)presentWithCallback:(WidgetCallback) widgetCallback;
+- (void)presentWidget_old:(WidgetCallback) widgetCallback;
 {
-    CLY_LOG_I(@"%s %@", __FUNCTION__, widgetCallback);
-    if (!CountlyConsentManager.sharedInstance.consentForFeedback)
-        return;
-        
-    if (self.widgetVersion && ![self.widgetVersion isKindOfClass:[NSNull class]]) {
-        [self presentWidget_new:widgetCallback];
-        return;
-    }
-    
     __block CLYInternalViewController* webVC = CLYInternalViewController.new;
     webVC.view.backgroundColor = [UIColor.blackColor colorWithAlphaComponent:0.4];
     webVC.modalPresentationStyle = UIModalPresentationCustom;
@@ -151,6 +142,53 @@ NSString* const kCountlyFBKeyShown          = @"shown";
         if(widgetCallback)
             widgetCallback(WIDGET_APPEARED);
     }];
+}
+
+- (void)presentWithCallback:(WidgetCallback) widgetCallback;
+{
+    CLY_LOG_I(@"%s %@", __FUNCTION__, widgetCallback);
+    if (!CountlyConsentManager.sharedInstance.consentForFeedback)
+        return;
+        
+    [self validateWidgetUrlAndPresent:widgetCallback];
+}
+
+- (void)validateWidgetUrlAndPresent:(WidgetCallback)widgetCallback {
+    NSURL *url = [self generateWidgetURL];
+    
+    if (!url || !url.scheme || !url.host) {
+        CLY_LOG_E(@"%s, The URL is not valid for HEAD request", __FUNCTION__);
+        return;
+    }
+    
+    NSMutableURLRequest *headRequest = [NSMutableURLRequest requestWithURL:url];
+    headRequest.HTTPMethod = @"HEAD";
+    headRequest.timeoutInterval = [CountlyServerConfig.sharedInstance bomAcceptedTimeoutSeconds];
+    NSURLSession *session = [CountlyCommon.sharedInstance URLSession];
+    
+    NSURLSessionTask *headTask = [session dataTaskWithRequest:headRequest completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        if (error) {
+            CLY_LOG_E(@"%s, HEAD request failed: %@", __FUNCTION__, error);
+            return;
+        }
+        
+        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+        
+        if (httpResponse.statusCode < 200 || httpResponse.statusCode >= 400) {
+            CLY_LOG_E(@"%s, HEAD request returned status %ld", __FUNCTION__, (long)httpResponse.statusCode);
+            return;
+        }
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (self.widgetVersion && ![self.widgetVersion isKindOfClass:[NSNull class]]) {
+               [self presentWidget_new:widgetCallback];
+            } else {
+                [self presentWidget_old:widgetCallback];
+            }
+       });
+    }];
+    
+    [headTask resume];
 }
 
 - (void)getWidgetData:(void (^)(NSDictionary * __nullable widgetData, NSError * __nullable error))completionHandler
