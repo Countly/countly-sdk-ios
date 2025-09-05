@@ -1,5 +1,6 @@
 ## XX.XX.XX
-* Mitigated an issue where in SDK Health Checks request, metrics was not formed correctly.
+* Mitigated an issue about app version info in metrics.
+* Health check requests now include additional metrics.
 
 ## 25.4.3
 * Mitigated an issue where SDK behavior settings were set to default when fetching for new config.
