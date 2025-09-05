@@ -5,42 +5,42 @@
 // Please visit www.count.ly for more information.
 
 #import "CountlyCommon.h"
+#import <mach-o/dyld.h>
+#import <mach-o/arch.h>
+#import <mach/mach_host.h>
 #import <arpa/inet.h>
 #import <ifaddrs.h>
-#import <mach-o/arch.h>
-#import <mach-o/dyld.h>
-#import <mach/mach_host.h>
-#include <sys/sysctl.h>
 #include <sys/types.h>
+#include <sys/sysctl.h>
 
 #if (TARGET_OS_IOS)
-  #if (!TARGET_OS_MACCATALYST)
-    #import <CoreTelephony/CTCarrier.h>
-    #import <CoreTelephony/CTTelephonyNetworkInfo.h>
-  #endif
+#if (!TARGET_OS_MACCATALYST)
+#import <CoreTelephony/CTTelephonyNetworkInfo.h>
+#import <CoreTelephony/CTCarrier.h>
+#endif
 #elif (TARGET_OS_OSX)
   #import <IOKit/ps/IOPowerSources.h>
 #endif
 
-CLYMetricKey const CLYMetricKeyDevice            = @"_device";
-CLYMetricKey const CLYMetricKeyDeviceType        = @"_device_type";
-CLYMetricKey const CLYMetricKeyOS                = @"_os";
-CLYMetricKey const CLYMetricKeyOSVersion         = @"_os_version";
-CLYMetricKey const CLYMetricKeyAppVersion        = @"_app_version";
-CLYMetricKey const CLYMetricKeyCarrier           = @"_carrier";
-CLYMetricKey const CLYMetricKeyResolution        = @"_resolution";
-CLYMetricKey const CLYMetricKeyDensity           = @"_density";
-CLYMetricKey const CLYMetricKeyLocale            = @"_locale";
-CLYMetricKey const CLYMetricKeyHasWatch          = @"_has_watch";
-CLYMetricKey const CLYMetricKeyInstalledWatchApp = @"_installed_watch_app";
+CLYMetricKey const CLYMetricKeyDevice             = @"_device";
+CLYMetricKey const CLYMetricKeyDeviceType         = @"_device_type";
+CLYMetricKey const CLYMetricKeyOS                 = @"_os";
+CLYMetricKey const CLYMetricKeyOSVersion          = @"_os_version";
+CLYMetricKey const CLYMetricKeyAppVersion         = @"_app_version";
+CLYMetricKey const CLYMetricKeyCarrier            = @"_carrier";
+CLYMetricKey const CLYMetricKeyResolution         = @"_resolution";
+CLYMetricKey const CLYMetricKeyDensity            = @"_density";
+CLYMetricKey const CLYMetricKeyLocale             = @"_locale";
+CLYMetricKey const CLYMetricKeyHasWatch           = @"_has_watch";
+CLYMetricKey const CLYMetricKeyInstalledWatchApp  = @"_installed_watch_app";
 
-NSString *const kCountlyAppVersionKey = @"av";
+NSString* const kCountlyAppVersionKey = @"av";
 
-@interface                CountlyDeviceInfo ()
-@property(nonatomic) BOOL isInBackground;
+@interface CountlyDeviceInfo ()
+@property (nonatomic) BOOL isInBackground;
 #if (TARGET_OS_IOS)
   #if (!TARGET_OS_MACCATALYST)
-@property(nonatomic) CTTelephonyNetworkInfo *networkInfo;
+@property (nonatomic) CTTelephonyNetworkInfo* networkInfo;
   #endif
 #endif
 @end
@@ -48,12 +48,10 @@ NSString *const kCountlyAppVersionKey = @"av";
 @implementation CountlyDeviceInfo
 
 static CountlyDeviceInfo *s_sharedInstance = nil;
-static dispatch_once_t    onceToken;
+static dispatch_once_t onceToken;
 + (instancetype)sharedInstance
 {
-  dispatch_once(&onceToken, ^{
-    s_sharedInstance = self.new;
-  });
+    dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
   return s_sharedInstance;
 }
 
@@ -71,17 +69,23 @@ static dispatch_once_t    onceToken;
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
     self.isInBackground = (UIApplication.sharedApplication.applicationState == UIApplicationStateBackground);
 
-    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(applicationDidEnterBackground:) name:UIApplicationDidEnterBackgroundNotification object:nil];
+        [NSNotificationCenter.defaultCenter addObserver:self
+                                               selector:@selector(applicationDidEnterBackground:)
+                                                   name:UIApplicationDidEnterBackgroundNotification
+                                                 object:nil];
 
-    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(applicationWillEnterForeground:) name:UIApplicationWillEnterForegroundNotification object:nil];
+        [NSNotificationCenter.defaultCenter addObserver:self
+                                               selector:@selector(applicationWillEnterForeground:)
+                                                   name:UIApplicationWillEnterForegroundNotification
+                                                 object:nil];
 #endif
   }
 
   return self;
 }
 
-// NOTE: Using this flag instead of a direct call to UIApplication's applicationState method
-//       in order to avoid making a UI call on a non-main thread at the moment of a crash.
+//NOTE: Using this flag instead of a direct call to UIApplication's applicationState method
+//      in order to avoid making a UI call on a non-main thread at the moment of a crash.
 - (void)applicationDidEnterBackground:(NSNotification *)notification
 {
   self.isInBackground = YES;
@@ -104,7 +108,7 @@ static dispatch_once_t    onceToken;
   if (deviceID.length)
     return deviceID;
 
-  NSString *UUID = [CountlyPersistency.sharedInstance retrieveNSUUID];
+    NSString* UUID = [CountlyPersistency.sharedInstance retrieveNSUUID];
   if (!UUID)
   {
     UUID = NSUUID.UUID.UUIDString;
@@ -239,7 +243,7 @@ static dispatch_once_t    onceToken;
   #if (!TARGET_OS_MACCATALYST)
     #pragma GCC diagnostic push
     #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-  // Note: "carrierName" is deprecated and returns '--' value for apps that are built with the iOS 16.4 SDK or later.
+    //Note: "carrierName" is deprecated and returns '--' value for apps that are built with the iOS 16.4 SDK or later.
   if (@available(iOS 16.4, *))
   {
     return nil;
@@ -251,23 +255,23 @@ static dispatch_once_t    onceToken;
     #pragma GCC diagnostic pop
   #endif
 #endif
-  // NOTE: it is not possible to get carrier info on Apple Watches as CoreTelephony is not available.
+    //NOTE: it is not possible to get carrier info on Apple Watches as CoreTelephony is not available.
   return nil;
 }
 
 + (NSString *)resolution
 {
-  CGRect  bounds;
+    CGRect bounds;
   CGFloat scale;
 #if (TARGET_OS_IOS || TARGET_OS_TV)
   bounds = UIScreen.mainScreen.bounds;
-  scale  = UIScreen.mainScreen.scale;
+    scale = UIScreen.mainScreen.scale;
 #elif (TARGET_OS_WATCH)
   bounds = WKInterfaceDevice.currentDevice.screenBounds;
-  scale  = WKInterfaceDevice.currentDevice.screenScale;
+    scale = WKInterfaceDevice.currentDevice.screenScale;
 #elif (TARGET_OS_OSX)
   bounds = NSScreen.mainScreen.frame;
-  scale  = NSScreen.mainScreen.backingScaleFactor;
+    scale = NSScreen.mainScreen.backingScaleFactor;
 #else
   return nil;
 #endif
@@ -301,16 +305,16 @@ static dispatch_once_t    onceToken;
 
 + (NSString *)appBuild
 {
-  return [NSBundle.mainBundle objectForInfoDictionaryKey:(NSString *)kCFBundleVersionKey];
+    return [NSBundle.mainBundle objectForInfoDictionaryKey:(NSString*)kCFBundleVersionKey];
 }
 
 + (NSString *)metrics
 {
-  NSMutableDictionary *metricsDictionary    = NSMutableDictionary.new;
-  metricsDictionary[CLYMetricKeyDevice]     = CountlyDeviceInfo.device;
+    NSMutableDictionary* metricsDictionary = NSMutableDictionary.new;
+    metricsDictionary[CLYMetricKeyDevice] = CountlyDeviceInfo.device;
   metricsDictionary[CLYMetricKeyDeviceType] = CountlyDeviceInfo.deviceType;
-  metricsDictionary[CLYMetricKeyOS]         = CountlyDeviceInfo.osName;
-  metricsDictionary[CLYMetricKeyOSVersion]  = CountlyDeviceInfo.osVersion;
+    metricsDictionary[CLYMetricKeyOS] = CountlyDeviceInfo.osName;
+    metricsDictionary[CLYMetricKeyOSVersion] = CountlyDeviceInfo.osVersion;
   metricsDictionary[CLYMetricKeyAppVersion] = CountlyDeviceInfo.appVersion;
 
   NSString *carrier = CountlyDeviceInfo.carrier;
@@ -318,8 +322,8 @@ static dispatch_once_t    onceToken;
     metricsDictionary[CLYMetricKeyCarrier] = carrier;
 
   metricsDictionary[CLYMetricKeyResolution] = CountlyDeviceInfo.resolution;
-  metricsDictionary[CLYMetricKeyDensity]    = CountlyDeviceInfo.density;
-  metricsDictionary[CLYMetricKeyLocale]     = CountlyDeviceInfo.locale;
+    metricsDictionary[CLYMetricKeyDensity] = CountlyDeviceInfo.density;
+    metricsDictionary[CLYMetricKeyLocale] = CountlyDeviceInfo.locale;
 
   [metricsDictionary addEntriesFromDictionary:CountlyDeviceInfo.sharedInstance.customMetrics];
 
@@ -378,9 +382,9 @@ static dispatch_once_t    onceToken;
 
 + (unsigned long long)freeRAM
 {
-  vm_statistics_data_t   vms;
+    vm_statistics_data_t vms;
   mach_msg_type_number_t ic = HOST_VM_INFO_COUNT;
-  kern_return_t          kr = host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t)&vms, &ic);
+    kern_return_t kr = host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t)&vms, &ic);
   if (kr != KERN_SUCCESS)
     return -1;
 
@@ -418,14 +422,14 @@ static dispatch_once_t    onceToken;
 #elif (TARGET_OS_WATCH)
   return abs((int)(WKInterfaceDevice.currentDevice.batteryLevel * 100));
 #elif (TARGET_OS_OSX)
-  CFTypeRef     sourcesInfo = IOPSCopyPowerSourcesInfo();
-  NSArray      *sources     = (__bridge NSArray *)IOPSCopyPowerSourcesList(sourcesInfo);
-  NSDictionary *source      = sources.firstObject;
+    CFTypeRef sourcesInfo = IOPSCopyPowerSourcesInfo();
+    NSArray *sources = (__bridge NSArray*)IOPSCopyPowerSourcesList(sourcesInfo);
+    NSDictionary *source = sources.firstObject;
   if (!source)
     return 100;
 
   NSInteger currentLevel = ((NSNumber *)(source[@kIOPSCurrentCapacityKey])).integerValue;
-  NSInteger maxLevel     = ((NSNumber *)(source[@kIOPSMaxCapacityKey])).integerValue;
+    NSInteger maxLevel = ((NSNumber *)(source[@kIOPSMaxCapacityKey])).integerValue;
   return (currentLevel / (float)maxLevel) * 100;
 #endif
 
@@ -435,13 +439,13 @@ static dispatch_once_t    onceToken;
 + (NSString *)orientation
 {
 #if (TARGET_OS_IOS)
-  NSArray            *orientations = @[ @"Unknown", @"Portrait", @"PortraitUpsideDown", @"LandscapeLeft", @"LandscapeRight", @"FaceUp", @"FaceDown" ];
-  UIDeviceOrientation orientation  = UIDevice.currentDevice.orientation;
+    NSArray *orientations = @[@"Unknown", @"Portrait", @"PortraitUpsideDown", @"LandscapeLeft", @"LandscapeRight", @"FaceUp", @"FaceDown"];
+    UIDeviceOrientation orientation = UIDevice.currentDevice.orientation;
   if (orientation >= 0 && orientation < orientations.count)
     return orientations[orientation];
 #elif (TARGET_OS_WATCH)
-  NSArray                          *orientations = @[ @"CrownLeft", @"CrownRight" ];
-  WKInterfaceDeviceCrownOrientation orientation  = WKInterfaceDevice.currentDevice.crownOrientation;
+    NSArray *orientations = @[@"CrownLeft", @"CrownRight"];
+    WKInterfaceDeviceCrownOrientation orientation = WKInterfaceDevice.currentDevice.crownOrientation;
   if (orientation >= 0 && orientation < orientations.count)
     return orientations[orientation];
 #endif
@@ -451,8 +455,8 @@ static dispatch_once_t    onceToken;
 
 + (BOOL)isJailbroken
 {
-  FILE *f            = fopen("/bin/bash", "r");
-  BOOL  isJailbroken = (f != NULL);
+    FILE *f = fopen("/bin/bash", "r");
+    BOOL isJailbroken = (f != NULL);
   fclose(f);
   return isJailbroken;
 }
@@ -468,15 +472,13 @@ static dispatch_once_t    onceToken;
         case CPU_TYPE_ARM:
             switch (baseSubtype) {
                 case CPU_SUBTYPE_ARM_V7: return @"armv7";
-                case CPU_SUBTYPE_ARM_V7K: return @"armv7k"; // watchOS
-                case CPU_SUBTYPE_ARM_V8: return @"armv8";
+                case CPU_SUBTYPE_ARM_V7K: return @"armv7"; // watchOS
                 default: return @"arm";
             }
 
         case CPU_TYPE_ARM64:
             switch (baseSubtype) {
                 case CPU_SUBTYPE_ARM64_ALL: return @"arm64";
-                case CPU_SUBTYPE_ARM64_V8: return @"arm64v8";
                 case CPU_SUBTYPE_ARM64E: return @"arm64e";
                 default: return @"arm64";
             }
@@ -484,7 +486,6 @@ static dispatch_once_t    onceToken;
         case CPU_TYPE_ARM64_32:
             switch (baseSubtype) {
                 case CPU_SUBTYPE_ARM64_32_ALL: return @"arm64_32";
-                case CPU_SUBTYPE_ARM64_32_V8: return @"arm64_32v8";
                 default: return @"arm64_32";
             }
 
@@ -507,8 +508,8 @@ static dispatch_once_t    onceToken;
 - (void)resetInstance
 {
   CLY_LOG_I(@"%s", __FUNCTION__);
-  self.deviceID    = nil;
-  onceToken        = 0;
+    self.deviceID = nil;
+    onceToken = 0;
   s_sharedInstance = nil;
 }
 
