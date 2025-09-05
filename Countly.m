@@ -95,7 +95,7 @@ static dispatch_once_t onceToken;
     if (config.disableSDKBehaviorSettingsUpdates) {
         [CountlyServerConfig.sharedInstance disableSDKBehaviourSettings];
     }
-    [CountlyServerConfig.sharedInstance retrieveServerConfigFromStorage:config.sdkBehaviorSettings];
+    [CountlyServerConfig.sharedInstance retrieveServerConfigFromStorage:config];
 
     CountlyCommon.sharedInstance.maxKeyLength = config.sdkInternalLimits.getMaxKeyLength;
     CountlyCommon.sharedInstance.maxValueLength = config.sdkInternalLimits.getMaxValueSize;
