@@ -1,5 +1,8 @@
 ## X.x.X
+* Health check requests now include additional metrics.
 * Improved Content display mechanics
+
+* Mitigated an issue about app version info in metrics.
 
 ## 25.4.3
 * Mitigated an issue where SDK behavior settings were set to default when fetching for new config.
