@@ -1,10 +1,10 @@
 ## XX.XX.XX
-* Health check requests now include additional metrics.
-* Improved Content display mechanics
+* Improved Health Check metric information.
+* Improved Content display mechanics.
+* Improved CPU architecture detection capabilities.
 
-* Mitigated an issue about app version info in metrics.
-* Mitigated an issue where the SDK didn't apply the stored SBS while in temporary ID mode.
-* Mitigated an issue about app version info in metrics.
+* Mitigated an issue about app version info in Health Check metrics.
+* Mitigated an SBS issue while in temporary ID mode.
 
 ## 25.4.3
 * Mitigated an issue where SDK behavior settings were set to default when fetching for new config.
