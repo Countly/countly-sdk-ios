@@ -1,5 +1,8 @@
 ## XX.XX.XX
+* Health check requests now include additional metrics.
+
 * Mitigated an issue where the SDK didn't apply the stored SBS while in temporary ID mode.
+* Mitigated an issue about app version info in metrics.
 
 ## 25.4.3
 * Mitigated an issue where SDK behavior settings were set to default when fetching for new config.
