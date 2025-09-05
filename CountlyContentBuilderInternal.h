@@ -21,6 +21,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)enterContentZone:(NSArray<NSString *> *)tags;
 - (void)exitContentZone;
 - (void)changeContent:(NSArray<NSString *> *)tags;
+- (void)refreshContentZone;
 
 #endif
 NS_ASSUME_NONNULL_END

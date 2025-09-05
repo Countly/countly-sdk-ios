@@ -21,6 +21,14 @@ NSString* const kCountlyEventKeyHourOfDay     = @"hour";
 NSString* const kCountlyEventKeyDayOfWeek     = @"dow";
 NSString* const kCountlyEventKeyDuration      = @"dur";
 
+/** 
+* This function is a critical component used within the `CountlyPersistency.serializeRecordedEvents` method. 
+* 
+* Note: If this function is modified, ensure that corresponding updates are made to 
+* the `CountlyPersistency.serializeRecordedEvents` method to maintain consistency and prevent potential issues. 
+* 
+* @warning Changes to this function may have downstream effects. Proceed with caution. 
+*/
 - (NSDictionary *)dictionaryRepresentation
 {
     NSMutableDictionary* eventData = NSMutableDictionary.dictionary;

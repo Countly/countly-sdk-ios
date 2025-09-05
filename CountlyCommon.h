@@ -31,6 +31,7 @@
 #import "CountlyCrashData.h"
 #import "CountlyContentBuilderInternal.h"
 #import "CountlyExperimentalConfig.h"
+#import "CountlyHealthTracker.h"
 
 #define CLY_LOG_E(fmt, ...) CountlyInternalLog(CLYInternalLogLevelError, fmt, ##__VA_ARGS__)
 #define CLY_LOG_W(fmt, ...) CountlyInternalLog(CLYInternalLogLevelWarning, fmt, ##__VA_ARGS__)
@@ -88,7 +89,6 @@ extern NSString* const kCountlySDKName;
 @property (nonatomic) BOOL manualSessionHandling;
 @property (nonatomic) BOOL enableManualSessionControlHybridMode;
 @property (nonatomic) BOOL enableOrientationTracking;
-@property (nonatomic) BOOL enableServerConfiguration;
 
 @property (nonatomic) BOOL enableVisibiltyTracking;
 
@@ -124,6 +124,8 @@ void CountlyPrint(NSString *stringToPrint);
 - (BOOL)hasStarted_;
 
 - (NSURLSession *)URLSession;
+
+- (CGSize)getWindowSize;
 @end
 
 

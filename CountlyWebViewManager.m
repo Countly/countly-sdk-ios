@@ -9,6 +9,12 @@
 
 @property (nonatomic, strong) PassThroughBackgroundView *backgroundView;
 @property (nonatomic, copy) void (^dismissBlock)(void);
+@property (nonatomic, copy) void (^appearBlock)(void);
+@property (nonatomic) BOOL topMarginApplied;
+@property (nonatomic) float topMargin;
+@property (nonatomic, strong) NSTimer *loadTimeoutTimer;
+@property (nonatomic, strong) NSDate *loadStartDate;
+@property (nonatomic) BOOL hasAppeared;
 @end
 
 @implementation CountlyWebViewManager
@@ -18,11 +24,17 @@
                  appearBlock:(void(^ __nullable)(void))appearBlock
                 dismissBlock:(void(^ __nullable)(void))dismissBlock {
     self.dismissBlock = dismissBlock;
+    self.appearBlock = appearBlock;
+    self.hasAppeared = NO;
+    // TODO: keyWindow deprecation fix
     UIViewController *rootViewController = UIApplication.sharedApplication.keyWindow.rootViewController;
+    self.topMarginApplied = NO;
+    self.topMargin = 0;
     CGRect backgroundFrame = rootViewController.view.bounds;
-    
     self.backgroundView = [[PassThroughBackgroundView alloc] initWithFrame:backgroundFrame];
+    [self applyTopMargin];
     self.backgroundView.backgroundColor = [UIColor clearColor];
+    self.backgroundView.hidden = YES;
     [rootViewController.view addSubview:self.backgroundView];
     
     WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
@@ -39,15 +51,37 @@
     
     self.backgroundView.webView = webView;
     self.backgroundView.dismissButton = dismissButton;
-    [webView evaluateJavaScript:@"document.readyState" completionHandler:^(id _Nullable result, NSError * _Nullable error) {
-        if ([result isKindOfClass:[NSString class]] && [(NSString *)result isEqualToString:@"complete"]) {
-            NSLog(@"Web view has finished loading");
-            self.backgroundView.hidden = NO;
-            if (appearBlock) {
-                appearBlock();
+}
+
+- (void)applyTopMargin{
+    UIWindow *window = nil;
+    if (@available(iOS 13.0, *)) {
+        for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+            if ([scene isKindOfClass:[UIWindowScene class]]) {
+                window = ((UIWindowScene *)scene).windows.firstObject;
+                break;
             }
         }
-    }];
+    } else {
+        window = [[UIApplication sharedApplication].delegate window];
+    }
+    
+    if (@available(iOS 11.0, *)) {
+        UIEdgeInsets safeArea = window.safeAreaInsets;
+        UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
+        if(!UIInterfaceOrientationIsLandscape(orientation) && !self.topMarginApplied){
+            self.topMarginApplied = YES;
+            CGRect newFrame = self.backgroundView.frame;
+            newFrame.origin.y += safeArea.top;
+            self.backgroundView.frame = newFrame;
+            self.topMargin = safeArea.top;
+        } else if(UIInterfaceOrientationIsLandscape(orientation) && self.topMarginApplied){
+            self.topMarginApplied = NO;
+            CGRect newFrame = self.backgroundView.frame;
+            newFrame.origin.y -= self.topMargin;
+            self.backgroundView.frame = newFrame;
+        }
+    }
 }
 
 - (void)configureWebView:(WKWebView *)webView {
@@ -66,6 +100,9 @@
     dismissButton.onClick = ^(id sender) {
         if (self.dismissBlock) {
             dispatch_async(dispatch_get_main_queue(), ^{
+                [self.loadTimeoutTimer invalidate];
+                self.loadTimeoutTimer = nil;
+                self.loadStartDate = nil;
                 self.dismissBlock();
                 [self.backgroundView removeFromSuperview];
             });
@@ -84,26 +121,27 @@
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
     NSString *url = navigationAction.request.URL.absoluteString;
     
-    if ([url hasPrefix:@"https://countly_action_event"] && [url containsString:@"cly_x_action_event=1"]) {
-        NSDictionary *queryParameters = [self parseQueryString:url];
-        NSString *action = queryParameters[@"action"];
-        if(action) {
-            if ([action isEqualToString:@"event"]) {
-                NSString *eventsJson = queryParameters[@"event"];
-                if(eventsJson) {
-                    [self recordEventsWithJSONString:eventsJson];
-                }
-            } else if ([action isEqualToString:@"link"]) {
-                NSString *link = queryParameters[@"link"];
-                if(link) {
-                    [self openExternalLink:link];
-                }
-            } else if ([action isEqualToString:@"resize_me"]) {
-                NSString *resize = queryParameters[@"resize_me"];
-                if(resize) {
-                    [self resizeWebViewWithJSONString:resize];
-                }
+    if ([url containsString:@"cly_x_int=1"]) {
+        CLY_LOG_I(@"%s Opening url [%@] in external browser", __FUNCTION__, url);
+        [[UIApplication sharedApplication] openURL:navigationAction.request.URL options:@{} completionHandler:^(BOOL success) {
+            if (success) {
+                CLY_LOG_I(@"%s url [%@] opened in external browser", __FUNCTION__, url);
             }
+            else {
+                CLY_LOG_I(@"%s unable to open url [%@] in external browser", __FUNCTION__, url);
+            }
+        }];
+        decisionHandler(WKNavigationActionPolicyCancel);
+        return;
+    }
+    
+    if ([url hasPrefix:@"https://countly_action_event"]) {
+        NSDictionary *queryParameters = [self parseQueryString:url];
+        
+        if([url containsString:@"cly_x_action_event=1"]){
+            [self contentURLAction:queryParameters];
+        } else if([url containsString:@"cly_widget_command=1"]){
+            [self widgetURLAction:queryParameters];
         }
         
         if ([queryParameters[@"close"] boolValue]) {
@@ -116,12 +154,95 @@
     }
 }
 
+- (void)webView:(WKWebView *)webView decidePolicyForNavigationResponse:(WKNavigationResponse *)navigationResponse decisionHandler:(void (^)(WKNavigationResponsePolicy))decisionHandler {
+    NSURLResponse *response = navigationResponse.response;
+    NSString *mimeType = response.MIMEType ?: @"(unknown)";
+    long statusCode = 0;
+    NSDictionary *headers = nil;
+    if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
+        NSHTTPURLResponse *http = (NSHTTPURLResponse *)response;
+        statusCode = http.statusCode;
+        headers = http.allHeaderFields;
+    }
+
+    CLY_LOG_I(@"%s Navigation response received: URL=%@, MIME=%@, status=%ld, headers=%@",
+              __FUNCTION__, response.URL.absoluteString, mimeType, statusCode, headers);
+
+    if (statusCode >= 400) {
+        CLY_LOG_I(@"%s Cancelling navigation due to HTTP status code: %ld", __FUNCTION__, statusCode);
+        decisionHandler(WKNavigationResponsePolicyCancel);
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self closeWebView];
+        });
+        return;
+    }
+
+    decisionHandler(WKNavigationResponsePolicyAllow);
+}
+
+- (void)webView:(WKWebView *)webView didReceiveServerRedirectForProvisionalNavigation:(WKNavigation *)navigation {
+    CLY_LOG_I(@"%s Server redirect received for navigation: %@", __FUNCTION__, navigation);
+}
+
+- (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error {
+    [self.loadTimeoutTimer invalidate];
+    self.loadTimeoutTimer = nil;
+    CLY_LOG_I(@"%s Provisional navigation failed: %@ (%ld). Closing web view.", __FUNCTION__, error.localizedDescription, (long)error.code);
+    [self closeWebView];
+}
+
+- (void)webView:(WKWebView *)webView didCommitNavigation:(WKNavigation *)navigation {
+    CLY_LOG_I(@"%s Content started arriving (didCommitNavigation).", __FUNCTION__);
+}
+
+- (void)webView:(WKWebView *)webView didFailNavigation:(WKNavigation *)navigation withError:(NSError *)error {
+    [self.loadTimeoutTimer invalidate];
+    self.loadTimeoutTimer = nil;
+    CLY_LOG_I(@"%s Navigation failed after commit: %@ (%ld). Closing web view.", __FUNCTION__, error.localizedDescription, (long)error.code);
+    [self closeWebView];
+}
+
+- (void)webView:(WKWebView *)webView didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential *credential))completionHandler {
+    CLY_LOG_I(@"%s Received authentication challenge for host: %@, protectionSpace: %@", __FUNCTION__, challenge.protectionSpace.host, challenge.protectionSpace.authenticationMethod);
+    // sth custom if needed later?
+    completionHandler(NSURLSessionAuthChallengePerformDefaultHandling, nil);
+}
+
+- (void)webViewWebContentProcessDidTerminate:(WKWebView *)webView {
+    CLY_LOG_I(@"%s Web content process terminated for URL: %@.", __FUNCTION__, webView.URL.absoluteString);
+    // reload?
+}
+
 - (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(WKNavigation *)navigation {
     CLY_LOG_I(@"%s Web view has started loading", __FUNCTION__);
+    [self.loadTimeoutTimer invalidate];
+    __weak typeof(self) weakSelf = self;
+    self.loadTimeoutTimer = [NSTimer scheduledTimerWithTimeInterval:60.0 repeats:NO block:^(NSTimer * _Nonnull timer) {
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+        [strongSelf loadDidTimeout];
+    }];
+    self.loadStartDate = [NSDate date];
 }
 
 - (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
+    [self.loadTimeoutTimer invalidate];
+    self.loadTimeoutTimer = nil;
     CLY_LOG_I(@"%s Web view has finished loading", __FUNCTION__);
+    if (self.loadStartDate) {
+        NSTimeInterval loadDuration = [[NSDate date] timeIntervalSinceDate:self.loadStartDate];
+        CLY_LOG_I(@"%s Web view load duration: %.3f seconds", __FUNCTION__, loadDuration);
+        self.loadStartDate = nil;
+    }
+
+    if (self.hasAppeared) return;
+    self.hasAppeared = YES;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        self.backgroundView.hidden = NO;
+        if (self.appearBlock) {
+            self.appearBlock();
+        }
+    });
 }
 
 - (void)animateView:(UIView *)view withAnimationType:(AnimationType)animationType {
@@ -159,6 +280,32 @@
     }];
 }
 
+- (void)contentURLAction:(NSDictionary *)queryParameters {
+    NSString *action = queryParameters[@"action"];
+    if(action) {
+        if ([action isEqualToString:@"event"]) {
+            NSString *eventsJson = queryParameters[@"event"];
+            if(eventsJson) {
+                [self recordEventsWithJSONString:eventsJson];
+            }
+        } else if ([action isEqualToString:@"link"]) {
+            NSString *link = queryParameters[@"link"];
+            if(link) {
+                [self openExternalLink:link];
+            }
+        } else if ([action isEqualToString:@"resize_me"]) {
+            NSString *resize = queryParameters[@"resize_me"];
+            if(resize) {
+                [self resizeWebViewWithJSONString:resize];
+            }
+        }
+    }
+}
+
+- (void)widgetURLAction:(NSDictionary *)queryParameters {
+    // none action yet
+}
+
 - (NSDictionary *)parseQueryString:(NSString *)url {
     NSMutableDictionary *queryDict = [NSMutableDictionary dictionary];
     NSArray *urlComponents = [url componentsSeparatedByString:@"?"];
@@ -191,12 +338,15 @@
     NSArray *events = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
     
     if (error) {
-        NSLog(@"Error parsing JSON: %@", error);
+        CLY_LOG_I(@"%s Error parsing JSON: %@", __FUNCTION__, error);
     } else {
-        NSLog(@"Parsed JSON: %@", events);
+        CLY_LOG_I(@"%s Parsed JSON: %@", __FUNCTION__, events);
     }
 
-    
+    if (!events || ![events isKindOfClass:[NSArray class]]) {
+        CLY_LOG_I(@"Events array should not be empty or nil, and should be of type NSArray");
+        return;
+    }
     for (NSDictionary *event in events) {
         NSString *key = event[@"key"];
         NSDictionary *segmentation = event[@"segmentation"];
@@ -215,6 +365,8 @@
         
         [Countly.sharedInstance recordEvent:key segmentation:segmentation];
     }
+    
+    [CountlyConnectionManager.sharedInstance attemptToSendStoredRequests];
 }
 
 - (void)openExternalLink:(NSString *)urlString {
@@ -274,6 +426,8 @@
     CGFloat y = [dimensions[@"y"] floatValue];
     CGFloat width = [dimensions[@"w"] floatValue];
     CGFloat height = [dimensions[@"h"] floatValue];
+        
+    [self applyTopMargin];
     
     // Animate the resizing of the web view
     [UIView animateWithDuration:0.3 animations:^{
@@ -284,17 +438,26 @@
         frame.size.height = height;
         self.backgroundView.webView.frame = frame;
     } completion:^(BOOL finished) {
-        CLY_LOG_I(@"Resized web view to width: %f, height: %f", width, height);
+        CLY_LOG_I(@"%s, Resized web view to width: %f, height: %f", __FUNCTION__, width, height);
     }];
 }
 
 - (void)closeWebView {
     dispatch_async(dispatch_get_main_queue(), ^{
+        self.loadStartDate = nil;
+        [self.loadTimeoutTimer invalidate];
+        self.loadTimeoutTimer = nil;
         if (self.dismissBlock) {
             self.dismissBlock();
         }
         [self.backgroundView removeFromSuperview];
     });
+}
+
+- (void)loadDidTimeout {
+    if (self.hasAppeared) return;
+    CLY_LOG_I(@"%s Web view load timed out after 60s, closing", __FUNCTION__);
+    [self closeWebView];
 }
 #endif
 @end

@@ -48,36 +48,6 @@
     }
 }
 
-CGSize getWindowSize(void) {
-    CGSize size = CGSizeZero;
-
-    // Attempt to retrieve the size from the connected scenes (for modern apps)
-    if (@available(iOS 13.0, *)) {
-        NSSet<UIScene *> *scenes = [[UIApplication sharedApplication] connectedScenes];
-        for (UIScene *scene in scenes) {
-            if ([scene isKindOfClass:[UIWindowScene class]]) {
-                UIWindowScene *windowScene = (UIWindowScene *)scene;
-                UIWindow *window = windowScene.windows.firstObject;
-                if (window) {
-                    size = window.bounds.size;
-                    return size; // Return immediately if we find a valid size
-                }
-            }
-        }
-    }
-
-    // Fallback for legacy apps using AppDelegate
-    id<UIApplicationDelegate> appDelegate = [[UIApplication sharedApplication] delegate];
-    if ([appDelegate respondsToSelector:@selector(window)]) {
-        UIWindow *legacyWindow = [appDelegate performSelector:@selector(window)];
-        if (legacyWindow) {
-            size = legacyWindow.bounds.size;
-        }
-    }
-
-    return size;
-}
-
 - (void)handleScreenChange {
     // Execute after a short delay to ensure properties are updated
     dispatch_async(dispatch_get_main_queue(), ^{
@@ -86,7 +56,7 @@ CGSize getWindowSize(void) {
 }
 
 - (void)updateWindowSize {
-    CGSize size = getWindowSize();
+    CGSize size = [CountlyCommon.sharedInstance getWindowSize];
     CGFloat width = size.width;
     CGFloat height = size.height;
     
@@ -96,7 +66,7 @@ CGSize getWindowSize(void) {
                              height];
     [self.webView evaluateJavaScript:postMessage completionHandler:^(id result, NSError *err) {
         if (err != nil) {
-            CLY_LOG_E(@"[PassThroughBackgroundView] updateWindowSize, %@", err);
+            CLY_LOG_E(@"%s updateWindowSize, %@", __FUNCTION__, err);
         }
     }];
 }

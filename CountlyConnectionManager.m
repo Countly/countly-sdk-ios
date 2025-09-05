@@ -5,6 +5,7 @@
 // Please visit www.count.ly for more information.
 
 #import "CountlyCommon.h"
+#import <stdatomic.h>
 
 @interface CountlyConnectionManager ()
 {
@@ -16,6 +17,8 @@
 @property (nonatomic) NSURLSession* URLSession;
 
 @property (nonatomic, strong) NSDate *startTime;
+@property (nonatomic, assign) atomic_bool backoff;
+
 
 @end
 
@@ -82,6 +85,7 @@ NSString* const kCountlyEndpointWidget = @"/widget";
 NSString* const kCountlyEndpointSurveys = @"/surveys";
 
 const NSInteger kCountlyGETRequestMaxLength = 2048;
+static const NSTimeInterval CONNECTION_TIMEOUT = 30.0;
 
 @implementation CountlyConnectionManager : NSObject
 
@@ -101,6 +105,7 @@ static dispatch_once_t onceToken;
     {
         unsentSessionLength = 0.0;
         isSessionStarted = NO;
+        atomic_init(&_backoff, NO);
     }
 
     return self;
@@ -176,6 +181,12 @@ static dispatch_once_t onceToken;
         return;
     }
     
+    BOOL backoffFlag = atomic_load(&_backoff) ? YES : NO;
+    if (backoffFlag) {
+        CLY_LOG_I(@"%s, currently backed off, skipping proceeding the queue", __FUNCTION__);
+        return;
+    }
+    
     if (!self.startTime) {
         self.startTime = [NSDate date]; // Record start time only when it's not already recorded
         CLY_LOG_D(@"Proceeding on queue started, queued request count %lu", [CountlyPersistency.sharedInstance remainingRequestCount]);
@@ -212,6 +223,8 @@ static dispatch_once_t onceToken;
         return;
     }
 
+    _URLSessionConfiguration.timeoutIntervalForRequest = CONNECTION_TIMEOUT;
+    _URLSessionConfiguration.timeoutIntervalForResource = CONNECTION_TIMEOUT;
     NSString* queryString = firstItemInQueue;
     NSString* endPoint = kCountlyEndpointI;
     
@@ -271,11 +284,12 @@ static dispatch_once_t onceToken;
     }
 
     request.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
-
+    NSDate *startTimeRequest = [NSDate date];
     self.connection = [self.URLSession dataTaskWithRequest:request completionHandler:^(NSData * data, NSURLResponse * response, NSError * error)
     {
         self.connection = nil;
-
+        NSDate *endTimeRequest = [NSDate date];
+        long duration = (long)[endTimeRequest timeIntervalSinceDate:startTimeRequest];
         
         CLY_LOG_V(@"Approximate received data size for request <%p> is %ld bytes.", (id)request, (long)data.length);
         
@@ -294,12 +308,21 @@ static dispatch_once_t onceToken;
                 [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
 
                 [CountlyPersistency.sharedInstance saveToFile];
+                
+                if(CountlyServerConfig.sharedInstance.backoffMechanism && [self backoff:duration queryString:queryString]){
+                    CLY_LOG_D(@"%s, backed off dropping proceeding the queue", __FUNCTION__);
+                    self.startTime = nil;
+                    [self backoffCountdown];
+                } else {
+                    [self proceedOnQueue];
 
-                [self proceedOnQueue];
+                }
             }
             else
             {
                 CLY_LOG_D(@"%s, request:[ <%p> ] failed! response:[ %@ ]", __FUNCTION__, request, [data cly_stringUTF8]);
+                [CountlyHealthTracker.sharedInstance logFailedNetworkRequestWithStatusCode:((NSHTTPURLResponse*)response).statusCode errorResponse: [data cly_stringUTF8]];
+                [CountlyHealthTracker.sharedInstance saveState];
                 self.startTime = nil;
             }
         }
@@ -317,6 +340,54 @@ static dispatch_once_t onceToken;
 
     [self logRequest:request];
 }
+
+- (BOOL)backoff:(long)responseTimeSeconds queryString:(NSString *)queryString
+{
+    BOOL result = NO;
+    // Check if the current response time is within acceptable limits
+    if (responseTimeSeconds >= [CountlyServerConfig.sharedInstance bomAcceptedTimeoutSeconds]) {
+        // Check if the remaining request count is within acceptable limits
+        NSUInteger remainingRequests = [CountlyPersistency.sharedInstance remainingRequestCount];
+        NSUInteger threshold = (NSUInteger)(CountlyPersistency.sharedInstance.storedRequestsLimit * [CountlyServerConfig.sharedInstance bomRQPercentage]);
+        
+        if (remainingRequests <= threshold) {
+            // Calculate the age of the current request
+            double requestTimestamp = [[queryString cly_valueForQueryStringKey:kCountlyQSKeyTimestamp] longLongValue] / 1000.0;
+            double requestAgeInSeconds = [NSDate date].timeIntervalSince1970 - requestTimestamp;
+            
+            if (requestAgeInSeconds <= [CountlyServerConfig.sharedInstance bomRequestAge] * 3600.0) {
+                // Server is too busy, back off
+                result = YES;
+                [CountlyHealthTracker.sharedInstance logBackoffRequest];
+            }
+        }
+    }
+    
+    if (!result) {
+        [CountlyHealthTracker.sharedInstance logConsecutiveBackoffRequest];
+    }
+    
+    return result;
+}
+
+- (void)backoffCountdown
+{
+    __weak typeof(self) weakSelf = self;
+    CLY_LOG_D(@"%s, backed off, countdown start for %f seconds", __FUNCTION__, [CountlyServerConfig.sharedInstance bomDuration]);
+
+    atomic_store(&_backoff, YES);
+    dispatch_time_t delay = dispatch_time(DISPATCH_TIME_NOW, (int64_t)([CountlyServerConfig.sharedInstance bomDuration] * NSEC_PER_SEC));
+    dispatch_after(delay, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+        
+        
+        CLY_LOG_D(@"%s, countdown finished, running tick in background thread", __FUNCTION__);
+        atomic_store(&strongSelf->_backoff, NO);
+        [strongSelf proceedOnQueue];
+    });
+}
+
 
 - (NSString*)extractAndRemoveOverrideEndPoint:(NSString **)queryString
 {
@@ -356,6 +427,9 @@ static dispatch_once_t onceToken;
     if (!CountlyConsentManager.sharedInstance.consentForSessions)
         return;
     
+    if(!CountlyServerConfig.sharedInstance.sessionTrackingEnabled)
+        return;
+    
     if (isSessionStarted) {
         CLY_LOG_W(@"%s A session is already running, this 'beginSession' will be ignored", __FUNCTION__);
         return;
@@ -387,9 +461,11 @@ static dispatch_once_t onceToken;
                              kCountlyQSKeySessionBegin, @"1",
                              kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
 
-    NSString* locationRelatedInfoQueryString = [self locationRelatedInfoQueryString];
-    if (locationRelatedInfoQueryString)
-        queryString = [queryString stringByAppendingString:locationRelatedInfoQueryString];
+    if(CountlyServerConfig.sharedInstance.locationTrackingEnabled) {
+        NSString* locationRelatedInfoQueryString = [self locationRelatedInfoQueryString];
+        if (locationRelatedInfoQueryString)
+            queryString = [queryString stringByAppendingString:locationRelatedInfoQueryString];
+    }
 
     NSString* attributionQueryString = [self attributionQueryString];
     if (attributionQueryString)
@@ -405,6 +481,9 @@ static dispatch_once_t onceToken;
 - (void)updateSession
 {
     if (!CountlyConsentManager.sharedInstance.consentForSessions)
+        return;
+    
+    if(!CountlyServerConfig.sharedInstance.sessionTrackingEnabled)
         return;
     
     if (!isSessionStarted) {
@@ -423,6 +502,9 @@ static dispatch_once_t onceToken;
 - (void)endSession
 {
     if (!CountlyConsentManager.sharedInstance.consentForSessions)
+        return;
+    
+    if(!CountlyServerConfig.sharedInstance.sessionTrackingEnabled)
         return;
     
     if (!isSessionStarted) {

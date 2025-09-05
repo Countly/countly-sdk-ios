@@ -102,7 +102,7 @@ class CountlyDeviceIDTests: CountlyBaseTestCase {
     }
     
     func validateSetIdOnServerRequest(request: String, newDeviceId: String) {
-        let parsedRequest = parseQueryString(request)
+        let parsedRequest = TestUtils.parseQueryString(request)
         
         let sdkDeviceID = Countly.sharedInstance().deviceID()
         
@@ -116,17 +116,13 @@ class CountlyDeviceIDTests: CountlyBaseTestCase {
     }
     
     func getIDFV() -> String {
-#if (os(iOS) || os(tvOS))
-        return UIDevice.current.identifierForVendor?.uuidString ?? ""
-#else
-        var UUID = CountlyPersistency.sharedInstance().retrieveNSUUID()
-        if UUID == nil {
-            UUID = UUID().uuidString
-            CountlyPersistency.sharedInstance().storeNSUUID(UUID)
+        var uuid = CountlyPersistency.sharedInstance().retrieveNSUUID()
+        if uuid == nil {
+            uuid = UUID().uuidString
+            CountlyPersistency.sharedInstance().storeNSUUID(uuid)
         }
         
-        return UUID ?? ""
-#endif
+        return uuid ?? ""
     }
     
 }

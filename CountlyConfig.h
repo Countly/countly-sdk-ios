@@ -667,7 +667,23 @@ typedef enum : NSUInteger
  * For enabling fetching and application of server config values.
  * @discussion If set, Server Config values from Countly Server will be fetched at the beginning of a session.
  */
-@property (nonatomic) BOOL enableServerConfiguration;
+@property(nonatomic) BOOL enableServerConfiguration DEPRECATED_MSG_ATTRIBUTE("Will do nothing");
+;
+
+/**
+ * Set the server configuration to be set while initializing the SDK
+ */
+@property(nonatomic, copy) NSString *sdkBehaviorSettings;
+
+/**
+ * Disable the server configuration updates to the server
+ */
+@property(nonatomic) BOOL disableSDKBehaviorSettingsUpdates;
+
+/**
+ * Will disable back off mechanism
+ */
+@property (nonatomic) BOOL disableBackoffMechanism;
 
 #if (TARGET_OS_IOS)
 /**

@@ -62,7 +62,7 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
         XCTAssertEqual(1, CountlyPersistency.sharedInstance().remainingRequestCount())
         
         try validateCrash(
-            extractStackTrace(exception3),
+            CountlyCrashReporterTests.extractStackTrace(exception3),
             breadcrumbs: "Breadcrumb_1\nBreadcrumb_2",
             isFatal: true,
             changedBits: 11,
@@ -83,7 +83,7 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
     func validateCrash(_ stackTrace: String?, breadcrumbs: String, isFatal: Bool, changedBits: Int, customSegmentation: [String: Any], idx: Int, customMetrics: [String: Any], metricsToExclude: [String]) throws {
         
         if let queuedRequests = CountlyPersistency.sharedInstance().value(forKey: "queuedRequests") as? [String] {
-            let request = parseQueryString(queuedRequests[idx])
+            let request = TestUtils.parseQueryString(queuedRequests[idx])
             //TestUtils.validateRequiredParams(RQ[idx])
             
             let crash = request["crash"] as! [String: Any]
@@ -162,7 +162,7 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
         }
     }
     
-    func extractStackTrace(_ exception: NSException) -> String? {
+    static func extractStackTrace(_ exception: NSException) -> String? {
         return exception.callStackSymbols.joined(separator: "\n")
     }
     

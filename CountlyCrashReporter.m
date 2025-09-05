@@ -56,6 +56,7 @@ NSString* const kCountlyCRKeyOB                = @"_ob";
 @property (nonatomic) NSDateFormatter* dateFormatter;
 @property (nonatomic) NSString* buildUUID;
 @property (nonatomic) NSString* executableName;
+@property (nonatomic) NSString* architecture;
 #ifdef COUNTLY_PLCRASHREPORTER_EXISTS
 @property (nonatomic) PLCrashReporter* crashReporter;
 #endif
@@ -243,6 +244,9 @@ void CountlyUncaughtExceptionHandler(NSException *exception)
 
 void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDetect)
 {
+    if (!CountlyServerConfig.sharedInstance.crashReportingEnabled)
+        return;
+    
     NSArray* stackTrace = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
     if (!stackTrace)
         stackTrace = exception.callStackSymbols;
@@ -290,6 +294,7 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
         crashReport[kCountlyCRKeyBinaryImages] = [CountlyCrashReporter.sharedInstance binaryImagesForStackTrace:stackTrace];
         crashReport[kCountlyCRKeyBuildUUID] = CountlyCrashReporter.sharedInstance.buildUUID ?: @"";
         crashReport[kCountlyCRKeyExecutableName] = CountlyCrashReporter.sharedInstance.executableName ?: @"";
+        crashReport[kCountlyCRKeyArchitecture] = CountlyCrashReporter.sharedInstance.architecture ?: @"";
         crashReport[kCountlyCRKeyName] = crashData.crashDescription;
         crashReport[kCountlyCRKeyType] = crashData.name;
         crashReport[kCountlyCRKeyNonfatal] = @(!crashData.fatal);
@@ -394,6 +399,8 @@ void CountlySignalHandler(int signalCode)
     NSMutableDictionary* binaryImages = NSMutableDictionary.new;
 
     uint32_t imageCount = _dyld_image_count();
+    cpu_type_t cpuType;
+    cpu_subtype_t cpuSubType;
     for (uint32_t i = 0; i < imageCount; i++)
     {
         const char* imageNameChar = _dyld_get_image_name(i);
@@ -423,6 +430,12 @@ void CountlySignalHandler(int signalCode)
         BOOL is64bit = imageHeader->magic == MH_MAGIC_64 || imageHeader->magic == MH_CIGAM_64;
         uintptr_t ptr = (uintptr_t)imageHeader + (is64bit ? sizeof(struct mach_header_64) : sizeof(struct mach_header));
         NSString* imageUUID = nil;
+        if(imageHeader->cputype){
+            cpuType = imageHeader->cputype;
+        }
+        if (imageHeader->cpusubtype && (cpuSubType == 0 || imageHeader->cpusubtype > cpuSubType)) {
+            cpuSubType = imageHeader->cpusubtype;
+        }
 
         for (uint32_t j = 0; j < imageHeader->ncmds; j++)
         {
@@ -436,7 +449,7 @@ void CountlySignalHandler(int signalCode)
             }
             ptr += segCmd->cmdsize;
         }
-
+        
         if (!imageUUID)
         {
             CLY_LOG_W(@"Image UUID can not be retrieved!");
@@ -454,7 +467,8 @@ void CountlySignalHandler(int signalCode)
 
         binaryImages[imageName] = @{kCountlyCRKeyImageLoadAddress: imageLoadAddress, kCountlyCRKeyImageBuildUUID: imageUUID};
     }
-
+    
+    CountlyCrashReporter.sharedInstance.architecture = [CountlyDeviceInfo architectureNameForCPUType:cpuType subtype:cpuSubType];
     return [NSDictionary dictionaryWithDictionary:binaryImages];
 }
 
@@ -496,7 +510,7 @@ void CountlySignalHandler(int signalCode)
     crashReport[kCountlyCRKeyOS] = CountlyDeviceInfo.osName;
     crashReport[kCountlyCRKeyOSVersion] = CountlyDeviceInfo.osVersion;
     crashReport[kCountlyCRKeyDevice] = CountlyDeviceInfo.device;
-    crashReport[kCountlyCRKeyArchitecture] = CountlyDeviceInfo.architecture;
+    // crashReport[kCountlyCRKeyArchitecture] = CountlyDeviceInfo.architecture; not here any more because it is not precise to extract architecture info here
     crashReport[kCountlyCRKeyResolution] = CountlyDeviceInfo.resolution;
     crashReport[kCountlyCRKeyAppVersion] = CountlyDeviceInfo.appVersion;
     crashReport[kCountlyCRKeyAppBuild] = CountlyDeviceInfo.appBuild;

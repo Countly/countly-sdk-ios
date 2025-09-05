@@ -16,6 +16,7 @@
 @implementation CountlyPersistency
 NSString* const kCountlyQueuedRequestsPersistencyKey = @"kCountlyQueuedRequestsPersistencyKey";
 NSString* const kCountlyStartedEventsPersistencyKey = @"kCountlyStartedEventsPersistencyKey";
+NSString* const kCountlyHealthCheckStatePersistencyKey = @"kCountlyHealthCheckStatePersistencyKey";
 NSString* const kCountlyStoredDeviceIDKey = @"kCountlyStoredDeviceIDKey";
 NSString* const kCountlyStoredNSUUIDKey = @"kCountlyStoredNSUUIDKey";
 NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKey";
@@ -282,24 +283,17 @@ static dispatch_once_t onceToken;
 
 - (NSString *)serializedRecordedEvents
 {
-    NSMutableArray *tempArray = NSMutableArray.new;
-    
     @synchronized (self.recordedEvents)
     {
         if (self.recordedEvents.count == 0)
             return nil;
-        
-        NSArray *eventsCopy = self.recordedEvents.copy;
-        
-        for (CountlyEvent *event in eventsCopy)
-        {
-            [tempArray addObject:[event dictionaryRepresentation]];
-        }
-        
-        [self.recordedEvents removeObjectsInArray:eventsCopy];
+
+        NSArray *eventDictionaries = [self.recordedEvents valueForKey:@"dictionaryRepresentation"];
+
+        [self.recordedEvents removeAllObjects];
+
+        return [eventDictionaries cly_JSONify];
     }
-    
-    return [tempArray cly_JSONify];
 }
 
 
@@ -599,18 +593,34 @@ static dispatch_once_t onceToken;
     [NSUserDefaults.standardUserDefaults synchronize];
 }
 
-- (NSDictionary *)retrieveServerConfig
+- (NSMutableDictionary *)retrieveServerConfig
 {
     NSDictionary* serverConfig = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyServerConfigPersistencyKey];
-    if (!serverConfig)
-        serverConfig = NSDictionary.new;
-    
-    return serverConfig;
+    if ([serverConfig isKindOfClass:[NSDictionary class]]) {
+         return [serverConfig mutableCopy];
+     }
+
+     return [NSMutableDictionary new];
 }
 
-- (void)storeServerConfig:(NSDictionary *)serverConfig
+- (void)storeServerConfig:(NSMutableDictionary *)serverConfig
 {
     [NSUserDefaults.standardUserDefaults setObject:serverConfig forKey:kCountlyServerConfigPersistencyKey];
+    [NSUserDefaults.standardUserDefaults synchronize];
+}
+
+- (NSDictionary *)retrieveHealthCheckTrackerState
+{
+    NSDictionary* healthCheckTrackerState = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyHealthCheckStatePersistencyKey];
+    if (!healthCheckTrackerState)
+        healthCheckTrackerState = NSDictionary.new;
+    
+    return healthCheckTrackerState;
+}
+
+- (void)storeHealthCheckTrackerState:(NSDictionary *)healthCheckTrackerState
+{
+    [NSUserDefaults.standardUserDefaults setObject:healthCheckTrackerState forKey:kCountlyHealthCheckStatePersistencyKey];
     [NSUserDefaults.standardUserDefaults synchronize];
 }
 

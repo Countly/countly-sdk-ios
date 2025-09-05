@@ -12,9 +12,14 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 
 @implementation CountlyContentBuilderInternal {
     BOOL _isRequestQueueLocked;
+    BOOL _isCurrentlyContentShown;
     NSTimer *_requestTimer;
     NSTimer *_minuteTimer;
+    dispatch_queue_t _contentQueue;
 }
+
+NSInteger const contentInitialDelay = 4;
+
 #if (TARGET_OS_IOS)
 + (instancetype)sharedInstance {
     static CountlyContentBuilderInternal *instance = nil;
@@ -31,12 +36,40 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     {
         self.zoneTimerInterval = 30.0;
         _requestTimer = nil;
+        _isCurrentlyContentShown = NO;
+        _contentQueue = dispatch_queue_create("ly.countly.content.queue", DISPATCH_QUEUE_SERIAL);
     }
     
     return self;
 }
 
+- (BOOL)isRequestQueueLockedThreadSafe {
+    __block BOOL locked = NO;
+    if (!_contentQueue) {
+        return _isRequestQueueLocked;
+    }
+    dispatch_sync(_contentQueue, ^{
+        locked = self->_isRequestQueueLocked;
+    });
+    return locked;
+}
+
+- (void)setRequestQueueLockedThreadSafe:(BOOL)locked {
+    if (!_contentQueue) {
+        _isRequestQueueLocked = locked;
+        return;
+    }
+    dispatch_async(_contentQueue, ^{
+        self->_isRequestQueueLocked = locked;
+    });
+}
+
 - (void)enterContentZone {
+    
+    if(_isCurrentlyContentShown){
+        CLY_LOG_I(@"%s, a content is already shown, skipping" ,__FUNCTION__);
+    }
+    
     [self enterContentZone:@[]];
 }
 
@@ -48,18 +81,26 @@ NSString* const kCountlyCBFetchContent  = @"queue";
         return;
     
     if(_requestTimer != nil) {
-        CLY_LOG_I(@"Already entered for content zone, please exit from content zone first to start again");
+        CLY_LOG_I(@"%s, Already entered for content zone, please exit from content zone first to start again", __FUNCTION__);
         return;
     }
     
     self.currentTags = tags;
+    int contentDelay = 0;
     
-    [self fetchContents];;
-    _requestTimer = [NSTimer scheduledTimerWithTimeInterval:self.zoneTimerInterval
-                                                     target:self
-                                                   selector:@selector(fetchContents)
-                                                   userInfo:nil
-                                                    repeats:YES];
+    if (CountlyCommon.sharedInstance.timeSinceLaunch < contentInitialDelay) {
+        contentDelay = contentInitialDelay;
+    }
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(contentDelay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
+    {
+        [self fetchContents];;
+        self->_requestTimer = [NSTimer scheduledTimerWithTimeInterval:self->_zoneTimerInterval
+                                                         target:self
+                                                       selector:@selector(fetchContents)
+                                                       userInfo:nil
+                                                        repeats:YES];
+    });
 }
 
 - (void)exitContentZone {
@@ -73,6 +114,25 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     }
 }
 
+- (void)refreshContentZone {
+    if (![CountlyServerConfig.sharedInstance refreshContentZoneEnabled])
+    {
+        return;
+    }
+    if(_isCurrentlyContentShown){
+        CLY_LOG_I(@"%s, a content is already shown, skipping" ,__FUNCTION__);
+    }
+    
+    [self exitContentZone];
+    [CountlyConnectionManager.sharedInstance attemptToSendStoredRequests];
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
+    {
+        [self enterContentZone];
+    });
+    
+}
+
 #pragma mark - Private Methods
 
 - (void)clearContentState {
@@ -82,23 +142,25 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     [_minuteTimer invalidate];
     _minuteTimer = nil;
     self.currentTags = nil;
-    _isRequestQueueLocked = NO;
+    [self setRequestQueueLockedThreadSafe:NO];
 }
 
 - (void)fetchContents {
     if (!CountlyConsentManager.sharedInstance.consentForContent)
         return;
-    
-    if  (_isRequestQueueLocked) {
+
+    if (!CountlyServerConfig.sharedInstance.networkingEnabled)
+        return;
+    if ([self isRequestQueueLockedThreadSafe]) {
         return;
     }
     
-    _isRequestQueueLocked = YES;
+    [self setRequestQueueLockedThreadSafe:YES];
     
     NSURLSessionTask *dataTask = [[NSURLSession sharedSession] dataTaskWithRequest:[self fetchContentsRequest] completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (error) {
-            CLY_LOG_I(@"Fetch content details failed: %@", error);
-            self->_isRequestQueueLocked = NO;
+            CLY_LOG_I(@"%s, Fetch content details failed: %@", __FUNCTION__, error);
+            [self setRequestQueueLockedThreadSafe:NO];
             return;
         }
         
@@ -106,14 +168,14 @@ NSString* const kCountlyCBFetchContent  = @"queue";
         NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
         
         if (jsonError) {
-            CLY_LOG_I(@"Failed to parse JSON: %@", jsonError);
-            self->_isRequestQueueLocked = NO;
+            CLY_LOG_I(@"%s, Failed to parse JSON: %@", __FUNCTION__, jsonError);
+            [self setRequestQueueLockedThreadSafe:NO];
             return;
         }
         
         if (!jsonResponse) {
-            CLY_LOG_I(@"Received empty or null response.");
-            self->_isRequestQueueLocked = NO;
+            CLY_LOG_I(@"%s, Received empty or null response.", __FUNCTION__);
+            [self setRequestQueueLockedThreadSafe:NO];
             return;
         }
         
@@ -122,7 +184,7 @@ NSString* const kCountlyCBFetchContent  = @"queue";
         if(pathToHtml) {
             [self showContentWithHtmlPath:pathToHtml placementCoordinates:placementCoordinates];
         }
-        self->_isRequestQueueLocked = NO;
+    [self setRequestQueueLockedThreadSafe:NO];
     }];
     
     [dataTask resume];
@@ -130,60 +192,31 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 
 - (NSURLRequest *)fetchContentsRequest
 {
-    NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
+    NSString *queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
     NSString *resolutionJson = [self resolutionJson];
-    queryString = [queryString stringByAppendingFormat:@"&%@=%@",
-                   @"resolution", resolutionJson.cly_URLEscaped];
-    
-    queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
-    
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"method", kCountlyCBFetchContent];
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"resolution", resolutionJson.cly_URLEscaped];
+
     NSArray *components = [CountlyDeviceInfo.locale componentsSeparatedByCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"_-"]];
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"la", components.firstObject];
 
-    queryString = [queryString stringByAppendingFormat:@"&%@=%@",
-                   @"la", components.firstObject];
-    
-    NSString* URLString = [NSString stringWithFormat:@"%@%@?%@",
-                           CountlyConnectionManager.sharedInstance.host,
-                           kCountlyEndpointContent,
-                           queryString];
-    
-    NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:URLString]];
+    NSString *deviceType = CountlyDeviceInfo.deviceType;
+    if (deviceType)
+    {
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"dt", deviceType];
+    }
+
+    queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
+
+    NSString *URLString = [NSString stringWithFormat:@"%@%@?%@", CountlyConnectionManager.sharedInstance.host, kCountlyEndpointContent, queryString];
+
+    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:URLString]];
     return request;
-}
-
-- (CGSize)getWindowSize {
-    CGSize size = CGSizeZero;
-
-    // Attempt to retrieve the size from the connected scenes (for modern apps)
-    if (@available(iOS 13.0, *)) {
-        NSSet<UIScene *> *scenes = [[UIApplication sharedApplication] connectedScenes];
-        for (UIScene *scene in scenes) {
-            if ([scene isKindOfClass:[UIWindowScene class]]) {
-                UIWindowScene *windowScene = (UIWindowScene *)scene;
-                UIWindow *window = windowScene.windows.firstObject;
-                if (window) {
-                    size = window.bounds.size;
-                    return size; // Return immediately if we find a valid size
-                }
-            }
-        }
-    }
-
-    // Fallback for legacy apps using AppDelegate
-    id<UIApplicationDelegate> appDelegate = [[UIApplication sharedApplication] delegate];
-    if ([appDelegate respondsToSelector:@selector(window)]) {
-        UIWindow *legacyWindow = [appDelegate performSelector:@selector(window)];
-        if (legacyWindow) {
-            size = legacyWindow.bounds.size;
-        }
-    }
-
-    return size;
 }
 
 - (NSString *)resolutionJson {
     //TODO: check why area is not clickable and safearea things
-    CGSize size = [self getWindowSize];
+    CGSize size = [CountlyCommon.sharedInstance getWindowSize];
     
     UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
     BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
@@ -196,6 +229,8 @@ NSString* const kCountlyCBFetchContent  = @"queue";
         @"landscape": @{@"height": @(lHpW), @"width": @(lWpH)}
     };
     
+    CLY_LOG_D(@"%s, %@", __FUNCTION__, resolutionDict);
+    
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:resolutionDict options:0 error:nil];
     return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
 }
@@ -205,48 +240,50 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     NSURL *url = [NSURL URLWithString:urlString];
     
     if (!url || !url.scheme || !url.host) {
-        NSLog(@"The URL is not valid: %@", urlString);
+        CLY_LOG_E(@"%s, The URL is not valid: %@", __FUNCTION__, urlString);
         return;
     }
 
     
     dispatch_async(dispatch_get_main_queue(), ^ {
-    // Detect screen orientation
-    UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
-    BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
+        // Detect screen orientation
+        UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
+        BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
+            
+        // Get the appropriate coordinates based on the orientation
+        NSDictionary *coordinates = isLandscape ? placementCoordinates[@"l"] : placementCoordinates[@"p"];
         
-    
-    // Get the appropriate coordinates based on the orientation
-    NSDictionary *coordinates = isLandscape ? placementCoordinates[@"l"] : placementCoordinates[@"p"];
-    
-    CGFloat x = [coordinates[@"x"] floatValue];
-    CGFloat y = [coordinates[@"y"] floatValue];
-    CGFloat width = [coordinates[@"w"] floatValue];
-    CGFloat height = [coordinates[@"h"] floatValue];
-    
-    CGRect frame = CGRectMake(x, y, width, height);
-    
-    // Log the URL and the frame
-    CLY_LOG_I(@"Showing content from URL: %@", url);
-    CLY_LOG_I(@"Placement frame: %@", NSStringFromCGRect(frame));
-    
-    CountlyWebViewManager* webViewManager =  CountlyWebViewManager.new;
-        [webViewManager createWebViewWithURL:url frame:frame appearBlock:^
-         {
-            CLY_LOG_I(@"Webview appeared");
+        CGFloat x = [coordinates[@"x"] floatValue];
+        CGFloat y = [coordinates[@"y"] floatValue];
+        CGFloat width = [coordinates[@"w"] floatValue];
+        CGFloat height = [coordinates[@"h"] floatValue];
+        
+        CGRect frame = CGRectMake(x, y, width, height);
+        
+        // Log the URL and the frame
+        CLY_LOG_I(@"%s, Showing content from URL: %@", __FUNCTION__, url);
+        CLY_LOG_I(@"%s, Placement frame: %@", __FUNCTION__, NSStringFromCGRect(frame));
+        
+        CountlyWebViewManager* webViewManager =  CountlyWebViewManager.new;
+            [webViewManager createWebViewWithURL:url frame:frame appearBlock:^
+             {
+                CLY_LOG_I(@"%s, Webview should be appeared", __FUNCTION__);
+            } dismissBlock:^
+             {
+                CLY_LOG_I(@"%s, Webview dismissed", __FUNCTION__);
+                self->_isCurrentlyContentShown = NO;
+                self->_minuteTimer = [NSTimer scheduledTimerWithTimeInterval:self->_zoneTimerInterval
+                                                                 target:self
+                                                               selector:@selector(enterContentZone)
+                                                               userInfo:nil
+                                                                repeats:NO];
+                if(self.contentCallback) {
+                    self.contentCallback(CLOSED, NSDictionary.new);
+                }
+            }];
+            CLY_LOG_I(@"%s, Webview initiated pausing content calls ", __FUNCTION__);
+            self->_isCurrentlyContentShown = YES;
             [self clearContentState];
-        } dismissBlock:^
-         {
-            CLY_LOG_I(@"Webview dismissed");
-            self->_minuteTimer = [NSTimer scheduledTimerWithTimeInterval:60.0
-                                                             target:self
-                                                           selector:@selector(enterContentZone)
-                                                           userInfo:nil
-                                                            repeats:NO];
-            if(self.contentCallback) {
-                self.contentCallback(CLOSED, NSDictionary.new);
-            }
-        }];
     });
 }
 #endif
