@@ -15,6 +15,7 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     BOOL _isCurrentlyContentShown;
     NSTimer *_requestTimer;
     NSTimer *_minuteTimer;
+    dispatch_queue_t _contentQueue;
 }
 
 NSInteger const contentInitialDelay = 4;
@@ -36,9 +37,31 @@ NSInteger const contentInitialDelay = 4;
         self.zoneTimerInterval = 30.0;
         _requestTimer = nil;
         _isCurrentlyContentShown = NO;
+        _contentQueue = dispatch_queue_create("ly.countly.content.queue", DISPATCH_QUEUE_SERIAL);
     }
     
     return self;
+}
+
+- (BOOL)isRequestQueueLockedThreadSafe {
+    __block BOOL locked = NO;
+    if (!_contentQueue) {
+        return _isRequestQueueLocked;
+    }
+    dispatch_sync(_contentQueue, ^{
+        locked = self->_isRequestQueueLocked;
+    });
+    return locked;
+}
+
+- (void)setRequestQueueLockedThreadSafe:(BOOL)locked {
+    if (!_contentQueue) {
+        _isRequestQueueLocked = locked;
+        return;
+    }
+    dispatch_async(_contentQueue, ^{
+        self->_isRequestQueueLocked = locked;
+    });
 }
 
 - (void)enterContentZone {
@@ -119,7 +142,7 @@ NSInteger const contentInitialDelay = 4;
     [_minuteTimer invalidate];
     _minuteTimer = nil;
     self.currentTags = nil;
-    _isRequestQueueLocked = NO;
+    [self setRequestQueueLockedThreadSafe:NO];
 }
 
 - (void)fetchContents {
@@ -128,16 +151,16 @@ NSInteger const contentInitialDelay = 4;
 
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
         return;
-    if  (_isRequestQueueLocked) {
+    if ([self isRequestQueueLockedThreadSafe]) {
         return;
     }
     
-    _isRequestQueueLocked = YES;
+    [self setRequestQueueLockedThreadSafe:YES];
     
     NSURLSessionTask *dataTask = [[NSURLSession sharedSession] dataTaskWithRequest:[self fetchContentsRequest] completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (error) {
             CLY_LOG_I(@"%s, Fetch content details failed: %@", __FUNCTION__, error);
-            self->_isRequestQueueLocked = NO;
+            [self setRequestQueueLockedThreadSafe:NO];
             return;
         }
         
@@ -146,13 +169,13 @@ NSInteger const contentInitialDelay = 4;
         
         if (jsonError) {
             CLY_LOG_I(@"%s, Failed to parse JSON: %@", __FUNCTION__, jsonError);
-            self->_isRequestQueueLocked = NO;
+            [self setRequestQueueLockedThreadSafe:NO];
             return;
         }
         
         if (!jsonResponse) {
             CLY_LOG_I(@"%s, Received empty or null response.", __FUNCTION__);
-            self->_isRequestQueueLocked = NO;
+            [self setRequestQueueLockedThreadSafe:NO];
             return;
         }
         
@@ -161,7 +184,7 @@ NSInteger const contentInitialDelay = 4;
         if(pathToHtml) {
             [self showContentWithHtmlPath:pathToHtml placementCoordinates:placementCoordinates];
         }
-        self->_isRequestQueueLocked = NO;
+    [self setRequestQueueLockedThreadSafe:NO];
     }];
     
     [dataTask resume];
@@ -244,9 +267,7 @@ NSInteger const contentInitialDelay = 4;
         CountlyWebViewManager* webViewManager =  CountlyWebViewManager.new;
             [webViewManager createWebViewWithURL:url frame:frame appearBlock:^
              {
-                CLY_LOG_I(@"%s, Webview appeared", __FUNCTION__);
-                self->_isCurrentlyContentShown = YES;
-                [self clearContentState];
+                CLY_LOG_I(@"%s, Webview should be appeared", __FUNCTION__);
             } dismissBlock:^
              {
                 CLY_LOG_I(@"%s, Webview dismissed", __FUNCTION__);
@@ -260,6 +281,9 @@ NSInteger const contentInitialDelay = 4;
                     self.contentCallback(CLOSED, NSDictionary.new);
                 }
             }];
+            CLY_LOG_I(@"%s, Webview initiated pausing content calls ", __FUNCTION__);
+            self->_isCurrentlyContentShown = YES;
+            [self clearContentState];
     });
 }
 #endif
