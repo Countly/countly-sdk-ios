@@ -1,6 +1,8 @@
 ## 25.4.4
 * Health check requests now include additional metrics.
 
+* Mitigated an issue about app version info in metrics.
+
 ## 25.4.3
 * Mitigated an issue where SDK behavior settings were set to default when fetching for new config.
 * Mitigated an issue where latest fetched behavior settings were replacing the current settings instead of merging.
