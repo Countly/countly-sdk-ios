@@ -21,7 +21,11 @@ NSString* const kCountlyReservedEventRating = @"[CLY]_star_rating";
 NSString* const kCountlyFBKeyClosed         = @"closed";
 NSString* const kCountlyFBKeyShown          = @"shown";
 
+#if (TARGET_OS_IOS)
 @interface CountlyFeedbackWidget () <WKNavigationDelegate>
+#else
+@interface CountlyFeedbackWidget ()
+#endif
 @property (nonatomic) CLYFeedbackWidgetType type;
 @property (nonatomic) NSString* ID;
 @property (nonatomic) NSString* name;
