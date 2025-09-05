@@ -6,6 +6,7 @@
 
 #import "CountlyCommon.h"
 #import <mach-o/dyld.h>
+#import <mach-o/arch.h>
 #import <mach/mach_host.h>
 #import <arpa/inet.h>
 #import <ifaddrs.h>
@@ -465,8 +466,48 @@ static dispatch_once_t onceToken;
     return CountlyDeviceInfo.sharedInstance.isInBackground;
 }
 
-- (void)resetInstance {
-    CLY_LOG_I(@"%s", __FUNCTION__);
++ (NSString *)architectureNameForCPUType:(cpu_type_t)cpuType subtype:(cpu_subtype_t)cpuSubtype {
+    cpu_subtype_t baseSubtype = cpuSubtype & ~CPU_SUBTYPE_PTRAUTH_ABI;
+    switch (cpuType) {
+        case CPU_TYPE_ARM:
+            switch (baseSubtype) {
+                case CPU_SUBTYPE_ARM_V7: return @"armv7";
+                case CPU_SUBTYPE_ARM_V7K: return @"armv7"; // watchOS
+                default: return @"arm";
+            }
+
+        case CPU_TYPE_ARM64:
+            switch (baseSubtype) {
+                case CPU_SUBTYPE_ARM64_ALL: return @"arm64";
+                case CPU_SUBTYPE_ARM64E: return @"arm64e";
+                default: return @"arm64";
+            }
+
+        case CPU_TYPE_ARM64_32:
+            switch (baseSubtype) {
+                case CPU_SUBTYPE_ARM64_32_ALL: return @"arm64_32";
+                default: return @"arm64_32";
+            }
+
+        case CPU_TYPE_X86:
+            return @"i386";
+
+        case CPU_TYPE_X86_64:
+            switch (baseSubtype) {
+                case CPU_SUBTYPE_X86_64_ALL: return @"x86_64";
+                case CPU_SUBTYPE_X86_64_H: return @"x86_64h";
+                default: return @"x86_64";
+            }
+
+        default:
+            return @"unknown";
+    }
+}
+
+
+- (void)resetInstance
+{
+  CLY_LOG_I(@"%s", __FUNCTION__);
     self.deviceID = nil;
     onceToken = 0;
     s_sharedInstance = nil;
