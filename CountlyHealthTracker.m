@@ -208,6 +208,7 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
     
     queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMetrics, [CountlyDeviceInfo metrics]];
 
+
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
     NSString* hcSendURL = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"%@",kCountlyEndpointI];
     

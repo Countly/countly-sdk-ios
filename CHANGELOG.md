@@ -1,4 +1,5 @@
 ## XX.XX.XX
+* Mitigated an issue about app version info in metrics.
 * Health check requests now include additional metrics.
 
 ## 25.4.3
