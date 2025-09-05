@@ -1,4 +1,4 @@
-## XX.XX.XX
+## 25.4.4
 * Health check requests now include additional metrics.
 
 ## 25.4.3
