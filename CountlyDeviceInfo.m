@@ -19,7 +19,7 @@
 #import <CoreTelephony/CTCarrier.h>
 #endif
 #elif (TARGET_OS_OSX)
-  #import <IOKit/ps/IOPowerSources.h>
+#import <IOKit/ps/IOPowerSources.h>
 #endif
 
 CLYMetricKey const CLYMetricKeyDevice             = @"_device";
@@ -39,9 +39,9 @@ NSString* const kCountlyAppVersionKey = @"av";
 @interface CountlyDeviceInfo ()
 @property (nonatomic) BOOL isInBackground;
 #if (TARGET_OS_IOS)
-  #if (!TARGET_OS_MACCATALYST)
+#if (!TARGET_OS_MACCATALYST)
 @property (nonatomic) CTTelephonyNetworkInfo* networkInfo;
-  #endif
+#endif
 #endif
 @end
 
@@ -52,22 +52,22 @@ static dispatch_once_t onceToken;
 + (instancetype)sharedInstance
 {
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
-  return s_sharedInstance;
+    return s_sharedInstance;
 }
 
 - (instancetype)init
 {
-  if (self = [super init])
-  {
-    self.deviceID = [CountlyPersistency.sharedInstance retrieveDeviceID];
+    if (self = [super init])
+    {
+        self.deviceID = [CountlyPersistency.sharedInstance retrieveDeviceID];
 #if (TARGET_OS_IOS)
-  #if (!TARGET_OS_MACCATALYST)
-    self.networkInfo = CTTelephonyNetworkInfo.new;
-  #endif
+#if (!TARGET_OS_MACCATALYST)
+        self.networkInfo = CTTelephonyNetworkInfo.new;
+#endif
 #endif
 
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
-    self.isInBackground = (UIApplication.sharedApplication.applicationState == UIApplicationStateBackground);
+        self.isInBackground = (UIApplication.sharedApplication.applicationState == UIApplicationStateBackground);
 
         [NSNotificationCenter.defaultCenter addObserver:self
                                                selector:@selector(applicationDidEnterBackground:)
@@ -79,69 +79,69 @@ static dispatch_once_t onceToken;
                                                    name:UIApplicationWillEnterForegroundNotification
                                                  object:nil];
 #endif
-  }
+    }
 
-  return self;
+    return self;
 }
 
 //NOTE: Using this flag instead of a direct call to UIApplication's applicationState method
 //      in order to avoid making a UI call on a non-main thread at the moment of a crash.
 - (void)applicationDidEnterBackground:(NSNotification *)notification
 {
-  self.isInBackground = YES;
+    self.isInBackground = YES;
 }
 
 - (void)applicationWillEnterForeground:(NSNotification *)notification
 {
-  self.isInBackground = NO;
+    self.isInBackground = NO;
 }
 
 - (void)initializeDeviceID:(NSString *)deviceID
 {
-  self.deviceID = [self ensafeDeviceID:deviceID];
+    self.deviceID = [self ensafeDeviceID:deviceID];
 
-  [CountlyPersistency.sharedInstance storeDeviceID:self.deviceID];
+    [CountlyPersistency.sharedInstance storeDeviceID:self.deviceID];
 }
 
 - (NSString *)ensafeDeviceID:(NSString *)deviceID
 {
-  if (deviceID.length)
-    return deviceID;
+    if (deviceID.length)
+        return deviceID;
 
     NSString* UUID = [CountlyPersistency.sharedInstance retrieveNSUUID];
-  if (!UUID)
-  {
-    UUID = NSUUID.UUID.UUIDString;
-    [CountlyPersistency.sharedInstance storeNSUUID:UUID];
-  }
+    if (!UUID)
+    {
+        UUID = NSUUID.UUID.UUIDString;
+        [CountlyPersistency.sharedInstance storeNSUUID:UUID];
+    }
 
-  return UUID;
+    return UUID;
 }
 
 - (BOOL)isDeviceIDTemporary
 {
-  return [self.deviceID isEqualToString:CLYTemporaryDeviceID];
+    return [self.deviceID isEqualToString:CLYTemporaryDeviceID];
 }
 
 - (CLYDeviceIDTypeValue)deviceIDTypeValue
 {
-  CLYDeviceIDType deviceIDType = Countly.sharedInstance.deviceIDType;
+    CLYDeviceIDType deviceIDType = Countly.sharedInstance.deviceIDType;
 
-  if ([deviceIDType isEqual:CLYDeviceIDTypeCustom])
-    return CLYDeviceIDTypeValueCustom;
+    if ([deviceIDType isEqual:CLYDeviceIDTypeCustom])
+        return CLYDeviceIDTypeValueCustom;
 
-  if ([deviceIDType isEqual:CLYDeviceIDTypeIDFV])
-    return CLYDeviceIDTypeValueIDFV;
+    if ([deviceIDType isEqual:CLYDeviceIDTypeIDFV])
+        return CLYDeviceIDTypeValueIDFV;
 
-  if ([deviceIDType isEqual:CLYDeviceIDTypeNSUUID])
-    return CLYDeviceIDTypeValueNSUUID;
+    if ([deviceIDType isEqual:CLYDeviceIDTypeNSUUID])
+        return CLYDeviceIDTypeValueNSUUID;
 
-  if ([deviceIDType isEqual:CLYDeviceIDTypeTemporary])
-    return CLYDeviceIDTypeValueTemporary;
+    if ([deviceIDType isEqual:CLYDeviceIDTypeTemporary])
+        return CLYDeviceIDTypeValueTemporary;
 
-  CLY_LOG_E(@"Device ID type is not one of the defined types.");
+    CLY_LOG_E(@"Device ID type is not one of the defined types.");
 
-  return (CLYDeviceIDTypeValue)-1;
+    return (CLYDeviceIDTypeValue)-1;
 }
 
 #pragma mark -
@@ -149,41 +149,41 @@ static dispatch_once_t onceToken;
 + (NSString *)device
 {
 #if (TARGET_OS_OSX)
-  char *modelKey = "hw.model";
+    char *modelKey = "hw.model";
 #else
-  char *modelKey = "hw.machine";
+    char *modelKey = "hw.machine";
 #endif
-  size_t size;
-  sysctlbyname(modelKey, NULL, &size, NULL, 0);
-  char *model = malloc(size);
-  sysctlbyname(modelKey, model, &size, NULL, 0);
-  NSString *modelString = @(model);
-  free(model);
-  return modelString;
+    size_t size;
+    sysctlbyname(modelKey, NULL, &size, NULL, 0);
+    char *model = malloc(size);
+    sysctlbyname(modelKey, model, &size, NULL, 0);
+    NSString *modelString = @(model);
+    free(model);
+    return modelString;
 }
 
 + (NSString *)deviceType
 {
 #if (TARGET_OS_IOS)
-  #if (TARGET_OS_MACCATALYST)
-  return @"desktop";
-  #else
-  if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad)
-    return @"tablet";
+#if (TARGET_OS_MACCATALYST)
+    return @"desktop";
+#else
+    if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad)
+        return @"tablet";
 
-  return @"mobile";
-  #endif
+    return @"mobile";
+#endif
 #elif (TARGET_OS_WATCH)
-  return @"wearable";
+    return @"wearable";
 #elif (TARGET_OS_TV)
-  return @"smarttv";
+    return @"smarttv";
 #elif (TARGET_OS_OSX)
-  return @"desktop";
+    return @"desktop";
 #elif (TARGET_OS_VISION)
-  return @"vr";
+    return @"vr";
 #endif
 
-  return nil;
+    return nil;
 }
 
 + (NSString *)architecture
@@ -210,97 +210,97 @@ static dispatch_once_t onceToken;
 + (NSString *)osName
 {
 #if (TARGET_OS_IOS)
-  return @"iOS";
+    return @"iOS";
 #elif (TARGET_OS_WATCH)
-  return @"watchOS";
+    return @"watchOS";
 #elif (TARGET_OS_TV)
-  return @"tvOS";
+    return @"tvOS";
 #elif (TARGET_OS_OSX)
-  return @"macOS";
+    return @"macOS";
 #elif (TARGET_OS_VISION)
-  return @"visionOS";
+    return @"visionOS";
 #endif
 
-  return nil;
+    return nil;
 }
 
 + (NSString *)osVersion
 {
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
-  return UIDevice.currentDevice.systemVersion;
+    return UIDevice.currentDevice.systemVersion;
 #elif (TARGET_OS_WATCH)
-  return WKInterfaceDevice.currentDevice.systemVersion;
+    return WKInterfaceDevice.currentDevice.systemVersion;
 #elif (TARGET_OS_OSX)
-  return [NSDictionary dictionaryWithContentsOfFile:@"/System/Library/CoreServices/SystemVersion.plist"][@"ProductVersion"];
+    return [NSDictionary dictionaryWithContentsOfFile:@"/System/Library/CoreServices/SystemVersion.plist"][@"ProductVersion"];
 #endif
 
-  return nil;
+    return nil;
 }
 
 + (NSString *)carrier
 {
 #if (TARGET_OS_IOS)
-  #if (!TARGET_OS_MACCATALYST)
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#if (!TARGET_OS_MACCATALYST)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     //Note: "carrierName" is deprecated and returns '--' value for apps that are built with the iOS 16.4 SDK or later.
-  if (@available(iOS 16.4, *))
-  {
-    return nil;
-  }
-  else
-  {
-    return CountlyDeviceInfo.sharedInstance.networkInfo.subscriberCellularProvider.carrierName;
-  }
-    #pragma GCC diagnostic pop
-  #endif
+    if (@available(iOS 16.4, *))
+    {
+        return nil;
+    }
+    else 
+    {
+        return CountlyDeviceInfo.sharedInstance.networkInfo.subscriberCellularProvider.carrierName;
+    }
+#pragma GCC diagnostic pop
+#endif
 #endif
     //NOTE: it is not possible to get carrier info on Apple Watches as CoreTelephony is not available.
-  return nil;
+    return nil;
 }
 
 + (NSString *)resolution
 {
     CGRect bounds;
-  CGFloat scale;
+    CGFloat scale;
 #if (TARGET_OS_IOS || TARGET_OS_TV)
-  bounds = UIScreen.mainScreen.bounds;
+    bounds = UIScreen.mainScreen.bounds;
     scale = UIScreen.mainScreen.scale;
 #elif (TARGET_OS_WATCH)
-  bounds = WKInterfaceDevice.currentDevice.screenBounds;
+    bounds = WKInterfaceDevice.currentDevice.screenBounds;
     scale = WKInterfaceDevice.currentDevice.screenScale;
 #elif (TARGET_OS_OSX)
-  bounds = NSScreen.mainScreen.frame;
+    bounds = NSScreen.mainScreen.frame;
     scale = NSScreen.mainScreen.backingScaleFactor;
 #else
-  return nil;
+    return nil;
 #endif
-  return [NSString stringWithFormat:@"%gx%g", bounds.size.width * scale, bounds.size.height * scale];
+    return [NSString stringWithFormat:@"%gx%g", bounds.size.width * scale, bounds.size.height * scale];
 }
 
 + (NSString *)density
 {
-  CGFloat scale;
+    CGFloat scale;
 #if (TARGET_OS_IOS || TARGET_OS_TV)
-  scale = UIScreen.mainScreen.scale;
+    scale = UIScreen.mainScreen.scale;
 #elif (TARGET_OS_WATCH)
-  scale = WKInterfaceDevice.currentDevice.screenScale;
+    scale = WKInterfaceDevice.currentDevice.screenScale;
 #elif (TARGET_OS_OSX)
-  scale = NSScreen.mainScreen.backingScaleFactor;
+    scale = NSScreen.mainScreen.backingScaleFactor;
 #else
-  return nil;
+    return nil;
 #endif
-  return [NSString stringWithFormat:@"@%dx", (int)scale];
+    return [NSString stringWithFormat:@"@%dx", (int)scale];
 }
 
 + (NSString *)locale
 {
-  return NSLocale.currentLocale.localeIdentifier;
+    return NSLocale.currentLocale.localeIdentifier;
 }
 
 + (NSString *)appVersion
 {
-  return [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
+    return [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
 }
 
 + (NSString *)appBuild
@@ -312,128 +312,128 @@ static dispatch_once_t onceToken;
 {
     NSMutableDictionary* metricsDictionary = NSMutableDictionary.new;
     metricsDictionary[CLYMetricKeyDevice] = CountlyDeviceInfo.device;
-  metricsDictionary[CLYMetricKeyDeviceType] = CountlyDeviceInfo.deviceType;
+    metricsDictionary[CLYMetricKeyDeviceType] = CountlyDeviceInfo.deviceType;
     metricsDictionary[CLYMetricKeyOS] = CountlyDeviceInfo.osName;
     metricsDictionary[CLYMetricKeyOSVersion] = CountlyDeviceInfo.osVersion;
-  metricsDictionary[CLYMetricKeyAppVersion] = CountlyDeviceInfo.appVersion;
+    metricsDictionary[CLYMetricKeyAppVersion] = CountlyDeviceInfo.appVersion;
 
-  NSString *carrier = CountlyDeviceInfo.carrier;
-  if (carrier)
-    metricsDictionary[CLYMetricKeyCarrier] = carrier;
+    NSString *carrier = CountlyDeviceInfo.carrier;
+    if (carrier)
+        metricsDictionary[CLYMetricKeyCarrier] = carrier;
 
-  metricsDictionary[CLYMetricKeyResolution] = CountlyDeviceInfo.resolution;
+    metricsDictionary[CLYMetricKeyResolution] = CountlyDeviceInfo.resolution;
     metricsDictionary[CLYMetricKeyDensity] = CountlyDeviceInfo.density;
     metricsDictionary[CLYMetricKeyLocale] = CountlyDeviceInfo.locale;
 
-  [metricsDictionary addEntriesFromDictionary:CountlyDeviceInfo.sharedInstance.customMetrics];
+    [metricsDictionary addEntriesFromDictionary:CountlyDeviceInfo.sharedInstance.customMetrics];
 
-  return [metricsDictionary cly_JSONify];
+    return [metricsDictionary cly_JSONify];
 }
 
 #pragma mark -
 
 + (NSUInteger)connectionType
 {
-  typedef enum : NSInteger
-  {
-    CLYConnectionNone,
-    CLYConnectionWiFi,
-    CLYConnectionCellNetwork,
-  } CLYConnectionType;
-
-  CLYConnectionType connType = CLYConnectionNone;
-
-  @try
-  {
-    struct ifaddrs *interfaces, *i;
-
-    if (!getifaddrs(&interfaces))
+    typedef enum : NSInteger
     {
-      i = interfaces;
+        CLYConnectionNone,
+        CLYConnectionWiFi,
+        CLYConnectionCellNetwork,
+    } CLYConnectionType;
 
-      while (i != NULL)
-      {
-        if (i->ifa_addr->sa_family == AF_INET)
+    CLYConnectionType connType = CLYConnectionNone;
+
+    @try
+    {
+        struct ifaddrs *interfaces, *i;
+
+        if (!getifaddrs(&interfaces))
         {
-          if ([[NSString stringWithUTF8String:i->ifa_name] isEqualToString:@"pdp_ip0"])
-          {
-            connType = CLYConnectionCellNetwork;
-          }
-          else if ([[NSString stringWithUTF8String:i->ifa_name] isEqualToString:@"en0"])
-          {
-            connType = CLYConnectionWiFi;
-            break;
-          }
+            i = interfaces;
+
+            while (i != NULL)
+            {
+                if (i->ifa_addr->sa_family == AF_INET)
+                {
+                    if ([[NSString stringWithUTF8String:i->ifa_name] isEqualToString:@"pdp_ip0"])
+                    {
+                        connType = CLYConnectionCellNetwork;
+                    }
+                    else if ([[NSString stringWithUTF8String:i->ifa_name] isEqualToString:@"en0"])
+                    {
+                        connType = CLYConnectionWiFi;
+                        break;
+                    }
+                }
+
+                i = i->ifa_next;
+            }
         }
 
-        i = i->ifa_next;
-      }
+        freeifaddrs(interfaces);
+    }
+    @catch (NSException *exception)
+    {
+        CLY_LOG_W(@"%s, Connection type can not be retrieved, got exception: %@", __FUNCTION__, exception);
     }
 
-    freeifaddrs(interfaces);
-  }
-  @catch (NSException *exception)
-  {
-    CLY_LOG_W(@"%s, Connection type can not be retrieved, got exception: %@", __FUNCTION__, exception);
-  }
-
-  return connType;
+    return connType;
 }
 
 + (unsigned long long)freeRAM
 {
     vm_statistics_data_t vms;
-  mach_msg_type_number_t ic = HOST_VM_INFO_COUNT;
+    mach_msg_type_number_t ic = HOST_VM_INFO_COUNT;
     kern_return_t kr = host_statistics(mach_host_self(), HOST_VM_INFO, (host_info_t)&vms, &ic);
-  if (kr != KERN_SUCCESS)
-    return -1;
+    if (kr != KERN_SUCCESS)
+        return -1;
 
-  return vm_page_size * (vms.free_count);
+    return vm_page_size * (vms.free_count);
 }
 
 + (unsigned long long)totalRAM
 {
-  return NSProcessInfo.processInfo.physicalMemory;
+    return NSProcessInfo.processInfo.physicalMemory;
 }
 
 + (unsigned long long)freeDisk
 {
-  NSDictionary *homeDirectory = [NSFileManager.defaultManager attributesOfFileSystemForPath:NSHomeDirectory() error:nil];
-  return [homeDirectory[NSFileSystemFreeSize] longLongValue];
+     NSDictionary *homeDirectory = [NSFileManager.defaultManager attributesOfFileSystemForPath:NSHomeDirectory() error:nil];
+    return [homeDirectory[NSFileSystemFreeSize] longLongValue];
 }
 
 + (unsigned long long)totalDisk
 {
-  NSDictionary *homeDirectory = [NSFileManager.defaultManager attributesOfFileSystemForPath:NSHomeDirectory() error:nil];
-  return [homeDirectory[NSFileSystemSize] longLongValue];
+    NSDictionary *homeDirectory = [NSFileManager.defaultManager attributesOfFileSystemForPath:NSHomeDirectory() error:nil];
+    return [homeDirectory[NSFileSystemSize] longLongValue];
 }
 
 // If it is not possible to retrieve a valid value then it will return a -1.
 + (NSInteger)batteryLevel
 {
 #if (TARGET_OS_IOS || TARGET_OS_VISION)
-  // If battey state is "unknown" that means that battery monitoring is not enabled.
-  // In that case we will not able to retrieve a battery level.
-  if (UIDevice.currentDevice.batteryState == UIDeviceBatteryStateUnknown)
-  {
-    return -1;
-  }
-  return abs((int)(UIDevice.currentDevice.batteryLevel * 100));
+    // If battey state is "unknown" that means that battery monitoring is not enabled.
+    // In that case we will not able to retrieve a battery level.
+    if (UIDevice.currentDevice.batteryState == UIDeviceBatteryStateUnknown)
+    {
+        return -1;
+    }
+    return abs((int)(UIDevice.currentDevice.batteryLevel * 100));
 #elif (TARGET_OS_WATCH)
-  return abs((int)(WKInterfaceDevice.currentDevice.batteryLevel * 100));
+    return abs((int)(WKInterfaceDevice.currentDevice.batteryLevel * 100));
 #elif (TARGET_OS_OSX)
     CFTypeRef sourcesInfo = IOPSCopyPowerSourcesInfo();
     NSArray *sources = (__bridge NSArray*)IOPSCopyPowerSourcesList(sourcesInfo);
     NSDictionary *source = sources.firstObject;
-  if (!source)
-    return 100;
+    if (!source)
+        return 100;
 
-  NSInteger currentLevel = ((NSNumber *)(source[@kIOPSCurrentCapacityKey])).integerValue;
+    NSInteger currentLevel = ((NSNumber *)(source[@kIOPSCurrentCapacityKey])).integerValue;
     NSInteger maxLevel = ((NSNumber *)(source[@kIOPSMaxCapacityKey])).integerValue;
-  return (currentLevel / (float)maxLevel) * 100;
+    return (currentLevel / (float)maxLevel) * 100;
 #endif
 
-  return -1;
+    return -1;
 }
 
 + (NSString *)orientation
@@ -441,29 +441,29 @@ static dispatch_once_t onceToken;
 #if (TARGET_OS_IOS)
     NSArray *orientations = @[@"Unknown", @"Portrait", @"PortraitUpsideDown", @"LandscapeLeft", @"LandscapeRight", @"FaceUp", @"FaceDown"];
     UIDeviceOrientation orientation = UIDevice.currentDevice.orientation;
-  if (orientation >= 0 && orientation < orientations.count)
-    return orientations[orientation];
+    if (orientation >= 0 && orientation < orientations.count)
+        return orientations[orientation];
 #elif (TARGET_OS_WATCH)
     NSArray *orientations = @[@"CrownLeft", @"CrownRight"];
     WKInterfaceDeviceCrownOrientation orientation = WKInterfaceDevice.currentDevice.crownOrientation;
-  if (orientation >= 0 && orientation < orientations.count)
-    return orientations[orientation];
+    if (orientation >= 0 && orientation < orientations.count)
+        return orientations[orientation];
 #endif
 
-  return nil;
+    return nil;
 }
 
 + (BOOL)isJailbroken
 {
     FILE *f = fopen("/bin/bash", "r");
     BOOL isJailbroken = (f != NULL);
-  fclose(f);
-  return isJailbroken;
+    fclose(f);
+    return isJailbroken;
 }
 
 + (BOOL)isInBackground
 {
-  return CountlyDeviceInfo.sharedInstance.isInBackground;
+    return CountlyDeviceInfo.sharedInstance.isInBackground;
 }
 
 + (NSString *)architectureNameForCPUType:(cpu_type_t)cpuType subtype:(cpu_subtype_t)cpuSubtype {
@@ -510,7 +510,7 @@ static dispatch_once_t onceToken;
   CLY_LOG_I(@"%s", __FUNCTION__);
     self.deviceID = nil;
     onceToken = 0;
-  s_sharedInstance = nil;
+    s_sharedInstance = nil;
 }
 
 @end
