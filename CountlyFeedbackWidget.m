@@ -21,7 +21,11 @@ NSString* const kCountlyReservedEventRating = @"[CLY]_star_rating";
 NSString* const kCountlyFBKeyClosed         = @"closed";
 NSString* const kCountlyFBKeyShown          = @"shown";
 
+#if (TARGET_OS_IOS)
+@interface CountlyFeedbackWidget () <WKNavigationDelegate>
+#else
 @interface CountlyFeedbackWidget ()
+#endif
 @property (nonatomic) CLYFeedbackWidgetType type;
 @property (nonatomic) NSString* ID;
 @property (nonatomic) NSString* name;
@@ -121,6 +125,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
     configuration.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
     WKWebView* webView = [[WKWebView alloc] initWithFrame:webVC.view.bounds configuration:configuration];
+    webView.navigationDelegate = self;
     webView.layer.shadowColor = UIColor.blackColor.CGColor;
     webView.layer.shadowOpacity = 0.5;
     webView.layer.shadowOffset = CGSizeMake(0.0f, 5.0f);
@@ -129,6 +134,8 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     webView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [webVC.view addSubview:webView];
     webVC.webView = webView;
+    self.webVC = webVC;
+    self.widgetCallback = widgetCallback;
     NSURLRequest* request = [NSURLRequest requestWithURL:[self generateWidgetURL]];
     [webView loadRequest:request];
     
@@ -151,6 +158,41 @@ NSString* const kCountlyFBKeyShown          = @"shown";
         if(widgetCallback)
             widgetCallback(WIDGET_APPEARED);
     }];
+}
+
+
+- (void)webView:(WKWebView *)webView decidePolicyForNavigationResponse:(WKNavigationResponse *)navigationResponse decisionHandler:(void (^)(WKNavigationResponsePolicy))decisionHandler {
+    NSURLResponse *response = navigationResponse.response;
+    NSString *mimeType = response.MIMEType ?: @"(unknown)";
+    long statusCode = 0;
+    NSDictionary *headers = nil;
+    if ([response isKindOfClass:[NSHTTPURLResponse class]]) {
+        NSHTTPURLResponse *http = (NSHTTPURLResponse *)response;
+        statusCode = http.statusCode;
+        headers = http.allHeaderFields;
+    }
+
+    CLY_LOG_I(@"%s Navigation response received: URL=%@, MIME=%@, status=%ld, headers=%@",
+              __FUNCTION__, response.URL.absoluteString, mimeType, statusCode, headers);
+
+    if (statusCode >= 400) {
+        CLY_LOG_I(@"%s Cancelling navigation due to HTTP status code: %ld", __FUNCTION__, statusCode);
+        decisionHandler(WKNavigationResponsePolicyCancel);
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (self.webVC) {
+                [self.webVC dismissViewControllerAnimated:YES completion:^{
+                    if (self.widgetCallback) {
+                        self.widgetCallback(WIDGET_CLOSED);
+                    }
+                }];
+                self.webVC = nil;
+                self.widgetCallback = nil;
+            }
+        });
+        return;
+    }
+
+    decisionHandler(WKNavigationResponsePolicyAllow);
 }
 
 - (void)getWidgetData:(void (^)(NSDictionary * __nullable widgetData, NSError * __nullable error))completionHandler
