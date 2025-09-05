@@ -416,14 +416,26 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
     {
         CLY_LOG_D(@"'getFeedbackWidgets' is aborted: SDK Networking is disabled from server config!");
+        if(completionHandler){
+            completionHandler(nil, nil);
+        }
         return;
     }
     
-    if (!CountlyConsentManager.sharedInstance.consentForFeedback)
+    if (!CountlyConsentManager.sharedInstance.consentForFeedback) {
+        if(completionHandler){
+            completionHandler(nil, nil);
+        }
         return;
+    }
+        
 
-    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary) {
+        if(completionHandler){
+            completionHandler(nil, nil);
+        }
         return;
+    }
 
     NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self feedbacksRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {

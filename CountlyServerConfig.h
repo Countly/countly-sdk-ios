@@ -13,7 +13,7 @@ extern NSString* const kCountlySCKeySC;
 + (instancetype)sharedInstance;
 
 - (void)fetchServerConfig:(CountlyConfig *)config;
-- (void)retrieveServerConfigFromStorage:(NSString*) sdkBehaviorSettings;
+- (void)retrieveServerConfigFromStorage:(CountlyConfig *)config;
 - (void)fetchServerConfigIfTimeIsUp;
 - (void)disableSDKBehaviourSettings;
 
