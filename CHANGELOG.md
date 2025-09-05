@@ -1,4 +1,4 @@
-## XX.XX.XX
+## 25.4.4
 * Improved Health Check metric information.
 * Improved Content display mechanics.
 * Improved CPU architecture detection capabilities.
