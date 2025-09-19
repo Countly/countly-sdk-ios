@@ -44,5 +44,6 @@ extern NSString* const kCountlySCKeySC;
 - (double)bomRQPercentage;
 - (NSInteger)bomRequestAge;
 - (NSInteger)bomDuration;
+- (NSInteger)requestTimeoutDuration;
 @end
 

@@ -41,6 +41,8 @@
 @property (nonatomic) NSInteger bomRequestAge;
 @property (nonatomic) NSInteger bomDuration;
 
+@property (nonatomic) NSInteger requestTimeoutDuration;
+
 @property (nonatomic) NSInteger version;
 @property (nonatomic) long long timestamp;
 @property (nonatomic) long long lastFetchTimestamp;
@@ -109,6 +111,7 @@ NSString *const kRBOMDuration = @"bom_d";
         _currentServerConfigUpdateInterval = 4;
         _requestTimer = nil;
         _serverConfigUpdatesDisabled = NO;
+        _requestTimeoutDuration = 30;
         [self setDefaultValues];
     }
     return self;
@@ -211,6 +214,12 @@ NSString *const kRBOMDuration = @"bom_d";
 
 - (void)populateServerConfig:(NSDictionary *)serverConfig withConfig:(CountlyConfig *)config
 {
+    if(config.requestTimeoutDuration <= 0) {
+        config.requestTimeoutDuration = 1;
+    }
+    
+    _requestTimeoutDuration = config.requestTimeoutDuration;
+    
     if (!serverConfig[kRConfig])
     {
         CLY_LOG_D(@"%s, config key is missing in the server configuration omitting", __FUNCTION__);
@@ -625,6 +634,11 @@ NSString *const kRBOMDuration = @"bom_d";
 - (NSInteger)bomDuration
 {
     return _bomDuration;
+}
+
+- (NSInteger)requestTimeoutDuration
+{
+    return _requestTimeoutDuration;
 }
 
 @end
