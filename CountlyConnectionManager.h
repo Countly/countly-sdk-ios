@@ -40,6 +40,8 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 
 + (instancetype)sharedInstance;
 
+- (void)recordMetrics:(nullable NSDictionary *)metricsOverride;
+
 - (void)beginSession;
 - (void)updateSession;
 - (void)endSession;

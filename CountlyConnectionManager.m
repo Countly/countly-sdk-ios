@@ -341,6 +341,34 @@ static dispatch_once_t onceToken;
     [self logRequest:request];
 }
 
+- (void)recordMetrics:(nullable NSDictionary *)metricsOverride
+{
+    CLY_LOG_I(@"%s", __FUNCTION__, metricsOverride);
+    
+    NSDictionary *defaultMetrics = [CountlyDeviceInfo metricsDictionary];
+    if (!defaultMetrics) {
+        CLY_LOG_W(@"%s Default metrics is nil, aborting", __FUNCTION__);
+        return;
+    }
+    CLY_LOG_I(@"%s default metrics:[%@]", __FUNCTION__, defaultMetrics);
+    
+    NSDictionary *finalMetrics;
+    if (metricsOverride && metricsOverride.count > 0) {
+        NSMutableDictionary *mutableMetrics = [defaultMetrics mutableCopy];
+        [mutableMetrics addEntriesFromDictionary:metricsOverride];
+        finalMetrics = [mutableMetrics copy];
+    } else {
+        finalMetrics = defaultMetrics;
+    }
+    CLY_LOG_I(@"%s final metrics:[%@]", __FUNCTION__, finalMetrics);
+    
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
+                             kCountlyQSKeyMetrics, [finalMetrics cly_JSONify]];
+    
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
+    [self proceedOnQueue];
+}
+
 - (BOOL)backoff:(long)responseTimeSeconds queryString:(NSString *)queryString
 {
     BOOL result = NO;
