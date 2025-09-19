@@ -548,6 +548,12 @@ static dispatch_once_t onceToken;
 
 #pragma mark - Queue Operations
 
+- (void)recordMetrics:(NSDictionary<NSString *, NSString *> * _Nullable)metricsOverride
+{
+    CLY_LOG_I(@"%s %@", __FUNCTION__, metricsOverride);
+    [CountlyConnectionManager.sharedInstance recordMetrics:metricsOverride];
+}
+
 - (void)flushQueues
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
