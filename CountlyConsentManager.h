@@ -23,6 +23,7 @@
 @property (nonatomic, readonly) BOOL consentForFeedback;
 @property (nonatomic, readonly) BOOL consentForRemoteConfig;
 @property (nonatomic, readonly) BOOL consentForContent;
+@property (nonatomic, readonly) BOOL consentForMetrics;
 
 
 + (instancetype)sharedInstance;

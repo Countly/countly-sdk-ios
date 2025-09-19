@@ -88,6 +88,7 @@ extern CLYConsent const CLYConsentPerformanceMonitoring;
 extern CLYConsent const CLYConsentFeedback;
 extern CLYConsent const CLYConsentRemoteConfig;
 extern CLYConsent const CLYConsentContent;
+extern CLYConsent const CLYConsentMetrics;
 
 //NOTE: Push Notification Test Modes
 typedef NSString* CLYPushTestMode NS_EXTENSIBLE_STRING_ENUM;
@@ -388,6 +389,13 @@ typedef enum : NSUInteger
  * @discussion If not set, it will not effect the requests.
  */
 @property (nonatomic) NSUInteger requestDropAgeHours;
+
+/**
+ * Set the request timeout duration in seconds
+ * Minimum value is "1" second
+ * Default value is "30" seconds
+ */
+@property (nonatomic) NSInteger requestTimeoutDuration;
 
 /**
  * Limit for the length of all string keys.

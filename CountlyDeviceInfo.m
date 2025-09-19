@@ -308,7 +308,7 @@ static dispatch_once_t onceToken;
     return [NSBundle.mainBundle objectForInfoDictionaryKey:(NSString*)kCFBundleVersionKey];
 }
 
-+ (NSString *)metrics
++ (NSDictionary *)metricsDictionary
 {
     NSMutableDictionary* metricsDictionary = NSMutableDictionary.new;
     metricsDictionary[CLYMetricKeyDevice] = CountlyDeviceInfo.device;
@@ -327,7 +327,12 @@ static dispatch_once_t onceToken;
 
     [metricsDictionary addEntriesFromDictionary:CountlyDeviceInfo.sharedInstance.customMetrics];
 
-    return [metricsDictionary cly_JSONify];
+    return metricsDictionary;
+}
+
++ (NSString *)metrics
+{
+    return [[CountlyDeviceInfo metricsDictionary] cly_JSONify];
 }
 
 #pragma mark -

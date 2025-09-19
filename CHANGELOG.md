@@ -1,3 +1,10 @@
+## 25.4.5
+* Added "requestTimeoutDuration" init config parameter to change request timeout duration in seconds.
+* Added a new function "sendMetricsRequest: metricsOverride" to send a manual metrics request, accessible through the instance.
+* Added a new Consent option "CLYConsentMetrics" for controlling "sendMetricsRequest" method. (This has no effect on Session metrics.)
+
+* Mitigated a possible health check recording issue.
+
 ## 25.4.4
 * Improved Health Check metric information.
 * Improved Content display mechanics.
