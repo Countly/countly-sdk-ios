@@ -1,5 +1,6 @@
 ## XX.XX.XX
-* Rolled back Health Check metric information to previous state.
+* Added a new function "sendMetricsRequest: metricsOverride" to send a manual metrics request, accessible through the instance.
+
 
 ## 25.4.4
 * Improved Health Check metric information.

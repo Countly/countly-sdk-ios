@@ -100,6 +100,12 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)addDirectRequest:(NSDictionary<NSString *, NSString *> * _Nullable)requestParameters;
 
+/**
+ * Records current device metrics and puts them into the request queue.
+ * @discussion Optionally, provide a dictionary to override detected metrics.
+ * @param metricsOverride Dictionary of metrics to override.
+ */
+- (void)recordMetrics:(NSDictionary<NSString *, NSString *> *_Nullable)metricsOverride;
 
 
 #pragma mark - Sessions
