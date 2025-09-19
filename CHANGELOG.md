@@ -3,6 +3,7 @@
 * Added a new function "sendMetricsRequest: metricsOverride" to send a manual metrics request, accessible through the instance.
 * Added a new Consent option "CLYConsentMetrics" for controlling "sendMetricsRequest" method. (This has no effect on Session metrics.)
 
+* Rolled back Health Check metric information to previous state.
 * Mitigated a possible health check recording issue.
 
 ## 25.4.4
