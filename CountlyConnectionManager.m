@@ -85,7 +85,6 @@ NSString* const kCountlyEndpointWidget = @"/widget";
 NSString* const kCountlyEndpointSurveys = @"/surveys";
 
 const NSInteger kCountlyGETRequestMaxLength = 2048;
-static const NSTimeInterval CONNECTION_TIMEOUT = 30.0;
 
 @implementation CountlyConnectionManager : NSObject
 
@@ -223,8 +222,8 @@ static dispatch_once_t onceToken;
         return;
     }
 
-    _URLSessionConfiguration.timeoutIntervalForRequest = CONNECTION_TIMEOUT;
-    _URLSessionConfiguration.timeoutIntervalForResource = CONNECTION_TIMEOUT;
+    _URLSessionConfiguration.timeoutIntervalForRequest = [CountlyServerConfig.sharedInstance requestTimeoutDuration];
+    _URLSessionConfiguration.timeoutIntervalForResource = [CountlyServerConfig.sharedInstance requestTimeoutDuration];
     NSString* queryString = firstItemInQueue;
     NSString* endPoint = kCountlyEndpointI;
     

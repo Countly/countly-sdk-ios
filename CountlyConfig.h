@@ -390,6 +390,13 @@ typedef enum : NSUInteger
 @property (nonatomic) NSUInteger requestDropAgeHours;
 
 /**
+ * Set the request timeout duration in seconds
+ * Minimum value is "1" second
+ * Default value is "30" seconds
+ */
+@property (nonatomic) NSUInteger requestTimeoutDuration;
+
+/**
  * Limit for the length of all string keys.
  * @discussion It affects:
  * @discussion - event names

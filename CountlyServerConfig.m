@@ -41,6 +41,8 @@
 @property (nonatomic) NSInteger bomRequestAge;
 @property (nonatomic) NSInteger bomDuration;
 
+@property (nonatomic) NSInteger requestTimeoutDuration;
+
 @property (nonatomic) NSInteger version;
 @property (nonatomic) long long timestamp;
 @property (nonatomic) long long lastFetchTimestamp;
@@ -109,6 +111,7 @@ NSString *const kRBOMDuration = @"bom_d";
         _currentServerConfigUpdateInterval = 4;
         _requestTimer = nil;
         _serverConfigUpdatesDisabled = NO;
+        _requestTimeoutDuration = 30;
         [self setDefaultValues];
     }
     return self;
@@ -388,6 +391,7 @@ NSString *const kRBOMDuration = @"bom_d";
 - (void)fetchServerConfig:(CountlyConfig *)config
 {
     CLY_LOG_D(@"%s, fetching sdk behavior settings", __FUNCTION__);
+    _requestTimeoutDuration = config.requestTimeoutDuration;
     
     if (_serverConfigUpdatesDisabled) {
         CLY_LOG_D(@"%s, sdk behavior settings updates disabled, omitting fetch", __FUNCTION__);
@@ -625,6 +629,11 @@ NSString *const kRBOMDuration = @"bom_d";
 - (NSInteger)bomDuration
 {
     return _bomDuration;
+}
+
+- (NSInteger)requestTimeoutDuration
+{
+    return _requestTimeoutDuration;
 }
 
 @end
