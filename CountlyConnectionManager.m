@@ -344,6 +344,8 @@ static dispatch_once_t onceToken;
 - (void)recordMetrics:(nullable NSDictionary *)metricsOverride
 {
     CLY_LOG_I(@"%s", __FUNCTION__, metricsOverride);
+    if (!CountlyConsentManager.sharedInstance.consentForMetrics)
+    return;
     
     NSDictionary *defaultMetrics = [CountlyDeviceInfo metricsDictionary];
     if (!defaultMetrics) {
