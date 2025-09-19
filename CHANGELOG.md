@@ -1,3 +1,6 @@
+## XX.XX.XX
+* Rolled back Health Check metric information to previous state.
+
 ## 25.4.4
 * Improved Health Check metric information.
 * Improved Content display mechanics.
