@@ -1,6 +1,8 @@
 ## 25.4.5
 * Added "requestTimeoutDuration" init config parameter configure request timeout in seconds.
 
+* Mitigated a possible health check recording issue.
+
 ## 25.4.4
 * Improved Health Check metric information.
 * Improved Content display mechanics.
