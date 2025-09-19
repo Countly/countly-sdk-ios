@@ -18,6 +18,7 @@ CLYConsent const CLYConsentPerformanceMonitoring = @"apm";
 CLYConsent const CLYConsentFeedback             = @"feedback";
 CLYConsent const CLYConsentRemoteConfig         = @"remote-config";
 CLYConsent const CLYConsentContent              = @"content";
+CLYConsent const CLYConsentMetrics              = @"metrics";
 
 
 @implementation CountlyConsentManager
@@ -34,6 +35,7 @@ CLYConsent const CLYConsentContent              = @"content";
 @synthesize consentForFeedback = _consentForFeedback;
 @synthesize consentForRemoteConfig = _consentForRemoteConfig;
 @synthesize consentForContent = _consentForContent;
+@synthesize consentForMetrics = _consentForMetrics;
 
 #pragma mark -
 
@@ -119,6 +121,9 @@ static dispatch_once_t onceToken;
     
     if ([features containsObject:CLYConsentContent] && !self.consentForContent)
         self.consentForContent = YES;
+    
+    if ([features containsObject:CLYConsentMetrics] && !self.consentForMetrics)
+        self.consentForMetrics = YES;
 
     [self sendConsents];
 }
@@ -186,6 +191,9 @@ static dispatch_once_t onceToken;
     if ([features containsObject:CLYConsentContent] && self.consentForContent)
         self.consentForContent = NO;
 
+    if ([features containsObject:CLYConsentMetrics] && self.consentForMetrics)
+        self.consentForMetrics = NO;
+
     if (!shouldSkipSendingConsentsRequest)
         [self sendConsents];
 }
@@ -207,6 +215,7 @@ static dispatch_once_t onceToken;
         CLYConsentFeedback: @(self.consentForFeedback),
         CLYConsentRemoteConfig: @(self.consentForRemoteConfig),
         CLYConsentContent: @(self.consentForContent),
+        CLYConsentMetrics: @(self.consentForMetrics),
     };
 
     [CountlyConnectionManager.sharedInstance sendConsents:[consents cly_JSONify]];
@@ -247,7 +256,8 @@ static dispatch_once_t onceToken;
     self.consentForPerformanceMonitoring ||
     self.consentForFeedback ||
     self.consentForRemoteConfig ||
-    self.consentForContent;
+    self.consentForContent ||
+    self.consentForMetrics;
 }
 
 
@@ -463,6 +473,20 @@ static dispatch_once_t onceToken;
     }
 }
 
+- (void)setConsentForMetrics:(BOOL)consentForMetrics
+{
+    _consentForMetrics = consentForMetrics;
+
+    if (consentForMetrics)
+    {
+        CLY_LOG_D(@"Consent for Metrics is given.");
+    }
+    else
+    {
+        CLY_LOG_D(@"Consent for Metrics is cancelled.");
+    }
+}
+
 - (void)setConsentForContent:(BOOL)consentForContent
 {
     _consentForContent = consentForContent;
@@ -584,6 +608,14 @@ static dispatch_once_t onceToken;
         return YES;
     
     return _consentForContent;
+}
+
+- (BOOL)consentForMetrics
+{
+    if (!self.requiresConsent)
+        return YES;
+    
+    return _consentForMetrics;
 }
 
 @end
