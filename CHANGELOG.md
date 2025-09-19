@@ -1,3 +1,6 @@
+## XX.XX.XX
+* Added a new function "sendMetricsRequest: metricsOverride" to send a manual metrics request, accessible through the instance.
+
 ## 25.4.4
 * Improved Health Check metric information.
 * Improved Content display mechanics.
