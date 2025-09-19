@@ -620,8 +620,14 @@ static dispatch_once_t onceToken;
 
 - (void)storeHealthCheckTrackerState:(NSDictionary *)healthCheckTrackerState
 {
-    [NSUserDefaults.standardUserDefaults setObject:healthCheckTrackerState forKey:kCountlyHealthCheckStatePersistencyKey];
-    [NSUserDefaults.standardUserDefaults synchronize];
+    @try {
+        [NSUserDefaults.standardUserDefaults setObject:healthCheckTrackerState forKey:kCountlyHealthCheckStatePersistencyKey];
+        [NSUserDefaults.standardUserDefaults synchronize];
+    }
+    @catch (NSException *exception) {
+        CLY_LOG_E(@"%s, Exception while storing health check tracker state: %@, reason: %@", __FUNCTION__,
+                  exception.name, exception.reason);
+    }
 }
 
 @end
