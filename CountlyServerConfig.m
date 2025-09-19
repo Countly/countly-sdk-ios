@@ -214,6 +214,12 @@ NSString *const kRBOMDuration = @"bom_d";
 
 - (void)populateServerConfig:(NSDictionary *)serverConfig withConfig:(CountlyConfig *)config
 {
+    if(config.requestTimeoutDuration <= 0) {
+        config.requestTimeoutDuration = 1;
+    }
+    
+    _requestTimeoutDuration = config.requestTimeoutDuration;
+    
     if (!serverConfig[kRConfig])
     {
         CLY_LOG_D(@"%s, config key is missing in the server configuration omitting", __FUNCTION__);
@@ -391,7 +397,6 @@ NSString *const kRBOMDuration = @"bom_d";
 - (void)fetchServerConfig:(CountlyConfig *)config
 {
     CLY_LOG_D(@"%s, fetching sdk behavior settings", __FUNCTION__);
-    _requestTimeoutDuration = config.requestTimeoutDuration;
     
     if (_serverConfigUpdatesDisabled) {
         CLY_LOG_D(@"%s, sdk behavior settings updates disabled, omitting fetch", __FUNCTION__);

@@ -394,7 +394,7 @@ typedef enum : NSUInteger
  * Minimum value is "1" second
  * Default value is "30" seconds
  */
-@property (nonatomic) NSUInteger requestTimeoutDuration;
+@property (nonatomic) NSInteger requestTimeoutDuration;
 
 /**
  * Limit for the length of all string keys.

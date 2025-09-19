@@ -161,10 +161,6 @@ static dispatch_once_t onceToken;
     CountlyPersistency.sharedInstance.requestDropAgeHours = config.requestDropAgeHours;
     CountlyPersistency.sharedInstance.storedRequestsLimit = MAX(1, config.storedRequestsLimit);
     
-    if(config.requestTimeoutDuration <= 0) {
-        config.requestTimeoutDuration = 1;
-    }
-    
     CountlyCommon.sharedInstance.manualSessionHandling = config.manualSessionHandling;
     CountlyCommon.sharedInstance.enableManualSessionControlHybridMode = config.enableManualSessionControlHybridMode;
     
