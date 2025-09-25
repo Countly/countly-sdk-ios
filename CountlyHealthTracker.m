@@ -75,7 +75,7 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
     self.countBackoffRequest = [initialState[keyBackoffRequest] longValue];
     self.consecutiveBackoffRequest = [initialState[keyConsecutiveBackoffRequest] longValue];
 
-    CLY_LOG_D(@"%s, Loaded initial health check state: [%@]", __FUNCTION__, initialState);
+    CLY_LOG_D(@"%s loaded initial health check state: [%@]", __FUNCTION__, initialState);
 }
 
 - (void)logWarning {
@@ -98,24 +98,30 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
     } else {
         self.errorMessage = errorResponse;
     }
+    
+    CLY_LOG_D(@"%s statusCode: [%d], errorResponse: [%@]", __FUNCTION__, (int)statusCode, errorResponse);
 }
 
 - (void)logBackoffRequest {
+    CLY_LOG_D(@"%s", __FUNCTION__);
     self.countBackoffRequest++;
     self.countConsecutiveBackoffRequest++;
 }
 
 - (void)logConsecutiveBackoffRequest {
+    CLY_LOG_D(@"%s", __FUNCTION__);
     self.consecutiveBackoffRequest = MAX(self.consecutiveBackoffRequest, self.countConsecutiveBackoffRequest);
     self.countConsecutiveBackoffRequest = 0;
 }
 
 - (void)clearAndSave {
+    CLY_LOG_D(@"%s", __FUNCTION__);
     [self clearValues];
     [CountlyPersistency.sharedInstance storeHealthCheckTrackerState:@{}];
 }
 
 - (void)saveState {
+    CLY_LOG_D(@"%s", __FUNCTION__);
     [self logConsecutiveBackoffRequest];
     
     NSDictionary *healthCheckState = @{
@@ -131,7 +137,7 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
 }
 
 - (void)clearValues {
-    CLY_LOG_W(@"%s, Clearing counters", __FUNCTION__);
+    CLY_LOG_W(@"%s clearing counters", __FUNCTION__);
 
     self.countLogWarning = 0;
     self.countLogError = 0;
@@ -144,24 +150,24 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
 
 - (void)sendHealthCheck {
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary) {
-        CLY_LOG_W(@"%s, currently in temporary id mode, omitting", __FUNCTION__);
+        CLY_LOG_W(@"%s currently in temporary id mode, omitting", __FUNCTION__);
     }
     
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
     {
-        CLY_LOG_D(@"'sendHealthCheck' is aborted: SDK Networking is disabled from server config!");
+        CLY_LOG_D(@"%s 'sendHealthCheck' is aborted: SDK Networking is disabled from server config!", __FUNCTION__);
         return;
     }
     
     if (!_healthCheckEnabled || _healthCheckSent) {
-        CLY_LOG_D(@"%s, health check status, sent: %d, not_enabled: %d", __FUNCTION__, _healthCheckSent, _healthCheckEnabled);
+        CLY_LOG_D(@"%s health check status, healthCheckSent: [%d], healthCheckEnabled: [%d]", __FUNCTION__, _healthCheckSent, _healthCheckEnabled);
     }
     
     NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self healthCheckRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
         if (error)
         {
-            CLY_LOG_W(@"%s, error while sending health checks error: %@", __FUNCTION__, error);
+            CLY_LOG_W(@"%s error while sending health checks error: [%@]", __FUNCTION__, error);
             return;
         }
         
@@ -169,12 +175,12 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
         NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
         
         if (jsonError || !jsonResponse) {
-            CLY_LOG_I(@"%s, error while sending health checks, Failed to parse JSON response: %@", __FUNCTION__, jsonError);
+            CLY_LOG_I(@"%s error while sending health checks, Failed to parse JSON response error: [%@]", __FUNCTION__, jsonError);
             return;
         }
         
         if (!jsonResponse[@"result"]) {
-            CLY_LOG_D(@"%s, Retrieved request response does not match expected pattern %@", __FUNCTION__, jsonResponse);
+            CLY_LOG_D(@"%s Retrieved request response does not match expected pattern response: [%@]", __FUNCTION__, jsonResponse);
             return;
         }
         
@@ -194,7 +200,7 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
         NSString *jsonString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
         encodedData = [jsonString stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
     } else {
-        CLY_LOG_W(@"%s, Failed to create json for hc request, %@", __FUNCTION__, error);
+        CLY_LOG_W(@"%s failed to create json for hc request error: [%@]", __FUNCTION__, error);
     }
 
     return encodedData;
@@ -220,7 +226,7 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
     NSString* hcSendURL = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"%@",kCountlyEndpointI];
     
-    CLY_LOG_D(@"%s, generated health check request: %@", __FUNCTION__, queryString);
+    CLY_LOG_D(@"%s generated health check request: [%@]", __FUNCTION__, queryString);
 
     if (queryString.length > kCountlyGETRequestMaxLength || CountlyConnectionManager.sharedInstance.alwaysUsePOST)
     {
