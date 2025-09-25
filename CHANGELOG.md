@@ -1,3 +1,6 @@
+## XX.XX.XX
+* Added ability to record reserved events
+
 ## 25.4.5
 * Added "requestTimeoutDuration" init config parameter to change request timeout duration in seconds.
 * Added a new function "sendMetricsRequest: metricsOverride" to send a manual metrics request, accessible through the instance.
