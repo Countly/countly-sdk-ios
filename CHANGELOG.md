@@ -1,3 +1,6 @@
+## XX.XX.XX
+* Changed default log level from "CLYInternalLogLevelDebug" to "CLYInternalLogLevelVerbose".
+
 ## 25.4.5
 * Added "requestTimeoutDuration" init config parameter to change request timeout duration in seconds.
 * Added a new function "sendMetricsRequest: metricsOverride" to send a manual metrics request, accessible through the instance.
