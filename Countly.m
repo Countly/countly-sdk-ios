@@ -104,7 +104,7 @@ static dispatch_once_t onceToken;
     // For backward compatibility, deprecated values are only set incase new values are not provided using sdkInternalLimits interface
     if(CountlyCommon.sharedInstance.maxKeyLength == kCountlyMaxKeyLength && config.maxKeyLength != kCountlyMaxKeyLength) {
         CountlyCommon.sharedInstance.maxKeyLength = config.maxKeyLength;
-        CLY_LOG_I(@"%s \033[1;31m deprecated maxKeyLength provided, maxKeyLength: [%lu]", __FUNCTION__, (unsigned long)config.maxKeyLength);
+        CLY_LOG_I(@"%s deprecated maxKeyLength provided, maxKeyLength: [%lu]", __FUNCTION__, (unsigned long)config.maxKeyLength);
     }
     if(CountlyCommon.sharedInstance.maxValueLength == kCountlyMaxValueSize && config.maxValueLength != kCountlyMaxValueSize) {
         CountlyCommon.sharedInstance.maxValueLength = config.maxValueLength;
