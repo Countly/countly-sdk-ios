@@ -1,5 +1,7 @@
 ## XX.XX.XX
-* Mitigated a networking health check recording issue.
+* Added the ability to record reserved events.
+
+* Mitigated a possible Health Check network log recording issue.
 
 ## 25.4.5
 * Added "requestTimeoutDuration" init config parameter to change request timeout duration in seconds.
