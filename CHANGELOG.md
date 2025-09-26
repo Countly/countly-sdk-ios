@@ -1,5 +1,6 @@
-## XX.XX.XX
+## XX.XX.XX
 * Added the ability to record reserved events.
+* Changed default log level from "CLYInternalLogLevelDebug" to "CLYInternalLogLevelVerbose".
 
 * Mitigated a possible Health Check network log recording issue.
 
