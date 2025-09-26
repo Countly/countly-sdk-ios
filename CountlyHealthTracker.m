@@ -59,7 +59,7 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
         _healthCheckEnabled = YES;
 
         // queue for health tracker state
-        _hcQueue = dispatch_queue_create("com.countly.healthtracker.queue", DISPATCH_QUEUE_SERIAL);
+        _hcQueue = dispatch_queue_create("ly.count.healthtracker.queue", DISPATCH_QUEUE_SERIAL);
 
         NSDictionary *initialState = [CountlyPersistency.sharedInstance retrieveHealthCheckTrackerState];
         [self setupInitialCounters:initialState];
