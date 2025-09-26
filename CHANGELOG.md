@@ -1,4 +1,4 @@
-## XX.XX.XX
+## 25.4.6
 * Added the ability to record reserved events.
 * Changed default log level from "CLYInternalLogLevelDebug" to "CLYInternalLogLevelVerbose".
 
