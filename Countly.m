@@ -849,22 +849,25 @@ static dispatch_once_t onceToken;
 {
     CLY_LOG_I(@"%s key: [%@], segmentation: [%@], count: [%lu], sum: [%f], duration: [%f]", __FUNCTION__, key, segmentation, (unsigned long)count, sum, duration);
 
-    if (!CountlyConsentManager.sharedInstance.consentForEvents)
-    {
-        CLY_LOG_W(@"Consent for events not given! Event will not be recorded.");
-        return;
-    }
-    
-    BOOL isReservedEvent = [self isReservedEvent:key];
+    NSNumber* isReservedEvent = [self isReservedEvent:key];
 
     if (isReservedEvent)
     {
-        CLY_LOG_W(@"A reserved event detected for key: '%@', event will not be recorded.", key);
+        CLY_LOG_V(@"%s, A reserved event detected: %@", __FUNCTION__, key);
+        if (!isReservedEvent.boolValue)
+        {
+            CLY_LOG_W(@"%s, No consent given for the reserved event! Event will not be recorded.", __FUNCTION__);
+            return;
+        }
+        CLY_LOG_V(@"%s, Specific consent given for the reserved event! So, it will be recorded.", __FUNCTION__);
+    } else if (!CountlyConsentManager.sharedInstance.consentForEvents) {
+        CLY_LOG_W(@"%s, Consent for events not given! Event will not be recorded.", __FUNCTION__);
         return;
     }
+    
     if (!CountlyServerConfig.sharedInstance.customEventTrackingEnabled)
     {
-        CLY_LOG_D(@"'recordEvent' is aborted: Custom Event Tracking is disabled from server config!");
+        CLY_LOG_D(@"%s, aborted: Custom Event Tracking is disabled from server config!", __FUNCTION__);
         return;
     }
 
@@ -985,20 +988,21 @@ static dispatch_once_t onceToken;
 #endif
 }
 
-
-- (BOOL)isReservedEvent:(NSString *)key
+/// This checks that given key requires any extra consent
+- (NSNumber *)isReservedEvent:(NSString *)key
 {
-    NSArray<NSString *>* reservedEvents =
-    @[
-        kCountlyReservedEventOrientation,
-        kCountlyReservedEventStarRating,
-        kCountlyReservedEventSurvey,
-        kCountlyReservedEventNPS,
-        kCountlyReservedEventPushAction,
-        kCountlyReservedEventView,
-    ];
-    
-    return [reservedEvents containsObject:key];
+    NSDictionary <NSString *, NSNumber *>* reservedEvents =
+    @{
+        kCountlyReservedEventOrientation: @(CountlyConsentManager.sharedInstance.consentForUserDetails),
+        kCountlyReservedEventStarRating: @(CountlyConsentManager.sharedInstance.consentForFeedback),
+        kCountlyReservedEventSurvey: @(CountlyConsentManager.sharedInstance.consentForFeedback),
+        kCountlyReservedEventNPS: @(CountlyConsentManager.sharedInstance.consentForFeedback),
+        kCountlyReservedEventPushAction: @(CountlyConsentManager.sharedInstance.consentForPushNotifications),
+        kCountlyReservedEventView: @(CountlyConsentManager.sharedInstance.consentForViewTracking),
+    };
+
+    NSNumber* aReservedEvent = reservedEvents[key];
+    return aReservedEvent;
 }
 
 #pragma mark -

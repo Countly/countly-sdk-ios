@@ -18,10 +18,11 @@
 @property (nonatomic, assign) long countConsecutiveBackoffRequest;
 @property (nonatomic, assign) long consecutiveBackoffRequest;
 @property (nonatomic, assign) NSInteger statusCode;
-@property (nonatomic, strong) NSString *errorMessage;
+@property (nonatomic, copy) NSString *errorMessage;
 @property (nonatomic, assign) BOOL healthCheckEnabled;
 @property (nonatomic, assign) BOOL healthCheckSent;
 
+@property (nonatomic, strong) dispatch_queue_t hcQueue;
 @end
 
 @implementation CountlyHealthTracker
@@ -57,6 +58,9 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
         _healthCheckSent = NO;
         _healthCheckEnabled = YES;
 
+        // queue for health tracker state
+        _hcQueue = dispatch_queue_create("com.countly.healthtracker.queue", DISPATCH_QUEUE_SERIAL);
+
         NSDictionary *initialState = [CountlyPersistency.sharedInstance retrieveHealthCheckTrackerState];
         [self setupInitialCounters:initialState];
     }
@@ -79,11 +83,15 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
 }
 
 - (void)logWarning {
-    self.countLogWarning++;
+    dispatch_async(self.hcQueue, ^{
+        self.countLogWarning++;
+    });
 }
 
 - (void)logError {
-    self.countLogError++;
+    dispatch_async(self.hcQueue, ^{
+        self.countLogError++;
+    });
 }
 
 - (void)logFailedNetworkRequestWithStatusCode:(NSInteger)statusCode
@@ -91,49 +99,60 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
     if (statusCode <= 0 || statusCode >= 1000 || errorResponse == nil) {
         return;
     }
-
-    self.statusCode = statusCode;
-    if (errorResponse.length > 1000) {
-        self.errorMessage = [errorResponse substringToIndex:1000];
-    } else {
-        self.errorMessage = errorResponse;
-    }
     
-    CLY_LOG_D(@"%s statusCode: [%d], errorResponse: [%@]", __FUNCTION__, (int)statusCode, errorResponse);
+    dispatch_async(self.hcQueue, ^{
+        self.statusCode = statusCode;
+
+        if (errorResponse.length > 1000) {
+            // copy ensures immutability even if errorResponse was NSMutableString
+            self.errorMessage = [errorResponse substringToIndex:1000];
+        } else {
+            self.errorMessage = [errorResponse copy];
+        }
+        CLY_LOG_D(@"%s statusCode: [%d], errorResponse: [%@]", __FUNCTION__, (int)statusCode, errorResponse);
+    });
 }
 
 - (void)logBackoffRequest {
     CLY_LOG_D(@"%s", __FUNCTION__);
-    self.countBackoffRequest++;
-    self.countConsecutiveBackoffRequest++;
+    dispatch_async(self.hcQueue, ^{
+        self.countBackoffRequest++;
+        self.countConsecutiveBackoffRequest++;
+    });
 }
 
 - (void)logConsecutiveBackoffRequest {
     CLY_LOG_D(@"%s", __FUNCTION__);
-    self.consecutiveBackoffRequest = MAX(self.consecutiveBackoffRequest, self.countConsecutiveBackoffRequest);
-    self.countConsecutiveBackoffRequest = 0;
+    dispatch_async(self.hcQueue, ^{
+        self.consecutiveBackoffRequest = MAX(self.consecutiveBackoffRequest, self.countConsecutiveBackoffRequest);
+        self.countConsecutiveBackoffRequest = 0;
+    });
 }
 
 - (void)clearAndSave {
     CLY_LOG_D(@"%s", __FUNCTION__);
-    [self clearValues];
-    [CountlyPersistency.sharedInstance storeHealthCheckTrackerState:@{}];
+    dispatch_async(self.hcQueue, ^{
+        [self clearValues];
+        [CountlyPersistency.sharedInstance storeHealthCheckTrackerState:@{}];
+    });
 }
 
 - (void)saveState {
     CLY_LOG_D(@"%s", __FUNCTION__);
-    [self logConsecutiveBackoffRequest];
-    
-    NSDictionary *healthCheckState = @{
-        keyLogWarning: @(self.countLogWarning),
-        keyLogError: @(self.countLogError),
-        keyStatusCode: @(self.statusCode),
-        keyErrorMessage: self.errorMessage ?: @"",
-        keyBackoffRequest: @(self.countBackoffRequest),
-        keyConsecutiveBackoffRequest: @(self.consecutiveBackoffRequest)
-    };
-    
-    [CountlyPersistency.sharedInstance storeHealthCheckTrackerState:healthCheckState];
+    dispatch_async(self.hcQueue, ^{
+        [self logConsecutiveBackoffRequest];
+
+        NSDictionary *healthCheckState = @{
+            keyLogWarning: @(self.countLogWarning),
+            keyLogError: @(self.countLogError),
+            keyStatusCode: @(self.statusCode),
+            keyErrorMessage: self.errorMessage ?: @"",
+            keyBackoffRequest: @(self.countBackoffRequest),
+            keyConsecutiveBackoffRequest: @(self.consecutiveBackoffRequest)
+        };
+
+        [CountlyPersistency.sharedInstance storeHealthCheckTrackerState:healthCheckState];
+    });
 }
 
 - (void)clearValues {
@@ -207,15 +226,31 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
 }
 
 - (NSURLRequest *)healthCheckRequest {
+    __block long snapshotLogError;
+    __block long snapshotLogWarning;
+    __block NSInteger snapshotStatusCode;
+    __block NSString *snapshotErrorMessage;
+    __block long snapshotBackoffRequest;
+    __block long snapshotConsecutiveBackoffRequest;
+
+    dispatch_sync(self.hcQueue, ^{
+        snapshotLogError = self.countLogError;
+        snapshotLogWarning = self.countLogWarning;
+        snapshotStatusCode = self.statusCode;
+        snapshotErrorMessage = [self.errorMessage copy] ?: @"";
+        snapshotBackoffRequest = self.countBackoffRequest;
+        snapshotConsecutiveBackoffRequest = self.consecutiveBackoffRequest;
+    });
+
     NSString *queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
 
     queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"hc", [self dictionaryToJsonString:@{
-        requestKeyErrorCount: @(self.countLogError),
-        requestKeyWarningCount: @(self.countLogWarning),
-        requestKeyStatusCode: @(self.statusCode),
-        requestKeyRequestError: self.errorMessage ?: @"",
-        requestKeyBackoffRequest: @(self.countBackoffRequest),
-        requestKeyConsecutiveBackoffRequest: @(self.consecutiveBackoffRequest)
+        requestKeyErrorCount: @(snapshotLogError),
+        requestKeyWarningCount: @(snapshotLogWarning),
+        requestKeyStatusCode: @(snapshotStatusCode),
+        requestKeyRequestError: snapshotErrorMessage,
+        requestKeyBackoffRequest: @(snapshotBackoffRequest),
+        requestKeyConsecutiveBackoffRequest: @(snapshotConsecutiveBackoffRequest)
     }]];
     
     queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"metrics", [self dictionaryToJsonString:@{

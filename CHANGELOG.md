@@ -1,5 +1,8 @@
 ## XX.XX.XX
+* Added the ability to record reserved events.
 * Changed default log level from "CLYInternalLogLevelDebug" to "CLYInternalLogLevelVerbose".
+
+* Mitigated a possible Health Check network log recording issue.
 
 ## 25.4.5
 * Added "requestTimeoutDuration" init config parameter to change request timeout duration in seconds.
