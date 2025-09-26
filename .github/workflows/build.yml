@@ -31,11 +31,11 @@ jobs:
             { os_version: 13, sdk: "appletvos17.2" },
             { os_version: 13, sdk: "watchos10.2" },
             { os_version: 13, sdk: "xros1.0" },
-            { os_version: 15.6, sdk: "macosx15.6" },
-            { os_version: 15.6, sdk: "iphoneos18.2" }, 
-            { os_version: 15.6, sdk: "appletvos18.2" }, 
-            { os_version: 15.6, sdk: "watchos11.2" },  
-            { os_version: 15.6, sdk: "xros2.2" }, 
+            { os_version: 15, sdk: "macosx15.5" },
+            { os_version: 15, sdk: "iphoneos18.5" }, 
+            { os_version: 15, sdk: "appletvos18.5" }, 
+            { os_version: 15, sdk: "watchos11.5" },  
+            { os_version: 15, sdk: "xros2.5" }, 
           ]
     steps:
       # To check the github context
