@@ -335,6 +335,17 @@ void CountlyPrint(NSString *stringToPrint)
     }
 }
 
+- (NSURLSession *)ImmediateURLSession
+{
+    NSURLSessionConfiguration *immediateConfig = [NSURLSessionConfiguration defaultSessionConfiguration];
+    if (CountlyConnectionManager.sharedInstance.URLSessionConfiguration)
+    {
+        immediateConfig.HTTPAdditionalHeaders = CountlyConnectionManager.sharedInstance.URLSessionConfiguration.HTTPAdditionalHeaders;
+    }
+   
+    return [NSURLSession sessionWithConfiguration:immediateConfig];
+}
+
 - (CGSize)getWindowSize {
 #if (TARGET_OS_IOS)
     UIWindow *window = nil;

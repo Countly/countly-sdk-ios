@@ -89,7 +89,7 @@ static dispatch_once_t onceToken;
     CountlyCommon.sharedInstance.shouldIgnoreTrustCheck = config.shouldIgnoreTrustCheck;
     CountlyCommon.sharedInstance.loggerDelegate = config.loggerDelegate;
     CountlyCommon.sharedInstance.internalLogLevel = config.internalLogLevel;
-    
+
     config = [self checkAndFixInternalLimitsConfig:config];
     
     if (config.disableSDKBehaviorSettingsUpdates) {

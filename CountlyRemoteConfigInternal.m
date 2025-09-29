@@ -197,8 +197,9 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         return;
     
     NSURLRequest* request = [self remoteConfigRequestForKeys:keys omitKeys:omitKeys isLegacy:isLegacy];
-    NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
                               {
+        // IMMEDIATE REQUEST to find them better in search
         NSDictionary* remoteConfig = nil;
         
         if (!error)
@@ -496,8 +497,9 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         return;
     
     NSURLRequest* request = [self downloadVariantsRequest];
-    NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
                               {
+        // IMMEDIATE REQUEST to find them better in search
         NSMutableDictionary* variants = NSMutableDictionary.new;
         
         if (!error)
@@ -607,8 +609,9 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
     }
     
     NSURLRequest* request = [self enrollInVarianRequestForKey:key variantName:variantName];
-    NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
+        // IMMEDIATE REQUEST to find them better in search
         NSDictionary* variants = nil;
         [self clearCachedRemoteConfig];
         if (!error)
@@ -721,9 +724,9 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         return;
     
     NSURLRequest* request = [self downloadExperimentInfoRequest];
-    NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
                               {
-        
+        // IMMEDIATE REQUEST to find them better in search
         NSMutableDictionary<NSString*, CountlyExperimentInformation*> * experiments = NSMutableDictionary.new;
         
         if (!error)
