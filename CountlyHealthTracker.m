@@ -18,10 +18,11 @@
 @property (nonatomic, assign) long countConsecutiveBackoffRequest;
 @property (nonatomic, assign) long consecutiveBackoffRequest;
 @property (nonatomic, assign) NSInteger statusCode;
-@property (nonatomic, strong) NSString *errorMessage;
+@property (nonatomic, copy) NSString *errorMessage;
 @property (nonatomic, assign) BOOL healthCheckEnabled;
 @property (nonatomic, assign) BOOL healthCheckSent;
 
+@property (nonatomic, strong) dispatch_queue_t hcQueue;
 @end
 
 @implementation CountlyHealthTracker
@@ -57,6 +58,9 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
         _healthCheckSent = NO;
         _healthCheckEnabled = YES;
 
+        // queue for health tracker state
+        _hcQueue = dispatch_queue_create("ly.count.healthtracker.queue", DISPATCH_QUEUE_SERIAL);
+
         NSDictionary *initialState = [CountlyPersistency.sharedInstance retrieveHealthCheckTrackerState];
         [self setupInitialCounters:initialState];
     }
@@ -75,15 +79,19 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
     self.countBackoffRequest = [initialState[keyBackoffRequest] longValue];
     self.consecutiveBackoffRequest = [initialState[keyConsecutiveBackoffRequest] longValue];
 
-    CLY_LOG_D(@"%s, Loaded initial health check state: [%@]", __FUNCTION__, initialState);
+    CLY_LOG_D(@"%s loaded initial health check state: [%@]", __FUNCTION__, initialState);
 }
 
 - (void)logWarning {
-    self.countLogWarning++;
+    dispatch_async(self.hcQueue, ^{
+        self.countLogWarning++;
+    });
 }
 
 - (void)logError {
-    self.countLogError++;
+    dispatch_async(self.hcQueue, ^{
+        self.countLogError++;
+    });
 }
 
 - (void)logFailedNetworkRequestWithStatusCode:(NSInteger)statusCode
@@ -91,47 +99,64 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
     if (statusCode <= 0 || statusCode >= 1000 || errorResponse == nil) {
         return;
     }
+    
+    dispatch_async(self.hcQueue, ^{
+        self.statusCode = statusCode;
 
-    self.statusCode = statusCode;
-    if (errorResponse.length > 1000) {
-        self.errorMessage = [errorResponse substringToIndex:1000];
-    } else {
-        self.errorMessage = errorResponse;
-    }
+        if (errorResponse.length > 1000) {
+            // copy ensures immutability even if errorResponse was NSMutableString
+            self.errorMessage = [errorResponse substringToIndex:1000];
+        } else {
+            self.errorMessage = [errorResponse copy];
+        }
+        CLY_LOG_D(@"%s statusCode: [%d], errorResponse: [%@]", __FUNCTION__, (int)statusCode, errorResponse);
+    });
 }
 
 - (void)logBackoffRequest {
-    self.countBackoffRequest++;
-    self.countConsecutiveBackoffRequest++;
+    CLY_LOG_D(@"%s", __FUNCTION__);
+    dispatch_async(self.hcQueue, ^{
+        self.countBackoffRequest++;
+        self.countConsecutiveBackoffRequest++;
+    });
 }
 
 - (void)logConsecutiveBackoffRequest {
-    self.consecutiveBackoffRequest = MAX(self.consecutiveBackoffRequest, self.countConsecutiveBackoffRequest);
-    self.countConsecutiveBackoffRequest = 0;
+    CLY_LOG_D(@"%s", __FUNCTION__);
+    dispatch_async(self.hcQueue, ^{
+        self.consecutiveBackoffRequest = MAX(self.consecutiveBackoffRequest, self.countConsecutiveBackoffRequest);
+        self.countConsecutiveBackoffRequest = 0;
+    });
 }
 
 - (void)clearAndSave {
-    [self clearValues];
-    [CountlyPersistency.sharedInstance storeHealthCheckTrackerState:@{}];
+    CLY_LOG_D(@"%s", __FUNCTION__);
+    dispatch_async(self.hcQueue, ^{
+        [self clearValues];
+        [CountlyPersistency.sharedInstance storeHealthCheckTrackerState:@{}];
+    });
 }
 
 - (void)saveState {
-    [self logConsecutiveBackoffRequest];
-    
-    NSDictionary *healthCheckState = @{
-        keyLogWarning: @(self.countLogWarning),
-        keyLogError: @(self.countLogError),
-        keyStatusCode: @(self.statusCode),
-        keyErrorMessage: self.errorMessage ?: @"",
-        keyBackoffRequest: @(self.countBackoffRequest),
-        keyConsecutiveBackoffRequest: @(self.consecutiveBackoffRequest)
-    };
-    
-    [CountlyPersistency.sharedInstance storeHealthCheckTrackerState:healthCheckState];
+    CLY_LOG_D(@"%s", __FUNCTION__);
+    dispatch_async(self.hcQueue, ^{
+        [self logConsecutiveBackoffRequest];
+
+        NSDictionary *healthCheckState = @{
+            keyLogWarning: @(self.countLogWarning),
+            keyLogError: @(self.countLogError),
+            keyStatusCode: @(self.statusCode),
+            keyErrorMessage: self.errorMessage ?: @"",
+            keyBackoffRequest: @(self.countBackoffRequest),
+            keyConsecutiveBackoffRequest: @(self.consecutiveBackoffRequest)
+        };
+
+        [CountlyPersistency.sharedInstance storeHealthCheckTrackerState:healthCheckState];
+    });
 }
 
 - (void)clearValues {
-    CLY_LOG_W(@"%s, Clearing counters", __FUNCTION__);
+    CLY_LOG_W(@"%s clearing counters", __FUNCTION__);
 
     self.countLogWarning = 0;
     self.countLogError = 0;
@@ -144,24 +169,24 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
 
 - (void)sendHealthCheck {
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary) {
-        CLY_LOG_W(@"%s, currently in temporary id mode, omitting", __FUNCTION__);
+        CLY_LOG_W(@"%s currently in temporary id mode, omitting", __FUNCTION__);
     }
     
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
     {
-        CLY_LOG_D(@"'sendHealthCheck' is aborted: SDK Networking is disabled from server config!");
+        CLY_LOG_D(@"%s 'sendHealthCheck' is aborted: SDK Networking is disabled from server config!", __FUNCTION__);
         return;
     }
     
     if (!_healthCheckEnabled || _healthCheckSent) {
-        CLY_LOG_D(@"%s, health check status, sent: %d, not_enabled: %d", __FUNCTION__, _healthCheckSent, _healthCheckEnabled);
+        CLY_LOG_D(@"%s health check status, healthCheckSent: [%d], healthCheckEnabled: [%d]", __FUNCTION__, _healthCheckSent, _healthCheckEnabled);
     }
     
     NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self healthCheckRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
         if (error)
         {
-            CLY_LOG_W(@"%s, error while sending health checks error: %@", __FUNCTION__, error);
+            CLY_LOG_W(@"%s error while sending health checks error: [%@]", __FUNCTION__, error);
             return;
         }
         
@@ -169,12 +194,12 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
         NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
         
         if (jsonError || !jsonResponse) {
-            CLY_LOG_I(@"%s, error while sending health checks, Failed to parse JSON response: %@", __FUNCTION__, jsonError);
+            CLY_LOG_I(@"%s error while sending health checks, Failed to parse JSON response error: [%@]", __FUNCTION__, jsonError);
             return;
         }
         
         if (!jsonResponse[@"result"]) {
-            CLY_LOG_D(@"%s, Retrieved request response does not match expected pattern %@", __FUNCTION__, jsonResponse);
+            CLY_LOG_D(@"%s Retrieved request response does not match expected pattern response: [%@]", __FUNCTION__, jsonResponse);
             return;
         }
         
@@ -194,22 +219,38 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
         NSString *jsonString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
         encodedData = [jsonString stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
     } else {
-        CLY_LOG_W(@"%s, Failed to create json for hc request, %@", __FUNCTION__, error);
+        CLY_LOG_W(@"%s failed to create json for hc request error: [%@]", __FUNCTION__, error);
     }
 
     return encodedData;
 }
 
 - (NSURLRequest *)healthCheckRequest {
+    __block long snapshotLogError;
+    __block long snapshotLogWarning;
+    __block NSInteger snapshotStatusCode;
+    __block NSString *snapshotErrorMessage;
+    __block long snapshotBackoffRequest;
+    __block long snapshotConsecutiveBackoffRequest;
+
+    dispatch_sync(self.hcQueue, ^{
+        snapshotLogError = self.countLogError;
+        snapshotLogWarning = self.countLogWarning;
+        snapshotStatusCode = self.statusCode;
+        snapshotErrorMessage = [self.errorMessage copy] ?: @"";
+        snapshotBackoffRequest = self.countBackoffRequest;
+        snapshotConsecutiveBackoffRequest = self.consecutiveBackoffRequest;
+    });
+
     NSString *queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
 
     queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"hc", [self dictionaryToJsonString:@{
-        requestKeyErrorCount: @(self.countLogError),
-        requestKeyWarningCount: @(self.countLogWarning),
-        requestKeyStatusCode: @(self.statusCode),
-        requestKeyRequestError: self.errorMessage ?: @"",
-        requestKeyBackoffRequest: @(self.countBackoffRequest),
-        requestKeyConsecutiveBackoffRequest: @(self.consecutiveBackoffRequest)
+        requestKeyErrorCount: @(snapshotLogError),
+        requestKeyWarningCount: @(snapshotLogWarning),
+        requestKeyStatusCode: @(snapshotStatusCode),
+        requestKeyRequestError: snapshotErrorMessage,
+        requestKeyBackoffRequest: @(snapshotBackoffRequest),
+        requestKeyConsecutiveBackoffRequest: @(snapshotConsecutiveBackoffRequest)
     }]];
     
     queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"metrics", [self dictionaryToJsonString:@{
@@ -220,7 +261,7 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
     NSString* hcSendURL = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"%@",kCountlyEndpointI];
     
-    CLY_LOG_D(@"%s, generated health check request: %@", __FUNCTION__, queryString);
+    CLY_LOG_D(@"%s generated health check request: [%@]", __FUNCTION__, queryString);
 
     if (queryString.length > kCountlyGETRequestMaxLength || CountlyConnectionManager.sharedInstance.alwaysUsePOST)
     {

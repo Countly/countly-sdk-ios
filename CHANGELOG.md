@@ -1,3 +1,9 @@
+## 25.4.6
+* Added the ability to record reserved events.
+* Changed default log level from "CLYInternalLogLevelDebug" to "CLYInternalLogLevelVerbose".
+
+* Mitigated a possible Health Check network log recording issue.
+
 ## 25.4.5
 * Added "requestTimeoutDuration" init config parameter to change request timeout duration in seconds.
 * Added a new function "sendMetricsRequest: metricsOverride" to send a manual metrics request, accessible through the instance.

@@ -843,7 +843,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)halt;
 - (void)halt:(BOOL) clearStorage;
 
-/* Combine all events in event queue into a request and attempt to process stored requests on demand
+/**
+ * Combine all events in event queue into a request and attempt to process stored requests on demand
  */
 - (void)attemptToSendStoredRequests;
 
