@@ -1,3 +1,6 @@
+## XX.XX.XX
+* Mitigated an issue where non-queued requests were affected from request timeout settings.
+
 ## 25.4.6
 * Added the ability to record reserved events.
 * Changed default log level from "CLYInternalLogLevelDebug" to "CLYInternalLogLevelVerbose".

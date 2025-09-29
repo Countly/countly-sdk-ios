@@ -182,8 +182,9 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
         CLY_LOG_D(@"%s health check status, healthCheckSent: [%d], healthCheckEnabled: [%d]", __FUNCTION__, _healthCheckSent, _healthCheckEnabled);
     }
     
-    NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self healthCheckRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:[self healthCheckRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
+        // IMMEDIATE REQUEST to find them better in search
         if (error)
         {
             CLY_LOG_W(@"%s error while sending health checks error: [%@]", __FUNCTION__, error);
