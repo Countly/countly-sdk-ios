@@ -1,5 +1,5 @@
 ## XX.XX.XX
-* Added ImmediateURLSession internal method for requests that bypass timeout configurations in time-sensitive operations.
+* Mitigated an issue where non-queued requests were affected from request timeout settings, not anymore.
 
 ## 25.4.6
 * Added the ability to record reserved events.
