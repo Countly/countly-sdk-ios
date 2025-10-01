@@ -1,3 +1,6 @@
+## XX.XX.XX
+* Updated resolution extraction to accommodate iOS 26 deprecations in UIScreen/UIScene APIs.
+
 ## 25.4.6
 * Added the ability to record reserved events.
 * Changed default log level from "CLYInternalLogLevelDebug" to "CLYInternalLogLevelVerbose".

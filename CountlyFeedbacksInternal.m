@@ -300,7 +300,8 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 {
     __block CLYInternalViewController* webVC = CLYInternalViewController.new;
     webVC.view.backgroundColor = UIColor.whiteColor;
-    webVC.view.bounds = UIScreen.mainScreen.bounds;
+    CGSize windowSize = [CountlyCommon.sharedInstance getWindowSize];
+    webVC.view.bounds = CGRectMake(0, 0, windowSize.width, windowSize.height);
     webVC.modalPresentationStyle = UIModalPresentationCustom;
 
     WKWebView* webView = [WKWebView.alloc initWithFrame:webVC.view.bounds];
