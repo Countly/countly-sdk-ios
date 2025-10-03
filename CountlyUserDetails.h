@@ -324,6 +324,10 @@ extern NSString* const kCountlyLocalPicturePath;
  */
 - (void)save;
 
+- (void)setProperties:(NSDictionary<NSString *,  id> *)data;
+- (void)setProperty:(NSString *)key value:(id)value;
+
+
 - (BOOL) hasUnsyncedChanges;
 
 NS_ASSUME_NONNULL_END

@@ -7,7 +7,11 @@
 #import "CountlyCommon.h"
 
 @interface CountlyUserDetails ()
-@property (nonatomic) NSMutableDictionary* modifications;
+@property (nonatomic) NSMutableDictionary* predefined;
+@property (nonatomic) NSMutableDictionary* customMods;
+@property (nonatomic) NSMutableDictionary* customProperties;
+
+- (BOOL)isValidDataType:(id) value;
 @end
 
 NSString* const kCountlyLocalPicturePath = @"kCountlyLocalPicturePath";
@@ -31,6 +35,19 @@ NSString* const kCountlyUDKeyModifierPush       = @"$push";
 NSString* const kCountlyUDKeyModifierAddToSet   = @"$addToSet";
 NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
+static NSString* const kCountlyUDNamedFields[] = {
+    kCountlyUDKeyName,
+    kCountlyUDKeyUsername,
+    kCountlyUDKeyEmail,
+    kCountlyUDKeyOrganization,
+    kCountlyUDKeyPhone,
+    kCountlyUDKeyGender,
+    kCountlyUDKeyPicture,
+    kCountlyUDKeyBirthyear
+};
+
+static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedFields) / sizeof(kCountlyUDNamedFields[0]);
+
 @implementation CountlyUserDetails
 
 + (instancetype)sharedInstance
@@ -45,7 +62,9 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 {
     if (self = [super init])
     {
-        self.modifications = NSMutableDictionary.new;
+        self.predefined = NSMutableDictionary.new;
+        self.customMods = NSMutableDictionary.new;
+        self.customProperties = NSMutableDictionary.new;
     }
 
     return self;
@@ -90,14 +109,24 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     if (self.birthYear)
         userDictionary[kCountlyUDKeyBirthyear] = self.birthYear;
 
+    NSMutableDictionary* customAll = NSMutableDictionary.new;
+    
     if ([self.custom isKindOfClass:NSDictionary.class])
     {
         NSDictionary* customTruncated = [((NSDictionary *)self.custom) cly_truncated:@"User details custom dictionary"];
-        self.custom = [customTruncated cly_limited:@"User details custom dictionary"];
+        [customAll addEntriesFromDictionary:[customTruncated cly_limited:@"User details custom dictionary"]];
+    }
+    
+    if(self.customProperties.count > 0){
+        [customAll addEntriesFromDictionary:[self.customProperties cly_limited:@"User details custom dictionary"]];
+    }
+    
+    if(self.customMods.count > 0){
+        [customAll addEntriesFromDictionary:self.customMods];
     }
 
-    if (self.custom)
-        userDictionary[kCountlyUDKeyCustom] = self.custom;
+    if (customAll.count > 0)
+        userDictionary[kCountlyUDKeyCustom] = customAll;
 
     if (userDictionary.allKeys.count)
         return [userDictionary cly_JSONify];
@@ -118,7 +147,9 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     self.birthYear = nil;
     self.custom = nil;
 
-    [self.modifications removeAllObjects];
+    [self.predefined removeAllObjects];
+    [self.customMods removeAllObjects];
+    [self.customProperties removeAllObjects];
 }
 
 - (BOOL)hasUnsyncedChanges
@@ -144,7 +175,7 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
         }
     }];
     
-    return userDetailsChanged || self.modifications.count > 0;
+    return userDetailsChanged || self.predefined.count > 0 || self.customProperties.count > 0 || self.customMods.count > 0;
 }
 
 
@@ -154,62 +185,55 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 - (void)set:(NSString *)key value:(NSString *)value
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
-
-    self.modifications[key] = value.copy;
+    [self setProperty:key value:value];
 }
 
 - (void)set:(NSString *)key numberValue:(NSNumber *)value
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
-
-    self.modifications[key] = value.copy;
+    [self setProperty:key value:value];
 }
 
 - (void)set:(NSString *)key boolValue:(BOOL)value
 {
     CLY_LOG_I(@"%s %@ %d", __FUNCTION__, key, value);
-
-    self.modifications[key] = @(value);
+    [self setProperty:key value:@(value)];
 }
 
 - (void)setOnce:(NSString *)key value:(NSString *)value
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
-
-    if (!value)
-    {
-        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
-        return;
-    }
-
-    self.modifications[key] = @{kCountlyUDKeyModifierSetOnce: value.copy};
+    [self doModification:kCountlyUDKeyModifierSetOnce key:key value:value];
 }
 
 - (void)setOnce:(NSString *)key numberValue:(NSNumber *)value
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
-
-    if (!value)
-    {
-        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
-        return;
-    }
-
-    self.modifications[key] = @{kCountlyUDKeyModifierSetOnce: value.copy};
+    [self doModification:kCountlyUDKeyModifierSetOnce key:key value:value];
 }
 
 - (void)setOnce:(NSString *)key boolValue:(BOOL)value;
 {
     CLY_LOG_I(@"%s %@ %d", __FUNCTION__, key, value);
-
-    self.modifications[key] = @{kCountlyUDKeyModifierSetOnce: @(value)};
+    [self doModification:kCountlyUDKeyModifierSetOnce key:key value:@(value)];
 }
 
 - (void)unSet:(NSString *)key
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, key);
-
-    self.modifications[key] = NSNull.null;
+    if(key != nil){
+        if(self.customProperties[key]) {
+            self.customProperties[key] = NSNull.null;
+        }
+        
+        if(self.customMods[key]) {
+            self.customMods[key] = NSNull.null;
+        }
+        
+        if(self.predefined[key]) {
+            self.predefined[key] = NSNull.null;
+        }
+    }
 }
 
 - (void)increment:(NSString *)key
@@ -222,189 +246,95 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 - (void)incrementBy:(NSString *)key value:(NSNumber *)value
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
-
-    if (!value)
-    {
-        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
-        return;
-    }
-
-    self.modifications[key] = @{kCountlyUDKeyModifierIncrement: value};
+    [self doModification:kCountlyUDKeyModifierIncrement key:key value:value];
 }
 
 - (void)multiply:(NSString *)key value:(NSNumber *)value
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
-
-    if (!value)
-    {
-        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
-        return;
-    }
-
-    self.modifications[key] = @{kCountlyUDKeyModifierMultiply: value};
+    [self doModification:kCountlyUDKeyModifierMultiply key:key value:value];
 }
 
 - (void)max:(NSString *)key value:(NSNumber *)value
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
-
-    if (!value)
-    {
-        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
-        return;
-    }
-
-    self.modifications[key] = @{kCountlyUDKeyModifierMax: value};
+    [self doModification:kCountlyUDKeyModifierMax key:key value:value];
 }
 
 - (void)min:(NSString *)key value:(NSNumber *)value
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
-
-    if (!value)
-    {
-        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
-        return;
-    }
-
-    self.modifications[key] = @{kCountlyUDKeyModifierMin: value};
-}
+    [self doModification:kCountlyUDKeyModifierMin key:key value:value];}
 
 - (void)push:(NSString *)key value:(NSString *)value
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
-
-    if (!value)
-    {
-        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
-        return;
-    }
-
-    self.modifications[key] = @{kCountlyUDKeyModifierPush: value.copy};
+    [self doModification:kCountlyUDKeyModifierPush key:key value:value];
 }
 
 - (void)push:(NSString *)key numberValue:(NSNumber *)value;
 {
-    if (!value)
-    {
-        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
-        return;
-    }
-
-    self.modifications[key] = @{kCountlyUDKeyModifierPush: value.copy};
+    [self doModification:kCountlyUDKeyModifierPush key:key value:value];
 }
 
 - (void)push:(NSString *)key boolValue:(BOOL)value
 {
     CLY_LOG_I(@"%s %@ %d", __FUNCTION__, key, value);
-
-    self.modifications[key] = @{kCountlyUDKeyModifierPush: @(value)};
+    [self doModification:kCountlyUDKeyModifierPush key:key value:@(value)];
 }
 
 - (void)push:(NSString *)key values:(NSArray *)value
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
-
-    if (!value)
-    {
-        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
-        return;
-    }
-
-    self.modifications[key] = @{kCountlyUDKeyModifierPush: value.copy};
+    [self doModification:kCountlyUDKeyModifierPush key:key value:value];
 }
 
 - (void)pushUnique:(NSString *)key value:(NSString *)value
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
-
-    if (!value)
-    {
-        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
-        return;
-    }
-
-    self.modifications[key] = @{kCountlyUDKeyModifierAddToSet: value.copy};
+    [self doModification:kCountlyUDKeyModifierAddToSet key:key value:value];
 }
 
 - (void)pushUnique:(NSString *)key numberValue:(NSNumber *)value
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
-
-    if (!value)
-    {
-        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
-        return;
-    }
-
-    self.modifications[key] = @{kCountlyUDKeyModifierAddToSet: value.copy};
+    [self doModification:kCountlyUDKeyModifierAddToSet key:key value:value];
 }
 
 - (void)pushUnique:(NSString *)key boolValue:(BOOL)value
 {
     CLY_LOG_I(@"%s %@ %d", __FUNCTION__, key, value);
-
-    self.modifications[key] = @{kCountlyUDKeyModifierAddToSet: @(value)};
+    [self doModification:kCountlyUDKeyModifierAddToSet key:key value:@(value)];
 }
 
 - (void)pushUnique:(NSString *)key values:(NSArray *)value
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
-
-    if (!value)
-    {
-        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
-        return;
-    }
-
-    self.modifications[key] = @{kCountlyUDKeyModifierAddToSet: value.copy};
+    [self doModification:kCountlyUDKeyModifierAddToSet key:key value:value];
 }
 
 - (void)pull:(NSString *)key value:(NSString *)value
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
-
-    if (!value)
-    {
-        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
-        return;
-    }
-
-    self.modifications[key] = @{kCountlyUDKeyModifierPull: value.copy};
+    [self doModification:kCountlyUDKeyModifierPull key:key value:value];
 }
 
 - (void)pull:(NSString *)key numberValue:(NSNumber *)value
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
-
-    if (!value)
-    {
-        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
-        return;
-    }
-
-    self.modifications[key] = @{kCountlyUDKeyModifierPull: value.copy};
+    [self doModification:kCountlyUDKeyModifierPull key:key value:value];
 }
 
 - (void)pull:(NSString *)key boolValue:(BOOL)value
 {
     CLY_LOG_I(@"%s %@ %d", __FUNCTION__, key, value);
-
-    self.modifications[key] = @{kCountlyUDKeyModifierPull: @(value)};
+    [self doModification:kCountlyUDKeyModifierPull key:key value:@(value)];
 }
 
 - (void)pull:(NSString *)key values:(NSArray *)value
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
-
-    if (!value)
-    {
-        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
-        return;
-    }
-
-    self.modifications[key] = @{kCountlyUDKeyModifierPull: value.copy};
+    [self doModification:kCountlyUDKeyModifierPull key:key value:value];
 }
 
 - (void)save
@@ -430,55 +360,117 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
     if (self.pictureLocalPath && !self.pictureURL)
         [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyLocalPicturePath: self.pictureLocalPath} cly_JSONify]];
 
-    if (self.modifications.count)
-    {
-        [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyUDKeyCustom: [self truncateModifications]} cly_JSONify]];
-    }
-
     [self clearUserDetails];
 }
 
-
-- (NSDictionary *)truncateModifications
-{
-    NSMutableDictionary* truncatedDict = self.modifications.mutableCopy;
-    [self.modifications enumerateKeysAndObjectsUsingBlock:^(NSString * key, id obj, BOOL * stop)
-     {
-        NSString* truncatedKey = [key cly_truncatedKey:@"User details modifications key"];
-        if (![truncatedKey isEqualToString:key])
-        {
-            truncatedDict[truncatedKey] = obj;
-            [truncatedDict removeObjectForKey:key];
-        }
-        
-        if ([obj isKindOfClass:NSString.class])
-        {
-            NSString* truncatedValue = [obj cly_truncatedValue:@"User details modifications value"];
-            if (![truncatedValue isEqualToString:obj])
-            {
-                truncatedDict[truncatedKey] = truncatedValue;
-            }
-        }
-        else if ([obj isKindOfClass:NSDictionary.class])
-        {
-            NSMutableDictionary* truncatedValueDict = ((NSDictionary *)obj).mutableCopy;
-            [(NSDictionary *)obj enumerateKeysAndObjectsUsingBlock:^(NSString * key, id value, BOOL * stop)
-             {
-                if ([value isKindOfClass:NSString.class])
-                {
-                    NSString* truncatedValue = [value cly_truncatedValue:@"User details modifications value"];
-                    if (![truncatedValue isEqualToString:value])
-                    {
-                        truncatedValueDict[key] = truncatedValue;
-                        truncatedDict[truncatedKey] = truncatedValueDict;
-                    }
-                }
-            }];
-        }
-        
-    }];
+- (void)doModification:(NSString *)mod key:(NSString *)key  value:(id)value {
+    if (value == nil)
+    {
+        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
+        return;
+    }
     
-    return truncatedDict.copy;
+    // If the value is NSString, apply truncation rules
+    if ([value isKindOfClass:[NSString class]]) {
+        value = [[value description] cly_truncatedValue:@"[CountlyUserDetails] doModification"];
+    }
+    
+    NSString* truncatedKey = [[key description] cly_truncatedKey:@"[CountlyUserDetails] setPropertiesInternal"];
+    if (![mod isEqualToString:@"$pull"] &&
+        ![mod isEqualToString:@"$push"] &&
+        ![mod isEqualToString:@"$addToSet"]) {
+        self.customMods[truncatedKey] = @{mod: value};;
+    } else {
+        if(self.customMods[truncatedKey] && self.customMods[truncatedKey][mod]){
+            NSMutableArray *array = [self.customMods[key][mod] mutableCopy];
+            [array addObject:value];
+            self.customMods[truncatedKey] = @{mod: array};
+        } else {
+            self.customMods[truncatedKey] = @{mod: @[value]};
+        }
+    }
+    
 }
 
+/**
+ * This mainly performs the filtering of provided values.
+ * This single call is used for both predefined properties and custom user properties.
+ *
+ * @param data Dictionary of user properties
+ */
+- (void)setPropertiesInternal:(NSDictionary<NSString *, id> *)data {
+    if (data.count == 0) {
+        NSLog(@"[ModuleUserProfile] setPropertiesInternal, no data was provided");
+        return;
+    }
+    
+    for (NSString *key in data) {
+        id value = data[key];
+        
+        if (value == nil || value == [NSNull null]) {
+            NSLog(@"[ModuleUserProfile] setPropertiesInternal, provided value for key [%@] is 'null'", key);
+            continue;
+        }
+        
+        if ([value isKindOfClass:[NSString class]]) {
+            value = [[value description] cly_truncatedValue:@"[CountlyUserDetails] setPropertiesInternal"];
+        }
+        
+        BOOL isNamed = NO;
+        
+        for (NSUInteger i = 0; i < kCountlyUDNamedFieldsCount; i++) {
+            if ([kCountlyUDNamedFields[i] isEqualToString:key]) {
+                isNamed = YES;
+                self.predefined[key] = [value description];
+                break;
+            }
+        }
+        
+        // Handle custom fields
+        if (!isNamed) {
+            NSString* truncatedKey = [[key description] cly_truncatedKey:@"[CountlyUserDetails] setPropertiesInternal"];
+            if ([self isValidDataType:value]) {
+                self.customProperties[truncatedKey] = value;
+            } else {
+                NSLog(@"[ModuleUserProfile] setPropertiesInternal, provided an unsupported type for key: [%@], value: [%@], type: [%@], omitting call",
+                      key, value, NSStringFromClass([value class]));
+            }
+        }
+    }
+}
+
+
+- (BOOL)isValidDataType:(id) value {
+    if ([value isKindOfClass:[NSNumber class]] ||
+        [value isKindOfClass:[NSString class]] ||
+        ([value isKindOfClass:[NSArray class]] && (value = [(NSArray *)value cly_filterSupportedDataTypes]))) {
+        return YES;
+    }
+    return NO;
+}
+
+// Set a single user property. It can be either a custom one or one of the predefined ones.
+- (void)setProperty:(NSString *)key value:(id)value {
+    NSLog(@"[UserProfile] Calling 'setProperty'");
+
+    NSMutableDictionary *data = [NSMutableDictionary dictionary];
+    if (key != nil && value != nil) {
+        data[key] = value;
+    }
+    
+    [self setPropertiesInternal:data];
+}
+
+// Provide a map of user properties to set.
+// Those can be either custom user properties or predefined user properties
+- (void)setProperties:(NSDictionary<NSString *,  NSObject *> *)data {
+    NSLog(@"[UserProfile] Calling 'setProperties'");
+
+    if (data == nil) {
+        NSLog(@"[UserProfile] Provided data can not be 'null'");
+        return;
+    }
+    
+    [self setPropertiesInternal:data];
+}
 @end
