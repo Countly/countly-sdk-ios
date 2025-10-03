@@ -388,7 +388,7 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
             [array addObject:value];
             self.customMods[truncatedKey] = @{mod: array};
         } else {
-            self.customMods[truncatedKey] = @{mod: @[value]};
+            self.customMods[truncatedKey] = @{mod: value};
         }
     }
     
