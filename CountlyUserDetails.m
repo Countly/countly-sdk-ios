@@ -274,6 +274,7 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
 
 - (void)push:(NSString *)key numberValue:(NSNumber *)value;
 {
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
     [self doModification:kCountlyUDKeyModifierPush key:key value:value];
 }
 
@@ -369,13 +370,14 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
         CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
         return;
     }
+    NSString* truncatedLog = [NSString stringWithFormat:@"%s",__FUNCTION__];
     
     // If the value is NSString, apply truncation rules
     if ([value isKindOfClass:[NSString class]]) {
-        value = [[value description] cly_truncatedValue:@"[CountlyUserDetails] doModification"];
+        value = [[value description] cly_truncatedValue:truncatedLog];
     }
     
-    NSString* truncatedKey = [[key description] cly_truncatedKey:@"[CountlyUserDetails] setPropertiesInternal"];
+    NSString* truncatedKey = [[key description] cly_truncatedKey:truncatedLog];
     if (![mod isEqualToString:@"$pull"] &&
         ![mod isEqualToString:@"$push"] &&
         ![mod isEqualToString:@"$addToSet"]) {
@@ -400,7 +402,7 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
  */
 - (void)setPropertiesInternal:(NSDictionary<NSString *, id> *)data {
     if (data.count == 0) {
-        NSLog(@"[ModuleUserProfile] setPropertiesInternal, no data was provided");
+        CLY_LOG_I(@"%s no data was provided", __FUNCTION__);
         return;
     }
     
@@ -408,12 +410,13 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
         id value = data[key];
         
         if (value == nil || value == [NSNull null]) {
-            NSLog(@"[ModuleUserProfile] setPropertiesInternal, provided value for key [%@] is 'null'", key);
+            CLY_LOG_W(@"%s provided value for key [%@] is 'null'", __FUNCTION__, key);
             continue;
         }
-        
+    
+        NSString* truncatedLog = [NSString stringWithFormat:@"%s",__FUNCTION__];
         if ([value isKindOfClass:[NSString class]]) {
-            value = [[value description] cly_truncatedValue:@"[CountlyUserDetails] setPropertiesInternal"];
+            value = [[value description] cly_truncatedValue:truncatedLog];
         }
         
         BOOL isNamed = NO;
@@ -428,11 +431,11 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
         
         // Handle custom fields
         if (!isNamed) {
-            NSString* truncatedKey = [[key description] cly_truncatedKey:@"[CountlyUserDetails] setPropertiesInternal"];
+            NSString* truncatedKey = [[key description] cly_truncatedKey:truncatedLog];
             if ([self isValidDataType:value]) {
                 self.customProperties[truncatedKey] = value;
             } else {
-                NSLog(@"[ModuleUserProfile] setPropertiesInternal, provided an unsupported type for key: [%@], value: [%@], type: [%@], omitting call",
+                CLY_LOG_D(@"%s provided an unsupported type for key: [%@], value: [%@], type: [%@], omitting call",__FUNCTION__,
                       key, value, NSStringFromClass([value class]));
             }
         }
