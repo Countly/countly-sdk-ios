@@ -128,7 +128,7 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
     if (customAll.count > 0)
         userDictionary[kCountlyUDKeyCustom] = customAll;
 
-    if (userDictionary.allKeys.count)
+    if (userDictionary.count > 0)
         return [userDictionary cly_JSONify];
 
     return nil;

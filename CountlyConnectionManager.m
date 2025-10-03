@@ -557,14 +557,7 @@ static dispatch_once_t onceToken;
 
 - (void)sendEventsWithSaveIfNeeded
 {
-    if([Countly.user hasUnsyncedChanges])
-    {
-        [Countly.user save];
-    }
-    else
-    {
-        [self sendEventsInternal];
-    }
+    [Countly.user save]; // this also sends the events
 }
 
 - (void)sendEvents
