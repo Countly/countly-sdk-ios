@@ -9,7 +9,6 @@
     }
   ],
   "defaultOptions" : {
-    "distributor" : "com.apple.TestFlight",
     "testTimeoutsEnabled" : true,
     "threadSanitizerEnabled" : true,
     "undefinedBehaviorSanitizerEnabled" : true
