@@ -1,3 +1,6 @@
+## X.X.X
+* Mitigated a race condition that could happen when recording previous event name.
+
 ## 25.4.6
 * Added the ability to record reserved events.
 * Changed default log level from "CLYInternalLogLevelDebug" to "CLYInternalLogLevelVerbose".

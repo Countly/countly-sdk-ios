@@ -4,12 +4,15 @@
       "id" : "9FACA4DE-8744-4EA8-9C62-DDE2EB48BB2E",
       "name" : "Test Scheme Action",
       "options" : {
-
+        "maximumParallelTestProcesses" : 1
       }
     }
   ],
   "defaultOptions" : {
-    "testExecutionOrdering" : "random"
+    "distributor" : "com.apple.TestFlight",
+    "testTimeoutsEnabled" : true,
+    "threadSanitizerEnabled" : true,
+    "undefinedBehaviorSanitizerEnabled" : true
   },
   "testTargets" : [
     {
