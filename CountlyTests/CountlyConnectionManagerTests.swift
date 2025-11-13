@@ -11,6 +11,18 @@ import XCTest
 
 class CountlyConnectionManagerTests: CountlyBaseTestCase {
 
+    
+    override func setUp() {
+        super.setUp()
+        // Initialize or reset necessary objects here
+        Countly.sharedInstance().halt(true)
+    }
+
+    override func tearDown() {
+        // Ensure everything is cleaned up properly
+        super.tearDown()
+        Countly.sharedInstance().halt(true)
+    }
     /**
      * <pre>
      * 1- Init countly with the limit of 250 requests
@@ -61,6 +73,38 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         
         Countly.sharedInstance().halt(true)
         
+    }
+    
+    func test_addCustomNetworkRequestHeaders() throws {
+        let config = createBaseConfig()
+        let sessionConfig = URLSessionConfiguration.default
+        sessionConfig.protocolClasses = [TestURLProtocol.self]
+        config.urlSessionConfiguration = sessionConfig
+        
+        Countly.sharedInstance().start(with: config)
+        // Add custom headers through the Objective-C API
+        let customHeaders: [String: String] = [
+            "Authorization": "Bearer 123",
+            "X-Test": "Value1"
+        ]
+        
+        Countly.sharedInstance().addCustomNetworkRequestHeaders(customHeaders)
+        Countly.sharedInstance().addDirectRequest(["test": "request"])
+        
+        let expectation = self.expectation(description: "Wait for timer")
+             
+         // Schedule a block to fulfill the expectation after 6 seconds
+         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+             expectation.fulfill()
+         }
+         
+         // Wait for the expectation to be fulfilled, with a timeout
+         waitForExpectations(timeout: 5, handler: nil)
+        
+        
+        let captured = TestURLProtocol.capturedHeaders()
+        XCTAssertEqual(captured?["Authorization"], "Bearer 123")
+        XCTAssertEqual(captured?["X-Test"], "Value1")
     }
     
     func addRequests(count: Int) {
