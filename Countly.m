@@ -571,6 +571,16 @@ static dispatch_once_t onceToken;
     [CountlyConnectionManager.sharedInstance addDirectRequest:requestParameters];
 }
 
+- (void)addCustomNetworkRequestHeaders:(NSDictionary<NSString *, NSString *> *_Nullable)customHeaderValues {
+    CLY_LOG_I(@"%s %@", __FUNCTION__, customHeaderValues);
+    
+    // Ignore nil or empty dictionary
+    if (customHeaderValues == nil || customHeaderValues.count == 0) {
+        return;
+    }
+    
+    [CountlyConnectionManager.sharedInstance addCustomNetworkRequestHeaders:customHeaderValues];
+}
 
 
 #pragma mark - Sessions
