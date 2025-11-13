@@ -481,6 +481,10 @@ static dispatch_once_t onceToken;
     }
 #endif
 
+    if([Countly.user hasUnsyncedChanges])
+    {
+        [Countly.user save];
+    }
 
     isSessionStarted = YES;
     lastSessionStartTime = NSDate.date.timeIntervalSince1970;
@@ -518,6 +522,11 @@ static dispatch_once_t onceToken;
     if (!isSessionStarted) {
         CLY_LOG_W(@"%s No session is running, this 'updateSession' will be ignored", __FUNCTION__);
         return;
+    }
+    
+    if([Countly.user hasUnsyncedChanges])
+    {
+        [Countly.user save];
     }
 
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%d",
