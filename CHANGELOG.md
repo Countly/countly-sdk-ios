@@ -1,3 +1,6 @@
+## XX.XX.XX
+* Added a new function "addCustomNetworkRequestHeaders: customHeaderValues" for providing or overriding custom headers after init.
+
 ## 25.4.6
 * Added the ability to record reserved events.
 * Changed default log level from "CLYInternalLogLevelDebug" to "CLYInternalLogLevelVerbose".
