@@ -76,6 +76,11 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         
     }
     
+    /**
+     * addCustomNetworkRequestHeaders after SDK init
+     * validate that added network headers are existing with outgoing requests
+     * intercept request with a test protocol and validate existance of 2 added headers
+     */
     func test_addCustomNetworkRequestHeaders() throws {
         let config = createBaseConfig()
         let sessionConfig = URLSessionConfiguration.default
@@ -100,6 +105,12 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         XCTAssertEqual(captured?.count, 2)
     }
     
+    /**
+     * addCustomNetworkRequestHeaders after SDK init and while initializing the SDK
+     * validate that added network headers are existing with outgoing requests and 1 header overridden by post-init headers
+     * after SDK init validate that given 1 header exists
+     * intercept request with a test protocol and validate existance of 2 added headers and validate one header is overridden
+     */
     func test_addCustomNetworkRequestHeaders_override() throws {
         let config = createBaseConfig()
         let sessionConfig = URLSessionConfiguration.default
@@ -132,6 +143,11 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         }
     }
     
+    /**
+     * addCustomNetworkRequestHeaders after SDK init invalid
+     * validate that added network headers are existing with outgoing requests and 1 header not there because it is invalid
+     * intercept request with a test protocol and validate that only 1 header exists
+     */
     func test_addCustomNetworkRequestHeaders_invalid() throws {
         let config = createBaseConfig()
         let sessionConfig = URLSessionConfiguration.default
