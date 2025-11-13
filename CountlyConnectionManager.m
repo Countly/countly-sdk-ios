@@ -145,6 +145,31 @@ static dispatch_once_t onceToken;
     }
 }
 
+- (void)addCustomNetworkRequestHeaders:(NSDictionary<NSString *, NSString *> *_Nullable)customHeaderValues {
+    if (_URLSessionConfiguration == nil) {
+        return;
+    }
+
+    // Start with current headers (or empty if nil)
+    NSMutableDictionary *updatedHeaders = [NSMutableDictionary dictionaryWithDictionary:_URLSessionConfiguration.HTTPAdditionalHeaders ?: @{}];
+
+    // Enumerate and validate custom headers
+    [customHeaderValues enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *value, BOOL *stop) {
+        if (key == nil || key.length == 0) {
+            return; // Skip empty key
+        }
+        if (value == nil) {
+            return; // Skip nil value
+        }
+
+        // Add or override
+        updatedHeaders[key] = value;
+    }];
+
+    // Apply updated headers
+    _URLSessionConfiguration.HTTPAdditionalHeaders = [updatedHeaders copy];
+    _URLSession = nil;
+}
 
 - (void)proceedOnQueue
 {
