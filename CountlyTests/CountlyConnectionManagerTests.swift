@@ -16,6 +16,7 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         super.setUp()
         // Initialize or reset necessary objects here
         Countly.sharedInstance().halt(true)
+        TestURLProtocol.reset()
     }
 
     override func tearDown() {
