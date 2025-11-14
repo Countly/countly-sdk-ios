@@ -66,10 +66,13 @@ static dispatch_once_t onceToken;
 
 - (void)resetInstance {
     CLY_LOG_I(@"%s", __FUNCTION__);
+#if (TARGET_OS_IOS || TARGET_OS_VISION )
+    [NSNotificationCenter.defaultCenter removeObserver:self name:UIDeviceOrientationDidChangeNotification object:nil];
+#endif
     onceToken = 0;
     s_sharedInstance = nil;
     _hasStarted = false;
-}
+ }
 
 
 - (BOOL)hasStarted

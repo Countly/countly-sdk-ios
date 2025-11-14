@@ -15,9 +15,13 @@
 
 long long appLoadStartTime;
 // It holds the event id of previous recorded custom event.
-NSString* previousEventID;
+static NSString* previousEventID;
 // It holds the event name of previous recorded custom event.
-NSString* previousEventName;
+static NSString* previousEventName;
+#if __has_include(<os/lock.h>)
+#import <os/lock.h>
+static os_unfair_lock previousEventLock = OS_UNFAIR_LOCK_INIT;
+#endif
 @implementation Countly
 
 #pragma mark - Core
@@ -40,9 +44,17 @@ static dispatch_once_t onceToken;
 
 - (void)resetInstance {
     CLY_LOG_I(@"%s resetting the instance", __FUNCTION__);
+    // Invalidate timer to avoid callbacks to a deallocated instance between tests.
+    if (timer) {
+        [timer invalidate];
+        timer = nil;
+    }
+    // Remove all notification observers to avoid duplicate registrations after re-init in tests.
+    [NSNotificationCenter.defaultCenter removeObserver:self];
+    isSuspended = NO;
     onceToken = 0;
     s_sharedCountly = nil;
-}
+ }
 
 - (instancetype)init
 {
@@ -925,30 +937,47 @@ static dispatch_once_t onceToken;
     NSMutableDictionary *filteredSegmentations = segmentation.cly_filterSupportedDataTypes;
     if(filteredSegmentations == nil)
         filteredSegmentations = NSMutableDictionary.new;
-    
-    // If the event is not reserved, assign the previous event ID and Name to the current event's PEID property, or an empty string if previousEventID is nil. Then, update previousEventID to the current event's ID.
-    if (!isReservedEvent)
-    {
-        CLY_LOG_V(@"%s will add event id and name properties because it is not a reserved event ", __FUNCTION__);
-        key = [key cly_truncatedKey:@"Event key"];
-        event.PEID = previousEventID ?: @"";
-        previousEventID = event.ID;
-        if(CountlyViewTrackingInternal.sharedInstance.enablePreviousNameRecording) {
-            filteredSegmentations[kCountlyPreviousEventName] = previousEventName ?: @"";
-            previousEventName = key;
-            filteredSegmentations[kCountlyCurrentView] = CountlyViewTrackingInternal.sharedInstance.currentViewName ?: @"";
-        }
-    }
-    event.key = key;
-    event.segmentation = [self processSegmentation:filteredSegmentations eventKey:key];
+
     event.count = MAX(count, 1);
     event.sum = sum;
     event.timestamp = timestamp;
     event.hourOfDay = CountlyCommon.sharedInstance.hourOfDay;
     event.dayOfWeek = CountlyCommon.sharedInstance.dayOfWeek;
     event.duration = duration;
-
-    [CountlyPersistency.sharedInstance recordEvent:event];
+    
+    if (!isReservedEvent)
+    {
+        CLY_LOG_V(@"%s will add event id and name properties because it is not a reserved event ", __FUNCTION__);
+        key = [key cly_truncatedKey:@"Event key"];
+        NSString* capturedPreviousID = nil;
+        NSString* capturedPreviousName = nil;
+#if __has_include(<os/lock.h>)
+        os_unfair_lock_lock(&previousEventLock);
+#endif
+        capturedPreviousID = previousEventID;
+        previousEventID = event.ID; // update chain
+        if(CountlyViewTrackingInternal.sharedInstance.enablePreviousNameRecording) {
+            capturedPreviousName = previousEventName;
+            previousEventName = key;
+        }
+        event.PEID = capturedPreviousID ?: @"";
+        if(CountlyViewTrackingInternal.sharedInstance.enablePreviousNameRecording) {
+            filteredSegmentations[kCountlyPreviousEventName] = capturedPreviousName ?: @"";
+            filteredSegmentations[kCountlyCurrentView] = CountlyViewTrackingInternal.sharedInstance.currentViewName ?: @"";
+        }
+        event.key = key;
+        event.segmentation = [self processSegmentation:filteredSegmentations eventKey:key];
+        [CountlyPersistency.sharedInstance recordEvent:event];
+#if __has_include(<os/lock.h>)
+        os_unfair_lock_unlock(&previousEventLock);
+#endif
+    }
+    else
+    {
+        event.key = key;
+        event.segmentation = [self processSegmentation:filteredSegmentations eventKey:key];
+        [CountlyPersistency.sharedInstance recordEvent:event];
+    }
 }
 
 - (NSDictionary *)processSegmentation:(NSMutableDictionary *)segmentation eventKey:(NSString *)eventKey {
@@ -1440,6 +1469,7 @@ static dispatch_once_t onceToken;
     [CountlyPersistency.sharedInstance resetInstance:clearStorage];
     [CountlyDeviceInfo.sharedInstance resetInstance];
     [CountlyConnectionManager.sharedInstance resetInstance];
+    [CountlyUserDetails.sharedInstance clearUserDetails];
     [self resetInstance];
     [CountlyCommon.sharedInstance resetInstance];
     
