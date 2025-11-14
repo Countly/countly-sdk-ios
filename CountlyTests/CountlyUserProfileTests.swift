@@ -321,6 +321,33 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         validateCustomUserDetails(request: queuedRequests[0], propertiesToCheck: getUserDataMap())
     }
     
+    func test_eventSaveScenario_sessionCallsTriggersSave_M() {
+        let config = createBaseConfig()
+        config.manualSessionHandling = true;
+        config.enableOrientationTracking = false;
+        Countly.sharedInstance().start(with: config);
+        
+        Countly.user().set("beforeBeginSession", value: "1");
+        Countly.sharedInstance().beginSession()
+        
+        Countly.user().set("beforeUpdateSession", value: "1");
+        Countly.sharedInstance().updateSession()
+        
+        Countly.user().set("beforeEndSession", value: "1");
+        Countly.sharedInstance().endSession()
+        
+        XCTAssertEqual(6, CountlyPersistency.sharedInstance().remainingRequestCount())
+        guard let queuedRequests =  CountlyPersistency.sharedInstance().value(forKey: "queuedRequests") as? [String] else {
+            fatalError("Failed to get queuedRequests from CountlyPersistency")
+        }
+        validateCustomUserDetails(request: queuedRequests[0], propertiesToCheck: ["beforeBeginSession": "1"])
+        XCTAssertTrue(queuedRequests[1].contains("begin_session=1"), "Begin session failed.")
+        validateCustomUserDetails(request: queuedRequests[2], propertiesToCheck: ["beforeUpdateSession": "1"])
+        XCTAssertTrue(queuedRequests[3].contains("session_duration=0"), "Update session failed.")
+        validateCustomUserDetails(request: queuedRequests[4], propertiesToCheck: ["beforeEndSession": "1"])
+        XCTAssertTrue(queuedRequests[5].contains("end_session=1"), "End session failed.")
+    }
+    
     func validateEvents(request: String, keysToCheck: [String]) {
         let parsedRequest = TestUtils.parseQueryString(request)
         let events = parsedRequest["events"];

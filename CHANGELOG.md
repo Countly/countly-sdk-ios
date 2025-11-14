@@ -1,4 +1,5 @@
-## X.X.X
+## XX.XX.XX
+* Updated user properties caching mechanism according to sessions.
 * Mitigated a race condition that could happen when recording previous event name.
 
 ## 25.4.6
