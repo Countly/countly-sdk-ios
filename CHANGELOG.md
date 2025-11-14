@@ -1,4 +1,5 @@
 ## XX.XX.XX
+* Updated resolution extraction to accommodate iOS 26 deprecations.
 * Added a new function "addCustomNetworkRequestHeaders: customHeaderValues" for providing or overriding custom headers after init.
 * Updated user properties caching mechanism according to sessions.
 

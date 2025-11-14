@@ -341,6 +341,7 @@ void CountlyPrint(NSString *stringToPrint)
 - (CGSize)getWindowSize {
 #if (TARGET_OS_IOS)
     UIWindow *window = nil;
+    CGFloat screenScale;
 
     if (@available(iOS 13.0, *)) {
         for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
@@ -349,14 +350,15 @@ void CountlyPrint(NSString *stringToPrint)
                 break;
             }
         }
+        screenScale = window.traitCollection.displayScale;
     } else {
         window = [[UIApplication sharedApplication].delegate window];
+        screenScale = [UIScreen mainScreen].scale;
     }
 
     if (!window) return CGSizeZero;
     
     UIEdgeInsets safeArea = UIEdgeInsetsZero;
-    CGFloat screenScale = [UIScreen mainScreen].scale;
     if (@available(iOS 11.0, *)) {
         safeArea = window.safeAreaInsets;
         safeArea.left /= screenScale;
