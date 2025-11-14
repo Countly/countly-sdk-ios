@@ -89,6 +89,7 @@
 		96329DE42D952F1500BFD641 /* MockURLProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96329DE32D952F1500BFD641 /* MockURLProtocol.swift */; };
 		965A2E9C2DDDCDAC00F28F6A /* CountlyHealthTracker.m in Sources */ = {isa = PBXBuildFile; fileRef = 965A2E9B2DDDCDAC00F28F6A /* CountlyHealthTracker.m */; };
 		965A2E9D2DDDCDAC00F28F6A /* CountlyHealthTracker.h in Headers */ = {isa = PBXBuildFile; fileRef = 965A2E9A2DDDCDAC00F28F6A /* CountlyHealthTracker.h */; };
+		9673567F2EC60CD400C742D8 /* TestURLProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9673567E2EC60CD400C742D8 /* TestURLProtocol.swift */; };
 		968426812BF2302C007B303E /* CountlyConnectionManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 968426802BF2302C007B303E /* CountlyConnectionManagerTests.swift */; };
 		96C05AB02E82936F0028A976 /* CountlyHealthTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96C05AAF2E8293630028A976 /* CountlyHealthTrackerTests.swift */; };
 		96DA74BB2D9FB687006FA6FF /* MockFeedbackWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96DA74BA2D9FB687006FA6FF /* MockFeedbackWidget.swift */; };
@@ -198,6 +199,7 @@
 		965A2E9A2DDDCDAC00F28F6A /* CountlyHealthTracker.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyHealthTracker.h; sourceTree = "<group>"; };
 		965A2E9B2DDDCDAC00F28F6A /* CountlyHealthTracker.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyHealthTracker.m; sourceTree = "<group>"; };
 		96681A9B2D97D9B300A4845A /* CountlyTests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = CountlyTests.xctestplan; sourceTree = "<group>"; };
+		9673567E2EC60CD400C742D8 /* TestURLProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestURLProtocol.swift; sourceTree = "<group>"; };
 		968426802BF2302C007B303E /* CountlyConnectionManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyConnectionManagerTests.swift; sourceTree = "<group>"; };
 		96C05AAF2E8293630028A976 /* CountlyHealthTrackerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyHealthTrackerTests.swift; sourceTree = "<group>"; };
 		96DA74BA2D9FB687006FA6FF /* MockFeedbackWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockFeedbackWidget.swift; sourceTree = "<group>"; };
@@ -232,6 +234,7 @@
 		1A5C4C952B35B0850032EE1F /* CountlyTests */ = {
 			isa = PBXGroup;
 			children = (
+				9673567E2EC60CD400C742D8 /* TestURLProtocol.swift */,
 				4C3A4C9F2EB4C40000827FEA /* EventThreadTests.swift */,
 				96C05AAF2E8293630028A976 /* CountlyHealthTrackerTests.swift */,
 				96DA74BA2D9FB687006FA6FF /* MockFeedbackWidget.swift */,
@@ -518,6 +521,7 @@
 				962485BA2D9E971800FA3C20 /* TestUtils.swift in Sources */,
 				96C05AB02E82936F0028A976 /* CountlyHealthTrackerTests.swift in Sources */,
 				3972EDDB2C08A38D00EB9D3E /* CountlyEventStruct.swift in Sources */,
+				9673567F2EC60CD400C742D8 /* TestURLProtocol.swift in Sources */,
 				96E680422BFF89AC0091E105 /* CountlyCrashReporterTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

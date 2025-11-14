@@ -1,5 +1,7 @@
 ## XX.XX.XX
+* Added a new function "addCustomNetworkRequestHeaders: customHeaderValues" for providing or overriding custom headers after init.
 * Updated user properties caching mechanism according to sessions.
+
 * Mitigated a race condition that could happen when recording previous event name.
 
 ## 25.4.6

@@ -65,6 +65,7 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 - (void)sendExitABRequestForKeys:(NSArray*)keys;
 
 - (void)addDirectRequest:(NSDictionary<NSString *, NSString *> *)requestParameters;
+- (void)addCustomNetworkRequestHeaders:(NSDictionary<NSString *, NSString *> *_Nullable)customHeaderValues;
 
 - (void)proceedOnQueue;
 
