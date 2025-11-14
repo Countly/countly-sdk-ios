@@ -1,4 +1,4 @@
-## XX.XX.XX
+## 25.4.7
 * Added a new function "addCustomNetworkRequestHeaders: customHeaderValues" for providing or overriding custom headers after init.
 * Updated user properties caching mechanism according to sessions.
 
