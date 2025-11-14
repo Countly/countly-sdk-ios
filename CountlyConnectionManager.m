@@ -145,6 +145,31 @@ static dispatch_once_t onceToken;
     }
 }
 
+- (void)addCustomNetworkRequestHeaders:(NSDictionary<NSString *, NSString *> *_Nullable)customHeaderValues {
+    if (_URLSessionConfiguration == nil) {
+        return;
+    }
+
+    // Start with current headers (or empty if nil)
+    NSMutableDictionary *updatedHeaders = [NSMutableDictionary dictionaryWithDictionary:_URLSessionConfiguration.HTTPAdditionalHeaders ?: @{}];
+
+    // Enumerate and validate custom headers
+    [customHeaderValues enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *value, BOOL *stop) {
+        if (key == nil || key.length == 0) {
+            return; // Skip empty key
+        }
+        if (value == nil) {
+            return; // Skip nil value
+        }
+
+        // Add or override
+        updatedHeaders[key] = value;
+    }];
+
+    // Apply updated headers
+    _URLSessionConfiguration.HTTPAdditionalHeaders = [updatedHeaders copy];
+    _URLSession = nil;
+}
 
 - (void)proceedOnQueue
 {
@@ -481,6 +506,10 @@ static dispatch_once_t onceToken;
     }
 #endif
 
+    if([Countly.user hasUnsyncedChanges])
+    {
+        [Countly.user save];
+    }
 
     isSessionStarted = YES;
     lastSessionStartTime = NSDate.date.timeIntervalSince1970;
@@ -518,6 +547,11 @@ static dispatch_once_t onceToken;
     if (!isSessionStarted) {
         CLY_LOG_W(@"%s No session is running, this 'updateSession' will be ignored", __FUNCTION__);
         return;
+    }
+    
+    if([Countly.user hasUnsyncedChanges])
+    {
+        [Countly.user save];
     }
 
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%d",
