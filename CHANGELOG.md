@@ -1,3 +1,6 @@
+## 25.4.8
+* Mitigated an issue where "giveAllConsent" did not include metrics consent.
+
 ## 25.4.7
 * Added a new function "addCustomNetworkRequestHeaders: customHeaderValues" for providing or overriding custom headers after init.
 * Updated user properties caching mechanism according to sessions.
