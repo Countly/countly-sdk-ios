@@ -13,7 +13,7 @@ class TestUtils {
     static let commonDeviceId: String = "deviceId"
     static let commonAppKey: String = "appkey"
     static let host: String = "https://testing.count.ly/"
-    static let SDK_VERSION = "25.1.1"
+    static let SDK_VERSION = "25.4.8"
     static let SDK_NAME = "objc-native-ios"
     
     static func cleanup() -> Void {
@@ -50,21 +50,38 @@ class TestUtils {
     }
     
     static func validateRequest(_ params: [String: Any], _ idx: Int, _ customValidator: ([String: Any]) -> Void){
+        guard let rq = getCurrentRQ() else {
+            XCTFail("Request queue is nil.")
+            return
+        }
+        guard rq.indices.contains(idx) else {
+            XCTFail("Request index \(idx) out of bounds. RQ count: \(rq.count).")
+            return
+        }
+        
         let requestStr = getCurrentRQ()![idx]
         let request = parseQueryString(requestStr)
         validateRequiredParams(request)
         
         for (key, value) in params {
             let reqValue = request[key]
+            guard let reqValue else {
+               XCTFail("Missing key '\(key)' in request. Expected value: \(value), Request:\(requestStr)")
+               continue
+           }
             
-            if let nestedMap = value as? [String: Any] {
-                let nestedReqValue = reqValue as! [String: Any]
+            if let nestedMap = value as? [String: Any] {                
+                guard let nestedReqValue = reqValue as? [String: Any] else {
+                     XCTFail("Key '\(key)' expected to be nested dictionary but got: \(reqValue)")
+                     continue
+                 }
+                
                 for (nestedKey, nestedValue) in nestedMap {
                     XCTAssertEqual("\(String(describing: nestedReqValue[nestedKey]))", "\(nestedValue)")
                 }
                 XCTAssertEqual(nestedMap.count, nestedReqValue.count)
             } else {
-                XCTAssertEqual("\(String(describing: reqValue!))", "\(value)")
+                XCTAssertEqual("\(String(describing: reqValue))", "\(value)")
             }
         }
         
@@ -216,38 +233,45 @@ class TestUtils {
     
     static func parseQueryString(_ queryString: String) -> [String: Any] {
         var result: [String: Any] = [:]
-        
-        // Split the query string by '&' to get individual key-value pairs
+
+        // Split query string into pairs
         let pairs = queryString.split(separator: "&")
         
         for pair in pairs {
-            // Split each pair by '=' to separate the key and value
-            let components = pair.split(separator: "=", maxSplits: 1)
+            // Always split into 2 parts; missing value becomes empty string
+            let components = pair.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
             
-            if components.count == 2 {
-                let key = String(components[0])
-                let value = String(components[1])
-                
-                // If the value is a JSON string (starts and ends with '%7B' and '%7D' respectively after URL decoding), decode it
-                if let decodedValue = value.removingPercentEncoding, decodedValue.hasPrefix("{"), decodedValue.hasSuffix("}") {
-                    if let jsonData = decodedValue.data(using: .utf8) {
-                        do {
-                            let jsonObject = try JSONSerialization.jsonObject(with: jsonData, options: [])
-                            result[key] = jsonObject
-                            continue
-                        } catch {
-                            print("Error decoding JSON for key \(key): \(error)")
-                        }
-                    }
-                }
-                
-                // Otherwise, simply assign the value to the key in the result dictionary
-                result[key] = value.removingPercentEncoding ?? value
+            guard components.count == 2 else {
+                continue
             }
+            
+            let key = String(components[0])
+            let value = String(components[1])  // <-- empty string stays empty string
+            
+            let decodedKey = key.removingPercentEncoding ?? key
+            let decodedValue = value.removingPercentEncoding ?? value
+            
+            // JSON detection (only if non-empty)
+            if !decodedValue.isEmpty,
+               decodedValue.hasPrefix("{"),
+               decodedValue.hasSuffix("}"),
+               let jsonData = decodedValue.data(using: .utf8)
+            {
+                do {
+                    let jsonObject = try JSONSerialization.jsonObject(with: jsonData, options: [])
+                    result[decodedKey] = jsonObject
+                    continue
+                } catch {
+                }
+            }
+            
+            // Assign empty string value properly
+            result[decodedKey] = decodedValue
         }
-        
+
         return result
     }
+
     
     static func compareDictionaries(_ dict1: [String: Any],_ dict2: [String: Any]) -> Bool {
         guard dict1.count == dict2.count else {
