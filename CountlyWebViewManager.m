@@ -92,6 +92,11 @@
     webView.opaque = NO;
     webView.scrollView.bounces = NO;
     webView.navigationDelegate = self;
+    if (@available(iOS 16.4, *)) {
+        webView.inspectable = YES;
+    } else {
+        // Fallback on earlier versions
+    }
     
     [self.backgroundView addSubview:webView];
 }
@@ -217,7 +222,7 @@
     CLY_LOG_I(@"%s Web view has started loading", __FUNCTION__);
     [self.loadTimeoutTimer invalidate];
     __weak typeof(self) weakSelf = self;
-    self.loadTimeoutTimer = [NSTimer scheduledTimerWithTimeInterval:60.0 repeats:NO block:^(NSTimer * _Nonnull timer) {
+    self.loadTimeoutTimer = [NSTimer scheduledTimerWithTimeInterval:6000.0 repeats:NO block:^(NSTimer * _Nonnull timer) {
         __strong typeof(weakSelf) strongSelf = weakSelf;
         if (!strongSelf) return;
         [strongSelf loadDidTimeout];
@@ -456,7 +461,7 @@
 
 - (void)loadDidTimeout {
     if (self.hasAppeared) return;
-    CLY_LOG_I(@"%s Web view load timed out after 60s, closing", __FUNCTION__);
+    CLY_LOG_I(@"%s Web view load timed out after 6000s, closing", __FUNCTION__);
     [self closeWebView];
 }
 #endif
