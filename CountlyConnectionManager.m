@@ -171,9 +171,8 @@ static dispatch_once_t onceToken;
     _URLSession = nil;
 }
 
-- (void)proceedOnQueue
-{
-    CLY_LOG_D(@"Proceeding on queue...");
+- (void)proceedOnQueue:(BOOL)sync {
+    CLY_LOG_D(@"%s, Proceeding on queue, sync:[%d]", __FUNCTION__, sync);
     
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
     {
@@ -234,7 +233,7 @@ static dispatch_once_t onceToken;
         
         [CountlyPersistency.sharedInstance saveToFile];
         
-        [self proceedOnQueue];
+        [self proceedOnQueue:sync];
         
         return;
     }
@@ -309,6 +308,21 @@ static dispatch_once_t onceToken;
 
     request.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
     NSDate *startTimeRequest = [NSDate date];
+    if(sync){
+        [self proceedOnQueueInnerSync:request startTimeRequest:startTimeRequest firstItemInQueue:firstItemInQueue queryString:queryString];
+    } else {
+        [self proceedOnQueueInnerAsync:request startTimeRequest:startTimeRequest firstItemInQueue:firstItemInQueue queryString:queryString];
+    }
+
+    [self logRequest:request];
+}
+
+- (void)proceedOnQueue
+{
+    [self proceedOnQueue:NO];
+}
+
+- (void)proceedOnQueueInnerAsync:(NSMutableURLRequest*) request startTimeRequest:(NSDate *) startTimeRequest firstItemInQueue:(NSString*) firstItemInQueue queryString:(NSString*) queryString {
     self.connection = [self.URLSession dataTaskWithRequest:request completionHandler:^(NSData * data, NSURLResponse * response, NSError * error)
     {
         self.connection = nil;
@@ -361,8 +375,74 @@ static dispatch_once_t onceToken;
     }];
 
     [self.connection resume];
+}
 
-    [self logRequest:request];
+- (void)proceedOnQueueInnerSync:(NSMutableURLRequest*) request startTimeRequest:(NSDate *) startTimeRequest firstItemInQueue:(NSString*) firstItemInQueue queryString:(NSString*) queryString {
+    __block NSData *responseData = nil;
+    __block NSURLResponse *urlResponse = nil;
+    __block NSError *responseError = nil;
+
+    dispatch_semaphore_t sem = dispatch_semaphore_create(0);
+
+    self.connection = [self.URLSession dataTaskWithRequest:request completionHandler:^(NSData * data, NSURLResponse * response, NSError * error)
+    {
+        responseData = data;
+        urlResponse = response;
+        responseError = error;
+
+        dispatch_semaphore_signal(sem); // Signal that the task is complete
+    }];
+
+    [self.connection resume];
+
+    // Wait until the request completes
+    dispatch_semaphore_wait(sem, DISPATCH_TIME_FOREVER);
+    self.connection = nil;
+
+    NSDate *endTimeRequest = [NSDate date];
+    long duration = (long)[endTimeRequest timeIntervalSinceDate:startTimeRequest];
+
+    CLY_LOG_V(@"Approximate received data size for request <%p> is %ld bytes.", (id)request, (long)responseData.length);
+
+    if(urlResponse) {
+        NSInteger code = ((NSHTTPURLResponse*)urlResponse).statusCode;
+        CLY_LOG_V(@"%s, Response received from server with status code:[ %ld ] request:[ %@ ]", __FUNCTION__, (long)code, ((NSHTTPURLResponse*)urlResponse).URL);
+    }
+
+    if (!responseError)
+    {
+        if ([self isRequestSuccessful:urlResponse data:responseData])
+        {
+            CLY_LOG_D(@"Request <%p> successfully completed.", request);
+
+            [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
+            [CountlyPersistency.sharedInstance saveToFile];
+
+            if(CountlyServerConfig.sharedInstance.backoffMechanism && [self backoff:duration queryString:queryString]){
+                CLY_LOG_D(@"%s, backed off dropping proceeding the queue", __FUNCTION__);
+                self.startTime = nil;
+                [self backoffCountdown];
+            } else {
+                [self proceedOnQueue:YES];
+            }
+        }
+        else
+        {
+            CLY_LOG_D(@"%s, request:[ <%p> ] failed! response:[ %@ ]", __FUNCTION__, request, [responseData cly_stringUTF8]);
+            [CountlyHealthTracker.sharedInstance logFailedNetworkRequestWithStatusCode:((NSHTTPURLResponse*)urlResponse).statusCode errorResponse: [responseData cly_stringUTF8]];
+            [CountlyHealthTracker.sharedInstance saveState];
+            self.startTime = nil;
+        }
+    }
+    else
+    {
+        CLY_LOG_D(@"%s, request:[ <%p> ] failed! error:[ %@ ]", __FUNCTION__, request, responseError);
+    #if (TARGET_OS_WATCH)
+        [CountlyPersistency.sharedInstance saveToFile];
+    #endif
+        self.startTime = nil;
+    }
+
 }
 
 - (void)recordMetrics:(nullable NSDictionary *)metricsOverride
@@ -611,6 +691,13 @@ static dispatch_once_t onceToken;
     [self addEventsToQueue];
     [CountlyPersistency.sharedInstance saveToFileSync];
     [self proceedOnQueue];
+}
+
+- (void)attemptToSendStoredRequestsSync
+{
+    [self addEventsToQueue];
+    [CountlyPersistency.sharedInstance saveToFileSync];
+    [self proceedOnQueue:YES];
 }
 
 - (void)sendEventsInternal
