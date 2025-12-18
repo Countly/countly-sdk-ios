@@ -1,3 +1,6 @@
+## XX.XX.XX
+* Improved Content refresh mechanics.
+
 ## 25.4.8
 * Mitigated an issue where "giveAllConsent" did not include metrics consent.
 
