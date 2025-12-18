@@ -124,13 +124,13 @@ NSInteger const contentInitialDelay = 4;
     }
     
     [self exitContentZone];
-    [CountlyConnectionManager.sharedInstance attemptToSendStoredRequests];
-    
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
-    {
-        [self enterContentZone];
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        [CountlyConnectionManager.sharedInstance attemptToSendStoredRequestsSync];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self enterContentZone]; // this touches to UI so it needs to be handled in the main queue
+        });
     });
-    
+
 }
 
 #pragma mark - Private Methods
