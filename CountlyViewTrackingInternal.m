@@ -104,6 +104,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         self.viewDataDictionary = NSMutableDictionary.new;
         self.viewSegmentation = nil;
         self.isFirstView = YES;
+        self.isManualViewRestartActive = YES;
     }
     
     return self;
@@ -753,11 +754,13 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)applicationWillEnterForeground {
 #if (TARGET_OS_IOS  || TARGET_OS_VISION || TARGET_OS_TV)
-    if (!self.isAutoViewTrackingActive) {
+    if (!self.isAutoViewTrackingActive && self.isManualViewRestartActive) {
         [self startStoppedViewsInternal];
     }
 #else
-    [self startStoppedViewsInternal];
+    if (self.isManualViewRestartActive) {
+        [self startStoppedViewsInternal];
+    }
 #endif
 }
 - (void)applicationDidEnterBackground {
@@ -765,11 +768,13 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     if (self.isAutoViewTrackingActive) {
         [self stopCurrentView];
     }
-    else {
+    else if (self.isManualViewRestartActive) {
         [self stopRunningViewsInternal];
     }
 #else
-    [self stopRunningViewsInternal];
+    if (self.isManualViewRestartActive) {
+        [self stopRunningViewsInternal];
+    }
 #endif
 }
 

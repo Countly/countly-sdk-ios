@@ -248,6 +248,10 @@ static dispatch_once_t onceToken;
     }
 #endif
     
+    if(config.disableViewRestartForManualRecording){
+        CountlyViewTrackingInternal.sharedInstance.isManualViewRestartActive = NO;
+    }
+    
     if(config.experimental.enablePreviousNameRecording) {
         CountlyViewTrackingInternal.sharedInstance.enablePreviousNameRecording = YES;
     }

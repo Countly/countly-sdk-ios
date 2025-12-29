@@ -22,6 +22,8 @@ extern NSString* const kCountlyVTKeyVisit;
 @property (nonatomic) NSString* currentViewName;
 @property (nonatomic) NSString* previousViewName;
 
+@property (nonatomic) BOOL isManualViewRestartActive;
+
 + (instancetype)sharedInstance;
 
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
