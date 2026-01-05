@@ -48,7 +48,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Xcode
-        run: xcode-select -switch /Applications/Xcode_${{ matrix.env.xcode }}.app
+        run: sudo xcode-select -switch /Applications/Xcode_${{ matrix.env.xcode }}.app
     
       - name: Build for the sdk ${{ matrix.env.sdk }} on macOS ${{ matrix.env.os_version }}
         run: xcodebuild -project Countly.xcodeproj build -sdk ${{ matrix.env.sdk }}
