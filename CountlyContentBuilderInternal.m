@@ -168,7 +168,7 @@ NSInteger const contentInitialDelay = 4;
         NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
         
         if (jsonError) {
-            CLY_LOG_I(@"%s failed to parse JSON: [%@]", __FUNCTION__, jsonError);
+            CLY_LOG_I(@"%s failed to parse JSON: [%@], data: [%@]", __FUNCTION__, jsonError, response);
             [self setRequestQueueLockedThreadSafe:NO];
             return;
         }
@@ -225,8 +225,8 @@ NSInteger const contentInitialDelay = 4;
     CGFloat lWpH =  isLandscape ? size.width : size.height;
     
     NSDictionary *resolutionDict = @{
-        @"portrait": @{@"height": @(lWpH), @"width": @(lHpW)},
-        @"landscape": @{@"height": @(lHpW), @"width": @(lWpH)}
+        @"p": @{@"h": @(lWpH), @"w": @(lHpW)},
+        @"l": @{@"h": @(lHpW), @"w": @(lWpH)}
     };
     
     CLY_LOG_D(@"%s, resolutionDict: [%@]", __FUNCTION__, resolutionDict);
