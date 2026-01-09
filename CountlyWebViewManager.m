@@ -37,21 +37,63 @@
     self.backgroundView.hidden = YES;
     [rootViewController.view addSubview:self.backgroundView];
     
+    NSString *jsString = @"(function () {\
+        window.addEventListener('error', function (e) {\
+          if (!e.target) return;\
+    \
+          var url = e.target.src || e.target.href;\
+          if (!url) return;\
+    \
+          if (url.includes('favicon.ico')) return;\
+    \
+          if (e.target.tagName && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'IMG' || e.target.tagName === 'LINK')) {\
+              window.webkit.messageHandlers.resourceLoadError.postMessage({\
+                url: url\
+              });}\
+        }, true);\
+      })();";
+    WKUserContentController *contentController = [[WKUserContentController alloc] init];
+
+    WKUserScript *resourceErrorScript =
+    [[WKUserScript alloc] initWithSource:jsString
+                           injectionTime:WKUserScriptInjectionTimeAtDocumentStart
+                        forMainFrameOnly:NO];
+
+    [contentController addUserScript:resourceErrorScript];
+    [contentController addScriptMessageHandler:self name:@"resourceLoadError"];
+
     WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
     configuration.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
+    configuration.userContentController = contentController;
     WKWebView *webView = [[WKWebView alloc] initWithFrame:frame configuration:configuration];
     
     [self configureWebView:webView];
-    
     NSURLRequest *request = [NSURLRequest requestWithURL:url];
     [webView loadRequest:request];
-    
     CLYButton *dismissButton = [CLYButton dismissAlertButton:@"X"];
     [self configureDismissButton:dismissButton forWebView:webView];
     
     self.backgroundView.webView = webView;
     self.backgroundView.dismissButton = dismissButton;
 }
+
+- (void)userContentController:(WKUserContentController *)userContentController
+      didReceiveScriptMessage:(WKScriptMessage *)message
+{
+    if (![message.name isEqualToString:@"resourceLoadError"]) {
+        return;
+    }
+
+    NSDictionary *body = message.body;
+    NSString *url = body[@"url"];
+
+    CLY_LOG_I(@"%s failed to load resource: [%@]", __FUNCTION__, url);
+
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self closeWebView];
+    });
+}
+
 
 - (void)applyTopMargin{
     UIWindow *window = nil;
@@ -442,17 +484,39 @@
     }];
 }
 
-- (void)closeWebView {
+- (void)closeWebView
+{
     dispatch_async(dispatch_get_main_queue(), ^{
+        if (!self.backgroundView.webView) {
+            return;
+        }
+
         self.loadStartDate = nil;
+
         [self.loadTimeoutTimer invalidate];
         self.loadTimeoutTimer = nil;
+        [self.backgroundView.webView stopLoading];
+        self.backgroundView.webView.navigationDelegate = nil;
+        self.backgroundView.webView.UIDelegate = nil;
+
+        WKUserContentController *controller =
+            self.backgroundView.webView.configuration.userContentController;
+
+        [controller removeScriptMessageHandlerForName:@"resourceLoadError"];
+
+        PassThroughBackgroundView *backgroundView = self.backgroundView;
+        if (backgroundView) {
+            backgroundView.webView = nil;
+            [backgroundView removeFromSuperview];
+        }
+        self.backgroundView = nil;
+
         if (self.dismissBlock) {
             self.dismissBlock();
         }
-        [self.backgroundView removeFromSuperview];
     });
 }
+
 
 - (void)loadDidTimeout {
     if (self.hasAppeared) return;
