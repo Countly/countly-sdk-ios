@@ -26,16 +26,30 @@
     self.dismissBlock = dismissBlock;
     self.appearBlock = appearBlock;
     self.hasAppeared = NO;
-    // TODO: keyWindow deprecation fix
-    UIViewController *rootViewController = UIApplication.sharedApplication.keyWindow.rootViewController;
+
+    // Attaching background view directly to the window (to be on top of all views)
+    UIWindow *window = nil;
+    if (@available(iOS 13.0, *)) {
+        for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+            if ([scene isKindOfClass:[UIWindowScene class]]) {
+                window = ((UIWindowScene *)scene).windows.firstObject;
+                break;
+            }
+        }
+    } else {
+        window = [[UIApplication sharedApplication].delegate window];
+    }
+
     self.topMarginApplied = NO;
     self.topMargin = 0;
-    CGRect backgroundFrame = rootViewController.view.bounds;
+    CGRect backgroundFrame = window ? window.bounds : UIScreen.mainScreen.bounds;
     self.backgroundView = [[PassThroughBackgroundView alloc] initWithFrame:backgroundFrame];
     [self applyTopMargin];
     self.backgroundView.backgroundColor = [UIColor clearColor];
     self.backgroundView.hidden = YES;
-    [rootViewController.view addSubview:self.backgroundView];
+    if (window) {
+        [window addSubview:self.backgroundView];
+    }
     
     WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
     configuration.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
@@ -238,6 +252,11 @@
     if (self.hasAppeared) return;
     self.hasAppeared = YES;
     dispatch_async(dispatch_get_main_queue(), ^{
+        // To bring background view to front in case other views were presented while loading
+        if (self.backgroundView.superview) {
+            [self.backgroundView.superview bringSubviewToFront:self.backgroundView];
+        }
+
         self.backgroundView.hidden = NO;
         if (self.appearBlock) {
             self.appearBlock();
