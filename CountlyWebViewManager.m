@@ -49,6 +49,7 @@
     configuration.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
     WKWebView *webView = [[WKWebView alloc] initWithFrame:frame configuration:configuration];
     webView.scrollView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+    [self applyTopMargin];
 
     [self configureWebView:webView];
     
@@ -90,7 +91,7 @@
         // Keep original frame to compute from clean state
         CGRect frame = window.bounds;  // full physical screen
 
-        if (NO) {
+        if (YES) {
             // === USABLE AREA MODE (Respect Notch + Status Bar) ===
             if (isPortrait) {
                 frame.origin.y += safeArea.top;
@@ -109,6 +110,7 @@
         self.backgroundView.frame = window.bounds;
     }
 }
+
 
 
 - (void)configureWebView:(WKWebView *)webView {

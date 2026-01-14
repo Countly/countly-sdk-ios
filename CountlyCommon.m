@@ -341,7 +341,7 @@ void CountlyPrint(NSString *stringToPrint)
 - (CGSize)getWindowSize{
 #if (TARGET_OS_IOS)
     UIWindow *window = nil;
-    BOOL useFullPhysicalScreen = YES;
+    BOOL useFullPhysicalScreen = NO;
 
     // 1 — Find active window
     if (@available(iOS 13.0, *)) {
@@ -360,7 +360,7 @@ void CountlyPrint(NSString *stringToPrint)
     // 2 — Start with full physical size
     CGSize size = window.bounds.size;
 
-    // 3 — If full screen mode → return immediately
+    // If full screen mode
     if (useFullPhysicalScreen) {
         return size;
     }
