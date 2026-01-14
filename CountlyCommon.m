@@ -338,46 +338,55 @@ void CountlyPrint(NSString *stringToPrint)
     }
 }
 
-- (CGSize)getWindowSize {
+- (CGSize)getWindowSize{
 #if (TARGET_OS_IOS)
     UIWindow *window = nil;
+    BOOL useFullPhysicalScreen = YES;
 
+    // 1 — Find active window
     if (@available(iOS 13.0, *)) {
-        for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+        for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
             if ([scene isKindOfClass:[UIWindowScene class]]) {
                 window = ((UIWindowScene *)scene).windows.firstObject;
                 break;
             }
         }
     } else {
-        window = [[UIApplication sharedApplication].delegate window];
+        window = UIApplication.sharedApplication.delegate.window;
     }
 
     if (!window) return CGSizeZero;
-    
-    UIEdgeInsets safeArea = UIEdgeInsetsZero;
-    CGFloat screenScale = [UIScreen mainScreen].scale;
-    if (@available(iOS 11.0, *)) {
-        safeArea = window.safeAreaInsets;
-        safeArea.left /= screenScale;
-        safeArea.bottom /= screenScale;
-        safeArea.right /= screenScale;
+
+    // 2 — Start with full physical size
+    CGSize size = window.bounds.size;
+
+    // 3 — If full screen mode → return immediately
+    if (useFullPhysicalScreen) {
+        return size;
     }
-    
-    UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
-    BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
-    
-    CGSize size = CGSizeMake(window.bounds.size.width, window.bounds.size.height);
-    
-    if(!isLandscape){
-        size.width -= safeArea.left + safeArea.right;
-        size.height -= safeArea.top + safeArea.bottom;
+
+    // 4 — Usable area mode (respect safe area)
+    if (@available(iOS 11.0, *)) {
+        UIEdgeInsets safe = window.safeAreaInsets;
+        UIInterfaceOrientation orientation = UIApplication.sharedApplication.statusBarOrientation;
+        BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
+
+        if (!isLandscape) {
+            // Portrait: trim notch + bottom home indicator area
+            size.width -= (safe.left + safe.right);
+            size.height -= (safe.top + safe.bottom);
+        } else {
+            // Landscape: you normally only remove bottom safe area
+            size.height -= safe.bottom;
+        }
     }
 
     return size;
-#endif
+#else
     return CGSizeZero;
+#endif
 }
+
 
 @end
 

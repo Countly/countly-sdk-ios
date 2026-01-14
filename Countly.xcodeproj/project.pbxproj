@@ -95,6 +95,8 @@
 		96C05AB02E82936F0028A976 /* CountlyHealthTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96C05AAF2E8293630028A976 /* CountlyHealthTrackerTests.swift */; };
 		96DA74BB2D9FB687006FA6FF /* MockFeedbackWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96DA74BA2D9FB687006FA6FF /* MockFeedbackWidget.swift */; };
 		96E680422BFF89AC0091E105 /* CountlyCrashReporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96E680412BFF89AC0091E105 /* CountlyCrashReporterTests.swift */; };
+		96F80BE72F17D066006B4F71 /* CountlyWebViewController.h in Headers */ = {isa = PBXBuildFile; fileRef = 96F80BE62F17D066006B4F71 /* CountlyWebViewController.h */; };
+		96F80BE92F17D06F006B4F71 /* CountlyWebViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 96F80BE82F17D06F006B4F71 /* CountlyWebViewController.m */; };
 		D219374B248AC71C00E5798B /* CountlyPerformanceMonitoring.h in Headers */ = {isa = PBXBuildFile; fileRef = D2193749248AC71C00E5798B /* CountlyPerformanceMonitoring.h */; };
 		D219374C248AC71C00E5798B /* CountlyPerformanceMonitoring.m in Sources */ = {isa = PBXBuildFile; fileRef = D219374A248AC71C00E5798B /* CountlyPerformanceMonitoring.m */; };
 		D249BF5E254D3D180058A6C2 /* CountlyFeedbackWidget.h in Headers */ = {isa = PBXBuildFile; fileRef = D249BF5C254D3D170058A6C2 /* CountlyFeedbackWidget.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -206,6 +208,8 @@
 		96C05AAF2E8293630028A976 /* CountlyHealthTrackerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyHealthTrackerTests.swift; sourceTree = "<group>"; };
 		96DA74BA2D9FB687006FA6FF /* MockFeedbackWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockFeedbackWidget.swift; sourceTree = "<group>"; };
 		96E680412BFF89AC0091E105 /* CountlyCrashReporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyCrashReporterTests.swift; sourceTree = "<group>"; };
+		96F80BE62F17D066006B4F71 /* CountlyWebViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyWebViewController.h; sourceTree = "<group>"; };
+		96F80BE82F17D06F006B4F71 /* CountlyWebViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyWebViewController.m; sourceTree = "<group>"; };
 		D2193749248AC71C00E5798B /* CountlyPerformanceMonitoring.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyPerformanceMonitoring.h; sourceTree = "<group>"; };
 		D219374A248AC71C00E5798B /* CountlyPerformanceMonitoring.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyPerformanceMonitoring.m; sourceTree = "<group>"; };
 		D249BF5C254D3D170058A6C2 /* CountlyFeedbackWidget.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyFeedbackWidget.h; sourceTree = "<group>"; };
@@ -263,6 +267,8 @@
 		3B20A9782245225A00E3D7AE = {
 			isa = PBXGroup;
 			children = (
+				96F80BE82F17D06F006B4F71 /* CountlyWebViewController.m */,
+				96F80BE62F17D066006B4F71 /* CountlyWebViewController.h */,
 				96681A9B2D97D9B300A4845A /* CountlyTests.xctestplan */,
 				39BDF7562CC7CA870066DE7C /* CountlyFeedbacks.h */,
 				39BDF7582CC7CA920066DE7C /* CountlyFeedbacks.m */,
@@ -379,6 +385,7 @@
 				3B20A9872245225A00E3D7AE /* Countly.h in Headers */,
 				1A423EA02A271FE0008C4757 /* CountlyRCData.h in Headers */,
 				3B20A9C12245228700E3D7AE /* CountlyRemoteConfig.h in Headers */,
+				96F80BE72F17D066006B4F71 /* CountlyWebViewController.h in Headers */,
 				1A3110652A7128ED001CB507 /* CountlyViewData.h in Headers */,
 				3B20A9B22245228700E3D7AE /* CountlyConnectionManager.h in Headers */,
 				1A3A576529ED47BD0041B7BE /* CountlyServerConfig.h in Headers */,
@@ -569,6 +576,7 @@
 				1A9027FE2AB197B50044EBCF /* CountlyExperimentInformation.m in Sources */,
 				39924ED62BEBD20F00139F91 /* CountlyCrashData.m in Sources */,
 				3B20A9C82245228700E3D7AE /* CountlyViewTrackingInternal.m in Sources */,
+				96F80BE92F17D06F006B4F71 /* CountlyWebViewController.m in Sources */,
 				3B20A9D22245228700E3D7AE /* CountlyLocationManager.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

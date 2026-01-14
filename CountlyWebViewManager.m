@@ -1,5 +1,6 @@
 
 #import "CountlyWebViewManager.h"
+#import "CountlyWebViewController.h"
 #import "PassThroughBackgroundView.h"
 #import "CountlyCommon.h"
 
@@ -15,6 +16,7 @@
 @property (nonatomic, strong) NSTimer *loadTimeoutTimer;
 @property (nonatomic, strong) NSDate *loadStartDate;
 @property (nonatomic) BOOL hasAppeared;
+@property (nonatomic, strong) CountlyWebViewController *presentingController;
 @end
 
 @implementation CountlyWebViewManager
@@ -27,7 +29,11 @@
     self.appearBlock = appearBlock;
     self.hasAppeared = NO;
     // TODO: keyWindow deprecation fix
+    CountlyWebViewController *modal = [CountlyWebViewController new];
+    modal.modalPresentationStyle = UIModalPresentationOverFullScreen;
+    modal.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
     UIViewController *rootViewController = UIApplication.sharedApplication.keyWindow.rootViewController;
+
     self.topMarginApplied = NO;
     self.topMargin = 0;
     CGRect backgroundFrame = rootViewController.view.bounds;
@@ -35,12 +41,15 @@
     [self applyTopMargin];
     self.backgroundView.backgroundColor = [UIColor clearColor];
     self.backgroundView.hidden = YES;
-    [rootViewController.view addSubview:self.backgroundView];
-    
+    modal.contentView = self.backgroundView;
+    [rootViewController presentViewController:modal animated:NO completion:nil];
+    self.presentingController = modal;
+
     WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
     configuration.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
     WKWebView *webView = [[WKWebView alloc] initWithFrame:frame configuration:configuration];
-    
+    webView.scrollView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+
     [self configureWebView:webView];
     
     NSURLRequest *request = [NSURLRequest requestWithURL:url];
@@ -53,36 +62,54 @@
     self.backgroundView.dismissButton = dismissButton;
 }
 
-- (void)applyTopMargin{
+- (void)applyTopMargin {
     UIWindow *window = nil;
+
+    // 1 — Resolve active window
     if (@available(iOS 13.0, *)) {
-        for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+        for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
             if ([scene isKindOfClass:[UIWindowScene class]]) {
                 window = ((UIWindowScene *)scene).windows.firstObject;
                 break;
             }
         }
     } else {
-        window = [[UIApplication sharedApplication].delegate window];
+        window = UIApplication.sharedApplication.delegate.window;
     }
-    
+
+    if (!window) return;
+
+    // 2 — Only iOS 11+ has safe areas
     if (@available(iOS 11.0, *)) {
+
         UIEdgeInsets safeArea = window.safeAreaInsets;
-        UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
-        if(!UIInterfaceOrientationIsLandscape(orientation) && !self.topMarginApplied){
-            self.topMarginApplied = YES;
-            CGRect newFrame = self.backgroundView.frame;
-            newFrame.origin.y += safeArea.top;
-            self.backgroundView.frame = newFrame;
-            self.topMargin = safeArea.top;
-        } else if(UIInterfaceOrientationIsLandscape(orientation) && self.topMarginApplied){
-            self.topMarginApplied = NO;
-            CGRect newFrame = self.backgroundView.frame;
-            newFrame.origin.y -= self.topMargin;
-            self.backgroundView.frame = newFrame;
+        UIInterfaceOrientation orientation = UIApplication.sharedApplication.statusBarOrientation;
+
+        BOOL isPortrait = !UIInterfaceOrientationIsLandscape(orientation);
+
+        // Keep original frame to compute from clean state
+        CGRect frame = window.bounds;  // full physical screen
+
+        if (NO) {
+            // === USABLE AREA MODE (Respect Notch + Status Bar) ===
+            if (isPortrait) {
+                frame.origin.y += safeArea.top;
+                frame.size.height -= safeArea.top + safeArea.bottom;
+            } else {
+                // Landscape: still trim unsafe bottoms
+                frame.size.height -= safeArea.bottom;
+            }
         }
+
+        // Apply the calculated frame
+        self.backgroundView.frame = frame;
+    }
+    else {
+        // Before iOS 11 → no safe area, full screen always
+        self.backgroundView.frame = window.bounds;
     }
 }
+
 
 - (void)configureWebView:(WKWebView *)webView {
     webView.layer.shadowColor = UIColor.blackColor.CGColor;
@@ -451,6 +478,7 @@
             self.dismissBlock();
         }
         [self.backgroundView removeFromSuperview];
+        [self.presentingController dismissViewControllerAnimated:NO completion:nil];
     });
 }
 
