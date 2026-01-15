@@ -49,7 +49,7 @@
     return _zoneTimerInterval;
 }
 
-- (void) setWebviewDisplayOption:(WebViewDisplayOption)webViewDisplayOption
+- (void)setWebviewDisplayOption:(WebViewDisplayOption)webViewDisplayOption
 {
     _webViewDisplayOption = webViewDisplayOption;
 }

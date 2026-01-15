@@ -77,21 +77,11 @@
     if (@available(iOS 11.0, *)) {
 
         UIEdgeInsets safeArea = window.safeAreaInsets;
-        UIInterfaceOrientation orientation = UIApplication.sharedApplication.statusBarOrientation;
-
-        BOOL isPortrait = !UIInterfaceOrientationIsLandscape(orientation);
-
         CGRect frame = window.bounds;
-
-        if (CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA) {
-            if (isPortrait) {
-                frame.origin.y += safeArea.top;
-                //frame.size.height -= safeArea.bottom;
-            } else {
-                //frame.size.height -= safeArea.bottom;
-            }
+        frame.origin.y += safeArea.top; // always respect notch if exists
+        if(CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA){
+            frame.origin.x += safeArea.left;
         }
-
         self.backgroundView.frame = frame;
     }
     else {

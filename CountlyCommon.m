@@ -357,19 +357,12 @@ void CountlyPrint(NSString *stringToPrint)
 
     CGSize size = window.bounds.size;
 
-    if (CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == IMMERSIVE) {
-        return size;
-    }
 
     if (@available(iOS 11.0, *)) {
         UIEdgeInsets safe = window.safeAreaInsets;
-        UIInterfaceOrientation orientation = UIApplication.sharedApplication.statusBarOrientation;
-        BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
-        
-        if (!isLandscape) {
+        size.height -= (safe.top); // always respect notch
+        if(CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA){
             size.width -= (safe.left + safe.right);
-            size.height -= (safe.top + safe.bottom);
-        } else {
             size.height -= safe.bottom;
         }
     }
