@@ -15,6 +15,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong) NSArray<NSString *> *currentTags;
 @property (nonatomic, assign) NSTimeInterval zoneTimerInterval;
 @property (nonatomic) ContentCallback contentCallback;
+@property (nonatomic, assign) WebViewDisplayOption webViewDisplayOption;
 
 + (instancetype)sharedInstance;
 

@@ -10,6 +10,7 @@
 #if (TARGET_OS_IOS)
 @property (nonatomic) ContentCallback contentCallback;
 @property (nonatomic) NSUInteger zoneTimerInterval;
+@property (nonatomic) WebViewDisplayOption webViewDisplayOption;
 #endif
 @end
 
@@ -46,6 +47,16 @@
 - (NSUInteger) getZoneTimerInterval
 {
     return _zoneTimerInterval;
+}
+
+- (void) setWebviewDisplayOption:(WebViewDisplayOption)webViewDisplayOption
+{
+    _webViewDisplayOption = webViewDisplayOption;
+}
+
+- (WebViewDisplayOption)getWebViewDisplayOption;
+{
+    return _webViewDisplayOption;
 }
 #endif
 

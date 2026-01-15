@@ -11,8 +11,6 @@
 @property (nonatomic, strong) PassThroughBackgroundView *backgroundView;
 @property (nonatomic, copy) void (^dismissBlock)(void);
 @property (nonatomic, copy) void (^appearBlock)(void);
-@property (nonatomic) BOOL topMarginApplied;
-@property (nonatomic) float topMargin;
 @property (nonatomic, strong) NSTimer *loadTimeoutTimer;
 @property (nonatomic, strong) NSDate *loadStartDate;
 @property (nonatomic) BOOL hasAppeared;
@@ -34,11 +32,8 @@
     modal.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
     UIViewController *rootViewController = UIApplication.sharedApplication.keyWindow.rootViewController;
 
-    self.topMarginApplied = NO;
-    self.topMargin = 0;
     CGRect backgroundFrame = rootViewController.view.bounds;
     self.backgroundView = [[PassThroughBackgroundView alloc] initWithFrame:backgroundFrame];
-    [self applyTopMargin];
     self.backgroundView.backgroundColor = [UIColor clearColor];
     self.backgroundView.hidden = YES;
     modal.contentView = self.backgroundView;
@@ -66,7 +61,6 @@
 - (void)applyTopMargin {
     UIWindow *window = nil;
 
-    // 1 — Resolve active window
     if (@available(iOS 13.0, *)) {
         for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
             if ([scene isKindOfClass:[UIWindowScene class]]) {
@@ -80,7 +74,6 @@
 
     if (!window) return;
 
-    // 2 — Only iOS 11+ has safe areas
     if (@available(iOS 11.0, *)) {
 
         UIEdgeInsets safeArea = window.safeAreaInsets;
@@ -88,25 +81,20 @@
 
         BOOL isPortrait = !UIInterfaceOrientationIsLandscape(orientation);
 
-        // Keep original frame to compute from clean state
-        CGRect frame = window.bounds;  // full physical screen
+        CGRect frame = window.bounds;
 
-        if (YES) {
-            // === USABLE AREA MODE (Respect Notch + Status Bar) ===
+        if (CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA) {
             if (isPortrait) {
                 frame.origin.y += safeArea.top;
-                frame.size.height -= safeArea.top + safeArea.bottom;
+                //frame.size.height -= safeArea.bottom;
             } else {
-                // Landscape: still trim unsafe bottoms
-                frame.size.height -= safeArea.bottom;
+                //frame.size.height -= safeArea.bottom;
             }
         }
 
-        // Apply the calculated frame
         self.backgroundView.frame = frame;
     }
     else {
-        // Before iOS 11 → no safe area, full screen always
         self.backgroundView.frame = window.bounds;
     }
 }
@@ -455,9 +443,7 @@
     CGFloat y = [dimensions[@"y"] floatValue];
     CGFloat width = [dimensions[@"w"] floatValue];
     CGFloat height = [dimensions[@"h"] floatValue];
-        
-    [self applyTopMargin];
-    
+            
     // Animate the resizing of the web view
     [UIView animateWithDuration:0.3 animations:^{
         CGRect frame = self.backgroundView.webView.frame;
@@ -466,6 +452,7 @@
         frame.size.width = width;
         frame.size.height = height;
         self.backgroundView.webView.frame = frame;
+        [self applyTopMargin];
     } completion:^(BOOL finished) {
         CLY_LOG_I(@"%s, Resized web view to width: %f, height: %f", __FUNCTION__, width, height);
     }];

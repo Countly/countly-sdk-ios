@@ -19,11 +19,11 @@
 @implementation CountlyWebViewController
 
 - (BOOL)prefersStatusBarHidden {
-    return YES;
+    return CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == IMMERSIVE ? YES : NO;
 }
 
 - (BOOL)prefersHomeIndicatorAutoHidden {
-    return YES;
+    return CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == IMMERSIVE ? YES : NO;
 }
 
 - (void)viewDidLoad {

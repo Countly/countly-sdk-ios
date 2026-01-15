@@ -341,9 +341,7 @@ void CountlyPrint(NSString *stringToPrint)
 - (CGSize)getWindowSize{
 #if (TARGET_OS_IOS)
     UIWindow *window = nil;
-    BOOL useFullPhysicalScreen = NO;
 
-    // 1 — Find active window
     if (@available(iOS 13.0, *)) {
         for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
             if ([scene isKindOfClass:[UIWindowScene class]]) {
@@ -357,26 +355,21 @@ void CountlyPrint(NSString *stringToPrint)
 
     if (!window) return CGSizeZero;
 
-    // 2 — Start with full physical size
     CGSize size = window.bounds.size;
 
-    // If full screen mode
-    if (useFullPhysicalScreen) {
+    if (CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == IMMERSIVE) {
         return size;
     }
 
-    // 4 — Usable area mode (respect safe area)
     if (@available(iOS 11.0, *)) {
         UIEdgeInsets safe = window.safeAreaInsets;
         UIInterfaceOrientation orientation = UIApplication.sharedApplication.statusBarOrientation;
         BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
-
+        
         if (!isLandscape) {
-            // Portrait: trim notch + bottom home indicator area
             size.width -= (safe.left + safe.right);
             size.height -= (safe.top + safe.bottom);
         } else {
-            // Landscape: you normally only remove bottom safe area
             size.height -= safe.bottom;
         }
     }
