@@ -36,6 +36,7 @@
     self.backgroundView = [[PassThroughBackgroundView alloc] initWithFrame:backgroundFrame];
     self.backgroundView.backgroundColor = [UIColor clearColor];
     self.backgroundView.hidden = YES;
+    [self.backgroundView setNeedsUpdateConstraints]; // triggers updating window.safeAreaInsets
     modal.contentView = self.backgroundView;
     [rootViewController presentViewController:modal animated:NO completion:nil];
     self.presentingController = modal;
@@ -44,8 +45,6 @@
     configuration.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
     WKWebView *webView = [[WKWebView alloc] initWithFrame:frame configuration:configuration];
     webView.scrollView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
-    [self applyTopMargin];
-
     [self configureWebView:webView];
     
     NSURLRequest *request = [NSURLRequest requestWithURL:url];
@@ -59,33 +58,27 @@
 }
 
 - (void)applyTopMargin {
-    UIWindow *window = nil;
-
     if (@available(iOS 13.0, *)) {
-        for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
-            if ([scene isKindOfClass:[UIWindowScene class]]) {
-                window = ((UIWindowScene *)scene).windows.firstObject;
-                break;
-            }
+        UIEdgeInsets safeArea = self.backgroundView.window.safeAreaInsets;
+        UIInterfaceOrientation orientation = self.backgroundView.window.windowScene.interfaceOrientation;
+        
+        CGRect frame = self.backgroundView.webView.frame;
+        if(!UIApplication.sharedApplication.keyWindow.rootViewController.prefersStatusBarHidden || CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA || [self hasTopNotch:safeArea]){
+            frame.origin.y += safeArea.top; // always respect notch if exists
         }
-    } else {
-        window = UIApplication.sharedApplication.delegate.window;
+        if ( CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA && orientation != UIInterfaceOrientationLandscapeLeft){
+            frame.origin.x += MAX(safeArea.left, safeArea.right);
+        }
+        self.backgroundView.webView.frame = frame;
     }
+}
 
-    if (!window) return;
-
+- (bool) hasTopNotch:(UIEdgeInsets)safeArea
+{
     if (@available(iOS 11.0, *)) {
-
-        UIEdgeInsets safeArea = window.safeAreaInsets;
-        CGRect frame = window.bounds;
-        frame.origin.y += safeArea.top; // always respect notch if exists
-        if(CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA){
-            frame.origin.x += safeArea.left;
-        }
-        self.backgroundView.frame = frame;
-    }
-    else {
-        self.backgroundView.frame = window.bounds;
+        return safeArea.top >= 44;
+    } else {
+        return NO;
     }
 }
 
@@ -243,6 +236,7 @@
     }
 
     if (self.hasAppeared) return;
+    [self applyTopMargin];
     self.hasAppeared = YES;
     dispatch_async(dispatch_get_main_queue(), ^{
         self.backgroundView.hidden = NO;

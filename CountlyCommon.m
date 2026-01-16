@@ -338,6 +338,11 @@ void CountlyPrint(NSString *stringToPrint)
     }
 }
 
+- (bool) hasTopNotch:(UIEdgeInsets)safeArea
+{
+    return safeArea.top >= 44;
+}
+
 - (CGSize)getWindowSize{
 #if (TARGET_OS_IOS)
     UIWindow *window = nil;
@@ -357,13 +362,14 @@ void CountlyPrint(NSString *stringToPrint)
 
     CGSize size = window.bounds.size;
 
-
     if (@available(iOS 11.0, *)) {
-        UIEdgeInsets safe = window.safeAreaInsets;
-        size.height -= (safe.top); // always respect notch
+        UIEdgeInsets safeArea = window.safeAreaInsets;
+        if(!UIApplication.sharedApplication.keyWindow.rootViewController.prefersStatusBarHidden || [self hasTopNotch:safeArea] || CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA){
+            size.height -= (safeArea.top); // always respect notch
+        }
         if(CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA){
-            size.width -= (safe.left + safe.right);
-            size.height -= safe.bottom;
+            size.width -= MAX(safeArea.left, safeArea.right);
+            size.height -= safeArea.bottom;
         }
     }
 
