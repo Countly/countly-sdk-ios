@@ -26,6 +26,10 @@
     return CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == IMMERSIVE ? YES : NO;
 }
 
+- (void)loadView {
+    self.view = [[PassThroughBackgroundView alloc] initWithFrame:UIApplication.sharedApplication.keyWindow.rootViewController.view.bounds];
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
 
