@@ -30,13 +30,13 @@
     CountlyWebViewController *modal = [CountlyWebViewController new];
     modal.modalPresentationStyle = UIModalPresentationOverFullScreen;
     modal.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
+    modal.modalPresentationCapturesStatusBarAppearance = YES;
     UIViewController *rootViewController = UIApplication.sharedApplication.keyWindow.rootViewController;
 
     CGRect backgroundFrame = rootViewController.view.bounds;
     self.backgroundView = [[PassThroughBackgroundView alloc] initWithFrame:backgroundFrame];
     self.backgroundView.backgroundColor = [UIColor clearColor];
     self.backgroundView.hidden = YES;
-    [self.backgroundView setNeedsUpdateConstraints]; // triggers updating window.safeAreaInsets
     modal.contentView = self.backgroundView;
     [rootViewController presentViewController:modal animated:NO completion:nil];
     self.presentingController = modal;
@@ -56,33 +56,6 @@
     self.backgroundView.webView = webView;
     self.backgroundView.dismissButton = dismissButton;
 }
-
-- (void)applyTopMargin {
-    if (@available(iOS 13.0, *)) {
-        UIEdgeInsets safeArea = self.backgroundView.window.safeAreaInsets;
-        UIInterfaceOrientation orientation = self.backgroundView.window.windowScene.interfaceOrientation;
-        
-        CGRect frame = self.backgroundView.webView.frame;
-        if(!UIApplication.sharedApplication.keyWindow.rootViewController.prefersStatusBarHidden || CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA || [self hasTopNotch:safeArea]){
-            frame.origin.y += safeArea.top; // always respect notch if exists
-        }
-        if ( CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA && orientation != UIInterfaceOrientationLandscapeLeft){
-            frame.origin.x += MAX(safeArea.left, safeArea.right);
-        }
-        self.backgroundView.webView.frame = frame;
-    }
-}
-
-- (bool) hasTopNotch:(UIEdgeInsets)safeArea
-{
-    if (@available(iOS 11.0, *)) {
-        return safeArea.top >= 44;
-    } else {
-        return NO;
-    }
-}
-
-
 
 - (void)configureWebView:(WKWebView *)webView {
     webView.layer.shadowColor = UIColor.blackColor.CGColor;
@@ -236,7 +209,7 @@
     }
 
     if (self.hasAppeared) return;
-    [self applyTopMargin];
+    [self.presentingController updatePlacementRespectToSafeAreas];
     self.hasAppeared = YES;
     dispatch_async(dispatch_get_main_queue(), ^{
         self.backgroundView.hidden = NO;
@@ -436,7 +409,7 @@
         frame.size.width = width;
         frame.size.height = height;
         self.backgroundView.webView.frame = frame;
-        [self applyTopMargin];
+        [self.presentingController updatePlacementRespectToSafeAreas];
     } completion:^(BOOL finished) {
         CLY_LOG_I(@"%s, Resized web view to width: %f, height: %f", __FUNCTION__, width, height);
     }];

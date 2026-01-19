@@ -364,7 +364,7 @@ void CountlyPrint(NSString *stringToPrint)
 
     if (@available(iOS 11.0, *)) {
         UIEdgeInsets safeArea = window.safeAreaInsets;
-        if(!UIApplication.sharedApplication.keyWindow.rootViewController.prefersStatusBarHidden || [self hasTopNotch:safeArea] || CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA){
+        if([self hasTopNotch:safeArea] || CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA){
             size.height -= (safeArea.top); // always respect notch
         }
         if(CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA){

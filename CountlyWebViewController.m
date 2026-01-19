@@ -49,5 +49,31 @@
     }
 }
 
+- (void)updatePlacementRespectToSafeAreas {
+    UIEdgeInsets safeArea = self.view.safeAreaInsets;
+    if (@available(iOS 13.0, *)) {
+        UIInterfaceOrientation orientation = self.view.window.windowScene.interfaceOrientation;
+        
+        CGRect frame = self.contentView.webView.frame;
+        if(CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA || [self hasTopNotch:safeArea]){
+            frame.origin.y += safeArea.top; // always respect notch if exists
+        }
+        if(CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA && orientation != UIInterfaceOrientationLandscapeLeft){
+            frame.origin.x += MAX(safeArea.left, safeArea.right);
+        }
+        self.contentView.webView.frame = frame;
+    }
+}
+
+- (bool) hasTopNotch:(UIEdgeInsets)safeArea
+{
+    if (@available(iOS 11.0, *)) {
+        return safeArea.top >= 44;
+    } else {
+        return NO;
+    }
+}
+
+
 
 @end
