@@ -417,13 +417,23 @@
 
 - (void)closeWebView {
     dispatch_async(dispatch_get_main_queue(), ^{
+        if (!self.backgroundView.webView) {
+            return;
+        }
         self.loadStartDate = nil;
         [self.loadTimeoutTimer invalidate];
         self.loadTimeoutTimer = nil;
+        [self.backgroundView.webView stopLoading];
+        self.backgroundView.webView.navigationDelegate = nil;
+        self.backgroundView.webView.UIDelegate = nil;
         if (self.dismissBlock) {
             self.dismissBlock();
         }
-        [self.backgroundView removeFromSuperview];
+        PassThroughBackgroundView *backgroundView = self.backgroundView;
+        if (backgroundView) {
+            [backgroundView removeFromSuperview];
+        }
+        self.backgroundView = nil;
         [self.presentingController dismissViewControllerAnimated:NO completion:nil];
     });
 }
