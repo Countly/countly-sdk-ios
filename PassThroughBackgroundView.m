@@ -23,6 +23,11 @@
 }
 
 - (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event {
+    BOOL anotherResult = [
+        self.superview pointInside:point withEvent:event
+    ];
+    NSLog(@"self.superview  = %@", self.superview);
+    NSLog(@"ANOTHER RES: %d", anotherResult);
     
     if (self.webView && CGRectContainsPoint(self.webView.frame, point)) {
         return YES;

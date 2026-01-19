@@ -33,12 +33,19 @@
     modal.modalPresentationCapturesStatusBarAppearance = YES;
     UIViewController *rootViewController = UIApplication.sharedApplication.keyWindow.rootViewController;
 
-    CGRect backgroundFrame = rootViewController.view.bounds;
-    self.backgroundView = [[PassThroughBackgroundView alloc] initWithFrame:backgroundFrame];
+    self.backgroundView = (PassThroughBackgroundView*)modal.view;
     self.backgroundView.backgroundColor = [UIColor clearColor];
     self.backgroundView.hidden = YES;
     modal.contentView = self.backgroundView;
-    [rootViewController presentViewController:modal animated:NO completion:nil];
+    [rootViewController addChildViewController:modal];
+
+    modal.view.frame = rootViewController.view.bounds;
+    [rootViewController.view addSubview:modal.view];
+
+    [modal didMoveToParentViewController:rootViewController];
+
+    // Force UIKit to re-query status bar appearance
+    [rootViewController setNeedsStatusBarAppearanceUpdate];
     self.presentingController = modal;
 
     WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];

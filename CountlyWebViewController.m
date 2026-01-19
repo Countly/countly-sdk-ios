@@ -26,6 +26,11 @@
     return CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == IMMERSIVE ? YES : NO;
 }
 
+- (void)loadView{
+    self.view = [[PassThroughBackgroundView alloc] initWithFrame:UIApplication.sharedApplication.keyWindow.rootViewController.view.bounds];
+    
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
 
@@ -45,7 +50,8 @@
             UIViewAutoresizingFlexibleWidth |
             UIViewAutoresizingFlexibleHeight;
 
-        [self.view addSubview:self.contentView];
+        //[self.view addSubview:self.contentView];
+        [UIApplication.sharedApplication.keyWindow.rootViewController.view addSubview:self.contentView];
     }
 }
 
