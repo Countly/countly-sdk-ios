@@ -30,9 +30,8 @@
     CountlyWebViewController *modal = [CountlyWebViewController new];
     modal.modalPresentationStyle = UIModalPresentationOverFullScreen;
     modal.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
-    modal.modalPresentationCapturesStatusBarAppearance = YES;
     UIViewController *rootViewController = UIApplication.sharedApplication.keyWindow.rootViewController;
-
+    modal.modalPresentationCapturesStatusBarAppearance = YES;
     self.backgroundView = (PassThroughBackgroundView*)modal.view;
     self.backgroundView.backgroundColor = [UIColor clearColor];
     self.backgroundView.hidden = YES;

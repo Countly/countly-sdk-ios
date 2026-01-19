@@ -17,8 +17,8 @@ typedef enum : NSUInteger
 
 typedef enum: NSUInteger
 {
-    SAFE_AREA,
-    IMMERSIVE
+    IMMERSIVE,
+    SAFE_AREA
 } WebViewDisplayOption;
 
 typedef void (^ContentCallback)(ContentStatus contentStatus, NSDictionary<NSString *, id>* contentData);
