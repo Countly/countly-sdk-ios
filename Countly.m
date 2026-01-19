@@ -282,8 +282,6 @@ static dispatch_once_t onceToken;
     }
     if(config.content.getWebViewDisplayOption){
         CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption = config.content.getWebViewDisplayOption;
-    } else {
-        CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption = IMMERSIVE;
     }
 #endif
     
