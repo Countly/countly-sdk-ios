@@ -59,7 +59,7 @@
         if(CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA || [self hasTopNotch:safeArea]){
             frame.origin.y += safeArea.top; // always respect notch if exists
         }
-        if(CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA && orientation != UIInterfaceOrientationLandscapeLeft){
+        if(orientation != UIInterfaceOrientationLandscapeLeft){ // regardless of given safe area, if notch is in left act for it
             frame.origin.x += MAX(safeArea.left, safeArea.right);
         }
         self.contentView.webView.frame = frame;

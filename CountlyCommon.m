@@ -368,9 +368,9 @@ void CountlyPrint(NSString *stringToPrint)
             size.height -= (safeArea.top); // always respect notch
         }
         if(CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA){
-            size.width -= MAX(safeArea.left, safeArea.right);
             size.height -= safeArea.bottom;
         }
+        size.width -= MAX(safeArea.left, safeArea.right); // regardles of given safe area, act for cutout
     }
 
     return size;
