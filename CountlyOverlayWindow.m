@@ -21,11 +21,31 @@
 @implementation CountlyOverlayWindow
 
 - (instancetype)init {
-    if (self = [super initWithFrame:UIScreen.mainScreen.bounds]) {
+    UIWindowScene *currentWindowScene = nil;
+
+    for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+        if ([scene isKindOfClass:[UIWindowScene class]]) {
+            currentWindowScene = (UIWindowScene *)scene;
+            break;
+        }
+    }
+    
+    BOOL initialized = NO;
+
+    if (currentWindowScene) {
+        if(self = [super initWithWindowScene:currentWindowScene]){
+            initialized = YES;
+        }
+    } else if (self = [super initWithFrame:UIScreen.mainScreen.bounds]){
+        initialized = YES;
+    }
+    
+    if(initialized){
         self.windowLevel = UIWindowLevelAlert + 10;
         self.backgroundColor = UIColor.clearColor;
         self.hidden = YES;
     }
+    
     return self;
 }
 
