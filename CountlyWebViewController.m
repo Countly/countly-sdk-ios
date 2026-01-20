@@ -33,8 +33,10 @@
     
     // Fully transparent controller background
     self.view.backgroundColor = [UIColor clearColor];
-    self.view.insetsLayoutMarginsFromSafeArea = NO;
-    self.view.directionalLayoutMargins = NSDirectionalEdgeInsetsZero;
+    if (@available(iOS 11.0, *)) {
+        self.view.insetsLayoutMarginsFromSafeArea = NO;
+        self.view.directionalLayoutMargins = NSDirectionalEdgeInsetsZero;
+    }
     self.extendedLayoutIncludesOpaqueBars = YES;
     self.edgesForExtendedLayout = UIRectEdgeAll;
     
@@ -52,8 +54,9 @@
 }
 
 - (void)updatePlacementRespectToSafeAreas {
-    UIEdgeInsets safeArea = self.view.safeAreaInsets;
     if (@available(iOS 13.0, *)) {
+        UIEdgeInsets safeArea = self.view.safeAreaInsets;
+
         UIInterfaceOrientation orientation = self.view.window.windowScene.interfaceOrientation;
         
         CGRect frame = self.contentView.webView.frame;

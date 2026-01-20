@@ -16,6 +16,6 @@
 @property (nonatomic, strong) PassThroughBackgroundView *contentView;
 - (void)updatePlacementRespectToSafeAreas;
 #else
-@interface CountlyWebViewController
+@interface CountlyWebViewController : NSObject
 #endif
 @end

@@ -19,6 +19,6 @@
 #if (TARGET_OS_IOS)
 @interface CountlyOverlayWindow : UIWindow
 #else
-@interface CountlyOverlayWindow
+@interface CountlyOverlayWindow : NSObject
 #endif
 @end

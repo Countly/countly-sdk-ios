@@ -83,6 +83,7 @@
 		3B20A9D42245228700E3D7AE /* CountlyPersistency.m in Sources */ = {isa = PBXBuildFile; fileRef = 3B20A9AF2245228600E3D7AE /* CountlyPersistency.m */; };
 		3B20A9D62245228700E3D7AE /* CountlyConsentManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 3B20A9B12245228700E3D7AE /* CountlyConsentManager.h */; };
 		4C3A4CA02EB4C40000827FEA /* EventThreadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4C3A4C9F2EB4C40000827FEA /* EventThreadTests.swift */; };
+		96095A5F2F20105600FDE933 /* TouchDelegatingView.h in Headers */ = {isa = PBXBuildFile; fileRef = 96095A5E2F20105600FDE933 /* TouchDelegatingView.h */; };
 		962485BA2D9E971800FA3C20 /* TestUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 962485B92D9E971400FA3C20 /* TestUtils.swift */; };
 		96329DE02D9426F300BFD641 /* CountlyServerConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96329DDF2D9426F300BFD641 /* CountlyServerConfigTests.swift */; };
 		96329DE22D94299D00BFD641 /* ServerConfigBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96329DE12D94299D00BFD641 /* ServerConfigBuilder.swift */; };
@@ -197,6 +198,7 @@
 		3B20A9AF2245228600E3D7AE /* CountlyPersistency.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyPersistency.m; sourceTree = "<group>"; };
 		3B20A9B12245228700E3D7AE /* CountlyConsentManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyConsentManager.h; sourceTree = "<group>"; };
 		4C3A4C9F2EB4C40000827FEA /* EventThreadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventThreadTests.swift; sourceTree = "<group>"; };
+		96095A5E2F20105600FDE933 /* TouchDelegatingView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TouchDelegatingView.h; sourceTree = "<group>"; };
 		962485B92D9E971400FA3C20 /* TestUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestUtils.swift; sourceTree = "<group>"; };
 		96329DDF2D9426F300BFD641 /* CountlyServerConfigTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyServerConfigTests.swift; sourceTree = "<group>"; };
 		96329DE12D94299D00BFD641 /* ServerConfigBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerConfigBuilder.swift; sourceTree = "<group>"; };
@@ -271,6 +273,7 @@
 		3B20A9782245225A00E3D7AE = {
 			isa = PBXGroup;
 			children = (
+				96095A5E2F20105600FDE933 /* TouchDelegatingView.h */,
 				9691B7662F1FA35C00A6ADCB /* CountlyOverlayWindow.m */,
 				9691B7642F1FA35500A6ADCB /* CountlyOverlayWindow.h */,
 				96F80BE82F17D06F006B4F71 /* CountlyWebViewController.m */,
@@ -385,6 +388,7 @@
 				39BDF7572CC7CA870066DE7C /* CountlyFeedbacks.h in Headers */,
 				3B20A9D32245228700E3D7AE /* CountlyPushNotifications.h in Headers */,
 				3B20A9C42245228700E3D7AE /* CountlyUserDetails.h in Headers */,
+				96095A5F2F20105600FDE933 /* TouchDelegatingView.h in Headers */,
 				965A2E9D2DDDCDAC00F28F6A /* CountlyHealthTracker.h in Headers */,
 				3961C6B72C6633C000DD38BA /* PassThroughBackgroundView.h in Headers */,
 				3B20A9CA2245228700E3D7AE /* CountlyConfig.h in Headers */,
