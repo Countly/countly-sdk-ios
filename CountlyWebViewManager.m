@@ -3,7 +3,7 @@
 // This code is provided under the MIT License.
 //
 // Please visit www.count.ly for more information.
-
+#if (TARGET_OS_IOS)
 #import "CountlyWebViewManager.h"
 #import "CountlyWebViewController.h"
 #import "PassThroughBackgroundView.h"
@@ -11,7 +11,6 @@
 #import "CountlyOverlayWindow.h"
 
 //TODO: improve logging, check edge cases
-#if (TARGET_OS_IOS)
 @interface CountlyWebViewManager()
 
 @property (nonatomic, strong) PassThroughBackgroundView *backgroundView;
