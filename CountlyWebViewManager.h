@@ -28,6 +28,6 @@ typedef NS_ENUM(NSUInteger, AnimationType) {
                 dismissBlock:(void(^ __nullable)(void))dismissBlock;
 
 #else
-@interface CountlyWebViewManager
+@interface CountlyWebViewManager : NSObject
 #endif
 @end
