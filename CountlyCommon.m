@@ -338,10 +338,12 @@ void CountlyPrint(NSString *stringToPrint)
     }
 }
 
+#if (TARGET_OS_IOS)
 - (bool) hasTopNotch:(UIEdgeInsets)safeArea
 {
     return safeArea.top >= 44;
 }
+#endif
 
 - (CGSize)getWindowSize{
 #if (TARGET_OS_IOS)
