@@ -91,6 +91,8 @@
 		965A2E9D2DDDCDAC00F28F6A /* CountlyHealthTracker.h in Headers */ = {isa = PBXBuildFile; fileRef = 965A2E9A2DDDCDAC00F28F6A /* CountlyHealthTracker.h */; };
 		9673567F2EC60CD400C742D8 /* TestURLProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9673567E2EC60CD400C742D8 /* TestURLProtocol.swift */; };
 		968426812BF2302C007B303E /* CountlyConnectionManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 968426802BF2302C007B303E /* CountlyConnectionManagerTests.swift */; };
+		9691B7652F1FA35500A6ADCB /* CountlyOverlayWindow.h in Headers */ = {isa = PBXBuildFile; fileRef = 9691B7642F1FA35500A6ADCB /* CountlyOverlayWindow.h */; };
+		9691B7672F1FA35C00A6ADCB /* CountlyOverlayWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = 9691B7662F1FA35C00A6ADCB /* CountlyOverlayWindow.m */; };
 		969E5BCE2ECC4D3200AB406A /* CountlyConsentManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 969E5BCD2ECC4D2C00AB406A /* CountlyConsentManagerTests.swift */; };
 		96C05AB02E82936F0028A976 /* CountlyHealthTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96C05AAF2E8293630028A976 /* CountlyHealthTrackerTests.swift */; };
 		96DA74BB2D9FB687006FA6FF /* MockFeedbackWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96DA74BA2D9FB687006FA6FF /* MockFeedbackWidget.swift */; };
@@ -204,6 +206,8 @@
 		96681A9B2D97D9B300A4845A /* CountlyTests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = CountlyTests.xctestplan; sourceTree = "<group>"; };
 		9673567E2EC60CD400C742D8 /* TestURLProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestURLProtocol.swift; sourceTree = "<group>"; };
 		968426802BF2302C007B303E /* CountlyConnectionManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyConnectionManagerTests.swift; sourceTree = "<group>"; };
+		9691B7642F1FA35500A6ADCB /* CountlyOverlayWindow.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyOverlayWindow.h; sourceTree = "<group>"; };
+		9691B7662F1FA35C00A6ADCB /* CountlyOverlayWindow.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyOverlayWindow.m; sourceTree = "<group>"; };
 		969E5BCD2ECC4D2C00AB406A /* CountlyConsentManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyConsentManagerTests.swift; sourceTree = "<group>"; };
 		96C05AAF2E8293630028A976 /* CountlyHealthTrackerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyHealthTrackerTests.swift; sourceTree = "<group>"; };
 		96DA74BA2D9FB687006FA6FF /* MockFeedbackWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockFeedbackWidget.swift; sourceTree = "<group>"; };
@@ -267,6 +271,8 @@
 		3B20A9782245225A00E3D7AE = {
 			isa = PBXGroup;
 			children = (
+				9691B7662F1FA35C00A6ADCB /* CountlyOverlayWindow.m */,
+				9691B7642F1FA35500A6ADCB /* CountlyOverlayWindow.h */,
 				96F80BE82F17D06F006B4F71 /* CountlyWebViewController.m */,
 				96F80BE62F17D066006B4F71 /* CountlyWebViewController.h */,
 				96681A9B2D97D9B300A4845A /* CountlyTests.xctestplan */,
@@ -398,6 +404,7 @@
 				D219374B248AC71C00E5798B /* CountlyPerformanceMonitoring.h in Headers */,
 				39911B672B457DBB00AC053C /* Resettable.h in Headers */,
 				3B20A9BC2245228700E3D7AE /* CountlyCommon.h in Headers */,
+				9691B7652F1FA35500A6ADCB /* CountlyOverlayWindow.h in Headers */,
 				399117D42C69F73D00DC4C66 /* CountlyContentBuilder.h in Headers */,
 				39527E182B5FD54C00EE5D7B /* CountlyAPMConfig.h in Headers */,
 				3B20A9C52245228700E3D7AE /* CountlyCrashReporter.h in Headers */,
@@ -550,6 +557,7 @@
 				39924ED02BEBD0D400139F91 /* CountlyCrashesConfig.m in Sources */,
 				3B20A9CE2245228700E3D7AE /* CountlyCrashReporter.m in Sources */,
 				3B20A9D42245228700E3D7AE /* CountlyPersistency.m in Sources */,
+				9691B7672F1FA35C00A6ADCB /* CountlyOverlayWindow.m in Sources */,
 				3B20A9B32245228700E3D7AE /* CountlyNotificationService.m in Sources */,
 				3948A8572BAC2E7D002D09AA /* CountlySDKLimitsConfig.m in Sources */,
 				D2CFEF982545FBE80026B044 /* CountlyFeedbacksInternal.m in Sources */,
