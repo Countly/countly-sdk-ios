@@ -5,11 +5,11 @@
 // Please visit www.count.ly for more information.
 //
 #if (TARGET_OS_IOS)
-#import "CountlyWebViewController.h"
 #import "TouchDelegatingView.h"
-
+#endif
+#import "CountlyWebViewController.h"
 @implementation CountlyWebViewController
-
+#if (TARGET_OS_IOS)
 - (BOOL)prefersStatusBarHidden {
     return CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == IMMERSIVE ? YES : NO;
 }
@@ -78,8 +78,5 @@
         return NO;
     }
 }
-
-
-
-@end
 #endif
+@end

@@ -14,11 +14,13 @@
 // Please visit www.count.ly for more information.
 
 #if (TARGET_OS_IOS)
-#import "CountlyOverlayWindow.h"
 #import "PassThroughBackgroundView.h"
 #import "CountlyWebViewController.h"
+#endif
+#import "CountlyOverlayWindow.h"
 
 @implementation CountlyOverlayWindow
+#if (TARGET_OS_IOS)
 
 - (instancetype)init {
     BOOL initialized = NO;
@@ -72,6 +74,5 @@
     }
     return [super hitTest:point withEvent:event];
 }
-
-@end
 #endif
+@end
