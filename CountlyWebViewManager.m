@@ -3,7 +3,7 @@
 // This code is provided under the MIT License.
 //
 // Please visit www.count.ly for more information.
-#if (TARGET_OS_IOS || TARGET_OS_IPHONE)
+#if (TARGET_OS_IOS)
   #import "CountlyOverlayWindow.h"
   #import "CountlyWebViewController.h"
   #import "PassThroughBackgroundView.h"
@@ -14,7 +14,7 @@
 
 // TODO: improve logging, check edge cases
 @interface CountlyWebViewManager ()
-#if (TARGET_OS_IOS || TARGET_OS_IPHONE)
+#if (TARGET_OS_IOS)
 @property(nonatomic, strong) PassThroughBackgroundView *backgroundView;
 @property(nonatomic, copy) void (^dismissBlock)(void);
 @property(nonatomic, copy) void (^appearBlock)(void);
@@ -27,7 +27,7 @@
 @end
 
 @implementation CountlyWebViewManager
-#if (TARGET_OS_IOS || TARGET_OS_IPHONE)
+#if (TARGET_OS_IOS)
 - (void)createWebViewWithURL:(NSURL *)url frame:(CGRect)frame appearBlock:(void (^__nullable)(void))appearBlock dismissBlock:(void (^__nullable)(void))dismissBlock
 {
   self.dismissBlock = dismissBlock;
