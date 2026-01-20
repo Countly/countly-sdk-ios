@@ -21,23 +21,30 @@
 @implementation CountlyOverlayWindow
 
 - (instancetype)init {
-    UIWindowScene *currentWindowScene = nil;
-
-    for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
-        if ([scene isKindOfClass:[UIWindowScene class]]) {
-            currentWindowScene = (UIWindowScene *)scene;
-            break;
-        }
-    }
-    
     BOOL initialized = NO;
 
-    if (currentWindowScene) {
-        if(self = [super initWithWindowScene:currentWindowScene]){
+    if (@available(iOS 13.0, *)) {
+        UIWindowScene *currentWindowScene = nil;
+        for (UIScene *s in UIApplication.sharedApplication.connectedScenes) {
+             if (s.activationState == UISceneActivationStateForegroundActive &&
+                 [s isKindOfClass:UIWindowScene.class]) {
+                 currentWindowScene = (UIWindowScene *)s;
+                 break;
+             }
+         }
+        
+        if (currentWindowScene) {
+            if(self = [super initWithWindowScene:currentWindowScene]){
+                self.frame = currentWindowScene.coordinateSpace.bounds;
+                initialized = YES;
+            }
+        }
+    }
+
+    if (!initialized){
+        if (self = [super initWithFrame:UIScreen.mainScreen.bounds]){
             initialized = YES;
         }
-    } else if (self = [super initWithFrame:UIScreen.mainScreen.bounds]){
-        initialized = YES;
     }
     
     if(initialized){
@@ -52,8 +59,15 @@
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
     if([self.rootViewController isKindOfClass:CountlyWebViewController.self]){
         CountlyWebViewController* vc = (CountlyWebViewController*)self.rootViewController;
-        if(vc.contentView && vc.contentView.hidden){
+        if(!vc.contentView || vc.contentView.hidden || vc.contentView.alpha < 0.01){
             return nil;
+        }
+        
+        if(vc.contentView){
+            CGPoint pointInContent = [self convertPoint:point toView:vc.contentView];
+            if (![vc.contentView pointInside:pointInContent withEvent:event]) {
+                return nil;
+            }
         }
     }
     return [super hitTest:point withEvent:event];
