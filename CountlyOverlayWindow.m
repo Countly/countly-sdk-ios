@@ -16,12 +16,13 @@
 #if (TARGET_OS_IOS)
 #import "PassThroughBackgroundView.h"
 #import "CountlyWebViewController.h"
-#endif
 #import "CountlyOverlayWindow.h"
 
-@implementation CountlyOverlayWindow
-#if (TARGET_OS_IOS)
+#endif
 
+
+#if (TARGET_OS_IOS)
+@implementation CountlyOverlayWindow
 - (instancetype)init {
     BOOL initialized = NO;
 
@@ -74,5 +75,5 @@
     }
     return [super hitTest:point withEvent:event];
 }
-#endif
 @end
+#endif
