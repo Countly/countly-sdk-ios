@@ -1,19 +1,9 @@
+// CountlyWebViewController.h
 //
-//  CountlyWebViewController.h
-//  Countly
+// This code is provided under the MIT License.
 //
-//  Created by Arif Burak Demiray on 14.01.2026.
-//  Copyright © 2026 Countly. All rights reserved.
-//
+// Please visit www.count.ly for more information.
 
-
-//
-//  CountlyWebViewController.h
-//  CountlyTestApp-iOS
-//
-//  Created by Arif Burak Demiray on 19.11.2025.
-//  Copyright © 2025 Countly. All rights reserved.
-//
 #if (TARGET_OS_IOS)
 #import <UIKit/UIKit.h>
 #endif

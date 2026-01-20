@@ -1,9 +1,8 @@
+// CountlyWebViewController.m
 //
-//  CountlyWebViewController.m
-//  Countly
+// This code is provided under the MIT License.
 //
-//  Created by Arif Burak Demiray on 14.01.2026.
-//  Copyright © 2026 Countly. All rights reserved.
+// Please visit www.count.ly for more information.
 //
 #import "CountlyWebViewController.h"
 #import "TouchDelegatingView.h"

@@ -1,10 +1,9 @@
+// TouchDelegatingView.h
 //
-//  TouchDelegatingView.h
-//  Countly
+// This code is provided under the MIT License.
 //
-//  Created by Arif Burak Demiray on 20.01.2026.
-//  Copyright © 2026 Countly. All rights reserved.
-//
+// Please visit www.count.ly for more information.
+
 @interface TouchDelegatingView : UIView
 
 @property (nonatomic, weak) UIView *touchDelegate;
