@@ -55,7 +55,9 @@
     WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
     configuration.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
     WKWebView *webView = [[WKWebView alloc] initWithFrame:frame configuration:configuration];
-    webView.scrollView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+    if (@available(iOS 11.0, *)) {
+        webView.scrollView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+    }
     [self configureWebView:webView];
     
     NSURLRequest *request = [NSURLRequest requestWithURL:url];

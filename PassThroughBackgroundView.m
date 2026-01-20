@@ -14,11 +14,9 @@
 - (instancetype)initWithFrame:(CGRect)frame {
 
     self = [super initWithFrame:frame];
-#if (TARGET_OS_IOS)
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleScreenChange) name:UIDeviceOrientationDidChangeNotification object:nil];
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleScreenChange) name:UIScreenModeDidChangeNotification object:nil];
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleScreenChange) name:UIApplicationDidBecomeActiveNotification object:nil];
-#endif
     return self;
 }
 
