@@ -6,6 +6,8 @@
 
 #if (TARGET_OS_IOS)
 #import "CountlyOverlayWindow.h"
+#import "PassThroughBackgroundView.h"
+#import "CountlyWebViewController.h"
 
 @implementation CountlyOverlayWindow
 
@@ -16,6 +18,16 @@
         self.hidden = YES;
     }
     return self;
+}
+
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
+    if([self.rootViewController isKindOfClass:CountlyWebViewController.self]){
+        CountlyWebViewController* vc = (CountlyWebViewController*)self.rootViewController;
+        if(vc.contentView && vc.contentView.hidden){
+            return nil;
+        }
+    }
+    return [super hitTest:point withEvent:event];
 }
 
 @end

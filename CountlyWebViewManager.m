@@ -8,6 +8,7 @@
 #import "CountlyWebViewController.h"
 #import "PassThroughBackgroundView.h"
 #import "CountlyCommon.h"
+#import "CountlyOverlayWindow.h"
 
 //TODO: improve logging, check edge cases
 #if (TARGET_OS_IOS)
@@ -20,6 +21,7 @@
 @property (nonatomic, strong) NSDate *loadStartDate;
 @property (nonatomic) BOOL hasAppeared;
 @property (nonatomic, strong) CountlyWebViewController *presentingController;
+@property (nonatomic, strong) CountlyOverlayWindow *window;
 @end
 
 @implementation CountlyWebViewManager
@@ -32,9 +34,11 @@
     self.appearBlock = appearBlock;
     self.hasAppeared = NO;
     // TODO: keyWindow deprecation fix
+    _window = [CountlyOverlayWindow new];
     CountlyWebViewController *modal = [CountlyWebViewController new];
     modal.modalPresentationStyle = UIModalPresentationOverFullScreen;
     modal.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
+    _window.rootViewController = modal;
     UIViewController *rootViewController = UIApplication.sharedApplication.keyWindow.rootViewController;
     modal.modalPresentationCapturesStatusBarAppearance = YES;
     CGRect backgroundFrame = rootViewController.view.bounds;
@@ -42,7 +46,8 @@
     self.backgroundView.backgroundColor = [UIColor clearColor];
     self.backgroundView.hidden = YES;
     modal.contentView = self.backgroundView;
-    [rootViewController presentViewController:modal animated:NO completion:nil];
+    
+    _window.hidden = NO;
     self.presentingController = modal;
 
     WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
@@ -424,6 +429,7 @@
         if (!self.backgroundView.webView) {
             return;
         }
+        self.window.hidden = YES;
         self.loadStartDate = nil;
         [self.loadTimeoutTimer invalidate];
         self.loadTimeoutTimer = nil;
@@ -437,8 +443,17 @@
         if (backgroundView) {
             [backgroundView removeFromSuperview];
         }
-        self.backgroundView = nil;
         [self.presentingController dismissViewControllerAnimated:NO completion:nil];
+        [self.backgroundView removeFromSuperview];
+        [self.window.rootViewController.view removeFromSuperview];
+        self.window.rootViewController = nil;
+        self.backgroundView = nil;
+        if (@available(iOS 13.0, *)) {
+            self.window.windowScene = nil;
+        } else {
+            // Fallback on earlier versions
+        }
+        self.window = nil;
     });
 }
 
