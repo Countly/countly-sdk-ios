@@ -5,16 +5,8 @@
 //  Created by Arif Burak Demiray on 14.01.2026.
 //  Copyright © 2026 Countly. All rights reserved.
 //
-
-
-//
-//  CountlyWebViewController.m
-//  CountlyTestApp-iOS
-//
-//  Created by Arif Burak Demiray on 19.11.2025.
-//  Copyright © 2025 Countly. All rights reserved.
-//
 #import "CountlyWebViewController.h"
+#import "TouchDelegatingView.h"
 
 @implementation CountlyWebViewController
 
@@ -27,12 +19,18 @@
 }
 
 - (void)loadView {
-    self.view = [[PassThroughBackgroundView alloc] initWithFrame:UIApplication.sharedApplication.keyWindow.rootViewController.view.bounds];
+    self.view = [[TouchDelegatingView alloc] initWithFrame:UIApplication.sharedApplication.keyWindow.rootViewController.view.bounds];
 }
 
 - (void)viewDidLoad {
     [super viewDidLoad];
 
+    if ([self.view isKindOfClass:[TouchDelegatingView class]]) {
+        TouchDelegatingView *delegatingView = (TouchDelegatingView *)self.view;
+        delegatingView.touchDelegate = UIApplication.sharedApplication.keyWindow.rootViewController.view;
+    }
+
+    
     // Fully transparent controller background
     self.view.backgroundColor = [UIColor clearColor];
     self.view.insetsLayoutMarginsFromSafeArea = NO;
