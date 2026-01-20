@@ -5,9 +5,9 @@
 // Please visit www.count.ly for more information.
 
 #import "CountlyCommon.h"
-#import "CountlyWebViewManager.h"
 #if (TARGET_OS_IOS)
 #import <WebKit/WebKit.h>
+#import "CountlyWebViewManager.h"
 #endif
 
 CLYFeedbackWidgetType const CLYFeedbackWidgetTypeSurvey = @"survey";
