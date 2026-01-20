@@ -5,8 +5,8 @@
 // Please visit www.count.ly for more information.
 
 #import "CountlyCommon.h"
-#import "CountlyWebViewManager.h"
 #if (TARGET_OS_IOS)
+#import "CountlyWebViewManager.h"
 #import <WebKit/WebKit.h>
 #endif
 
