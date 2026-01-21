@@ -68,12 +68,18 @@ NSInteger const contentInitialDelay = 4;
     
     if(_isCurrentlyContentShown){
         CLY_LOG_I(@"%s a content is already shown, skipping" ,__FUNCTION__);
+        return;
     }
     
     [self enterContentZone:@[]];
 }
 
 - (void)enterContentZone:(NSArray<NSString *> *)tags {
+    if(_isCurrentlyContentShown){
+        CLY_LOG_I(@"%s a content is already shown, skipping" ,__FUNCTION__);
+        return;
+    }
+    
     [_minuteTimer invalidate];
     _minuteTimer = nil;
     
@@ -121,6 +127,7 @@ NSInteger const contentInitialDelay = 4;
     }
     if(_isCurrentlyContentShown){
         CLY_LOG_I(@"%s a content is already shown, skipping" ,__FUNCTION__);
+        return;
     }
     
     [self exitContentZone];
@@ -151,6 +158,12 @@ NSInteger const contentInitialDelay = 4;
 
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
         return;
+    
+    if(_isCurrentlyContentShown){
+        CLY_LOG_I(@"%s a content is already shown, skipping" ,__FUNCTION__);
+        return;
+    }
+    
     if ([self isRequestQueueLockedThreadSafe]) {
         return;
     }
