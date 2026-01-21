@@ -25,6 +25,16 @@
   return UIApplication.sharedApplication.keyWindow.rootViewController.preferredStatusBarStyle;
 }
 
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations
+{
+    return UIInterfaceOrientationMaskAll;
+}
+
+- (BOOL)shouldAutorotate
+{
+    return YES;
+}
+
 - (void)loadView
 {
   self.view = [[TouchDelegatingView alloc] initWithFrame:UIApplication.sharedApplication.keyWindow.rootViewController.view.bounds];
