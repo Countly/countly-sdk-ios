@@ -5,7 +5,6 @@
 // Please visit www.count.ly for more information.
 #import "CountlyOverlayWindow.h"
 #import "CountlyWebViewController.h"
-#import "PassThroughBackgroundView.h"
 
 #if (TARGET_OS_IOS)
 @implementation CountlyOverlayWindow

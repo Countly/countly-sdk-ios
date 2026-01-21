@@ -6,6 +6,7 @@
 //
 #import "CountlyWebViewController.h"
 #import "TouchDelegatingView.h"
+#import "PassThroughBackgroundView.h"
 
 #if (TARGET_OS_IOS)
 @implementation CountlyWebViewController
@@ -68,17 +69,21 @@
     UIEdgeInsets safeArea = self.view.safeAreaInsets;
 
     UIInterfaceOrientation orientation = self.view.window.windowScene.interfaceOrientation;
-
-    CGRect frame = self.contentView.webView.frame;
-    if (CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA || [self hasTopNotch:safeArea])
-    {
-      frame.origin.y += safeArea.top; // always respect notch if exists
-    }
-    if (orientation != UIInterfaceOrientationLandscapeLeft)
-    { // regardless of given safe area, if notch is in left act for it
-      frame.origin.x += MAX(safeArea.left, safeArea.right);
-    }
-    self.contentView.webView.frame = frame;
+      
+      if([self.contentView isKindOfClass:PassThroughBackgroundView.self]){
+          PassThroughBackgroundView* content = (PassThroughBackgroundView*)self.contentView;
+          CGRect frame = content.webView.frame;
+          if (CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA || [self hasTopNotch:safeArea])
+          {
+            frame.origin.y += safeArea.top; // always respect notch if exists
+          }
+          if (orientation != UIInterfaceOrientationLandscapeLeft)
+          { // regardless of given safe area, if notch is in left act for it
+            frame.origin.x += MAX(safeArea.left, safeArea.right);
+          }
+            content.webView.frame = frame;
+      }
+   
   }
 }
 
