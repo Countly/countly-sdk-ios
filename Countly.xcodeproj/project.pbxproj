@@ -553,6 +553,10 @@
 			buildActionMask = 2147483647;
 			files = (
 				3B20A9B92245228700E3D7AE /* Countly.m in Sources */,
+                3961C6B92C6633C000DD38BA /* PassThroughBackgroundView.m in Sources */,
+                96F80BE92F17D06F006B4F71 /* CountlyWebViewController.m in Sources */,
+                9691B7672F1FA35C00A6ADCB /* CountlyOverlayWindow.m in Sources */,
+                3961C6BA2C6633C000DD38BA /* CountlyWebViewManager.m in Sources */,
 				D249BF5F254D3D180058A6C2 /* CountlyFeedbackWidget.m in Sources */,
 				3B20A9BA2245228700E3D7AE /* CountlyEvent.m in Sources */,
 				3B20A9B52245228700E3D7AE /* CountlyCommon.m in Sources */,
@@ -561,12 +565,10 @@
 				39924ED02BEBD0D400139F91 /* CountlyCrashesConfig.m in Sources */,
 				3B20A9CE2245228700E3D7AE /* CountlyCrashReporter.m in Sources */,
 				3B20A9D42245228700E3D7AE /* CountlyPersistency.m in Sources */,
-				9691B7672F1FA35C00A6ADCB /* CountlyOverlayWindow.m in Sources */,
 				3B20A9B32245228700E3D7AE /* CountlyNotificationService.m in Sources */,
 				3948A8572BAC2E7D002D09AA /* CountlySDKLimitsConfig.m in Sources */,
 				D2CFEF982545FBE80026B044 /* CountlyFeedbacksInternal.m in Sources */,
 				1A3110632A7128CD001CB507 /* CountlyViewData.m in Sources */,
-				3961C6B92C6633C000DD38BA /* PassThroughBackgroundView.m in Sources */,
 				399117D32C69F73D00DC4C66 /* CountlyContentBuilderInternal.m in Sources */,
 				39BDF7592CC7CA920066DE7C /* CountlyFeedbacks.m in Sources */,
 				1A423E9E2A271E46008C4757 /* CountlyRCData.m in Sources */,
@@ -584,11 +586,9 @@
 				3B20A9C92245228700E3D7AE /* CountlyUserDetails.m in Sources */,
 				399117D12C69F73D00DC4C66 /* CountlyContentBuilder.m in Sources */,
 				3B20A9D12245228700E3D7AE /* CountlyConfig.m in Sources */,
-				3961C6BA2C6633C000DD38BA /* CountlyWebViewManager.m in Sources */,
 				1A9027FE2AB197B50044EBCF /* CountlyExperimentInformation.m in Sources */,
 				39924ED62BEBD20F00139F91 /* CountlyCrashData.m in Sources */,
 				3B20A9C82245228700E3D7AE /* CountlyViewTrackingInternal.m in Sources */,
-				96F80BE92F17D06F006B4F71 /* CountlyWebViewController.m in Sources */,
 				3B20A9D22245228700E3D7AE /* CountlyLocationManager.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
