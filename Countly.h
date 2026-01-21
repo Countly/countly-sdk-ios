@@ -107,6 +107,14 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)recordMetrics:(NSDictionary<NSString *, NSString *> *_Nullable)metricsOverride;
 
+/**
+ * To add new header key/value pairs or override existing ones.
+ * A nil or empty map is ignored. nil or empty keys, as well as nil values, are ignored.
+ * Subsequent requests (including those created after overriding) will contain the updated header set.
+ * @param customHeaderValues map of header key/value pairs to add/override
+ */
+- (void)addCustomNetworkRequestHeaders:(NSDictionary<NSString *, NSString *> *_Nullable)customHeaderValues;
+
 
 #pragma mark - Sessions
 
