@@ -338,46 +338,49 @@ void CountlyPrint(NSString *stringToPrint)
     }
 }
 
-- (CGSize)getWindowSize {
+#if (TARGET_OS_IOS)
+- (bool) hasTopNotch:(UIEdgeInsets)safeArea
+{
+    return safeArea.top >= 44;
+}
+#endif
+
+- (CGSize)getWindowSize{
 #if (TARGET_OS_IOS)
     UIWindow *window = nil;
 
     if (@available(iOS 13.0, *)) {
-        for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+        for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
             if ([scene isKindOfClass:[UIWindowScene class]]) {
                 window = ((UIWindowScene *)scene).windows.firstObject;
                 break;
             }
         }
     } else {
-        window = [[UIApplication sharedApplication].delegate window];
+        window = UIApplication.sharedApplication.delegate.window;
     }
 
     if (!window) return CGSizeZero;
-    
-    UIEdgeInsets safeArea = UIEdgeInsetsZero;
-    CGFloat screenScale = [UIScreen mainScreen].scale;
+
+    CGSize size = window.bounds.size;
+
     if (@available(iOS 11.0, *)) {
-        safeArea = window.safeAreaInsets;
-        safeArea.left /= screenScale;
-        safeArea.bottom /= screenScale;
-        safeArea.right /= screenScale;
-    }
-    
-    UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
-    BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
-    
-    CGSize size = CGSizeMake(window.bounds.size.width, window.bounds.size.height);
-    
-    if(!isLandscape){
-        size.width -= safeArea.left + safeArea.right;
-        size.height -= safeArea.top + safeArea.bottom;
+        UIEdgeInsets safeArea = window.safeAreaInsets;
+        if([self hasTopNotch:safeArea] || CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA){
+            size.height -= (safeArea.top); // always respect notch
+        }
+        if(CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA){
+            size.height -= safeArea.bottom;
+        }
+        size.width -= MAX(safeArea.left, safeArea.right); // regardles of given safe area, act for cutout
     }
 
     return size;
-#endif
+#else
     return CGSizeZero;
+#endif
 }
+
 
 @end
 
