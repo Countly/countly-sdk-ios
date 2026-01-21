@@ -95,6 +95,7 @@
 		9691B7652F1FA35500A6ADCB /* CountlyOverlayWindow.h in Headers */ = {isa = PBXBuildFile; fileRef = 9691B7642F1FA35500A6ADCB /* CountlyOverlayWindow.h */; };
 		9691B7672F1FA35C00A6ADCB /* CountlyOverlayWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = 9691B7662F1FA35C00A6ADCB /* CountlyOverlayWindow.m */; };
 		969E5BCE2ECC4D3200AB406A /* CountlyConsentManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 969E5BCD2ECC4D2C00AB406A /* CountlyConsentManagerTests.swift */; };
+		96AAC90A2F20B7790021CA5A /* TouchDelegatingView.m in Sources */ = {isa = PBXBuildFile; fileRef = 96AAC9092F20B7790021CA5A /* TouchDelegatingView.m */; };
 		96C05AB02E82936F0028A976 /* CountlyHealthTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96C05AAF2E8293630028A976 /* CountlyHealthTrackerTests.swift */; };
 		96DA74BB2D9FB687006FA6FF /* MockFeedbackWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96DA74BA2D9FB687006FA6FF /* MockFeedbackWidget.swift */; };
 		96E680422BFF89AC0091E105 /* CountlyCrashReporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96E680412BFF89AC0091E105 /* CountlyCrashReporterTests.swift */; };
@@ -211,6 +212,7 @@
 		9691B7642F1FA35500A6ADCB /* CountlyOverlayWindow.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyOverlayWindow.h; sourceTree = "<group>"; };
 		9691B7662F1FA35C00A6ADCB /* CountlyOverlayWindow.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyOverlayWindow.m; sourceTree = "<group>"; };
 		969E5BCD2ECC4D2C00AB406A /* CountlyConsentManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyConsentManagerTests.swift; sourceTree = "<group>"; };
+		96AAC9092F20B7790021CA5A /* TouchDelegatingView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TouchDelegatingView.m; sourceTree = "<group>"; };
 		96C05AAF2E8293630028A976 /* CountlyHealthTrackerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyHealthTrackerTests.swift; sourceTree = "<group>"; };
 		96DA74BA2D9FB687006FA6FF /* MockFeedbackWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockFeedbackWidget.swift; sourceTree = "<group>"; };
 		96E680412BFF89AC0091E105 /* CountlyCrashReporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyCrashReporterTests.swift; sourceTree = "<group>"; };
@@ -273,6 +275,7 @@
 		3B20A9782245225A00E3D7AE = {
 			isa = PBXGroup;
 			children = (
+				96AAC9092F20B7790021CA5A /* TouchDelegatingView.m */,
 				96095A5E2F20105600FDE933 /* TouchDelegatingView.h */,
 				9691B7662F1FA35C00A6ADCB /* CountlyOverlayWindow.m */,
 				9691B7642F1FA35500A6ADCB /* CountlyOverlayWindow.h */,
@@ -552,11 +555,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				96AAC90A2F20B7790021CA5A /* TouchDelegatingView.m in Sources */,
 				3B20A9B92245228700E3D7AE /* Countly.m in Sources */,
-                3961C6B92C6633C000DD38BA /* PassThroughBackgroundView.m in Sources */,
-                96F80BE92F17D06F006B4F71 /* CountlyWebViewController.m in Sources */,
-                9691B7672F1FA35C00A6ADCB /* CountlyOverlayWindow.m in Sources */,
-                3961C6BA2C6633C000DD38BA /* CountlyWebViewManager.m in Sources */,
+				3961C6B92C6633C000DD38BA /* PassThroughBackgroundView.m in Sources */,
+				96F80BE92F17D06F006B4F71 /* CountlyWebViewController.m in Sources */,
+				9691B7672F1FA35C00A6ADCB /* CountlyOverlayWindow.m in Sources */,
+				3961C6BA2C6633C000DD38BA /* CountlyWebViewManager.m in Sources */,
 				D249BF5F254D3D180058A6C2 /* CountlyFeedbackWidget.m in Sources */,
 				3B20A9BA2245228700E3D7AE /* CountlyEvent.m in Sources */,
 				3B20A9B52245228700E3D7AE /* CountlyCommon.m in Sources */,

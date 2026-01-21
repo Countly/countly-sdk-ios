@@ -3,12 +3,11 @@
 // This code is provided under the MIT License.
 //
 // Please visit www.count.ly for more information.
+#import "CountlyOverlayWindow.h"
+#import "CountlyWebViewController.h"
+#import "PassThroughBackgroundView.h"
 
 #if (TARGET_OS_IOS)
-  #import "CountlyOverlayWindow.h"
-  #import "CountlyWebViewController.h"
-  #import "PassThroughBackgroundView.h"
-
 @implementation CountlyOverlayWindow
 - (instancetype)init
 {

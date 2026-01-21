@@ -4,10 +4,10 @@
 //
 // Please visit www.count.ly for more information.
 //
-#if (TARGET_OS_IOS)
-  #import "CountlyWebViewController.h"
-  #import "TouchDelegatingView.h"
+#import "CountlyWebViewController.h"
+#import "TouchDelegatingView.h"
 
+#if (TARGET_OS_IOS)
 @implementation CountlyWebViewController
 - (BOOL)prefersStatusBarHidden
 {

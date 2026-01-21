@@ -4,31 +4,15 @@
 //
 // Please visit www.count.ly for more information.
 #if (TARGET_OS_IOS)
-#import <UIKit/UIKit.h>
+  #import <UIKit/UIKit.h>
+#endif
 
-@interface TouchDelegatingView : UIView
+#import "CountlyCommon.h"
 
-@property (nonatomic, weak) UIView *touchDelegate;
-
-@end
-
-
-@implementation TouchDelegatingView
-
-- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
-{
-    UIView *view = [super hitTest:point withEvent:event];
-    if (!view) {
-        return nil;
-    }
-
-    if (view != self || !self.touchDelegate) {
-        return view;
-    }
-
-    CGPoint convertedPoint = [self.touchDelegate convertPoint:point fromView:self];
-    return [self.touchDelegate hitTest:convertedPoint withEvent:event];
-}
-
+NS_ASSUME_NONNULL_BEGIN
+#if (TARGET_OS_IOS)
+@interface                         TouchDelegatingView : UIView
+@property(nonatomic, weak) UIView *touchDelegate;
 @end
 #endif
+NS_ASSUME_NONNULL_END

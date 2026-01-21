@@ -5,12 +5,11 @@
 // Please visit www.count.ly for more information.
 #import "CountlyWebViewManager.h"
 #import "CountlyCommon.h"
+#import "CountlyOverlayWindow.h"
+#import "CountlyWebViewController.h"
 #import "PassThroughBackgroundView.h"
 
 #if (TARGET_OS_IOS)
-  #import "CountlyOverlayWindow.h"
-  #import "CountlyWebViewController.h"
-
 // TODO: improve logging, check edge cases
 @interface CountlyWebViewManager ()
 
