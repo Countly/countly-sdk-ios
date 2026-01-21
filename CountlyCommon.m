@@ -718,7 +718,7 @@ NSString* CountlyJSONFromObject(id object)
         
         if ([value isKindOfClass:[NSNumber class]] ||
             [value isKindOfClass:[NSString class]] ||
-            ([value isKindOfClass:[NSArray class]] && (value = [value cly_filterSupportedDataTypes]))) {
+            ([value isKindOfClass:[NSArray class]] && (value = [(NSArray *)value cly_filterSupportedDataTypes]))) {
             [filteredDictionary setObject:value forKey:key];
         } else {
             CLY_LOG_W(@"%s, Removed invalid type for key %@: %@", __FUNCTION__, key, [value class]);

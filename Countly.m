@@ -1531,4 +1531,9 @@ static dispatch_once_t onceToken;
     return CountlyRemoteConfig.sharedInstance;
 }
 
+- (CountlyUserDetails *) userProfile
+{
+    return CountlyUserDetails.sharedInstance;
+}
+
 @end
