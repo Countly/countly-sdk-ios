@@ -218,6 +218,7 @@
     }
 
     if (self.hasAppeared) return;
+    [self.presentingController updatePlacementRespectToSafeAreas];
     self.hasAppeared = YES;
     dispatch_async(dispatch_get_main_queue(), ^{
         self.backgroundView.hidden = NO;
