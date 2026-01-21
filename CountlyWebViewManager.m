@@ -5,15 +5,11 @@
 // Please visit www.count.ly for more information.
 #import "CountlyWebViewManager.h"
 #import "CountlyCommon.h"
+#import "PassThroughBackgroundView.h"
 
 #if (TARGET_OS_IOS)
-@class PassThroughBackgroundView;
-@class CountlyWebViewController;
-@class CountlyOverlayWindow;
-
   #import "CountlyOverlayWindow.h"
   #import "CountlyWebViewController.h"
-  #import "PassThroughBackgroundView.h"
 
 // TODO: improve logging, check edge cases
 @interface CountlyWebViewManager ()
@@ -26,13 +22,10 @@
 @property(nonatomic) BOOL                              hasAppeared;
 @property(nonatomic, strong) CountlyWebViewController *presentingController;
 @property(nonatomic, strong) CountlyOverlayWindow     *window;
-#else
-@interface CountlyWebViewManager ()
-#endif
 @end
 
 @implementation CountlyWebViewManager
-#if (TARGET_OS_IOS)
+  #if (TARGET_OS_IOS)
 - (void)createWebViewWithURL:(NSURL *)url frame:(CGRect)frame appearBlock:(void (^__nullable)(void))appearBlock dismissBlock:(void (^__nullable)(void))dismissBlock
 {
   self.dismissBlock = dismissBlock;
@@ -552,5 +545,6 @@
   CLY_LOG_I(@"%s Web view load timed out after 60s, closing", __FUNCTION__);
   [self closeWebView];
 }
-#endif
+  #endif
 @end
+#endif

@@ -1,11 +1,3 @@
-//
-//  CountlyOverlayWindow.m
-//  Countly
-//
-//  Created by Arif Burak Demiray on 20.01.2026.
-//  Copyright © 2026 Countly. All rights reserved.
-//
-
 // CountlyOverlayWindow.m
 //
 // This code is provided under the MIT License.
