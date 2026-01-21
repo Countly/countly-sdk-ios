@@ -284,6 +284,9 @@ static dispatch_once_t onceToken;
     if(config.content.getZoneTimerInterval){
         CountlyContentBuilderInternal.sharedInstance.zoneTimerInterval = config.content.getZoneTimerInterval;
     }
+    if(config.content.getWebViewDisplayOption){
+        CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption = config.content.getWebViewDisplayOption;
+    }
 #endif
     
     [CountlyPerformanceMonitoring.sharedInstance startWithConfig:config.apm];

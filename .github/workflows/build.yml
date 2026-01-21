@@ -21,26 +21,34 @@ jobs:
       matrix:
         env: 
           [
-            { os_version: 14, sdk: "macosx14.5" },
-            { os_version: 14, sdk: "iphoneos17.5" },
-            { os_version: 14, sdk: "appletvos17.5" },
-            { os_version: 14, sdk: "watchos10.5" },
-            { os_version: 14, sdk: "xros1.2" },
-            { os_version: 13, sdk: "iphoneos17.2" },
-            { os_version: 13, sdk: "macosx14.2" },
-            { os_version: 13, sdk: "appletvos17.2" },
-            { os_version: 13, sdk: "watchos10.2" },
-            { os_version: 13, sdk: "xros1.0" },
-            { os_version: 15, sdk: "macosx15.5" },
-            { os_version: 15, sdk: "iphoneos18.5" }, 
-            { os_version: 15, sdk: "appletvos18.5" }, 
-            { os_version: 15, sdk: "watchos11.5" },  
-            { os_version: 15, sdk: "xros2.5" }, 
+            { os_version: 14, sdk: "macosx14.5", xcode: "15.4" },
+            { os_version: 14, sdk: "iphoneos17.5", xcode: "15.4"},
+            { os_version: 14, sdk: "appletvos17.5", xcode: "15.4"},
+            { os_version: 14, sdk: "watchos10.5", xcode: "15.4" },
+            { os_version: 14, sdk: "xros1.2", xcode: "15.4" },
+            { os_version: 14, sdk: "iphoneos17.2", xcode: "15.2" },
+            { os_version: 14, sdk: "macosx14.2", xcode: "15.2" },
+            { os_version: 14, sdk: "appletvos17.2", xcode: "15.2" },
+            { os_version: 14, sdk: "watchos10.2", xcode: "15.2" },
+            { os_version: 14, sdk: "xros1.0", xcode: "15.2" },
+            { os_version: 15, sdk: "macosx15.5", xcode: "16.4" },
+            { os_version: 15, sdk: "iphoneos18.5", xcode: "16.4" }, 
+            { os_version: 15, sdk: "appletvos18.5", xcode: "16.4" }, 
+            { os_version: 15, sdk: "watchos11.5", xcode: "16.4" },  
+            { os_version: 15, sdk: "xros2.5", xcode: "16.4" },
+            { os_version: 26, sdk: "macosx26.2", xcode: "26.2"},
+            { os_version: 26, sdk: "iphoneos26.2", xcode: "26.2"},
+            { os_version: 26, sdk: "appletvos26.2", xcode: "26.2"},
+            { os_version: 26, sdk: "watchos26.2", xcode: "26.2"},
+            { os_version: 26, sdk: "xros26.2", xcode: "26.2"}
           ]
     steps:
       # To check the github context
       - name: Checkout SDK code
         uses: actions/checkout@v4
+
+      - name: Set up Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_${{ matrix.env.xcode }}.app
     
       - name: Build for the sdk ${{ matrix.env.sdk }} on macOS ${{ matrix.env.os_version }}
         run: xcodebuild -project Countly.xcodeproj build -sdk ${{ matrix.env.sdk }}
