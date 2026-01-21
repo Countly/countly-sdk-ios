@@ -19,6 +19,11 @@
   return CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == IMMERSIVE ? YES : NO;
 }
 
+- (UIStatusBarStyle)preferredStatusBarStyle
+{
+  return UIApplication.sharedApplication.keyWindow.rootViewController.preferredStatusBarStyle;
+}
+
 - (void)loadView
 {
   self.view = [[TouchDelegatingView alloc] initWithFrame:UIApplication.sharedApplication.keyWindow.rootViewController.view.bounds];

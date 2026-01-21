@@ -7,6 +7,10 @@
   #import "CountlyOverlayWindow.h"
   #import "CountlyWebViewController.h"
   #import "PassThroughBackgroundView.h"
+
+@class PassThroughBackgroundView;
+@class CountlyWebViewController;
+@class CountlyOverlayWindow;
 #endif
 
 #import "CountlyCommon.h"
