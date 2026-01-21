@@ -3,22 +3,21 @@
 // This code is provided under the MIT License.
 //
 // Please visit www.count.ly for more information.
+#import "CountlyWebViewManager.h"
+#import "CountlyCommon.h"
+
 #if (TARGET_OS_IOS)
+@class PassThroughBackgroundView;
+@class CountlyWebViewController;
+@class CountlyOverlayWindow;
+
   #import "CountlyOverlayWindow.h"
   #import "CountlyWebViewController.h"
   #import "PassThroughBackgroundView.h"
 
-@class PassThroughBackgroundView;
-@class CountlyWebViewController;
-@class CountlyOverlayWindow;
-#endif
-
-#import "CountlyCommon.h"
-#import "CountlyWebViewManager.h"
-
 // TODO: improve logging, check edge cases
 @interface CountlyWebViewManager ()
-#if (TARGET_OS_IOS)
+
 @property(nonatomic, strong) PassThroughBackgroundView *backgroundView;
 @property(nonatomic, copy) void (^dismissBlock)(void);
 @property(nonatomic, copy) void (^appearBlock)(void);
@@ -27,6 +26,8 @@
 @property(nonatomic) BOOL                              hasAppeared;
 @property(nonatomic, strong) CountlyWebViewController *presentingController;
 @property(nonatomic, strong) CountlyOverlayWindow     *window;
+#else
+@interface CountlyWebViewManager ()
 #endif
 @end
 
