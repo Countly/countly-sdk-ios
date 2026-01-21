@@ -68,6 +68,7 @@ NSInteger const contentInitialDelay = 4;
     
     if(_isCurrentlyContentShown){
         CLY_LOG_I(@"%s a content is already shown, skipping" ,__FUNCTION__);
+        return;
     }
     
     [self enterContentZone:@[]];
@@ -121,6 +122,7 @@ NSInteger const contentInitialDelay = 4;
     }
     if(_isCurrentlyContentShown){
         CLY_LOG_I(@"%s a content is already shown, skipping" ,__FUNCTION__);
+        return;
     }
     
     [self exitContentZone];

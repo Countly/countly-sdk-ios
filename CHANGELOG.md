@@ -1,3 +1,6 @@
+## XX.XX.XX
+* Added safeguards to prevent showing multiple contents at the same time.
+
 ## 25.4.8
 * Mitigated an issue where "giveAllConsent" did not include metrics consent.
 
