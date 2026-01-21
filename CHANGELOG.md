@@ -1,4 +1,5 @@
 ## 25.4.9
+* Added a new config option disableViewRestartForManualRecording to disable auto close/restart behavior of manual views on app background/foreground actions.
 * Added a new config option "setWebviewDisplayOption: WebViewDisplayOption" to control how Content and Feedback Widgets are presented.
   * IMMERSIVE mode (default): Full-screen display (except cutouts).
   * SAFE_AREA mode: Omits status bar, navigation bar and cutouts when displaying WebView.
