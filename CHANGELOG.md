@@ -1,5 +1,5 @@
 ## XX.XX.XX
-* Mitigated an issue where another content was able to be shown while a content was already presented.
+* Mitigated an issue where multiple contents could have been displayed in parallel.
 
 ## 25.4.8
 * Mitigated an issue where "giveAllConsent" did not include metrics consent.
