@@ -233,10 +233,10 @@ static dispatch_once_t onceToken;
         CLY_LOG_D(@"%s, Queue is empty. All requests are processed. Total time taken: %.2f seconds", __FUNCTION__, elapsedTime);
 
         // Call global queue flush callback if set
-        if (self.globalQueueFlushCallback) {
+        if (_globalQueueFlushCallback) {
             BOOL allSuccess = !self.hasAnyRequestFailed;
             CLY_LOG_D(@"%s, Calling global queue flush callback with allSuccess: %d", __FUNCTION__, allSuccess);
-            self.globalQueueFlushCallback(allSuccess);
+            _globalQueueFlushCallback(allSuccess);
         }
 
         // Reset start time and failure flag for future queue processing
@@ -1329,16 +1329,8 @@ static dispatch_once_t onceToken;
 
 - (void)setGlobalQueueFlushCallback:(CLYQueueFlushCallback)callback
 {
-    if (callback)
-    {
-        CLY_LOG_D(@"%s, Setting global queue flush callback.", __FUNCTION__);
-    }
-    else
-    {
-        CLY_LOG_D(@"%s, Removing global queue flush callback.", __FUNCTION__);
-    }
-
-    self.globalQueueFlushCallback = callback;
+    CLY_LOG_D(@"%s, Setting global queue flush callback: %@", __FUNCTION__, callback ? @"provided" : @"nil");
+    _globalQueueFlushCallback = callback;
 }
 
 - (void)addToQueueWithCallback:(NSString *)queryString callback:(CLYRequestCallback)callback
