@@ -18,6 +18,8 @@
 
 @property (nonatomic, strong) NSDate *startTime;
 @property (nonatomic, assign) atomic_bool backoff;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, id> *internalRequestCallbacks;
+typedef void (^InternalRequestCallback)(NSString *response, BOOL success);
 
 
 @end
@@ -105,6 +107,7 @@ static dispatch_once_t onceToken;
         unsentSessionLength = 0.0;
         isSessionStarted = NO;
         atomic_init(&_backoff, NO);
+        _internalRequestCallbacks = [NSMutableDictionary dictionary];
     }
 
     return self;
@@ -120,6 +123,7 @@ static dispatch_once_t onceToken;
     onceToken = 0;
     s_sharedInstance = nil;
     isSessionStarted = NO;
+    [_internalRequestCallbacks removeAllObjects];
 }
 
 - (void)setHost:(NSString *)host
@@ -224,6 +228,10 @@ static dispatch_once_t onceToken;
         CLY_LOG_D(@"Queue is empty. All requests are processed. Total time taken: %.2f seconds", elapsedTime);
         // Reset start time for future queue processing
         self.startTime = nil;
+        InternalRequestCallback globalCallback = self.internalRequestCallbacks[@"global_request_callback"];
+        if(globalCallback){
+            globalCallback(@"",YES);
+        }
         return;
     }
     
@@ -252,10 +260,17 @@ static dispatch_once_t onceToken;
     NSString* queryString = firstItemInQueue;
     NSString* endPoint = kCountlyEndpointI;
     
-    NSString* overrideEndPoint = [self extractAndRemoveOverrideEndPoint:&queryString];
+    NSString* overrideEndPoint = [self extractAndRemoveParameter:&queryString parameter: kCountlyEndPointOverrideTag];
     if(overrideEndPoint) {
         endPoint = overrideEndPoint;
     }
+    
+    NSString* callbackID = [self extractAndRemoveParameter:&queryString parameter: @"&callback_id="];
+    InternalRequestCallback requestCallback;
+    if(callbackID){
+        requestCallback = self.internalRequestCallbacks[callbackID];
+    }
+    
     
     [CountlyCommon.sharedInstance startBackgroundTask];
 
@@ -328,6 +343,10 @@ static dispatch_once_t onceToken;
             if ([self isRequestSuccessful:response data:data])
             {
                 CLY_LOG_D(@"Request <%p> successfully completed.", request);
+                
+                if(requestCallback){
+                    requestCallback(@"", YES);
+                }
 
                 [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
 
@@ -345,6 +364,11 @@ static dispatch_once_t onceToken;
             else
             {
                 CLY_LOG_D(@"%s, request:[ <%p> ] failed! response:[ %@ ]", __FUNCTION__, request, [data cly_stringUTF8]);
+                
+                if(requestCallback){
+                    requestCallback(@"", NO);
+                }
+                
                 [CountlyHealthTracker.sharedInstance logFailedNetworkRequestWithStatusCode:((NSHTTPURLResponse*)response).statusCode errorResponse: [data cly_stringUTF8]];
                 [CountlyHealthTracker.sharedInstance saveState];
                 self.startTime = nil;
@@ -353,6 +377,10 @@ static dispatch_once_t onceToken;
         else
         {
             CLY_LOG_D(@"%s, request:[ <%p> ] failed! error:[ %@ ]", __FUNCTION__, request, error);
+            
+            if(requestCallback){
+                requestCallback(@"", NO);
+            }
 #if (TARGET_OS_WATCH)
             [CountlyPersistency.sharedInstance saveToFile];
 #endif
@@ -442,15 +470,14 @@ static dispatch_once_t onceToken;
     });
 }
 
-
-- (NSString*)extractAndRemoveOverrideEndPoint:(NSString **)queryString
+- (NSString*)extractAndRemoveParameter:(NSString **)queryString parameter:(NSString*)parameter
 {
-    if([*queryString containsString:kCountlyNewEndPoint]) {
-        NSString* overrideEndPoint = [*queryString cly_valueForQueryStringKey:kCountlyNewEndPoint];
-        if(overrideEndPoint) {
-            NSString* stringToRemove = [kCountlyEndPointOverrideTag stringByAppendingString:overrideEndPoint];
+    if([*queryString containsString:parameter]) {
+        NSString* parameterExtracted = [*queryString cly_valueForQueryStringKey:parameter];
+        if(parameterExtracted) {
+            NSString* stringToRemove = [parameter stringByAppendingString:parameterExtracted];
             *queryString = [*queryString stringByReplacingOccurrencesOfString:stringToRemove withString:@""];
-            return overrideEndPoint;
+            return parameterExtracted;
         }
     }
     return nil;
