@@ -74,4 +74,38 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 
 - (BOOL)isSessionStarted;
 
+#pragma mark - Request Callbacks
+
+/**
+ * Callback block type for individual request results.
+ * @param response Response string from server (or error description if failed)
+ * @param success YES if request succeeded, NO if failed
+ */
+typedef void (^CLYRequestCallback)(NSString * _Nullable response, BOOL success);
+
+/**
+ * Callback block type for global queue flush events.
+ * @param allSuccess YES if all requests in the queue were successful, NO if any failed
+ */
+typedef void (^CLYQueueFlushCallback)(BOOL allSuccess);
+
+/**
+ * Sets a global callback to be executed when the entire queue is flushed.
+ * @discussion This callback is called when queue becomes empty after processing requests.
+ * @discussion Only one global callback can be active at a time. Setting a new one replaces the old one.
+ * @discussion Pass nil to remove the global callback.
+ * @param callback Block to be executed when queue is flushed, or nil to remove
+ */
+- (void)setGlobalQueueFlushCallback:(CLYQueueFlushCallback _Nullable)callback;
+
+/**
+ * Adds a request to the queue with an associated callback.
+ * @discussion The callback will be executed when this specific request completes.
+ * @discussion A unique callback ID will be automatically generated internally using UUID.
+ * @discussion Callback IDs are managed internally and cannot be accessed or modified by developers.
+ * @param queryString Query string for the request
+ * @param callback Block to be executed when this request completes
+ */
+- (void)addToQueueWithCallback:(NSString *)queryString callback:(CLYRequestCallback)callback;
+
 @end
