@@ -19,7 +19,7 @@
 @property (nonatomic, strong) NSDate *startTime;
 @property (nonatomic, assign) atomic_bool backoff;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, CLYRequestCallback> *internalRequestCallbacks;
-@property (nonatomic, copy) CLYQueueFlushCallback globalQueueFlushCallback;
+@property (nonatomic, strong) NSMutableArray<CLYQueueFlushRunnable> *queueFlushRunnables;
 @property (nonatomic) BOOL hasAnyRequestFailed;
 
 @end
@@ -109,6 +109,7 @@ static dispatch_once_t onceToken;
         isSessionStarted = NO;
         atomic_init(&_backoff, NO);
         _internalRequestCallbacks = [NSMutableDictionary dictionary];
+        _queueFlushRunnables = [NSMutableArray array];
         _hasAnyRequestFailed = NO;
     }
 
@@ -126,7 +127,7 @@ static dispatch_once_t onceToken;
     s_sharedInstance = nil;
     isSessionStarted = NO;
     [_internalRequestCallbacks removeAllObjects];
-    _globalQueueFlushCallback = nil;
+    [_queueFlushRunnables removeAllObjects];
     _hasAnyRequestFailed = NO;
 }
 
@@ -232,11 +233,24 @@ static dispatch_once_t onceToken;
         NSTimeInterval elapsedTime = -[self.startTime timeIntervalSinceNow];
         CLY_LOG_D(@"%s, Queue is empty. All requests are processed. Total time taken: %.2f seconds", __FUNCTION__, elapsedTime);
 
-        // Call global queue flush callback if set
-        if (_globalQueueFlushCallback) {
-            BOOL allSuccess = !self.hasAnyRequestFailed;
-            CLY_LOG_D(@"%s, Calling global queue flush callback with allSuccess: %d", __FUNCTION__, allSuccess);
-            _globalQueueFlushCallback(allSuccess);
+        // Execute and clear runnables only if all requests succeeded
+        if (!self.hasAnyRequestFailed && _queueFlushRunnables.count > 0) {
+            CLY_LOG_D(@"%s, All requests succeeded. Executing %lu queue flush runnables.", __FUNCTION__, (unsigned long)_queueFlushRunnables.count);
+
+            // Copy runnables to execute (in case a runnable adds new runnables)
+            NSArray<CLYQueueFlushRunnable> *runnablesToExecute = [_queueFlushRunnables copy];
+
+            // Clear runnables before execution
+            [_queueFlushRunnables removeAllObjects];
+
+            // Execute all runnables
+            for (CLYQueueFlushRunnable runnable in runnablesToExecute) {
+                runnable();
+            }
+
+            CLY_LOG_D(@"%s, All queue flush runnables executed and removed.", __FUNCTION__);
+        } else if (self.hasAnyRequestFailed) {
+            CLY_LOG_D(@"%s, Some requests failed. Runnables will not be executed.", __FUNCTION__);
         }
 
         // Reset start time and failure flag for future queue processing
@@ -1327,10 +1341,22 @@ static dispatch_once_t onceToken;
     [self.internalRequestCallbacks removeObjectForKey:callbackID];
 }
 
-- (void)setGlobalQueueFlushCallback:(CLYQueueFlushCallback)callback
+- (void)addQueueFlushRunnable:(CLYQueueFlushRunnable)runnable
 {
-    CLY_LOG_D(@"%s, Setting global queue flush callback: %@", __FUNCTION__, callback ? @"provided" : @"nil");
-    _globalQueueFlushCallback = callback;
+    if (!runnable)
+    {
+        CLY_LOG_W(@"%s, Runnable is nil. Cannot add to queue flush runnables.", __FUNCTION__);
+        return;
+    }
+
+    CLY_LOG_D(@"%s, Adding queue flush runnable. Total count: %lu", __FUNCTION__, (unsigned long)(_queueFlushRunnables.count + 1));
+    [_queueFlushRunnables addObject:[runnable copy]];
+}
+
+- (void)clearQueueFlushRunnables
+{
+    CLY_LOG_D(@"%s, Clearing %lu queue flush runnables.", __FUNCTION__, (unsigned long)_queueFlushRunnables.count);
+    [_queueFlushRunnables removeAllObjects];
 }
 
 - (void)addToQueueWithCallback:(NSString *)queryString callback:(CLYRequestCallback)callback

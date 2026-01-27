@@ -84,19 +84,24 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 typedef void (^CLYRequestCallback)(NSString * _Nullable response, BOOL success);
 
 /**
- * Callback block type for global queue flush events.
- * @param allSuccess YES if all requests in the queue were successful, NO if any failed
+ * Runnable block type for queue flush completion.
+ * @discussion Executed when all requests in the queue complete successfully.
  */
-typedef void (^CLYQueueFlushCallback)(BOOL allSuccess);
+typedef void (^CLYQueueFlushRunnable)(void);
 
 /**
- * Sets a global callback to be executed when the entire queue is flushed.
- * @discussion This callback is called when queue becomes empty after processing requests.
- * @discussion Only one global callback can be active at a time. Setting a new one replaces the old one.
- * @discussion Pass nil to remove the global callback.
- * @param callback Block to be executed when queue is flushed, or nil to remove
+ * Adds a runnable to be executed when the request queue is successfully flushed.
+ * @discussion Multiple runnables can be registered and will all execute when queue becomes empty.
+ * @discussion Runnables are automatically removed after successful execution.
+ * @discussion Runnables only execute when ALL requests complete successfully.
+ * @param runnable Block to be executed when queue is successfully flushed
  */
-- (void)setGlobalQueueFlushCallback:(CLYQueueFlushCallback _Nullable)callback;
+- (void)addQueueFlushRunnable:(CLYQueueFlushRunnable _Nonnull)runnable;
+
+/**
+ * Removes all registered queue flush runnables.
+ */
+- (void)clearQueueFlushRunnables;
 
 /**
  * Adds a request to the queue with an associated callback.
