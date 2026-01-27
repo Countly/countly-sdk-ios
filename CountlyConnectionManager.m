@@ -21,6 +21,7 @@
 @property (nonatomic, strong) NSMutableDictionary<NSString *, CLYRequestCallback> *internalRequestCallbacks;
 @property (nonatomic, strong) NSMutableArray<CLYQueueFlushRunnable> *queueFlushRunnables;
 @property (nonatomic) BOOL hasAnyRequestFailed;
+@property (nonatomic, strong) dispatch_queue_t callbackQueue; // Serial queue for thread-safe callback/runnable access
 
 @end
 
@@ -111,6 +112,7 @@ static dispatch_once_t onceToken;
         _internalRequestCallbacks = [NSMutableDictionary dictionary];
         _queueFlushRunnables = [NSMutableArray array];
         _hasAnyRequestFailed = NO;
+        _callbackQueue = dispatch_queue_create("ly.count.callbackQueue", DISPATCH_QUEUE_SERIAL);
     }
 
     return self;
@@ -126,8 +128,10 @@ static dispatch_once_t onceToken;
     onceToken = 0;
     s_sharedInstance = nil;
     isSessionStarted = NO;
-    [_internalRequestCallbacks removeAllObjects];
-    [_queueFlushRunnables removeAllObjects];
+    dispatch_sync(_callbackQueue, ^{
+        [self->_internalRequestCallbacks removeAllObjects];
+        [self->_queueFlushRunnables removeAllObjects];
+    });
     _hasAnyRequestFailed = NO;
 }
 
@@ -234,22 +238,25 @@ static dispatch_once_t onceToken;
         CLY_LOG_D(@"%s, Queue is empty. All requests are processed. Total time taken: %.2f seconds", __FUNCTION__, elapsedTime);
 
         // Execute and clear runnables only if all requests succeeded
-        if (!self.hasAnyRequestFailed && _queueFlushRunnables.count > 0) {
-            CLY_LOG_D(@"%s, All requests succeeded. Executing %lu queue flush runnables.", __FUNCTION__, (unsigned long)_queueFlushRunnables.count);
+        if (!self.hasAnyRequestFailed) {
+            // Thread-safe copy and clear of runnables
+            __block NSArray<CLYQueueFlushRunnable> *runnablesToExecute = nil;
+            dispatch_sync(_callbackQueue, ^{
+                if (self->_queueFlushRunnables.count > 0) {
+                    CLY_LOG_D(@"%s, All requests succeeded. Executing %lu queue flush runnables.", __FUNCTION__, (unsigned long)self->_queueFlushRunnables.count);
+                    runnablesToExecute = [self->_queueFlushRunnables copy];
+                    [self->_queueFlushRunnables removeAllObjects];
+                }
+            });
 
-            // Copy runnables to execute (in case a runnable adds new runnables)
-            NSArray<CLYQueueFlushRunnable> *runnablesToExecute = [_queueFlushRunnables copy];
-
-            // Clear runnables before execution
-            [_queueFlushRunnables removeAllObjects];
-
-            // Execute all runnables
-            for (CLYQueueFlushRunnable runnable in runnablesToExecute) {
-                runnable();
+            // Execute runnables outside the lock to prevent deadlocks
+            if (runnablesToExecute) {
+                for (CLYQueueFlushRunnable runnable in runnablesToExecute) {
+                    runnable();
+                }
+                CLY_LOG_D(@"%s, All queue flush runnables executed and removed.", __FUNCTION__);
             }
-
-            CLY_LOG_D(@"%s, All queue flush runnables executed and removed.", __FUNCTION__);
-        } else if (self.hasAnyRequestFailed) {
+        } else {
             CLY_LOG_D(@"%s, Some requests failed. Runnables will not be executed.", __FUNCTION__);
         }
 
@@ -290,9 +297,11 @@ static dispatch_once_t onceToken;
     }
     
     NSString* callbackID = [self extractAndRemoveParameter:&queryString parameter: kCountlyCallbackID];
-    CLYRequestCallback requestCallback = nil;
+    __block CLYRequestCallback requestCallback = nil;
     if(callbackID){
-        requestCallback = self.internalRequestCallbacks[callbackID];
+        dispatch_sync(_callbackQueue, ^{
+            requestCallback = self.internalRequestCallbacks[callbackID];
+        });
     }
     
     
@@ -372,7 +381,9 @@ static dispatch_once_t onceToken;
                     requestCallback([response description], YES);
                     // Clean up callback after execution
                     if (callbackID) {
-                        [self.internalRequestCallbacks removeObjectForKey:callbackID];
+                        dispatch_sync(self->_callbackQueue, ^{
+                            [self.internalRequestCallbacks removeObjectForKey:callbackID];
+                        });
                     }
                 }
 
@@ -400,7 +411,9 @@ static dispatch_once_t onceToken;
                     requestCallback([data cly_stringUTF8], NO);
                     // Clean up callback after execution
                     if (callbackID) {
-                        [self.internalRequestCallbacks removeObjectForKey:callbackID];
+                        dispatch_sync(self->_callbackQueue, ^{
+                            [self.internalRequestCallbacks removeObjectForKey:callbackID];
+                        });
                     }
                 }
 
@@ -419,7 +432,9 @@ static dispatch_once_t onceToken;
                 requestCallback([error description], NO);
                 // Clean up callback after execution
                 if (callbackID) {
-                    [self.internalRequestCallbacks removeObjectForKey:callbackID];
+                    dispatch_sync(self->_callbackQueue, ^{
+                        [self.internalRequestCallbacks removeObjectForKey:callbackID];
+                    });
                 }
             }
 #if (TARGET_OS_WATCH)
@@ -1325,8 +1340,10 @@ static dispatch_once_t onceToken;
         return;
     }
 
-    CLY_LOG_D(@"%s, Registering request callback with ID: %@", __FUNCTION__, callbackID);
-    self.internalRequestCallbacks[callbackID] = callback;
+    dispatch_sync(_callbackQueue, ^{
+        CLY_LOG_D(@"%s, Registering request callback with ID: %@", __FUNCTION__, callbackID);
+        self.internalRequestCallbacks[callbackID] = callback;
+    });
 }
 
 - (void)removeRequestCallback:(NSString *)callbackID
@@ -1337,8 +1354,10 @@ static dispatch_once_t onceToken;
         return;
     }
 
-    CLY_LOG_D(@"%s, Removing request callback with ID: %@", __FUNCTION__, callbackID);
-    [self.internalRequestCallbacks removeObjectForKey:callbackID];
+    dispatch_sync(_callbackQueue, ^{
+        CLY_LOG_D(@"%s, Removing request callback with ID: %@", __FUNCTION__, callbackID);
+        [self.internalRequestCallbacks removeObjectForKey:callbackID];
+    });
 }
 
 - (void)addQueueFlushRunnable:(CLYQueueFlushRunnable)runnable
@@ -1349,14 +1368,19 @@ static dispatch_once_t onceToken;
         return;
     }
 
-    CLY_LOG_D(@"%s, Adding queue flush runnable. Total count: %lu", __FUNCTION__, (unsigned long)(_queueFlushRunnables.count + 1));
-    [_queueFlushRunnables addObject:[runnable copy]];
+    CLYQueueFlushRunnable runnableCopy = [runnable copy];
+    dispatch_sync(_callbackQueue, ^{
+        CLY_LOG_D(@"%s, Adding queue flush runnable. Total count: %lu", __FUNCTION__, (unsigned long)(self->_queueFlushRunnables.count + 1));
+        [self->_queueFlushRunnables addObject:runnableCopy];
+    });
 }
 
 - (void)clearQueueFlushRunnables
 {
-    CLY_LOG_D(@"%s, Clearing %lu queue flush runnables.", __FUNCTION__, (unsigned long)_queueFlushRunnables.count);
-    [_queueFlushRunnables removeAllObjects];
+    dispatch_sync(_callbackQueue, ^{
+        CLY_LOG_D(@"%s, Clearing %lu queue flush runnables.", __FUNCTION__, (unsigned long)self->_queueFlushRunnables.count);
+        [self->_queueFlushRunnables removeAllObjects];
+    });
 }
 
 - (void)addToQueueWithCallback:(NSString *)queryString callback:(CLYRequestCallback)callback
