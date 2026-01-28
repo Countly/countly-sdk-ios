@@ -108,6 +108,7 @@
 		D249BF5F254D3D180058A6C2 /* CountlyFeedbackWidget.m in Sources */ = {isa = PBXBuildFile; fileRef = D249BF5D254D3D180058A6C2 /* CountlyFeedbackWidget.m */; };
 		D2CFEF972545FBE80026B044 /* CountlyFeedbacksInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = D2CFEF952545FBE80026B044 /* CountlyFeedbacksInternal.h */; };
 		D2CFEF982545FBE80026B044 /* CountlyFeedbacksInternal.m in Sources */ = {isa = PBXBuildFile; fileRef = D2CFEF962545FBE80026B044 /* CountlyFeedbacksInternal.m */; };
+		F041D46C963F3EA85882CB0D /* CountlyRequestCallbackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C1C3803ECB0A386136072D6 /* CountlyRequestCallbackTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -201,6 +202,7 @@
 		3B20A9B12245228700E3D7AE /* CountlyConsentManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyConsentManager.h; sourceTree = "<group>"; };
 		4C3A4C9F2EB4C40000827FEA /* EventThreadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventThreadTests.swift; sourceTree = "<group>"; };
 		6B81507954AACF61B41133AA /* CountlyQueueFlushRunnablesTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CountlyQueueFlushRunnablesTests.swift; sourceTree = "<group>"; };
+		7C1C3803ECB0A386136072D6 /* CountlyRequestCallbackTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CountlyRequestCallbackTests.swift; sourceTree = "<group>"; };
 		96095A5E2F20105600FDE933 /* TouchDelegatingView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TouchDelegatingView.h; sourceTree = "<group>"; };
 		962485B92D9E971400FA3C20 /* TestUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestUtils.swift; sourceTree = "<group>"; };
 		96329DDF2D9426F300BFD641 /* CountlyServerConfigTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyServerConfigTests.swift; sourceTree = "<group>"; };
@@ -271,6 +273,7 @@
 				399B464F2C52813700AD384E /* CountlyLocationTests.swift */,
 				3969D0222CB80848000F8A32 /* CountlyViewTests.swift */,
 				6B81507954AACF61B41133AA /* CountlyQueueFlushRunnablesTests.swift */,
+				7C1C3803ECB0A386136072D6 /* CountlyRequestCallbackTests.swift */,
 			);
 			path = CountlyTests;
 			sourceTree = "<group>";
@@ -552,6 +555,7 @@
 				9673567F2EC60CD400C742D8 /* TestURLProtocol.swift in Sources */,
 				96E680422BFF89AC0091E105 /* CountlyCrashReporterTests.swift in Sources */,
 				A431BFDB50E23B1C056F93A1 /* CountlyQueueFlushRunnablesTests.swift in Sources */,
+				F041D46C963F3EA85882CB0D /* CountlyRequestCallbackTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
