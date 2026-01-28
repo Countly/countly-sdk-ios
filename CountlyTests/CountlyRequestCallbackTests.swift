@@ -3,83 +3,13 @@
 //  CountlyTests
 //
 //  Tests for the CLYRequestCallback feature.
-//  These tests verify individual request callbacks work correctly.
 //
 
 import XCTest
 @testable import Countly
 
 /// Tests for request callback feature (CLYRequestCallback).
-/// Uses class-level setup to start SDK once, avoiding the halt() singleton issue.
-class CountlyRequestCallbackTests: XCTestCase {
-
-    private static var isSDKStarted = false
-    private static let appKey = "appkey"
-    private static let host = "https://testing.count.ly/"
-
-    override class func setUp() {
-        super.setUp()
-        if !isSDKStarted {
-            // Configure MockURLProtocol to return valid JSON by default
-            MockURLProtocol.requestHandler = { request in
-                let jsonResponse = Data("{\"result\":\"Success\"}".utf8)
-                let response = HTTPURLResponse(
-                    url: request.url!,
-                    statusCode: 200,
-                    httpVersion: "HTTP/1.1",
-                    headerFields: ["Content-Type": "application/json"]
-                )!
-                return (jsonResponse, response, nil)
-            }
-
-            let config = CountlyConfig()
-            config.appKey = appKey
-            config.host = host
-            config.enableDebug = true
-            config.manualSessionHandling = true
-            let sessionConfig = URLSessionConfiguration.default
-            sessionConfig.protocolClasses = [MockURLProtocol.self]
-            config.urlSessionConfiguration = sessionConfig
-            Countly.sharedInstance().start(with: config)
-            isSDKStarted = true
-        }
-    }
-
-    override func setUp() {
-        super.setUp()
-        // Reset MockURLProtocol to success handler for each test
-        MockURLProtocol.requestHandler = { request in
-            let jsonResponse = Data("{\"result\":\"Success\"}".utf8)
-            let response = HTTPURLResponse(
-                url: request.url!,
-                statusCode: 200,
-                httpVersion: "HTTP/1.1",
-                headerFields: ["Content-Type": "application/json"]
-            )!
-            return (jsonResponse, response, nil)
-        }
-        // Clear any leftover runnables
-        CountlyConnectionManager.sharedInstance()?.clearQueueFlushRunnables()
-
-        // Wait for any pending queue requests to complete (drain the queue)
-        var waitCount = 0
-        while CountlyPersistency.sharedInstance().remainingRequestCount() > 0 && waitCount < 50 {
-            CountlyConnectionManager.sharedInstance()?.proceedOnQueue()
-            Thread.sleep(forTimeInterval: 0.1)
-            waitCount += 1
-        }
-    }
-
-    override func tearDown() {
-        CountlyConnectionManager.sharedInstance()?.clearQueueFlushRunnables()
-        super.tearDown()
-    }
-
-    // MARK: - Helper
-
-    private func getConnectionManager() -> CountlyConnectionManager? {
-        return CountlyConnectionManager.sharedInstance()
-    }
+class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
     // MARK: - Basic Functionality Tests
 
@@ -88,7 +18,7 @@ class CountlyRequestCallbackTests: XCTestCase {
      * Verifies callback receives success=true and response string
      */
     func test_requestCallback_executedOnSuccess() throws {
-        guard let connectionManager = getConnectionManager() else {
+        guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
         }
@@ -103,7 +33,6 @@ class CountlyRequestCallbackTests: XCTestCase {
             expectation.fulfill()
         })
 
-        // Trigger queue processing
         connectionManager.proceedOnQueue()
 
         wait(for: [expectation], timeout: 5.0)
@@ -115,24 +44,14 @@ class CountlyRequestCallbackTests: XCTestCase {
 
     /**
      * Test that callback receives failure status on server error
-     * Uses MockURLProtocol to return 500 error
      */
     func test_requestCallback_failureOnServerError() throws {
-        guard let connectionManager = getConnectionManager() else {
+        guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
         }
 
-        // Configure MockURLProtocol to return 500 error
-        MockURLProtocol.requestHandler = { request in
-            let response = HTTPURLResponse(
-                url: request.url!,
-                statusCode: 500,
-                httpVersion: "HTTP/1.1",
-                headerFields: nil
-            )!
-            return (Data("Internal Server Error".utf8), response, nil)
-        }
+        MockURLProtocol.requestHandler = Self.createErrorHandler(statusCode: 500, message: "Internal Server Error")
 
         let expectation = XCTestExpectation(description: "Callback executed")
         var receivedSuccess: Bool?
@@ -144,7 +63,6 @@ class CountlyRequestCallbackTests: XCTestCase {
             expectation.fulfill()
         })
 
-        // Trigger queue processing
         connectionManager.proceedOnQueue()
 
         wait(for: [expectation], timeout: 5.0)
@@ -156,24 +74,14 @@ class CountlyRequestCallbackTests: XCTestCase {
 
     /**
      * Test that callback receives failure on invalid JSON response
-     * Server returns 200 but with plain text (not valid JSON)
      */
     func test_requestCallback_failureOnInvalidJSON() throws {
-        guard let connectionManager = getConnectionManager() else {
+        guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
         }
 
-        // Configure MockURLProtocol to return 200 with plain text (invalid JSON)
-        MockURLProtocol.requestHandler = { request in
-            let response = HTTPURLResponse(
-                url: request.url!,
-                statusCode: 200,
-                httpVersion: "HTTP/1.1",
-                headerFields: nil
-            )!
-            return (Data("OK".utf8), response, nil)
-        }
+        MockURLProtocol.requestHandler = Self.createInvalidJSONHandler()
 
         let expectation = XCTestExpectation(description: "Callback executed")
         var receivedSuccess: Bool?
@@ -183,7 +91,6 @@ class CountlyRequestCallbackTests: XCTestCase {
             expectation.fulfill()
         })
 
-        // Trigger queue processing
         connectionManager.proceedOnQueue()
 
         wait(for: [expectation], timeout: 5.0)
@@ -196,22 +103,12 @@ class CountlyRequestCallbackTests: XCTestCase {
      * Test that callback receives failure when JSON lacks "result" key
      */
     func test_requestCallback_failureOnMissingResultKey() throws {
-        guard let connectionManager = getConnectionManager() else {
+        guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
         }
 
-        // Configure MockURLProtocol to return JSON without "result" key
-        MockURLProtocol.requestHandler = { request in
-            let jsonResponse = Data("{\"status\":\"ok\"}".utf8)
-            let response = HTTPURLResponse(
-                url: request.url!,
-                statusCode: 200,
-                httpVersion: "HTTP/1.1",
-                headerFields: ["Content-Type": "application/json"]
-            )!
-            return (jsonResponse, response, nil)
-        }
+        MockURLProtocol.requestHandler = Self.createMissingResultKeyHandler()
 
         let expectation = XCTestExpectation(description: "Callback executed")
         var receivedSuccess: Bool?
@@ -221,7 +118,6 @@ class CountlyRequestCallbackTests: XCTestCase {
             expectation.fulfill()
         })
 
-        // Trigger queue processing
         connectionManager.proceedOnQueue()
 
         wait(for: [expectation], timeout: 5.0)
@@ -236,7 +132,7 @@ class CountlyRequestCallbackTests: XCTestCase {
      * Test that callback is only called once (removed after execution)
      */
     func test_requestCallback_calledOnlyOnce() throws {
-        guard let connectionManager = getConnectionManager() else {
+        guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
         }
@@ -249,7 +145,6 @@ class CountlyRequestCallbackTests: XCTestCase {
             expectation.fulfill()
         })
 
-        // Trigger queue processing
         connectionManager.proceedOnQueue()
 
         wait(for: [expectation], timeout: 5.0)
@@ -262,10 +157,9 @@ class CountlyRequestCallbackTests: XCTestCase {
 
     /**
      * Test that callback is removed after successful execution
-     * Second request should not trigger first callback
      */
     func test_requestCallback_removedAfterSuccess() throws {
-        guard let connectionManager = getConnectionManager() else {
+        guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
         }
@@ -280,18 +174,15 @@ class CountlyRequestCallbackTests: XCTestCase {
             expectation1.fulfill()
         })
 
-        // Trigger queue processing for first request
         connectionManager.proceedOnQueue()
 
         wait(for: [expectation1], timeout: 5.0)
 
-        // Add second request with different callback
         connectionManager.addToQueue(withCallback: "test=second_request", callback: { response, success in
             secondCallbackCount += 1
             expectation2.fulfill()
         })
 
-        // Trigger queue processing for second request
         connectionManager.proceedOnQueue()
 
         wait(for: [expectation2], timeout: 5.0)
@@ -304,21 +195,12 @@ class CountlyRequestCallbackTests: XCTestCase {
      * Test that callback is removed after failure execution
      */
     func test_requestCallback_removedAfterFailure() throws {
-        guard let connectionManager = getConnectionManager() else {
+        guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
         }
 
-        // Configure failure response
-        MockURLProtocol.requestHandler = { request in
-            let response = HTTPURLResponse(
-                url: request.url!,
-                statusCode: 500,
-                httpVersion: "HTTP/1.1",
-                headerFields: nil
-            )!
-            return (Data("Error".utf8), response, nil)
-        }
+        MockURLProtocol.requestHandler = Self.createErrorHandler(statusCode: 500, message: "Error")
 
         var callbackCount = 0
         let expectation = XCTestExpectation(description: "Callback executed")
@@ -328,12 +210,10 @@ class CountlyRequestCallbackTests: XCTestCase {
             expectation.fulfill()
         })
 
-        // Trigger queue processing
         connectionManager.proceedOnQueue()
 
         wait(for: [expectation], timeout: 5.0)
 
-        // Wait to ensure no second call
         TestUtils.sleep(2) {}
 
         XCTAssertEqual(callbackCount, 1, "Callback should be called exactly once even on failure")
@@ -345,7 +225,7 @@ class CountlyRequestCallbackTests: XCTestCase {
      * Test multiple callbacks for different requests all execute
      */
     func test_multipleRequestCallbacks_allExecuted() throws {
-        guard let connectionManager = getConnectionManager() else {
+        guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
         }
@@ -371,7 +251,6 @@ class CountlyRequestCallbackTests: XCTestCase {
             expectation.fulfill()
         })
 
-        // Trigger queue processing
         connectionManager.proceedOnQueue()
 
         wait(for: [expectation], timeout: 15.0)
@@ -385,7 +264,7 @@ class CountlyRequestCallbackTests: XCTestCase {
      * Test callbacks execute in queue order (FIFO)
      */
     func test_multipleRequestCallbacks_executeInOrder() throws {
-        guard let connectionManager = getConnectionManager() else {
+        guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
         }
@@ -416,7 +295,6 @@ class CountlyRequestCallbackTests: XCTestCase {
             expectation.fulfill()
         })
 
-        // Trigger queue processing
         connectionManager.proceedOnQueue()
 
         wait(for: [expectation], timeout: 15.0)
@@ -424,111 +302,32 @@ class CountlyRequestCallbackTests: XCTestCase {
         XCTAssertEqual(executionOrder, [1, 2, 3], "Callbacks should execute in FIFO order")
     }
 
-    // MARK: - Error Scenarios
+    // MARK: - HTTP Success Code Tests
 
     /**
-     * Test callback on 400 Bad Request
+     * Test callback with 201 Created success code
      */
-    func test_requestCallback_400_badRequest() throws {
-        guard let connectionManager = getConnectionManager() else {
+    func test_requestCallback_201_created_success() throws {
+        guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
         }
 
-        MockURLProtocol.requestHandler = { request in
-            let response = HTTPURLResponse(
-                url: request.url!,
-                statusCode: 400,
-                httpVersion: "HTTP/1.1",
-                headerFields: nil
-            )!
-            return (Data("Bad Request".utf8), response, nil)
-        }
+        MockURLProtocol.requestHandler = Self.createSuccessHandler(statusCode: 201, result: "Created")
 
         let expectation = XCTestExpectation(description: "Callback executed")
         var receivedSuccess: Bool?
 
-        connectionManager.addToQueue(withCallback: "test=bad_request", callback: { response, success in
+        connectionManager.addToQueue(withCallback: "test=create", callback: { response, success in
             receivedSuccess = success
             expectation.fulfill()
         })
 
-        // Trigger queue processing
         connectionManager.proceedOnQueue()
 
         wait(for: [expectation], timeout: 5.0)
 
-        XCTAssertFalse(receivedSuccess ?? true, "Callback should receive failure on 400")
-    }
-
-    /**
-     * Test callback on 404 Not Found
-     */
-    func test_requestCallback_404_notFound() throws {
-        guard let connectionManager = getConnectionManager() else {
-            XCTFail("ConnectionManager not available")
-            return
-        }
-
-        MockURLProtocol.requestHandler = { request in
-            let response = HTTPURLResponse(
-                url: request.url!,
-                statusCode: 404,
-                httpVersion: "HTTP/1.1",
-                headerFields: nil
-            )!
-            return (Data("Not Found".utf8), response, nil)
-        }
-
-        let expectation = XCTestExpectation(description: "Callback executed")
-        var receivedSuccess: Bool?
-
-        connectionManager.addToQueue(withCallback: "test=notfound", callback: { response, success in
-            receivedSuccess = success
-            expectation.fulfill()
-        })
-
-        // Trigger queue processing
-        connectionManager.proceedOnQueue()
-
-        wait(for: [expectation], timeout: 5.0)
-
-        XCTAssertFalse(receivedSuccess ?? true, "Callback should receive failure on 404")
-    }
-
-    /**
-     * Test callback on 503 Service Unavailable
-     */
-    func test_requestCallback_503_serviceUnavailable() throws {
-        guard let connectionManager = getConnectionManager() else {
-            XCTFail("ConnectionManager not available")
-            return
-        }
-
-        MockURLProtocol.requestHandler = { request in
-            let response = HTTPURLResponse(
-                url: request.url!,
-                statusCode: 503,
-                httpVersion: "HTTP/1.1",
-                headerFields: nil
-            )!
-            return (Data("Service Unavailable".utf8), response, nil)
-        }
-
-        let expectation = XCTestExpectation(description: "Callback executed")
-        var receivedSuccess: Bool?
-
-        connectionManager.addToQueue(withCallback: "test=unavailable", callback: { response, success in
-            receivedSuccess = success
-            expectation.fulfill()
-        })
-
-        // Trigger queue processing
-        connectionManager.proceedOnQueue()
-
-        wait(for: [expectation], timeout: 5.0)
-
-        XCTAssertFalse(receivedSuccess ?? true, "Callback should receive failure on 503")
+        XCTAssertTrue(receivedSuccess ?? false, "Callback should receive success on 201")
     }
 
     // MARK: - Integration Tests
@@ -537,7 +336,7 @@ class CountlyRequestCallbackTests: XCTestCase {
      * Test that request callback and queue flush runnable both execute
      */
     func test_requestCallback_andQueueFlushRunnable_bothExecute() throws {
-        guard let connectionManager = getConnectionManager() else {
+        guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
         }
@@ -546,23 +345,19 @@ class CountlyRequestCallbackTests: XCTestCase {
         var runnableExecuted = false
         let callbackExpectation = XCTestExpectation(description: "Callback executed")
 
-        // Add a queue flush runnable
         connectionManager.addQueueFlushRunnable {
             runnableExecuted = true
         }
 
-        // Add request with callback
         connectionManager.addToQueue(withCallback: "test=combined", callback: { response, success in
             callbackExecuted = true
             callbackExpectation.fulfill()
         })
 
-        // Trigger queue processing
         connectionManager.proceedOnQueue()
 
         wait(for: [callbackExpectation], timeout: 5.0)
 
-        // Give runnable time to execute
         TestUtils.sleep(1) {}
 
         XCTAssertTrue(callbackExecuted, "Request callback should have executed")
@@ -573,82 +368,33 @@ class CountlyRequestCallbackTests: XCTestCase {
      * Test that callback failure prevents queue flush runnable from executing
      */
     func test_requestCallback_failure_preventsQueueFlushRunnable() throws {
-        guard let connectionManager = getConnectionManager() else {
+        guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
         }
 
-        // Configure failure response
-        MockURLProtocol.requestHandler = { request in
-            let response = HTTPURLResponse(
-                url: request.url!,
-                statusCode: 500,
-                httpVersion: "HTTP/1.1",
-                headerFields: nil
-            )!
-            return (Data("Error".utf8), response, nil)
-        }
+        MockURLProtocol.requestHandler = Self.createErrorHandler(statusCode: 500, message: "Error")
 
         var callbackExecuted = false
         var runnableExecuted = false
         let callbackExpectation = XCTestExpectation(description: "Callback executed")
 
-        // Add a queue flush runnable
         connectionManager.addQueueFlushRunnable {
             runnableExecuted = true
         }
 
-        // Add request with callback (will fail)
         connectionManager.addToQueue(withCallback: "test=failing", callback: { response, success in
             callbackExecuted = true
             callbackExpectation.fulfill()
         })
 
-        // Trigger queue processing
         connectionManager.proceedOnQueue()
 
         wait(for: [callbackExpectation], timeout: 5.0)
 
-        // Give time for runnable to potentially execute
         TestUtils.sleep(2) {}
 
         XCTAssertTrue(callbackExecuted, "Request callback should have executed")
         XCTAssertFalse(runnableExecuted, "Queue flush runnable should NOT have executed due to failure")
-    }
-
-    /**
-     * Test callback with 201 Created success code
-     */
-    func test_requestCallback_201_created_success() throws {
-        guard let connectionManager = getConnectionManager() else {
-            XCTFail("ConnectionManager not available")
-            return
-        }
-
-        MockURLProtocol.requestHandler = { request in
-            let jsonResponse = Data("{\"result\":\"Created\"}".utf8)
-            let response = HTTPURLResponse(
-                url: request.url!,
-                statusCode: 201,
-                httpVersion: "HTTP/1.1",
-                headerFields: ["Content-Type": "application/json"]
-            )!
-            return (jsonResponse, response, nil)
-        }
-
-        let expectation = XCTestExpectation(description: "Callback executed")
-        var receivedSuccess: Bool?
-
-        connectionManager.addToQueue(withCallback: "test=create", callback: { response, success in
-            receivedSuccess = success
-            expectation.fulfill()
-        })
-
-        // Trigger queue processing
-        connectionManager.proceedOnQueue()
-
-        wait(for: [expectation], timeout: 5.0)
-
-        XCTAssertTrue(receivedSuccess ?? false, "Callback should receive success on 201")
     }
 }

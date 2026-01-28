@@ -2,79 +2,14 @@
 //  CountlyQueueFlushRunnablesTests.swift
 //  CountlyTests
 //
-//  Created by Arif Burak Demiray on 28.01.2026.
-//  Copyright © 2026 Countly. All rights reserved.
+//  Tests for queue flush runnables feature.
 //
 
 import XCTest
 @testable import Countly
 
-/// Tests for queue flush runnables feature.
-/// These tests use a class-level setup to start the SDK once and keep it running
-/// across all tests, since halt() breaks CountlyCommon.sharedInstance recreation.
-class CountlyQueueFlushRunnablesTests: XCTestCase {
-
-    private static var isSDKStarted = false
-    private static let appKey = "appkey"
-    private static let host = "https://testing.count.ly/"
-
-    override class func setUp() {
-        super.setUp()
-        // Start SDK once for all tests in this class
-        if !isSDKStarted {
-            // Configure MockURLProtocol to return valid JSON (SDK requires JSON responses)
-            MockURLProtocol.requestHandler = { request in
-                let jsonResponse = Data("{\"result\":\"Success\"}".utf8)
-                let response = HTTPURLResponse(
-                    url: request.url!,
-                    statusCode: 200,
-                    httpVersion: "HTTP/1.1",
-                    headerFields: ["Content-Type": "application/json"]
-                )!
-                return (jsonResponse, response, nil)
-            }
-
-            let config = CountlyConfig()
-            config.appKey = appKey
-            config.host = host
-            config.enableDebug = true
-            config.manualSessionHandling = true
-            let sessionConfig = URLSessionConfiguration.default
-            sessionConfig.protocolClasses = [MockURLProtocol.self]
-            config.urlSessionConfiguration = sessionConfig
-            Countly.sharedInstance().start(with: config)
-            isSDKStarted = true
-        }
-    }
-
-    override func setUp() {
-        super.setUp()
-        // Ensure MockURLProtocol returns success for all tests
-        MockURLProtocol.requestHandler = { request in
-            let jsonResponse = Data("{\"result\":\"Success\"}".utf8)
-            let response = HTTPURLResponse(
-                url: request.url!,
-                statusCode: 200,
-                httpVersion: "HTTP/1.1",
-                headerFields: ["Content-Type": "application/json"]
-            )!
-            return (jsonResponse, response, nil)
-        }
-        // Clear any leftover runnables from previous test
-        CountlyConnectionManager.sharedInstance()?.clearQueueFlushRunnables()
-    }
-
-    override func tearDown() {
-        // Clear runnables after each test
-        CountlyConnectionManager.sharedInstance()?.clearQueueFlushRunnables()
-        super.tearDown()
-    }
-
-    // MARK: - Helper
-
-    private func getConnectionManager() -> CountlyConnectionManager? {
-        return CountlyConnectionManager.sharedInstance()
-    }
+/// Tests for queue flush runnables feature (CLYQueueFlushRunnable).
+class CountlyQueueFlushRunnablesTests: CountlyCallbackBaseTestCase {
 
     // MARK: - Tests
 
@@ -83,7 +18,7 @@ class CountlyQueueFlushRunnablesTests: XCTestCase {
      * Verify that the runnable can be added without error
      */
     func test_addQueueFlushRunnable_singleRunnable() throws {
-        guard let connectionManager = getConnectionManager() else {
+        guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
         }
@@ -102,7 +37,7 @@ class CountlyQueueFlushRunnablesTests: XCTestCase {
      * Verify that multiple runnables can be registered
      */
     func test_addQueueFlushRunnable_multipleRunnables() throws {
-        guard let connectionManager = getConnectionManager() else {
+        guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
         }
@@ -132,7 +67,7 @@ class CountlyQueueFlushRunnablesTests: XCTestCase {
      * Verify that clearQueueFlushRunnables removes all registered runnables
      */
     func test_clearQueueFlushRunnables() throws {
-        guard let connectionManager = getConnectionManager() else {
+        guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
         }
@@ -159,7 +94,7 @@ class CountlyQueueFlushRunnablesTests: XCTestCase {
      * Uses MockURLProtocol which returns 200 OK with valid JSON
      */
     func test_queueFlushRunnables_executedOnSuccess() throws {
-        guard let connectionManager = getConnectionManager() else {
+        guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
         }
@@ -182,7 +117,7 @@ class CountlyQueueFlushRunnablesTests: XCTestCase {
      * Test that multiple runnables are all executed in order when queue flushes successfully
      */
     func test_queueFlushRunnables_multipleExecutedInOrder() throws {
-        guard let connectionManager = getConnectionManager() else {
+        guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
         }
@@ -213,7 +148,7 @@ class CountlyQueueFlushRunnablesTests: XCTestCase {
      * Add runnable, let it execute, add another request - first runnable should not execute again
      */
     func test_queueFlushRunnables_removedAfterExecution() throws {
-        guard let connectionManager = getConnectionManager() else {
+        guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
         }
@@ -244,21 +179,13 @@ class CountlyQueueFlushRunnablesTests: XCTestCase {
      * Uses MockURLProtocol to simulate a failure response
      */
     func test_queueFlushRunnables_notExecutedOnFailure() throws {
-        guard let connectionManager = getConnectionManager() else {
+        guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
         }
 
         // Configure MockURLProtocol to return a failure (500 error)
-        MockURLProtocol.requestHandler = { request in
-            let response = HTTPURLResponse(
-                url: request.url!,
-                statusCode: 500,
-                httpVersion: "HTTP/1.1",
-                headerFields: nil
-            )!
-            return (Data("Server Error".utf8), response, nil)
-        }
+        MockURLProtocol.requestHandler = Self.createErrorHandler(statusCode: 500, message: "Server Error")
 
         var runnableExecuted = false
         connectionManager.addQueueFlushRunnable {
@@ -274,23 +201,14 @@ class CountlyQueueFlushRunnablesTests: XCTestCase {
         XCTAssertFalse(runnableExecuted)
 
         // Restore success handler for subsequent tests
-        MockURLProtocol.requestHandler = { request in
-            let jsonResponse = Data("{\"result\":\"Success\"}".utf8)
-            let response = HTTPURLResponse(
-                url: request.url!,
-                statusCode: 200,
-                httpVersion: "HTTP/1.1",
-                headerFields: ["Content-Type": "application/json"]
-            )!
-            return (jsonResponse, response, nil)
-        }
+        MockURLProtocol.requestHandler = Self.createSuccessHandler()
     }
 
     /**
      * Test thread safety - add runnables from multiple threads concurrently
      */
     func test_queueFlushRunnables_threadSafety() throws {
-        guard let connectionManager = getConnectionManager() else {
+        guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
         }
@@ -346,7 +264,7 @@ class CountlyQueueFlushRunnablesTests: XCTestCase {
      * Test that a runnable adding new runnables during execution doesn't cause issues
      */
     func test_queueFlushRunnables_addingDuringExecution() throws {
-        guard let connectionManager = getConnectionManager() else {
+        guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
         }
