@@ -74,4 +74,43 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 
 - (BOOL)isSessionStarted;
 
+#pragma mark - Request Callbacks
+
+/**
+ * Callback block type for individual request results.
+ * @param response Response string from server (or error description if failed)
+ * @param success YES if request succeeded, NO if failed
+ */
+typedef void (^CLYRequestCallback)(NSString * _Nullable response, BOOL success);
+
+/**
+ * Runnable block type for queue flush completion.
+ * @discussion Executed when all requests in the queue complete successfully.
+ */
+typedef void (^CLYQueueFlushRunnable)(void);
+
+/**
+ * Adds a runnable to be executed when the request queue is successfully flushed.
+ * @discussion Multiple runnables can be registered and will all execute when queue becomes empty.
+ * @discussion Runnables are automatically removed after successful execution.
+ * @discussion Runnables only execute when ALL requests complete successfully.
+ * @param runnable Block to be executed when queue is successfully flushed
+ */
+- (void)addQueueFlushRunnable:(CLYQueueFlushRunnable _Nonnull)runnable;
+
+/**
+ * Removes all registered queue flush runnables.
+ */
+- (void)clearQueueFlushRunnables;
+
+/**
+ * Adds a request to the queue with an associated callback.
+ * @discussion The callback will be executed when this specific request completes.
+ * @discussion A unique callback ID will be automatically generated internally using UUID.
+ * @discussion Callback IDs are managed internally and cannot be accessed or modified by developers.
+ * @param queryString Query string for the request
+ * @param callback Block to be executed when this request completes
+ */
+- (void)addToQueueWithCallback:(NSString *)queryString callback:(CLYRequestCallback)callback;
+
 @end
