@@ -10,6 +10,9 @@
 
 #if (TARGET_OS_IOS)
 @implementation CountlyWebViewController
+{
+    UIStatusBarStyle _cachedStatusBarStyle;
+}
 - (BOOL)prefersStatusBarHidden
 {
   return CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == IMMERSIVE ? YES : NO;
@@ -22,12 +25,46 @@
 
 - (UIStatusBarStyle)preferredStatusBarStyle
 {
+    if(_cachedStatusBarStyle){
+        return _cachedStatusBarStyle;
+    }
+    UIWindow *keyWindow = [self getKeyWindow];
+
+    if (keyWindow && keyWindow.rootViewController) {
+        _cachedStatusBarStyle = keyWindow.rootViewController.preferredStatusBarStyle;
+        return _cachedStatusBarStyle;
+    }
+    
     return UIStatusBarStyleLightContent;
 }
 
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations
 {
     return UIInterfaceOrientationMaskAll;
+}
+
+- (UIWindow *)getKeyWindow {
+    if (@available(iOS 13.0, *)) {
+        for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+            if (![scene isKindOfClass:[UIWindowScene class]]) {
+                continue;
+            }
+            
+            UIWindowScene *windowScene = (UIWindowScene *)scene;
+            
+            if (windowScene.activationState == UISceneActivationStateForegroundActive) {
+                for (UIWindow *window in windowScene.windows) {
+                    if (window.isKeyWindow) {
+                        return window;
+                    }
+                }
+            }
+        }
+    } else {
+        return UIApplication.sharedApplication.keyWindow;
+    }
+    
+    return nil;
 }
 
 - (BOOL)shouldAutorotate
