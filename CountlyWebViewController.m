@@ -12,6 +12,7 @@
 @implementation CountlyWebViewController
 {
     UIStatusBarStyle _cachedStatusBarStyle;
+    BOOL _hasCachedStatusBarStyle;
 }
 - (BOOL)prefersStatusBarHidden
 {
@@ -25,13 +26,15 @@
 
 - (UIStatusBarStyle)preferredStatusBarStyle
 {
-    if(_cachedStatusBarStyle){
+    if (_hasCachedStatusBarStyle) {
         return _cachedStatusBarStyle;
     }
+    
     UIWindow *keyWindow = [self getKeyWindow];
 
     if (keyWindow && keyWindow.rootViewController) {
         _cachedStatusBarStyle = keyWindow.rootViewController.preferredStatusBarStyle;
+        _hasCachedStatusBarStyle = YES;
         return _cachedStatusBarStyle;
     }
     
@@ -80,6 +83,15 @@
 - (void)viewDidLoad
 {
   [super viewDidLoad];
+    
+    if (!_hasCachedStatusBarStyle) {
+        UIWindow *keyWindow = [self getKeyWindow];
+        if (keyWindow && keyWindow.rootViewController) {
+            _cachedStatusBarStyle = keyWindow.rootViewController.preferredStatusBarStyle;
+            _hasCachedStatusBarStyle = YES;
+        }
+    }
+
 
   if ([self.view isKindOfClass:[TouchDelegatingView class]])
   {
