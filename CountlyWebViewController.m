@@ -77,15 +77,23 @@
 
 - (void)loadView
 {
-  self.view = [[TouchDelegatingView alloc] initWithFrame:UIApplication.sharedApplication.keyWindow.rootViewController.view.bounds];
+    UIWindow *keyWindow = [self getKeyWindow];
+    CGRect bounds = keyWindow.rootViewController.view.bounds;
+    
+    if (CGRectIsEmpty(bounds)) {
+        bounds = UIScreen.mainScreen.bounds;
+    }
+    
+    self.view = [[TouchDelegatingView alloc] initWithFrame:bounds];
 }
 
 - (void)viewDidLoad
 {
   [super viewDidLoad];
     
+    UIWindow *keyWindow = [self getKeyWindow];
+    
     if (!_hasCachedStatusBarStyle) {
-        UIWindow *keyWindow = [self getKeyWindow];
         if (keyWindow && keyWindow.rootViewController) {
             _cachedStatusBarStyle = keyWindow.rootViewController.preferredStatusBarStyle;
             _hasCachedStatusBarStyle = YES;
@@ -93,11 +101,13 @@
     }
 
 
-  if ([self.view isKindOfClass:[TouchDelegatingView class]])
-  {
-    TouchDelegatingView *delegatingView = (TouchDelegatingView *)self.view;
-    delegatingView.touchDelegate        = UIApplication.sharedApplication.keyWindow.rootViewController.view;
-  }
+    if ([self.view isKindOfClass:[TouchDelegatingView class]])
+    {
+        TouchDelegatingView *delegatingView = (TouchDelegatingView *)self.view;
+        if (keyWindow && keyWindow.rootViewController) {
+            delegatingView.touchDelegate = keyWindow.rootViewController.view;
+        }
+    }
 
   // Fully transparent controller background
   self.view.backgroundColor = [UIColor clearColor];
