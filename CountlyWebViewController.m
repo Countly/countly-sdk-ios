@@ -22,7 +22,7 @@
 
 - (UIStatusBarStyle)preferredStatusBarStyle
 {
-  return UIApplication.sharedApplication.keyWindow.rootViewController.preferredStatusBarStyle;
+    return UIStatusBarStyleLightContent;
 }
 
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations
