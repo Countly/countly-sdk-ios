@@ -1,3 +1,6 @@
+## 25.1.2
+* View auto stop/start logic can now be enabled by 'enableAutoViewStartStop' config method (pause/resume by default.)
+
 ## 25.1.1
 * Mitigated an issue while setting zone timer interval for content.
 

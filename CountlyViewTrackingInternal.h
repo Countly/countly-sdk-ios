@@ -21,6 +21,7 @@ extern NSString* const kCountlyVTKeyVisit;
 @property (nonatomic) BOOL enablePreviousNameRecording;
 @property (nonatomic) NSString* currentViewName;
 @property (nonatomic) NSString* previousViewName;
+@property (nonatomic) BOOL enableAutoViewStartStop;
 
 + (instancetype)sharedInstance;
 

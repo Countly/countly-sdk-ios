@@ -234,6 +234,13 @@ typedef enum : NSUInteger
 @property (nonatomic) BOOL enableAutomaticViewTracking;
 
 /**
+ * For enabling automatic start/stop of active views on app background/foreground.
+ * @discussion If set to @c NO, active views are paused on background and resumed on foreground.
+ * @discussion Default value is @c NO.
+ */
+@property (nonatomic) BOOL enableAutoViewStartStop;
+
+/**
  * Automatic view exclusion list .
  * @discussion These views will exclude from automatic tracking.
  */

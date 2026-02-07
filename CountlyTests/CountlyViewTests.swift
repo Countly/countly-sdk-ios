@@ -559,6 +559,7 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
 class CountlyViewForegroundBackgroundTests: CountlyViewBaseTest {
     func testStartMultipleViewsMoveAppToBackgroundAndReturnToForeground() throws {
         let config = createBaseConfig()
+        config.enableAutoViewStartStop = true
         Countly.sharedInstance().start(with: config)
         
         // Start the views
@@ -637,6 +638,7 @@ class CountlyViewForegroundBackgroundTests: CountlyViewBaseTest {
     
     func testStartViewBackgroundAppResumeViewWhenReturningToForeground() throws {
         let config = createBaseConfig()
+        config.enableAutoViewStartStop = true
         Countly.sharedInstance().start(with: config)
         
         // Start the view
@@ -685,6 +687,39 @@ class CountlyViewForegroundBackgroundTests: CountlyViewBaseTest {
         // Call validateRecordedEvents to check if the events match expectations
         validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
     }
+
+    func testBackgroundForegroundPausesViewsByDefault() throws {
+        let config = createBaseConfig()
+        config.enableAutoViewStartStop = false
+        Countly.sharedInstance().start(with: config)
+        
+        Countly.sharedInstance().views().startView("View1")
+        
+        let waitForStart = XCTestExpectation(description: "Wait before backgrounding app.")
+        let waitForBackground = XCTestExpectation(description: "Wait in background.")
+        let waitForForeground = XCTestExpectation(description: "Wait after foregrounding.")
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+            NotificationCenter.default.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+            waitForStart.fulfill()
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                NotificationCenter.default.post(name: UIApplication.didBecomeActiveNotification, object: nil)
+                waitForBackground.fulfill()
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                    Countly.sharedInstance().views().stopView(withName: "View1")
+                    waitForForeground.fulfill()
+                }
+            }
+        }
+        
+        wait(for: [waitForStart, waitForBackground, waitForForeground], timeout: 12.0)
+        
+        let startedEventsCount = ["View1": 1]
+        let endedEventsDurations = ["View1": [3, 3]]
+        validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
+    }
     
     func testAttemptToStopANonStartedView() throws {
         let config = createBaseConfig()
@@ -700,6 +735,7 @@ class CountlyViewForegroundBackgroundTests: CountlyViewBaseTest {
     
     func testBackgroundAndForegroundTriggers() throws {
         let config = createBaseConfig()
+        config.enableAutoViewStartStop = true
         Countly.sharedInstance().start(with: config)
         
         Countly.sharedInstance().views().startView("View1")

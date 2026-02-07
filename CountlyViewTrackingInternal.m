@@ -12,6 +12,7 @@
 #endif
 @property (nonatomic, strong) NSMutableDictionary<NSString*, CountlyViewData *> * viewDataDictionary;
 @property (nonatomic) NSMutableDictionary* viewSegmentation;
+@property (nonatomic, strong) NSMutableSet<NSString *> *backgroundPausedViewIDs;
 @property (nonatomic) BOOL isFirstView;
 @end
 
@@ -103,6 +104,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         
         self.viewDataDictionary = NSMutableDictionary.new;
         self.viewSegmentation = nil;
+        self.backgroundPausedViewIDs = NSMutableSet.new;
         self.isFirstView = YES;
     }
     
@@ -535,6 +537,34 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     }];
 }
 
+- (void)pauseRunningViewsInternal
+{
+    if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
+        return;
+    [self.backgroundPausedViewIDs removeAllObjects];
+    [self.viewDataDictionary enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, CountlyViewData * _Nonnull viewData, BOOL * _Nonnull stop) {
+        [self.backgroundPausedViewIDs addObject:viewData.viewID];
+        [self pauseViewInternal:viewData];
+    }];
+}
+
+- (void)resumePausedViewsInternal
+{
+    if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
+        return;
+    if (!self.backgroundPausedViewIDs.count)
+        return;
+    for (NSString *viewID in self.backgroundPausedViewIDs)
+    {
+        CountlyViewData *viewData = self.viewDataDictionary[viewID];
+        if (viewData)
+        {
+            [viewData resumeView];
+        }
+    }
+    [self.backgroundPausedViewIDs removeAllObjects];
+}
+
 - (void)pauseViewInternal:(CountlyViewData*) viewData
 {
     [self stopViewWithIDInternal:viewData.viewID customSegmentation:nil autoPaused:YES];
@@ -738,23 +768,39 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)applicationWillEnterForeground {
 #if (TARGET_OS_IOS  || TARGET_OS_VISION || TARGET_OS_TV)
-    if (!self.isAutoViewTrackingActive) {
-        [self startStoppedViewsInternal];
+    if (self.enableAutoViewStartStop) {
+        if (!self.isAutoViewTrackingActive) {
+            [self startStoppedViewsInternal];
+        }
+    } else {
+        [self resumePausedViewsInternal];
     }
 #else
-    [self startStoppedViewsInternal];
+    if (self.enableAutoViewStartStop) {
+        [self startStoppedViewsInternal];
+    } else {
+        [self resumePausedViewsInternal];
+    }
 #endif
 }
 - (void)applicationDidEnterBackground {
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
-    if (self.isAutoViewTrackingActive) {
-        [self stopCurrentView];
-    }
-    else {
-        [self stopRunningViewsInternal];
+    if (self.enableAutoViewStartStop) {
+        if (self.isAutoViewTrackingActive) {
+            [self stopCurrentView];
+        }
+        else {
+            [self stopRunningViewsInternal];
+        }
+    } else {
+        [self pauseRunningViewsInternal];
     }
 #else
-    [self stopRunningViewsInternal];
+    if (self.enableAutoViewStartStop) {
+        [self stopRunningViewsInternal];
+    } else {
+        [self pauseRunningViewsInternal];
+    }
 #endif
 }
 

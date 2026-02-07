@@ -235,6 +235,7 @@ static dispatch_once_t onceToken;
     }
 
 #if (TARGET_OS_IOS || TARGET_OS_TV )
+    CountlyViewTrackingInternal.sharedInstance.enableAutoViewStartStop = config.enableAutoViewStartStop;
     if (config.enableAutomaticViewTracking || [config.features containsObject:CLYAutoViewTracking])
     {
         // Print deprecation flag for feature
