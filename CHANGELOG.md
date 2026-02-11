@@ -1,3 +1,6 @@
+## 25.4.10
+* Mitigated an issue when returning from the external content link.
+
 ## 25.4.9
 * Added a new config option disableViewRestartForManualRecording to disable auto close/restart behavior of manual views on app background/foreground actions.
 * Added a new config option "setWebviewDisplayOption: WebViewDisplayOption" to control how Content and Feedback Widgets are presented.
