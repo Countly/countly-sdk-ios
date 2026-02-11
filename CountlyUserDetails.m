@@ -92,7 +92,9 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
     if ([self.custom isKindOfClass:NSDictionary.class])
     {
-        NSDictionary* customTruncated = [((NSDictionary *)self.custom) cly_truncated:@"User details custom dictionary"];
+        NSMutableDictionary *customMutable = [((NSDictionary *)self.custom) mutableCopy];
+        [self filterAndLimitUserProperties:customMutable];
+        NSDictionary* customTruncated = [customMutable cly_truncated:@"User details custom dictionary"];
         self.custom = [customTruncated cly_limited:@"User details custom dictionary"];
     }
 
@@ -432,12 +434,31 @@ NSString* const kCountlyUDKeyModifierPull       = @"$pull";
 
     if (self.modifications.count)
     {
+        [self filterAndLimitUserProperties:self.modifications];
         [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyUDKeyCustom: [self truncateModifications]} cly_JSONify]];
     }
 
     [self clearUserDetails];
 }
 
+
+- (void)filterAndLimitUserProperties:(NSMutableDictionary *)properties
+{
+    NSInteger limit = CountlyServerConfig.sharedInstance.userPropertyCacheLimit;
+    BOOL shouldApplyLimit = limit > 0;
+    NSInteger kept = 0;
+
+    for (NSString *key in properties.allKeys) {
+        if (![CountlyServerConfig.sharedInstance shouldRecordUserProperty:key]) {
+            CLY_LOG_D(@"Filtering out user property '%@' by server config user property filter", key);
+            [properties removeObjectForKey:key];
+        }
+        else if (shouldApplyLimit && ++kept > limit) {
+            CLY_LOG_D(@"Removing user property '%@' due to cache limit (%ld)", key, (long)limit);
+            [properties removeObjectForKey:key];
+        }
+    }
+}
 
 - (NSDictionary *)truncateModifications
 {

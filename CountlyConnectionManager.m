@@ -710,16 +710,24 @@ static dispatch_once_t onceToken;
 
 - (void)addEventsToQueue
 {
+    [self addEventsToQueue:nil];
+}
+
+- (void)addEventsToQueue:(CLYRequestCallback)callback
+{
     NSString* events = [CountlyPersistency.sharedInstance serializedRecordedEvents];
-    
+
     if (!events)
         return;
-    
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
-                             kCountlyQSKeyEvents, events];
-    
-    [CountlyPersistency.sharedInstance addToQueue:queryString];
-    
+
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyEvents, events];
+    [self addToQueueWithCallback:queryString callback:callback];
+}
+
+- (void)sendEventsWithCallback:(CLYRequestCallback)callback
+{
+    [self addEventsToQueue:callback];
+    [self proceedOnQueue];
 }
 
 #pragma mark ---
@@ -1393,7 +1401,6 @@ static dispatch_once_t onceToken;
 
     if (!callback)
     {
-        CLY_LOG_W(@"%s, Callback is nil. Adding request without callback.", __FUNCTION__);
         [CountlyPersistency.sharedInstance addToQueue:queryString];
         return;
     }

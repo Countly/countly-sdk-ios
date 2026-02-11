@@ -45,5 +45,14 @@ extern NSString* const kCountlySCKeySC;
 - (NSInteger)bomRequestAge;
 - (NSInteger)bomDuration;
 - (NSInteger)requestTimeoutDuration;
+
+#pragma mark - Listing Filters
+
+- (BOOL)shouldRecordEvent:(NSString *)eventKey;
+- (BOOL)shouldRecordUserProperty:(NSString *)propertyKey;
+- (NSDictionary *)filterSegmentation:(NSDictionary *)segmentation eventKey:(NSString *)eventKey;
+- (BOOL)isJourneyTriggerEvent:(NSString *)eventKey;
+- (NSInteger)userPropertyCacheLimit;
+
 @end
 

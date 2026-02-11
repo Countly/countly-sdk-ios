@@ -113,4 +113,12 @@ typedef void (^CLYQueueFlushRunnable)(void);
  */
 - (void)addToQueueWithCallback:(NSString *)queryString callback:(CLYRequestCallback)callback;
 
+/**
+ * Sends pending events with an associated callback.
+ * @discussion Used for Journey Trigger Events (JTE) to get notified when the events request succeeds.
+ * @discussion Serializes recorded events, adds them to queue with callback, and proceeds on queue.
+ * @param callback Block to be executed when the events request completes
+ */
+- (void)sendEventsWithCallback:(CLYRequestCallback)callback;
+
 @end

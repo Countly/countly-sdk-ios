@@ -900,8 +900,16 @@ static dispatch_once_t onceToken;
         return;
     }
 
-    NSDictionary* truncated = [segmentation cly_truncated:@"Event segmentation"];
-    segmentation = [truncated cly_limited:@"Event segmentation"];
+    if (![CountlyServerConfig.sharedInstance shouldRecordEvent:key])
+    {
+        CLY_LOG_D(@"%s, aborted: Event '%@' is filtered by server config event filter!", __FUNCTION__, key);
+        return;
+    }
+    
+    // Apply global segmentation filter (sb/sw) and event-specific segmentation filter (esb/esw)
+    NSDictionary* filtered = [CountlyServerConfig.sharedInstance filterSegmentation:segmentation eventKey:key];
+    filtered = [filtered cly_truncated:@"Event segmentation"];
+    segmentation = [filtered cly_limited:@"Event segmentation"];
 
     [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration ID:nil timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
 }
@@ -984,7 +992,20 @@ static dispatch_once_t onceToken;
         }
         event.key = key;
         event.segmentation = [self processSegmentation:filteredSegmentations eventKey:key];
-        [CountlyPersistency.sharedInstance recordEvent:event];
+        id callback = nil;
+        if ([CountlyServerConfig.sharedInstance isJourneyTriggerEvent:key]){
+            callback = ^(NSString *response, BOOL success) {
+                if (success)
+                {
+    #if (TARGET_OS_IOS)
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [CountlyContentBuilderInternal.sharedInstance refreshContentZoneJTE];
+                    });
+    #endif
+                }
+            };
+        }
+        [CountlyPersistency.sharedInstance recordEvent:event callback:callback];
 #if __has_include(<os/lock.h>)
         os_unfair_lock_unlock(&previousEventLock);
 #endif
