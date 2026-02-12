@@ -108,6 +108,9 @@ NSString *const kREventSegmentationBlacklist = @"esb";
 NSString *const kREventSegmentationWhitelist = @"esw";
 NSString *const kRJourneyTriggerEvents = @"jte";
 
+static CountlyServerConfig *s_sharedInstance = nil;
+static dispatch_once_t onceToken;
+
 @implementation CountlyServerConfig
 
 + (instancetype)sharedInstance
@@ -115,8 +118,6 @@ NSString *const kRJourneyTriggerEvents = @"jte";
     if (!CountlyCommon.sharedInstance.hasStarted)
         return nil;
 
-    static CountlyServerConfig *s_sharedInstance = nil;
-    static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         s_sharedInstance = self.new;
     });
@@ -137,6 +138,25 @@ NSString *const kRJourneyTriggerEvents = @"jte";
         [self setDefaultValues];
     }
     return self;
+}
+
+- (void)resetInstance
+{
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    _timestamp = 0;
+    _version = 0;
+    _currentServerConfigUpdateInterval = 4;
+    _serverConfigUpdatesDisabled = NO;
+    _requestTimeoutDuration = 30;
+    _lastFetchTimestamp = 0;
+    if (_requestTimer)
+    {
+        [_requestTimer invalidate];
+        _requestTimer = nil;
+    }
+    [self setDefaultValues];
+    onceToken = 0;
+    s_sharedInstance = nil;
 }
 
 - (void)retrieveServerConfigFromStorage:(CountlyConfig *)config
@@ -522,6 +542,20 @@ NSString *const kRJourneyTriggerEvents = @"jte";
     _bomRQPercentage = 0.5;
     _bomRequestAge = 24;
     _bomDuration = 60;
+
+    // Reset numeric properties to 0 so notifySdkConfigChange: falls back to CountlyConfig defaults
+    _eventQueueSize = 0;
+    _requestQueueSize = 0;
+    _sessionInterval = 0;
+    _limitKeyLength = 0;
+    _limitValueSize = 0;
+    _limitSegValues = 0;
+    _limitBreadcrumb = 0;
+    _limitTraceLine = 0;
+    _limitTraceLength = 0;
+    _consentRequired = NO;
+    _dropOldRequestTime = 0;
+    _contentZoneInterval = 0;
 
     _eventFilterSet = [NSSet set];
     _eventFilterIsWhitelist = NO;

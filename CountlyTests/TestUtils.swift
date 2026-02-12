@@ -17,12 +17,41 @@ class TestUtils {
     static let SDK_NAME = "objc-native-ios"
     
     static func cleanup() -> Void {
+        // Clear ALL SDK UserDefaults keys BEFORE starting the SDK to prevent
+        // cross-contamination from previous test runs (removePersistentDomainForName
+        // does not work in xctest environment because bundle ID differs)
+        let sdkKeys = [
+            "kCountlyServerConfigPersistencyKey",
+            "kCountlyHealthCheckStatePersistencyKey",
+            "kCountlyQueuedRequestsPersistencyKey",
+            "kCountlyStartedEventsPersistencyKey",
+            "kCountlyStoredDeviceIDKey",
+            "kCountlyStoredNSUUIDKey",
+            "kCountlyStarRatingStatusKey",
+            "kCountlyRemoteConfigKey",
+            "kCountlyIsCustomDeviceIDKey",
+            "kCountlyNotificationPermissionKey",
+            "kCountlyWatchParentDeviceIDKey"
+        ]
+        for key in sdkKeys {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+        UserDefaults.standard.synchronize()
+
         let config = createBaseConfig()
         config.requiresConsent = false;
         config.manualSessionHandling = true;
         Countly.sharedInstance().start(with: config);
         sleep(1){
             Countly.sharedInstance().halt(true)
+            // Reset view tracking and health check state to prevent cross-contamination
+            CountlyViewTrackingInternal.sharedInstance().resetFirstView()
+            CountlyHealthTracker.sharedInstance().resetState()
+            // Clear again after halt
+            for key in sdkKeys {
+                UserDefaults.standard.removeObject(forKey: key)
+            }
+            UserDefaults.standard.synchronize()
             sleep(1){}
         }
     }
@@ -114,8 +143,11 @@ class TestUtils {
                         if let eventSegmentation = event["segmentation"] as? [String: Any] {
                             XCTAssertEqual(eventSegmentation.count, segmentation.count, "Expected segmentation: \(segmentation), got: \(eventSegmentation)")
                             for (key, value) in segmentation {
-                                let segValue = eventSegmentation[key]
-                                XCTAssertEqual("\(String(describing: segValue!))", "\(value)")
+                                guard let segValue = eventSegmentation[key] else {
+                                    XCTFail("Missing segmentation key '\(key)' in event. Expected: \(segmentation), got: \(eventSegmentation)")
+                                    continue
+                                }
+                                XCTAssertEqual("\(String(describing: segValue))", "\(value)")
                             }
                         } else {
                             XCTFail("Missing or invalid 'segmentation' in event")

@@ -1507,6 +1507,7 @@ static dispatch_once_t onceToken;
     [CountlyPersistency.sharedInstance resetInstance:clearStorage];
     [CountlyDeviceInfo.sharedInstance resetInstance];
     [CountlyConnectionManager.sharedInstance resetInstance];
+    [CountlyServerConfig.sharedInstance resetInstance];
     [CountlyUserDetails.sharedInstance clearUserDetails];
     [self resetInstance];
     [CountlyCommon.sharedInstance resetInstance];

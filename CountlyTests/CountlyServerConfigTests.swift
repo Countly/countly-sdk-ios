@@ -7,7 +7,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         var counts: [Int] = [0, 0, 0, 0, 0]
     }
 
-    override func setUp() async throws {
+    override func setUp() {
         TestUtils.cleanup()
     }
     // MARK: - Basic Configuration Tests
@@ -467,6 +467,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
             
             let stackTrace = flowAllFeatures()
+            immediateFlowAllFeatures()
             
             XCTAssertTrue(TestUtils.getCurrentRQ()![0].contains("begin_session"))
             // Events should not be tracked
@@ -499,6 +500,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count)
             
             let stackTrace = flowAllFeatures()
+            immediateFlowAllFeatures()
             
             // Verify that crash is not recorded
             for request in TestUtils.getCurrentRQ()! {
@@ -526,6 +528,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count)
             
             let stackTrace = flowAllFeatures()
+            immediateFlowAllFeatures()
             
             // Verify no sessions, events, or views are recorded
             for request in TestUtils.getCurrentRQ()! {
@@ -647,10 +650,11 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     
     private func getEventWithKey(_ requests: [String], _ key: String) -> [String: Any]? {
         for request in requests {
-            if let data = request.data(using: .utf8),
-               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let events = json["events"] as? [[String: Any]] {
-                for event in events {
+            let parsed = TestUtils.parseQueryString(request)
+            if let eventsStr = parsed["events"] as? String,
+               let data = eventsStr.data(using: .utf8),
+               let eventArray = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+                for event in eventArray {
                     if let eventKey = event["key"] as? String, eventKey == key {
                         return event
                     }
@@ -812,7 +816,10 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         Countly.sharedInstance().start(with: countlyConfig)
         //Countly.sharedInstance().moduleContent.CONTENT_START_DELAY_MS = 0
         //Countly.sharedInstance().moduleContent.REFRESH_CONTENT_ZONE_DELAY_MS = 0
-        
+
+        // Wait for async server config fetch to complete
+        TestUtils.sleep(2) {}
+
         return tracker
     }
     
@@ -939,13 +946,556 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         
         validateCounts(tracker.counts, hc: hc, fc: fc, rc: rc, cc: cc, sc: scc)
     }
-    
+
     private func setServerConfig(_ serverConfig: [String: Any]){
         UserDefaults.standard.set(serverConfig, forKey: "kCountlyServerConfigPersistencyKey")
-        UserDefaults.standard.synchronize() // Not needed in modern Swift
+        UserDefaults.standard.synchronize()
     }
-    
+
     func retrieveServerConfig() -> [String: Any] {
         return UserDefaults.standard.object(forKey: "kCountlyServerConfigPersistencyKey") as? [String: Any] ?? [:]
+    }
+
+    // MARK: - Event Blacklist Tests (eb)
+
+    /**
+     * Tests that event blacklist blocks filtered events.
+     * Verifies that:
+     * 1. Blacklisted events are not recorded
+     * 2. Non-blacklisted events are recorded normally
+     */
+    func test_eventBlacklist_blocksFilteredEvents() {
+        let sc = ServerConfigBuilder()
+            .eventBlacklist(["blocked_event", "another_blocked"])
+        let _ = setupTestAllFeatures(sc.buildJson())
+
+        Countly.sharedInstance().recordEvent("blocked_event")
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
+
+        Countly.sharedInstance().recordEvent("allowed_event")
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count)
+
+        Countly.sharedInstance().recordEvent("another_blocked")
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count)
+    }
+
+    /**
+     * Tests that event whitelist only allows specified events.
+     * Verifies that:
+     * 1. Whitelisted events are recorded
+     * 2. Non-whitelisted events are blocked
+     */
+    func test_eventWhitelist_onlyAllowsSpecifiedEvents() {
+        let sc = ServerConfigBuilder()
+            .eventWhitelist(["allowed_event", "another_allowed"])
+        let _ = setupTestAllFeatures(sc.buildJson())
+
+        Countly.sharedInstance().recordEvent("allowed_event")
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count)
+
+        Countly.sharedInstance().recordEvent("not_in_whitelist")
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count)
+
+        Countly.sharedInstance().recordEvent("another_allowed")
+        XCTAssertEqual(2, TestUtils.getCurrentEQ()?.count)
+    }
+
+    /**
+     * Tests that internal/reserved events bypass event filters.
+     * Verifies that view events and other reserved events still work when event filter is active.
+     */
+    func test_eventFilter_internalEventsNotAffected() {
+        let sc = ServerConfigBuilder()
+            .eventBlacklist(["[CLY]_view", "test_blocked"])
+        let _ = setupTestAllFeatures(sc.buildJson())
+
+        // View events are reserved and should bypass the filter
+        Countly.sharedInstance().views().startView("test_view")
+
+        TestUtils.sleep(1) {
+            // View event should still be recorded (internal events bypass custom event filters)
+            let eq = TestUtils.getCurrentEQ()
+            let hasView = eq?.contains(where: { $0.key == "[CLY]_view" }) ?? false
+            XCTAssertTrue(hasView, "View events should bypass event blacklist")
+        }
+
+        // Custom blocked event should be blocked
+        Countly.sharedInstance().recordEvent("test_blocked")
+        let customEq = TestUtils.getCurrentEQ()?.filter { $0.key == "test_blocked" }
+        XCTAssertEqual(0, customEq?.count)
+    }
+
+    /**
+     * Tests that blacklist takes precedence when both eb and ew are present.
+     */
+    func test_eventFilter_blacklistPrecedenceOverWhitelist() {
+        let configDict: [String: Any] = [
+            "v": 1,
+            "t": Int(Date().timeIntervalSince1970),
+            "c": [
+                "eb": ["event_a", "event_b"],
+                "ew": ["event_a", "event_c"]
+            ]
+        ]
+        setServerConfig(configDict)
+        let config = TestUtils.createBaseConfig()
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+
+        // With blacklist precedence: event_a and event_b should be blocked
+        Countly.sharedInstance().recordEvent("event_a")
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
+
+        Countly.sharedInstance().recordEvent("event_b")
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
+
+        // event_c should be allowed (not in blacklist)
+        Countly.sharedInstance().recordEvent("event_c")
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count)
+    }
+
+    /**
+     * Tests empty event filter allows all events.
+     */
+    func test_eventFilter_emptyFilterAllowsAll() {
+        let sc = ServerConfigBuilder()
+        let _ = setupTestAllFeatures(sc.buildJson())
+
+        Countly.sharedInstance().recordEvent("any_event")
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count)
+
+        Countly.sharedInstance().recordEvent("another_event")
+        XCTAssertEqual(2, TestUtils.getCurrentEQ()?.count)
+    }
+
+    // MARK: - Segmentation Blacklist Tests (sb)
+
+    /**
+     * Tests that segmentation blacklist removes filtered keys from events.
+     * Verifies that:
+     * 1. Blacklisted segmentation keys are removed
+     * 2. Non-blacklisted keys remain
+     */
+    func test_segmentationBlacklist_removesFilteredKeys() throws {
+        let sc = ServerConfigBuilder()
+            .segmentationBlacklist(["blocked_key", "another_blocked"])
+            .eventQueueSize(1)
+        let _ = setupTestAllFeatures(sc.buildJson())
+
+        Countly.sharedInstance().recordEvent("test_event", segmentation: [
+            "blocked_key": "value1",
+            "another_blocked": "value2",
+            "allowed_key": "value3"
+        ])
+
+        try TestUtils.validateEventInRQ("test_event", ["allowed_key": "value3"], 0, 1, 0, 1)
+    }
+
+    /**
+     * Tests that segmentation whitelist only keeps specified keys.
+     */
+    func test_segmentationWhitelist_onlyKeepsSpecifiedKeys() throws {
+        let sc = ServerConfigBuilder()
+            .segmentationWhitelist(["allowed_key"])
+            .eventQueueSize(1)
+        let _ = setupTestAllFeatures(sc.buildJson())
+
+        Countly.sharedInstance().recordEvent("test_event", segmentation: [
+            "allowed_key": "value1",
+            "not_allowed_1": "value2",
+            "not_allowed_2": "value3"
+        ])
+
+        try TestUtils.validateEventInRQ("test_event", ["allowed_key": "value1"], 0, 1, 0, 1)
+    }
+
+    // MARK: - Event Segmentation Blacklist Tests (esb)
+
+    /**
+     * Tests that event-specific segmentation blacklist only affects the specified event.
+     * Verifies that:
+     * 1. For the targeted event, blacklisted seg keys are removed
+     * 2. For other events, the same seg keys remain untouched
+     */
+    func test_eventSegmentationBlacklist_affectsSpecificEvents() throws {
+        let sc = ServerConfigBuilder()
+            .eventSegmentationBlacklist(["event1": ["blocked_for_event1"]])
+            .eventQueueSize(1)
+        let _ = setupTestAllFeatures(sc.buildJson())
+
+        // For event1, blocked_for_event1 should be removed
+        Countly.sharedInstance().recordEvent("event1", segmentation: [
+            "blocked_for_event1": "value1",
+            "allowed_key": "value2"
+        ])
+
+        try TestUtils.validateEventInRQ("event1", ["allowed_key": "value2"], 0, 1, 0, 1)
+
+        // For event2, blocked_for_event1 should NOT be removed
+        Countly.sharedInstance().recordEvent("event2", segmentation: [
+            "blocked_for_event1": "value1",
+            "other_key": "value2"
+        ])
+
+        try TestUtils.validateEventInRQ("event2", ["blocked_for_event1": "value1", "other_key": "value2"], 1, 2, 0, 1)
+    }
+
+    /**
+     * Tests that event-specific segmentation whitelist only keeps specified keys for the targeted event.
+     */
+    func test_eventSegmentationWhitelist_affectsSpecificEvents() throws {
+        let sc = ServerConfigBuilder()
+            .eventSegmentationWhitelist(["purchase": ["keep"]])
+            .eventQueueSize(1)
+        let _ = setupTestAllFeatures(sc.buildJson())
+
+        // For purchase, only "keep" should remain
+        Countly.sharedInstance().recordEvent("purchase", segmentation: [
+            "card": "1111",
+            "keep": "ok",
+            "drop": "no"
+        ])
+
+        try TestUtils.validateEventInRQ("purchase", ["keep": "ok"], 0, 1, 0, 1)
+
+        // For non-purchase, all keys should remain
+        Countly.sharedInstance().recordEvent("not-purchase", segmentation: [
+            "card": "1111",
+            "keep": "ok",
+            "drop": "no"
+        ])
+
+        try TestUtils.validateEventInRQ("not-purchase", ["card": "1111", "keep": "ok", "drop": "no"], 1, 2, 0, 1)
+    }
+
+    // MARK: - Combined Segmentation Filter Tests
+
+    /**
+     * Tests that both global and event-specific segmentation filters work together.
+     */
+    func test_combinedSegmentationFilters_bothApplied() throws {
+        let sc = ServerConfigBuilder()
+            .segmentationBlacklist(["global_blocked"])
+            .eventSegmentationBlacklist(["my_event": ["event_blocked"]])
+            .eventQueueSize(1)
+        let _ = setupTestAllFeatures(sc.buildJson())
+
+        Countly.sharedInstance().recordEvent("my_event", segmentation: [
+            "global_blocked": "value1",
+            "event_blocked": "value2",
+            "allowed_key": "value3"
+        ])
+
+        try TestUtils.validateEventInRQ("my_event", ["allowed_key": "value3"], 0, 1, 0, 1)
+    }
+
+    // MARK: - User Property Blacklist Tests (upb)
+
+    /**
+     * Tests that user property blacklist blocks filtered properties in modifications.
+     * Verifies that:
+     * 1. Blacklisted custom properties are not sent
+     * 2. Non-blacklisted custom properties are sent
+     */
+    func test_userPropertyBlacklist_blocksFilteredProperties() {
+        let sc = ServerConfigBuilder()
+            .userPropertyBlacklist(["blocked_prop", "another_blocked"])
+        let _ = setupTestAllFeatures(sc.buildJson())
+
+        Countly.user().set("blocked_prop", value: "value1")
+        Countly.user().set("another_blocked", value: "value2")
+        Countly.user().set("allowed_prop", value: "value3")
+        Countly.user().save()
+
+        TestUtils.sleep(1) {
+            let rq = TestUtils.getCurrentRQ()!
+            let userDetailsRequest = rq.first { $0.contains("user_details") }
+            XCTAssertNotNil(userDetailsRequest)
+            if let requestStr = userDetailsRequest {
+                XCTAssertTrue(requestStr.contains("allowed_prop"))
+                XCTAssertFalse(requestStr.contains("blocked_prop"))
+                XCTAssertFalse(requestStr.contains("another_blocked"))
+            }
+        }
+    }
+
+    /**
+     * Tests that user property whitelist only allows specified properties.
+     */
+    func test_userPropertyWhitelist_onlyAllowsSpecifiedProperties() {
+        let sc = ServerConfigBuilder()
+            .userPropertyWhitelist(["allowed_prop"])
+        let _ = setupTestAllFeatures(sc.buildJson())
+
+        Countly.user().set("allowed_prop", value: "value1")
+        Countly.user().set("not_allowed", value: "value2")
+        Countly.user().save()
+
+        TestUtils.sleep(1) {
+            let rq = TestUtils.getCurrentRQ()!
+            let userDetailsRequest = rq.first { $0.contains("user_details") }
+            XCTAssertNotNil(userDetailsRequest)
+            if let requestStr = userDetailsRequest {
+                XCTAssertTrue(requestStr.contains("allowed_prop"))
+                XCTAssertFalse(requestStr.contains("not_allowed"))
+            }
+        }
+    }
+
+    /**
+     * Tests that user property blacklist also filters the custom dictionary property.
+     */
+    func test_userPropertyBlacklist_filtersCustomDictionary() {
+        let sc = ServerConfigBuilder()
+            .userPropertyBlacklist(["blocked_custom"])
+        let _ = setupTestAllFeatures(sc.buildJson())
+
+        Countly.user().custom = [
+            "blocked_custom": "value1",
+            "allowed_custom": "value2"
+        ] as NSDictionary
+        Countly.user().save()
+
+        TestUtils.sleep(1) {
+            let rq = TestUtils.getCurrentRQ()!
+            let userDetailsRequest = rq.first { $0.contains("user_details") }
+            XCTAssertNotNil(userDetailsRequest)
+            if let requestStr = userDetailsRequest {
+                XCTAssertTrue(requestStr.contains("allowed_custom"))
+                XCTAssertFalse(requestStr.contains("blocked_custom"))
+            }
+        }
+    }
+
+    // MARK: - User Property Cache Limit Tests (upcl)
+
+    /**
+     * Tests that user property cache limit trims excess properties.
+     */
+    func test_userPropertyCacheLimit_trimsExcessProperties() {
+        let sc = ServerConfigBuilder()
+            .userPropertyCacheLimit(3)
+        let _ = setupTestAllFeatures(sc.buildJson())
+
+        // Set more properties than the limit
+        Countly.user().set("prop1", value: "value1")
+        Countly.user().set("prop2", value: "value2")
+        Countly.user().set("prop3", value: "value3")
+        Countly.user().set("prop4", value: "value4")
+        Countly.user().set("prop5", value: "value5")
+        Countly.user().save()
+
+        TestUtils.sleep(1) {
+            let rq = TestUtils.getCurrentRQ()!
+            let userDetailsRequest = rq.first { $0.contains("user_details") }
+            XCTAssertNotNil(userDetailsRequest)
+            if let requestStr = userDetailsRequest,
+               let range = requestStr.range(of: "user_details="),
+               let decoded = requestStr[range.upperBound...].removingPercentEncoding,
+               let data = decoded.data(using: .utf8),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let custom = json["custom"] as? [String: Any] {
+                // Should have at most 3 properties
+                XCTAssertLessThanOrEqual(custom.count, 3)
+            }
+        }
+    }
+
+    /**
+     * Tests that default user property cache limit is 100.
+     */
+    func test_userPropertyCacheLimit_defaultIs100() {
+        let sc = ServerConfigBuilder()
+        let _ = setupTestAllFeatures(sc.buildJson())
+
+        XCTAssertEqual(100, CountlyServerConfig.sharedInstance()?.userPropertyCacheLimit())
+    }
+
+    // MARK: - Journey Trigger Events Tests (jte)
+
+    /**
+     * Tests that journey trigger events are configured correctly.
+     */
+    func test_journeyTriggerEvents_configuredCorrectly() {
+        let sc = ServerConfigBuilder()
+            .journeyTriggerEvents(["trigger_event", "another_trigger"])
+        let _ = setupTestAllFeatures(sc.buildJson())
+
+        XCTAssertTrue(CountlyServerConfig.sharedInstance()!.isJourneyTriggerEvent("trigger_event"))
+        XCTAssertTrue(CountlyServerConfig.sharedInstance()!.isJourneyTriggerEvent("another_trigger"))
+        XCTAssertFalse(CountlyServerConfig.sharedInstance()!.isJourneyTriggerEvent("not_a_trigger"))
+    }
+
+    /**
+     * Tests that recording a JTE event forces flush of the event queue.
+     * Verifies that:
+     * 1. Regular events stay in event queue (high threshold)
+     * 2. JTE event forces immediate flush of all events to RQ
+     * 3. Flushed request contains callback_id (for JTE callback)
+     */
+    func test_journeyTriggerEvents_triggersEventFlush() {
+        let sc = ServerConfigBuilder()
+            .journeyTriggerEvents(["jte_event"])
+            .eventQueueSize(100) // High threshold
+        let _ = setupTestAllFeatures(sc.buildJson())
+
+        XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count)
+
+        // Record non-JTE event - should stay in EQ
+        Countly.sharedInstance().recordEvent("regular_event")
+        XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count)
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count)
+
+        // Record JTE event - should force flush all events to RQ
+        Countly.sharedInstance().recordEvent("jte_event")
+        XCTAssertEqual(1, TestUtils.getCurrentRQ()?.count)
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
+
+        // Verify the flushed request contains both events and has callback_id
+        let rq = TestUtils.getCurrentRQ()!
+        XCTAssertTrue(rq[0].contains("regular_event"))
+        XCTAssertTrue(rq[0].contains("jte_event"))
+        XCTAssertTrue(rq[0].contains("callback_id"))
+    }
+
+    /**
+     * Tests that non-JTE events stay queued normally.
+     */
+    func test_journeyTriggerEvents_nonJteStaysQueued() {
+        let sc = ServerConfigBuilder()
+            .journeyTriggerEvents(["journey_event"])
+            .eventQueueSize(100)
+        let _ = setupTestAllFeatures(sc.buildJson())
+
+        // Record non-JTE events - should stay in queue
+        Countly.sharedInstance().recordEvent("regular_event")
+        XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count)
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count)
+
+        Countly.sharedInstance().recordEvent("another_regular")
+        XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count)
+        XCTAssertEqual(2, TestUtils.getCurrentEQ()?.count)
+
+        // Record JTE event - should flush ALL events
+        Countly.sharedInstance().recordEvent("journey_event")
+        XCTAssertEqual(1, TestUtils.getCurrentRQ()?.count)
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
+
+        // Verify all events in the flushed request
+        let rq = TestUtils.getCurrentRQ()!
+        XCTAssertTrue(rq[0].contains("regular_event"))
+        XCTAssertTrue(rq[0].contains("another_regular"))
+        XCTAssertTrue(rq[0].contains("journey_event"))
+    }
+
+    /**
+     * Tests that event blacklist and JTE work together correctly.
+     * A blacklisted event that is also a JTE should not be recorded or trigger a flush.
+     */
+    func test_eventBlacklist_withJTE_blacklistedJTENotRecorded() {
+        let sc = ServerConfigBuilder()
+            .eventBlacklist(["blocked_jte"])
+            .journeyTriggerEvents(["blocked_jte", "allowed_jte"])
+            .eventQueueSize(100)
+        let _ = setupTestAllFeatures(sc.buildJson())
+
+        // Record a blacklisted JTE - should be blocked before JTE check
+        Countly.sharedInstance().recordEvent("blocked_jte")
+        XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count)
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
+
+        // Record a non-blacklisted JTE - should trigger flush
+        Countly.sharedInstance().recordEvent("allowed_jte")
+        XCTAssertEqual(1, TestUtils.getCurrentRQ()?.count)
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
+    }
+
+    // MARK: - Mutual Exclusivity Tests
+
+    /**
+     * Tests that when config changes from blacklist to whitelist, the old blacklist is removed.
+     */
+    func test_filterMerge_whitelistReplacesBlacklist() {
+        // First "launch" with event blacklist
+        let initialConfig = ServerConfigBuilder()
+            .eventBlacklist(["event_a"])
+            .buildJson()
+        setServerConfig(initialConfig)
+        let config1 = TestUtils.createBaseConfig()
+        config1.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config1)
+
+        Countly.sharedInstance().recordEvent("event_a")
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count, "event_a should be blocked by blacklist")
+
+        Countly.sharedInstance().recordEvent("event_b")
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count, "event_b should be allowed")
+
+        TestUtils.cleanup()
+
+        // Second "launch" with event whitelist via mock server
+        let updatedConfig = ServerConfigBuilder()
+            .eventWhitelist(["event_a"])
+            .buildJson()
+        setServerConfig(updatedConfig)
+        let config2 = TestUtils.createBaseConfig()
+        config2.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config2)
+
+        Countly.sharedInstance().recordEvent("event_a")
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count, "event_a should be allowed by whitelist")
+
+        Countly.sharedInstance().recordEvent("event_b")
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count, "event_b should be blocked (not in whitelist)")
+    }
+
+    /**
+     * Tests that server config with all new listing filter keys can be parsed and validated.
+     */
+    func test_serverConfig_allNewKeysProvidedValues() {
+        let builder = ServerConfigBuilder()
+            .eventBlacklist(["blocked_ev1", "blocked_ev2"])
+            .userPropertyBlacklist(["blocked_prop"])
+            .segmentationBlacklist(["blocked_seg"])
+            .eventSegmentationBlacklist(["ev1": ["seg1", "seg2"]])
+            .journeyTriggerEvents(["jte1", "jte2"])
+            .userPropertyCacheLimit(50)
+
+        setServerConfig(builder.buildJson())
+        let config = TestUtils.createBaseConfig()
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+
+        TestUtils.sleep(1) {
+            builder.validateAgainst()
+        }
+    }
+
+    // MARK: - All Features with Listing Filters
+
+    /**
+     * Tests all features work correctly with event blacklist applied.
+     * Sessions, views, crashes, etc. should still work while custom events are filtered.
+     */
+    func test_eventBlacklist_allFeatures() throws {
+        let sc = ServerConfigBuilder()
+            .eventBlacklist(["test_event"])
+        let tracker = setupTestAllFeatures(sc.buildJson())
+
+        XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count)
+
+        let _ = flowAllFeatures()
+        immediateFlowAllFeatures()
+
+        // test_event should NOT be in the request queue
+        XCTAssertFalse(containsEventWithKey(TestUtils.getCurrentRQ()!, "test_event"))
+
+        // But other features should work
+        XCTAssertTrue(TestUtils.getCurrentRQ()![0].contains("begin_session"))
+
+        // Views should still work (reserved events bypass custom event filters)
+        XCTAssertTrue(containsEventWithKey(TestUtils.getCurrentRQ()!, "[CLY]_view"))
+
+        validateCounts(tracker.counts, hc: 0, fc: 1, rc: 1, cc: 2, sc: 1)
     }
 }

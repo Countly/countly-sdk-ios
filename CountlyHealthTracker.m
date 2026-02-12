@@ -155,6 +155,16 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
     });
 }
 
+- (void)resetState {
+    CLY_LOG_D(@"%s resetting health check state", __FUNCTION__);
+    dispatch_async(self.hcQueue, ^{
+        [self clearValues];
+        self->_healthCheckSent = NO;
+        self->_healthCheckEnabled = YES;
+        [CountlyPersistency.sharedInstance storeHealthCheckTrackerState:@{}];
+    });
+}
+
 - (void)clearValues {
     CLY_LOG_W(@"%s clearing counters", __FUNCTION__);
 
@@ -170,6 +180,7 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
 - (void)sendHealthCheck {
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary) {
         CLY_LOG_W(@"%s currently in temporary id mode, omitting", __FUNCTION__);
+        return;
     }
     
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
@@ -180,6 +191,7 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
     
     if (!_healthCheckEnabled || _healthCheckSent) {
         CLY_LOG_D(@"%s health check status, healthCheckSent: [%d], healthCheckEnabled: [%d]", __FUNCTION__, _healthCheckSent, _healthCheckEnabled);
+        return;
     }
     
     NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self healthCheckRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)

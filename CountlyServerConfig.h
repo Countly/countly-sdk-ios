@@ -11,6 +11,7 @@ extern NSString* const kCountlySCKeySC;
 @interface CountlyServerConfig : NSObject
 
 + (instancetype)sharedInstance;
+- (void)resetInstance;
 
 - (void)fetchServerConfig:(CountlyConfig *)config;
 - (void)retrieveServerConfigFromStorage:(CountlyConfig *)config;

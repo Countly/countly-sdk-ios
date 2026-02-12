@@ -34,6 +34,16 @@ class ServerConfigBuilder {
         static let dropOldRequestTime = "dort"
         static let crashReporting = "crt"
         static let serverConfigUpdateInterval = "scui"
+        static let eventBlacklist = "eb"
+        static let eventWhitelist = "ew"
+        static let userPropertyBlacklist = "upb"
+        static let userPropertyWhitelist = "upw"
+        static let userPropertyCacheLimit = "upcl"
+        static let segmentationBlacklist = "sb"
+        static let segmentationWhitelist = "sw"
+        static let eventSegmentationBlacklist = "esb"
+        static let eventSegmentationWhitelist = "esw"
+        static let journeyTriggerEvents = "jte"
     }
     
     // MARK: - Feature Flags
@@ -92,6 +102,68 @@ class ServerConfigBuilder {
         return this
     }
     
+    // MARK: - Listing Filters
+
+    @discardableResult
+    func eventBlacklist(_ keys: [String]) -> ServerConfigBuilder {
+        config[Keys.eventBlacklist] = keys
+        return this
+    }
+
+    @discardableResult
+    func eventWhitelist(_ keys: [String]) -> ServerConfigBuilder {
+        config[Keys.eventWhitelist] = keys
+        return this
+    }
+
+    @discardableResult
+    func userPropertyBlacklist(_ keys: [String]) -> ServerConfigBuilder {
+        config[Keys.userPropertyBlacklist] = keys
+        return this
+    }
+
+    @discardableResult
+    func userPropertyWhitelist(_ keys: [String]) -> ServerConfigBuilder {
+        config[Keys.userPropertyWhitelist] = keys
+        return this
+    }
+
+    @discardableResult
+    func userPropertyCacheLimit(_ limit: UInt) -> ServerConfigBuilder {
+        config[Keys.userPropertyCacheLimit] = limit
+        return this
+    }
+
+    @discardableResult
+    func segmentationBlacklist(_ keys: [String]) -> ServerConfigBuilder {
+        config[Keys.segmentationBlacklist] = keys
+        return this
+    }
+
+    @discardableResult
+    func segmentationWhitelist(_ keys: [String]) -> ServerConfigBuilder {
+        config[Keys.segmentationWhitelist] = keys
+        return this
+    }
+
+    @discardableResult
+    func eventSegmentationBlacklist(_ map: [String: [String]]) -> ServerConfigBuilder {
+        config[Keys.eventSegmentationBlacklist] = map
+        return this
+    }
+
+    @discardableResult
+    func eventSegmentationWhitelist(_ map: [String: [String]]) -> ServerConfigBuilder {
+        config[Keys.eventSegmentationWhitelist] = map
+        return this
+    }
+
+    @discardableResult
+    func journeyTriggerEvents(_ keys: [String]) -> ServerConfigBuilder {
+        config[Keys.journeyTriggerEvents] = keys
+        return this
+    }
+
     // MARK: - Intervals and Sizes
     
     @discardableResult
@@ -247,39 +319,69 @@ class ServerConfigBuilder {
         let persistency = CountlyPersistency.sharedInstance()
         let crashReporter = CountlyCrashReporter.sharedInstance()
         
-        // Feature flags
-        XCTAssertEqual(config[Keys.tracking] as? Bool, moduleConfig?.trackingEnabled())
-        XCTAssertEqual(config[Keys.networking] as? Bool, moduleConfig?.networkingEnabled())
-        XCTAssertEqual(config[Keys.crashReporting] as? Bool, moduleConfig?.crashReportingEnabled())
-        XCTAssertEqual(config[Keys.viewTracking] as? Bool, moduleConfig?.viewTrackingEnabled())
-        XCTAssertEqual(config[Keys.sessionTracking] as? Bool, moduleConfig?.sessionTrackingEnabled())
-        XCTAssertEqual(config[Keys.customEventTracking] as? Bool, moduleConfig?.customEventTrackingEnabled())
-        XCTAssertEqual(config[Keys.enterContentZone] as? Bool, moduleConfig?.enterContentZone())
-        XCTAssertEqual(config[Keys.locationTracking] as? Bool, moduleConfig?.locationTrackingEnabled())
-        XCTAssertEqual(config[Keys.refreshContentZone] as? Bool, moduleConfig?.refreshContentZoneEnabled())
-        
+        // Feature flags (only validate if explicitly set in builder)
+        if let v = config[Keys.tracking] as? Bool { XCTAssertEqual(v, moduleConfig?.trackingEnabled()) }
+        if let v = config[Keys.networking] as? Bool { XCTAssertEqual(v, moduleConfig?.networkingEnabled()) }
+        if let v = config[Keys.crashReporting] as? Bool { XCTAssertEqual(v, moduleConfig?.crashReportingEnabled()) }
+        if let v = config[Keys.viewTracking] as? Bool { XCTAssertEqual(v, moduleConfig?.viewTrackingEnabled()) }
+        if let v = config[Keys.sessionTracking] as? Bool { XCTAssertEqual(v, moduleConfig?.sessionTrackingEnabled()) }
+        if let v = config[Keys.customEventTracking] as? Bool { XCTAssertEqual(v, moduleConfig?.customEventTrackingEnabled()) }
+        if let v = config[Keys.enterContentZone] as? Bool { XCTAssertEqual(v, moduleConfig?.enterContentZone()) }
+        if let v = config[Keys.locationTracking] as? Bool { XCTAssertEqual(v, moduleConfig?.locationTrackingEnabled()) }
+        if let v = config[Keys.refreshContentZone] as? Bool { XCTAssertEqual(v, moduleConfig?.refreshContentZoneEnabled()) }
+
         // Debug mode
-        XCTAssertEqual(config[Keys.logging] as? Bool, common.enableDebug)
-        
+        if let v = config[Keys.logging] as? Bool { XCTAssertEqual(v, common.enableDebug) }
+
         // Limits
-        XCTAssertEqual(config[Keys.limitKeyLength] as? UInt, common.maxKeyLength)
-        XCTAssertEqual(config[Keys.limitValueSize] as? UInt, common.maxValueLength)
-        XCTAssertEqual(config[Keys.limitSegValues] as? UInt, common.maxSegmentationValues)
-        XCTAssertEqual(config[Keys.limitBreadcrumb] as? UInt, CountlyCrashReporter.sharedInstance()?.crashLogLimit)
-        
+        if let v = config[Keys.limitKeyLength] as? UInt { XCTAssertEqual(v, common.maxKeyLength) }
+        if let v = config[Keys.limitValueSize] as? UInt { XCTAssertEqual(v, common.maxValueLength) }
+        if let v = config[Keys.limitSegValues] as? UInt { XCTAssertEqual(v, common.maxSegmentationValues) }
+        if let v = config[Keys.limitBreadcrumb] as? UInt { XCTAssertEqual(v, CountlyCrashReporter.sharedInstance()?.crashLogLimit) }
+
         // Consent
-        XCTAssertEqual(config[Keys.consentRequired] as? Bool, consentManager?.requiresConsent)
-        
+        if let v = config[Keys.consentRequired] as? Bool { XCTAssertEqual(v, consentManager?.requiresConsent) }
+
         // Queue sizes and intervals
-        XCTAssertEqual(config[Keys.eventQueueSize] as? UInt, CountlyPersistency.sharedInstance().eventSendThreshold)
-        XCTAssertEqual(config[Keys.requestQueueSize] as? UInt, CountlyPersistency.sharedInstance().storedRequestsLimit)
-        XCTAssertEqual(config[Keys.dropOldRequestTime] as? UInt, CountlyPersistency.sharedInstance().requestDropAgeHours)
-        XCTAssertEqual(config[Keys.sessionUpdateInterval] as? Int, moduleConfig?.sessionInterval())
-        
+        if let v = config[Keys.eventQueueSize] as? UInt { XCTAssertEqual(v, CountlyPersistency.sharedInstance().eventSendThreshold) }
+        if let v = config[Keys.requestQueueSize] as? UInt { XCTAssertEqual(v, CountlyPersistency.sharedInstance().storedRequestsLimit) }
+        if let v = config[Keys.dropOldRequestTime] as? UInt { XCTAssertEqual(v, CountlyPersistency.sharedInstance().requestDropAgeHours) }
+        if let v = config[Keys.sessionUpdateInterval] as? Int { XCTAssertEqual(v, moduleConfig?.sessionInterval()) }
+
         #if os(iOS)
-        XCTAssertEqual(config[Keys.contentZoneInterval] as? TimeInterval, CountlyContentBuilderInternal.sharedInstance().zoneTimerInterval)
-        
-#endif
+        if let v = config[Keys.contentZoneInterval] as? TimeInterval { XCTAssertEqual(v, CountlyContentBuilderInternal.sharedInstance().zoneTimerInterval) }
+        #endif
+
+        // User property cache limit
+        if let upcl = config[Keys.userPropertyCacheLimit] as? UInt {
+            XCTAssertEqual(Int(upcl), moduleConfig?.userPropertyCacheLimit())
+        }
+
+        // Listing filter validation: event filter
+        if let eb = config[Keys.eventBlacklist] as? [String] {
+            XCTAssertFalse(moduleConfig!.shouldRecordEvent(eb.first ?? ""))
+            XCTAssertTrue(moduleConfig!.shouldRecordEvent("nonexistent_event_xyz"))
+        } else if let ew = config[Keys.eventWhitelist] as? [String] {
+            XCTAssertTrue(moduleConfig!.shouldRecordEvent(ew.first ?? ""))
+            XCTAssertFalse(moduleConfig!.shouldRecordEvent("nonexistent_event_xyz"))
+        }
+
+        // User property filter
+        if let upb = config[Keys.userPropertyBlacklist] as? [String] {
+            XCTAssertFalse(moduleConfig!.shouldRecordUserProperty(upb.first ?? ""))
+            XCTAssertTrue(moduleConfig!.shouldRecordUserProperty("nonexistent_prop_xyz"))
+        } else if let upw = config[Keys.userPropertyWhitelist] as? [String] {
+            XCTAssertTrue(moduleConfig!.shouldRecordUserProperty(upw.first ?? ""))
+            XCTAssertFalse(moduleConfig!.shouldRecordUserProperty("nonexistent_prop_xyz"))
+        }
+
+        // Journey trigger events
+        if let jte = config[Keys.journeyTriggerEvents] as? [String] {
+            for key in jte {
+                XCTAssertTrue(moduleConfig!.isJourneyTriggerEvent(key))
+            }
+            XCTAssertFalse(moduleConfig!.isJourneyTriggerEvent("nonexistent_jte_xyz"))
+        }
     }
     
     // MARK: - Helper Methods
