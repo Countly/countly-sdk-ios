@@ -29,6 +29,6 @@
 - (void)sendHealthCheck;
 
 // Exposed for testing purposes only.
-- (void)resetState;
+- (void)resetInstance;
 
 @end

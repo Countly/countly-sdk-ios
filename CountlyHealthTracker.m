@@ -155,7 +155,7 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
     });
 }
 
-- (void)resetState {
+- (void)resetInstance {
     CLY_LOG_D(@"%s resetting health check state", __FUNCTION__);
     dispatch_async(self.hcQueue, ^{
         [self clearValues];

@@ -1520,7 +1520,7 @@ static dispatch_once_t onceToken;
     }
 
     // Reset health tracker state
-    [CountlyHealthTracker.sharedInstance resetState];
+    [CountlyHealthTracker.sharedInstance resetInstance];
 
     // Clear crash logs (safe operation - just clears array or deletes file)
     if (CountlyCrashReporter.sharedInstance)
