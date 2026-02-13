@@ -369,8 +369,16 @@ static dispatch_once_t onceToken;
     config.updateSessionPeriod = _sessionInterval ?: config.updateSessionPeriod;
     _sessionInterval = config.updateSessionPeriod;
     
+    BOOL consentDidChange = !config.requiresConsent && _consentRequired;
     config.requiresConsent = _consentRequired ?: config.requiresConsent;
     CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
+    if(consentDidChange){
+        [CountlyConsentManager.sharedInstance sendConsents];
+        if (!CountlyConsentManager.sharedInstance.consentForLocation)
+        {
+            [CountlyConnectionManager.sharedInstance sendLocationInfo];
+        }
+    }
 
 #if (TARGET_OS_IOS)
     [config.content setZoneTimerInterval:_contentZoneInterval ?: config.content.getZoneTimerInterval];
@@ -405,7 +413,8 @@ static dispatch_once_t onceToken;
 
     if (!_locationTracking && !CountlyLocationManager.sharedInstance.isLocationInfoDisabled)
     {
-        [CountlyLocationManager.sharedInstance disableLocationInfo];
+        [CountlyLocationManager.sharedInstance disableLocation];
+        [CountlyConnectionManager.sharedInstance sendLocationInfo];
     }
     
     if(_backoffMechanism && config.disableBackoffMechanism){

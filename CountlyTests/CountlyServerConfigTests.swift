@@ -244,6 +244,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             "metrics": 0
         ]
         TestUtils.validateRequest(["consent": consents], 0)
+        TestUtils.validateRequest(["location": ""], 1)
 
         validateCounts(tracker.counts, hc: 1, fc: 0, rc: 0, cc: 0, sc: 1)
     }
@@ -265,7 +266,10 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         
         let stackTrace = flowAllFeatures()
         
-        //ModuleCrashTests.validateCrash(stackTrace, "", false, false, 7, 0, [:], 0, [:], [])
+        TestUtils.validateRequest([:], 0, { request in
+            let crash = request["crash"] as? [String: Any]
+            XCTAssertTrue(crash != nil)
+        })
         try TestUtils.validateEventInRQ("test_event", [:], 1, 7, 0, 2)
         try TestUtils.validateEventInRQ("[CLY]_view", ["name": "test_view", "segment": "iOS", "visit": "1"], 1, 7, 1, 2)
         TestUtils.validateRequest([:], 2, { request in
@@ -503,6 +507,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             
             let stackTrace = flowAllFeatures()
             immediateFlowAllFeatures()
+
             
             XCTAssertTrue(TestUtils.getCurrentRQ()![0].contains("begin_session"))
             // Events should not be tracked
@@ -536,7 +541,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             
             let stackTrace = flowAllFeatures()
             immediateFlowAllFeatures()
-            
             // Verify that crash is not recorded
             for request in TestUtils.getCurrentRQ()! {
                 XCTAssertFalse(request.contains("crash="))
@@ -564,7 +568,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             
             let stackTrace = flowAllFeatures()
             immediateFlowAllFeatures()
-            
             // Verify no sessions, events, or views are recorded
             for request in TestUtils.getCurrentRQ()! {
                 XCTAssertFalse(request.contains("begin_session"))
@@ -808,18 +811,16 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         MockURLProtocol.requestHandler = { request in
             let requestString = request.url?.absoluteString ?? ""
             var responseString: Data? = nil
+            NSLog("REQUEST_FROM_PROTOCOL: %@", requestString);
 
             if requestString.contains("hc=") {
                 tracker.counts[0] += 1
             } else if requestString.contains("method=feedback") {
                 tracker.counts[1] += 1
-                responseString = "[]".data(using: .utf8)
             } else if requestString.contains("method=rc") {
                 tracker.counts[2] += 1
-                //responseString = "[]".data(using: .utf8)
             } else if requestString.contains("method=queue") {
                 tracker.counts[3] += 1
-                responseString = "[]".data(using: .utf8)
             } else if requestString.contains("method=sc") {
                 tracker.counts[4] += 1
                 do{
@@ -862,13 +863,11 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     }
     
     private func validateCounts(_ counts: [Int], hc: Int, fc: Int, rc: Int, cc: Int, sc: Int) {
-        TestUtils.sleep(6) {
-            XCTAssertEqual(hc, counts[0], "Health check count mismatch. Expected: \(hc), Got: \(counts[0])")
-            XCTAssertEqual(fc, counts[1], "Feedback request count mismatch. Expected: \(fc), Got: \(counts[1])")
-            XCTAssertEqual(rc, counts[2], "Remote config count mismatch. Expected: \(rc), Got: \(counts[2])")
-            //XCTAssertEqual(cc, counts[3], "Content request count mismatch. Expected: \(cc), Got: \(counts[3])")
-            XCTAssertEqual(sc, counts[4], "Server config count mismatch. Expected: \(sc), Got: \(counts[4])")
-        }
+        XCTAssertEqual(hc, counts[0], "Health check count mismatch. Expected: \(hc), Got: \(counts[0])")
+        XCTAssertEqual(fc, counts[1], "Feedback request count mismatch. Expected: \(fc), Got: \(counts[1])")
+        XCTAssertEqual(rc, counts[2], "Remote config count mismatch. Expected: \(rc), Got: \(counts[2])")
+        XCTAssertEqual(cc, counts[3], "Content request count mismatch. Expected: \(cc), Got: \(counts[3])")
+        XCTAssertEqual(sc, counts[4], "Server config count mismatch. Expected: \(sc), Got: \(counts[4])")
     }
     
     private func flowAllFeatures() -> String {
@@ -909,7 +908,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         TestUtils.sleep(2) {
             Countly.sharedInstance().content().refreshContentZone()
         }
-        
+        TestUtils.sleep(2){}
     }
     
     private func feedbackFlowAllFeatures() {
@@ -934,7 +933,10 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         XCTAssertEqual(8, TestUtils.getCurrentRQ()?.count)
 
         XCTAssertTrue(TestUtils.getCurrentRQ()![0].contains("begin_session"))
-        //ModuleCrashTests.validateCrash(stackTrace, "", false, false, 8, 1, [:], 0, [:], [])
+        TestUtils.validateRequest([:], 1, { request in
+            let crash = request["crash"] as? [String: Any]
+            XCTAssertTrue(crash != nil)
+        })
         //try TestUtils.validateEventInRQ("[CLY]_orientation", ["mode": "portrait"], 2, 8, 0, 3)
         try TestUtils.validateEventInRQ("test_event", [:], 2, 8, 0, 2) // 1, 3
         try TestUtils.validateEventInRQ("[CLY]_view", ["name": "test_view", "segment": "iOS", "visit": "1", "start": "1"], 2, 8, 1, 2) // 2, 3

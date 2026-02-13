@@ -207,7 +207,7 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     
     [self setRequestQueueLockedThreadSafe:YES];
     
-    NSURLSessionTask *dataTask = [[NSURLSession sharedSession] dataTaskWithRequest:[self fetchContentsRequest] completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+    NSURLSessionTask *dataTask = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self fetchContentsRequest] completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (error) {
             CLY_LOG_I(@"%s fetch content details failed: [%@]", __FUNCTION__, error);
             [self setRequestQueueLockedThreadSafe:NO];
