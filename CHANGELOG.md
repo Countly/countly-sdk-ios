@@ -1,3 +1,12 @@
+## XX.XX.XX
+* Added server-side listing filters support for controlling what data gets recorded:
+  * Event filters (blacklist/whitelist) to control which events are recorded
+  * User property filters (blacklist/whitelist) to control which user properties are recorded
+  * Custom event segmentation filters to control which segmentation keys are recorded across all events
+  * Custom event-specific segmentation filters to control segmentation keys per custom event
+  * User property cache limit to limit the number of user properties recorded per request
+* Added journey trigger events that automatically refresh content zones when journey trigger events are recorded
+
 ## 25.4.10
 * Mitigated an issue when returning from the external content link.
 
