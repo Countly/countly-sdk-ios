@@ -34,40 +34,8 @@ class CountlyBaseTestCase: XCTestCase {
     }
     
     func cleanupState() {
-        // Reset view tracking state BEFORE halt — sharedInstance() returns nil after halt.
-        // Use KVC to clear internal state directly since stopAllViews checks consent
-        // and may be a no-op if previous test required consent.
-        if let viewTracking = CountlyViewTrackingInternal.sharedInstance() {
-            viewTracking.setValue(NSMutableDictionary(), forKey: "viewDataDictionary")
-            viewTracking.setValue(nil, forKey: "currentViewID")
-            viewTracking.setValue(nil, forKey: "currentViewName")
-            viewTracking.setValue(nil, forKey: "previousViewID")
-            viewTracking.setValue(nil, forKey: "previousViewName")
-            viewTracking.setValue(false, forKey: "isAutoViewTrackingActive")
-            viewTracking.resetFirstView()
-        }
-        CountlyHealthTracker.sharedInstance()?.resetState()
-
+        // All cleanup logic now handled inside Countly.halt(true)
         Countly.sharedInstance().halt(true)
-        // halt(true) calls removePersistentDomainForName which doesn't work in xctest
-        // environment (different bundle ID), so clear SDK keys manually
-        let sdkKeys = [
-            "kCountlyServerConfigPersistencyKey",
-            "kCountlyHealthCheckStatePersistencyKey",
-            "kCountlyQueuedRequestsPersistencyKey",
-            "kCountlyStartedEventsPersistencyKey",
-            "kCountlyStoredDeviceIDKey",
-            "kCountlyStoredNSUUIDKey",
-            "kCountlyStarRatingStatusKey",
-            "kCountlyRemoteConfigKey",
-            "kCountlyIsCustomDeviceIDKey",
-            "kCountlyNotificationPermissionKey",
-            "kCountlyWatchParentDeviceIDKey"
-        ]
-        for key in sdkKeys {
-            UserDefaults.standard.removeObject(forKey: key)
-        }
-        UserDefaults.standard.synchronize()
     }
 }
 

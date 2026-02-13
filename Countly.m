@@ -1503,6 +1503,42 @@ static dispatch_once_t onceToken;
 - (void)halt:(BOOL) clearStorage
 {
     CLY_LOG_I(@"%s clearStorage: [%d]", __FUNCTION__, clearStorage);
+
+    // Reset view tracking state BEFORE halt — sharedInstance() returns nil after halt.
+    // Use KVC to clear internal state directly since stopAllViews checks consent
+    // and may be a no-op if previous test required consent.
+    if (CountlyViewTrackingInternal.sharedInstance)
+    {
+        CountlyViewTrackingInternal* viewTracking = CountlyViewTrackingInternal.sharedInstance;
+        [viewTracking setValue:NSMutableDictionary.new forKey:@"viewDataDictionary"];
+        [viewTracking setValue:nil forKey:@"currentViewID"];
+        [viewTracking setValue:nil forKey:@"currentViewName"];
+        [viewTracking setValue:nil forKey:@"previousViewID"];
+        [viewTracking setValue:nil forKey:@"previousViewName"];
+        [viewTracking setValue:@NO forKey:@"isAutoViewTrackingActive"];
+        [viewTracking resetFirstView];
+    }
+
+    // Reset health tracker state
+    [CountlyHealthTracker.sharedInstance resetState];
+
+    // Clear crash logs (safe operation - just clears array or deletes file)
+    if (CountlyCrashReporter.sharedInstance)
+    {
+        [CountlyCrashReporter.sharedInstance clearCrashLogs];
+    }
+
+    // Clear custom performance monitoring traces (safe operation - just clears dictionary)
+    if (CountlyPerformanceMonitoring.sharedInstance)
+    {
+        [CountlyPerformanceMonitoring.sharedInstance clearAllCustomTraces];
+    }
+
+    // Note: CountlyRemoteConfigInternal.clearAll is not called here because it triggers
+    // storeRemoteConfig which involves file I/O and can block during shutdown.
+    // Remote config state will persist across halt/start but is cleared via UserDefaults
+    // key removal below.
+
     [CountlyConsentManager.sharedInstance resetInstance];
     [CountlyPersistency.sharedInstance resetInstance:clearStorage];
     [CountlyDeviceInfo.sharedInstance resetInstance];
@@ -1511,11 +1547,33 @@ static dispatch_once_t onceToken;
     [CountlyUserDetails.sharedInstance clearUserDetails];
     [self resetInstance];
     [CountlyCommon.sharedInstance resetInstance];
-    
+
     if(clearStorage)
     {
         NSString *appDomain = [[NSBundle mainBundle] bundleIdentifier];
         [NSUserDefaults.standardUserDefaults removePersistentDomainForName:appDomain];
+
+        // halt(true) calls removePersistentDomainForName which doesn't work in xctest
+        // environment (different bundle ID), so clear SDK keys manually
+        NSArray* sdkKeys = @[
+            @"kCountlyServerConfigPersistencyKey",
+            @"kCountlyHealthCheckStatePersistencyKey",
+            @"kCountlyQueuedRequestsPersistencyKey",
+            @"kCountlyStartedEventsPersistencyKey",
+            @"kCountlyStoredDeviceIDKey",
+            @"kCountlyStoredNSUUIDKey",
+            @"kCountlyStarRatingStatusKey",
+            @"kCountlyRemoteConfigKey",
+            @"kCountlyIsCustomDeviceIDKey",
+            @"kCountlyNotificationPermissionKey",
+            @"kCountlyWatchParentDeviceIDKey"
+        ];
+        for (NSString* key in sdkKeys)
+        {
+            [NSUserDefaults.standardUserDefaults removeObjectForKey:key];
+        }
+
+        // Single synchronize after all UserDefaults modifications
         [NSUserDefaults.standardUserDefaults synchronize];
     }
 }

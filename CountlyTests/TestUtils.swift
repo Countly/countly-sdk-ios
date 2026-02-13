@@ -17,52 +17,13 @@ class TestUtils {
     static let SDK_NAME = "objc-native-ios"
     
     static func cleanup() -> Void {
-        // Clear ALL SDK UserDefaults keys BEFORE starting the SDK to prevent
-        // cross-contamination from previous test runs (removePersistentDomainForName
-        // does not work in xctest environment because bundle ID differs)
-        let sdkKeys = [
-            "kCountlyServerConfigPersistencyKey",
-            "kCountlyHealthCheckStatePersistencyKey",
-            "kCountlyQueuedRequestsPersistencyKey",
-            "kCountlyStartedEventsPersistencyKey",
-            "kCountlyStoredDeviceIDKey",
-            "kCountlyStoredNSUUIDKey",
-            "kCountlyStarRatingStatusKey",
-            "kCountlyRemoteConfigKey",
-            "kCountlyIsCustomDeviceIDKey",
-            "kCountlyNotificationPermissionKey",
-            "kCountlyWatchParentDeviceIDKey"
-        ]
-        for key in sdkKeys {
-            UserDefaults.standard.removeObject(forKey: key)
-        }
-        UserDefaults.standard.synchronize()
-
         let config = createBaseConfig()
         config.requiresConsent = false;
         config.manualSessionHandling = true;
         Countly.sharedInstance().start(with: config);
         sleep(1){
-            // Reset state BEFORE halt — sharedInstance() returns nil after halt for view tracking.
-            // Use KVC to clear internal state directly since stopAllViews checks consent
-            // and isAutoViewTrackingActive, which may cause it to no-op.
-            if let viewTracking = CountlyViewTrackingInternal.sharedInstance() {
-                viewTracking.setValue(NSMutableDictionary(), forKey: "viewDataDictionary")
-                viewTracking.setValue(nil, forKey: "currentViewID")
-                viewTracking.setValue(nil, forKey: "currentViewName")
-                viewTracking.setValue(nil, forKey: "previousViewID")
-                viewTracking.setValue(nil, forKey: "previousViewName")
-                viewTracking.setValue(false, forKey: "isAutoViewTrackingActive")
-                viewTracking.resetFirstView()
-            }
-            CountlyHealthTracker.sharedInstance()?.resetState()
-
+            // All cleanup logic now handled inside Countly.halt(true)
             Countly.sharedInstance().halt(true)
-            // Clear again after halt
-            for key in sdkKeys {
-                UserDefaults.standard.removeObject(forKey: key)
-            }
-            UserDefaults.standard.synchronize()
             sleep(1){}
         }
     }

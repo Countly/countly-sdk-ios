@@ -23,24 +23,8 @@ class CountlyCallbackBaseTestCase: XCTestCase {
 
         // Always halt first to clear state from previous test classes,
         // ensuring start(with:) accepts our MockURLProtocol config
+        // All cleanup logic now handled inside Countly.halt(true)
         Countly.sharedInstance().halt(true)
-        let sdkKeys = [
-            "kCountlyServerConfigPersistencyKey",
-            "kCountlyHealthCheckStatePersistencyKey",
-            "kCountlyQueuedRequestsPersistencyKey",
-            "kCountlyStartedEventsPersistencyKey",
-            "kCountlyStoredDeviceIDKey",
-            "kCountlyStoredNSUUIDKey",
-            "kCountlyStarRatingStatusKey",
-            "kCountlyRemoteConfigKey",
-            "kCountlyIsCustomDeviceIDKey",
-            "kCountlyNotificationPermissionKey",
-            "kCountlyWatchParentDeviceIDKey"
-        ]
-        for key in sdkKeys {
-            UserDefaults.standard.removeObject(forKey: key)
-        }
-        UserDefaults.standard.synchronize()
 
         // Configure MockURLProtocol to return valid JSON by default
         MockURLProtocol.requestHandler = createSuccessHandler()
