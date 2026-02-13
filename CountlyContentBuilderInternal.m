@@ -18,8 +18,6 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     dispatch_queue_t _contentQueue;
 }
 
-NSInteger const contentInitialDelay = 4;
-
 #if (TARGET_OS_IOS)
 + (instancetype)sharedInstance {
     static CountlyContentBuilderInternal *instance = nil;
@@ -38,6 +36,8 @@ NSInteger const contentInitialDelay = 4;
         _requestTimer = nil;
         _isCurrentlyContentShown = NO;
         _contentQueue = dispatch_queue_create("ly.countly.content.queue", DISPATCH_QUEUE_SERIAL);
+        _contentInitialDelay = 4;
+        _refreshContentZoneDelay = 2.5;
     }
     
     return self;
@@ -94,8 +94,8 @@ NSInteger const contentInitialDelay = 4;
     self.currentTags = tags;
     int contentDelay = 0;
     
-    if (CountlyCommon.sharedInstance.timeSinceLaunch < contentInitialDelay) {
-        contentDelay = contentInitialDelay;
+    if (CountlyCommon.sharedInstance.timeSinceLaunch < _contentInitialDelay) {
+        contentDelay = _contentInitialDelay;
     }
     
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(contentDelay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
@@ -133,7 +133,7 @@ NSInteger const contentInitialDelay = 4;
     [self exitContentZone];
     [CountlyConnectionManager.sharedInstance attemptToSendStoredRequests];
     
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(2.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(_refreshContentZoneDelay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
     {
         [self enterContentZone];
     });

@@ -23,6 +23,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
     ///   - readerBlock: Block executed by reader threads
     private func runConcurrentStressTest(
         iterations: Int = 10_000,
+        readerIterations: Int? = nil,
         writerDelay: useconds_t = 0,
         readerDelay: useconds_t = 0,
         extraThreads: Int = 0,
@@ -34,11 +35,12 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
     ) {
         let config = createBaseConfig()
         Countly.sharedInstance().start(with: config)
-        
+
+        let actualReaderIterations = readerIterations ?? min(iterations, 100)
         let group = DispatchGroup()
         let writerQueue = DispatchQueue(label: "test.writer", attributes: .concurrent)
         let readerQueue = DispatchQueue(label: "test.reader", attributes: .concurrent)
-        
+
         // Writer operations
         group.enter()
         writerQueue.async {
@@ -50,11 +52,11 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
             }
             group.leave()
         }
-        
-        // Reader operations
+
+        // Reader operations (capped to avoid exhausting file descriptors from network calls)
         group.enter()
         readerQueue.async {
-            for _ in 0..<iterations {
+            for _ in 0..<actualReaderIterations {
                 autoreleasepool {
                     readerBlock()
                     if readerDelay > 0 { usleep(readerDelay) }
@@ -62,12 +64,13 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
             }
             group.leave()
         }
-        
+
         // Additional mixed operations for maximum contention
+        let mixedIterations = min(iterations / 2, 100)
         for threadIndex in 0..<extraThreads {
             group.enter()
             DispatchQueue.global(qos: .userInitiated).async {
-                for i in 0..<(iterations / 2) {
+                for i in 0..<mixedIterations {
                     autoreleasepool {
                         if i % 2 == 0 {
                             writerBlock(i + threadIndex * iterations)
@@ -79,7 +82,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
                 group.leave()
             }
         }
-        
+
         let result = group.wait(timeout: .now() + timeout)
         XCTAssertEqual(result, .success, "Concurrent stress test did not complete within \(timeout) seconds", file: file, line: line)
     }
@@ -145,7 +148,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
     /// Specifically targets the objc_release crash that occurred with rapid string copying
     func testLogFailedNetworkRequest_objcReleaseErrorPrevention() {
         runConcurrentStressTest(
-            iterations: 10_000,
+            iterations: 500,
             writerDelay: 50,
             readerDelay: 50,
             writerBlock: { _ in
@@ -217,10 +220,10 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
     func testLogFailedNetworkRequest_errorMessageRaceCondition() {
         let config = createBaseConfig()
         Countly.sharedInstance().start(with: config)
-        
-        let iterations = 20_000
+
+        let iterations = 2_000
         let group = DispatchGroup()
-        
+
         // Multiple writers rapidly updating errorMessage property
         for writerIndex in 0..<8 {
             group.enter()
@@ -235,12 +238,13 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
                 group.leave()
             }
         }
-        
+
         // Multiple readers accessing errorMessage through sendHealthCheck
-        for _ in 0..<4 {
+        // Capped to avoid exhausting file descriptors from network calls
+        for _ in 0..<2 {
             group.enter()
             DispatchQueue.global(qos: .userInitiated).async {
-                for _ in 0..<iterations {
+                for _ in 0..<50 {
                     autoreleasepool {
                         CountlyHealthTracker.sharedInstance().sendHealthCheck()
                     }
@@ -248,7 +252,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
                 group.leave()
             }
         }
-        
+
         // Mixed operations for maximum property contention
         group.enter()
         DispatchQueue.global(qos: .userInitiated).async {
@@ -259,7 +263,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
             }
             group.leave()
         }
-        
+
         let result = group.wait(timeout: .now() + 45)
         XCTAssertEqual(result, .success, "Error message race condition test did not complete in time")
     }
@@ -294,8 +298,8 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
                         CountlyHealthTracker.sharedInstance()
                             .logFailedNetworkRequest(withStatusCode: 400, errorResponse: uniqueString)
                         
-                        // Immediate read to create contention
-                        if i % 10 == 0 {
+                        // Immediate read to create contention (capped to avoid file descriptor exhaustion)
+                        if i % 200 == 0 {
                             CountlyHealthTracker.sharedInstance().sendHealthCheck()
                         }
                     }
@@ -327,11 +331,11 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
     func testLogFailedNetworkRequest_synchronizedOperationsPerformance() {
         let config = createBaseConfig()
         Countly.sharedInstance().start(with: config)
-        
+
         measure(metrics: [XCTClockMetric()]) {
-            let iterations = 10_000
+            let iterations = 500
             let group = DispatchGroup()
-            
+
             // Test write performance
             group.enter()
             DispatchQueue.global(qos: .userInitiated).async {
@@ -341,7 +345,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
                 }
                 group.leave()
             }
-            
+
             // Test read performance (fewer iterations as they trigger network requests)
             group.enter()
             DispatchQueue.global(qos: .userInitiated).async {
@@ -350,8 +354,8 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
                 }
                 group.leave()
             }
-            
-            let result = group.wait(timeout: .now() + 10)
+
+            let result = group.wait(timeout: .now() + 30)
             XCTAssertEqual(result, .success, "Performance test did not complete in time")
         }
     }

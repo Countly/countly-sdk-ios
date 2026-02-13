@@ -543,19 +543,18 @@ static dispatch_once_t onceToken;
     _bomRequestAge = 24;
     _bomDuration = 60;
 
-    // Reset numeric properties to 0 so notifySdkConfigChange: falls back to CountlyConfig defaults
-    _eventQueueSize = 0;
-    _requestQueueSize = 0;
-    _sessionInterval = 0;
-    _limitKeyLength = 0;
-    _limitValueSize = 0;
-    _limitSegValues = 0;
-    _limitBreadcrumb = 0;
-    _limitTraceLine = 0;
-    _limitTraceLength = 0;
+    _eventQueueSize = 100;
+    _requestQueueSize = 1000;
+    _sessionInterval = 60;
+    _limitKeyLength = 128;
+    _limitValueSize = 256;
+    _limitSegValues = 100;
+    _limitBreadcrumb = 100;
+    _limitTraceLine = 200;
+    _limitTraceLength = 30;
     _consentRequired = NO;
     _dropOldRequestTime = 0;
-    _contentZoneInterval = 0;
+    _contentZoneInterval = 30;
 
     _eventFilterSet = [NSSet set];
     _eventFilterIsWhitelist = NO;

@@ -12,7 +12,7 @@ class TestUtils {
     
     static let commonDeviceId: String = "deviceId"
     static let commonAppKey: String = "appkey"
-    static let host: String = "https://testing.count.ly/"
+    static let host: String = "https://YOUR_SERVER"
     static let SDK_VERSION = "25.4.10"
     static let SDK_NAME = "objc-native-ios"
     
@@ -43,10 +43,21 @@ class TestUtils {
         config.manualSessionHandling = true;
         Countly.sharedInstance().start(with: config);
         sleep(1){
+            // Reset state BEFORE halt — sharedInstance() returns nil after halt for view tracking.
+            // Use KVC to clear internal state directly since stopAllViews checks consent
+            // and isAutoViewTrackingActive, which may cause it to no-op.
+            if let viewTracking = CountlyViewTrackingInternal.sharedInstance() {
+                viewTracking.setValue(NSMutableDictionary(), forKey: "viewDataDictionary")
+                viewTracking.setValue(nil, forKey: "currentViewID")
+                viewTracking.setValue(nil, forKey: "currentViewName")
+                viewTracking.setValue(nil, forKey: "previousViewID")
+                viewTracking.setValue(nil, forKey: "previousViewName")
+                viewTracking.setValue(false, forKey: "isAutoViewTrackingActive")
+                viewTracking.resetFirstView()
+            }
+            CountlyHealthTracker.sharedInstance()?.resetState()
+
             Countly.sharedInstance().halt(true)
-            // Reset view tracking and health check state to prevent cross-contamination
-            CountlyViewTrackingInternal.sharedInstance().resetFirstView()
-            CountlyHealthTracker.sharedInstance().resetState()
             // Clear again after halt
             for key in sdkKeys {
                 UserDefaults.standard.removeObject(forKey: key)

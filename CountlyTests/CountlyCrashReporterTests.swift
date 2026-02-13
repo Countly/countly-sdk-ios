@@ -12,7 +12,18 @@ import XCTest
 @testable import Countly
 
 class CountlyCrashReporterTests: CountlyBaseTestCase {
-    
+
+    /// Local Countly instances created during tests.
+    var localCountlyInstances: [Countly] = []
+
+    override func tearDown() {
+        for instance in localCountlyInstances {
+            instance.halt(true)
+        }
+        localCountlyInstances = []
+        super.tearDown()
+    }
+
     func testRecordHandledException_globalCrashFilter() throws {
         let cConfig = createBaseConfig()
         cConfig.manualSessionHandling = true
@@ -42,6 +53,7 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
         cConfig.crashes().crashFilterCallback = crashFilterBlock
         
         let countly = Countly()
+        localCountlyInstances.append(countly)
         countly.start(with: cConfig)
         
         // First Exception

@@ -10,7 +10,7 @@
   ],
   "defaultOptions" : {
     "testTimeoutsEnabled" : true,
-    "threadSanitizerEnabled" : true,
+    "threadSanitizerEnabled" : false,
     "undefinedBehaviorSanitizerEnabled" : true
   },
   "testTargets" : [

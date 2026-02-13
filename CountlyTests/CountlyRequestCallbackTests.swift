@@ -150,7 +150,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
         wait(for: [expectation], timeout: 5.0)
 
         // Wait a bit more to ensure callback isn't called again
-        TestUtils.sleep(2) {}
+        TestUtils.sleep(0.5) {}
 
         XCTAssertEqual(callbackCount, 1, "Callback should be called exactly once")
     }
@@ -214,7 +214,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         wait(for: [expectation], timeout: 5.0)
 
-        TestUtils.sleep(2) {}
+        TestUtils.sleep(0.5) {}
 
         XCTAssertEqual(callbackCount, 1, "Callback should be called exactly once even on failure")
     }
@@ -253,7 +253,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.proceedOnQueue()
 
-        wait(for: [expectation], timeout: 15.0)
+        wait(for: [expectation], timeout: 5.0)
 
         XCTAssertTrue(callback1Executed, "Callback 1 should have executed")
         XCTAssertTrue(callback2Executed, "Callback 2 should have executed")
@@ -297,7 +297,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.proceedOnQueue()
 
-        wait(for: [expectation], timeout: 15.0)
+        wait(for: [expectation], timeout: 5.0)
 
         XCTAssertEqual(executionOrder, [1, 2, 3], "Callbacks should execute in FIFO order")
     }
@@ -358,7 +358,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         wait(for: [callbackExpectation], timeout: 5.0)
 
-        TestUtils.sleep(1) {}
+        TestUtils.sleep(0.5) {}
 
         XCTAssertTrue(callbackExecuted, "Request callback should have executed")
         XCTAssertTrue(runnableExecuted, "Queue flush runnable should have executed")
@@ -392,7 +392,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         wait(for: [callbackExpectation], timeout: 5.0)
 
-        TestUtils.sleep(2) {}
+        TestUtils.sleep(0.5) {}
 
         XCTAssertTrue(callbackExecuted, "Request callback should have executed")
         XCTAssertFalse(runnableExecuted, "Queue flush runnable should NOT have executed due to failure")

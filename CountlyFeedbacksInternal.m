@@ -456,8 +456,9 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
             }
         }
 
-        if (error)
+        if (error || !feedbacksResponse || ![feedbacksResponse isKindOfClass:[NSDictionary class]])
         {
+            CLY_LOG_D(@"%s, aborting call, feedbacksResponse: [%@], error: [%@]",__FUNCTION__, feedbacksResponse, error);
             dispatch_async(dispatch_get_main_queue(), ^
             {
                 if (completionHandler)
@@ -466,9 +467,20 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
             return;
         }
+        
 
         NSMutableArray* feedbacks = NSMutableArray.new;
         NSArray* rawFeedbackObjects = feedbacksResponse[@"result"];
+        if(!rawFeedbackObjects){
+            CLY_LOG_D(@"%s, aborting call, response is not valid, error: [%@]", __FUNCTION__, error);
+            dispatch_async(dispatch_get_main_queue(), ^
+            {
+                if (completionHandler)
+                    completionHandler(nil, error);
+            });
+
+            return;
+        }
         for (NSDictionary * feedbackDict in rawFeedbackObjects)
         {
             CountlyFeedbackWidget *feedback = [CountlyFeedbackWidget createWithDictionary:feedbackDict];
