@@ -6,6 +6,8 @@
   * Custom event-specific segmentation filters to control segmentation keys per custom event
   * User property cache limit to limit the number of user properties recorded per request
 * Added journey trigger events that automatically refresh content zones when journey trigger events are recorded
+* Improved feedbacks response validation.
+* Improved consent requirements and location info management when they updated from server configuration.
 
 ## 25.4.10
 * Mitigated an issue when returning from the external content link.
