@@ -321,49 +321,75 @@ class ServerConfigBuilder {
         let crashReporter = CountlyCrashReporter.sharedInstance()
 
         // Feature flags (only validate if explicitly set in builder)
-        if let v = config[Keys.tracking] as? Bool { XCTAssertEqual(v, moduleConfig?.trackingEnabled()) }
-        if let v = config[Keys.networking] as? Bool { XCTAssertEqual(v, moduleConfig?.networkingEnabled()) }
-        if let v = config[Keys.crashReporting] as? Bool { XCTAssertEqual(v, moduleConfig?.crashReportingEnabled()) }
-        if let v = config[Keys.viewTracking] as? Bool { XCTAssertEqual(v, moduleConfig?.viewTrackingEnabled()) }
-        if let v = config[Keys.sessionTracking] as? Bool { XCTAssertEqual(v, moduleConfig?.sessionTrackingEnabled()) }
-        if let v = config[Keys.customEventTracking] as? Bool {
-            XCTAssertEqual(v, moduleConfig?.customEventTrackingEnabled())
+        if let val = config[Keys.tracking] as? Bool {
+            XCTAssertEqual(val, moduleConfig?.trackingEnabled())
         }
-        if let v = config[Keys.enterContentZone] as? Bool { XCTAssertEqual(v, moduleConfig?.enterContentZone()) }
-        if let v = config[Keys.locationTracking] as? Bool { XCTAssertEqual(v, moduleConfig?.locationTrackingEnabled()) }
-        if let v = config[Keys.refreshContentZone] as? Bool {
-            XCTAssertEqual(v, moduleConfig?.refreshContentZoneEnabled())
+        if let val = config[Keys.networking] as? Bool {
+            XCTAssertEqual(val, moduleConfig?.networkingEnabled())
+        }
+        if let val = config[Keys.crashReporting] as? Bool {
+            XCTAssertEqual(val, moduleConfig?.crashReportingEnabled())
+        }
+        if let val = config[Keys.viewTracking] as? Bool {
+            XCTAssertEqual(val, moduleConfig?.viewTrackingEnabled())
+        }
+        if let val = config[Keys.sessionTracking] as? Bool {
+            XCTAssertEqual(val, moduleConfig?.sessionTrackingEnabled())
+        }
+        if let val = config[Keys.customEventTracking] as? Bool {
+            XCTAssertEqual(val, moduleConfig?.customEventTrackingEnabled())
+        }
+        if let val = config[Keys.enterContentZone] as? Bool {
+            XCTAssertEqual(val, moduleConfig?.enterContentZone())
+        }
+        if let val = config[Keys.locationTracking] as? Bool {
+            XCTAssertEqual(val, moduleConfig?.locationTrackingEnabled())
+        }
+        if let val = config[Keys.refreshContentZone] as? Bool {
+            XCTAssertEqual(val, moduleConfig?.refreshContentZoneEnabled())
         }
 
         // Debug mode
-        if let v = config[Keys.logging] as? Bool { XCTAssertEqual(v, common.enableDebug) }
+        if let val = config[Keys.logging] as? Bool {
+            XCTAssertEqual(val, common.enableDebug)
+        }
 
         // Limits
-        if let v = config[Keys.limitKeyLength] as? UInt { XCTAssertEqual(v, common.maxKeyLength) }
-        if let v = config[Keys.limitValueSize] as? UInt { XCTAssertEqual(v, common.maxValueLength) }
-        if let v = config[Keys.limitSegValues] as? UInt { XCTAssertEqual(v, common.maxSegmentationValues) }
-        if let v = config[Keys.limitBreadcrumb] as? UInt {
-            XCTAssertEqual(v, CountlyCrashReporter.sharedInstance()?.crashLogLimit)
+        if let val = config[Keys.limitKeyLength] as? UInt {
+            XCTAssertEqual(val, common.maxKeyLength)
+        }
+        if let val = config[Keys.limitValueSize] as? UInt {
+            XCTAssertEqual(val, common.maxValueLength)
+        }
+        if let val = config[Keys.limitSegValues] as? UInt {
+            XCTAssertEqual(val, common.maxSegmentationValues)
+        }
+        if let val = config[Keys.limitBreadcrumb] as? UInt {
+            XCTAssertEqual(val, CountlyCrashReporter.sharedInstance()?.crashLogLimit)
         }
 
         // Consent
-        if let v = config[Keys.consentRequired] as? Bool { XCTAssertEqual(v, consentManager?.requiresConsent) }
+        if let val = config[Keys.consentRequired] as? Bool {
+            XCTAssertEqual(val, consentManager?.requiresConsent)
+        }
 
         // Queue sizes and intervals
-        if let v = config[Keys.eventQueueSize] as? UInt {
-            XCTAssertEqual(v, CountlyPersistency.sharedInstance().eventSendThreshold)
+        if let val = config[Keys.eventQueueSize] as? UInt {
+            XCTAssertEqual(val, CountlyPersistency.sharedInstance().eventSendThreshold)
         }
-        if let v = config[Keys.requestQueueSize] as? UInt {
-            XCTAssertEqual(v, CountlyPersistency.sharedInstance().storedRequestsLimit)
+        if let val = config[Keys.requestQueueSize] as? UInt {
+            XCTAssertEqual(val, CountlyPersistency.sharedInstance().storedRequestsLimit)
         }
-        if let v = config[Keys.dropOldRequestTime] as? UInt {
-            XCTAssertEqual(v, CountlyPersistency.sharedInstance().requestDropAgeHours)
+        if let val = config[Keys.dropOldRequestTime] as? UInt {
+            XCTAssertEqual(val, CountlyPersistency.sharedInstance().requestDropAgeHours)
         }
-        if let v = config[Keys.sessionUpdateInterval] as? Int { XCTAssertEqual(v, moduleConfig?.sessionInterval()) }
+        if let val = config[Keys.sessionUpdateInterval] as? Int {
+            XCTAssertEqual(val, moduleConfig?.sessionInterval())
+        }
 
         #if os(iOS)
-            if let v = config[Keys.contentZoneInterval] as? TimeInterval {
-                XCTAssertEqual(v, CountlyContentBuilderInternal.sharedInstance().zoneTimerInterval)
+            if let val = config[Keys.contentZoneInterval] as? TimeInterval {
+                XCTAssertEqual(val, CountlyContentBuilderInternal.sharedInstance().zoneTimerInterval)
             }
         #endif
 

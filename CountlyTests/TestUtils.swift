@@ -122,9 +122,11 @@ class TestUtils {
                                 "Expected segmentation: \(segmentation), got: \(eventSegmentation)")
                             for (key, value) in segmentation {
                                 guard let segValue = eventSegmentation[key] else {
-                                    XCTFail(
-                                        "Missing segmentation key '\(key)' in event. Expected: \(segmentation), got: \(eventSegmentation)"
-                                    )
+                                    let msg =
+                                        "Missing segmentation key '\(key)' in event."
+                                        + " Expected: \(segmentation),"
+                                        + " got: \(eventSegmentation)"
+                                    XCTFail(msg)
                                     continue
                                 }
                                 XCTAssertEqual("\(String(describing: segValue))", "\(value)")

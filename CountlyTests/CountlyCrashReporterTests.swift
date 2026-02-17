@@ -103,7 +103,10 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
 
             let crash = request["crash"] as! [String: Any]
 
-            var paramCount = 0  //try validateCrashMetrics(crash: crash,  customMetrics: customMetrics, metricsToExclude: metricsToExclude)
+            // try validateCrashMetrics(crash: crash,
+            //   customMetrics: customMetrics,
+            //   metricsToExclude: metricsToExclude)
+            var paramCount = 0
 
             paramCount += 2  // for nonFatal and ob
             XCTAssertEqual(!isFatal, crash["_nonfatal"] as? Bool)
