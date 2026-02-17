@@ -219,7 +219,7 @@ class ServerConfigBuilder {
         let configDict: [String: Any] = [
             Keys.version: 1,
             Keys.timestamp: Int(Date().timeIntervalSince1970),
-            Keys.config: config,
+            Keys.config: config
         ]
 
         if let jsonData = try? JSONSerialization.data(withJSONObject: configDict),
@@ -234,7 +234,7 @@ class ServerConfigBuilder {
         return [
             Keys.version: 1,
             Keys.timestamp: Int(Date().timeIntervalSince1970),
-            Keys.config: config,
+            Keys.config: config
         ]
     }
 

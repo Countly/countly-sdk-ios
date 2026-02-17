@@ -34,7 +34,7 @@ class CountlyBaseTestCase: XCTestCase {
     }
 
     func cleanupState() {
-        // TODO: This also nils the instances which makes testing bad
+        // Note: This also nils the instances which makes testing bad
         // Shared instances are static they must not be nilled for multi instance cases.
         // Countly.sharedInstance().halt(true)
     }

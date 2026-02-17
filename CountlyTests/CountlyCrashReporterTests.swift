@@ -20,7 +20,7 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
             "double": String(Double.greatestFiniteMagnitude),
             "bool": String(true),
             "long": String(Int64.max),
-            "float": String(1.1),
+            "float": String(1.1)
         ]
 
         let crashFilterBlock: (CountlyCrashData?) -> Bool = { crash in
@@ -70,7 +70,7 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
                 "bool": String(true),
                 "float": String(1.1),
                 "long": String(Int64.max),
-                "sphinx_no": "324",
+                "sphinx_no": "324"
             ],
             idx: 0,
             customMetrics: ["secret": "Minato"],

@@ -399,51 +399,27 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         let parsedRequest = TestUtils.parseQueryString(request)
         let userDetails = parsedRequest["user_details"]
         XCTAssertNotNil(userDetails, "user details are nil")
-        if userDetails != nil {
-            guard let customUserDetails = (userDetails as! [String: Any])["custom"] else {
-                fatalError("Failed to get custom user details")
-            }
-            do {
-                // Decode JSON data into an array of CountlyEventStruct
-                let custom = customUserDetails as! [String: Any]
+        guard userDetails != nil else { return }
 
-                XCTAssertNotEqual(0, custom.count, "No custom properties found")
-                XCTAssertEqual(propertiesToCheck.count, custom.count, "Custom propeties count is not matched")
-                for (key, value) in propertiesToCheck {
-                    let customValue = custom[key]
-                    XCTAssertNotNil(customValue, "Key \(key) not found in custom properties")
+        guard let customUserDetails = (userDetails as! [String: Any])["custom"] else {
+            fatalError("Failed to get custom user details")
+        }
 
-                    // Check if both values are dictionaries
-                    if let customDict = customValue as? [String: Any], let checkDict = value as? [String: Any] {
-                        // Check if the dictionaries are equal
-                        XCTAssertTrue(
-                            TestUtils.compareDictionaries(customDict, checkDict),
-                            "Value for key \(key) does not match. Expected: \(checkDict), Found: \(customDict)")
+        let custom = customUserDetails as! [String: Any]
+        XCTAssertNotEqual(0, custom.count, "No custom properties found")
+        XCTAssertEqual(propertiesToCheck.count, custom.count, "Custom propeties count is not matched")
+        for (key, value) in propertiesToCheck {
+            let customValue = custom[key]
+            XCTAssertNotNil(customValue, "Key \(key) not found in custom properties")
 
-                    } else { // Convert to string for comparison
-                        XCTAssertNotEqual(
-                            "\(customValue)", "\(value)",
-                            "Value for key \(key) does not match. Expected: \(value), Found: \(customValue)")
-                    }
-                }
-
-            } catch {
-                if let decodingError = error as? DecodingError {
-                    switch decodingError {
-                    case let .dataCorrupted(context):
-                        print("Data corrupted: \(context.debugDescription)")
-                    case let .keyNotFound(key, context):
-                        print("Key not found: \(key.stringValue) in context: \(context.debugDescription)")
-                    case let .typeMismatch(type, context):
-                        print("Type mismatch: \(type) in context: \(context.debugDescription)")
-                    case let .valueNotFound(value, context):
-                        print("Value not found: \(value) in context: \(context.debugDescription)")
-                    @unknown default:
-                        print("Unknown decoding error")
-                    }
-                } else {
-                    print("Failed to decode JSON: \(error.localizedDescription)")
-                }
+            if let customDict = customValue as? [String: Any], let checkDict = value as? [String: Any] {
+                XCTAssertTrue(
+                    TestUtils.compareDictionaries(customDict, checkDict),
+                    "Value for key \(key) does not match. Expected: \(checkDict), Found: \(customDict)")
+            } else {
+                XCTAssertNotEqual(
+                    "\(customValue)", "\(value)",
+                    "Value for key \(key) does not match. Expected: \(value), Found: \(customValue)")
             }
         }
     }
@@ -521,7 +497,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
             "g12345": ["$setOnce": 200],
             "h12345": ["$addToSet": "morning"],
             "i12345": ["$push": "morning"],
-            "j12345": ["$pull": "morning"],
+            "j12345": ["$pull": "morning"]
         ] as [String: Any]
     }
 

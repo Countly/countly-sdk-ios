@@ -200,7 +200,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             "remote-config": 0,
             "sessions": 0,
             "attribution": 0,
-            "views": 0,
+            "views": 0
         ]
         TestUtils.validateRequest(["consent": consents], 0)
         TestUtils.validateRequest(["begin_session": "1"], 1)
@@ -249,7 +249,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
                             "response_time": 1111,
                             "response_code": 400,
                             "request_payload_size": 2000,
-                            "response_payload_size": 2000,
+                            "response_payload_size": 2000
                         ]))
             }
         TestUtils.validateRequest(["attribution_data": "test_data"], 5)
@@ -271,7 +271,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
                 "widget_id": "test",
                 "contactMe": "1",
                 "email": "test",
-                "comment": "test",
+                "comment": "test"
             ], 7, 8, 0, 2)
 
         try TestUtils.validateEventInRQ(
@@ -280,7 +280,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
                 "app_version": XCTUnwrap(CountlyDeviceInfo.appVersion()),
                 "widget_id": "test",
                 "closed": "1",
-                "platform": "iOS",
+                "platform": "iOS"
             ], 7, 8, 1, 2)
 
         XCTAssertEqual(8, TestUtils.getCurrentRQ()?.count)
@@ -383,7 +383,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             "{\"v\":1,\"t\":2}", // Missing "c"
             "{\"v\":1,\"t\":2,\"c\":123}", // Invalid "c" type
             "{\"v\":1,\"t\":2,\"c\":false}", // Invalid "c" type
-            "{\"v\":1,\"t\":2,\"c\":\"invalid\"}", // Invalid "c" type
+            "{\"v\":1,\"t\":2,\"c\":\"invalid\"}" // Invalid "c" type
         ]
 
         for config in invalidConfigs {
@@ -633,7 +633,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             "key1": "value1",
             "key2": "value2",
             "key3": "value3VeryLong",
-            "veryLongKey": "value4",
+            "veryLongKey": "value4"
         ]
 
         Countly.sharedInstance().recordEvent(longKey, segmentation: segmentation)
@@ -788,7 +788,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         MockURLProtocol.requestHandler = { request in
             let requestString = request.url?.absoluteString ?? ""
 
-            if requestString.contains("hc=") { // TODO: IOS DOES NOT HAVE HC
+            if requestString.contains("hc=") { // Note: IOS DOES NOT HAVE HC
                 tracker.counts[0] += 1
             } else if requestString.contains("method=feedback") {
                 tracker.counts[1] += 1
@@ -882,9 +882,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     private func immediateFlowAllFeatures() {
         Countly.sharedInstance().remoteConfig().downloadKeys { _, _, _, _ in
         }
-        Countly.sharedInstance().feedback().getAvailableFeedbackWidgets { (
-            feedbackWidgets: [CountlyFeedbackWidget]?,
-            error) in
+        Countly.sharedInstance().feedback().getAvailableFeedbackWidgets { feedbackWidgets, error in
             if error != nil {
                 print(
                     "Getting widgets list failed. \n \(error!.localizedDescription) \n \((error! as NSError).userInfo)")
@@ -945,7 +943,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
                             "response_time": 1111,
                             "response_code": 400,
                             "request_payload_size": 2000,
-                            "response_payload_size": 2000,
+                            "response_payload_size": 2000
                         ]))
             }
         TestUtils.validateRequest(["attribution_data": "test_data"], 6)
@@ -967,7 +965,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
                 "widget_id": "test",
                 "contactMe": 1,
                 "email": "test",
-                "comment": "test",
+                "comment": "test"
             ], 8, 9, 0, 2)
 
         try TestUtils.validateEventInRQ(
@@ -976,7 +974,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
                 "app_version": CountlyDeviceInfo.appVersion()!,
                 "widget_id": "test",
                 "closed": "1",
-                "platform": "iOS",
+                "platform": "iOS"
             ], 8, 9, 1, 2)
 
         XCTAssertEqual(9, TestUtils.getCurrentRQ()?.count)

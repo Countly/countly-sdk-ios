@@ -145,12 +145,12 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
         let startedEventsCount = [
             "View1": 1,
             "View2": 1,
-            "View3": 1,
+            "View3": 1
         ]
 
         let endedEventsDurations = [
             "View1": [5],
-            "View2": [5],
+            "View2": [5]
         ]
 
         // Call validateRecordedEvents to check if the events match expectations
@@ -206,12 +206,12 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
         // Verify recorded events
         let startedEventsCount = [
             "View1": 1,
-            "View2": 1,
+            "View2": 1
         ]
 
         let endedEventsDurations = [
             "View1": [4, 5],
-            "View2": [12],
+            "View2": [12]
         ]
 
         // Call validateRecordedEvents to check if the events match expectations
@@ -373,12 +373,12 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
 
         let startedEventsCount = [
             "View1": 1,
-            "View2": 1,
+            "View2": 1
         ]
 
         let endedEventsDurations = [
             "View1": [4],
-            "View2": [3],
+            "View2": [3]
         ]
 
         // Call validateRecordedEvents to check if the events match expectations
@@ -424,12 +424,12 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
 
         let startedEventsCount = [
             "View1": 1,
-            "View2": 1,
+            "View2": 1
         ]
 
         let endedEventsDurations = [
             "View1": [3, 5],
-            "View2": [4],
+            "View2": [4]
         ]
 
         // Call validateRecordedEvents to check if the events match expectations
@@ -460,17 +460,17 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
 
         let startedEventsCount = [
             "View1": 1,
-            "View2": 1,
+            "View2": 1
         ]
 
         let endedEventsDurations = [
             "View1": [4],
-            "View2": [4],
+            "View2": [4]
         ]
 
         // Call validateRecordedEvents to check if the events match expectations
         validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
-        // TODO: check segmentations also
+        // Note: check segmentations also
     }
 
     func testUpdateSegmentationMultipleTimesOnTheSameView() {
@@ -530,7 +530,7 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
 
         let viewID2 = Countly.sharedInstance().views().startView("View2")
         Countly.sharedInstance().views().stopView(withID: viewID2)
-        // TODO: Add all the public methods
+        // Note: Add all the public methods
 
         let afterEventCount = getRecordedViews().count
 
@@ -544,7 +544,7 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
 
         // Start the first view
         Countly.sharedInstance().views().startView("View1")
-        // TODO: validate that view or remove it
+        // Note: validate that view or remove it
 
         // Create expectations for various events
         let stopView1Expectation = XCTestExpectation(description: "Expect View1 to be stopped after 4 seconds.")
@@ -562,7 +562,7 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
             // Start View2 after 3 seconds
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                 viewID2 = Countly.sharedInstance().views().startView("View2")
-                // TODO: also start with segmentation to check the precedence of user provided and global segmentation
+                // Note: also start with segmentation to check the precedence of user provided and global segmentation
                 startView2Expectation.fulfill() // Fulfill View2 start expectation
 
                 // Update global view segmentation
@@ -639,12 +639,12 @@ class CountlyViewForegroundBackgroundTests: CountlyViewBaseTest {
 
         let startedQueuedEventsCount = [
             "V1": 1,
-            "A1": 1,
+            "A1": 1
         ]
 
         let endedQueuedEventsDurations = [
             "V1": [3],
-            "A1": [3],
+            "A1": [3]
         ]
 
         // Call validateRecordedEvents to check if the events match expectations
@@ -657,7 +657,7 @@ class CountlyViewForegroundBackgroundTests: CountlyViewBaseTest {
             "V1": 1,
             "A1": 1,
             "FGV1": 1,
-            "FGA1": 1,
+            "FGA1": 1
         ]
 
         let endedEventsDurations = [
@@ -666,7 +666,7 @@ class CountlyViewForegroundBackgroundTests: CountlyViewBaseTest {
             "V1": [5],
             "BGV1": [8],
             "FGV1": [4],
-            "FGA1": [4],
+            "FGA1": [4]
         ]
 
         // Call validateRecordedEvents to check if the events match expectations
@@ -826,15 +826,12 @@ class CountlyViewBaseTest: CountlyBaseTestCase {
         var actualEndedEventsDurations: [String: [Int]] = [:]
 
         // Iterate through recorded events to populate actual counts and durations
-        for event in recordedEvents {
-            // Check for start events with "visit": "1"
-            if event.key == kCountlyReservedEventView {
-                if let eventKey = event.segmentation?["name"] as? String {
-                    if let visit = event.segmentation?["visit"], visit as! Int == 1 {
-                        actualStartedEventsCount[eventKey, default: 0] += 1
-                    } else {
-                        actualEndedEventsDurations[eventKey, default: []].append(Int(event.duration))
-                    }
+        for event in recordedEvents where event.key == kCountlyReservedEventView {
+            if let eventKey = event.segmentation?["name"] as? String {
+                if let visit = event.segmentation?["visit"], visit as! Int == 1 {
+                    actualStartedEventsCount[eventKey, default: 0] += 1
+                } else {
+                    actualEndedEventsDurations[eventKey, default: []].append(Int(event.duration))
                 }
             }
         }
@@ -904,19 +901,17 @@ class CountlyViewBaseTest: CountlyBaseTestCase {
                     // Decode JSON data into an array of events
                     let events = try JSONDecoder().decode([CountlyEventStruct].self, from: jsonData)
 
-                    // Process each event to check if it’s a start or stop event
-                    for event in events {
-                        if event.key == kCountlyReservedEventView {
-                            let eventKey = event.segmentation?["name"] as? String ?? ""
+                    // Process each event to check if it's a start or stop event
+                    for event in events where event.key == kCountlyReservedEventView {
+                        let eventKey = event.segmentation?["name"] as? String ?? ""
 
-                            // Check for start events with "visit": "1"
-                            if let visit = event.segmentation?["visit"] as? Int, visit == 1 {
-                                actualStartedEventsCount[eventKey, default: 0] += 1
-                            }
-                            // Check for stop events with "dur" for duration
-                            else {
-                                actualEndedEventsDurations[eventKey, default: []].append(Int(event.duration))
-                            }
+                        // Check for start events with "visit": "1"
+                        if let visit = event.segmentation?["visit"] as? Int, visit == 1 {
+                            actualStartedEventsCount[eventKey, default: 0] += 1
+                        }
+                        // Check for stop events with "dur" for duration
+                        else {
+                            actualEndedEventsDurations[eventKey, default: []].append(Int(event.duration))
                         }
                     }
                 } catch {

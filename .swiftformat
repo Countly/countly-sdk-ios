@@ -10,7 +10,7 @@
 --stripunusedargs closure-only
 --self remove
 --importgrouping testable-last
---commas always
+--commas inline
 --linebreaks lf
 --ifdef no-indent
 --disable wrapMultilineStatementBraces

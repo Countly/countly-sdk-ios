@@ -28,7 +28,7 @@ class CountlySegmentationTests: CountlyBaseTestCase {
             "stinrgArrayKey": ["one", "two", "three"], // Array<String>
             "doubleKey": 3.14, // Double
             "invalidArrayKey": ["one", 2, Date()], // Array containing non-allowed types
-            "invalidValueKey": Date(), // Unsupported type (Date)
+            "invalidValueKey": Date() // Unsupported type (Date)
         ]
 
         Countly.sharedInstance().recordEvent("EventKey", segmentation: segmentation)

@@ -51,7 +51,7 @@ class CountlyConsentManagerTests: CountlyBaseTestCase {
             "sessions": 0,
             "attribution": 0,
             "views": 0,
-            "metrics": 0,
+            "metrics": 0
         ]
 
         TestUtils.validateRequest(["consent": consents], 0)

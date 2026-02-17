@@ -89,7 +89,7 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         // Add custom headers through the Objective-C API
         let customHeaders: [String: String] = [
             "Authorization": "Bearer 123",
-            "X-Test": "Value1",
+            "X-Test": "Value1"
         ]
 
         Countly.sharedInstance().addCustomNetworkRequestHeaders(customHeaders)
@@ -129,7 +129,7 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
 
         let customHeaders: [String: String] = [
             "Authorization": "Bearer 123",
-            "X-Test": "Value1",
+            "X-Test": "Value1"
         ]
 
         Countly.sharedInstance().addCustomNetworkRequestHeaders(customHeaders)
@@ -160,7 +160,7 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         // Add custom headers through the Objective-C API
         let customHeaders: [String: String] = [
             "Authorization": "",
-            "": "Value1",
+            "": "Value1"
         ]
 
         Countly.sharedInstance().addCustomNetworkRequestHeaders(customHeaders)

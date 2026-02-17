@@ -54,11 +54,11 @@ function_body_length:
   error: 200
 
 type_body_length:
-  warning: 800
-  error: 1200
+  warning: 750
+  error: 1500
 
 file_length:
-  warning: 1200
+  warning: 1100
   error: 2000
 
 function_parameter_count:
@@ -73,16 +73,5 @@ large_tuple:
   warning: 4
 
 disabled_rules:
-  - trailing_comma
-  - todo
   - force_cast
   - force_try
-  - force_unwrapping
-  - for_where
-  - closure_parameter_position
-
-opt_in_rules:
-  - empty_count
-  - closure_spacing
-  - explicit_init
-  - redundant_nil_coalescing

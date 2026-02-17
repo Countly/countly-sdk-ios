@@ -96,7 +96,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
             ("over_limit", String(repeating: "c", count: 1500)),
             ("unicode", String(repeating: "🚀", count: 250)),
             ("mixed_unicode", "Test🚀String🌟With✨Unicode🎉" + String(repeating: "x", count: 950)),
-            ("special_chars", String(repeating: "line\n\ttab\r", count: 100)),
+            ("special_chars", String(repeating: "line\n\ttab\r", count: 100))
         ]
     }
 
@@ -277,7 +277,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
             ("single_char", "x"),
             ("unicode_boundary", String(repeating: "🎯", count: 250)), // 4-byte unicode
             ("mixed_content", "Test🚀String🌟With✨Unicode🎉Characters" + String(repeating: "x", count: 950)),
-            ("special_chars", String(repeating: "line\n\ttab\r", count: 100)),
+            ("special_chars", String(repeating: "line\n\ttab\r", count: 100))
         ]
 
         let group = DispatchGroup()
