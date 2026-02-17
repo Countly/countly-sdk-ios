@@ -6,7 +6,6 @@
 //  Copyright © 2025 Countly. All rights reserved.
 //
 
-
 import Foundation
 import XCTest
 
@@ -26,9 +25,9 @@ class MockURLProtocol: URLProtocol {
             XCTFail("Request handler not set!")
             return
         }
-        
+
         let (data, response, error) = handler(request)
-        
+
         if let response = response {
             client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         }

@@ -6,6 +6,7 @@
 //
 
 import XCTest
+
 @testable import Countly
 
 /// Tests for request callback feature (CLYRequestCallback).
@@ -27,11 +28,13 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
         var receivedSuccess: Bool?
         var receivedResponse: String?
 
-        connectionManager.addToQueue(withCallback: "test=request", callback: { response, success in
-            receivedResponse = response
-            receivedSuccess = success
-            expectation.fulfill()
-        })
+        connectionManager.addToQueue(
+            withCallback: "test=request",
+            callback: { response, success in
+                receivedResponse = response
+                receivedSuccess = success
+                expectation.fulfill()
+            })
 
         connectionManager.proceedOnQueue()
 
@@ -57,11 +60,13 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
         var receivedSuccess: Bool?
         var receivedResponse: String?
 
-        connectionManager.addToQueue(withCallback: "test=error_request", callback: { response, success in
-            receivedResponse = response
-            receivedSuccess = success
-            expectation.fulfill()
-        })
+        connectionManager.addToQueue(
+            withCallback: "test=error_request",
+            callback: { response, success in
+                receivedResponse = response
+                receivedSuccess = success
+                expectation.fulfill()
+            })
 
         connectionManager.proceedOnQueue()
 
@@ -86,10 +91,12 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
         let expectation = XCTestExpectation(description: "Callback executed")
         var receivedSuccess: Bool?
 
-        connectionManager.addToQueue(withCallback: "test=invalid_json", callback: { response, success in
-            receivedSuccess = success
-            expectation.fulfill()
-        })
+        connectionManager.addToQueue(
+            withCallback: "test=invalid_json",
+            callback: { response, success in
+                receivedSuccess = success
+                expectation.fulfill()
+            })
 
         connectionManager.proceedOnQueue()
 
@@ -113,10 +120,12 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
         let expectation = XCTestExpectation(description: "Callback executed")
         var receivedSuccess: Bool?
 
-        connectionManager.addToQueue(withCallback: "test=missing_result", callback: { response, success in
-            receivedSuccess = success
-            expectation.fulfill()
-        })
+        connectionManager.addToQueue(
+            withCallback: "test=missing_result",
+            callback: { response, success in
+                receivedSuccess = success
+                expectation.fulfill()
+            })
 
         connectionManager.proceedOnQueue()
 
@@ -140,10 +149,12 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
         var callbackCount = 0
         let expectation = XCTestExpectation(description: "Callback executed")
 
-        connectionManager.addToQueue(withCallback: "test=once_request", callback: { response, success in
-            callbackCount += 1
-            expectation.fulfill()
-        })
+        connectionManager.addToQueue(
+            withCallback: "test=once_request",
+            callback: { response, success in
+                callbackCount += 1
+                expectation.fulfill()
+            })
 
         connectionManager.proceedOnQueue()
 
@@ -169,19 +180,23 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
         let expectation1 = XCTestExpectation(description: "First callback executed")
         let expectation2 = XCTestExpectation(description: "Second callback executed")
 
-        connectionManager.addToQueue(withCallback: "test=first_request", callback: { response, success in
-            firstCallbackCount += 1
-            expectation1.fulfill()
-        })
+        connectionManager.addToQueue(
+            withCallback: "test=first_request",
+            callback: { response, success in
+                firstCallbackCount += 1
+                expectation1.fulfill()
+            })
 
         connectionManager.proceedOnQueue()
 
         wait(for: [expectation1], timeout: 5.0)
 
-        connectionManager.addToQueue(withCallback: "test=second_request", callback: { response, success in
-            secondCallbackCount += 1
-            expectation2.fulfill()
-        })
+        connectionManager.addToQueue(
+            withCallback: "test=second_request",
+            callback: { response, success in
+                secondCallbackCount += 1
+                expectation2.fulfill()
+            })
 
         connectionManager.proceedOnQueue()
 
@@ -205,10 +220,12 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
         var callbackCount = 0
         let expectation = XCTestExpectation(description: "Callback executed")
 
-        connectionManager.addToQueue(withCallback: "test=failure_request", callback: { response, success in
-            callbackCount += 1
-            expectation.fulfill()
-        })
+        connectionManager.addToQueue(
+            withCallback: "test=failure_request",
+            callback: { response, success in
+                callbackCount += 1
+                expectation.fulfill()
+            })
 
         connectionManager.proceedOnQueue()
 
@@ -236,20 +253,26 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
         let expectation = XCTestExpectation(description: "All callbacks")
         expectation.expectedFulfillmentCount = 3
 
-        connectionManager.addToQueue(withCallback: "test=request1", callback: { response, success in
-            callback1Executed = true
-            expectation.fulfill()
-        })
+        connectionManager.addToQueue(
+            withCallback: "test=request1",
+            callback: { response, success in
+                callback1Executed = true
+                expectation.fulfill()
+            })
 
-        connectionManager.addToQueue(withCallback: "test=request2", callback: { response, success in
-            callback2Executed = true
-            expectation.fulfill()
-        })
+        connectionManager.addToQueue(
+            withCallback: "test=request2",
+            callback: { response, success in
+                callback2Executed = true
+                expectation.fulfill()
+            })
 
-        connectionManager.addToQueue(withCallback: "test=request3", callback: { response, success in
-            callback3Executed = true
-            expectation.fulfill()
-        })
+        connectionManager.addToQueue(
+            withCallback: "test=request3",
+            callback: { response, success in
+                callback3Executed = true
+                expectation.fulfill()
+            })
 
         connectionManager.proceedOnQueue()
 
@@ -274,26 +297,32 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
         let expectation = XCTestExpectation(description: "All callbacks executed")
         expectation.expectedFulfillmentCount = 3
 
-        connectionManager.addToQueue(withCallback: "test=order1", callback: { response, success in
-            lock.lock()
-            executionOrder.append(1)
-            lock.unlock()
-            expectation.fulfill()
-        })
+        connectionManager.addToQueue(
+            withCallback: "test=order1",
+            callback: { response, success in
+                lock.lock()
+                executionOrder.append(1)
+                lock.unlock()
+                expectation.fulfill()
+            })
 
-        connectionManager.addToQueue(withCallback: "test=order2", callback: { response, success in
-            lock.lock()
-            executionOrder.append(2)
-            lock.unlock()
-            expectation.fulfill()
-        })
+        connectionManager.addToQueue(
+            withCallback: "test=order2",
+            callback: { response, success in
+                lock.lock()
+                executionOrder.append(2)
+                lock.unlock()
+                expectation.fulfill()
+            })
 
-        connectionManager.addToQueue(withCallback: "test=order3", callback: { response, success in
-            lock.lock()
-            executionOrder.append(3)
-            lock.unlock()
-            expectation.fulfill()
-        })
+        connectionManager.addToQueue(
+            withCallback: "test=order3",
+            callback: { response, success in
+                lock.lock()
+                executionOrder.append(3)
+                lock.unlock()
+                expectation.fulfill()
+            })
 
         connectionManager.proceedOnQueue()
 
@@ -318,10 +347,12 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
         let expectation = XCTestExpectation(description: "Callback executed")
         var receivedSuccess: Bool?
 
-        connectionManager.addToQueue(withCallback: "test=create", callback: { response, success in
-            receivedSuccess = success
-            expectation.fulfill()
-        })
+        connectionManager.addToQueue(
+            withCallback: "test=create",
+            callback: { response, success in
+                receivedSuccess = success
+                expectation.fulfill()
+            })
 
         connectionManager.proceedOnQueue()
 
@@ -349,10 +380,12 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
             runnableExecuted = true
         }
 
-        connectionManager.addToQueue(withCallback: "test=combined", callback: { response, success in
-            callbackExecuted = true
-            callbackExpectation.fulfill()
-        })
+        connectionManager.addToQueue(
+            withCallback: "test=combined",
+            callback: { response, success in
+                callbackExecuted = true
+                callbackExpectation.fulfill()
+            })
 
         connectionManager.proceedOnQueue()
 
@@ -383,10 +416,12 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
             runnableExecuted = true
         }
 
-        connectionManager.addToQueue(withCallback: "test=failing", callback: { response, success in
-            callbackExecuted = true
-            callbackExpectation.fulfill()
-        })
+        connectionManager.addToQueue(
+            withCallback: "test=failing",
+            callback: { response, success in
+                callbackExecuted = true
+                callbackExpectation.fulfill()
+            })
 
         connectionManager.proceedOnQueue()
 

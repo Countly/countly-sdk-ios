@@ -6,7 +6,6 @@
 //  Copyright © 2025 Countly. All rights reserved.
 //
 
-
 import Countly
 
 class MockFeedbackWidget: CountlyFeedbackWidget {

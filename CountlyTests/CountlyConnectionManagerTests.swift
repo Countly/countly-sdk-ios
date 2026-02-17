@@ -7,11 +7,11 @@
 //
 
 import XCTest
+
 @testable import Countly
 
 class CountlyConnectionManagerTests: CountlyBaseTestCase {
 
-    
     override func setUp() {
         super.setUp()
         // Initialize or reset necessary objects here
@@ -48,34 +48,34 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         config.manualSessionHandling = true
         // No Device ID provided during init
         Countly.sharedInstance().start(with: config)
-        
+
         XCTAssertEqual(0, CountlyPersistency.sharedInstance().remainingRequestCount())
-        
+
         addRequests(count: 300)
         XCTAssertEqual(250, CountlyPersistency.sharedInstance().remainingRequestCount())
-        
+
         Countly.sharedInstance().halt(false)
         config.storedRequestsLimit = 10
         Countly.sharedInstance().start(with: config)
-        
+
         XCTAssertEqual(250, CountlyPersistency.sharedInstance().remainingRequestCount())
-        
+
         addRequests(count: 1)
         XCTAssertEqual(150, CountlyPersistency.sharedInstance().remainingRequestCount())
-        
+
         addRequests(count: 1)
         XCTAssertEqual(50, CountlyPersistency.sharedInstance().remainingRequestCount())
-        
+
         addRequests(count: 1)
         XCTAssertEqual(10, CountlyPersistency.sharedInstance().remainingRequestCount())
-        
+
         addRequests(count: 17)
         XCTAssertEqual(10, CountlyPersistency.sharedInstance().remainingRequestCount())
-        
+
         Countly.sharedInstance().halt(true)
-        
+
     }
-    
+
     /**
      * addCustomNetworkRequestHeaders after SDK init
      * validate that added network headers are existing with outgoing requests
@@ -86,30 +86,33 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         let sessionConfig = URLSessionConfiguration.default
         sessionConfig.protocolClasses = [TestURLProtocol.self]
         config.urlSessionConfiguration = sessionConfig
-        
+
         Countly.sharedInstance().start(with: config)
         // Add custom headers through the Objective-C API
         let customHeaders: [String: String] = [
             "Authorization": "Bearer 123",
-            "X-Test": "Value1"
+            "X-Test": "Value1",
         ]
-        
+
         Countly.sharedInstance().addCustomNetworkRequestHeaders(customHeaders)
         Countly.sharedInstance().addDirectRequest(["test": "request"])
-        
+
         TestUtils.sleep(2) {}
-        
+
         let captured = TestURLProtocol.capturedHeaders()
         XCTAssertEqual(captured?["Authorization"], "Bearer 123")
         XCTAssertEqual(captured?["X-Test"], "Value1")
         XCTAssertEqual(captured?.count, 2)
     }
-    
+
     /**
-     * addCustomNetworkRequestHeaders after SDK init and while initializing the SDK
-     * validate that added network headers are existing with outgoing requests and 1 header overridden by post-init headers
-     * after SDK init validate that given 1 header exists
-     * intercept request with a test protocol and validate existance of 2 added headers and validate one header is overridden
+     * addCustomNetworkRequestHeaders after SDK init and while
+     * initializing the SDK. Validate that added network headers are
+     * existing with outgoing requests and 1 header overridden by
+     * post-init headers. After SDK init validate that given 1
+     * header exists. Intercept request with a test protocol and
+     * validate existance of 2 added headers and validate one
+     * header is overridden.
      */
     func test_addCustomNetworkRequestHeaders_override() throws {
         let config = createBaseConfig()
@@ -117,24 +120,23 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         sessionConfig.protocolClasses = [TestURLProtocol.self]
         sessionConfig.httpAdditionalHeaders = ["X-Test": "Value0"]
         config.urlSessionConfiguration = sessionConfig
-        
-       
+
         Countly.sharedInstance().start(with: config)
         // Add custom headers through the Objective-C API
-        
+
         TestUtils.sleep(1) {}
         let captured = TestURLProtocol.capturedHeaders()
         XCTAssertEqual(captured?["X-Test"], "Value0")
         XCTAssertEqual(captured?.count, 1)
-        
+
         let customHeaders: [String: String] = [
             "Authorization": "Bearer 123",
-            "X-Test": "Value1"
+            "X-Test": "Value1",
         ]
-        
+
         Countly.sharedInstance().addCustomNetworkRequestHeaders(customHeaders)
         Countly.sharedInstance().addDirectRequest(["test": "request"])
-        
+
         TestUtils.sleep(2) {
             let captured = TestURLProtocol.capturedHeaders()
             XCTAssertEqual(captured?["Authorization"], "Bearer 123")
@@ -142,36 +144,38 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
             XCTAssertEqual(captured?.count, 2)
         }
     }
-    
+
     /**
-     * addCustomNetworkRequestHeaders after SDK init invalid
-     * validate that added network headers are existing with outgoing requests and 1 header not there because it is invalid
-     * intercept request with a test protocol and validate that only 1 header exists
+     * addCustomNetworkRequestHeaders after SDK init invalid.
+     * Validate that added network headers are existing with
+     * outgoing requests and 1 header not there because it is
+     * invalid. Intercept request with a test protocol and
+     * validate that only 1 header exists.
      */
     func test_addCustomNetworkRequestHeaders_invalid() throws {
         let config = createBaseConfig()
         let sessionConfig = URLSessionConfiguration.default
         sessionConfig.protocolClasses = [TestURLProtocol.self]
         config.urlSessionConfiguration = sessionConfig
-        
+
         Countly.sharedInstance().start(with: config)
         // Add custom headers through the Objective-C API
         let customHeaders: [String: String] = [
             "Authorization": "",
-            "": "Value1"
+            "": "Value1",
         ]
-        
+
         Countly.sharedInstance().addCustomNetworkRequestHeaders(customHeaders)
         Countly.sharedInstance().addDirectRequest(["test": "request"])
-        
+
         TestUtils.sleep(2) {}
-        
+
         let captured = TestURLProtocol.capturedHeaders()
         XCTAssertEqual(captured?.count, 1)
     }
-    
+
     func addRequests(count: Int) {
-        for loop in 0...count-1 {
+        for loop in 0...count - 1 {
             CountlyPersistency.sharedInstance().add(toQueue: "&request=REQUEST\(loop)")
         }
         CountlyPersistency.sharedInstance().saveToFileSync()

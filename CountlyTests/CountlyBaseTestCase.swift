@@ -7,6 +7,7 @@
 //
 
 import XCTest
+
 @testable import Countly
 
 class CountlyBaseTestCase: XCTestCase {
@@ -14,30 +15,28 @@ class CountlyBaseTestCase: XCTestCase {
     var deviceID: String = ""
     let appKey: String = "appkey"
     var host: String = "https://testing.count.ly/"
-    
+
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
         cleanupState()
     }
-    
+
     func createBaseConfig() -> CountlyConfig {
         let config: CountlyConfig = CountlyConfig()
         config.appKey = appKey
         config.host = host
         config.enableDebug = true
-        config.features = [CLYFeature.crashReporting];
+        config.features = [CLYFeature.crashReporting]
         return config
     }
-    
+
     override func tearDownWithError() throws {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
-    
+
     func cleanupState() {
         // TODO: This also nils the instances which makes testing bad
         // Shared instances are static they must not be nilled for multi instance cases.
         //Countly.sharedInstance().halt(true)
     }
 }
-
-

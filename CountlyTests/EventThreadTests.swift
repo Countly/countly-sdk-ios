@@ -7,6 +7,7 @@
 //
 
 import XCTest
+
 @testable import Countly
 
 final class EventRaceReproTests: XCTestCase {
@@ -17,7 +18,7 @@ final class EventRaceReproTests: XCTestCase {
         config.enableDebug = true
         config.requiresConsent = false
         config.eventSendThreshold = UInt(10_000)
-        config.experimental().enablePreviousNameRecording = true;
+        config.experimental().enablePreviousNameRecording = true
         Countly.sharedInstance().start(with: config)
 
         Countly.sharedInstance().recordEvent("warmup")
@@ -63,7 +64,8 @@ final class EventRaceReproTests: XCTestCase {
         func extractEvents(from request: String) -> [EventPayload] {
             let params = TestUtils.parseQueryString(request)
             guard let eventsJSON = params["events"] as? String,
-                  let data = eventsJSON.data(using: .utf8) else {
+                let data = eventsJSON.data(using: .utf8)
+            else {
                 return []
             }
 
@@ -91,7 +93,8 @@ final class EventRaceReproTests: XCTestCase {
         XCTAssertFalse(queuedEvents.isEmpty, "No events found in queued requests")
 
         let expectedNonReservedCount = 1 + (workers * iterations)
-        let nonReservedEvents = queuedEvents
+        let nonReservedEvents =
+            queuedEvents
             .filter { !$0.key.hasPrefix("[CLY]_") }
 
         XCTAssertEqual(nonReservedEvents.count, expectedNonReservedCount)
@@ -101,7 +104,11 @@ final class EventRaceReproTests: XCTestCase {
         for (index, event) in nonReservedEvents.enumerated() {
             if index == 0 {
                 if !event.previousID.isEmpty || !event.previousName.isEmpty {
-                    mismatchSummaries.append("Index 0 expected empty previous metadata but found id=\(event.previousID), name=\(event.previousName)")
+                    mismatchSummaries.append(
+                        "Index 0 expected empty previous metadata"
+                            + " but found id=\(event.previousID),"
+                            + " name=\(event.previousName)"
+                    )
                 }
                 continue
             }
@@ -109,11 +116,13 @@ final class EventRaceReproTests: XCTestCase {
             let priorEvent = nonReservedEvents[index - 1]
 
             if event.previousID != priorEvent.id {
-                mismatchSummaries.append("Index \(index) id=\(event.id) expected prior id=\(priorEvent.id) but was \(event.previousID)")
+                mismatchSummaries.append(
+                    "Index \(index) id=\(event.id) expected prior id=\(priorEvent.id) but was \(event.previousID)")
             }
 
             if event.previousName != priorEvent.key {
-                mismatchSummaries.append("Index \(index) id=\(event.id) expected prior name=\(priorEvent.key) but was \(event.previousName)")
+                mismatchSummaries.append(
+                    "Index \(index) id=\(event.id) expected prior name=\(priorEvent.key) but was \(event.previousName)")
             }
         }
 

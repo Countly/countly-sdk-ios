@@ -6,12 +6,12 @@
 //  Copyright © 2025 Countly. All rights reserved.
 //
 import Foundation
-
 import XCTest
+
 @testable import Countly
 
 class CountlyConsentManagerTests: CountlyBaseTestCase {
-    
+
     override func setUp() {
         super.setUp()
         // Initialize or reset necessary objects here
@@ -34,7 +34,7 @@ class CountlyConsentManagerTests: CountlyBaseTestCase {
     func test_giveAllConsents() {
         let config = TestUtils.createBaseConfig()
         config.requiresConsent = true
-        
+
         Countly.sharedInstance().start(with: config)
         XCTAssertEqual(2, TestUtils.getCurrentRQ()?.count)
         Countly.sharedInstance().giveAllConsents()
@@ -52,7 +52,7 @@ class CountlyConsentManagerTests: CountlyBaseTestCase {
             "sessions": 0,
             "attribution": 0,
             "views": 0,
-            "metrics": 0
+            "metrics": 0,
         ]
 
         TestUtils.validateRequest(["consent": consents], 0)
@@ -64,8 +64,5 @@ class CountlyConsentManagerTests: CountlyBaseTestCase {
         TestUtils.validateRequest(["consent": consents], 3)
 
     }
-    
+
 }
-
-
-

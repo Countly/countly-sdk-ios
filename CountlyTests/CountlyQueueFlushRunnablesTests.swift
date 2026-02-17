@@ -6,6 +6,7 @@
 //
 
 import XCTest
+
 @testable import Countly
 
 /// Tests for queue flush runnables feature (CLYQueueFlushRunnable).
@@ -223,7 +224,7 @@ class CountlyQueueFlushRunnablesTests: CountlyCallbackBaseTestCase {
         let group = DispatchGroup()
 
         // Add runnables from multiple threads concurrently
-        for _ in 0..<totalRunnables/2 {
+        for _ in 0..<totalRunnables / 2 {
             group.enter()
             queue1.async {
                 connectionManager.addQueueFlushRunnable {

@@ -11,14 +11,14 @@ import Foundation
 // Helper struct to decode Any values in the segmentation dictionary
 struct AnyCodable: Codable {
     let value: Any
-    
+
     init(_ value: Any) {
         self.value = value
     }
-    
+
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
-        
+
         if let intValue = try? container.decode(Int.self) {
             value = intValue
         } else if let doubleValue = try? container.decode(Double.self) {
@@ -35,10 +35,10 @@ struct AnyCodable: Codable {
             throw DecodingError.dataCorruptedError(in: container, debugDescription: "Unsupported type")
         }
     }
-    
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        
+
         if let intValue = value as? Int {
             try container.encode(intValue)
         } else if let doubleValue = value as? Double {
@@ -52,7 +52,8 @@ struct AnyCodable: Codable {
         } else if let nestedArray = value as? [Any] {
             try container.encode(nestedArray.map { AnyCodable($0) })
         } else {
-            throw EncodingError.invalidValue(value, EncodingError.Context(codingPath: container.codingPath, debugDescription: "Unsupported type"))
+            throw EncodingError.invalidValue(
+                value, EncodingError.Context(codingPath: container.codingPath, debugDescription: "Unsupported type"))
         }
     }
 }
@@ -71,11 +72,19 @@ struct CountlyEventStruct: Codable {
     let hourOfDay: UInt
     let dayOfWeek: UInt
     let duration: TimeInterval
-    
+
     enum CodingKeys: String, CodingKey {
-        case key, ID = "id", CVID = "cvid", PVID = "pvid", PEID = "peid", segmentation, count, sum, timestamp, hourOfDay = "hour", dayOfWeek = "dow", duration = "dur"
+        case key
+        case ID = "id"
+        case CVID = "cvid"
+        case PVID = "pvid"
+        case PEID = "peid"
+        case segmentation, count, sum, timestamp
+        case hourOfDay = "hour"
+        case dayOfWeek = "dow"
+        case duration = "dur"
     }
-    
+
     // Custom decoding for the segmentation dictionary
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -90,7 +99,7 @@ struct CountlyEventStruct: Codable {
         hourOfDay = try container.decode(UInt.self, forKey: .hourOfDay)
         dayOfWeek = try container.decode(UInt.self, forKey: .dayOfWeek)
         duration = try container.decode(TimeInterval.self, forKey: .duration)
-        
+
         do {
             let segmentationData = try container.decodeIfPresent([String: AnyCodable].self, forKey: .segmentation)
             segmentation = segmentationData?.mapValues { $0.value }
@@ -99,7 +108,7 @@ struct CountlyEventStruct: Codable {
             segmentation = nil
         }
     }
-    
+
     // Custom encoding for the segmentation dictionary
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -114,11 +123,10 @@ struct CountlyEventStruct: Codable {
         try container.encode(hourOfDay, forKey: .hourOfDay)
         try container.encode(dayOfWeek, forKey: .dayOfWeek)
         try container.encode(duration, forKey: .duration)
-        
+
         if let segmentation = segmentation {
             let segmentationData = segmentation.mapValues { AnyCodable($0) }
             try container.encode(segmentationData, forKey: .segmentation)
         }
     }
 }
-

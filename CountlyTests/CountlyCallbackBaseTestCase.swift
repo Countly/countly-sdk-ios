@@ -7,6 +7,7 @@
 //
 
 import XCTest
+
 @testable import Countly
 
 /// Base test class for callback tests (CLYRequestCallback and CLYQueueFlushRunnable).
