@@ -3,9 +3,9 @@ import XCTest
 
 class ServerConfigBuilder {
     private var config: [String: Any] = [:]
-    
+
     // MARK: - Constants
-    
+
     private enum Keys {
         static let sc = "sc"
         static let tracking = "tracking"
@@ -45,63 +45,63 @@ class ServerConfigBuilder {
         static let eventSegmentationWhitelist = "esw"
         static let journeyTriggerEvents = "jte"
     }
-    
+
     // MARK: - Feature Flags
-    
+
     @discardableResult
     func tracking(_ enabled: Bool) -> ServerConfigBuilder {
         config[Keys.tracking] = enabled
         return this
     }
-    
+
     @discardableResult
     func networking(_ enabled: Bool) -> ServerConfigBuilder {
         config[Keys.networking] = enabled
         return this
     }
-    
+
     @discardableResult
     func crashReporting(_ enabled: Bool) -> ServerConfigBuilder {
         config[Keys.crashReporting] = enabled
         return this
     }
-    
+
     @discardableResult
     func viewTracking(_ enabled: Bool) -> ServerConfigBuilder {
         config[Keys.viewTracking] = enabled
         return this
     }
-    
+
     @discardableResult
     func sessionTracking(_ enabled: Bool) -> ServerConfigBuilder {
         config[Keys.sessionTracking] = enabled
         return this
     }
-    
+
     @discardableResult
     func customEventTracking(_ enabled: Bool) -> ServerConfigBuilder {
         config[Keys.customEventTracking] = enabled
         return this
     }
-    
+
     @discardableResult
     func contentZone(_ enabled: Bool) -> ServerConfigBuilder {
         config[Keys.enterContentZone] = enabled
         return this
     }
-    
+
     @discardableResult
     func locationTracking(_ enabled: Bool) -> ServerConfigBuilder {
         config[Keys.locationTracking] = enabled
         return this
     }
-    
+
     @discardableResult
     func refreshContentZone(_ enabled: Bool) -> ServerConfigBuilder {
         config[Keys.refreshContentZone] = enabled
         return this
     }
-    
+
     // MARK: - Listing Filters
 
     @discardableResult
@@ -165,95 +165,95 @@ class ServerConfigBuilder {
     }
 
     // MARK: - Intervals and Sizes
-    
+
     @discardableResult
     func serverConfigUpdateInterval(_ interval: UInt) -> ServerConfigBuilder {
         config[Keys.serverConfigUpdateInterval] = interval
         return this
     }
-    
+
     @discardableResult
     func requestQueueSize(_ size: UInt) -> ServerConfigBuilder {
         config[Keys.requestQueueSize] = size
         return this
     }
-    
+
     @discardableResult
     func eventQueueSize(_ size: UInt) -> ServerConfigBuilder {
         config[Keys.eventQueueSize] = size
         return this
     }
-    
+
     @discardableResult
     func logging(_ enabled: Bool) -> ServerConfigBuilder {
         config[Keys.logging] = enabled
         return this
     }
-    
+
     @discardableResult
     func sessionUpdateInterval(_ interval: Int) -> ServerConfigBuilder {
         config[Keys.sessionUpdateInterval] = interval
         return this
     }
-    
+
     @discardableResult
     func contentZoneInterval(_ interval: TimeInterval) -> ServerConfigBuilder {
         config[Keys.contentZoneInterval] = interval
         return this
     }
-    
+
     @discardableResult
     func consentRequired(_ required: Bool) -> ServerConfigBuilder {
         config[Keys.consentRequired] = required
         return this
     }
-    
+
     @discardableResult
     func dropOldRequestTime(_ time: UInt) -> ServerConfigBuilder {
         config[Keys.dropOldRequestTime] = time
         return this
     }
-    
+
     // MARK: - Limits
-    
+
     @discardableResult
     func limitKeyLength(_ limit: UInt) -> ServerConfigBuilder {
         config[Keys.limitKeyLength] = limit
         return this
     }
-    
+
     @discardableResult
     func limitValueSize(_ limit: UInt) -> ServerConfigBuilder {
         config[Keys.limitValueSize] = limit
         return this
     }
-    
+
     @discardableResult
     func limitSegmentationValues(_ limit: UInt) -> ServerConfigBuilder {
         config[Keys.limitSegValues] = limit
         return this
     }
-    
+
     @discardableResult
     func limitBreadcrumb(_ limit: UInt) -> ServerConfigBuilder {
         config[Keys.limitBreadcrumb] = limit
         return this
     }
-    
+
     @discardableResult
     func limitTraceLength(_ limit: UInt) -> ServerConfigBuilder {
         config[Keys.limitTraceLength] = limit
         return this
     }
-    
+
     @discardableResult
     func limitTraceLines(_ limit: UInt) -> ServerConfigBuilder {
         config[Keys.limitTraceLine] = limit
         return this
     }
-    
+
     // MARK: - Build Methods
-    
+
     func defaults() -> ServerConfigBuilder {
         // Feature flags
         tracking(true)
@@ -265,7 +265,7 @@ class ServerConfigBuilder {
         contentZone(false)
         locationTracking(true)
         refreshContentZone(true)
-        
+
         // Intervals and sizes
         serverConfigUpdateInterval(4)
         requestQueueSize(1000)
@@ -275,7 +275,7 @@ class ServerConfigBuilder {
         contentZoneInterval(30)
         consentRequired(false)
         dropOldRequestTime(0)
-        
+
         // Limits
         limitKeyLength(128)
         limitValueSize(256)
@@ -283,52 +283,57 @@ class ServerConfigBuilder {
         limitBreadcrumb(100)
         limitTraceLength(200)
         limitTraceLines(30)
-        
+
         return this
     }
-    
+
     func build() -> String {
         let configDict: [String: Any] = [
             Keys.version: 1,
             Keys.timestamp: Int(Date().timeIntervalSince1970),
-            Keys.config: config
+            Keys.config: config,
         ]
-        
+
         if let jsonData = try? JSONSerialization.data(withJSONObject: configDict),
-           let jsonString = String(data: jsonData, encoding: .utf8) {
+            let jsonString = String(data: jsonData, encoding: .utf8)
+        {
             return jsonString
         }
-        
+
         return "{}"
     }
-    
+
     func buildJson() -> [String: Any] {
         return [
             Keys.version: 1,
             Keys.timestamp: Int(Date().timeIntervalSince1970),
-            Keys.config: config
+            Keys.config: config,
         ]
     }
-    
+
     // MARK: - Validation
-    
+
     func validateAgainst() {
         let moduleConfig = CountlyServerConfig.sharedInstance()
         let common = CountlyCommon.sharedInstance()
         let consentManager = CountlyConsentManager.sharedInstance()
         let persistency = CountlyPersistency.sharedInstance()
         let crashReporter = CountlyCrashReporter.sharedInstance()
-        
+
         // Feature flags (only validate if explicitly set in builder)
         if let v = config[Keys.tracking] as? Bool { XCTAssertEqual(v, moduleConfig?.trackingEnabled()) }
         if let v = config[Keys.networking] as? Bool { XCTAssertEqual(v, moduleConfig?.networkingEnabled()) }
         if let v = config[Keys.crashReporting] as? Bool { XCTAssertEqual(v, moduleConfig?.crashReportingEnabled()) }
         if let v = config[Keys.viewTracking] as? Bool { XCTAssertEqual(v, moduleConfig?.viewTrackingEnabled()) }
         if let v = config[Keys.sessionTracking] as? Bool { XCTAssertEqual(v, moduleConfig?.sessionTrackingEnabled()) }
-        if let v = config[Keys.customEventTracking] as? Bool { XCTAssertEqual(v, moduleConfig?.customEventTrackingEnabled()) }
+        if let v = config[Keys.customEventTracking] as? Bool {
+            XCTAssertEqual(v, moduleConfig?.customEventTrackingEnabled())
+        }
         if let v = config[Keys.enterContentZone] as? Bool { XCTAssertEqual(v, moduleConfig?.enterContentZone()) }
         if let v = config[Keys.locationTracking] as? Bool { XCTAssertEqual(v, moduleConfig?.locationTrackingEnabled()) }
-        if let v = config[Keys.refreshContentZone] as? Bool { XCTAssertEqual(v, moduleConfig?.refreshContentZoneEnabled()) }
+        if let v = config[Keys.refreshContentZone] as? Bool {
+            XCTAssertEqual(v, moduleConfig?.refreshContentZoneEnabled())
+        }
 
         // Debug mode
         if let v = config[Keys.logging] as? Bool { XCTAssertEqual(v, common.enableDebug) }
@@ -337,19 +342,29 @@ class ServerConfigBuilder {
         if let v = config[Keys.limitKeyLength] as? UInt { XCTAssertEqual(v, common.maxKeyLength) }
         if let v = config[Keys.limitValueSize] as? UInt { XCTAssertEqual(v, common.maxValueLength) }
         if let v = config[Keys.limitSegValues] as? UInt { XCTAssertEqual(v, common.maxSegmentationValues) }
-        if let v = config[Keys.limitBreadcrumb] as? UInt { XCTAssertEqual(v, CountlyCrashReporter.sharedInstance()?.crashLogLimit) }
+        if let v = config[Keys.limitBreadcrumb] as? UInt {
+            XCTAssertEqual(v, CountlyCrashReporter.sharedInstance()?.crashLogLimit)
+        }
 
         // Consent
         if let v = config[Keys.consentRequired] as? Bool { XCTAssertEqual(v, consentManager?.requiresConsent) }
 
         // Queue sizes and intervals
-        if let v = config[Keys.eventQueueSize] as? UInt { XCTAssertEqual(v, CountlyPersistency.sharedInstance().eventSendThreshold) }
-        if let v = config[Keys.requestQueueSize] as? UInt { XCTAssertEqual(v, CountlyPersistency.sharedInstance().storedRequestsLimit) }
-        if let v = config[Keys.dropOldRequestTime] as? UInt { XCTAssertEqual(v, CountlyPersistency.sharedInstance().requestDropAgeHours) }
+        if let v = config[Keys.eventQueueSize] as? UInt {
+            XCTAssertEqual(v, CountlyPersistency.sharedInstance().eventSendThreshold)
+        }
+        if let v = config[Keys.requestQueueSize] as? UInt {
+            XCTAssertEqual(v, CountlyPersistency.sharedInstance().storedRequestsLimit)
+        }
+        if let v = config[Keys.dropOldRequestTime] as? UInt {
+            XCTAssertEqual(v, CountlyPersistency.sharedInstance().requestDropAgeHours)
+        }
         if let v = config[Keys.sessionUpdateInterval] as? Int { XCTAssertEqual(v, moduleConfig?.sessionInterval()) }
 
         #if os(iOS)
-        if let v = config[Keys.contentZoneInterval] as? TimeInterval { XCTAssertEqual(v, CountlyContentBuilderInternal.sharedInstance().zoneTimerInterval) }
+            if let v = config[Keys.contentZoneInterval] as? TimeInterval {
+                XCTAssertEqual(v, CountlyContentBuilderInternal.sharedInstance().zoneTimerInterval)
+            }
         #endif
 
         // User property cache limit
@@ -383,10 +398,10 @@ class ServerConfigBuilder {
             XCTAssertFalse(moduleConfig!.isJourneyTriggerEvent("nonexistent_jte_xyz"))
         }
     }
-    
+
     // MARK: - Helper Methods
-    
+
     private var this: ServerConfigBuilder {
         return self
     }
-} 
+}
