@@ -98,8 +98,7 @@ class TestUtils {
         validateRequiredParams(request)
 
         if let eventsStr = request["events"] as? String,
-            let data = eventsStr.data(using: .utf8)
-        {
+            let data = eventsStr.data(using: .utf8) {
             do {
                 let json = try JSONSerialization.jsonObject(with: data, options: [])
                 // Optionally cast it
@@ -228,7 +227,7 @@ class TestUtils {
     static func validateRequiredParams(_ params: [String: Any]) {
         guard let hour = Int((params["hour"] as? String)!),
             let dow = Int((params["dow"] as? String)!),
-            let tz = Int((params["tz"] as? String)!),
+            let timeZone = Int((params["tz"] as? String)!),
             let timestamp = Int((params["timestamp"] as? String)!)
         else {
             XCTFail("Invalid parameter types")
@@ -243,7 +242,7 @@ class TestUtils {
         XCTAssertTrue(timestamp > 0)
         XCTAssertTrue(hour >= 0 && hour < 24)
         XCTAssertTrue(dow >= 0 && dow < 7)
-        XCTAssertTrue(tz >= -720 && tz <= 840)
+        XCTAssertTrue(timeZone >= -720 && timeZone <= 840)
     }
 
     static func parseQueryString(_ queryString: String) -> [String: Any] {

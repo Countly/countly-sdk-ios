@@ -295,8 +295,7 @@ class ServerConfigBuilder {
         ]
 
         if let jsonData = try? JSONSerialization.data(withJSONObject: configDict),
-            let jsonString = String(data: jsonData, encoding: .utf8)
-        {
+            let jsonString = String(data: jsonData, encoding: .utf8) {
             return jsonString
         }
 
@@ -399,26 +398,26 @@ class ServerConfigBuilder {
         }
 
         // Listing filter validation: event filter
-        if let eb = config[Keys.eventBlacklist] as? [String] {
-            XCTAssertFalse(moduleConfig!.shouldRecordEvent(eb.first ?? ""))
+        if let eventBlacklist = config[Keys.eventBlacklist] as? [String] {
+            XCTAssertFalse(moduleConfig!.shouldRecordEvent(eventBlacklist.first ?? ""))
             XCTAssertTrue(moduleConfig!.shouldRecordEvent("nonexistent_event_xyz"))
-        } else if let ew = config[Keys.eventWhitelist] as? [String] {
-            XCTAssertTrue(moduleConfig!.shouldRecordEvent(ew.first ?? ""))
+        } else if let eventWhitelist = config[Keys.eventWhitelist] as? [String] {
+            XCTAssertTrue(moduleConfig!.shouldRecordEvent(eventWhitelist.first ?? ""))
             XCTAssertFalse(moduleConfig!.shouldRecordEvent("nonexistent_event_xyz"))
         }
 
         // User property filter
-        if let upb = config[Keys.userPropertyBlacklist] as? [String] {
-            XCTAssertFalse(moduleConfig!.shouldRecordUserProperty(upb.first ?? ""))
+        if let userPropertyBlacklist = config[Keys.userPropertyBlacklist] as? [String] {
+            XCTAssertFalse(moduleConfig!.shouldRecordUserProperty(userPropertyBlacklist.first ?? ""))
             XCTAssertTrue(moduleConfig!.shouldRecordUserProperty("nonexistent_prop_xyz"))
-        } else if let upw = config[Keys.userPropertyWhitelist] as? [String] {
-            XCTAssertTrue(moduleConfig!.shouldRecordUserProperty(upw.first ?? ""))
+        } else if let userPropertyWhitelist = config[Keys.userPropertyWhitelist] as? [String] {
+            XCTAssertTrue(moduleConfig!.shouldRecordUserProperty(userPropertyWhitelist.first ?? ""))
             XCTAssertFalse(moduleConfig!.shouldRecordUserProperty("nonexistent_prop_xyz"))
         }
 
         // Journey trigger events
-        if let jte = config[Keys.journeyTriggerEvents] as? [String] {
-            for key in jte {
+        if let journeyTriggerEvents = config[Keys.journeyTriggerEvents] as? [String] {
+            for key in journeyTriggerEvents {
                 XCTAssertTrue(moduleConfig!.isJourneyTriggerEvent(key))
             }
             XCTAssertFalse(moduleConfig!.isJourneyTriggerEvent("nonexistent_jte_xyz"))

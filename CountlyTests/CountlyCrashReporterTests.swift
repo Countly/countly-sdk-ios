@@ -133,8 +133,7 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
     }
 
     func validateCrashMetrics(crash: [String: Any], customMetrics: [String: Any], metricsToExclude: [String]) throws
-        -> Int
-    {
+        -> Int {
         var metricCount = 20 - metricsToExclude.count
 
         try assertMetricIfNotExcluded(
