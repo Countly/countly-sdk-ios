@@ -7,7 +7,6 @@
 //
 
 import XCTest
-
 @testable import Countly
 
 class CountlyBaseTestCase: XCTestCase {
@@ -22,7 +21,7 @@ class CountlyBaseTestCase: XCTestCase {
     }
 
     func createBaseConfig() -> CountlyConfig {
-        let config: CountlyConfig = CountlyConfig()
+        let config = CountlyConfig()
         config.appKey = appKey
         config.host = host
         config.enableDebug = true
@@ -37,6 +36,6 @@ class CountlyBaseTestCase: XCTestCase {
     func cleanupState() {
         // TODO: This also nils the instances which makes testing bad
         // Shared instances are static they must not be nilled for multi instance cases.
-        //Countly.sharedInstance().halt(true)
+        // Countly.sharedInstance().halt(true)
     }
 }

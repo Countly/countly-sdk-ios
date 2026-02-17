@@ -223,8 +223,7 @@ class ServerConfigBuilder {
         ]
 
         if let jsonData = try? JSONSerialization.data(withJSONObject: configDict),
-            let jsonString = String(data: jsonData, encoding: .utf8)
-        {
+           let jsonString = String(data: jsonData, encoding: .utf8) {
             return jsonString
         }
 
@@ -279,9 +278,9 @@ class ServerConfigBuilder {
         XCTAssertEqual(config[Keys.sessionUpdateInterval] as? Int, moduleConfig?.sessionInterval())
 
         #if os(iOS)
-            XCTAssertEqual(
-                config[Keys.contentZoneInterval] as? TimeInterval,
-                CountlyContentBuilderInternal.sharedInstance().zoneTimerInterval)
+        XCTAssertEqual(
+            config[Keys.contentZoneInterval] as? TimeInterval,
+            CountlyContentBuilderInternal.sharedInstance().zoneTimerInterval)
 
         #endif
     }

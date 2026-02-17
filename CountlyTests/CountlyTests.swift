@@ -7,14 +7,12 @@
 //
 
 import XCTest
-
 @testable import Countly
 
 class CountlyTests: CountlyBaseTestCase {
-
     // MARK: - Configuration Tests
 
-    func testReInitWithDeviceId() throws {
+    func testReInitWithDeviceId() {
         let config = createBaseConfig()
         // No Device ID provided during init
         Countly.sharedInstance().start(with: config)
@@ -27,7 +25,7 @@ class CountlyTests: CountlyBaseTestCase {
         Countly.sharedInstance().halt(false)
         XCTAssertTrue(!CountlyCommon.sharedInstance().hasStarted, "Countly halt failed.")
 
-        let deviceID = String(Int.random(in: 0..<100))
+        let deviceID = String(Int.random(in: 0 ..< 100))
 
         let newConfig = createBaseConfig()
         newConfig.deviceID = deviceID
@@ -42,7 +40,7 @@ class CountlyTests: CountlyBaseTestCase {
             "Countly deviced id type should be custom when device id is provided during init.")
     }
 
-    func testPerformanceExample() async throws {
+    func testPerformanceExample() {
         // This is an example of a performance test case.
         measure {
             // Put the code you want to measure the time of here.
@@ -55,18 +53,16 @@ class CountlyTests: CountlyBaseTestCase {
             if let queuedRequests = CountlyPersistency.sharedInstance().value(forKey: "queuedRequests")
                 as? NSMutableArray,
                 let recordedEvents = CountlyPersistency.sharedInstance().value(forKey: "recordedEvents")
-                    as? NSMutableArray,
+                as? NSMutableArray,
                 let startedEvents = CountlyPersistency.sharedInstance().value(forKey: "startedEvents")
-                    as? NSMutableDictionary,
+                as? NSMutableDictionary,
                 let isQueueBeingModified = CountlyPersistency.sharedInstance().value(forKey: "isQueueBeingModified")
-                    as? Bool
-            {
+                as? Bool {
                 print("Successfully access private properties.")
 
             } else {
                 print("Failed to access private properties.")
             }
         }
-
     }
 }

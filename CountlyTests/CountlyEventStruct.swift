@@ -8,7 +8,7 @@
 
 import Foundation
 
-// Helper struct to decode Any values in the segmentation dictionary
+/// Helper struct to decode Any values in the segmentation dictionary
 struct AnyCodable: Codable {
     let value: Any
 
@@ -58,7 +58,7 @@ struct AnyCodable: Codable {
     }
 }
 
-// Define a struct that matches the CountlyEvent class properties
+/// Define a struct that matches the CountlyEvent class properties
 struct CountlyEventStruct: Codable {
     let key: String
     let ID: String
@@ -85,7 +85,7 @@ struct CountlyEventStruct: Codable {
         case duration = "dur"
     }
 
-    // Custom decoding for the segmentation dictionary
+    /// Custom decoding for the segmentation dictionary
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         key = try container.decode(String.self, forKey: .key)
@@ -109,7 +109,7 @@ struct CountlyEventStruct: Codable {
         }
     }
 
-    // Custom encoding for the segmentation dictionary
+    /// Custom encoding for the segmentation dictionary
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(key, forKey: .key)

@@ -8,16 +8,13 @@
 
 import Foundation
 import XCTest
-
 @testable import Countly
 
 class CountlyDeviceIDTests: CountlyBaseTestCase {
-
     var testDeviceID: String = "test1234"
-    // Run this test first if you are facing cache not clear or instances are not reset properly
-    // This is a dummy test to cover the edge case clear the cache when SDK is not initialized
-    func testDummy() {
-    }
+    /// Run this test first if you are facing cache not clear or instances are not reset properly
+    /// This is a dummy test to cover the edge case clear the cache when SDK is not initialized
+    func testDummy() {}
 
     // "setID" with custom device id
     // - validate that device id is developer supplied
@@ -65,7 +62,7 @@ class CountlyDeviceIDTests: CountlyBaseTestCase {
         let config = createBaseConfig()
         config.requiresConsent = false
         Countly.sharedInstance().start(with: config)
-        validateSdkGeneratedID()  // validate ID exists and is SDK generated
+        validateSdkGeneratedID() // validate ID exists and is SDK generated
 
         let newId = "New_ID"
         Countly.sharedInstance().setID(newId)
@@ -130,5 +127,4 @@ class CountlyDeviceIDTests: CountlyBaseTestCase {
 
         return uuid ?? ""
     }
-
 }

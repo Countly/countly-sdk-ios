@@ -7,7 +7,6 @@
 //
 
 import XCTest
-
 @testable import Countly
 
 // M:Manual Sessions enabled
@@ -23,11 +22,9 @@ import XCTest
 // L: Location Provided
 
 class CountlyLocationTests: CountlyBaseTestCase {
+    func testDummy() {}
 
-    func testDummy() {
-    }
-
-    func testLocationInit_CNR_A() throws {
+    func testLocationInit_CNR_A() {
         let config = createBaseConfig()
         Countly.sharedInstance().start(with: config)
 
@@ -40,7 +37,7 @@ class CountlyLocationTests: CountlyBaseTestCase {
         XCTAssertFalse(queuedRequests[0].contains("location="), "Location should not be send in this scenario")
     }
 
-    func testLocationInit_CR_CNG_A() throws {
+    func testLocationInit_CR_CNG_A() {
         let config = createBaseConfig()
         config.requiresConsent = true
         Countly.sharedInstance().start(with: config)
@@ -58,7 +55,7 @@ class CountlyLocationTests: CountlyBaseTestCase {
             queuedRequests[1].contains("location="), "Individual location request should send in this scenario")
     }
 
-    func testLocationInit_CR_CG_A() throws {
+    func testLocationInit_CR_CG_A() {
         let config = createBaseConfig()
         config.requiresConsent = true
         config.enableAllConsents = true
@@ -74,7 +71,7 @@ class CountlyLocationTests: CountlyBaseTestCase {
         XCTAssertFalse(queuedRequests[0].contains("location="), "Location should not be send in this scenario")
     }
 
-    func testLocationInit_CR_CGS_A() throws {
+    func testLocationInit_CR_CGS_A() {
         let config = createBaseConfig()
         config.requiresConsent = true
         config.consents = [CLYConsent.sessions]
@@ -90,7 +87,7 @@ class CountlyLocationTests: CountlyBaseTestCase {
         XCTAssertTrue(queuedRequests[0].contains("location="), "Location should send in this scenario")
     }
 
-    func testLocationInit_CR_CGL_A() throws {
+    func testLocationInit_CR_CGL_A() {
         let config = createBaseConfig()
         config.requiresConsent = true
         config.consents = [CLYConsent.location]
@@ -105,7 +102,7 @@ class CountlyLocationTests: CountlyBaseTestCase {
         XCTAssertTrue(queuedRequests[0].contains("consent="), "Only consent request should send in this scenario")
     }
 
-    func testLocationInit_CR_CGLS_A() throws {
+    func testLocationInit_CR_CGLS_A() {
         let config = createBaseConfig()
         config.requiresConsent = true
         config.consents = [CLYConsent.location, CLYConsent.sessions]
@@ -139,17 +136,20 @@ class CountlyLocationTests: CountlyBaseTestCase {
         let parsedRequest = TestUtils.parseQueryString(queuedRequests[0])
 
         XCTAssertTrue(
-            (parsedRequest["location"] as! String) == "35.689500,139.691700",
+            try (XCTUnwrap(parsedRequest["location"] as? String)) == "35.689500,139.691700",
             "Begin session should contains provided location")
-        XCTAssertTrue((parsedRequest["city"] as! String) == "Tokyo", "Begin session should contains provided city")
         XCTAssertTrue(
-            (parsedRequest["country_code"] as! String) == "JP", "Begin session should contains provided country code")
+            try (XCTUnwrap(parsedRequest["city"] as? String)) == "Tokyo",
+            "Begin session should contains provided city")
         XCTAssertTrue(
-            (parsedRequest["ip_address"] as! String) == "255.255.255.255",
+            try (XCTUnwrap(parsedRequest["country_code"] as? String)) == "JP",
+            "Begin session should contains provided country code")
+        XCTAssertTrue(
+            try (XCTUnwrap(parsedRequest["ip_address"] as? String)) == "255.255.255.255",
             "Begin session should contains provided IP address")
     }
 
-    func testLocationInit_CNR_M() throws {
+    func testLocationInit_CNR_M() {
         let config = createBaseConfig()
         config.manualSessionHandling = true
         Countly.sharedInstance().start(with: config)
@@ -165,7 +165,7 @@ class CountlyLocationTests: CountlyBaseTestCase {
         XCTAssertFalse(queuedRequests[0].contains("location="), "Location should not be send in this scenario")
     }
 
-    func testLocationInit_CR_CNG_M() throws {
+    func testLocationInit_CR_CNG_M() {
         let config = createBaseConfig()
         config.manualSessionHandling = true
         config.requiresConsent = true
@@ -185,7 +185,7 @@ class CountlyLocationTests: CountlyBaseTestCase {
             queuedRequests[1].contains("location="), "Individual location request should send in this scenario")
     }
 
-    func testLocationInit_CR_CG_M() throws {
+    func testLocationInit_CR_CG_M() {
         let config = createBaseConfig()
         config.manualSessionHandling = true
         config.requiresConsent = true
@@ -203,7 +203,7 @@ class CountlyLocationTests: CountlyBaseTestCase {
         XCTAssertFalse(queuedRequests[1].contains("location="), "Location should not be send in this scenario")
     }
 
-    func testLocationInit_CR_CGS_M() throws {
+    func testLocationInit_CR_CGS_M() {
         let config = createBaseConfig()
         config.manualSessionHandling = true
         config.requiresConsent = true
@@ -221,7 +221,7 @@ class CountlyLocationTests: CountlyBaseTestCase {
         XCTAssertTrue(queuedRequests[1].contains("location="), "Location should send in this scenario")
     }
 
-    func testLocationInit_CR_CGL_M() throws {
+    func testLocationInit_CR_CGL_M() {
         let config = createBaseConfig()
         config.manualSessionHandling = true
         config.requiresConsent = true
@@ -238,7 +238,7 @@ class CountlyLocationTests: CountlyBaseTestCase {
         XCTAssertTrue(queuedRequests[0].contains("consent="), "Only consent request should send in this scenario")
     }
 
-    func testLocationInit_CR_CGLS_M() throws {
+    func testLocationInit_CR_CGLS_M() {
         let config = createBaseConfig()
         config.manualSessionHandling = true
         config.requiresConsent = true
@@ -276,14 +276,16 @@ class CountlyLocationTests: CountlyBaseTestCase {
         let parsedRequest = TestUtils.parseQueryString(queuedRequests[0])
 
         XCTAssertTrue(
-            (parsedRequest["location"] as! String) == "35.689500,139.691700",
+            try (XCTUnwrap(parsedRequest["location"] as? String)) == "35.689500,139.691700",
             "Begin session should contains provided location")
-        XCTAssertTrue((parsedRequest["city"] as! String) == "Tokyo", "Begin session should contains provided city")
         XCTAssertTrue(
-            (parsedRequest["country_code"] as! String) == "JP", "Begin session should contains provided country code")
+            try (XCTUnwrap(parsedRequest["city"] as? String)) == "Tokyo",
+            "Begin session should contains provided city")
         XCTAssertTrue(
-            (parsedRequest["ip_address"] as! String) == "255.255.255.255",
+            try (XCTUnwrap(parsedRequest["country_code"] as? String)) == "JP",
+            "Begin session should contains provided country code")
+        XCTAssertTrue(
+            try (XCTUnwrap(parsedRequest["ip_address"] as? String)) == "255.255.255.255",
             "Begin session should contains provided IP address")
     }
-
 }

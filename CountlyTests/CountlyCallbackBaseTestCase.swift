@@ -7,13 +7,11 @@
 //
 
 import XCTest
-
 @testable import Countly
 
 /// Base test class for callback tests (CLYRequestCallback and CLYQueueFlushRunnable).
 /// Uses class-level setup to start SDK once, avoiding the halt() singleton issue.
 class CountlyCallbackBaseTestCase: XCTestCase {
-
     // MARK: - Static SDK Setup
 
     private static var isSDKStarted = false
@@ -67,7 +65,7 @@ class CountlyCallbackBaseTestCase: XCTestCase {
     /// Drain the request queue to avoid state pollution between tests
     func drainQueue() {
         var waitCount = 0
-        while CountlyPersistency.sharedInstance().remainingRequestCount() > 0 && waitCount < 50 {
+        while CountlyPersistency.sharedInstance().remainingRequestCount() > 0, waitCount < 50 {
             connectionManager?.proceedOnQueue()
             Thread.sleep(forTimeInterval: 0.1)
             waitCount += 1
@@ -87,8 +85,7 @@ class CountlyCallbackBaseTestCase: XCTestCase {
                 url: request.url!,
                 statusCode: 200,
                 httpVersion: "HTTP/1.1",
-                headerFields: ["Content-Type": "application/json"]
-            )!
+                headerFields: ["Content-Type": "application/json"])!
             return (jsonResponse, response, nil)
         }
     }
@@ -101,8 +98,7 @@ class CountlyCallbackBaseTestCase: XCTestCase {
                 url: request.url!,
                 statusCode: statusCode,
                 httpVersion: "HTTP/1.1",
-                headerFields: ["Content-Type": "application/json"]
-            )!
+                headerFields: ["Content-Type": "application/json"])!
             return (jsonResponse, response, nil)
         }
     }
@@ -114,8 +110,7 @@ class CountlyCallbackBaseTestCase: XCTestCase {
                 url: request.url!,
                 statusCode: statusCode,
                 httpVersion: "HTTP/1.1",
-                headerFields: nil
-            )!
+                headerFields: nil)!
             return (Data(message.utf8), response, nil)
         }
     }
@@ -127,8 +122,7 @@ class CountlyCallbackBaseTestCase: XCTestCase {
                 url: request.url!,
                 statusCode: 200,
                 httpVersion: "HTTP/1.1",
-                headerFields: nil
-            )!
+                headerFields: nil)!
             return (Data("OK".utf8), response, nil)
         }
     }
@@ -141,8 +135,7 @@ class CountlyCallbackBaseTestCase: XCTestCase {
                 url: request.url!,
                 statusCode: 200,
                 httpVersion: "HTTP/1.1",
-                headerFields: ["Content-Type": "application/json"]
-            )!
+                headerFields: ["Content-Type": "application/json"])!
             return (jsonResponse, response, nil)
         }
     }

@@ -8,7 +8,6 @@
 
 import Foundation
 import XCTest
-
 @testable import Countly
 
 // M:Manual Sessions enabled
@@ -20,7 +19,6 @@ import XCTest
 // CNG:Consent not given (All)
 
 class CountlyUserProfileTests: CountlyBaseTestCase {
-
     override func setUp() {
         super.setUp()
         // Initialize or reset necessary objects here
@@ -32,8 +30,9 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         super.tearDown()
         Countly.sharedInstance().halt(true)
     }
-    // Run this test first if you are facing cache not clear or instances are not reset properly
-    // This is a dummy test to cover the edge case clear the cache when SDK is not initialized
+
+    /// Run this test first if you are facing cache not clear or instances are not reset properly
+    /// This is a dummy test to cover the edge case clear the cache when SDK is not initialized
     func testDummy() {
         let config = createBaseConfig()
         config.requiresConsent = false
@@ -78,7 +77,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         Countly.sharedInstance().start(with: config)
         sendUserProperty()
         setUserData()
-        XCTAssertEqual(2, CountlyPersistency.sharedInstance().remainingRequestCount())  // consents, location
+        XCTAssertEqual(2, CountlyPersistency.sharedInstance().remainingRequestCount()) // consents, location
     }
 
     func test_203_CNR_A() {
@@ -117,7 +116,6 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         XCTAssertEqual(1, recordedEvents.count)
 
         XCTAssertEqual("E", recordedEvents[0].key, "Recorded event should be with key 'E'")
-
     }
 
     func test_205_CR_CG_A() {
@@ -165,7 +163,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         Countly.sharedInstance().recordEvent("D")
         setSameData()
         Countly.sharedInstance().recordEvent("E")
-        XCTAssertEqual(2, CountlyPersistency.sharedInstance().remainingRequestCount())  // consents, location
+        XCTAssertEqual(2, CountlyPersistency.sharedInstance().remainingRequestCount()) // consents, location
     }
 
     func test_207_CNR_M() {
@@ -298,7 +296,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         XCTAssertTrue(queuedRequests[2].contains("old_device_id="), "Merge device id failed")
     }
 
-    // Test case for Consent Not Required with Manual Sessions enabled
+    /// Test case for Consent Not Required with Manual Sessions enabled
     func test_210_CNR_M() {
         let config = createBaseConfig()
         config.requiresConsent = false
@@ -361,7 +359,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         let parsedRequest = TestUtils.parseQueryString(request)
         let events = parsedRequest["events"]
         XCTAssertNotNil(events, "events are nil")
-        if (events) != nil {
+        if events != nil {
             guard let jsonData = (events as! String).data(using: .utf8) else {
                 fatalError("Failed to convert JSON string to Data")
             }
@@ -379,13 +377,13 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
             } catch {
                 if let decodingError = error as? DecodingError {
                     switch decodingError {
-                    case .dataCorrupted(let context):
+                    case let .dataCorrupted(context):
                         print("Data corrupted: \(context.debugDescription)")
-                    case .keyNotFound(let key, let context):
+                    case let .keyNotFound(key, context):
                         print("Key not found: \(key.stringValue) in context: \(context.debugDescription)")
-                    case .typeMismatch(let type, let context):
+                    case let .typeMismatch(type, context):
                         print("Type mismatch: \(type) in context: \(context.debugDescription)")
-                    case .valueNotFound(let value, let context):
+                    case let .valueNotFound(value, context):
                         print("Value not found: \(value) in context: \(context.debugDescription)")
                     @unknown default:
                         print("Unknown decoding error")
@@ -401,7 +399,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         let parsedRequest = TestUtils.parseQueryString(request)
         let userDetails = parsedRequest["user_details"]
         XCTAssertNotNil(userDetails, "user details are nil")
-        if (userDetails) != nil {
+        if userDetails != nil {
             guard let customUserDetails = (userDetails as! [String: Any])["custom"] else {
                 fatalError("Failed to get custom user details")
             }
@@ -422,7 +420,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
                             TestUtils.compareDictionaries(customDict, checkDict),
                             "Value for key \(key) does not match. Expected: \(checkDict), Found: \(customDict)")
 
-                    } else {  // Convert to string for comparison
+                    } else { // Convert to string for comparison
                         XCTAssertNotEqual(
                             "\(customValue)", "\(value)",
                             "Value for key \(key) does not match. Expected: \(value), Found: \(customValue)")
@@ -432,13 +430,13 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
             } catch {
                 if let decodingError = error as? DecodingError {
                     switch decodingError {
-                    case .dataCorrupted(let context):
+                    case let .dataCorrupted(context):
                         print("Data corrupted: \(context.debugDescription)")
-                    case .keyNotFound(let key, let context):
+                    case let .keyNotFound(key, context):
                         print("Key not found: \(key.stringValue) in context: \(context.debugDescription)")
-                    case .typeMismatch(let type, let context):
+                    case let .typeMismatch(type, context):
                         print("Type mismatch: \(type) in context: \(context.debugDescription)")
-                    case .valueNotFound(let value, let context):
+                    case let .valueNotFound(value, context):
                         print("Value not found: \(value) in context: \(context.debugDescription)")
                     @unknown default:
                         print("Unknown decoding error")
@@ -455,7 +453,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         let userDetails = parsedRequest["user_details"]
         XCTAssertNotNil(userDetails, "user details is nil")
         let userDetailsMap = userDetails as! [String: Any]
-        if (userDetails) != nil {
+        if userDetails != nil {
             XCTAssertNotNil(userDetailsMap["byear"], "byear should not be nil")
             XCTAssertNotNil(userDetailsMap["email"], "email should not be nil")
             XCTAssertNotNil(userDetailsMap["gender"], "gender should not be nil")
@@ -482,7 +480,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
     }
 
     func sendUserProperty() {
-        //default properties
+        // default properties
         Countly.user().name = "John Doe" as CountlyUserDetailsNullableString
         Countly.user().username = "johndoe" as CountlyUserDetailsNullableString
         Countly.user().email = "john@doe.com" as CountlyUserDetailsNullableString
@@ -491,10 +489,10 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         Countly.user().gender = "M" as CountlyUserDetailsNullableString
         Countly.user().phone = "+0123456789" as CountlyUserDetailsNullableString
 
-        //profile photo
+        // profile photo
         Countly.user().pictureURL =
             "https://s12.postimg.org/qji0724gd/988a10da33b57631caa7ee8e2b5a9036.jpg" as CountlyUserDetailsNullableString
-        //or local image on the device
+        // or local image on the device
         Countly.user().pictureLocalPath = "" as any CountlyUserDetailsNullableString
         Countly.user().save()
     }
@@ -513,20 +511,18 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
     }
 
     func getUserDataMap() -> [String: Any] {
-        let userProperties =
-            [
-                "a12345": "My Property",
-                "b12345": ["$inc": 1],
-                "c12345": ["$inc": 10],
-                "d12345": ["$mul": 20],
-                "e12345": ["$max": 100],
-                "f12345": ["$min": 50],
-                "g12345": ["$setOnce": 200],
-                "h12345": ["$addToSet": "morning"],
-                "i12345": ["$push": "morning"],
-                "j12345": ["$pull": "morning"],
-            ] as [String: Any]
-        return userProperties
+        return [
+            "a12345": "My Property",
+            "b12345": ["$inc": 1],
+            "c12345": ["$inc": 10],
+            "d12345": ["$mul": 20],
+            "e12345": ["$max": 100],
+            "f12345": ["$min": 50],
+            "g12345": ["$setOnce": 200],
+            "h12345": ["$addToSet": "morning"],
+            "i12345": ["$push": "morning"],
+            "j12345": ["$pull": "morning"],
+        ] as [String: Any]
     }
 
     func setSameData() {
@@ -535,5 +531,4 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         Countly.user().set("a12345", value: "3")
         Countly.user().set("a12345", value: "4")
     }
-
 }

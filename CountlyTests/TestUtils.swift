@@ -1,4 +1,5 @@
 import Countly
+
 //
 //  TestUtils.swift
 //  Countly
@@ -9,7 +10,6 @@ import Countly
 import XCTest
 
 class TestUtils {
-
     static let commonDeviceId: String = "deviceId"
     static let commonAppKey: String = "appkey"
     static let host: String = "https://testing.count.ly/"
@@ -46,7 +46,7 @@ class TestUtils {
     }
 
     static func validateRequest(_ params: [String: Any], _ idx: Int) {
-        validateRequest(params, idx, { request in })
+        validateRequest(params, idx) { _ in }
     }
 
     static func validateRequest(_ params: [String: Any], _ idx: Int, _ customValidator: ([String: Any]) -> Void) {
@@ -90,15 +90,13 @@ class TestUtils {
 
     static func validateEventInRQ(
         _ eventName: String, _ segmentation: [String: Any], _ idx: Int, _ rqCount: Int, _ eventIdx: Int,
-        _ eventCount: Int
-    ) throws {
+        _ eventCount: Int) throws {
         let requestStr = getCurrentRQ()![idx]
         let request = parseQueryString(requestStr)
         validateRequiredParams(request)
 
         if let eventsStr = request["events"] as? String,
-            let data = eventsStr.data(using: .utf8)
-        {
+           let data = eventsStr.data(using: .utf8) {
             do {
                 let json = try JSONSerialization.jsonObject(with: data, options: [])
                 // Optionally cast it
@@ -129,13 +127,13 @@ class TestUtils {
                     }
 
                     if let dow = event["dow"] as? Int {
-                        XCTAssertTrue((0..<7).contains(dow))
+                        XCTAssertTrue((0 ..< 7).contains(dow))
                     } else {
                         XCTFail("Missing or invalid 'dow'")
                     }
 
                     if let hour = event["hour"] as? Int {
-                        XCTAssertTrue((0..<24).contains(hour))
+                        XCTAssertTrue((0 ..< 24).contains(hour))
                     } else {
                         XCTFail("Missing or invalid 'hour'")
                     }
@@ -151,28 +149,27 @@ class TestUtils {
                     validateId("_CLY_", event["pvid"] as? String, "Previous View ID")
                     validateId("_CLY_", event["cvid"] as? String, "Current View ID")
                     validateId("_CLY_", event["peid"] as? String, "Previous Event ID")
-
                 }
             } catch {
                 XCTFail("Failed to parse JSON: \(error)")
             }
         }
-        //XCTFail((request["events"] as? String)!)
-        //ModuleEventsTests.validateEventInRQ(
+        // XCTFail((request["events"] as? String)!)
+        // ModuleEventsTests.validateEventInRQ(
         //  TestUtils.commonDeviceId,
         // eventName,
         // segmentation,
-        //1,
-        //0.0,
-        //0.0,
-        //"_CLY_",
-        //"_CLY_",
-        //"_CLY_",
-        //"_CLY_",
-        //idx,
-        //rqCount,
-        //eventIdx,
-        //eventCount
+        // 1,
+        // 0.0,
+        // 0.0,
+        // "_CLY_",
+        // "_CLY_",
+        // "_CLY_",
+        // "_CLY_",
+        // idx,
+        // rqCount,
+        // eventIdx,
+        // eventCount
         // )
     }
 
@@ -201,11 +198,11 @@ class TestUtils {
             let date = Date(timeIntervalSince1970: TimeInterval(timestamp) / 1000)
             let calendar = Calendar(identifier: .gregorian)
 
-            let dow = calendar.component(.weekday, from: date) - 1  // Sunday=1 → normalize to 0-6
+            let dow = calendar.component(.weekday, from: date) - 1 // Sunday=1 → normalize to 0-6
             let hour = calendar.component(.hour, from: date)
 
-            XCTAssertTrue((0..<7).contains(dow), "Day of week is not valid")
-            XCTAssertTrue((0..<24).contains(hour), "Hour is not valid")
+            XCTAssertTrue((0 ..< 7).contains(dow), "Day of week is not valid")
+            XCTAssertTrue((0 ..< 24).contains(hour), "Hour is not valid")
             XCTAssertTrue(timestamp > 0, "Timestamp is not positive")
         } else {
             XCTFail("No match for \(val)")
@@ -219,9 +216,9 @@ class TestUtils {
 
     static func validateRequiredParams(_ params: [String: Any]) {
         guard let hour = Int((params["hour"] as? String)!),
-            let dow = Int((params["dow"] as? String)!),
-            let tz = Int((params["tz"] as? String)!),
-            let timestamp = Int((params["timestamp"] as? String)!)
+              let dow = Int((params["dow"] as? String)!),
+              let tz = Int((params["tz"] as? String)!),
+              let timestamp = Int((params["timestamp"] as? String)!)
         else {
             XCTFail("Invalid parameter types")
             return
@@ -253,23 +250,21 @@ class TestUtils {
             }
 
             let key = String(components[0])
-            let value = String(components[1])  // <-- empty string stays empty string
+            let value = String(components[1]) // <-- empty string stays empty string
 
             let decodedKey = key.removingPercentEncoding ?? key
             let decodedValue = value.removingPercentEncoding ?? value
 
             // JSON detection (only if non-empty)
             if !decodedValue.isEmpty,
-                decodedValue.hasPrefix("{"),
-                decodedValue.hasSuffix("}"),
-                let jsonData = decodedValue.data(using: .utf8)
-            {
+               decodedValue.hasPrefix("{"),
+               decodedValue.hasSuffix("}"),
+               let jsonData = decodedValue.data(using: .utf8) {
                 do {
                     let jsonObject = try JSONSerialization.jsonObject(with: jsonData, options: [])
                     result[decodedKey] = jsonObject
                     continue
-                } catch {
-                }
+                } catch {}
             }
 
             // Assign empty string value properly
@@ -302,7 +297,7 @@ class TestUtils {
     }
 
     static func createBaseConfig() -> CountlyConfig {
-        let config: CountlyConfig = CountlyConfig()
+        let config = CountlyConfig()
         config.appKey = commonAppKey
         config.deviceID = commonDeviceId
         config.host = host
@@ -310,5 +305,4 @@ class TestUtils {
         config.features = [CLYFeature.crashReporting]
         return config
     }
-
 }

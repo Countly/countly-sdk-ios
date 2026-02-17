@@ -7,11 +7,9 @@
 //
 
 import XCTest
-
 @testable import Countly
 
 class CountlyConnectionManagerTests: CountlyBaseTestCase {
-
     override func setUp() {
         super.setUp()
         // Initialize or reset necessary objects here
@@ -24,6 +22,7 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         super.tearDown()
         Countly.sharedInstance().halt(true)
     }
+
     /**
      * <pre>
      * 1- Init countly with the limit of 250 requests
@@ -42,7 +41,7 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
      *  - On the last one queue should be size of 10
      *  </pre>
      */
-    func test_addRequest_maxQueueSizeLimit_Scenario() throws {
+    func test_addRequest_maxQueueSizeLimit_Scenario() {
         let config = createBaseConfig()
         config.storedRequestsLimit = 250
         config.manualSessionHandling = true
@@ -73,7 +72,6 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         XCTAssertEqual(10, CountlyPersistency.sharedInstance().remainingRequestCount())
 
         Countly.sharedInstance().halt(true)
-
     }
 
     /**
@@ -81,7 +79,7 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
      * validate that added network headers are existing with outgoing requests
      * intercept request with a test protocol and validate existance of 2 added headers
      */
-    func test_addCustomNetworkRequestHeaders() throws {
+    func test_addCustomNetworkRequestHeaders() {
         let config = createBaseConfig()
         let sessionConfig = URLSessionConfiguration.default
         sessionConfig.protocolClasses = [TestURLProtocol.self]
@@ -114,7 +112,7 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
      * validate existance of 2 added headers and validate one
      * header is overridden.
      */
-    func test_addCustomNetworkRequestHeaders_override() throws {
+    func test_addCustomNetworkRequestHeaders_override() {
         let config = createBaseConfig()
         let sessionConfig = URLSessionConfiguration.default
         sessionConfig.protocolClasses = [TestURLProtocol.self]
@@ -152,7 +150,7 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
      * invalid. Intercept request with a test protocol and
      * validate that only 1 header exists.
      */
-    func test_addCustomNetworkRequestHeaders_invalid() throws {
+    func test_addCustomNetworkRequestHeaders_invalid() {
         let config = createBaseConfig()
         let sessionConfig = URLSessionConfiguration.default
         sessionConfig.protocolClasses = [TestURLProtocol.self]
@@ -175,7 +173,7 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
     }
 
     func addRequests(count: Int) {
-        for loop in 0...count - 1 {
+        for loop in 0 ... count - 1 {
             CountlyPersistency.sharedInstance().add(toQueue: "&request=REQUEST\(loop)")
         }
         CountlyPersistency.sharedInstance().saveToFileSync()

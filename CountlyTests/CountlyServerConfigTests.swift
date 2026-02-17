@@ -1,9 +1,7 @@
 import XCTest
-
 @testable import Countly
 
 class CountlyServerConfigTests: CountlyBaseTestCase {
-
     class CountTracker {
         var counts: [Int] = [0, 0, 0, 0, 0]
     }
@@ -11,6 +9,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     override func setUp() async throws {
         TestUtils.cleanup()
     }
+
     // MARK: - Basic Configuration Tests
 
     /**
@@ -45,7 +44,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     /**
      * Test configuration when server config is enabled and all properties are allowing
      */
-    func test_serverConfig_whenEnabledAndAllPropertiesAllowing() throws {
+    func test_serverConfig_whenEnabledAndAllPropertiesAllowing() {
         setServerConfig(createStorageConfig(tracking: true, networking: true, crashes: true))
         let config = TestUtils.createBaseConfig()
         config.enableServerConfiguration = true
@@ -68,20 +67,18 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         Countly.sharedInstance().start(with: config)
 
         TestUtils.sleep(
-            2,
-            {
+            2) {
                 XCTAssertFalse(retrieveServerConfig().isEmpty)
                 XCTAssertFalse(CountlyServerConfig.sharedInstance().networkingEnabled())
                 XCTAssertFalse(CountlyServerConfig.sharedInstance().trackingEnabled())
                 XCTAssertFalse(CountlyServerConfig.sharedInstance().crashReportingEnabled())
-            })
+            }
     }
 
     /**
      * Test configuration when server config is disabled and all properties are allowing
      */
-    func test_serverConfig_whenDisabledAndAllPropertiesAllowing() throws {
-
+    func test_serverConfig_whenDisabledAndAllPropertiesAllowing() {
         setServerConfig(createStorageConfig(tracking: true, networking: true, crashes: true))
         let config = TestUtils.createBaseConfig()
         let countly = Countly()
@@ -97,12 +94,11 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      * Tests that default server configuration values are correctly applied when no custom configuration is provided.
      * Verifies that all default values match the expected configuration.
      */
-    func test_serverConfig_defaultValues() throws {
-
+    func test_serverConfig_defaultValues() {
         let config = TestUtils.createBaseConfig()
         config.enableDebug = false
         Countly.sharedInstance().start(with: config)
-        TestUtils.sleep(2, { ServerConfigBuilder().defaults().validateAgainst() })
+        TestUtils.sleep(2) { ServerConfigBuilder().defaults().validateAgainst() }
     }
 
     /**
@@ -110,7 +106,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      * Verifies that the configuration is properly parsed and applied to the SDK.
      */
     func test_serverConfig_providedValues() throws {
-
         try initServerConfigWithValues { config, serverConfig in
             config.sdkBehaviorSettings = serverConfig
         }
@@ -121,7 +116,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      * Verifies that the configuration is properly handled when received through the request generator.
      */
     func test_serverConfig_withImmediateRequestGenerator() throws {
-
         try initServerConfigWithValues { config, serverConfig in
             config.urlSessionConfiguration = createUrlSessionConfigForResponse(serverConfig)
         }
@@ -133,7 +127,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      * when using default configuration values.
      */
     func test_serverConfig_defaults_allFeatures() throws {
-
         try baseAllFeatures({ _ in }, hc: 0, fc: 1, rc: 1, cc: 2, scc: 1)
     }
 
@@ -142,7 +135,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      * Verifies that no requests are generated and no data is collected when all features are disabled.
      */
     func test_disable_allFeatures() {
-
         let sc = ServerConfigBuilder()
         sc.networking(false)
             .sessionTracking(false)
@@ -233,22 +225,20 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
 
         let stackTrace = flowAllFeatures()
 
-        //ModuleCrashTests.validateCrash(stackTrace, "", false, false, 7, 0, [:], 0, [:], [])
+        // ModuleCrashTests.validateCrash(stackTrace, "", false, false, 7, 0, [:], 0, [:], [])
         try TestUtils.validateEventInRQ("test_event", [:], 1, 7, 0, 2)
         try TestUtils.validateEventInRQ(
             "[CLY]_view", ["name": "test_view", "segment": "iOS", "visit": "1"], 1, 7, 1, 2)
         TestUtils.validateRequest(
-            [:], 2,
-            { request in
+            [:], 2) { request in
                 let userDetails = request["user_details"] as! [String: Any]
                 XCTAssertTrue(
                     TestUtils.compareDictionaries(
                         userDetails["custom"] as! [String: Any], ["test_property": "test_value"]))
-            })
+            }
         TestUtils.validateRequest(["location": "33.689500,139.691700"], 3)
         TestUtils.validateRequest(
-            [:], 4,
-            { request in
+            [:], 4) { request in
                 let apm = request["apm"] as! [String: Any]
                 XCTAssertEqual("test_trace", apm["name"] as! String)
                 XCTAssertEqual("network", apm["type"] as! String)
@@ -261,7 +251,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
                             "request_payload_size": 2000,
                             "response_payload_size": 2000,
                         ]))
-            })
+            }
         TestUtils.validateRequest(["attribution_data": "test_data"], 5)
         TestUtils.validateRequest(["key": "value"], 6)
 
@@ -276,7 +266,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             "[CLY]_star_rating",
             [
                 "platform": "iOS",
-                "app_version": CountlyDeviceInfo.appVersion()!,
+                "app_version": XCTUnwrap(CountlyDeviceInfo.appVersion()),
                 "rating": "5",
                 "widget_id": "test",
                 "contactMe": "1",
@@ -287,7 +277,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         try TestUtils.validateEventInRQ(
             "[CLY]_nps",
             [
-                "app_version": CountlyDeviceInfo.appVersion()!,
+                "app_version": XCTUnwrap(CountlyDeviceInfo.appVersion()),
                 "widget_id": "test",
                 "closed": "1",
                 "platform": "iOS",
@@ -349,7 +339,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      * 3. Different types of requests (sessions, attribution, location) are counted towards the limit
      */
     func test_requestQueueSize() throws {
-
         let countlyConfig = TestUtils.createBaseConfig()
         countlyConfig.manualSessionHandling = true
         countlyConfig.urlSessionConfiguration = createUrlSessionConfigForResponse(
@@ -357,7 +346,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         Countly.sharedInstance().start(with: countlyConfig)
 
         Countly.sharedInstance().beginSession()
-        XCTAssertTrue(TestUtils.getCurrentRQ()![0].contains("begin_session"))
+        XCTAssertTrue(try XCTUnwrap(TestUtils.getCurrentRQ()?[0].contains("begin_session")))
 
         Countly.sharedInstance().recordDirectAttribution(
             withCampaignType: "_special_test", andCampaignData: "_special_test")
@@ -371,7 +360,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         let params = ["key": "value"]
         Countly.sharedInstance().addDirectRequest(params)
 
-        XCTAssertFalse(TestUtils.getCurrentRQ()![0].contains("begin_session"))
+        XCTAssertFalse(try XCTUnwrap(TestUtils.getCurrentRQ()?[0].contains("begin_session")))
     }
 
     func test_validateServerConfigParsing_invalid() {
@@ -390,11 +379,11 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     func test_serverConfig_missingOrInvalidKeys() {
         let invalidConfigs: [String] = [
             "{}",
-            "{\"v\":1}",  // Missing "t" and "c"
-            "{\"v\":1,\"t\":2}",  // Missing "c"
-            "{\"v\":1,\"t\":2,\"c\":123}",  // Invalid "c" type
-            "{\"v\":1,\"t\":2,\"c\":false}",  // Invalid "c" type
-            "{\"v\":1,\"t\":2,\"c\":\"invalid\"}",  // Invalid "c" type
+            "{\"v\":1}", // Missing "t" and "c"
+            "{\"v\":1,\"t\":2}", // Missing "c"
+            "{\"v\":1,\"t\":2,\"c\":123}", // Invalid "c" type
+            "{\"v\":1,\"t\":2,\"c\":false}", // Invalid "c" type
+            "{\"v\":1,\"t\":2,\"c\":\"invalid\"}", // Invalid "c" type
         ]
 
         for config in invalidConfigs {
@@ -474,12 +463,12 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     }
 
     /**
-         * Tests that event tracking is properly disabled when configured.
-         * Verifies that:
-         * 1. No event requests are generated
-         * 2. Other features (sessions, views, crashes) continue to work
-         * 3. Request counts and order are maintained correctly
-         */
+     * Tests that event tracking is properly disabled when configured.
+     * Verifies that:
+     * 1. No event requests are generated
+     * 2. Other features (sessions, views, crashes) continue to work
+     * 3. Request counts and order are maintained correctly
+     */
     func test_eventsDisabled_allFeatures() throws {
         let sc = ServerConfigBuilder()
             .customEventTracking(false)
@@ -490,34 +479,33 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
 
         let stackTrace = flowAllFeatures()
 
-        XCTAssertTrue(TestUtils.getCurrentRQ()![0].contains("begin_session"))
+        XCTAssertTrue(try XCTUnwrap(TestUtils.getCurrentRQ()?[0].contains("begin_session")))
         // Events should not be tracked
-        XCTAssertFalse(containsEventWithKey(TestUtils.getCurrentRQ()!, "test_event"))
+        XCTAssertFalse(try containsEventWithKey(XCTUnwrap(TestUtils.getCurrentRQ()), "test_event"))
 
         // But other features should work
         try TestUtils.validateEventInRQ(
             "[CLY]_view", ["name": "test_view", "segment": "iOS", "visit": "1", "start": "1"], 2, 7, 0, 1)
         TestUtils.validateRequest(
-            [:], 3,
-            { request in
+            [:], 3) { request in
                 let userDetails = request["user_details"] as! [String: Any]
                 XCTAssertTrue(
                     TestUtils.compareDictionaries(
                         userDetails["custom"] as! [String: Any], ["test_property": "test_value"]))
-            })
+            }
 
         XCTAssertEqual(8, TestUtils.getCurrentRQ()?.count)
-        XCTAssertFalse(containsEventWithKey(TestUtils.getCurrentRQ()!, "test_event"))
-        XCTAssertTrue(TestUtils.getCurrentEQ()!.isEmpty)
+        XCTAssertFalse(try containsEventWithKey(XCTUnwrap(TestUtils.getCurrentRQ()), "test_event"))
+        XCTAssertTrue(try XCTUnwrap(TestUtils.getCurrentEQ()?.isEmpty))
         validateCounts(tracker.counts, hc: 0, fc: 1, rc: 1, cc: 2, sc: 1)
     }
 
     /**
-         * Tests that crashes are properly disabled when configured.
-         * Verifies that:
-         * 1. No crash reports are sent
-         * 2. Other features (sessions, events, views) continue to work
-         */
+     * Tests that crashes are properly disabled when configured.
+     * Verifies that:
+     * 1. No crash reports are sent
+     * 2. Other features (sessions, events, views) continue to work
+     */
     func test_crashesDisabled_allFeatures() throws {
         let sc = ServerConfigBuilder()
             .crashReporting(false)
@@ -528,12 +516,12 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         let stackTrace = flowAllFeatures()
 
         // Verify that crash is not recorded
-        for request in TestUtils.getCurrentRQ()! {
+        for request in try XCTUnwrap(TestUtils.getCurrentRQ()) {
             XCTAssertFalse(request.contains("crash="))
         }
 
         // But other features should work
-        XCTAssertTrue(TestUtils.getCurrentRQ()![0].contains("begin_session"))
+        XCTAssertTrue(try XCTUnwrap(TestUtils.getCurrentRQ()?[0].contains("begin_session")))
         try TestUtils.validateEventInRQ("test_event", [:], 2, 7, 0, 2)
 
         validateCounts(tracker.counts, hc: 0, fc: 1, rc: 1, cc: 2, sc: 1)
@@ -555,30 +543,28 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         let stackTrace = flowAllFeatures()
 
         // Verify no sessions, events, or views are recorded
-        for request in TestUtils.getCurrentRQ()! {
+        for request in try XCTUnwrap(TestUtils.getCurrentRQ()) {
             XCTAssertFalse(request.contains("begin_session"))
-            XCTAssertFalse(containsEventWithKey(TestUtils.getCurrentRQ()!, "test_event"))
-            XCTAssertFalse(containsEventWithKey(TestUtils.getCurrentRQ()!, "[CLY]_view"))
+            XCTAssertFalse(try containsEventWithKey(XCTUnwrap(TestUtils.getCurrentRQ()), "test_event"))
+            XCTAssertFalse(try containsEventWithKey(XCTUnwrap(TestUtils.getCurrentRQ()), "[CLY]_view"))
         }
 
         XCTAssertEqual(6, TestUtils.getCurrentRQ()?.count)
 
         TestUtils.validateRequest(
-            [:], 0,
-            { request in
+            [:], 0) { request in
                 XCTAssertTrue(
-                    request.contains(where: { (key: String, value: Any) in
-                        return key.elementsEqual("crash")
+                    request.contains(where: { (key: String, _: Any) in
+                        key.elementsEqual("crash")
                     }))
-            })
+            }
         TestUtils.validateRequest(
-            [:], 1,
-            { request in
+            [:], 1) { request in
                 let userDetails = request["user_details"] as! [String: Any]
                 XCTAssertTrue(
                     TestUtils.compareDictionaries(
                         userDetails["custom"] as! [String: Any], ["test_property": "test_value"]))
-            })
+            }
         TestUtils.validateRequest(["location": "33.689500,139.691700"], 2)
 
         validateCounts(tracker.counts, hc: 0, fc: 1, rc: 1, cc: 2, sc: 1)
@@ -634,11 +620,11 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      * 2. Values exceeding the size limit are truncated
      * 3. The number of segmentation values is limited as specified
      */
-    func test_keyLengthAndValueSizeLimits() throws {
+    func test_keyLengthAndValueSizeLimits() {
         let sc = ServerConfigBuilder()
-            .limitKeyLength(5)  // Limit key length to 5 characters
-            .limitValueSize(10)  // Limit value size to 10 characters
-            .limitSegmentationValues(2)  // Limit segmentation values to 2
+            .limitKeyLength(5) // Limit key length to 5 characters
+            .limitValueSize(10) // Limit value size to 10 characters
+            .limitSegmentationValues(2) // Limit segmentation values to 2
         let tracker = setupTestAllFeatures(sc.buildJson())
 
         // Record event with long key and values
@@ -665,14 +651,14 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
 
             // Verify value is truncated
             if let segmentation = event.segmentation,
-                let longValue = segmentation["key3"] as? String
-            {
+               let longValue = segmentation["key3"] as? String {
                 XCTAssertEqual(10, longValue.count)
             }
         }
 
         validateCounts(tracker.counts, hc: 0, fc: 0, rc: 0, cc: 0, sc: 1)
     }
+
     // MARK: - Helper Methods
 
     private func containsEventWithKey(_ requests: [String], _ key: String) -> Bool {
@@ -682,9 +668,8 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     private func getEventWithKey(_ requests: [String], _ key: String) -> [String: Any]? {
         for request in requests {
             if let data = request.data(using: .utf8),
-                let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                let events = json["events"] as? [[String: Any]]
-            {
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let events = json["events"] as? [[String: Any]] {
                 for event in events {
                     if let eventKey = event["key"] as? String, eventKey == key {
                         return event
@@ -732,7 +717,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     }
 
     private func createUrlSessionConfigForResponse(_ targetResponse: String) -> URLSessionConfiguration {
-
         MockURLProtocol.requestHandler = { request in
             let requestString = request.url?.absoluteString ?? ""
             var response = HTTPURLResponse(
@@ -749,7 +733,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
                 statusCode: 400,
                 httpVersion: nil,
                 headerFields: nil)
-            return ("{\"result\":\"fail\"}".data(using: .utf8), response, nil)
+            return (Data("{\"result\":\"fail\"}".utf8), response, nil)
         }
 
         // Create a URLSession using the mock protocol
@@ -771,7 +755,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             .contentZone(true)
             .locationTracking(false)
             .refreshContentZone(false)
-
             // Intervals and sizes
             .serverConfigUpdateInterval(8)
             .requestQueueSize(2000)
@@ -795,8 +778,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         let countly = Countly()
         countly.start(with: countlyConfig)
 
-        TestUtils.sleep(2, { builder.validateAgainst() })
-
+        TestUtils.sleep(2) { builder.validateAgainst() }
     }
 
     private func setupTestAllFeatures(_ serverConfig: [String: Any]) -> CountTracker {
@@ -806,7 +788,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         MockURLProtocol.requestHandler = { request in
             let requestString = request.url?.absoluteString ?? ""
 
-            if requestString.contains("hc=") {  // TODO IOS DOES NOT HAVE HC
+            if requestString.contains("hc=") { // TODO: IOS DOES NOT HAVE HC
                 tracker.counts[0] += 1
             } else if requestString.contains("method=feedback") {
                 tracker.counts[1] += 1
@@ -824,7 +806,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
                 do {
                     configToReturn = try JSONSerialization.data(withJSONObject: serverConfig)
                 } catch {
-                    //ignored
+                    // ignored
                 }
                 return (
                     configToReturn,
@@ -832,18 +814,16 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
                         url: request.url!,
                         statusCode: 200,
                         httpVersion: nil,
-                        headerFields: nil), nil
-                )
+                        headerFields: nil), nil)
             }
 
             return (
-                "{\"result\":\"fail\"}".data(using: .utf8),
+                Data("{\"result\":\"fail\"}".utf8),
                 HTTPURLResponse(
                     url: request.url!,
                     statusCode: 400,
                     httpVersion: nil,
-                    headerFields: nil), nil
-            )
+                    headerFields: nil), nil)
         }
 
         // Create a URLSession using the mock protocol
@@ -855,19 +835,21 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         countlyConfig.urlSessionConfiguration = config
 
         Countly.sharedInstance().start(with: countlyConfig)
-        //Countly.sharedInstance().moduleContent.CONTENT_START_DELAY_MS = 0
-        //Countly.sharedInstance().moduleContent.REFRESH_CONTENT_ZONE_DELAY_MS = 0
+        // Countly.sharedInstance().moduleContent.CONTENT_START_DELAY_MS = 0
+        // Countly.sharedInstance().moduleContent.REFRESH_CONTENT_ZONE_DELAY_MS = 0
 
         return tracker
     }
 
     private func validateCounts(_ counts: [Int], hc: Int, fc: Int, rc: Int, cc: Int, sc: Int) {
         TestUtils.sleep(2) {
-            XCTAssertEqual(hc, counts[0])  // health check request
-            XCTAssertEqual(fc, counts[1])  // feedback request
-            XCTAssertEqual(rc, counts[2])  // remote config request
-            XCTAssertEqual(cc, counts[3])  // content request ?? when it debugged counts increasing but some sleep it needs
-            XCTAssertEqual(sc, counts[4])  // server config request
+            XCTAssertEqual(hc, counts[0]) // health check request
+            XCTAssertEqual(fc, counts[1]) // feedback request
+            XCTAssertEqual(rc, counts[2]) // remote config request
+            XCTAssertEqual(
+                cc,
+                counts[3]) // content request ?? when it debugged counts increasing but some sleep it needs
+            XCTAssertEqual(sc, counts[4]) // server config request
         }
     }
 
@@ -876,8 +858,8 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         Countly.sharedInstance().recordEvent("test_event")
         Countly.sharedInstance().views().startView("test_view")
 
-        let e = NSException()
-        Countly.sharedInstance().record(e)
+        let exception = NSException()
+        Countly.sharedInstance().record(exception)
 
         Countly.user().set("test_property", value: "test_value")
         Countly.user().save()
@@ -898,10 +880,11 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     }
 
     private func immediateFlowAllFeatures() {
-        Countly.sharedInstance().remoteConfig().downloadKeys { response, error, fullValueUpdate, downloadedValues in
+        Countly.sharedInstance().remoteConfig().downloadKeys { _, _, _, _ in
         }
-        Countly.sharedInstance().feedback().getAvailableFeedbackWidgets {
-            (feedbackWidgets: [CountlyFeedbackWidget]?, error) in
+        Countly.sharedInstance().feedback().getAvailableFeedbackWidgets { (
+            feedbackWidgets: [CountlyFeedbackWidget]?,
+            error) in
             if error != nil {
                 print(
                     "Getting widgets list failed. \n \(error!.localizedDescription) \n \((error! as NSError).userInfo)")
@@ -913,7 +896,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         TestUtils.sleep(2) {
             Countly.sharedInstance().content().refreshContentZone()
         }
-
     }
 
     private func feedbackFlowAllFeatures() {
@@ -921,15 +903,12 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             withID: "test", rating: 5, email: "test", comment: "test", userCanBeContacted: true)
         let mockWidget = MockFeedbackWidget(
             id: "test",
-            type: CLYFeedbackWidgetType.NPS
-        )
+            type: CLYFeedbackWidgetType.NPS)
         mockWidget.recordResult(nil)
     }
 
     private func baseAllFeatures(
-        _ consumer: (ServerConfigBuilder) -> Void, hc: Int, fc: Int, rc: Int, cc: Int, scc: Int
-    ) throws {
-
+        _ consumer: (ServerConfigBuilder) -> Void, hc: Int, fc: Int, rc: Int, cc: Int, scc: Int) throws {
         let sc = ServerConfigBuilder()
         consumer(sc)
         let tracker = setupTestAllFeatures(sc.buildJson())
@@ -941,23 +920,21 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         XCTAssertEqual(8, TestUtils.getCurrentRQ()?.count)
 
         XCTAssertTrue(TestUtils.getCurrentRQ()![0].contains("begin_session"))
-        //ModuleCrashTests.validateCrash(stackTrace, "", false, false, 8, 1, [:], 0, [:], [])
+        // ModuleCrashTests.validateCrash(stackTrace, "", false, false, 8, 1, [:], 0, [:], [])
         try TestUtils.validateEventInRQ("[CLY]_orientation", ["mode": "portrait"], 2, 8, 0, 3)
         try TestUtils.validateEventInRQ("test_event", [:], 2, 8, 0, 2)
         try TestUtils.validateEventInRQ(
             "[CLY]_view", ["name": "test_view", "segment": "iOS", "visit": "1", "start": "1"], 2, 8, 1, 2)
         TestUtils.validateRequest(
-            [:], 3,
-            { request in
+            [:], 3) { request in
                 let userDetails = request["user_details"] as! [String: Any]
                 XCTAssertTrue(
                     TestUtils.compareDictionaries(
                         userDetails["custom"] as! [String: Any], ["test_property": "test_value"]))
-            })
+            }
         TestUtils.validateRequest(["location": "33.689500,139.691700"], 4)
         TestUtils.validateRequest(
-            [:], 5,
-            { request in
+            [:], 5) { request in
                 let apm = request["apm"] as! [String: Any]
                 XCTAssertEqual("test_trace", apm["name"] as! String)
                 XCTAssertEqual("network", apm["type"] as! String)
@@ -970,7 +947,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
                             "request_payload_size": 2000,
                             "response_payload_size": 2000,
                         ]))
-            })
+            }
         TestUtils.validateRequest(["attribution_data": "test_data"], 6)
         TestUtils.validateRequest(["key": "value"], 7)
 
@@ -1009,7 +986,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
 
     private func setServerConfig(_ serverConfig: [String: Any]) {
         UserDefaults.standard.set(serverConfig, forKey: "kCountlyServerConfigPersistencyKey")
-        UserDefaults.standard.synchronize()  // Not needed in modern Swift
+        UserDefaults.standard.synchronize() // Not needed in modern Swift
     }
 
     func retrieveServerConfig() -> [String: Any] {

@@ -6,11 +6,9 @@
 //  Copyright © 2025 Countly. All rights reserved.
 //
 import XCTest
-
 @testable import Countly
 
 class CountlyHealthTrackerTests: CountlyBaseTestCase {
-
     // MARK: - Helper Methods
 
     /// Executes concurrent stress test with configurable parameters to detect race conditions and memory issues
@@ -23,7 +21,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
     ///   - writerBlock: Block executed by writer threads
     ///   - readerBlock: Block executed by reader threads
     private func runConcurrentStressTest(
-        iterations: Int = 10_000,
+        iterations: Int = 10000,
         writerDelay: useconds_t = 0,
         readerDelay: useconds_t = 0,
         extraThreads: Int = 0,
@@ -31,8 +29,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         file: StaticString = #filePath,
         line: UInt = #line,
         writerBlock: @escaping (Int) -> Void,
-        readerBlock: @escaping () -> Void
-    ) {
+        readerBlock: @escaping () -> Void) {
         let config = createBaseConfig()
         Countly.sharedInstance().start(with: config)
 
@@ -43,7 +40,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         // Writer operations
         group.enter()
         writerQueue.async {
-            for i in 0..<iterations {
+            for i in 0 ..< iterations {
                 autoreleasepool {
                     writerBlock(i)
                     if writerDelay > 0 { usleep(writerDelay) }
@@ -55,7 +52,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         // Reader operations
         group.enter()
         readerQueue.async {
-            for _ in 0..<iterations {
+            for _ in 0 ..< iterations {
                 autoreleasepool {
                     readerBlock()
                     if readerDelay > 0 { usleep(readerDelay) }
@@ -65,10 +62,10 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         }
 
         // Additional mixed operations for maximum contention
-        for threadIndex in 0..<extraThreads {
+        for threadIndex in 0 ..< extraThreads {
             group.enter()
             DispatchQueue.global(qos: .userInitiated).async {
-                for i in 0..<(iterations / 2) {
+                for i in 0 ..< (iterations / 2) {
                     autoreleasepool {
                         if i % 2 == 0 {
                             writerBlock(i + threadIndex * iterations)
@@ -129,7 +126,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
     /// Validates that concurrent writes don't cause race conditions or crashes
     func testLogFailedNetworkRequest_concurrentAccessProtection() {
         runConcurrentStressTest(
-            iterations: 10_000,
+            iterations: 10000,
             extraThreads: 4,
             writerBlock: { i in
                 let error = String(repeating: "X", count: 50) + " \(i)"
@@ -138,8 +135,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
             },
             readerBlock: {
                 CountlyHealthTracker.sharedInstance().sendHealthCheck()
-            }
-        )
+            })
     }
 
     /// Tests logFailedNetworkRequest with memory-intensive strings to catch objc_release errors
@@ -147,18 +143,17 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
     /// Specifically targets the objc_release crash that occurred with rapid string copying
     func testLogFailedNetworkRequest_objcReleaseErrorPrevention() {
         runConcurrentStressTest(
-            iterations: 10_000,
+            iterations: 10000,
             writerDelay: 50,
             readerDelay: 50,
             writerBlock: { _ in
-                let err = String(repeating: UUID().uuidString, count: 1000)  // ~36KB string
+                let err = String(repeating: UUID().uuidString, count: 1000) // ~36KB string
                 CountlyHealthTracker.sharedInstance()
                     .logFailedNetworkRequest(withStatusCode: 500, errorResponse: err)
             },
             readerBlock: {
                 CountlyHealthTracker.sharedInstance().sendHealthCheck()
-            }
-        )
+            })
     }
 
     // MARK: - String Memory Management Tests
@@ -170,7 +165,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         let config = createBaseConfig()
         Countly.sharedInstance().start(with: config)
 
-        let iterations = 5_000
+        let iterations = 5000
         let group = DispatchGroup()
         let testStrings = createTestStrings()
 
@@ -178,7 +173,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         for (index, testString) in testStrings.enumerated() {
             group.enter()
             DispatchQueue.global(qos: .userInitiated).async {
-                for i in 0..<iterations {
+                for i in 0 ..< iterations {
                     autoreleasepool {
                         let errorString = testString.value ?? ""
                         let finalString = errorString.isEmpty ? "nil_test_\(i)" : "\(errorString)_\(i)"
@@ -194,7 +189,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         // Test mutable string protection - ensures copy semantics work correctly
         group.enter()
         DispatchQueue.global(qos: .userInitiated).async {
-            for i in 0..<iterations {
+            for i in 0 ..< iterations {
                 autoreleasepool {
                     let mutableString = NSMutableString(string: "mutable_\(i)")
                     CountlyHealthTracker.sharedInstance()
@@ -220,14 +215,14 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         let config = createBaseConfig()
         Countly.sharedInstance().start(with: config)
 
-        let iterations = 20_000
+        let iterations = 20000
         let group = DispatchGroup()
 
         // Multiple writers rapidly updating errorMessage property
-        for writerIndex in 0..<8 {
+        for writerIndex in 0 ..< 8 {
             group.enter()
             DispatchQueue.global(qos: .userInitiated).async {
-                for i in 0..<iterations {
+                for i in 0 ..< iterations {
                     autoreleasepool {
                         let errorMsg = "writer_\(writerIndex)_iteration_\(i)_" + String(repeating: "x", count: 100)
                         CountlyHealthTracker.sharedInstance()
@@ -239,10 +234,10 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         }
 
         // Multiple readers accessing errorMessage through sendHealthCheck
-        for _ in 0..<4 {
+        for _ in 0 ..< 4 {
             group.enter()
             DispatchQueue.global(qos: .userInitiated).async {
-                for _ in 0..<iterations {
+                for _ in 0 ..< iterations {
                     autoreleasepool {
                         CountlyHealthTracker.sharedInstance().sendHealthCheck()
                     }
@@ -254,7 +249,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         // Mixed operations for maximum property contention
         group.enter()
         DispatchQueue.global(qos: .userInitiated).async {
-            for i in 0..<iterations {
+            for i in 0 ..< iterations {
                 autoreleasepool {
                     self.executeAllHealthTrackerOperations(index: i)
                 }
@@ -280,7 +275,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
             ("over_1000_chars", String(repeating: "b", count: 1500)),
             ("empty_string", ""),
             ("single_char", "x"),
-            ("unicode_boundary", String(repeating: "🎯", count: 250)),  // 4-byte unicode
+            ("unicode_boundary", String(repeating: "🎯", count: 250)), // 4-byte unicode
             ("mixed_content", "Test🚀String🌟With✨Unicode🎉Characters" + String(repeating: "x", count: 950)),
             ("special_chars", String(repeating: "line\n\ttab\r", count: 100)),
         ]
@@ -290,7 +285,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         for (testName, testString) in boundaryTests {
             group.enter()
             DispatchQueue.global(qos: .userInitiated).async {
-                for i in 0..<1000 {
+                for i in 0 ..< 1000 {
                     autoreleasepool {
                         let uniqueString = "\(testName)_\(i)_\(testString)"
                         CountlyHealthTracker.sharedInstance()
@@ -309,7 +304,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         // Test all property setters under load
         group.enter()
         DispatchQueue.global(qos: .userInitiated).async {
-            for i in 0..<2000 {
+            for i in 0 ..< 2000 {
                 autoreleasepool {
                     self.executeAllHealthTrackerOperations(index: i)
                 }
@@ -331,13 +326,13 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         Countly.sharedInstance().start(with: config)
 
         measure(metrics: [XCTClockMetric()]) {
-            let iterations = 10_000
+            let iterations = 10000
             let group = DispatchGroup()
 
             // Test write performance
             group.enter()
             DispatchQueue.global(qos: .userInitiated).async {
-                for i in 0..<iterations {
+                for i in 0 ..< iterations {
                     CountlyHealthTracker.sharedInstance()
                         .logFailedNetworkRequest(withStatusCode: 500, errorResponse: "perf_test_\(i)")
                 }
@@ -347,7 +342,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
             // Test read performance (fewer iterations as they trigger network requests)
             group.enter()
             DispatchQueue.global(qos: .userInitiated).async {
-                for _ in 0..<(iterations / 10) {
+                for _ in 0 ..< (iterations / 10) {
                     CountlyHealthTracker.sharedInstance().sendHealthCheck()
                 }
                 group.leave()
@@ -365,16 +360,16 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         let config = createBaseConfig()
         Countly.sharedInstance().start(with: config)
 
-        let iterations = 5_000
+        let iterations = 5000
 
         measure(metrics: [XCTClockMetric()]) {
             let group = DispatchGroup()
 
             // Multiple concurrent writers
-            for writerIndex in 0..<4 {
+            for writerIndex in 0 ..< 4 {
                 group.enter()
                 DispatchQueue.global(qos: .userInitiated).async {
-                    for i in 0..<iterations {
+                    for i in 0 ..< iterations {
                         autoreleasepool {
                             CountlyHealthTracker.sharedInstance()
                                 .logFailedNetworkRequest(

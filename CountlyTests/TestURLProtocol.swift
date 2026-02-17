@@ -9,15 +9,16 @@
 import Foundation
 
 final class TestURLProtocol: URLProtocol {
-    private static var lastRequestHeaders: [String: String]? = nil
+    private static var lastRequestHeaders: [String: String]?
 
     // MARK: - URLProtocol overrides
-    override class func canInit(with request: URLRequest) -> Bool {
+
+    override static func canInit(with request: URLRequest) -> Bool {
         // Intercept all requests
         true
     }
 
-    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+    override static func canonicalRequest(for request: URLRequest) -> URLRequest {
         request
     }
 
@@ -30,8 +31,7 @@ final class TestURLProtocol: URLProtocol {
             url: request.url!,
             statusCode: 200,
             httpVersion: "HTTP/1.1",
-            headerFields: nil
-        )!
+            headerFields: nil)!
 
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         client?.urlProtocol(self, didLoad: Data("OK".utf8))
@@ -43,6 +43,7 @@ final class TestURLProtocol: URLProtocol {
     }
 
     // MARK: - Helpers for tests
+
     static func reset() {
         lastRequestHeaders = nil
     }

@@ -7,11 +7,9 @@
 //
 import Foundation
 import XCTest
-
 @testable import Countly
 
 class CountlyConsentManagerTests: CountlyBaseTestCase {
-
     override func setUp() {
         super.setUp()
         // Initialize or reset necessary objects here
@@ -23,6 +21,7 @@ class CountlyConsentManagerTests: CountlyBaseTestCase {
         super.tearDown()
         Countly.sharedInstance().halt(true)
     }
+
     /**
      * Tests that consent requirement is properly handled when enabled.
      * Verifies that:
@@ -62,7 +61,5 @@ class CountlyConsentManagerTests: CountlyBaseTestCase {
             consents[key] = 1
         }
         TestUtils.validateRequest(["consent": consents], 3)
-
     }
-
 }

@@ -6,19 +6,17 @@
 //
 
 import XCTest
-
 @testable import Countly
 
 /// Tests for queue flush runnables feature (CLYQueueFlushRunnable).
 class CountlyQueueFlushRunnablesTests: CountlyCallbackBaseTestCase {
-
     // MARK: - Tests
 
     /**
      * Test adding a single queue flush runnable
      * Verify that the runnable can be added without error
      */
-    func test_addQueueFlushRunnable_singleRunnable() throws {
+    func test_addQueueFlushRunnable_singleRunnable() {
         guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
@@ -37,7 +35,7 @@ class CountlyQueueFlushRunnablesTests: CountlyCallbackBaseTestCase {
      * Test adding multiple queue flush runnables
      * Verify that multiple runnables can be registered
      */
-    func test_addQueueFlushRunnable_multipleRunnables() throws {
+    func test_addQueueFlushRunnable_multipleRunnables() {
         guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
@@ -67,7 +65,7 @@ class CountlyQueueFlushRunnablesTests: CountlyCallbackBaseTestCase {
      * Test clearing all queue flush runnables
      * Verify that clearQueueFlushRunnables removes all registered runnables
      */
-    func test_clearQueueFlushRunnables() throws {
+    func test_clearQueueFlushRunnables() {
         guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
@@ -94,7 +92,7 @@ class CountlyQueueFlushRunnablesTests: CountlyCallbackBaseTestCase {
      * Test that runnables are executed when all requests succeed
      * Uses MockURLProtocol which returns 200 OK with valid JSON
      */
-    func test_queueFlushRunnables_executedOnSuccess() throws {
+    func test_queueFlushRunnables_executedOnSuccess() {
         guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
@@ -117,7 +115,7 @@ class CountlyQueueFlushRunnablesTests: CountlyCallbackBaseTestCase {
     /**
      * Test that multiple runnables are all executed in order when queue flushes successfully
      */
-    func test_queueFlushRunnables_multipleExecutedInOrder() throws {
+    func test_queueFlushRunnables_multipleExecutedInOrder() {
         guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
@@ -148,7 +146,7 @@ class CountlyQueueFlushRunnablesTests: CountlyCallbackBaseTestCase {
      * Test that runnables are removed after successful execution
      * Add runnable, let it execute, add another request - first runnable should not execute again
      */
-    func test_queueFlushRunnables_removedAfterExecution() throws {
+    func test_queueFlushRunnables_removedAfterExecution() {
         guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
@@ -179,7 +177,7 @@ class CountlyQueueFlushRunnablesTests: CountlyCallbackBaseTestCase {
      * Test that runnables are NOT executed when a request fails
      * Uses MockURLProtocol to simulate a failure response
      */
-    func test_queueFlushRunnables_notExecutedOnFailure() throws {
+    func test_queueFlushRunnables_notExecutedOnFailure() {
         guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
@@ -208,7 +206,7 @@ class CountlyQueueFlushRunnablesTests: CountlyCallbackBaseTestCase {
     /**
      * Test thread safety - add runnables from multiple threads concurrently
      */
-    func test_queueFlushRunnables_threadSafety() throws {
+    func test_queueFlushRunnables_threadSafety() {
         guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
@@ -224,7 +222,7 @@ class CountlyQueueFlushRunnablesTests: CountlyCallbackBaseTestCase {
         let group = DispatchGroup()
 
         // Add runnables from multiple threads concurrently
-        for _ in 0..<totalRunnables / 2 {
+        for _ in 0 ..< totalRunnables / 2 {
             group.enter()
             queue1.async {
                 connectionManager.addQueueFlushRunnable {
@@ -264,7 +262,7 @@ class CountlyQueueFlushRunnablesTests: CountlyCallbackBaseTestCase {
     /**
      * Test that a runnable adding new runnables during execution doesn't cause issues
      */
-    func test_queueFlushRunnables_addingDuringExecution() throws {
+    func test_queueFlushRunnables_addingDuringExecution() {
         guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return

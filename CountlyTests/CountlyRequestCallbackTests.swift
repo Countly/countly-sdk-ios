@@ -6,19 +6,17 @@
 //
 
 import XCTest
-
 @testable import Countly
 
 /// Tests for request callback feature (CLYRequestCallback).
 class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
-
     // MARK: - Basic Functionality Tests
 
     /**
      * Test that a callback is executed on successful request
      * Verifies callback receives success=true and response string
      */
-    func test_requestCallback_executedOnSuccess() throws {
+    func test_requestCallback_executedOnSuccess() {
         guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
@@ -48,7 +46,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
     /**
      * Test that callback receives failure status on server error
      */
-    func test_requestCallback_failureOnServerError() throws {
+    func test_requestCallback_failureOnServerError() {
         guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
@@ -80,7 +78,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
     /**
      * Test that callback receives failure on invalid JSON response
      */
-    func test_requestCallback_failureOnInvalidJSON() throws {
+    func test_requestCallback_failureOnInvalidJSON() {
         guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
@@ -93,7 +91,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.addToQueue(
             withCallback: "test=invalid_json",
-            callback: { response, success in
+            callback: { _, success in
                 receivedSuccess = success
                 expectation.fulfill()
             })
@@ -109,7 +107,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
     /**
      * Test that callback receives failure when JSON lacks "result" key
      */
-    func test_requestCallback_failureOnMissingResultKey() throws {
+    func test_requestCallback_failureOnMissingResultKey() {
         guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
@@ -122,7 +120,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.addToQueue(
             withCallback: "test=missing_result",
-            callback: { response, success in
+            callback: { _, success in
                 receivedSuccess = success
                 expectation.fulfill()
             })
@@ -140,7 +138,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
     /**
      * Test that callback is only called once (removed after execution)
      */
-    func test_requestCallback_calledOnlyOnce() throws {
+    func test_requestCallback_calledOnlyOnce() {
         guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
@@ -151,7 +149,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.addToQueue(
             withCallback: "test=once_request",
-            callback: { response, success in
+            callback: { _, _ in
                 callbackCount += 1
                 expectation.fulfill()
             })
@@ -169,7 +167,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
     /**
      * Test that callback is removed after successful execution
      */
-    func test_requestCallback_removedAfterSuccess() throws {
+    func test_requestCallback_removedAfterSuccess() {
         guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
@@ -182,7 +180,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.addToQueue(
             withCallback: "test=first_request",
-            callback: { response, success in
+            callback: { _, _ in
                 firstCallbackCount += 1
                 expectation1.fulfill()
             })
@@ -193,7 +191,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.addToQueue(
             withCallback: "test=second_request",
-            callback: { response, success in
+            callback: { _, _ in
                 secondCallbackCount += 1
                 expectation2.fulfill()
             })
@@ -209,7 +207,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
     /**
      * Test that callback is removed after failure execution
      */
-    func test_requestCallback_removedAfterFailure() throws {
+    func test_requestCallback_removedAfterFailure() {
         guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
@@ -222,7 +220,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.addToQueue(
             withCallback: "test=failure_request",
-            callback: { response, success in
+            callback: { _, _ in
                 callbackCount += 1
                 expectation.fulfill()
             })
@@ -241,7 +239,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
     /**
      * Test multiple callbacks for different requests all execute
      */
-    func test_multipleRequestCallbacks_allExecuted() throws {
+    func test_multipleRequestCallbacks_allExecuted() {
         guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
@@ -255,21 +253,21 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.addToQueue(
             withCallback: "test=request1",
-            callback: { response, success in
+            callback: { _, _ in
                 callback1Executed = true
                 expectation.fulfill()
             })
 
         connectionManager.addToQueue(
             withCallback: "test=request2",
-            callback: { response, success in
+            callback: { _, _ in
                 callback2Executed = true
                 expectation.fulfill()
             })
 
         connectionManager.addToQueue(
             withCallback: "test=request3",
-            callback: { response, success in
+            callback: { _, _ in
                 callback3Executed = true
                 expectation.fulfill()
             })
@@ -286,7 +284,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
     /**
      * Test callbacks execute in queue order (FIFO)
      */
-    func test_multipleRequestCallbacks_executeInOrder() throws {
+    func test_multipleRequestCallbacks_executeInOrder() {
         guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
@@ -299,7 +297,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.addToQueue(
             withCallback: "test=order1",
-            callback: { response, success in
+            callback: { _, _ in
                 lock.lock()
                 executionOrder.append(1)
                 lock.unlock()
@@ -308,7 +306,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.addToQueue(
             withCallback: "test=order2",
-            callback: { response, success in
+            callback: { _, _ in
                 lock.lock()
                 executionOrder.append(2)
                 lock.unlock()
@@ -317,7 +315,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.addToQueue(
             withCallback: "test=order3",
-            callback: { response, success in
+            callback: { _, _ in
                 lock.lock()
                 executionOrder.append(3)
                 lock.unlock()
@@ -336,7 +334,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
     /**
      * Test callback with 201 Created success code
      */
-    func test_requestCallback_201_created_success() throws {
+    func test_requestCallback_201_created_success() {
         guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
@@ -349,7 +347,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.addToQueue(
             withCallback: "test=create",
-            callback: { response, success in
+            callback: { _, success in
                 receivedSuccess = success
                 expectation.fulfill()
             })
@@ -366,7 +364,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
     /**
      * Test that request callback and queue flush runnable both execute
      */
-    func test_requestCallback_andQueueFlushRunnable_bothExecute() throws {
+    func test_requestCallback_andQueueFlushRunnable_bothExecute() {
         guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
@@ -382,7 +380,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.addToQueue(
             withCallback: "test=combined",
-            callback: { response, success in
+            callback: { _, _ in
                 callbackExecuted = true
                 callbackExpectation.fulfill()
             })
@@ -400,7 +398,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
     /**
      * Test that callback failure prevents queue flush runnable from executing
      */
-    func test_requestCallback_failure_preventsQueueFlushRunnable() throws {
+    func test_requestCallback_failure_preventsQueueFlushRunnable() {
         guard let connectionManager = connectionManager else {
             XCTFail("ConnectionManager not available")
             return
@@ -418,7 +416,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.addToQueue(
             withCallback: "test=failing",
-            callback: { response, success in
+            callback: { _, _ in
                 callbackExecuted = true
                 callbackExpectation.fulfill()
             })

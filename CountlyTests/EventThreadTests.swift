@@ -1,5 +1,5 @@
 //
-//  CountlyBaseTestCase.swift
+//  EventThreadTests.swift
 //  CountlyTests
 //
 //  Created by Muhammad Junaid Akram on 27/12/2023.
@@ -7,7 +7,6 @@
 //
 
 import XCTest
-
 @testable import Countly
 
 final class EventRaceReproTests: XCTestCase {
@@ -17,7 +16,7 @@ final class EventRaceReproTests: XCTestCase {
         config.host = "https://127.0.0.1"
         config.enableDebug = true
         config.requiresConsent = false
-        config.eventSendThreshold = UInt(10_000)
+        config.eventSendThreshold = UInt(10000)
         config.experimental().enablePreviousNameRecording = true
         Countly.sharedInstance().start(with: config)
 
@@ -25,12 +24,12 @@ final class EventRaceReproTests: XCTestCase {
 
         let group = DispatchGroup()
         let workers = 8
-        let iterations = 1_000
+        let iterations = 1000
 
-        for w in 0..<workers {
+        for w in 0 ..< workers {
             group.enter()
             DispatchQueue.global().async {
-                for i in 0..<iterations {
+                for i in 0 ..< iterations {
                     let seg: [String: Any] = ["step": i, "flag": i % 2 == 0]
                     Countly.sharedInstance().recordEvent("Login Result #\(w)-\(i)", segmentation: seg)
                 }
@@ -64,7 +63,7 @@ final class EventRaceReproTests: XCTestCase {
         func extractEvents(from request: String) -> [EventPayload] {
             let params = TestUtils.parseQueryString(request)
             guard let eventsJSON = params["events"] as? String,
-                let data = eventsJSON.data(using: .utf8)
+                  let data = eventsJSON.data(using: .utf8)
             else {
                 return []
             }
@@ -80,8 +79,7 @@ final class EventRaceReproTests: XCTestCase {
                     id: event.ID,
                     previousID: event.PEID ?? "",
                     previousName: previousName,
-                    timestamp: event.timestamp
-                )
+                    timestamp: event.timestamp)
             }
         }
 
@@ -95,7 +93,7 @@ final class EventRaceReproTests: XCTestCase {
         let expectedNonReservedCount = 1 + (workers * iterations)
         let nonReservedEvents =
             queuedEvents
-            .filter { !$0.key.hasPrefix("[CLY]_") }
+                .filter { !$0.key.hasPrefix("[CLY]_") }
 
         XCTAssertEqual(nonReservedEvents.count, expectedNonReservedCount)
 
@@ -107,8 +105,7 @@ final class EventRaceReproTests: XCTestCase {
                     mismatchSummaries.append(
                         "Index 0 expected empty previous metadata"
                             + " but found id=\(event.previousID),"
-                            + " name=\(event.previousName)"
-                    )
+                            + " name=\(event.previousName)")
                 }
                 continue
             }

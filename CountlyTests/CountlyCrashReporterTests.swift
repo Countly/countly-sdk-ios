@@ -8,11 +8,9 @@
 
 import Foundation
 import XCTest
-
 @testable import Countly
 
 class CountlyCrashReporterTests: CountlyBaseTestCase {
-
     func testRecordHandledException_globalCrashFilter() throws {
         let cConfig = createBaseConfig()
         cConfig.manualSessionHandling = true
@@ -76,24 +74,23 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
             ],
             idx: 0,
             customMetrics: ["secret": "Minato"],
-            metricsToExclude: ["_ram_total"]
-        )
+            metricsToExclude: ["_ram_total"])
     }
 
     func validateCrash(
         _ stackTrace: String?, breadcrumbs: String, isFatal: Bool, changedBits: Int, customSegmentation: [String: Any],
-        idx: Int, customMetrics: [String: Any], metricsToExclude: [String]
-    ) throws {
-
+        idx: Int, customMetrics: [String: Any], metricsToExclude: [String]) throws {
         if let queuedRequests = CountlyPersistency.sharedInstance().value(forKey: "queuedRequests") as? [String] {
             let request = TestUtils.parseQueryString(queuedRequests[idx])
-            //TestUtils.validateRequiredParams(RQ[idx])
+            // TestUtils.validateRequiredParams(RQ[idx])
 
             let crash = request["crash"] as! [String: Any]
 
-            var paramCount = 0  //try validateCrashMetrics(crash: crash,  customMetrics: customMetrics, metricsToExclude: metricsToExclude)
+            var paramCount =
+                0 // try validateCrashMetrics(crash: crash,  customMetrics: customMetrics, metricsToExclude:
+            // metricsToExclude)
 
-            paramCount += 2  // for nonFatal and ob
+            paramCount += 2 // for nonFatal and ob
             XCTAssertEqual(!isFatal, crash["_nonfatal"] as? Bool)
             XCTAssertEqual(changedBits, crash["_ob"] as? Int)
 
@@ -112,14 +109,12 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
                 XCTAssertEqual(breadcrumbs, crash["_logs"] as? String)
             }
 
-            //XCTAssertEqual(paramCount, crash.count)
+            // XCTAssertEqual(paramCount, crash.count)
         }
-
     }
 
     func validateCrashMetrics(crash: [String: Any], customMetrics: [String: Any], metricsToExclude: [String]) throws
-        -> Int
-    {
+        -> Int {
         var metricCount = 20 - metricsToExclude.count
 
         try assertMetricIfNotExcluded(
@@ -177,8 +172,7 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
     }
 
     func assertMetricIfNotExcluded(metricsToExclude: [String], key: String, expectedValue: String, crash: [String: Any])
-        throws
-    {
+        throws {
         if !metricsToExclude.contains(key) {
             XCTAssertTrue(expectedValue == crash[key] as? String)
         } else {
@@ -189,5 +183,4 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
     static func extractStackTrace(_ exception: NSException) -> String? {
         return exception.callStackSymbols.joined(separator: "\n")
     }
-
 }

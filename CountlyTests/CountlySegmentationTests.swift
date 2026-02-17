@@ -1,5 +1,5 @@
 //
-//  CountlyEventTests.swift
+//  CountlySegmentationTests.swift
 //  CountlyTests
 //
 //  Created by Muhammad Junaid Akram on 25/06/2024.
@@ -8,11 +8,9 @@
 
 import Foundation
 import XCTest
-
 @testable import Countly
 
 class CountlySegmentationTests: CountlyBaseTestCase {
-
     func test_Event_Segmentation() {
         cleanupState()
         let config = createBaseConfig()
@@ -20,17 +18,17 @@ class CountlySegmentationTests: CountlyBaseTestCase {
         Countly.sharedInstance().start(with: config)
 
         let segmentation: [String: Any] = [
-            "intKey": 42,  // Int
-            "boolKey": true,  // Bool
-            "stringKey": "Hello, World!",  // String
-            "arrayKey": ["one", 2, 3.14],  // Array<String, Int, Double>
-            "intArrayKey": [1, 2, 3],  // Array<Int>
-            "boolArrayKey": [true, false, true],  // Array<Bool>
-            "doubleArrayKey": [1.1, 2.2, 3.3],  // Array<Double>
-            "stinrgArrayKey": ["one", "two", "three"],  // Array<String>
-            "doubleKey": 3.14,  // Double
-            "invalidArrayKey": ["one", 2, Date()],  // Array containing non-allowed types
-            "invalidValueKey": Date(),  // Unsupported type (Date)
+            "intKey": 42, // Int
+            "boolKey": true, // Bool
+            "stringKey": "Hello, World!", // String
+            "arrayKey": ["one", 2, 3.14], // Array<String, Int, Double>
+            "intArrayKey": [1, 2, 3], // Array<Int>
+            "boolArrayKey": [true, false, true], // Array<Bool>
+            "doubleArrayKey": [1.1, 2.2, 3.3], // Array<Double>
+            "stinrgArrayKey": ["one", "two", "three"], // Array<String>
+            "doubleKey": 3.14, // Double
+            "invalidArrayKey": ["one", 2, Date()], // Array containing non-allowed types
+            "invalidValueKey": Date(), // Unsupported type (Date)
         ]
 
         Countly.sharedInstance().recordEvent("EventKey", segmentation: segmentation)
@@ -121,7 +119,6 @@ class CountlySegmentationTests: CountlyBaseTestCase {
 
             // Unsupported type removed
             XCTAssertNil(event.segmentation["invalidValueKey"])
-
         }
     }
 }

@@ -1,0 +1,88 @@
+included:
+  - CountlyTests
+
+line_length:
+  warning: 120
+  error: 200
+  ignores_comments: true
+  ignores_urls: true
+
+identifier_name:
+  min_length:
+    warning: 3
+  max_length:
+    warning: 40
+    error: 60
+  excluded:
+    - id
+    - ID
+    - ip
+    - os
+    - i
+    - x
+    - y
+    - sc
+    - rq
+    - tz
+    - w
+    - hc
+    - fc
+    - rc
+    - cc
+    - eq
+  allowed_symbols:
+    - _
+
+type_name:
+  min_length:
+    warning: 3
+  max_length:
+    warning: 40
+
+opening_brace:
+  severity: warning
+
+trailing_semicolon:
+  severity: warning
+
+trailing_whitespace:
+  ignores_empty_lines: true
+
+# Relaxed thresholds for test files
+function_body_length:
+  warning: 100
+  error: 200
+
+type_body_length:
+  warning: 800
+  error: 1200
+
+file_length:
+  warning: 1200
+  error: 2000
+
+function_parameter_count:
+  warning: 8
+  error: 10
+
+cyclomatic_complexity:
+  warning: 15
+  error: 25
+
+large_tuple:
+  warning: 4
+
+disabled_rules:
+  - trailing_comma
+  - todo
+  - force_cast
+  - force_try
+  - force_unwrapping
+  - for_where
+  - closure_parameter_position
+
+opt_in_rules:
+  - empty_count
+  - closure_spacing
+  - explicit_init
+  - redundant_nil_coalescing

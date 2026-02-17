@@ -12,15 +12,19 @@ class MockFeedbackWidget: CountlyFeedbackWidget {
     private let _id: String
     private let _type: CLYFeedbackWidgetType
 
-    override var id: String { return _id }
-    override var type: CLYFeedbackWidgetType { return _type }
+    override var id: String {
+        return _id
+    }
+
+    override var type: CLYFeedbackWidgetType {
+        return _type
+    }
 
     init(
         id: String,
-        type: CLYFeedbackWidgetType
-    ) {
-        self._id = id
-        self._type = type
+        type: CLYFeedbackWidgetType) {
+        _id = id
+        _type = type
         super.init()
     }
 }
