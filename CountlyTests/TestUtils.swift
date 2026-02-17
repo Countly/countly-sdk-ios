@@ -1,3 +1,4 @@
+import Countly
 //
 //  TestUtils.swift
 //  Countly
@@ -6,36 +7,35 @@
 //  Copyright © 2025 Countly. All rights reserved.
 //
 import XCTest
-import Countly
 
 class TestUtils {
-    
+
     static let commonDeviceId: String = "deviceId"
     static let commonAppKey: String = "appkey"
     static let host: String = "https://testing.count.ly/"
     static let SDK_VERSION = "25.4.10"
     static let SDK_NAME = "objc-native-ios"
-    
-    static func cleanup() -> Void {
+
+    static func cleanup() {
         let config = createBaseConfig()
-        config.requiresConsent = false;
-        config.manualSessionHandling = true;
-        Countly.sharedInstance().start(with: config);
-        sleep(1){
+        config.requiresConsent = false
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+        sleep(1) {
             Countly.sharedInstance().halt(true)
-            sleep(1){}
+            sleep(1) {}
         }
     }
-    
+
     static func getCurrentRQ() -> [String]? {
-        return CountlyPersistency.sharedInstance().value(forKey: "queuedRequests") as? [String];
+        return CountlyPersistency.sharedInstance().value(forKey: "queuedRequests") as? [String]
     }
-    
+
     static func getCurrentEQ() -> [CountlyEvent]? {
-        return CountlyPersistency.sharedInstance().value(forKey: "recordedEvents") as? [CountlyEvent];
+        return CountlyPersistency.sharedInstance().value(forKey: "recordedEvents") as? [CountlyEvent]
     }
-    
-    static func sleep(_ seconds: TimeInterval, _ job: () -> Void){
+
+    static func sleep(_ seconds: TimeInterval, _ job: () -> Void) {
         let exp = XCTestExpectation(description: "Run after \(seconds) seconds")
         let result = XCTWaiter.wait(for: [exp], timeout: seconds)
         if result == XCTWaiter.Result.timedOut {
@@ -44,12 +44,12 @@ class TestUtils {
             XCTFail("Delay interrupted")
         }
     }
-    
-    static func validateRequest(_ params: [String: Any], _ idx: Int){
+
+    static func validateRequest(_ params: [String: Any], _ idx: Int) {
         validateRequest(params, idx, { request in })
     }
-    
-    static func validateRequest(_ params: [String: Any], _ idx: Int, _ customValidator: ([String: Any]) -> Void){
+
+    static func validateRequest(_ params: [String: Any], _ idx: Int, _ customValidator: ([String: Any]) -> Void) {
         guard let rq = getCurrentRQ() else {
             XCTFail("Request queue is nil.")
             return
@@ -58,24 +58,24 @@ class TestUtils {
             XCTFail("Request index \(idx) out of bounds. RQ count: \(rq.count).")
             return
         }
-        
+
         let requestStr = getCurrentRQ()![idx]
         let request = parseQueryString(requestStr)
         validateRequiredParams(request)
-        
+
         for (key, value) in params {
             let reqValue = request[key]
             guard let reqValue else {
-               XCTFail("Missing key '\(key)' in request. Expected value: \(value), Request:\(requestStr)")
-               continue
-           }
-            
-            if let nestedMap = value as? [String: Any] {                
+                XCTFail("Missing key '\(key)' in request. Expected value: \(value), Request:\(requestStr)")
+                continue
+            }
+
+            if let nestedMap = value as? [String: Any] {
                 guard let nestedReqValue = reqValue as? [String: Any] else {
-                     XCTFail("Key '\(key)' expected to be nested dictionary but got: \(reqValue)")
-                     continue
-                 }
-                
+                    XCTFail("Key '\(key)' expected to be nested dictionary but got: \(reqValue)")
+                    continue
+                }
+
                 for (nestedKey, nestedValue) in nestedMap {
                     XCTAssertEqual("\(String(describing: nestedReqValue[nestedKey]))", "\(nestedValue)")
                 }
@@ -84,17 +84,21 @@ class TestUtils {
                 XCTAssertEqual("\(String(describing: reqValue))", "\(value)")
             }
         }
-        
+
         customValidator(request)
     }
-    
-    static func validateEventInRQ(_ eventName: String, _ segmentation: [String: Any], _ idx: Int, _ rqCount: Int, _ eventIdx: Int, _ eventCount: Int) throws {
+
+    static func validateEventInRQ(
+        _ eventName: String, _ segmentation: [String: Any], _ idx: Int, _ rqCount: Int, _ eventIdx: Int,
+        _ eventCount: Int
+    ) throws {
         let requestStr = getCurrentRQ()![idx]
         let request = parseQueryString(requestStr)
         validateRequiredParams(request)
-        
+
         if let eventsStr = request["events"] as? String,
-           let data = eventsStr.data(using: .utf8) {
+            let data = eventsStr.data(using: .utf8)
+        {
             do {
                 let json = try JSONSerialization.jsonObject(with: data, options: [])
                 // Optionally cast it
@@ -109,10 +113,12 @@ class TestUtils {
 
                     let duration = (event["dur"] as? Double) ?? 0.0
                     XCTAssertEqual(duration, 0, accuracy: 0.0001)
-                    
-                    if(!segmentation.isEmpty){
+
+                    if !segmentation.isEmpty {
                         if let eventSegmentation = event["segmentation"] as? [String: Any] {
-                            XCTAssertEqual(eventSegmentation.count, segmentation.count, "Expected segmentation: \(segmentation), got: \(eventSegmentation)")
+                            XCTAssertEqual(
+                                eventSegmentation.count, segmentation.count,
+                                "Expected segmentation: \(segmentation), got: \(eventSegmentation)")
                             for (key, value) in segmentation {
                                 let segValue = eventSegmentation[key]
                                 XCTAssertEqual("\(String(describing: segValue!))", "\(value)")
@@ -153,23 +159,23 @@ class TestUtils {
         }
         //XCTFail((request["events"] as? String)!)
         //ModuleEventsTests.validateEventInRQ(
-          //  TestUtils.commonDeviceId,
-           // eventName,
-           // segmentation,
-            //1,
-            //0.0,
-            //0.0,
-            //"_CLY_",
-            //"_CLY_",
-            //"_CLY_",
-            //"_CLY_",
-            //idx,
-            //rqCount,
-            //eventIdx,
-            //eventCount
-       // )
+        //  TestUtils.commonDeviceId,
+        // eventName,
+        // segmentation,
+        //1,
+        //0.0,
+        //0.0,
+        //"_CLY_",
+        //"_CLY_",
+        //"_CLY_",
+        //"_CLY_",
+        //idx,
+        //rqCount,
+        //eventIdx,
+        //eventCount
+        // )
     }
-    
+
     static func validateId(_ id: String?, _ toValidate: String?, _ name: String) {
         if let id = id, id == "_CLY_" {
             if let val = toValidate, !val.isEmpty {
@@ -189,7 +195,8 @@ class TestUtils {
         let timestampStr = String(val.suffix(13))
         let base64Str = String(val.prefix(val.count - 13))
 
-        let matches = base64Pattern.numberOfMatches(in: base64Str, range: NSRange(location: 0, length: base64Str.utf16.count))
+        let matches = base64Pattern.numberOfMatches(
+            in: base64Str, range: NSRange(location: 0, length: base64Str.utf16.count))
         if matches > 0, let timestamp = Int64(timestampStr) {
             let date = Date(timeIntervalSince1970: TimeInterval(timestamp) / 1000)
             let calendar = Calendar(identifier: .gregorian)
@@ -205,57 +212,57 @@ class TestUtils {
         }
     }
 
-    
     static func validateSdkIdentityParams(_ params: [String: Any]) {
-          XCTAssertEqual(SDK_VERSION, params["sdk_version"] as? String)
-          XCTAssertEqual(SDK_NAME, params["sdk_name"] as? String)
+        XCTAssertEqual(SDK_VERSION, params["sdk_version"] as? String)
+        XCTAssertEqual(SDK_NAME, params["sdk_name"] as? String)
     }
-      
-      static func validateRequiredParams(_ params: [String: Any]) {
-          guard let hour = Int((params["hour"] as? String)!),
-                let dow = Int((params["dow"] as? String)!),
-                let tz = Int((params["tz"] as? String)!),
-                let timestamp = Int((params["timestamp"] as? String)!) else {
-              XCTFail("Invalid parameter types")
-              return
-          }
-          
-          validateSdkIdentityParams(params)
-          XCTAssertEqual(commonDeviceId, params["device_id"] as? String)
-          XCTAssertEqual(commonAppKey, params["app_key"] as? String)
-          XCTAssertEqual(CountlyDeviceInfo.appVersion(), params["av"] as? String)
-          XCTAssertEqual("0", params["t"] as? String)
-          XCTAssertTrue(timestamp > 0)
-          XCTAssertTrue(hour >= 0 && hour < 24)
-          XCTAssertTrue(dow >= 0 && dow < 7)
-          XCTAssertTrue(tz >= -720 && tz <= 840)
-      }
-    
+
+    static func validateRequiredParams(_ params: [String: Any]) {
+        guard let hour = Int((params["hour"] as? String)!),
+            let dow = Int((params["dow"] as? String)!),
+            let tz = Int((params["tz"] as? String)!),
+            let timestamp = Int((params["timestamp"] as? String)!)
+        else {
+            XCTFail("Invalid parameter types")
+            return
+        }
+
+        validateSdkIdentityParams(params)
+        XCTAssertEqual(commonDeviceId, params["device_id"] as? String)
+        XCTAssertEqual(commonAppKey, params["app_key"] as? String)
+        XCTAssertEqual(CountlyDeviceInfo.appVersion(), params["av"] as? String)
+        XCTAssertEqual("0", params["t"] as? String)
+        XCTAssertTrue(timestamp > 0)
+        XCTAssertTrue(hour >= 0 && hour < 24)
+        XCTAssertTrue(dow >= 0 && dow < 7)
+        XCTAssertTrue(tz >= -720 && tz <= 840)
+    }
+
     static func parseQueryString(_ queryString: String) -> [String: Any] {
         var result: [String: Any] = [:]
 
         // Split query string into pairs
         let pairs = queryString.split(separator: "&")
-        
+
         for pair in pairs {
             // Always split into 2 parts; missing value becomes empty string
             let components = pair.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
-            
+
             guard components.count == 2 else {
                 continue
             }
-            
+
             let key = String(components[0])
             let value = String(components[1])  // <-- empty string stays empty string
-            
+
             let decodedKey = key.removingPercentEncoding ?? key
             let decodedValue = value.removingPercentEncoding ?? value
-            
+
             // JSON detection (only if non-empty)
             if !decodedValue.isEmpty,
-               decodedValue.hasPrefix("{"),
-               decodedValue.hasSuffix("}"),
-               let jsonData = decodedValue.data(using: .utf8)
+                decodedValue.hasPrefix("{"),
+                decodedValue.hasSuffix("}"),
+                let jsonData = decodedValue.data(using: .utf8)
             {
                 do {
                     let jsonObject = try JSONSerialization.jsonObject(with: jsonData, options: [])
@@ -264,7 +271,7 @@ class TestUtils {
                 } catch {
                 }
             }
-            
+
             // Assign empty string value properly
             result[decodedKey] = decodedValue
         }
@@ -272,17 +279,16 @@ class TestUtils {
         return result
     }
 
-    
-    static func compareDictionaries(_ dict1: [String: Any],_ dict2: [String: Any]) -> Bool {
+    static func compareDictionaries(_ dict1: [String: Any], _ dict2: [String: Any]) -> Bool {
         guard dict1.count == dict2.count else {
             return false
         }
-        
+
         for (key, value) in dict1 {
             guard let otherValue = dict2[key] else {
                 return false
             }
-            
+
             if let nestedDict1 = value as? [String: Any], let nestedDict2 = otherValue as? [String: Any] {
                 if !compareDictionaries(nestedDict1, nestedDict2) {
                     return false
@@ -291,18 +297,18 @@ class TestUtils {
                 return false
             }
         }
-        
+
         return true
     }
-    
+
     static func createBaseConfig() -> CountlyConfig {
         let config: CountlyConfig = CountlyConfig()
         config.appKey = commonAppKey
         config.deviceID = commonDeviceId
         config.host = host
         config.enableDebug = true
-        config.features = [CLYFeature.crashReporting];
+        config.features = [CLYFeature.crashReporting]
         return config
     }
-    
+
 }
