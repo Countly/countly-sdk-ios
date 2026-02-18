@@ -13,7 +13,7 @@ class TestUtils {
     static let commonDeviceId: String = "deviceId"
     static let commonAppKey: String = "appkey"
     static let host: String = "https://YOUR_SERVER"
-    static let SDK_VERSION = "25.4.10"
+    static let SDK_VERSION = "26.1.0"
     static let SDK_NAME = "objc-native-ios"
 
     static func cleanup() {
