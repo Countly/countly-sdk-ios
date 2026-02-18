@@ -3,7 +3,6 @@
 // This code is provided under the MIT License.
 //
 // Please visit www.count.ly for more information.
-
 #import "CountlyCommon.h"
 
 @interface CountlyPersistency ()
@@ -265,6 +264,11 @@ static dispatch_once_t onceToken;
 
 - (void)recordEvent:(CountlyEvent *)event
 {
+    [self recordEvent:event callback:nil];
+}
+
+- (void)recordEvent:(CountlyEvent *)event callback:(CLYRequestCallback)callback
+{
     @synchronized (self.recordedEvents)
     {
         if([Countly.user hasUnsyncedChanges])
@@ -274,9 +278,9 @@ static dispatch_once_t onceToken;
         
         [self.recordedEvents addObject:event];
         
-        if (self.recordedEvents.count >= self.eventSendThreshold)
+        if (callback != nil || self.recordedEvents.count >= self.eventSendThreshold)
         {
-            [CountlyConnectionManager.sharedInstance sendEvents];
+            [CountlyConnectionManager.sharedInstance sendEventsWithCallback:callback];
         }
     }
 }

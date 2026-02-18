@@ -15,13 +15,16 @@ class CountlyCallbackBaseTestCase: XCTestCase {
 
     // MARK: - Static SDK Setup
 
-    private static var isSDKStarted = false
     static let testAppKey = "appkey"
     static let testHost = "https://testing.count.ly/"
 
     override class func setUp() {
         super.setUp()
-        guard !isSDKStarted else { return }
+
+        // Always halt first to clear state from previous test classes,
+        // ensuring start(with:) accepts our MockURLProtocol config
+        // All cleanup logic now handled inside Countly.halt(true)
+        Countly.sharedInstance().halt(true)
 
         // Configure MockURLProtocol to return valid JSON by default
         MockURLProtocol.requestHandler = createSuccessHandler()
@@ -35,7 +38,6 @@ class CountlyCallbackBaseTestCase: XCTestCase {
         sessionConfig.protocolClasses = [MockURLProtocol.self]
         config.urlSessionConfiguration = sessionConfig
         Countly.sharedInstance().start(with: config)
-        isSDKStarted = true
     }
 
     // MARK: - Instance Setup/Teardown

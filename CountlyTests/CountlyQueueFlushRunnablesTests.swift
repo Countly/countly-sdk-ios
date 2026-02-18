@@ -83,7 +83,7 @@ class CountlyQueueFlushRunnablesTests: CountlyCallbackBaseTestCase {
         // Add a request and let it complete (queue will flush)
         Countly.sharedInstance().addDirectRequest(["test": "request"])
 
-        TestUtils.sleep(2) {}
+        TestUtils.sleep(1) {}
 
         // Runnable should NOT have executed because it was cleared
         XCTAssertFalse(runnableExecuted)
@@ -107,7 +107,7 @@ class CountlyQueueFlushRunnablesTests: CountlyCallbackBaseTestCase {
         // Add a request - MockURLProtocol will return success
         Countly.sharedInstance().addDirectRequest(["test": "request"])
 
-        TestUtils.sleep(3) {}
+        TestUtils.sleep(1) {}
 
         // Runnable should have executed after successful queue flush
         XCTAssertTrue(runnableExecuted)
@@ -137,7 +137,7 @@ class CountlyQueueFlushRunnablesTests: CountlyCallbackBaseTestCase {
         // Add a request - MockURLProtocol will return success
         Countly.sharedInstance().addDirectRequest(["test": "request"])
 
-        TestUtils.sleep(3) {}
+        TestUtils.sleep(1) {}
 
         // All runnables should have executed in order
         XCTAssertEqual(executionOrder, [1, 2, 3])
@@ -161,14 +161,14 @@ class CountlyQueueFlushRunnablesTests: CountlyCallbackBaseTestCase {
         // First request - runnable should execute
         Countly.sharedInstance().addDirectRequest(["test": "request1"])
 
-        TestUtils.sleep(3) {}
+        TestUtils.sleep(1) {}
 
         XCTAssertEqual(executionCount, 1)
 
         // Second request - runnable should NOT execute again (was removed)
         Countly.sharedInstance().addDirectRequest(["test": "request2"])
 
-        TestUtils.sleep(3) {}
+        TestUtils.sleep(1) {}
 
         // Execution count should still be 1
         XCTAssertEqual(executionCount, 1)
@@ -195,7 +195,7 @@ class CountlyQueueFlushRunnablesTests: CountlyCallbackBaseTestCase {
         // Add a request - MockURLProtocol will return 500 error
         Countly.sharedInstance().addDirectRequest(["test": "request"])
 
-        TestUtils.sleep(3) {}
+        TestUtils.sleep(1) {}
 
         // Runnable should NOT have executed due to failure
         XCTAssertFalse(runnableExecuted)
@@ -254,7 +254,7 @@ class CountlyQueueFlushRunnablesTests: CountlyCallbackBaseTestCase {
         // Trigger queue flush
         Countly.sharedInstance().addDirectRequest(["test": "request"])
 
-        TestUtils.sleep(3) {}
+        TestUtils.sleep(1) {}
 
         // All runnables should have been added and executed
         XCTAssertEqual(executedCount, totalRunnables)
@@ -283,7 +283,7 @@ class CountlyQueueFlushRunnablesTests: CountlyCallbackBaseTestCase {
         // First flush
         Countly.sharedInstance().addDirectRequest(["test": "request1"])
 
-        TestUtils.sleep(3) {}
+        TestUtils.sleep(1) {}
 
         // First runnable should have executed
         XCTAssertTrue(firstRunnableExecuted)
@@ -293,7 +293,7 @@ class CountlyQueueFlushRunnablesTests: CountlyCallbackBaseTestCase {
         // Second flush - nested runnable should execute
         Countly.sharedInstance().addDirectRequest(["test": "request2"])
 
-        TestUtils.sleep(3) {}
+        TestUtils.sleep(1) {}
 
         // Now nested runnable should have executed
         XCTAssertTrue(nestedRunnableExecuted)

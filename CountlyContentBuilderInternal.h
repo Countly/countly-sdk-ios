@@ -16,6 +16,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, assign) NSTimeInterval zoneTimerInterval;
 @property (nonatomic) ContentCallback contentCallback;
 @property (nonatomic, assign) WebViewDisplayOption webViewDisplayOption;
+@property (nonatomic, assign) int contentInitialDelay;
+@property (nonatomic, assign) NSUInteger refreshContentZoneDelay;
 
 + (instancetype)sharedInstance;
 
@@ -23,6 +25,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)exitContentZone;
 - (void)changeContent:(NSArray<NSString *> *)tags;
 - (void)refreshContentZone;
+- (void)refreshContentZoneJTE;
 
 #endif
 NS_ASSUME_NONNULL_END
