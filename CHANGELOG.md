@@ -9,6 +9,8 @@
 * Improved feedbacks response validation.
 * Improved consent requirements and location info management when they updated from server configuration.
 
+* Mitigated an issue about early health check requests in temporary ID mode.
+
 ## 25.4.10
 * Mitigated an issue when returning from the external content link.
 
