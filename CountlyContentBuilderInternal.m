@@ -260,10 +260,21 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
 
-    NSString *URLString = [NSString stringWithFormat:@"%@%@?%@", CountlyConnectionManager.sharedInstance.host, kCountlyEndpointContent, queryString];
+    NSString *contentEndpoint = [NSString stringWithFormat:@"%@%@", CountlyConnectionManager.sharedInstance.host, kCountlyEndpointContent];
 
-    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:URLString]];
-    return request;
+    if (queryString.length > kCountlyGETRequestMaxLength || CountlyConnectionManager.sharedInstance.alwaysUsePOST)
+    {
+        NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:contentEndpoint]];
+        request.HTTPMethod = @"POST";
+        request.HTTPBody = [queryString cly_dataUTF8];
+        return request.copy;
+    }
+    else
+    {
+        NSString* withQueryString = [contentEndpoint stringByAppendingFormat:@"?%@", queryString];
+        NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:withQueryString]];
+        return request;
+    }
 }
 
 - (NSString *)resolutionJson {
