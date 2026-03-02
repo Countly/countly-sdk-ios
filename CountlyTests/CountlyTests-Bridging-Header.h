@@ -2,3 +2,4 @@
 #import "CountlyConnectionManager.h"
 #import "CountlyViewTrackingInternal.h"
 #import "CountlyHealthTracker.h"
+#import "CountlyContentBuilderInternal.h"
