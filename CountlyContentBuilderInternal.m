@@ -18,8 +18,6 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     dispatch_queue_t _contentQueue;
 }
 
-NSInteger const contentInitialDelay = 4;
-
 #if (TARGET_OS_IOS)
 + (instancetype)sharedInstance {
     static CountlyContentBuilderInternal *instance = nil;
@@ -38,6 +36,8 @@ NSInteger const contentInitialDelay = 4;
         _requestTimer = nil;
         _isCurrentlyContentShown = NO;
         _contentQueue = dispatch_queue_create("ly.countly.content.queue", DISPATCH_QUEUE_SERIAL);
+        _contentInitialDelay = 4;
+        _refreshContentZoneDelay = 2.5;
     }
     
     return self;
@@ -68,12 +68,18 @@ NSInteger const contentInitialDelay = 4;
     
     if(_isCurrentlyContentShown){
         CLY_LOG_I(@"%s a content is already shown, skipping" ,__FUNCTION__);
+        return;
     }
     
     [self enterContentZone:@[]];
 }
 
 - (void)enterContentZone:(NSArray<NSString *> *)tags {
+    if(_isCurrentlyContentShown){
+        CLY_LOG_I(@"%s a content is already shown, skipping" ,__FUNCTION__);
+        return;
+    }
+    
     [_minuteTimer invalidate];
     _minuteTimer = nil;
     
@@ -88,8 +94,8 @@ NSInteger const contentInitialDelay = 4;
     self.currentTags = tags;
     int contentDelay = 0;
     
-    if (CountlyCommon.sharedInstance.timeSinceLaunch < contentInitialDelay) {
-        contentDelay = contentInitialDelay;
+    if (CountlyCommon.sharedInstance.timeSinceLaunch < _contentInitialDelay) {
+        contentDelay = _contentInitialDelay;
     }
     
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(contentDelay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
@@ -121,6 +127,7 @@ NSInteger const contentInitialDelay = 4;
     }
     if(_isCurrentlyContentShown){
         CLY_LOG_I(@"%s a content is already shown, skipping" ,__FUNCTION__);
+        return;
     }
     
     [self exitContentZone];
@@ -130,7 +137,40 @@ NSInteger const contentInitialDelay = 4;
             [self enterContentZone]; // this touches to UI so it needs to be handled in the main queue
         });
     });
+}
 
+- (void)refreshContentZoneJTE {
+    if (![CountlyServerConfig.sharedInstance refreshContentZoneEnabled])
+    {
+        CLY_LOG_D(@"%s, refresh content zone is disabled, skipping JTE content refresh", __FUNCTION__);
+        return;
+    }
+    if(_isCurrentlyContentShown){
+        CLY_LOG_I(@"%s a content is already shown, skipping JTE content refresh" ,__FUNCTION__);
+        return;
+    }
+
+    CLY_LOG_D(@"%s, Starting JTE content refresh with retries", __FUNCTION__);
+    [self exitContentZone];
+    [self fetchContentsForJourneyWithMaxAttempts:3 currentAttempt:1];
+}
+
+- (void)fetchContentsForJourneyWithMaxAttempts:(NSInteger)maxAttempts currentAttempt:(NSInteger)currentAttempt {
+    CLY_LOG_D(@"%s, JTE content fetch attempt %ld of %ld", __FUNCTION__, (long)currentAttempt, (long)maxAttempts);
+
+    [self fetchContents:^{
+        if (currentAttempt < maxAttempts) {
+            CLY_LOG_D(@"Retrying JTE content fetch in 1 second (attempt %ld of %ld)", (long)(currentAttempt + 1), (long)maxAttempts);
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                [self fetchContentsForJourneyWithMaxAttempts:maxAttempts currentAttempt:currentAttempt + 1];
+            });
+        } else {
+            CLY_LOG_D(@"JTE content fetch exhausted all %ld attempts. Re-entering content zone.", (long)maxAttempts);
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self enterContentZone];
+            });
+        }
+    }];
 }
 
 #pragma mark - Private Methods
@@ -146,36 +186,46 @@ NSInteger const contentInitialDelay = 4;
 }
 
 - (void)fetchContents {
+    [self fetchContents:nil];
+}
+
+- (void)fetchContents:(void (^)(void))failureCallback {
     if (!CountlyConsentManager.sharedInstance.consentForContent)
         return;
 
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
         return;
+    
+    if(_isCurrentlyContentShown){
+        CLY_LOG_I(@"%s a content is already shown, skipping" ,__FUNCTION__);
+        return;
+    }
+    
     if ([self isRequestQueueLockedThreadSafe]) {
         return;
     }
     
     [self setRequestQueueLockedThreadSafe:YES];
     
-    NSURLSessionTask *dataTask = [[NSURLSession sharedSession] dataTaskWithRequest:[self fetchContentsRequest] completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+    NSURLSessionTask *dataTask = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self fetchContentsRequest] completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (error) {
             CLY_LOG_I(@"%s fetch content details failed: [%@]", __FUNCTION__, error);
             [self setRequestQueueLockedThreadSafe:NO];
+            if (failureCallback) {
+                failureCallback();
+            }
             return;
         }
         
         NSError *jsonError;
         NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
-        
-        if (jsonError) {
-            CLY_LOG_I(@"%s failed to parse JSON: [%@]", __FUNCTION__, jsonError);
+
+        if (jsonError || !jsonResponse) {
+            CLY_LOG_I(@"%s failed to parse JSON or empty response: [%@]", __FUNCTION__, jsonError);
             [self setRequestQueueLockedThreadSafe:NO];
-            return;
-        }
-        
-        if (!jsonResponse) {
-            CLY_LOG_I(@"%s received empty or null response.", __FUNCTION__);
-            [self setRequestQueueLockedThreadSafe:NO];
+            if (failureCallback) {
+                failureCallback();
+            }
             return;
         }
         
@@ -183,8 +233,10 @@ NSInteger const contentInitialDelay = 4;
         NSDictionary *placementCoordinates = jsonResponse[@"geo"];
         if(pathToHtml) {
             [self showContentWithHtmlPath:pathToHtml placementCoordinates:placementCoordinates];
+        } else if (failureCallback) {
+            failureCallback();
         }
-    [self setRequestQueueLockedThreadSafe:NO];
+        [self setRequestQueueLockedThreadSafe:NO];
     }];
     
     [dataTask resume];
