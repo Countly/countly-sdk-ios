@@ -12,7 +12,6 @@
 @synthesize webView;
 
 - (instancetype)initWithFrame:(CGRect)frame {
-
     self = [super initWithFrame:frame];
 #if (TARGET_OS_IOS)
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleScreenChange) name:UIDeviceOrientationDidChangeNotification object:nil];
@@ -23,20 +22,20 @@
 }
 
 - (BOOL)pointInside:(CGPoint)point withEvent:(UIEvent *)event {
-    
+
     if (self.webView && CGRectContainsPoint(self.webView.frame, point)) {
         return YES;
     }
     if (self.dismissButton && CGRectContainsPoint(self.dismissButton.frame, point)) {
         return YES;
     }
-    
+
     return NO;
 }
 
 - (void)traitCollectionDidChange:(UITraitCollection *)previousTraitCollection {
     [super traitCollectionDidChange:previousTraitCollection];
-    
+
     if (self.traitCollection.horizontalSizeClass != previousTraitCollection.horizontalSizeClass) {
         [self adjustWebViewForTraitCollection:self.traitCollection];
     }
