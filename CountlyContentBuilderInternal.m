@@ -120,6 +120,10 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     }
 }
 
+- (void)previewContent:(NSString *)contentId {
+    [self fetchContents:nil contentId:contentId];
+}
+
 - (void)refreshContentZone {
     if (![CountlyServerConfig.sharedInstance refreshContentZoneEnabled])
     {
@@ -170,7 +174,7 @@ NSString* const kCountlyCBFetchContent  = @"queue";
                 [self enterContentZone];
             });
         }
-    }];
+    } contentId:nil];
 }
 
 #pragma mark - Private Methods
@@ -186,10 +190,10 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 }
 
 - (void)fetchContents {
-    [self fetchContents:nil];
+    [self fetchContents:nil contentId:nil];
 }
 
-- (void)fetchContents:(void (^)(void))failureCallback {
+- (void)fetchContents:(void (^)(void))failureCallback contentId:(NSString *)contentId {
     if (!CountlyConsentManager.sharedInstance.consentForContent)
         return;
 
@@ -207,7 +211,7 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     
     [self setRequestQueueLockedThreadSafe:YES];
     
-    NSURLSessionTask *dataTask = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self fetchContentsRequest] completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+    NSURLSessionTask *dataTask = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self fetchContentsRequest: contentId] completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         if (error) {
             CLY_LOG_I(@"%s fetch content details failed: [%@]", __FUNCTION__, error);
             [self setRequestQueueLockedThreadSafe:NO];
@@ -242,7 +246,7 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     [dataTask resume];
 }
 
-- (NSURLRequest *)fetchContentsRequest
+- (NSURLRequest *)fetchContentsRequest:(NSString *)contentId
 {
     NSString *queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
     NSString *resolutionJson = [self resolutionJson];
@@ -258,6 +262,11 @@ NSString* const kCountlyCBFetchContent  = @"queue";
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"dt", deviceType];
     }
 
+    if (contentId) {
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"content_id", contentId.cly_URLEscaped];
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"preview", @"true"];
+    }
+    
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
 
     NSString *URLString = [NSString stringWithFormat:@"%@%@?%@", CountlyConnectionManager.sharedInstance.host, kCountlyEndpointContent, queryString];
