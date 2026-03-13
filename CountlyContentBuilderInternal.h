@@ -6,18 +6,17 @@
 
 #import <Foundation/Foundation.h>
 #if (TARGET_OS_IOS)
-#import <UIKit/UIKit.h>
+  #import <UIKit/UIKit.h>
 #endif
 #import "CountlyCommon.h"
 NS_ASSUME_NONNULL_BEGIN
-@interface CountlyContentBuilderInternal: NSObject
+@interface CountlyContentBuilderInternal : NSObject
 #if (TARGET_OS_IOS)
-@property (nonatomic, strong) NSArray<NSString *> *currentTags;
-@property (nonatomic, assign) NSTimeInterval zoneTimerInterval;
-@property (nonatomic) ContentCallback contentCallback;
-@property (nonatomic, assign) WebViewDisplayOption webViewDisplayOption;
-@property (nonatomic, assign) int contentInitialDelay;
-@property (nonatomic, assign) NSUInteger refreshContentZoneDelay;
+@property(nonatomic, strong) NSArray<NSString *> *currentTags;
+@property(nonatomic, assign) NSTimeInterval       zoneTimerInterval;
+@property(nonatomic) ContentCallback              contentCallback;
+@property(nonatomic, assign) WebViewDisplayOption webViewDisplayOption;
+@property(nonatomic, assign) int                  contentInitialDelay;
 
 + (instancetype)sharedInstance;
 
@@ -30,4 +29,3 @@ NS_ASSUME_NONNULL_BEGIN
 #endif
 NS_ASSUME_NONNULL_END
 @end
-
