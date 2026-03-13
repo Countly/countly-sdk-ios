@@ -130,9 +130,11 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     }
     
     [CountlyConnectionManager.sharedInstance addQueueFlushRunnable:^{
+        CLY_LOG_I(@"%s queue flueshed, will re-fetch contents" ,__FUNCTION__);
         [self exitContentZone];
         [self enterContentZone];
     }];
+    [CountlyConnectionManager.sharedInstance attemptToSendStoredRequests];
 }
 
 - (void)refreshContentZoneJTE {
