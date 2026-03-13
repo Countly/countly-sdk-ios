@@ -37,7 +37,6 @@ NSString* const kCountlyCBFetchContent  = @"queue";
         _isCurrentlyContentShown = NO;
         _contentQueue = dispatch_queue_create("ly.countly.content.queue", DISPATCH_QUEUE_SERIAL);
         _contentInitialDelay = 4;
-        _refreshContentZoneDelay = 2.5;
     }
     
     return self;
@@ -130,13 +129,10 @@ NSString* const kCountlyCBFetchContent  = @"queue";
         return;
     }
     
-    [self exitContentZone];
-    [CountlyConnectionManager.sharedInstance attemptToSendStoredRequests];
-    
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(_refreshContentZoneDelay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
-    {
+    [CountlyConnectionManager.sharedInstance addQueueFlushRunnable:^{
+        [self exitContentZone];
         [self enterContentZone];
-    });
+    }];
 }
 
 - (void)refreshContentZoneJTE {
