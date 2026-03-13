@@ -1,3 +1,6 @@
+## XX.XX.XX
+* Added robust resource loading checks before displaying content
+
 ## 26.1.0
 * Added server-side listing filters support for controlling what data gets recorded:
   * Event filters (blacklist/whitelist) to control which events are recorded
