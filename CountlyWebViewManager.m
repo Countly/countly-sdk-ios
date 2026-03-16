@@ -19,6 +19,7 @@
 @property(nonatomic, strong) NSTimer *loadTimeoutTimer;
 @property(nonatomic, strong) NSDate *loadStartDate;
 @property(nonatomic) BOOL hasAppeared;
+@property(nonatomic) BOOL webViewClosed;
 @property(nonatomic, strong) CountlyWebViewController *presentingController;
 @property(nonatomic, strong) CountlyOverlayWindow *window;
 @end
@@ -32,6 +33,7 @@
     self.dismissBlock = dismissBlock;
     self.appearBlock = appearBlock;
     self.hasAppeared = NO;
+    self.webViewClosed = NO;
     // TODO: keyWindow deprecation fix
     _window = [CountlyOverlayWindow new];
     CountlyWebViewController *modal = [CountlyWebViewController new];
@@ -48,16 +50,60 @@
 
     _window.hidden = NO;
     self.presentingController = modal;
+    
+    NSString *jsString = @"(function(){"
+     // 1) Catch network-level failures (connection refused, DNS, etc.) for SCRIPT/LINK
+     "window.addEventListener('error',function(e){"
+     "if(!e.target)return;"
+     "var url=e.target.src||e.target.href;"
+     "if(!url)return;"
+     "if(url.includes('favicon.ico'))return;"
+     "if(e.target.tagName&&(e.target.tagName==='SCRIPT'||e.target.tagName==='LINK')){"
+     "window.webkit.messageHandlers.resourceLoadError.postMessage({"
+     "tag:e.target.tagName,"
+     "url:url"
+     "});}"
+     "},true);"
+     // 2) Catch HTTP errors (4xx/5xx) on CSS/JS via PerformanceObserver
+     "if(window.PerformanceObserver){"
+     "var obs=new PerformanceObserver(function(list){"
+     "list.getEntries().forEach(function(entry){"
+     "if(entry.responseStatus&&entry.responseStatus>=400){"
+     "var tag='';"
+     "if(entry.initiatorType==='link')tag='LINK';"
+     "else if(entry.initiatorType==='script')tag='SCRIPT';"
+     "if(tag){"
+     "window.webkit.messageHandlers.resourceLoadError.postMessage({"
+     "tag:tag,"
+     "url:entry.name"
+     "});}}"
+     "});"
+     "});"
+     "obs.observe({type:'resource',buffered:true});"
+     "}"
+     "})();";
+       WKUserContentController *contentController = [[WKUserContentController alloc] init];
+
+       WKUserScript *resourceErrorScript =
+       [[WKUserScript alloc] initWithSource:jsString
+                              injectionTime:WKUserScriptInjectionTimeAtDocumentStart
+                           forMainFrameOnly:NO];
+
+       [contentController addUserScript:resourceErrorScript];
+       [contentController addScriptMessageHandler:self name:@"resourceLoadError"];
+       [contentController addScriptMessageHandler:self name:@"resourceVerifyResult"];
 
     WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
     configuration.websiteDataStore = [WKWebsiteDataStore nonPersistentDataStore];
+    configuration.userContentController = contentController;
+
     WKWebView *webView = [[WKWebView alloc] initWithFrame:frame configuration:configuration];
     if (@available(iOS 11.0, *)) {
         webView.scrollView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
     }
     [self configureWebView:webView];
 
-    NSURLRequest *request = [NSURLRequest requestWithURL:url];
+    NSURLRequest *request = [NSURLRequest requestWithURL:url cachePolicy:NSURLRequestReloadIgnoringLocalCacheData timeoutInterval:60];
     [webView loadRequest:request];
 
     CLYButton *dismissButton = [CLYButton dismissAlertButton:@"X"];
@@ -103,6 +149,12 @@
 
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
     NSString *url = navigationAction.request.URL.absoluteString;
+
+    if (!url) {
+        CLY_LOG_I(@"%s Navigation action with nil URL (possible proxy tunnel), allowing", __FUNCTION__);
+        decisionHandler(WKNavigationActionPolicyAllow);
+        return;
+    }
 
     if ([url containsString:@"cly_x_int=1"]) {
         CLY_LOG_I(@"%s Opening url [%@] in external browser", __FUNCTION__, url);
@@ -208,8 +260,12 @@
 }
 
 - (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
-    [self.loadTimeoutTimer invalidate];
-    self.loadTimeoutTimer = nil;
+    // Don't invalidate the timeout timer here — keep it running until
+    // the view actually appears or resource verification completes.
+    // This ensures a 60s safety net even if fetch() calls hang.
+
+    if (self.webViewClosed) return;
+
     CLY_LOG_I(@"%s Web view has finished loading", __FUNCTION__);
     if (self.loadStartDate) {
         NSTimeInterval loadDuration = [[NSDate date] timeIntervalSinceDate:self.loadStartDate];
@@ -217,15 +273,92 @@
         self.loadStartDate = nil;
     }
 
-    if (self.hasAppeared) return;
+    [self verifyResourceStatuses:webView];
+}
+
+// After page load, fetch each CSS/JS URL with HEAD to verify HTTP status.
+// Results are sent back via postMessage since evaluateJavaScript can't handle Promises.
+- (void)verifyResourceStatuses:(WKWebView *)webView {
+    if (self.webViewClosed) return;
+
+    NSString *js =
+        @"(function(){"
+         "var urls=[];"
+         "document.querySelectorAll('link[rel=\"stylesheet\"]').forEach(function(l){if(l.href)urls.push({tag:'LINK',url:l.href});});"
+         "document.querySelectorAll('script[src]').forEach(function(s){urls.push({tag:'SCRIPT',url:s.src});});"
+         "if(urls.length===0){"
+         "window.webkit.messageHandlers.resourceVerifyResult.postMessage({results:[]});"
+         "return;"
+         "}"
+         "Promise.all(urls.map(function(r){"
+         "return fetch(r.url,{method:'HEAD'}).then(function(resp){"
+         "return {tag:r.tag,url:r.url,status:resp.status};"
+         "}).catch(function(){"
+         "return {tag:r.tag,url:r.url,status:0};"
+         "});"
+         "})).then(function(results){"
+         "window.webkit.messageHandlers.resourceVerifyResult.postMessage({results:results});"
+         "});"
+         "})()";
+
+    [webView evaluateJavaScript:js completionHandler:^(id result, NSError *error) {
+        if (error) {
+            CLY_LOG_I(@"%s Error injecting verify script: %@", __FUNCTION__, error.localizedDescription);
+            [self notifyPageLoaded];
+        }
+    }];
+}
+
+- (void)notifyPageLoaded {
+    if (self.webViewClosed || self.hasAppeared) return;
+
+    [self.loadTimeoutTimer invalidate];
+    self.loadTimeoutTimer = nil;
+
     [self.presentingController updatePlacementRespectToSafeAreas];
     self.hasAppeared = YES;
-    dispatch_async(dispatch_get_main_queue(), ^{
-        self.backgroundView.hidden = NO;
-        if (self.appearBlock) {
-            self.appearBlock();
+    self.backgroundView.hidden = NO;
+    if (self.appearBlock) {
+        self.appearBlock();
+    }
+}
+
+- (void)userContentController:(WKUserContentController *)userContentController
+      didReceiveScriptMessage:(WKScriptMessage *)message
+{
+    if (self.webViewClosed) return;
+
+    if ([message.name isEqualToString:@"resourceLoadError"]) {
+        NSDictionary *body = message.body;
+        NSString *tag = body[@"tag"];
+        NSString *url = body[@"url"];
+
+        CLY_LOG_I(@"%s Critical resource (%@) failed to load: [%@]. Closing web view.", __FUNCTION__, tag, url);
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self closeWebView];
+        });
+    }
+    else if ([message.name isEqualToString:@"resourceVerifyResult"]) {
+        NSDictionary *body = message.body;
+        NSArray *results = body[@"results"];
+
+        if ([results isKindOfClass:[NSArray class]]) {
+            for (NSDictionary *entry in results) {
+                NSInteger status = [entry[@"status"] integerValue];
+                if (status >= 400) {
+                    CLY_LOG_I(@"%s Critical resource (%@) returned HTTP %ld: [%@]. Closing web view.",
+                              __FUNCTION__, entry[@"tag"], (long)status, entry[@"url"]);
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [self closeWebView];
+                    });
+                    return;
+                }
+            }
         }
-    });
+
+        [self notifyPageLoaded];
+    }
 }
 
 - (void)animateView:(UIView *)view withAnimationType:(AnimationType)animationType {
@@ -430,6 +563,7 @@
         if (!self.backgroundView.webView) {
             return;
         }
+        self.webViewClosed = YES;
         self.window.hidden = YES;
         self.loadStartDate = nil;
         [self.loadTimeoutTimer invalidate];
@@ -439,6 +573,9 @@
             self.backgroundView.webView.navigationDelegate = nil;
             self.backgroundView.webView.UIDelegate = nil;
             [self.backgroundView removeFromSuperview];
+            WKUserContentController *controller = self.backgroundView.webView.configuration.userContentController;
+            [controller removeScriptMessageHandlerForName:@"resourceLoadError"];
+            [controller removeScriptMessageHandlerForName:@"resourceVerifyResult"];
         }
         if (self.dismissBlock) {
             self.dismissBlock();
@@ -463,7 +600,8 @@
 }
 
 - (void)loadDidTimeout {
-    if (self.hasAppeared) return;
+    if (self.hasAppeared || self.webViewClosed) return;
+    self.webViewClosed = YES;
     CLY_LOG_I(@"%s Web view load timed out after 60s, closing", __FUNCTION__);
     [self closeWebView];
 }

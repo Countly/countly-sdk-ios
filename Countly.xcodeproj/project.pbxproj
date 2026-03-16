@@ -111,6 +111,7 @@
 		D2CFEF972545FBE80026B044 /* CountlyFeedbacksInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = D2CFEF952545FBE80026B044 /* CountlyFeedbacksInternal.h */; };
 		D2CFEF982545FBE80026B044 /* CountlyFeedbacksInternal.m in Sources */ = {isa = PBXBuildFile; fileRef = D2CFEF962545FBE80026B044 /* CountlyFeedbacksInternal.m */; };
 		F041D46C963F3EA85882CB0D /* CountlyRequestCallbackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C1C3803ECB0A386136072D6 /* CountlyRequestCallbackTests.swift */; };
+		69F2F899F8C641418B746050 /* CountlyWebViewManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBD1642D826B471A80175BE3 /* CountlyWebViewManagerTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -232,6 +233,8 @@
 		D249BF5D254D3D180058A6C2 /* CountlyFeedbackWidget.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyFeedbackWidget.m; sourceTree = "<group>"; };
 		D2CFEF952545FBE80026B044 /* CountlyFeedbacksInternal.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CountlyFeedbacksInternal.h; sourceTree = "<group>"; };
 		D2CFEF962545FBE80026B044 /* CountlyFeedbacksInternal.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CountlyFeedbacksInternal.m; sourceTree = "<group>"; };
+		EBD1642D826B471A80175BE3 /* CountlyWebViewManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyWebViewManagerTests.swift; sourceTree = "<group>"; };
+		265156CB5F59417EA14BAC2F /* CountlyWebViewManager+Tests.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "CountlyWebViewManager+Tests.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -271,6 +274,8 @@
 				968426802BF2302C007B303E /* CountlyConnectionManagerTests.swift */,
 				96CB10A02F04B3A100D1E2F0 /* CountlyContentBuilderTests.swift */,
 				96E680412BFF89AC0091E105 /* CountlyCrashReporterTests.swift */,
+				EBD1642D826B471A80175BE3 /* CountlyWebViewManagerTests.swift */,
+				265156CB5F59417EA14BAC2F /* CountlyWebViewManager+Tests.h */,
 				3979E47C2C0760E900FA1CA4 /* CountlyUserProfileTests.swift */,
 				3972EDDA2C08A38D00EB9D3E /* CountlyEventStruct.swift */,
 				3966DBCE2C11EE270002ED97 /* CountlyDeviceIDTests.swift */,
@@ -561,6 +566,7 @@
 				3972EDDB2C08A38D00EB9D3E /* CountlyEventStruct.swift in Sources */,
 				9673567F2EC60CD400C742D8 /* TestURLProtocol.swift in Sources */,
 				96E680422BFF89AC0091E105 /* CountlyCrashReporterTests.swift in Sources */,
+				69F2F899F8C641418B746050 /* CountlyWebViewManagerTests.swift in Sources */,
 				A431BFDB50E23B1C056F93A1 /* CountlyQueueFlushRunnablesTests.swift in Sources */,
 				F041D46C963F3EA85882CB0D /* CountlyRequestCallbackTests.swift in Sources */,
 				CD99EB53BFF33C2DA9C50715 /* CountlyCallbackBaseTestCase.swift in Sources */,
