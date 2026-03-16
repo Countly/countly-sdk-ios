@@ -1,4 +1,4 @@
-## XX.XX.XX
+## 26.1.1
 * Added POST method support for contents. 
 * Added robust resource loading checks before displaying content
 * Added Content feature method `previewContent:(NSString *)contentId` (Experimental!).
