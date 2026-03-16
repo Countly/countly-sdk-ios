@@ -1,5 +1,6 @@
 ## XX.XX.XX
 * Added robust resource loading checks before displaying content
+* Improved refreshing contents.
 
 ## 26.1.0
 * Added server-side listing filters support for controlling what data gets recorded:
