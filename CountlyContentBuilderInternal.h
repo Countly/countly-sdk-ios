@@ -17,7 +17,6 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) ContentCallback contentCallback;
 @property (nonatomic, assign) WebViewDisplayOption webViewDisplayOption;
 @property (nonatomic, assign) int contentInitialDelay;
-@property (nonatomic, assign) NSUInteger refreshContentZoneDelay;
 
 + (instancetype)sharedInstance;
 
