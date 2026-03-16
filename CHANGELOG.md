@@ -1,5 +1,6 @@
 ## XX.XX.XX
 * Added robust resource loading checks before displaying content
+* Added Content feature method `previewContent:(NSString *)contentId` (Experimental!).
 * Improved refreshing contents.
 
 ## 26.1.0
