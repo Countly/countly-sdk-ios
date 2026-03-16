@@ -36,6 +36,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)refreshContentZone;
 
 /**
+ * This is an experimental feature and it can have breaking changes
  * Previews a specific content by its ID.
  * This performs a one-time fetch for the given content
  * without starting periodic content updates.
