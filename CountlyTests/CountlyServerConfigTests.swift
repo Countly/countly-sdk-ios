@@ -854,7 +854,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         
         Countly.sharedInstance().start(with: countlyConfig)
         CountlyContentBuilderInternal.sharedInstance().contentInitialDelay = 0;
-        CountlyContentBuilderInternal.sharedInstance().refreshContentZoneDelay = 0;
 
         // Wait for async server config fetch to complete
         TestUtils.sleep(2) {}
