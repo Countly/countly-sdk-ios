@@ -1,3 +1,9 @@
+## 26.1.1
+* Added POST method support for contents. 
+* Added robust resource loading checks before displaying content
+* Added Content feature method `previewContent:(NSString *)contentId` (Experimental!).
+* Improved refreshing contents.
+
 ## 26.1.0
 * Added server-side listing filters support for controlling what data gets recorded:
   * Event filters (blacklist/whitelist) to control which events are recorded
