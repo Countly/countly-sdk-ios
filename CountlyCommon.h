@@ -4,34 +4,34 @@
 //
 // Please visit www.count.ly for more information.
 
-#import <Foundation/Foundation.h>
 #import "Countly.h"
-#import "CountlyServerConfig.h"
-#import "CountlyPersistency.h"
-#import "CountlyConnectionManager.h"
-#import "CountlyEvent.h"
-#import "CountlyUserDetails.h"
-#import "CountlyDeviceInfo.h"
-#import "CountlyCrashReporter.h"
 #import "CountlyConfig.h"
-#import "CountlyViewTrackingInternal.h"
-#import "CountlyFeedbacksInternal.h"
-#import "CountlyFeedbackWidget.h"
-#import "CountlyPushNotifications.h"
-#import "CountlyNotificationService.h"
+#import "CountlyConnectionManager.h"
 #import "CountlyConsentManager.h"
-#import "CountlyLocationManager.h"
-#import "CountlyRemoteConfigInternal.h"
-#import "CountlyPerformanceMonitoring.h"
-#import "CountlyRCData.h"
-#import "CountlyViewData.h"
-#import "CountlyRemoteConfig.h"
-#import "CountlyViewTracking.h"
-#import "Resettable.h"
-#import "CountlyCrashData.h"
 #import "CountlyContentBuilderInternal.h"
+#import "CountlyCrashData.h"
+#import "CountlyCrashReporter.h"
+#import "CountlyDeviceInfo.h"
+#import "CountlyEvent.h"
 #import "CountlyExperimentalConfig.h"
+#import "CountlyFeedbackWidget.h"
+#import "CountlyFeedbacksInternal.h"
 #import "CountlyHealthTracker.h"
+#import "CountlyLocationManager.h"
+#import "CountlyNotificationService.h"
+#import "CountlyPerformanceMonitoring.h"
+#import "CountlyPersistency.h"
+#import "CountlyPushNotifications.h"
+#import "CountlyRCData.h"
+#import "CountlyRemoteConfig.h"
+#import "CountlyRemoteConfigInternal.h"
+#import "CountlyServerConfig.h"
+#import "CountlyUserDetails.h"
+#import "CountlyViewData.h"
+#import "CountlyViewTracking.h"
+#import "CountlyViewTrackingInternal.h"
+#import "Resettable.h"
+#import <Foundation/Foundation.h>
 
 #define CLY_LOG_E(fmt, ...) CountlyInternalLog(CLYInternalLogLevelError, fmt, ##__VA_ARGS__)
 #define CLY_LOG_W(fmt, ...) CountlyInternalLog(CLYInternalLogLevelWarning, fmt, ##__VA_ARGS__)
@@ -40,62 +40,57 @@
 #define CLY_LOG_V(fmt, ...) CountlyInternalLog(CLYInternalLogLevelVerbose, fmt, ##__VA_ARGS__)
 
 #if (TARGET_OS_IOS)
-#import <UIKit/UIKit.h>
-#import <WebKit/WebKit.h>
+  #import <UIKit/UIKit.h>
+  #import <WebKit/WebKit.h>
 #endif
 
 #if (TARGET_OS_WATCH)
-#import <WatchKit/WatchKit.h>
-#import "WatchConnectivity/WatchConnectivity.h"
+  #import "WatchConnectivity/WatchConnectivity.h"
+  #import <WatchKit/WatchKit.h>
 #endif
 
 #if (TARGET_OS_TV)
-#import <UIKit/UIKit.h>
+  #import <UIKit/UIKit.h>
 #endif
 
 #import <objc/runtime.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
-extern NSString* const kCountlyErrorDomain;
+extern NSString *const kCountlyErrorDomain;
 
-extern NSString* const kCountlyReservedEventOrientation;
-extern NSString* const kCountlyVisibility;
+extern NSString *const kCountlyReservedEventOrientation;
+extern NSString *const kCountlyVisibility;
 
-NS_ERROR_ENUM(kCountlyErrorDomain)
-{
-    CLYErrorFeedbackWidgetNotAvailable = 10001,
-    CLYErrorFeedbackWidgetNotTargetedForDevice = 10002,
-    CLYErrorRemoteConfigGeneralAPIError = 10011,
-    CLYErrorFeedbacksGeneralAPIError = 10012,
-    CLYErrorServerConfigGeneralAPIError = 10013,
+NS_ERROR_ENUM(kCountlyErrorDomain){
+    CLYErrorFeedbackWidgetNotAvailable = 10001, CLYErrorFeedbackWidgetNotTargetedForDevice = 10002, CLYErrorRemoteConfigGeneralAPIError = 10011, CLYErrorFeedbacksGeneralAPIError = 10012, CLYErrorServerConfigGeneralAPIError = 10013,
 };
 
-extern NSString* const kCountlySDKVersion;
-extern NSString* const kCountlySDKName;
+extern NSString *const kCountlySDKVersion;
+extern NSString *const kCountlySDKName;
 
 @interface CountlyCommon : NSObject <Resettable>
 
-@property (nonatomic, copy) NSString* SDKVersion;
-@property (nonatomic, copy) NSString* SDKName;
+@property(nonatomic, copy) NSString *SDKVersion;
+@property(nonatomic, copy) NSString *SDKName;
 
-@property (nonatomic) BOOL hasStarted;
-@property (nonatomic) BOOL enableDebug;
+@property(nonatomic) BOOL hasStarted;
+@property(nonatomic) BOOL hasFinishedInit;
+@property(nonatomic) BOOL enableDebug;
 
-@property (nonatomic) BOOL shouldIgnoreTrustCheck;
-@property (nonatomic, weak) id <CountlyLoggerDelegate> loggerDelegate;
-@property (nonatomic) CLYInternalLogLevel internalLogLevel;
-@property (nonatomic, copy) NSString* attributionID;
-@property (nonatomic) BOOL manualSessionHandling;
-@property (nonatomic) BOOL enableManualSessionControlHybridMode;
-@property (nonatomic) BOOL enableOrientationTracking;
+@property(nonatomic) BOOL                            shouldIgnoreTrustCheck;
+@property(nonatomic, weak) id<CountlyLoggerDelegate> loggerDelegate;
+@property(nonatomic) CLYInternalLogLevel             internalLogLevel;
+@property(nonatomic, copy) NSString                 *attributionID;
+@property(nonatomic) BOOL                            manualSessionHandling;
+@property(nonatomic) BOOL                            enableManualSessionControlHybridMode;
+@property(nonatomic) BOOL                            enableOrientationTracking;
 
-@property (nonatomic) BOOL enableVisibiltyTracking;
+@property(nonatomic) BOOL enableVisibiltyTracking;
 
-
-@property (nonatomic) NSUInteger maxKeyLength;
-@property (nonatomic) NSUInteger maxValueLength;
-@property (nonatomic) NSUInteger maxSegmentationValues;
+@property(nonatomic) NSUInteger maxKeyLength;
+@property(nonatomic) NSUInteger maxValueLength;
+@property(nonatomic) NSUInteger maxSegmentationValues;
 
 void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...) NS_FORMAT_FUNCTION(2, 3);
 void CountlyPrint(NSString *stringToPrint);
@@ -111,10 +106,10 @@ void CountlyPrint(NSString *stringToPrint);
 - (void)startBackgroundTask;
 - (void)finishBackgroundTask;
 
-#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV )
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
 - (UIViewController *)topViewController;
 - (void)tryPresentingViewController:(UIViewController *)viewController;
-- (void)tryPresentingViewController:(UIViewController *)viewController withCompletion:(void (^ __nullable) (void))completion;
+- (void)tryPresentingViewController:(UIViewController *)viewController withCompletion:(void (^__nullable)(void))completion;
 #endif
 
 - (void)observeDeviceOrientationChanges;
@@ -128,23 +123,22 @@ void CountlyPrint(NSString *stringToPrint);
 - (CGSize)getWindowSize;
 @end
 
-
 #if (TARGET_OS_IOS)
-@interface CLYInternalViewController : UIViewController <WKNavigationDelegate>
-@property (nonatomic, weak) WKWebView* webView;
+@interface                            CLYInternalViewController : UIViewController <WKNavigationDelegate>
+@property(nonatomic, weak) WKWebView *webView;
 @end
 
 @interface CLYButton : UIButton
-@property (nonatomic, copy) void (^onClick)(id sender);
+@property(nonatomic, copy) void (^onClick)(id sender);
 + (CLYButton *)dismissAlertButton;
-+ (CLYButton *)dismissAlertButton:(NSString * _Nullable)closeButtonText;
++ (CLYButton *)dismissAlertButton:(NSString *_Nullable)closeButtonText;
 - (void)positionToTopRight;
 - (void)positionToTopRightConsideringStatusBar;
 @end
 #endif
 
-@interface CLYDelegateInterceptor : NSObject
-@property (nonatomic, weak) id originalDelegate;
+@interface                    CLYDelegateInterceptor : NSObject
+@property(nonatomic, weak) id originalDelegate;
 @end
 
 @interface NSString (Countly)
