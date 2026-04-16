@@ -51,5 +51,16 @@
     [CountlyContentBuilder.sharedInstance changeContent:tags];
 }
 
+- (void)previewContent:(NSString *)contentId
+{
+    if (!contentId || contentId.length == 0)
+    {
+        CLY_LOG_W(@"%s contentId is null or empty, skipping", __FUNCTION__);
+        return;
+    }
+
+    [CountlyContentBuilderInternal.sharedInstance previewContent:contentId];
+}
+
 #endif
 @end
