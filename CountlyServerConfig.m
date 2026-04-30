@@ -357,6 +357,7 @@ static dispatch_once_t onceToken;
 
     CountlyCommon.sharedInstance.maxKeyLength = config.sdkInternalLimits.getMaxKeyLength;
     CountlyCommon.sharedInstance.maxValueLength = config.sdkInternalLimits.getMaxValueSize;
+    CountlyCommon.sharedInstance.maxValueLengthPicture = config.sdkInternalLimits.getMaxValueSizePicture;
     CountlyCommon.sharedInstance.maxSegmentationValues = config.sdkInternalLimits.getMaxSegmentationValues;
 
     config.eventSendThreshold = _eventQueueSize ?: config.eventSendThreshold;
