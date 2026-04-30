@@ -505,8 +505,8 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
     }
     
     func getUserDataMap()-> [String: Any]{
-        // $push/$pull/$addToSet always serialize as arrays (post first-write-as-array fix
-        // — server-accepted, prevents NSMutableString crash on second-call array merge).
+        // Single-call $push/$pull/$addToSet serialize as the bare value;
+        // accumulation across multiple calls upgrades to array.
         let userProperties = ["a12345": "My Property",
                               "b12345": ["$inc": 1],
                               "c12345": ["$inc": 10],
@@ -514,9 +514,9 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
                               "e12345": ["$max": 100],
                               "f12345": ["$min": 50],
                               "g12345": ["$setOnce": 200],
-                              "h12345": ["$addToSet": ["morning"]],
-                              "i12345": ["$push": ["morning"]],
-                              "j12345": ["$pull": ["morning"]] ]as [String : Any]
+                              "h12345": ["$addToSet": "morning"],
+                              "i12345": ["$push": "morning"],
+                              "j12345": ["$pull": "morning"] ]as [String : Any]
         return userProperties;
     }
     

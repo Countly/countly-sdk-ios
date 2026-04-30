@@ -394,19 +394,17 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
         ![mod isEqualToString:@"$push"] &&
         ![mod isEqualToString:@"$addToSet"]) {
         self.customMods[truncatedKey] = @{mod: value};
-    } else {
-        NSMutableArray *array;
-        if (self.customMods[truncatedKey] && [self.customMods[truncatedKey][mod] isKindOfClass:[NSArray class]]) {
-            array = [self.customMods[truncatedKey][mod] mutableCopy];
-        } else {
-            array = [NSMutableArray array];
-        }
+    } else if (self.customMods[truncatedKey] && self.customMods[truncatedKey][mod]) {
+        id existing = self.customMods[truncatedKey][mod];
+        NSMutableArray *array = [existing isKindOfClass:[NSArray class]] ? [existing mutableCopy] : [NSMutableArray arrayWithObject:existing];
         if ([value isKindOfClass:[NSArray class]]) {
             [array addObjectsFromArray:value];
         } else {
             [array addObject:value];
         }
         self.customMods[truncatedKey] = @{mod: array};
+    } else {
+        self.customMods[truncatedKey] = @{mod: value};
     }
     // Note: legacy modifier methods (setOnce/push/pull/etc.) deliberately do
     // NOT auto-flush events — preserves pre-existing request-timing behavior
