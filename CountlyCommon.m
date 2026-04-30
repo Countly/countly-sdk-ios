@@ -70,6 +70,7 @@ static dispatch_once_t onceToken;
     [NSNotificationCenter.defaultCenter removeObserver:self name:UIDeviceOrientationDidChangeNotification object:nil];
 #endif
     _hasStarted = false;
+    _hasFinishedInit       = false;
     _maxKeyLength = kCountlyMaxKeyLength;
     _maxValueLength = kCountlyMaxValueSize;
     _maxValueLengthPicture = kCountlyMaxValueSizePicture;

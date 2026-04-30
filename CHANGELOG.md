@@ -10,6 +10,12 @@
 * Added `setMaxValueSizePicture:` to `CountlySDKLimitsConfig` to control the maximum size of picture URLs and picture paths independently of other value limits (default 4096).
 * Improved `$push` / `$pull` / `$addToSet` wire format: values are now always sent as arrays so multiple consecutive calls on the same key accumulate correctly.
 
+* Mitigated a race condition in the request queue that could drop or duplicate requests.
+* Mitigated an issue where server config defaults overrode user-provided SDK limits.
+* Mitigated an issue where invalid or unknown `sdkBehaviorSettings` keys were persisted.
+* Mitigated an issue where listing-filter conflicts cleared keys across unrelated categories.
+* Mitigated an issue where consent could be sent twice during initialization.
+
 * Deprecated the direct property setters on `CountlyUserDetails`: `name`, `username`, `email`, `organization`, `phone`, `gender`, `pictureURL`, `pictureLocalPath`, `birthYear`, `custom`. Use `setProperty:value:` or `setProperties:` instead.
 * Deprecated `set:value:`, `set:numberValue:`, `set:boolValue:` on `CountlyUserDetails`. Use `setProperty:value:` instead.
 * Deprecated `unSet:` on `CountlyUserDetails`. Use `setProperty:value:` with an empty string `@""` to clear a property on the server.
