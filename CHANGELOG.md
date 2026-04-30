@@ -1,3 +1,10 @@
+## XX.XX.XX
+* Mitigated a race condition in the request queue that could drop or duplicate requests.
+* Mitigated an issue where server config defaults overrode user-provided SDK limits.
+* Mitigated an issue where invalid or unknown `sdkBehaviorSettings` keys were persisted.
+* Mitigated an issue where listing-filter conflicts cleared keys across unrelated categories.
+* Mitigated an issue where consent could be sent twice during initialization.
+
 ## 26.1.1
 * Added POST method support for contents. 
 * Added robust resource loading checks before displaying content
