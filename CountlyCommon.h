@@ -95,6 +95,7 @@ extern NSString* const kCountlySDKName;
 
 @property (nonatomic) NSUInteger maxKeyLength;
 @property (nonatomic) NSUInteger maxValueLength;
+@property (nonatomic) NSUInteger maxValueLengthPicture;
 @property (nonatomic) NSUInteger maxSegmentationValues;
 
 void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...) NS_FORMAT_FUNCTION(2, 3);
@@ -154,6 +155,7 @@ void CountlyPrint(NSString *stringToPrint);
 - (NSString *)cly_valueForQueryStringKey:(NSString *)key;
 - (NSString *)cly_truncatedKey:(NSString *)explanation;
 - (NSString *)cly_truncatedValue:(NSString *)explanation;
+- (NSString *)cly_truncatedPictureValue:(NSString *)explanation;
 @end
 
 @interface NSArray (Countly)

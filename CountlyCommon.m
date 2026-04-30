@@ -72,6 +72,7 @@ static dispatch_once_t onceToken;
     _hasStarted = false;
     _maxKeyLength = kCountlyMaxKeyLength;
     _maxValueLength = kCountlyMaxValueSize;
+    _maxValueLengthPicture = kCountlyMaxValueSizePicture;
     _maxSegmentationValues = kCountlyMaxSegmentationValues;
     onceToken = 0;
     s_sharedInstance = nil;
@@ -628,6 +629,17 @@ NSString* CountlyJSONFromObject(id object)
         return [self substringToIndex:CountlyCommon.sharedInstance.maxKeyLength];
     }
 
+    return self;
+}
+
+- (NSString *)cly_truncatedPictureValue:(NSString *)explanation
+{
+    NSUInteger limit = CountlyCommon.sharedInstance.maxValueLengthPicture;
+    if (self.length > limit)
+    {
+        CLY_LOG_W(@"%@ length is more than the picture limit (%ld)! So, it will be truncated: %@.", explanation, (long)limit, self);
+        return [self substringToIndex:limit];
+    }
     return self;
 }
 
