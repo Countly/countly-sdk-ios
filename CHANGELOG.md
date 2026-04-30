@@ -1,3 +1,19 @@
+## XX.XX.XX
+* Added a new user properties functions on `CountlyUserDetails`:
+  * `setProperty:value:` for setting a single predefined or custom user property.
+  * `setProperties:` for setting multiple predefined and custom properties in one call.
+  * `clear` to drop queued user property changes without sending them to the server.
+  * Empty-string-as-clear semantics for predefined string fields (`name`, `username`, `email`, `organization`, `phone`, `gender`, `picture`, `picturePath`) — passing `@""` sends `null` to the server to clear the field.
+  * Negative-value-as-clear semantics for `byear` — passing a negative `NSNumber` sends `null` to clear the field.
+  * Pending events are flushed before the next user details request when a user property changes via this new functions, so they reach the server in the right order.
+* Added `providedUserProperties` to `CountlyConfig` to set initial user properties that are applied and saved automatically right after `start`.
+* Added `setMaxValueSizePicture:` to `CountlySDKLimitsConfig` to control the maximum size of picture URLs and picture paths independently of other value limits (default 4096).
+* Improved `$push` / `$pull` / `$addToSet` wire format: values are now always sent as arrays so multiple consecutive calls on the same key accumulate correctly.
+
+* Deprecated the direct property setters on `CountlyUserDetails`: `name`, `username`, `email`, `organization`, `phone`, `gender`, `pictureURL`, `pictureLocalPath`, `birthYear`, `custom`. Use `setProperty:value:` or `setProperties:` instead.
+* Deprecated `set:value:`, `set:numberValue:`, `set:boolValue:` on `CountlyUserDetails`. Use `setProperty:value:` instead.
+* Deprecated `unSet:` on `CountlyUserDetails`. Use `setProperty:value:` with an empty string `@""` to clear a property on the server.
+
 ## 26.1.1
 * Added POST method support for contents. 
 * Added robust resource loading checks before displaying content
