@@ -7,7 +7,6 @@
 #import "CountlyCommon.h"
 
 @interface CountlyUserDetails ()
-@property (nonatomic) NSMutableDictionary* predefined;
 @property (nonatomic) NSMutableDictionary* customMods;
 @property (nonatomic) NSMutableDictionary* customProperties;
 
@@ -25,6 +24,7 @@ NSString* const kCountlyUDKeyGender        = @"gender";
 NSString* const kCountlyUDKeyPicture       = @"picture";
 NSString* const kCountlyUDKeyBirthyear     = @"byear";
 NSString* const kCountlyUDKeyCustom        = @"custom";
+NSString* const kCountlyUDKeyPicturePath   = @"picturePath";
 
 NSString* const kCountlyUDKeyModifierSetOnce    = @"$setOnce";
 NSString* const kCountlyUDKeyModifierIncrement  = @"$inc";
@@ -43,6 +43,7 @@ static NSString* const kCountlyUDNamedFields[] = {
     kCountlyUDKeyPhone,
     kCountlyUDKeyGender,
     kCountlyUDKeyPicture,
+    kCountlyUDKeyPicturePath,
     kCountlyUDKeyBirthyear
 };
 
@@ -62,7 +63,6 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
 {
     if (self = [super init])
     {
-        self.predefined = NSMutableDictionary.new;
         self.customMods = NSMutableDictionary.new;
         self.customProperties = NSMutableDictionary.new;
     }
@@ -73,41 +73,22 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
 - (NSString *)serializedUserDetails
 {
     NSMutableDictionary* userDictionary = NSMutableDictionary.new;
-    if (self.name)
-        userDictionary[kCountlyUDKeyName] =
-                ![self.name isKindOfClass:NSString.class] ? self.name :
-                        [(NSString *)self.name cly_truncatedValue:@"User details name"];
+    [self serializeStringField:self.name key:kCountlyUDKeyName explanation:@"User details name" into:userDictionary picture:NO];
+    [self serializeStringField:self.username key:kCountlyUDKeyUsername explanation:@"User details username" into:userDictionary picture:NO];
+    [self serializeStringField:self.email key:kCountlyUDKeyEmail explanation:@"User details email" into:userDictionary picture:NO];
+    [self serializeStringField:self.organization key:kCountlyUDKeyOrganization explanation:@"User details organization" into:userDictionary picture:NO];
+    [self serializeStringField:self.phone key:kCountlyUDKeyPhone explanation:@"User details phone" into:userDictionary picture:NO];
+    [self serializeStringField:self.gender key:kCountlyUDKeyGender explanation:@"User details gender" into:userDictionary picture:NO];
+    [self serializeStringField:self.pictureURL key:kCountlyUDKeyPicture explanation:@"User details picture" into:userDictionary picture:YES];
 
-    if (self.username)
-        userDictionary[kCountlyUDKeyUsername] =
-                ![self.username isKindOfClass:NSString.class] ? self.username :
-                        [(NSString *)self.username cly_truncatedValue:@"User details username"];
-
-    if (self.email)
-        userDictionary[kCountlyUDKeyEmail] =
-                ![self.email isKindOfClass:NSString.class] ? self.email :
-                        [(NSString *)self.email cly_truncatedValue:@"User details email"];
-
-    if (self.organization)
-        userDictionary[kCountlyUDKeyOrganization] =
-                ![self.organization isKindOfClass:NSString.class] ? self.organization :
-                        [(NSString *)self.organization cly_truncatedValue:@"User details organization"];
-
-    if (self.phone)
-        userDictionary[kCountlyUDKeyPhone] =
-                ![self.phone isKindOfClass:NSString.class] ? self.phone :
-                        [(NSString *)self.phone cly_truncatedValue:@"User details phone"];
-
-    if (self.gender)
-        userDictionary[kCountlyUDKeyGender] =
-                ![self.gender isKindOfClass:NSString.class] ? self.gender :
-                        [(NSString *)self.gender cly_truncatedValue:@"User details gender"];
-
-    if (self.pictureURL)
-        userDictionary[kCountlyUDKeyPicture] = self.pictureURL;
-
-    if (self.birthYear)
-        userDictionary[kCountlyUDKeyBirthyear] = self.birthYear;
+    if (self.birthYear) {
+        if ([self.birthYear isKindOfClass:NSNumber.class] && ((NSNumber *)self.birthYear).integerValue < 0) {
+            // Negative byear means "clear on server" — match Android semantics.
+            userDictionary[kCountlyUDKeyBirthyear] = NSNull.null;
+        } else {
+            userDictionary[kCountlyUDKeyBirthyear] = self.birthYear;
+        }
+    }
 
     NSMutableDictionary* customAll = NSMutableDictionary.new;
     
@@ -149,7 +130,6 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
     self.birthYear = nil;
     self.custom = nil;
 
-    [self.predefined removeAllObjects];
     [self.customMods removeAllObjects];
     [self.customProperties removeAllObjects];
 }
@@ -177,29 +157,55 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
         }
     }];
     
-    return userDetailsChanged || self.predefined.count > 0 || self.customProperties.count > 0 || self.customMods.count > 0;
+    return userDetailsChanged || self.customProperties.count > 0 || self.customMods.count > 0;
 }
 
 
 
 #pragma mark -
 
+// Legacy custom-only setter. Treats every key as a custom user property — never
+// routes to predefined fields like `name`/`email`/etc. This preserves the
+// pre-`setProperty:` wire format. Use `-setProperty:value:` for the named-aware path.
 - (void)set:(NSString *)key value:(NSString *)value
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
-    [self setProperty:key value:value];
+    [self setCustomProperty:key value:value];
 }
 
 - (void)set:(NSString *)key numberValue:(NSNumber *)value
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
-    [self setProperty:key value:value];
+    [self setCustomProperty:key value:value];
 }
 
 - (void)set:(NSString *)key boolValue:(BOOL)value
 {
     CLY_LOG_I(@"%s %@ %d", __FUNCTION__, key, value);
-    [self setProperty:key value:@(value)];
+    [self setCustomProperty:key value:@(value)];
+}
+
+- (void)setCustomProperty:(NSString *)key value:(id)value
+{
+    if (key == nil || value == nil) return;
+    if (![CountlyServerConfig.sharedInstance shouldRecordUserProperty:key]) {
+        CLY_LOG_D(@"%s key [%@] is filtered out by user property filter, omitting call", __FUNCTION__, key);
+        return;
+    }
+    if (![self isValidDataType:value]) {
+        CLY_LOG_D(@"%s unsupported type for key [%@], type [%@], omitting call",
+                  __FUNCTION__, key, NSStringFromClass([value class]));
+        return;
+    }
+    NSString* truncatedLog = [NSString stringWithFormat:@"%s",__FUNCTION__];
+    if ([value isKindOfClass:[NSString class]]) {
+        BOOL isPicture = [key isEqualToString:kCountlyUDKeyPicture] || [key isEqualToString:kCountlyUDKeyPicturePath];
+        value = isPicture ? [(NSString *)value cly_truncatedPictureValue:truncatedLog]
+                          : [(NSString *)value cly_truncatedValue:truncatedLog];
+    }
+    NSString *truncatedKey = [key cly_truncatedKey:truncatedLog];
+    self.customProperties[truncatedKey] = value;
+    // No auto-flush — legacy `set:` preserves pre-existing event-flush timing.
 }
 
 - (void)setOnce:(NSString *)key value:(NSString *)value
@@ -220,22 +226,17 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
     [self doModification:kCountlyUDKeyModifierSetOnce key:key value:@(value)];
 }
 
+// Legacy custom-only unsetter. Always treats key as a custom user property; does
+// not clear predefined fields like `name`/`email`. Preserves pre-`setProperty:`
+// wire format. Clear named fields via direct property assignment to NSNull.null.
 - (void)unSet:(NSString *)key
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, key);
-    if(key != nil){
-        if(self.customProperties[key]) {
-            self.customProperties[key] = NSNull.null;
-        }
-        
-        if(self.customMods[key]) {
-            self.customMods[key] = NSNull.null;
-        }
-        
-        if(self.predefined[key]) {
-            self.predefined[key] = NSNull.null;
-        }
-    }
+    if (key == nil) return;
+
+    NSString *truncatedKey = [key cly_truncatedKey:@"unSet"];
+    self.customProperties[truncatedKey] = NSNull.null;
+    // No auto-flush — legacy `unSet:` preserves pre-existing event-flush timing.
 }
 
 - (void)increment:(NSString *)key
@@ -363,12 +364,6 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
     if (self.pictureLocalPath && !self.pictureURL)
         [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyLocalPicturePath: self.pictureLocalPath} cly_JSONify]];
 
-    if (self.modifications.count)
-    {
-        [self filterAndLimitUserProperties:self.modifications];
-        [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyUDKeyCustom: [self truncateModifications]} cly_JSONify]];
-    }
-
     [self clearUserDetails];
 }
 
@@ -378,28 +373,45 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
         CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
         return;
     }
+    if (![self isValidDataType:value]) {
+        CLY_LOG_W(@"%s unsupported value type for key [%@] mod [%@], type [%@], omitting call",
+                  __FUNCTION__, key, mod, NSStringFromClass([value class]));
+        return;
+    }
+    if (![CountlyServerConfig.sharedInstance shouldRecordUserProperty:key]) {
+        CLY_LOG_D(@"%s key [%@] is filtered out by user property filter, omitting call", __FUNCTION__, key);
+        return;
+    }
     NSString* truncatedLog = [NSString stringWithFormat:@"%s",__FUNCTION__];
-    
+
     // If the value is NSString, apply truncation rules
     if ([value isKindOfClass:[NSString class]]) {
         value = [[value description] cly_truncatedValue:truncatedLog];
     }
-    
+
     NSString* truncatedKey = [[key description] cly_truncatedKey:truncatedLog];
     if (![mod isEqualToString:@"$pull"] &&
         ![mod isEqualToString:@"$push"] &&
         ![mod isEqualToString:@"$addToSet"]) {
-        self.customMods[truncatedKey] = @{mod: value};;
+        self.customMods[truncatedKey] = @{mod: value};
     } else {
-        if(self.customMods[truncatedKey] && self.customMods[truncatedKey][mod]){
-            NSMutableArray *array = [self.customMods[key][mod] mutableCopy];
-            [array addObject:value];
-            self.customMods[truncatedKey] = @{mod: array};
+        NSMutableArray *array;
+        if (self.customMods[truncatedKey] && [self.customMods[truncatedKey][mod] isKindOfClass:[NSArray class]]) {
+            array = [self.customMods[truncatedKey][mod] mutableCopy];
         } else {
-            self.customMods[truncatedKey] = @{mod: value};
+            array = [NSMutableArray array];
         }
+        if ([value isKindOfClass:[NSArray class]]) {
+            [array addObjectsFromArray:value];
+        } else {
+            [array addObject:value];
+        }
+        self.customMods[truncatedKey] = @{mod: array};
     }
-    
+    // Note: legacy modifier methods (setOnce/push/pull/etc.) deliberately do
+    // NOT auto-flush events — preserves pre-existing request-timing behavior
+    // for callers still on the legacy API. Auto-flush is opt-in via the new
+    // -setProperty:/setProperties: path.
 }
 
 /**
@@ -413,38 +425,121 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
         CLY_LOG_I(@"%s no data was provided", __FUNCTION__);
         return;
     }
-    
+
+    NSString* truncatedLog = [NSString stringWithFormat:@"%s",__FUNCTION__];
+    BOOL anyChange = NO;
+
     for (NSString *key in data) {
         id value = data[key];
-        
+
         if (value == nil || value == [NSNull null]) {
             CLY_LOG_W(@"%s provided value for key [%@] is 'null'", __FUNCTION__, key);
             continue;
         }
-    
-        NSString* truncatedLog = [NSString stringWithFormat:@"%s",__FUNCTION__];
+
         if ([value isKindOfClass:[NSString class]]) {
-            value = [[value description] cly_truncatedValue:truncatedLog];
+            BOOL isPicture = [key isEqualToString:kCountlyUDKeyPicture] || [key isEqualToString:kCountlyUDKeyPicturePath];
+            value = isPicture ? [[value description] cly_truncatedPictureValue:truncatedLog]
+                              : [[value description] cly_truncatedValue:truncatedLog];
         }
-        
+
         BOOL isNamed = NO;
-        
         for (NSUInteger i = 0; i < kCountlyUDNamedFieldsCount; i++) {
             if ([kCountlyUDNamedFields[i] isEqualToString:key]) {
                 isNamed = YES;
-                self.predefined[key] = [value description];
+                [self assignNamedField:key value:value];
+                anyChange = YES;
                 break;
             }
         }
-        
-        // Handle custom fields
+
         if (!isNamed) {
+            if (![CountlyServerConfig.sharedInstance shouldRecordUserProperty:key]) {
+                CLY_LOG_D(@"%s key [%@] is filtered out by user property filter, omitting call", __FUNCTION__, key);
+                continue;
+            }
             NSString* truncatedKey = [[key description] cly_truncatedKey:truncatedLog];
             if ([self isValidDataType:value]) {
                 self.customProperties[truncatedKey] = value;
+                anyChange = YES;
             } else {
                 CLY_LOG_D(@"%s provided an unsupported type for key: [%@], value: [%@], type: [%@], omitting call",__FUNCTION__,
                       key, value, NSStringFromClass([value class]));
+            }
+        }
+    }
+
+    if (anyChange) [self userPropertiesChanged];
+}
+
+- (void)serializeStringField:(id)field
+                         key:(NSString *)key
+                 explanation:(NSString *)explanation
+                        into:(NSMutableDictionary *)userDictionary
+                     picture:(BOOL)isPicture
+{
+    if (!field) return;
+
+    if (![field isKindOfClass:NSString.class]) {
+        // NSNull — explicit clear.
+        userDictionary[key] = field;
+        return;
+    }
+
+    NSString *str = (NSString *)field;
+    if (str.length == 0) {
+        // Empty string means "clear on server" — match Android semantics.
+        userDictionary[key] = NSNull.null;
+        return;
+    }
+
+    userDictionary[key] = isPicture ? [str cly_truncatedPictureValue:explanation]
+                                    : [str cly_truncatedValue:explanation];
+}
+
+- (void)assignNamedField:(NSString *)key value:(id)value {
+    BOOL isNull = (value == [NSNull null]);
+    id stringOrNull = isNull ? NSNull.null : [value description];
+
+    if ([key isEqualToString:kCountlyUDKeyName]) {
+        self.name = stringOrNull;
+    } else if ([key isEqualToString:kCountlyUDKeyUsername]) {
+        self.username = stringOrNull;
+    } else if ([key isEqualToString:kCountlyUDKeyEmail]) {
+        self.email = stringOrNull;
+    } else if ([key isEqualToString:kCountlyUDKeyOrganization]) {
+        self.organization = stringOrNull;
+    } else if ([key isEqualToString:kCountlyUDKeyPhone]) {
+        self.phone = stringOrNull;
+    } else if ([key isEqualToString:kCountlyUDKeyGender]) {
+        self.gender = stringOrNull;
+    } else if ([key isEqualToString:kCountlyUDKeyPicture]) {
+        self.pictureURL = stringOrNull;
+    } else if ([key isEqualToString:kCountlyUDKeyPicturePath]) {
+        if (isNull) {
+            self.pictureLocalPath = nil;
+        } else {
+            NSString *path = [value description];
+            // Match Android: drop the path with a warning if the file isn't readable.
+            if (path.length > 0 && ![[NSFileManager defaultManager] isReadableFileAtPath:path]) {
+                CLY_LOG_W(@"%s provided picture path file [%@] can not be opened", __FUNCTION__, path);
+                self.pictureLocalPath = nil;
+            } else {
+                self.pictureLocalPath = path;
+            }
+        }
+    } else if ([key isEqualToString:kCountlyUDKeyBirthyear]) {
+        if (isNull) {
+            self.birthYear = NSNull.null;
+        } else if ([value isKindOfClass:[NSNumber class]]) {
+            self.birthYear = (NSNumber *)value;
+        } else if ([value isKindOfClass:[NSString class]]) {
+            NSNumberFormatter *formatter = [NSNumberFormatter new];
+            NSNumber *parsed = [formatter numberFromString:(NSString *)value];
+            if (parsed) {
+                self.birthYear = parsed;
+            } else {
+                CLY_LOG_W(@"%s incorrect byear number format: %@", __FUNCTION__, value);
             }
         }
     }
@@ -468,48 +563,14 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
     }
 }
 
-- (NSDictionary *)truncateModifications
+// Match Android's `onUserPropertiesChanged`: when user properties change, flush any
+// pending events first so they reach the server before the next user-details request.
+- (void)userPropertiesChanged
 {
-    NSMutableDictionary* truncatedDict = self.modifications.mutableCopy;
-    [self.modifications enumerateKeysAndObjectsUsingBlock:^(NSString * key, id obj, BOOL * stop)
-     {
-        NSString* truncatedKey = [key cly_truncatedKey:@"User details modifications key"];
-        if (![truncatedKey isEqualToString:key])
-        {
-            truncatedDict[truncatedKey] = obj;
-            [truncatedDict removeObjectForKey:key];
-        }
-        
-        if ([obj isKindOfClass:NSString.class])
-        {
-            NSString* truncatedValue = [obj cly_truncatedValue:@"User details modifications value"];
-            if (![truncatedValue isEqualToString:obj])
-            {
-                truncatedDict[truncatedKey] = truncatedValue;
-            }
-        }
-        else if ([obj isKindOfClass:NSDictionary.class])
-        {
-            NSMutableDictionary* truncatedValueDict = ((NSDictionary *)obj).mutableCopy;
-            [(NSDictionary *)obj enumerateKeysAndObjectsUsingBlock:^(NSString * key, id value, BOOL * stop)
-             {
-                if ([value isKindOfClass:NSString.class])
-                {
-                    NSString* truncatedValue = [value cly_truncatedValue:@"User details modifications value"];
-                    if (![truncatedValue isEqualToString:value])
-                    {
-                        truncatedValueDict[key] = truncatedValue;
-                        truncatedDict[truncatedKey] = truncatedValueDict;
-                    }
-                }
-            }];
-        }
-        
-    }];
-    
-    return truncatedDict.copy;
+    if (!CountlyCommon.sharedInstance.hasStarted)
+        return;
+    [CountlyConnectionManager.sharedInstance sendEvents];
 }
-
 
 - (BOOL)isValidDataType:(id) value {
     if ([value isKindOfClass:[NSNumber class]] ||
@@ -522,26 +583,31 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
 
 // Set a single user property. It can be either a custom one or one of the predefined ones.
 - (void)setProperty:(NSString *)key value:(id)value {
-    NSLog(@"[UserProfile] Calling 'setProperty'");
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
 
     NSMutableDictionary *data = [NSMutableDictionary dictionary];
     if (key != nil && value != nil) {
         data[key] = value;
     }
-    
+
     [self setPropertiesInternal:data];
 }
 
 // Provide a map of user properties to set.
 // Those can be either custom user properties or predefined user properties
 - (void)setProperties:(NSDictionary<NSString *,  NSObject *> *)data {
-    NSLog(@"[UserProfile] Calling 'setProperties'");
+    CLY_LOG_I(@"%s", __FUNCTION__);
 
     if (data == nil) {
-        NSLog(@"[UserProfile] Provided data can not be 'null'");
+        CLY_LOG_W(@"%s provided data can not be 'null'", __FUNCTION__);
         return;
     }
-    
+
     [self setPropertiesInternal:data];
+}
+
+- (void)clear {
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    [self clearUserDetails];
 }
 @end
