@@ -15,9 +15,13 @@
 
 long long appLoadStartTime;
 // It holds the event id of previous recorded custom event.
-NSString* previousEventID;
+static NSString* previousEventID;
 // It holds the event name of previous recorded custom event.
-NSString* previousEventName;
+static NSString* previousEventName;
+#if __has_include(<os/lock.h>)
+#import <os/lock.h>
+static os_unfair_lock previousEventLock = OS_UNFAIR_LOCK_INIT;
+#endif
 @implementation Countly
 
 #pragma mark - Core
@@ -40,9 +44,17 @@ static dispatch_once_t onceToken;
 
 - (void)resetInstance {
     CLY_LOG_I(@"%s resetting the instance", __FUNCTION__);
+    // Invalidate timer to avoid callbacks to a deallocated instance between tests.
+    if (timer) {
+        [timer invalidate];
+        timer = nil;
+    }
+    // Remove all notification observers to avoid duplicate registrations after re-init in tests.
+    [NSNotificationCenter.defaultCenter removeObserver:self];
+    isSuspended = NO;
     onceToken = 0;
     s_sharedCountly = nil;
-}
+ }
 
 - (instancetype)init
 {
@@ -236,6 +248,10 @@ static dispatch_once_t onceToken;
     }
 #endif
     
+    if(config.disableViewRestartForManualRecording){
+        CountlyViewTrackingInternal.sharedInstance.isManualViewRestartActive = NO;
+    }
+    
     if(config.experimental.enablePreviousNameRecording) {
         CountlyViewTrackingInternal.sharedInstance.enablePreviousNameRecording = YES;
     }
@@ -267,6 +283,9 @@ static dispatch_once_t onceToken;
     }
     if(config.content.getZoneTimerInterval){
         CountlyContentBuilderInternal.sharedInstance.zoneTimerInterval = config.content.getZoneTimerInterval;
+    }
+    if(config.content.getWebViewDisplayOption){
+        CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption = config.content.getWebViewDisplayOption;
     }
 #endif
     
@@ -571,6 +590,16 @@ static dispatch_once_t onceToken;
     [CountlyConnectionManager.sharedInstance addDirectRequest:requestParameters];
 }
 
+- (void)addCustomNetworkRequestHeaders:(NSDictionary<NSString *, NSString *> *_Nullable)customHeaderValues {
+    CLY_LOG_I(@"%s %@", __FUNCTION__, customHeaderValues);
+    
+    // Ignore nil or empty dictionary
+    if (customHeaderValues == nil || customHeaderValues.count == 0) {
+        return;
+    }
+    
+    [CountlyConnectionManager.sharedInstance addCustomNetworkRequestHeaders:customHeaderValues];
+}
 
 
 #pragma mark - Sessions
@@ -871,8 +900,16 @@ static dispatch_once_t onceToken;
         return;
     }
 
-    NSDictionary* truncated = [segmentation cly_truncated:@"Event segmentation"];
-    segmentation = [truncated cly_limited:@"Event segmentation"];
+    if (![CountlyServerConfig.sharedInstance shouldRecordEvent:key])
+    {
+        CLY_LOG_D(@"%s, aborted: Event '%@' is filtered by server config event filter!", __FUNCTION__, key);
+        return;
+    }
+    
+    // Apply global segmentation filter (sb/sw) and event-specific segmentation filter (esb/esw)
+    NSDictionary* filtered = [CountlyServerConfig.sharedInstance filterSegmentation:segmentation eventKey:key];
+    filtered = [filtered cly_truncated:@"Event segmentation"];
+    segmentation = [filtered cly_limited:@"Event segmentation"];
 
     [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration ID:nil timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
 }
@@ -925,30 +962,60 @@ static dispatch_once_t onceToken;
     NSMutableDictionary *filteredSegmentations = segmentation.cly_filterSupportedDataTypes;
     if(filteredSegmentations == nil)
         filteredSegmentations = NSMutableDictionary.new;
-    
-    // If the event is not reserved, assign the previous event ID and Name to the current event's PEID property, or an empty string if previousEventID is nil. Then, update previousEventID to the current event's ID.
-    if (!isReservedEvent)
-    {
-        CLY_LOG_V(@"%s will add event id and name properties because it is not a reserved event ", __FUNCTION__);
-        key = [key cly_truncatedKey:@"Event key"];
-        event.PEID = previousEventID ?: @"";
-        previousEventID = event.ID;
-        if(CountlyViewTrackingInternal.sharedInstance.enablePreviousNameRecording) {
-            filteredSegmentations[kCountlyPreviousEventName] = previousEventName ?: @"";
-            previousEventName = key;
-            filteredSegmentations[kCountlyCurrentView] = CountlyViewTrackingInternal.sharedInstance.currentViewName ?: @"";
-        }
-    }
-    event.key = key;
-    event.segmentation = [self processSegmentation:filteredSegmentations eventKey:key];
+
     event.count = MAX(count, 1);
     event.sum = sum;
     event.timestamp = timestamp;
     event.hourOfDay = CountlyCommon.sharedInstance.hourOfDay;
     event.dayOfWeek = CountlyCommon.sharedInstance.dayOfWeek;
     event.duration = duration;
-
-    [CountlyPersistency.sharedInstance recordEvent:event];
+    
+    if (!isReservedEvent)
+    {
+        CLY_LOG_V(@"%s will add event id and name properties because it is not a reserved event ", __FUNCTION__);
+        key = [key cly_truncatedKey:@"Event key"];
+        NSString* capturedPreviousID = nil;
+        NSString* capturedPreviousName = nil;
+#if __has_include(<os/lock.h>)
+        os_unfair_lock_lock(&previousEventLock);
+#endif
+        capturedPreviousID = previousEventID;
+        previousEventID = event.ID; // update chain
+        if(CountlyViewTrackingInternal.sharedInstance.enablePreviousNameRecording) {
+            capturedPreviousName = previousEventName;
+            previousEventName = key;
+        }
+        event.PEID = capturedPreviousID ?: @"";
+        if(CountlyViewTrackingInternal.sharedInstance.enablePreviousNameRecording) {
+            filteredSegmentations[kCountlyPreviousEventName] = capturedPreviousName ?: @"";
+            filteredSegmentations[kCountlyCurrentView] = CountlyViewTrackingInternal.sharedInstance.currentViewName ?: @"";
+        }
+        event.key = key;
+        event.segmentation = [self processSegmentation:filteredSegmentations eventKey:key];
+        id callback = nil;
+        if ([CountlyServerConfig.sharedInstance isJourneyTriggerEvent:key]){
+            callback = ^(NSString *response, BOOL success) {
+                if (success)
+                {
+    #if (TARGET_OS_IOS)
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [CountlyContentBuilderInternal.sharedInstance refreshContentZoneJTE];
+                    });
+    #endif
+                }
+            };
+        }
+        [CountlyPersistency.sharedInstance recordEvent:event callback:callback];
+#if __has_include(<os/lock.h>)
+        os_unfair_lock_unlock(&previousEventLock);
+#endif
+    }
+    else
+    {
+        event.key = key;
+        event.segmentation = [self processSegmentation:filteredSegmentations eventKey:key];
+        [CountlyPersistency.sharedInstance recordEvent:event];
+    }
 }
 
 - (NSDictionary *)processSegmentation:(NSMutableDictionary *)segmentation eventKey:(NSString *)eventKey {
@@ -1436,17 +1503,77 @@ static dispatch_once_t onceToken;
 - (void)halt:(BOOL) clearStorage
 {
     CLY_LOG_I(@"%s clearStorage: [%d]", __FUNCTION__, clearStorage);
+
+    // Reset view tracking state BEFORE halt — sharedInstance() returns nil after halt.
+    // Use KVC to clear internal state directly since stopAllViews checks consent
+    // and may be a no-op if previous test required consent.
+    if (CountlyViewTrackingInternal.sharedInstance)
+    {
+        CountlyViewTrackingInternal* viewTracking = CountlyViewTrackingInternal.sharedInstance;
+        [viewTracking setValue:NSMutableDictionary.new forKey:@"viewDataDictionary"];
+        [viewTracking setValue:nil forKey:@"currentViewID"];
+        [viewTracking setValue:nil forKey:@"currentViewName"];
+        [viewTracking setValue:nil forKey:@"previousViewID"];
+        [viewTracking setValue:nil forKey:@"previousViewName"];
+        [viewTracking setValue:@NO forKey:@"isAutoViewTrackingActive"];
+        [viewTracking resetFirstView];
+    }
+
+    // Reset health tracker state
+    [CountlyHealthTracker.sharedInstance resetInstance];
+
+    // Clear crash logs (safe operation - just clears array or deletes file)
+    if (CountlyCrashReporter.sharedInstance)
+    {
+        [CountlyCrashReporter.sharedInstance clearCrashLogs];
+    }
+
+    // Clear custom performance monitoring traces (safe operation - just clears dictionary)
+    if (CountlyPerformanceMonitoring.sharedInstance)
+    {
+        [CountlyPerformanceMonitoring.sharedInstance clearAllCustomTraces];
+    }
+
+    // Note: CountlyRemoteConfigInternal.clearAll is not called here because it triggers
+    // storeRemoteConfig which involves file I/O and can block during shutdown.
+    // Remote config state will persist across halt/start but is cleared via UserDefaults
+    // key removal below.
+
     [CountlyConsentManager.sharedInstance resetInstance];
     [CountlyPersistency.sharedInstance resetInstance:clearStorage];
     [CountlyDeviceInfo.sharedInstance resetInstance];
     [CountlyConnectionManager.sharedInstance resetInstance];
+    [CountlyServerConfig.sharedInstance resetInstance];
+    [CountlyUserDetails.sharedInstance clearUserDetails];
     [self resetInstance];
     [CountlyCommon.sharedInstance resetInstance];
-    
+
     if(clearStorage)
     {
         NSString *appDomain = [[NSBundle mainBundle] bundleIdentifier];
         [NSUserDefaults.standardUserDefaults removePersistentDomainForName:appDomain];
+
+        // halt(true) calls removePersistentDomainForName which doesn't work in xctest
+        // environment (different bundle ID), so clear SDK keys manually
+        NSArray* sdkKeys = @[
+            @"kCountlyServerConfigPersistencyKey",
+            @"kCountlyHealthCheckStatePersistencyKey",
+            @"kCountlyQueuedRequestsPersistencyKey",
+            @"kCountlyStartedEventsPersistencyKey",
+            @"kCountlyStoredDeviceIDKey",
+            @"kCountlyStoredNSUUIDKey",
+            @"kCountlyStarRatingStatusKey",
+            @"kCountlyRemoteConfigKey",
+            @"kCountlyIsCustomDeviceIDKey",
+            @"kCountlyNotificationPermissionKey",
+            @"kCountlyWatchParentDeviceIDKey"
+        ];
+        for (NSString* key in sdkKeys)
+        {
+            [NSUserDefaults.standardUserDefaults removeObjectForKey:key];
+        }
+
+        // Single synchronize after all UserDefaults modifications
         [NSUserDefaults.standardUserDefaults synchronize];
     }
 }

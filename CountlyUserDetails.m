@@ -113,7 +113,9 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
     
     if ([self.custom isKindOfClass:NSDictionary.class])
     {
-        NSDictionary* customTruncated = [((NSDictionary *)self.custom) cly_truncated:@"User details custom dictionary"];
+        NSMutableDictionary *customMutable = [((NSDictionary *)self.custom) mutableCopy];
+        [self filterAndLimitUserProperties:customMutable];
+        NSDictionary* customTruncated = [customMutable cly_truncated:@"User details custom dictionary"];
         [customAll addEntriesFromDictionary:[customTruncated cly_limited:@"User details custom dictionary"]];
     }
     
@@ -361,6 +363,12 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
     if (self.pictureLocalPath && !self.pictureURL)
         [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyLocalPicturePath: self.pictureLocalPath} cly_JSONify]];
 
+    if (self.modifications.count)
+    {
+        [self filterAndLimitUserProperties:self.modifications];
+        [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyUDKeyCustom: [self truncateModifications]} cly_JSONify]];
+    }
+
     [self clearUserDetails];
 }
 
@@ -440,6 +448,66 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
             }
         }
     }
+}
+
+- (void)filterAndLimitUserProperties:(NSMutableDictionary *)properties
+{
+    NSInteger limit = CountlyServerConfig.sharedInstance.userPropertyCacheLimit;
+    BOOL shouldApplyLimit = limit > 0;
+    NSInteger kept = 0;
+
+    for (NSString *key in properties.allKeys) {
+        if (![CountlyServerConfig.sharedInstance shouldRecordUserProperty:key]) {
+            CLY_LOG_D(@"Filtering out user property '%@' by server config user property filter", key);
+            [properties removeObjectForKey:key];
+        }
+        else if (shouldApplyLimit && ++kept > limit) {
+            CLY_LOG_D(@"Removing user property '%@' due to cache limit (%ld)", key, (long)limit);
+            [properties removeObjectForKey:key];
+        }
+    }
+}
+
+- (NSDictionary *)truncateModifications
+{
+    NSMutableDictionary* truncatedDict = self.modifications.mutableCopy;
+    [self.modifications enumerateKeysAndObjectsUsingBlock:^(NSString * key, id obj, BOOL * stop)
+     {
+        NSString* truncatedKey = [key cly_truncatedKey:@"User details modifications key"];
+        if (![truncatedKey isEqualToString:key])
+        {
+            truncatedDict[truncatedKey] = obj;
+            [truncatedDict removeObjectForKey:key];
+        }
+        
+        if ([obj isKindOfClass:NSString.class])
+        {
+            NSString* truncatedValue = [obj cly_truncatedValue:@"User details modifications value"];
+            if (![truncatedValue isEqualToString:obj])
+            {
+                truncatedDict[truncatedKey] = truncatedValue;
+            }
+        }
+        else if ([obj isKindOfClass:NSDictionary.class])
+        {
+            NSMutableDictionary* truncatedValueDict = ((NSDictionary *)obj).mutableCopy;
+            [(NSDictionary *)obj enumerateKeysAndObjectsUsingBlock:^(NSString * key, id value, BOOL * stop)
+             {
+                if ([value isKindOfClass:NSString.class])
+                {
+                    NSString* truncatedValue = [value cly_truncatedValue:@"User details modifications value"];
+                    if (![truncatedValue isEqualToString:value])
+                    {
+                        truncatedValueDict[key] = truncatedValue;
+                        truncatedDict[truncatedKey] = truncatedValueDict;
+                    }
+                }
+            }];
+        }
+        
+    }];
+    
+    return truncatedDict.copy;
 }
 
 

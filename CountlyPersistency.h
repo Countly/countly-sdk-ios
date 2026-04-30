@@ -5,6 +5,7 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
+#import "CountlyConnectionManager.h"
 
 @class CountlyEvent;
 
@@ -23,6 +24,7 @@
 - (void)removeOldAgeRequestsFromQueue;
 
 - (void)recordEvent:(CountlyEvent *)event;
+- (void)recordEvent:(CountlyEvent *)event callback:(CLYRequestCallback)callback;
 - (NSString *)serializedRecordedEvents;
 - (void)flushEvents;
 

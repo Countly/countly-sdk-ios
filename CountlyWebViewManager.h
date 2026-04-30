@@ -23,7 +23,7 @@ typedef NS_ENUM(NSUInteger, AnimationType) {
 
 
 
-@interface CountlyWebViewManager : NSObject <WKNavigationDelegate>
+@interface CountlyWebViewManager : NSObject <WKNavigationDelegate, WKScriptMessageHandler>
 
 - (void)createWebViewWithURL:(NSURL *)url
                      frame:(CGRect)frame

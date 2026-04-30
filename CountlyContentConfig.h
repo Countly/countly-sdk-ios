@@ -15,6 +15,12 @@ typedef enum : NSUInteger
     CLOSED,
 } ContentStatus;
 
+typedef enum: NSUInteger
+{
+    IMMERSIVE,
+    SAFE_AREA
+} WebViewDisplayOption;
+
 typedef void (^ContentCallback)(ContentStatus contentStatus, NSDictionary<NSString *, id>* contentData);
 #endif
 
@@ -46,6 +52,13 @@ typedef void (^ContentCallback)(ContentStatus contentStatus, NSDictionary<NSStri
  * Get zone timer interval
  */
 - (NSUInteger) getZoneTimerInterval;
+
+/**
+ * To control how content and feedback widgets displayed. Default is IMMERSIVE (full screen contents)
+ */
+- (void) setWebviewDisplayOption:(WebViewDisplayOption) webViewDisplayOption;
+
+- (WebViewDisplayOption)getWebViewDisplayOption;
 #endif
 
 NS_ASSUME_NONNULL_END
