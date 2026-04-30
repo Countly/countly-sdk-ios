@@ -332,6 +332,8 @@ static dispatch_once_t onceToken;
         [self recordIndirectAttribution:config.indirectAttribution];
     
     [CountlyHealthTracker.sharedInstance sendHealthCheck];
+
+    CountlyCommon.sharedInstance.hasFinishedInit = YES;
 }
 
 - (CountlyConfig *) checkAndFixInternalLimitsConfig:(CountlyConfig *)config
