@@ -122,7 +122,7 @@ extern NSString* const kCountlyLocalPicturePath;
 /**
  * Returns @c CountlyUserDetails singleton to be used throughout the app.
  * @return The shared @c CountlyUserDetails object
- * @discussion @c Countly.user convenience accessor can also be used.
+ * @discussion @c Countly.sharedInstance.userProfile convenience accessor can also be used and is the recommended way.
  */
 + (instancetype)sharedInstance;
 

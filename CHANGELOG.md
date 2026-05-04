@@ -19,6 +19,7 @@
 * Deprecated the direct property setters on `CountlyUserDetails`: `name`, `username`, `email`, `organization`, `phone`, `gender`, `pictureURL`, `pictureLocalPath`, `birthYear`, `custom`. Use `setProperty:value:` or `setProperties:` instead.
 * Deprecated `set:value:`, `set:numberValue:`, `set:boolValue:` on `CountlyUserDetails`. Use `setProperty:value:` instead.
 * Deprecated `unSet:` on `CountlyUserDetails`. Use `setProperty:value:` with an empty string `@""` to clear a property on the server.
+* Deprecated the `+ user` class accessor on `Countly`. Use `Countly.sharedInstance.userProfile` instead.
 
 ## 26.1.1
 * Added POST method support for contents. 

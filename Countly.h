@@ -602,7 +602,7 @@ NS_ASSUME_NONNULL_BEGIN
  * Returns @c CountlyUserDetails singleton to be used throughout the app.
  * @return The shared @c CountlyUserDetails object
  */
-+ (CountlyUserDetails *)user;
++ (CountlyUserDetails *)user DEPRECATED_MSG_ATTRIBUTE("Use -userProfile via Countly.sharedInstance instead (e.g., Countly.sharedInstance.userProfile).");
 
 
 

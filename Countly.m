@@ -169,10 +169,10 @@ static dispatch_once_t onceToken;
 
     if (config.providedUserProperties.count > 0) {
         CLY_LOG_I(@"%s applying providedUserProperties at init [%lu]", __FUNCTION__, (unsigned long)config.providedUserProperties.count);
-        [Countly.user setProperties:config.providedUserProperties];
+        [Countly.sharedInstance.userProfile setProperties:config.providedUserProperties];
     }
 
-    [Countly.user save];
+    [Countly.sharedInstance.userProfile save];
     // If something added related to server config, make sure to check CountlyServerConfig.notifySdkConfigChange
     [CountlyServerConfig.sharedInstance fetchServerConfig:config];
     
