@@ -83,7 +83,7 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
 
     if (self.birthYear) {
         if ([self.birthYear isKindOfClass:NSNumber.class] && ((NSNumber *)self.birthYear).integerValue < 0) {
-            // Negative byear means "clear on server" — match Android semantics.
+            // Negative byear means "clear on server"
             userDictionary[kCountlyUDKeyBirthyear] = NSNull.null;
         } else {
             userDictionary[kCountlyUDKeyBirthyear] = self.birthYear;
@@ -486,7 +486,7 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
 
     NSString *str = (NSString *)field;
     if (str.length == 0) {
-        // Empty string means "clear on server" — match Android semantics.
+        // Empty string means "clear on server"
         userDictionary[key] = NSNull.null;
         return;
     }
@@ -518,7 +518,7 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
             self.pictureLocalPath = nil;
         } else {
             NSString *path = [value description];
-            // Match Android: drop the path with a warning if the file isn't readable.
+            // drop the path with a warning if the file isn't readable.
             if (path.length > 0 && ![[NSFileManager defaultManager] isReadableFileAtPath:path]) {
                 CLY_LOG_W(@"%s provided picture path file [%@] can not be opened", __FUNCTION__, path);
                 self.pictureLocalPath = nil;
@@ -561,7 +561,7 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
     }
 }
 
-// Match Android's `onUserPropertiesChanged`: when user properties change, flush any
+// when user properties change, flush any
 // pending events first so they reach the server before the next user-details request.
 - (void)userPropertiesChanged
 {
