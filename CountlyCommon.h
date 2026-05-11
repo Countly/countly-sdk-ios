@@ -80,6 +80,7 @@ extern NSString* const kCountlySDKName;
 @property (nonatomic, copy) NSString* SDKName;
 
 @property (nonatomic) BOOL hasStarted;
+@property (nonatomic) BOOL hasFinishedInit;
 @property (nonatomic) BOOL enableDebug;
 
 @property (nonatomic) BOOL shouldIgnoreTrustCheck;
