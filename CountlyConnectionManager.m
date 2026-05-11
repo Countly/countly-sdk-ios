@@ -18,7 +18,11 @@
 
 @property (nonatomic, strong) NSDate *startTime;
 @property (nonatomic, assign) atomic_bool backoff;
-
+@property (nonatomic, assign) atomic_bool isProcessingQueue;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, CLYRequestCallback> *internalRequestCallbacks;
+@property (nonatomic, strong) NSMutableArray<CLYQueueFlushRunnable> *queueFlushRunnables;
+@property (nonatomic) BOOL hasAnyRequestFailed;
+@property (nonatomic, strong) dispatch_queue_t callbackQueue; // Serial queue for thread-safe callback/runnable access
 
 @end
 
@@ -71,6 +75,7 @@ NSString* const kCountlyRCKeyABOptIn          = @"ab";
 NSString* const kCountlyRCKeyABOptOut         = @"ab_opt_out";
 NSString* const kCountlyEndPointOverrideTag   = @"&new_end_point=";
 NSString* const kCountlyNewEndPoint           = @"new_end_point";
+NSString* const kCountlyCallbackID            = @"callback_id";
 
 CLYAttributionKey const CLYAttributionKeyIDFA = kCountlyQSKeyIDFA;
 CLYAttributionKey const CLYAttributionKeyADID = kCountlyQSKeyADID;
@@ -105,6 +110,11 @@ static dispatch_once_t onceToken;
         unsentSessionLength = 0.0;
         isSessionStarted = NO;
         atomic_init(&_backoff, NO);
+        atomic_init(&_isProcessingQueue, NO);
+        _internalRequestCallbacks = [NSMutableDictionary dictionary];
+        _queueFlushRunnables = [NSMutableArray array];
+        _hasAnyRequestFailed = NO;
+        _callbackQueue = dispatch_queue_create("ly.count.callbackQueue", DISPATCH_QUEUE_SERIAL);
     }
 
     return self;
@@ -120,6 +130,12 @@ static dispatch_once_t onceToken;
     onceToken = 0;
     s_sharedInstance = nil;
     isSessionStarted = NO;
+    dispatch_sync(_callbackQueue, ^{
+        [self->_internalRequestCallbacks removeAllObjects];
+        [self->_queueFlushRunnables removeAllObjects];
+    });
+    _hasAnyRequestFailed = NO;
+    atomic_store(&_isProcessingQueue, NO);
 }
 
 - (void)setHost:(NSString *)host
@@ -181,39 +197,44 @@ static dispatch_once_t onceToken;
         return;
     }
     
-    if (self.connection)
+    if (self.connection || atomic_exchange(&_isProcessingQueue, YES))
     {
         CLY_LOG_D(@"Proceeding on queue is aborted: Already has a request in process!");
         return;
     }
-    
+
     if (isCrashing)
     {
         CLY_LOG_D(@"Proceeding on queue is aborted: Application is crashing!");
+        atomic_store(&_isProcessingQueue, NO);
         return;
     }
-    
+
     if (self.isTerminating)
     {
         CLY_LOG_D(@"Proceeding on queue is aborted: Application is terminating!");
+        atomic_store(&_isProcessingQueue, NO);
         return;
     }
-    
+
     if (CountlyPersistency.sharedInstance.isQueueBeingModified)
     {
         CLY_LOG_D(@"Proceeding on queue is aborted: Queue is being modified!");
+        atomic_store(&_isProcessingQueue, NO);
         return;
     }
-    
+
     BOOL backoffFlag = atomic_load(&_backoff) ? YES : NO;
     if (backoffFlag) {
         CLY_LOG_I(@"%s, currently backed off, skipping proceeding the queue", __FUNCTION__);
+        atomic_store(&_isProcessingQueue, NO);
         return;
     }
     
     if (!self.startTime) {
         self.startTime = [NSDate date]; // Record start time only when it's not already recorded
-        CLY_LOG_D(@"Proceeding on queue started, queued request count %lu", [CountlyPersistency.sharedInstance remainingRequestCount]);
+        self.hasAnyRequestFailed = NO; // Reset failure flag when starting queue processing
+        CLY_LOG_D(@"%s, Proceeding on queue started, queued request count %lu", __FUNCTION__, [CountlyPersistency.sharedInstance remainingRequestCount]);
     }
 
     NSString* firstItemInQueue = [CountlyPersistency.sharedInstance firstItemInQueue];
@@ -221,9 +242,35 @@ static dispatch_once_t onceToken;
     {
         // Calculate total time when the queue becomes empty
         NSTimeInterval elapsedTime = -[self.startTime timeIntervalSinceNow];
-        CLY_LOG_D(@"Queue is empty. All requests are processed. Total time taken: %.2f seconds", elapsedTime);
-        // Reset start time for future queue processing
+        CLY_LOG_D(@"%s, Queue is empty. All requests are processed. Total time taken: %.2f seconds", __FUNCTION__, elapsedTime);
+
+        // Execute and clear runnables only if all requests succeeded
+        if (!self.hasAnyRequestFailed) {
+            // Thread-safe copy and clear of runnables
+            __block NSArray<CLYQueueFlushRunnable> *runnablesToExecute = nil;
+            dispatch_sync(_callbackQueue, ^{
+                if (self->_queueFlushRunnables.count > 0) {
+                    CLY_LOG_D(@"%s, All requests succeeded. Executing %lu queue flush runnables.", __FUNCTION__, (unsigned long)self->_queueFlushRunnables.count);
+                    runnablesToExecute = [self->_queueFlushRunnables copy];
+                    [self->_queueFlushRunnables removeAllObjects];
+                }
+            });
+
+            // Execute runnables outside the lock to prevent deadlocks
+            if (runnablesToExecute) {
+                for (CLYQueueFlushRunnable runnable in runnablesToExecute) {
+                    runnable();
+                }
+                CLY_LOG_D(@"%s, All queue flush runnables executed and removed.", __FUNCTION__);
+            }
+        } else {
+            CLY_LOG_D(@"%s, Some requests failed. Runnables will not be executed.", __FUNCTION__);
+        }
+
+        // Reset start time and failure flag for future queue processing
         self.startTime = nil;
+        self.hasAnyRequestFailed = NO;
+        atomic_store(&_isProcessingQueue, NO);
         return;
     }
     
@@ -233,17 +280,19 @@ static dispatch_once_t onceToken;
         [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
         
         [CountlyPersistency.sharedInstance saveToFile];
-        
+
+        atomic_store(&_isProcessingQueue, NO);
         [self proceedOnQueue];
-        
+
         return;
     }
-    
+
 
     NSString* temporaryDeviceIDQueryString = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, CLYTemporaryDeviceID];
     if ([firstItemInQueue containsString:temporaryDeviceIDQueryString])
     {
         CLY_LOG_D(@"Proceeding on queue is aborted: Device ID in request is CLYTemporaryDeviceID!");
+        atomic_store(&_isProcessingQueue, NO);
         return;
     }
 
@@ -252,10 +301,19 @@ static dispatch_once_t onceToken;
     NSString* queryString = firstItemInQueue;
     NSString* endPoint = kCountlyEndpointI;
     
-    NSString* overrideEndPoint = [self extractAndRemoveOverrideEndPoint:&queryString];
+    NSString* overrideEndPoint = [self extractAndRemoveParameter:&queryString parameter: kCountlyNewEndPoint];
     if(overrideEndPoint) {
         endPoint = overrideEndPoint;
     }
+    
+    NSString* callbackID = [self extractAndRemoveParameter:&queryString parameter: kCountlyCallbackID];
+    __block CLYRequestCallback requestCallback = nil;
+    if(callbackID){
+        dispatch_sync(_callbackQueue, ^{
+            requestCallback = self.internalRequestCallbacks[callbackID];
+        });
+    }
+    
     
     [CountlyCommon.sharedInstance startBackgroundTask];
 
@@ -312,6 +370,7 @@ static dispatch_once_t onceToken;
     self.connection = [self.URLSession dataTaskWithRequest:request completionHandler:^(NSData * data, NSURLResponse * response, NSError * error)
     {
         self.connection = nil;
+        atomic_store(&self->_isProcessingQueue, NO);
         NSDate *endTimeRequest = [NSDate date];
         long duration = (long)[endTimeRequest timeIntervalSinceDate:startTimeRequest];
         
@@ -329,13 +388,24 @@ static dispatch_once_t onceToken;
             {
                 CLY_LOG_D(@"Request <%p> successfully completed.", request);
 
+                if(requestCallback){
+                    requestCallback([response description], YES);
+                    // Clean up callback after execution
+                    if (callbackID) {
+                        dispatch_sync(self->_callbackQueue, ^{
+                            [self.internalRequestCallbacks removeObjectForKey:callbackID];
+                        });
+                    }
+                }
+
                 [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
 
                 [CountlyPersistency.sharedInstance saveToFile];
-                
+
                 if(CountlyServerConfig.sharedInstance.backoffMechanism && [self backoff:duration queryString:queryString]){
                     CLY_LOG_D(@"%s, backed off dropping proceeding the queue", __FUNCTION__);
                     self.startTime = nil;
+                    self.hasAnyRequestFailed = NO; // Reset on backoff
                     [self backoffCountdown];
                 } else {
                     [self proceedOnQueue];
@@ -345,6 +415,19 @@ static dispatch_once_t onceToken;
             else
             {
                 CLY_LOG_D(@"%s, request:[ <%p> ] failed! response:[ %@ ]", __FUNCTION__, request, [data cly_stringUTF8]);
+
+                self.hasAnyRequestFailed = YES; // Mark that a request has failed
+
+                if(requestCallback){
+                    requestCallback([data cly_stringUTF8], NO);
+                    // Clean up callback after execution
+                    if (callbackID) {
+                        dispatch_sync(self->_callbackQueue, ^{
+                            [self.internalRequestCallbacks removeObjectForKey:callbackID];
+                        });
+                    }
+                }
+
                 [CountlyHealthTracker.sharedInstance logFailedNetworkRequestWithStatusCode:((NSHTTPURLResponse*)response).statusCode errorResponse: [data cly_stringUTF8]];
                 [CountlyHealthTracker.sharedInstance saveState];
                 self.startTime = nil;
@@ -353,6 +436,18 @@ static dispatch_once_t onceToken;
         else
         {
             CLY_LOG_D(@"%s, request:[ <%p> ] failed! error:[ %@ ]", __FUNCTION__, request, error);
+
+            self.hasAnyRequestFailed = YES; // Mark that a request has failed
+
+            if(requestCallback){
+                requestCallback([error description], NO);
+                // Clean up callback after execution
+                if (callbackID) {
+                    dispatch_sync(self->_callbackQueue, ^{
+                        [self.internalRequestCallbacks removeObjectForKey:callbackID];
+                    });
+                }
+            }
 #if (TARGET_OS_WATCH)
             [CountlyPersistency.sharedInstance saveToFile];
 #endif
@@ -442,16 +537,21 @@ static dispatch_once_t onceToken;
     });
 }
 
-
-- (NSString*)extractAndRemoveOverrideEndPoint:(NSString **)queryString
+- (NSString*)extractAndRemoveParameter:(NSString **)queryString parameter:(NSString*)parameter
 {
-    if([*queryString containsString:kCountlyNewEndPoint]) {
-        NSString* overrideEndPoint = [*queryString cly_valueForQueryStringKey:kCountlyNewEndPoint];
-        if(overrideEndPoint) {
-            NSString* stringToRemove = [kCountlyEndPointOverrideTag stringByAppendingString:overrideEndPoint];
+    CLY_LOG_D(@"%s, Extracting parameter: %@", __FUNCTION__, parameter);
+
+    if([*queryString containsString:parameter]) {
+        NSString* parameterExtracted = [*queryString cly_valueForQueryStringKey:parameter];
+        if(parameterExtracted) {
+            NSString* stringToRemove = [NSString stringWithFormat:@"&%@=%@",parameter,parameterExtracted];
             *queryString = [*queryString stringByReplacingOccurrencesOfString:stringToRemove withString:@""];
-            return overrideEndPoint;
+            CLY_LOG_D(@"%s, Parameter extracted successfully: %@ = %@", __FUNCTION__, parameter, parameterExtracted);
+            return parameterExtracted;
         }
+        CLY_LOG_D(@"%s, Parameter found but value extraction failed for: %@", __FUNCTION__, parameter);
+    } else {
+        CLY_LOG_D(@"%s, Parameter not found in query string: %@", __FUNCTION__, parameter);
     }
     return nil;
 }
@@ -621,16 +721,24 @@ static dispatch_once_t onceToken;
 
 - (void)addEventsToQueue
 {
+    [self addEventsToQueue:nil];
+}
+
+- (void)addEventsToQueue:(CLYRequestCallback)callback
+{
     NSString* events = [CountlyPersistency.sharedInstance serializedRecordedEvents];
-    
+
     if (!events)
         return;
-    
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
-                             kCountlyQSKeyEvents, events];
-    
-    [CountlyPersistency.sharedInstance addToQueue:queryString];
-    
+
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyEvents, events];
+    [self addToQueueWithCallback:queryString callback:callback];
+}
+
+- (void)sendEventsWithCallback:(CLYRequestCallback)callback
+{
+    [self addEventsToQueue:callback];
+    [self proceedOnQueue];
 }
 
 #pragma mark ---
@@ -1233,6 +1341,93 @@ static dispatch_once_t onceToken;
         CFRelease(serverKey);
 
     CFRelease(policy);
+}
+
+#pragma mark - Request Callbacks
+
+- (void)registerRequestCallback:(NSString *)callbackID callback:(CLYRequestCallback)callback
+{
+    if (!callbackID || callbackID.length == 0)
+    {
+        CLY_LOG_W(@"%s, Callback ID is nil or empty. Callback registration ignored.", __FUNCTION__);
+        return;
+    }
+
+    if (!callback)
+    {
+        CLY_LOG_W(@"%s, Callback block is nil. Callback registration ignored.", __FUNCTION__);
+        return;
+    }
+
+    dispatch_sync(_callbackQueue, ^{
+        CLY_LOG_D(@"%s, Registering request callback with ID: %@", __FUNCTION__, callbackID);
+        self.internalRequestCallbacks[callbackID] = callback;
+    });
+}
+
+- (void)removeRequestCallback:(NSString *)callbackID
+{
+    if (!callbackID || callbackID.length == 0)
+    {
+        CLY_LOG_W(@"%s, Callback ID is nil or empty. Callback removal ignored.", __FUNCTION__);
+        return;
+    }
+
+    dispatch_sync(_callbackQueue, ^{
+        CLY_LOG_D(@"%s, Removing request callback with ID: %@", __FUNCTION__, callbackID);
+        [self.internalRequestCallbacks removeObjectForKey:callbackID];
+    });
+}
+
+- (void)addQueueFlushRunnable:(CLYQueueFlushRunnable)runnable
+{
+    if (!runnable)
+    {
+        CLY_LOG_W(@"%s, Runnable is nil. Cannot add to queue flush runnables.", __FUNCTION__);
+        return;
+    }
+
+    CLYQueueFlushRunnable runnableCopy = [runnable copy];
+    dispatch_sync(_callbackQueue, ^{
+        CLY_LOG_D(@"%s, Adding queue flush runnable. Total count: %lu", __FUNCTION__, (unsigned long)(self->_queueFlushRunnables.count + 1));
+        [self->_queueFlushRunnables addObject:runnableCopy];
+    });
+}
+
+- (void)clearQueueFlushRunnables
+{
+    dispatch_sync(_callbackQueue, ^{
+        CLY_LOG_D(@"%s, Clearing %lu queue flush runnables.", __FUNCTION__, (unsigned long)self->_queueFlushRunnables.count);
+        [self->_queueFlushRunnables removeAllObjects];
+    });
+}
+
+- (void)addToQueueWithCallback:(NSString *)queryString callback:(CLYRequestCallback)callback
+{
+    if (!queryString || queryString.length == 0)
+    {
+        CLY_LOG_W(@"%s, Query string is nil or empty. Cannot add to queue with callback.", __FUNCTION__);
+        return;
+    }
+
+    if (!callback)
+    {
+        [CountlyPersistency.sharedInstance addToQueue:queryString];
+        return;
+    }
+
+    // Generate a unique callback ID
+    NSString* callbackID = [[NSUUID UUID] UUIDString];
+    CLY_LOG_D(@"%s, Adding request to queue with callback ID: %@", __FUNCTION__, callbackID);
+
+    // Register the callback
+    [self registerRequestCallback:callbackID callback:callback];
+
+    // Append callback_id parameter to query string
+    NSString* queryStringWithCallback = [queryString stringByAppendingFormat:@"&callback_id=%@", callbackID];
+
+    // Add to queue
+    [CountlyPersistency.sharedInstance addToQueue:queryStringWithCallback];
 }
 
 @end

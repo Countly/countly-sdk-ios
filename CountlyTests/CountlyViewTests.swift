@@ -701,9 +701,43 @@ class CountlyViewForegroundBackgroundTests: CountlyViewBaseTest {
     func testBackgroundAndForegroundTriggers() throws {
         let config = createBaseConfig()
         Countly.sharedInstance().start(with: config)
-        
+
         Countly.sharedInstance().views().startView("View1")
         
+        goBackgroundForeground()
+        
+        let startedQueuedEventsCount = ["View1": 1]
+        
+        let endedQueuedEventsDurations = ["View1": [3]]
+        
+        // Call validateRecordedEvents to check if the events match expectations
+        validateQueuedViews(startedEventsCount: startedQueuedEventsCount, endedEventsDurations: endedQueuedEventsDurations)
+        
+        let startedEventsCount = ["View1": 1]
+        
+        let endedEventsDurations: [String: [Int]]  = [:]
+        
+        // Call validateRecordedEvents to check if the events match expectations
+        validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
+    }
+    
+    func testBackgroundAndForegroundTriggers_manualViewRestartDisabled() throws {
+        let config = createBaseConfig()
+        config.disableViewRestartForManualRecording = true
+        Countly.sharedInstance().start(with: config)
+
+        Countly.sharedInstance().views().startView("View1")
+        
+        goBackgroundForeground()
+                    
+        // Call validateRecordedEvents to check if the events match expectations
+        validateQueuedViews(startedEventsCount: ["View1": 1], endedEventsDurations: [:]) // no end view now
+        
+        // Call validateRecordedEvents to check if the events match expectations
+        validateRecordedViews(startedEventsCount: [:], endedEventsDurations: [:])
+    }
+    
+    private func goBackgroundForeground() {
         // Create expectations for various events
         let waitForStart = XCTestExpectation(description: "Wait for 3 seconds before backgrounding app.")
         let waitForBackground = XCTestExpectation(description: "Wait for 4 seconds in background.")
@@ -730,20 +764,6 @@ class CountlyViewForegroundBackgroundTests: CountlyViewBaseTest {
         
         // Wait for all expectations to be fulfilled
         wait(for: [waitForStart, waitForBackground, waitForForeground], timeout: 15.0)
-        
-        let startedQueuedEventsCount = ["View1": 1]
-        
-        let endedQueuedEventsDurations = ["View1": [3]]
-        
-        // Call validateRecordedEvents to check if the events match expectations
-        validateQueuedViews(startedEventsCount: startedQueuedEventsCount, endedEventsDurations: endedQueuedEventsDurations)
-        
-        let startedEventsCount = ["View1": 1]
-        
-        let endedEventsDurations: [String: [Int]]  = [:]
-        
-        // Call validateRecordedEvents to check if the events match expectations
-        validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
     }
 }
 

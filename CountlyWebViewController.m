@@ -1,0 +1,171 @@
+// CountlyWebViewController.m
+//
+// This code is provided under the MIT License.
+//
+// Please visit www.count.ly for more information.
+//
+#import "CountlyWebViewController.h"
+#import "PassThroughBackgroundView.h"
+#import "TouchDelegatingView.h"
+
+#if (TARGET_OS_IOS)
+@implementation CountlyWebViewController
+{
+    UIStatusBarStyle _cachedStatusBarStyle;
+    BOOL _hasCachedStatusBarStyle;
+}
+- (BOOL)prefersStatusBarHidden
+{
+  return CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == IMMERSIVE ? YES : NO;
+}
+
+- (BOOL)prefersHomeIndicatorAutoHidden
+{
+  return CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == IMMERSIVE ? YES : NO;
+}
+
+- (UIStatusBarStyle)preferredStatusBarStyle
+{
+    if (_hasCachedStatusBarStyle) {
+        return _cachedStatusBarStyle;
+    }
+    
+    UIWindow *keyWindow = [self getKeyWindow];
+
+    if (keyWindow && keyWindow.rootViewController) {
+        _cachedStatusBarStyle = keyWindow.rootViewController.preferredStatusBarStyle;
+        _hasCachedStatusBarStyle = YES;
+        return _cachedStatusBarStyle;
+    }
+    
+    return UIStatusBarStyleLightContent;
+}
+
+- (UIInterfaceOrientationMask)supportedInterfaceOrientations
+{
+    return UIInterfaceOrientationMaskAll;
+}
+
+- (UIWindow *)getKeyWindow {
+    if (@available(iOS 13.0, *)) {
+        for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
+            if (![scene isKindOfClass:[UIWindowScene class]]) {
+                continue;
+            }
+            
+            UIWindowScene *windowScene = (UIWindowScene *)scene;
+            
+            if (windowScene.activationState == UISceneActivationStateForegroundActive) {
+                for (UIWindow *window in windowScene.windows) {
+                    if (window.isKeyWindow) {
+                        return window;
+                    }
+                }
+            }
+        }
+    } else {
+        return UIApplication.sharedApplication.keyWindow;
+    }
+    
+    return nil;
+}
+
+- (BOOL)shouldAutorotate
+{
+    return YES;
+}
+
+- (void)loadView
+{
+    UIWindow *keyWindow = [self getKeyWindow];
+    CGRect bounds = keyWindow.rootViewController.view.bounds;
+    
+    if (CGRectIsEmpty(bounds)) {
+        bounds = UIScreen.mainScreen.bounds;
+    }
+    
+    self.view = [[TouchDelegatingView alloc] initWithFrame:bounds];
+}
+
+- (void)viewDidLoad
+{
+  [super viewDidLoad];
+    
+    UIWindow *keyWindow = [self getKeyWindow];
+    
+    if (!_hasCachedStatusBarStyle) {
+        if (keyWindow && keyWindow.rootViewController) {
+            _cachedStatusBarStyle = keyWindow.rootViewController.preferredStatusBarStyle;
+            _hasCachedStatusBarStyle = YES;
+        }
+    }
+
+
+    if ([self.view isKindOfClass:[TouchDelegatingView class]])
+    {
+        TouchDelegatingView *delegatingView = (TouchDelegatingView *)self.view;
+        if (keyWindow && keyWindow.rootViewController) {
+            delegatingView.touchDelegate = keyWindow.rootViewController.view;
+        }
+    }
+
+  // Fully transparent controller background
+  self.view.backgroundColor = [UIColor clearColor];
+  if (@available(iOS 11.0, *))
+  {
+    self.view.insetsLayoutMarginsFromSafeArea = NO;
+    self.view.directionalLayoutMargins        = NSDirectionalEdgeInsetsZero;
+  }
+  self.extendedLayoutIncludesOpaqueBars = YES;
+  self.edgesForExtendedLayout           = UIRectEdgeAll;
+
+  // Ensure underlying app stays visible
+  self.view.opaque = NO;
+
+  if (self.contentView)
+  {
+    self.contentView.frame            = self.view.bounds;
+    self.contentView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+
+    [self.view addSubview:self.contentView];
+  }
+}
+
+- (void)updatePlacementRespectToSafeAreas
+{
+  if (@available(iOS 13.0, *))
+  {
+    UIEdgeInsets safeArea = self.view.safeAreaInsets;
+
+    UIInterfaceOrientation orientation = self.view.window.windowScene.interfaceOrientation;
+
+    if ([self.contentView isKindOfClass:PassThroughBackgroundView.self])
+    {
+      PassThroughBackgroundView *content = (PassThroughBackgroundView *)self.contentView;
+      CGRect                     frame   = content.webView.frame;
+      if (CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA || [self hasTopNotch:safeArea])
+      {
+        frame.origin.y += safeArea.top; // always respect notch if exists
+      }
+      if (orientation != UIInterfaceOrientationLandscapeLeft)
+      { // regardless of given safe area, if notch is in left act for it
+        frame.origin.x += MAX(safeArea.left, safeArea.right);
+      }
+      content.webView.frame = frame;
+    }
+  }
+}
+
+- (bool)hasTopNotch:(UIEdgeInsets)safeArea
+{
+  if (@available(iOS 11.0, *))
+  {
+    return safeArea.top >= 44;
+  }
+  else
+  {
+    return NO;
+  }
+}
+@end
+#endif

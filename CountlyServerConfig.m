@@ -43,6 +43,17 @@
 
 @property (nonatomic) NSInteger requestTimeoutDuration;
 
+@property (nonatomic) NSSet<NSString *> *eventFilterSet;
+@property (nonatomic) BOOL eventFilterIsWhitelist;
+@property (nonatomic) NSSet<NSString *> *userPropertyFilterSet;
+@property (nonatomic) BOOL userPropertyFilterIsWhitelist;
+@property (nonatomic) NSInteger userPropertyCacheLimit;
+@property (nonatomic) NSSet<NSString *> *segmentationFilterSet;
+@property (nonatomic) BOOL segmentationFilterIsWhitelist;
+@property (nonatomic) NSDictionary<NSString *, NSSet<NSString *> *> *eventSegmentationFilterMap;
+@property (nonatomic) BOOL eventSegmentationFilterIsWhitelist;
+@property (nonatomic) NSSet<NSString *> *journeyTriggerEvents;
+
 @property (nonatomic) NSInteger version;
 @property (nonatomic) long long timestamp;
 @property (nonatomic) long long lastFetchTimestamp;
@@ -86,6 +97,20 @@ NSString *const kRBOMRQPercentage = @"bom_rqp";
 NSString *const kRBOMRequestAge = @"bom_ra";
 NSString *const kRBOMDuration = @"bom_d";
 
+NSString *const kREventBlacklist = @"eb";
+NSString *const kREventWhitelist = @"ew";
+NSString *const kRUserPropertyBlacklist = @"upb";
+NSString *const kRUserPropertyWhitelist = @"upw";
+NSString *const kRUserPropertyCacheLimit = @"upcl";
+NSString *const kRSegmentationBlacklist = @"sb";
+NSString *const kRSegmentationWhitelist = @"sw";
+NSString *const kREventSegmentationBlacklist = @"esb";
+NSString *const kREventSegmentationWhitelist = @"esw";
+NSString *const kRJourneyTriggerEvents = @"jte";
+
+static CountlyServerConfig *s_sharedInstance = nil;
+static dispatch_once_t onceToken;
+
 @implementation CountlyServerConfig
 
 + (instancetype)sharedInstance
@@ -93,8 +118,6 @@ NSString *const kRBOMDuration = @"bom_d";
     if (!CountlyCommon.sharedInstance.hasStarted)
         return nil;
 
-    static CountlyServerConfig *s_sharedInstance = nil;
-    static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         s_sharedInstance = self.new;
     });
@@ -117,6 +140,25 @@ NSString *const kRBOMDuration = @"bom_d";
     return self;
 }
 
+- (void)resetInstance
+{
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    _timestamp = 0;
+    _version = 0;
+    _currentServerConfigUpdateInterval = 4;
+    _serverConfigUpdatesDisabled = NO;
+    _requestTimeoutDuration = 30;
+    _lastFetchTimestamp = 0;
+    if (_requestTimer)
+    {
+        [_requestTimer invalidate];
+        _requestTimer = nil;
+    }
+    [self setDefaultValues];
+    onceToken = 0;
+    s_sharedInstance = nil;
+}
+
 - (void)retrieveServerConfigFromStorage:(CountlyConfig *)config
 {
     NSMutableDictionary *persistentBehaviorSettings = [CountlyPersistency.sharedInstance retrieveServerConfig];
@@ -127,13 +169,13 @@ NSString *const kRBOMDuration = @"bom_d";
 
         if ([parsed isKindOfClass:[NSDictionary class]]) {
             persistentBehaviorSettings = [(NSDictionary *)parsed mutableCopy];
-            [CountlyPersistency.sharedInstance storeServerConfig:persistentBehaviorSettings];
         } else {
             CLY_LOG_W(@"%s, Failed to parse sdkBehaviorSettings or not a dictionary: %@", __FUNCTION__, error);
         }
     }
 
     [self populateServerConfig:persistentBehaviorSettings withConfig:config];
+    [CountlyPersistency.sharedInstance storeServerConfig:persistentBehaviorSettings];
 }
 
 - (void)mergeBehaviorSettings:(NSMutableDictionary *)baseConfig
@@ -178,56 +220,113 @@ NSString *const kRBOMDuration = @"bom_d";
             }
         }];
 
+        [self removeConflictingFilterKeys:cMerged newConfig:cNew];
         baseConfig[kRConfig] = cMerged;
     }
 }
 
-- (void)setBoolProperty:(BOOL *)property fromDictionary:(NSDictionary *)dictionary key:(NSString *)key logString:(NSMutableString *)logString
+- (void)setBoolProperty:(BOOL *)property fromDictionary:(NSMutableDictionary *)dictionary key:(NSString *)key logString:(NSMutableString *)logString
 {
-    NSNumber *value = dictionary[key];
-    if (value)
+    id value = dictionary[key];
+    if (!value)
+        return;
+
+    if (CFGetTypeID((__bridge CFTypeRef)value) == CFBooleanGetTypeID())
     {
-        *property = value.boolValue;
+        *property = [value boolValue];
         [logString appendFormat:@"%@: %@, ", key, *property ? @"YES" : @"NO"];
     }
-}
-
-- (void)setIntegerProperty:(NSInteger *)property fromDictionary:(NSDictionary *)dictionary key:(NSString *)key logString:(NSMutableString *)logString
-{
-    NSNumber *value = dictionary[key];
-    if (value)
+    else
     {
-        *property = value.integerValue;
-        [logString appendFormat:@"%@: %ld, ", key, (long)*property];
+        CLY_LOG_W(@"%s, Invalid type for bool key '%@', removing", __FUNCTION__, key);
+        [dictionary removeObjectForKey:key];
     }
 }
 
-- (void)setDoubleProperty:(double *)property fromDictionary:(NSDictionary *)dictionary key:(NSString *)key logString:(NSMutableString *)logString
+- (void)setIntegerProperty:(NSInteger *)property fromDictionary:(NSMutableDictionary *)dictionary key:(NSString *)key logString:(NSMutableString *)logString
 {
-    NSNumber *value = dictionary[key];
-    if (value)
+    [self setIntegerProperty:property fromDictionary:dictionary key:key minValue:1 logString:logString];
+}
+
+- (void)setIntegerProperty:(NSInteger *)property fromDictionary:(NSMutableDictionary *)dictionary key:(NSString *)key minValue:(NSInteger)minValue logString:(NSMutableString *)logString
+{
+    id value = dictionary[key];
+    if (!value)
+        return;
+
+    if ([value isKindOfClass:[NSNumber class]] && CFGetTypeID((__bridge CFTypeRef)value) != CFBooleanGetTypeID())
     {
-        *property = value.doubleValue;
-        [logString appendFormat:@"%@: %lf, ", key, (double)*property];
+        NSInteger intVal = [value integerValue];
+        if (intVal >= minValue)
+        {
+            *property = intVal;
+            [logString appendFormat:@"%@: %ld, ", key, (long)*property];
+        }
+        else
+        {
+            CLY_LOG_W(@"%s, Invalid value (%ld) for integer key '%@' (min: %ld), removing", __FUNCTION__, (long)intVal, key, (long)minValue);
+            [dictionary removeObjectForKey:key];
+        }
+    }
+    else
+    {
+        CLY_LOG_W(@"%s, Invalid type for integer key '%@', removing", __FUNCTION__, key);
+        [dictionary removeObjectForKey:key];
     }
 }
 
-- (void)populateServerConfig:(NSDictionary *)serverConfig withConfig:(CountlyConfig *)config
+- (void)setDoubleProperty:(double *)property fromDictionary:(NSMutableDictionary *)dictionary key:(NSString *)key logString:(NSMutableString *)logString
+{
+    id value = dictionary[key];
+    if (!value)
+        return;
+
+    if ([value isKindOfClass:[NSNumber class]] && CFGetTypeID((__bridge CFTypeRef)value) != CFBooleanGetTypeID())
+    {
+        double dblVal = [value doubleValue];
+        if (dblVal > 0.0 && dblVal < 1.0)
+        {
+            *property = dblVal;
+            [logString appendFormat:@"%@: %lf, ", key, (double)*property];
+        }
+        else
+        {
+            CLY_LOG_W(@"%s, Invalid value (%lf) for double key '%@', removing", __FUNCTION__, dblVal, key);
+            [dictionary removeObjectForKey:key];
+        }
+    }
+    else
+    {
+        CLY_LOG_W(@"%s, Invalid type for double key '%@', removing", __FUNCTION__, key);
+        [dictionary removeObjectForKey:key];
+    }
+}
+
+- (void)populateServerConfig:(NSMutableDictionary *)serverConfig withConfig:(CountlyConfig *)config
 {
     if(config.requestTimeoutDuration <= 0) {
         config.requestTimeoutDuration = 1;
     }
-    
+
     _requestTimeoutDuration = config.requestTimeoutDuration;
-    
+
     if (!serverConfig[kRConfig])
     {
         CLY_LOG_D(@"%s, config key is missing in the server configuration omitting", __FUNCTION__);
         return;
     }
-    
-    NSDictionary *dictionary = serverConfig[kRConfig];
-    
+
+    NSMutableDictionary *dictionary;
+    if ([serverConfig[kRConfig] isKindOfClass:[NSDictionary class]])
+    {
+        dictionary = [serverConfig[kRConfig] mutableCopy];
+    }
+    else
+    {
+        CLY_LOG_D(@"%s, config is not a dictionary, omitting", __FUNCTION__);
+        return;
+    }
+
     if (!serverConfig[kRVersion] || !serverConfig[kRTimestamp])
     {
         CLY_LOG_D(@"%s, version or timestamp is missing in the server configuration omitting", __FUNCTION__);
@@ -238,7 +337,59 @@ NSString *const kRBOMDuration = @"bom_d";
     _timestamp = [serverConfig[kRTimestamp] longLongValue];
     
     NSMutableString *logString = [NSMutableString stringWithString:@"Server Config: "];
-    
+
+    // Known keys set — used to remove unknown keys after validation
+    NSMutableSet *knownKeys = [NSMutableSet setWithArray:@[
+        kTracking,
+        kNetworking,
+        kRSessionUpdateInterval,
+        kRReqQueueSize,
+        kREventQueueSize,
+        kRCrashReporting,
+        kRSessionTracking,
+        kRLogging,
+        kRLimitKeyLength,
+        kRLimitValueSize,
+        kRLimitSegValues,
+        kRLimitBreadcrumb,
+        kRLimitTraceLine,
+        kRLimitTraceLength,
+        kRCustomEventTracking,
+        kRViewTracking,
+        kREnterContentZone,
+        kRContentZoneInterval,
+        kRConsentRequired,
+        kRDropOldRequestTime,
+        kRServerConfigUpdateInterval,
+        kRLocationTracking,
+        kRRefreshContentZone,
+        kRbackoffMechanism,
+        kRBOMAcceptedTimeout,
+        kRBOMRQPercentage,
+        kRBOMRequestAge,
+        kRBOMDuration,
+        kRUserPropertyCacheLimit,
+        kREventBlacklist,
+        kREventWhitelist,
+        kRUserPropertyBlacklist,
+        kRUserPropertyWhitelist,
+        kRSegmentationBlacklist,
+        kRSegmentationWhitelist,
+        kREventSegmentationBlacklist,
+        kREventSegmentationWhitelist,
+        kRJourneyTriggerEvents
+    ]];
+
+    // Remove unknown keys
+    for (NSString *key in dictionary.allKeys)
+    {
+        if (![knownKeys containsObject:key])
+        {
+            CLY_LOG_W(@"%s, Unknown config key '%@', removing", __FUNCTION__, key);
+            [dictionary removeObjectForKey:key];
+        }
+    }
+
     [self setBoolProperty:&_trackingEnabled fromDictionary:dictionary key:kTracking logString:logString];
     [self setBoolProperty:&_networkingEnabled fromDictionary:dictionary key:kNetworking logString:logString];
     [self setIntegerProperty:&_sessionInterval fromDictionary:dictionary key:kRSessionUpdateInterval logString:logString];
@@ -256,9 +407,9 @@ NSString *const kRBOMDuration = @"bom_d";
     [self setBoolProperty:&_customEventTrackingEnabled fromDictionary:dictionary key:kRCustomEventTracking logString:logString];
     [self setBoolProperty:&_viewTrackingEnabled fromDictionary:dictionary key:kRViewTracking logString:logString];
     [self setBoolProperty:&_enterContentZone fromDictionary:dictionary key:kREnterContentZone logString:logString];
-    [self setIntegerProperty:&_contentZoneInterval fromDictionary:dictionary key:kRContentZoneInterval logString:logString];
+    [self setIntegerProperty:&_contentZoneInterval fromDictionary:dictionary key:kRContentZoneInterval minValue:16 logString:logString];
     [self setBoolProperty:&_consentRequired fromDictionary:dictionary key:kRConsentRequired logString:logString];
-    [self setIntegerProperty:&_dropOldRequestTime fromDictionary:dictionary key:kRDropOldRequestTime logString:logString];
+    [self setIntegerProperty:&_dropOldRequestTime fromDictionary:dictionary key:kRDropOldRequestTime minValue:0 logString:logString];
     [self setIntegerProperty:&_serverConfigUpdateInterval fromDictionary:dictionary key:kRServerConfigUpdateInterval logString:logString];
     [self setBoolProperty:&_locationTracking fromDictionary:dictionary key:kRLocationTracking logString:logString];
     [self setBoolProperty:&_refreshContentZone fromDictionary:dictionary key:kRRefreshContentZone logString:logString];
@@ -267,7 +418,13 @@ NSString *const kRBOMDuration = @"bom_d";
     [self setDoubleProperty:&_bomRQPercentage fromDictionary:dictionary key:kRBOMRQPercentage logString:logString];
     [self setIntegerProperty:&_bomRequestAge fromDictionary:dictionary key:kRBOMRequestAge logString:logString];
     [self setIntegerProperty:&_bomDuration fromDictionary:dictionary key:kRBOMDuration logString:logString];
-    
+    [self setIntegerProperty:&_userPropertyCacheLimit fromDictionary:dictionary key:kRUserPropertyCacheLimit logString:logString];
+
+    [self updateListingFilters:dictionary logString:logString];
+
+    // Update the config dictionary with cleaned values
+    serverConfig[kRConfig] = dictionary;
+
     if(![logString isEqualToString: @"Server Config: "]){
         // means new config gotten, if that is the case notify SDK
         [self notifySdkConfigChange: config];
@@ -323,8 +480,16 @@ NSString *const kRBOMDuration = @"bom_d";
     config.updateSessionPeriod = _sessionInterval ?: config.updateSessionPeriod;
     _sessionInterval = config.updateSessionPeriod;
     
+    BOOL consentDidChange = !config.requiresConsent && _consentRequired;
     config.requiresConsent = _consentRequired ?: config.requiresConsent;
     CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
+    if(consentDidChange && CountlyCommon.sharedInstance.hasFinishedInit){
+        [CountlyConsentManager.sharedInstance sendConsents];
+        if (!CountlyConsentManager.sharedInstance.consentForLocation)
+        {
+            [CountlyConnectionManager.sharedInstance sendLocationInfo];
+        }
+    }
 
 #if (TARGET_OS_IOS)
     [config.content setZoneTimerInterval:_contentZoneInterval ?: config.content.getZoneTimerInterval];
@@ -359,7 +524,8 @@ NSString *const kRBOMDuration = @"bom_d";
 
     if (!_locationTracking && !CountlyLocationManager.sharedInstance.isLocationInfoDisabled)
     {
-        [CountlyLocationManager.sharedInstance disableLocationInfo];
+        [CountlyLocationManager.sharedInstance disableLocation];
+        [CountlyConnectionManager.sharedInstance sendLocationInfo];
     }
     
     if(_backoffMechanism && config.disableBackoffMechanism){
@@ -441,8 +607,8 @@ NSString *const kRBOMDuration = @"bom_d";
         {
             NSMutableDictionary *persistentBehaviorSettings = [CountlyPersistency.sharedInstance retrieveServerConfig];
             [self mergeBehaviorSettings:persistentBehaviorSettings withConfig:serverConfigResponse];
-            [CountlyPersistency.sharedInstance storeServerConfig:persistentBehaviorSettings];
             [self populateServerConfig:persistentBehaviorSettings withConfig:config];
+            [CountlyPersistency.sharedInstance storeServerConfig:persistentBehaviorSettings];
         }
     };
     // Set default values
@@ -496,6 +662,30 @@ NSString *const kRBOMDuration = @"bom_d";
     _bomRQPercentage = 0.5;
     _bomRequestAge = 24;
     _bomDuration = 60;
+
+    _eventQueueSize = 0;
+    _requestQueueSize = 0;
+    _sessionInterval = 0;
+    _limitKeyLength = 0;
+    _limitValueSize = 0;
+    _limitSegValues = 0;
+    _limitBreadcrumb = 0;
+    _limitTraceLine = 0;
+    _limitTraceLength = 0;
+    _consentRequired = NO;
+    _dropOldRequestTime = 0;
+    _contentZoneInterval = 0;
+
+    _eventFilterSet = [NSSet set];
+    _eventFilterIsWhitelist = NO;
+    _userPropertyFilterSet = [NSSet set];
+    _userPropertyFilterIsWhitelist = NO;
+    _userPropertyCacheLimit = 100;
+    _segmentationFilterSet = [NSSet set];
+    _segmentationFilterIsWhitelist = NO;
+    _eventSegmentationFilterMap = @{};
+    _eventSegmentationFilterIsWhitelist = NO;
+    _journeyTriggerEvents = [NSSet set];
 }
 
 - (void)disableSDKBehaviourSettings {
@@ -639,6 +829,197 @@ NSString *const kRBOMDuration = @"bom_d";
 - (NSInteger)requestTimeoutDuration
 {
     return _requestTimeoutDuration;
+}
+
+- (NSInteger)userPropertyCacheLimit
+{
+    return _userPropertyCacheLimit;
+}
+
+#pragma mark - Listing Filters
+
+- (void)removeConflictingFilterKeys:(NSMutableDictionary *)mergedConfig newConfig:(NSDictionary *)newConfig
+{
+    // Remove conflicting filter keys per category.
+    // Within each category, if new config provides a blacklist, remove stored whitelist (and vice versa).
+    NSArray *filterPairs = @[
+        @[kREventBlacklist, kREventWhitelist],
+        @[kRSegmentationBlacklist, kRSegmentationWhitelist],
+        @[kREventSegmentationBlacklist, kREventSegmentationWhitelist],
+        @[kRUserPropertyBlacklist, kRUserPropertyWhitelist],
+    ];
+
+    for (NSArray *pair in filterPairs)
+    {
+        NSString *blacklistKey = pair[0];
+        NSString *whitelistKey = pair[1];
+
+        // Only consider valid filter values (arrays/dicts) for conflict resolution
+        id blacklistVal = newConfig[blacklistKey];
+        id whitelistVal = newConfig[whitelistKey];
+        BOOL hasValidBlacklist = [blacklistVal isKindOfClass:NSArray.class] || [blacklistVal isKindOfClass:NSDictionary.class];
+        BOOL hasValidWhitelist = [whitelistVal isKindOfClass:NSArray.class] || [whitelistVal isKindOfClass:NSDictionary.class];
+
+        if (hasValidBlacklist)
+        {
+            [mergedConfig removeObjectForKey:whitelistKey];
+        }
+        if (hasValidWhitelist)
+        {
+            [mergedConfig removeObjectForKey:blacklistKey];
+        }
+    }
+}
+
+- (void)updateListingFilters:(NSMutableDictionary *)dictionary logString:(NSMutableString *)logString
+{
+    // Event filter (eb/ew) - blacklist takes precedence
+    NSArray *eb = dictionary[kREventBlacklist];
+    NSArray *ew = dictionary[kREventWhitelist];
+    if ([eb isKindOfClass:NSArray.class]) {
+        _eventFilterSet = [NSSet setWithArray:eb];
+        _eventFilterIsWhitelist = NO;
+        [logString appendFormat:@"%@: %@, ", kREventBlacklist, eb];
+        if (ew)
+            [dictionary removeObjectForKey:kREventWhitelist]; // blacklist takes precedence
+    } else if ([ew isKindOfClass:NSArray.class]) {
+        _eventFilterSet = [NSSet setWithArray:ew];
+        _eventFilterIsWhitelist = YES;
+        [logString appendFormat:@"%@: %@, ", kREventWhitelist, ew];
+    } else {
+        if (eb)
+            [dictionary removeObjectForKey:kREventBlacklist];
+        if (ew)
+            [dictionary removeObjectForKey:kREventWhitelist];
+    }
+
+    // User property filter (upb/upw) - blacklist takes precedence
+    NSArray *upb = dictionary[kRUserPropertyBlacklist];
+    NSArray *upw = dictionary[kRUserPropertyWhitelist];
+    if ([upb isKindOfClass:NSArray.class]) {
+        _userPropertyFilterSet = [NSSet setWithArray:upb];
+        _userPropertyFilterIsWhitelist = NO;
+        [logString appendFormat:@"%@: %@, ", kRUserPropertyBlacklist, upb];
+        if (upw)
+            [dictionary removeObjectForKey:kRUserPropertyWhitelist];
+    } else if ([upw isKindOfClass:NSArray.class]) {
+        _userPropertyFilterSet = [NSSet setWithArray:upw];
+        _userPropertyFilterIsWhitelist = YES;
+        [logString appendFormat:@"%@: %@, ", kRUserPropertyWhitelist, upw];
+    } else {
+        if (upb)
+            [dictionary removeObjectForKey:kRUserPropertyBlacklist];
+        if (upw)
+            [dictionary removeObjectForKey:kRUserPropertyWhitelist];
+    }
+
+    // Segmentation filter (sb/sw) - blacklist takes precedence
+    NSArray *sb = dictionary[kRSegmentationBlacklist];
+    NSArray *sw = dictionary[kRSegmentationWhitelist];
+    if ([sb isKindOfClass:NSArray.class]) {
+        _segmentationFilterSet = [NSSet setWithArray:sb];
+        _segmentationFilterIsWhitelist = NO;
+        [logString appendFormat:@"%@: %@, ", kRSegmentationBlacklist, sb];
+        if (sw)
+            [dictionary removeObjectForKey:kRSegmentationWhitelist];
+    } else if ([sw isKindOfClass:NSArray.class]) {
+        _segmentationFilterSet = [NSSet setWithArray:sw];
+        _segmentationFilterIsWhitelist = YES;
+        [logString appendFormat:@"%@: %@, ", kRSegmentationWhitelist, sw];
+    } else {
+        if (sb)
+            [dictionary removeObjectForKey:kRSegmentationBlacklist];
+        if (sw)
+            [dictionary removeObjectForKey:kRSegmentationWhitelist];
+    }
+
+    // Event segmentation filter (esb/esw) - blacklist takes precedence
+    NSDictionary *esb = dictionary[kREventSegmentationBlacklist];
+    NSDictionary *esw = dictionary[kREventSegmentationWhitelist];
+    if ([esb isKindOfClass:NSDictionary.class]) {
+        NSMutableDictionary *map = NSMutableDictionary.new;
+        [esb enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSArray *obj, BOOL *stop) {
+            if ([obj isKindOfClass:NSArray.class]) {
+                map[key] = [NSSet setWithArray:obj];
+            }
+        }];
+        _eventSegmentationFilterMap = map.copy;
+        _eventSegmentationFilterIsWhitelist = NO;
+        [logString appendFormat:@"%@: %@, ", kREventSegmentationBlacklist, esb];
+        if (esw)
+            [dictionary removeObjectForKey:kREventSegmentationWhitelist];
+    } else if ([esw isKindOfClass:NSDictionary.class]) {
+        NSMutableDictionary *map = NSMutableDictionary.new;
+        [esw enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSArray *obj, BOOL *stop) {
+            if ([obj isKindOfClass:NSArray.class]) {
+                map[key] = [NSSet setWithArray:obj];
+            }
+        }];
+        _eventSegmentationFilterMap = map.copy;
+        _eventSegmentationFilterIsWhitelist = YES;
+        [logString appendFormat:@"%@: %@, ", kREventSegmentationWhitelist, esw];
+    } else {
+        if (esb)
+            [dictionary removeObjectForKey:kREventSegmentationBlacklist];
+        if (esw)
+            [dictionary removeObjectForKey:kREventSegmentationWhitelist];
+    }
+
+    // Journey trigger events (jte)
+    NSArray *jte = dictionary[kRJourneyTriggerEvents];
+    if ([jte isKindOfClass:NSArray.class]) {
+        _journeyTriggerEvents = [NSSet setWithArray:jte];
+        [logString appendFormat:@"%@: %@, ", kRJourneyTriggerEvents, jte];
+    } else {
+        if (jte)
+            [dictionary removeObjectForKey:kRJourneyTriggerEvents];
+    }
+}
+
+- (BOOL)shouldRecordEvent:(NSString *)eventKey
+{
+    if (_eventFilterSet.count == 0) return YES;
+    return _eventFilterIsWhitelist == [_eventFilterSet containsObject:eventKey];
+}
+
+- (BOOL)shouldRecordUserProperty:(NSString *)propertyKey
+{
+    if (_userPropertyFilterSet.count == 0) return YES;
+    return _userPropertyFilterIsWhitelist == [_userPropertyFilterSet containsObject:propertyKey];
+}
+
+- (NSDictionary *)filterSegmentation:(NSDictionary *)segmentation eventKey:(NSString *)eventKey
+{
+    if (!segmentation) {
+        return segmentation;
+    }
+
+    BOOL hasGlobalFilter = _segmentationFilterSet.count > 0;
+    NSSet *eventFilter = _eventSegmentationFilterMap[eventKey];
+    BOOL hasEventFilter = eventFilter.count > 0;
+
+    if (!hasGlobalFilter && !hasEventFilter) {
+        return segmentation;
+    }
+
+    NSMutableDictionary *result = [segmentation mutableCopy];
+    for (NSString *key in segmentation.allKeys) {
+        if (hasGlobalFilter && _segmentationFilterIsWhitelist != [_segmentationFilterSet containsObject:key]) {
+            CLY_LOG_D(@"Filtering out segmentation key '%@' by global segmentation filter", key);
+            [result removeObjectForKey:key];
+        }
+        else if (hasEventFilter && _eventSegmentationFilterIsWhitelist != [eventFilter containsObject:key]) {
+            CLY_LOG_D(@"Filtering out segmentation key '%@' for event '%@' by event segmentation filter", key, eventKey);
+            [result removeObjectForKey:key];
+        }
+    }
+
+    return result.copy;
+}
+
+- (BOOL)isJourneyTriggerEvent:(NSString *)eventKey
+{
+    return [_journeyTriggerEvents containsObject:eventKey];
 }
 
 @end

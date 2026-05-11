@@ -29,7 +29,7 @@ NSString* const kCountlyVisibility = @"cly_v";
 #endif
 @end
 
-NSString* const kCountlySDKVersion = @"25.4.6";
+NSString* const kCountlySDKVersion = @"26.1.1";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
@@ -69,9 +69,13 @@ static dispatch_once_t onceToken;
 #if (TARGET_OS_IOS || TARGET_OS_VISION )
     [NSNotificationCenter.defaultCenter removeObserver:self name:UIDeviceOrientationDidChangeNotification object:nil];
 #endif
+    _hasStarted = false;
+    _hasFinishedInit       = false;
+    _maxKeyLength = kCountlyMaxKeyLength;
+    _maxValueLength = kCountlyMaxValueSize;
+    _maxSegmentationValues = kCountlyMaxSegmentationValues;
     onceToken = 0;
     s_sharedInstance = nil;
-    _hasStarted = false;
  }
 
 
@@ -338,13 +342,20 @@ void CountlyPrint(NSString *stringToPrint)
     }
 }
 
-- (CGSize)getWindowSize {
+#if (TARGET_OS_IOS)
+- (bool) hasTopNotch:(UIEdgeInsets)safeArea
+{
+    return safeArea.top >= 44;
+}
+#endif
+
+- (CGSize)getWindowSize{
 #if (TARGET_OS_IOS)
     UIWindow *window = nil;
     CGFloat screenScale;
 
     if (@available(iOS 13.0, *)) {
-        for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+        for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
             if ([scene isKindOfClass:[UIWindowScene class]]) {
                 window = ((UIWindowScene *)scene).windows.firstObject;
                 break;
@@ -360,26 +371,22 @@ void CountlyPrint(NSString *stringToPrint)
     
     UIEdgeInsets safeArea = UIEdgeInsetsZero;
     if (@available(iOS 11.0, *)) {
-        safeArea = window.safeAreaInsets;
-        safeArea.left /= screenScale;
-        safeArea.bottom /= screenScale;
-        safeArea.right /= screenScale;
-    }
-    
-    UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
-    BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
-    
-    CGSize size = CGSizeMake(window.bounds.size.width, window.bounds.size.height);
-    
-    if(!isLandscape){
-        size.width -= safeArea.left + safeArea.right;
-        size.height -= safeArea.top + safeArea.bottom;
+        UIEdgeInsets safeArea = window.safeAreaInsets;
+        if([self hasTopNotch:safeArea] || CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA){
+            size.height -= (safeArea.top); // always respect notch
+        }
+        if(CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption == SAFE_AREA){
+            size.height -= safeArea.bottom;
+        }
+        size.width -= MAX(safeArea.left, safeArea.right); // regardles of given safe area, act for cutout
     }
 
     return size;
-#endif
+#else
     return CGSizeZero;
+#endif
 }
+
 
 @end
 

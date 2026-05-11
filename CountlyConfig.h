@@ -693,6 +693,11 @@ typedef enum : NSUInteger
  */
 @property (nonatomic) BOOL disableBackoffMechanism;
 
+/**
+ * Disable view restarting for manual view recording
+ */
+@property(nonatomic) BOOL disableViewRestartForManualRecording;
+
 #if (TARGET_OS_IOS)
 /**
  * Variable to access content configurations.

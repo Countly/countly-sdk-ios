@@ -1,5 +1,46 @@
 ## XX.XX.XX
 * Updated resolution extraction to accommodate iOS 26 deprecations.
+
+* Mitigated a race condition in the request queue that could drop or duplicate requests.
+* Mitigated an issue where server config defaults overrode user-provided SDK limits.
+* Mitigated an issue where invalid or unknown `sdkBehaviorSettings` keys were persisted.
+* Mitigated an issue where listing-filter conflicts cleared keys across unrelated categories.
+* Mitigated an issue where consent could be sent twice during initialization.
+
+## 26.1.1
+* Added POST method support for contents. 
+* Added robust resource loading checks before displaying content
+* Added Content feature method `previewContent:(NSString *)contentId` (Experimental!).
+* Improved refreshing contents.
+
+## 26.1.0
+* Added server-side listing filters support for controlling what data gets recorded:
+  * Event filters (blacklist/whitelist) to control which events are recorded
+  * User property filters (blacklist/whitelist) to control which user properties are recorded
+  * Custom event segmentation filters to control which segmentation keys are recorded across all events
+  * Custom event-specific segmentation filters to control segmentation keys per custom event
+  * User property cache limit to limit the number of user properties recorded per request
+* Added journey trigger events that automatically refresh content zones when journey trigger events are recorded
+* Improved feedbacks response validation.
+* Improved consent requirements and location info management when they updated from server configuration.
+
+* Mitigated an issue about early health check requests in temporary ID mode.
+
+## 25.4.10
+* Mitigated an issue when returning from the external content link.
+
+## 25.4.9
+* Added a new config option disableViewRestartForManualRecording to disable auto close/restart behavior of manual views on app background/foreground actions.
+* Added a new config option "setWebviewDisplayOption: WebViewDisplayOption" to control how Content and Feedback Widgets are presented.
+  * IMMERSIVE mode (default): Full-screen display (except cutouts).
+  * SAFE_AREA mode: Omits status bar, navigation bar and cutouts when displaying WebView.
+
+* Mitigated an issue where multiple contents could have been displayed in parallel.
+
+## 25.4.8
+* Mitigated an issue where "giveAllConsent" did not include metrics consent.
+
+## 25.4.7
 * Added a new function "addCustomNetworkRequestHeaders: customHeaderValues" for providing or overriding custom headers after init.
 * Updated user properties caching mechanism according to sessions.
 
