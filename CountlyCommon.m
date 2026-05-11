@@ -344,12 +344,17 @@ void CountlyPrint(NSString *stringToPrint)
 
 - (NSURLSession *)ImmediateURLSession
 {
-    NSURLSessionConfiguration *immediateConfig = [NSURLSessionConfiguration defaultSessionConfiguration];
-    if (CountlyConnectionManager.sharedInstance.URLSessionConfiguration)
-    {
-        immediateConfig.HTTPAdditionalHeaders = CountlyConnectionManager.sharedInstance.URLSessionConfiguration.HTTPAdditionalHeaders;
-    }
-   
+    // Base on the user-provided URLSessionConfiguration so that things like
+    // protocolClasses (test mocks), cookie policy, etc. are preserved.
+    // If none was provided, fall back to default session configuration.
+    NSURLSessionConfiguration *userConfig = CountlyConnectionManager.sharedInstance.URLSessionConfiguration;
+    NSURLSessionConfiguration *immediateConfig = userConfig ? [userConfig copy] : [NSURLSessionConfiguration defaultSessionConfiguration];
+
+    // Immediate requests must not be constrained by the SDK's configured
+    // request timeout — reset to the system defaults.
+    immediateConfig.timeoutIntervalForRequest = 60;
+    immediateConfig.timeoutIntervalForResource = 7 * 24 * 60 * 60;
+
     return [NSURLSession sessionWithConfiguration:immediateConfig];
 }
 
