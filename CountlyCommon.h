@@ -126,6 +126,8 @@ void CountlyPrint(NSString *stringToPrint);
 
 - (NSURLSession *)URLSession;
 
+- (NSURLSession *)ImmediateURLSession;
+
 - (CGSize)getWindowSize;
 @end
 
