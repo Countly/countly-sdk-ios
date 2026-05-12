@@ -261,11 +261,29 @@ static dispatch_once_t onceToken;
 
 + (NSString *)resolution
 {
-    CGRect bounds;
-    CGFloat scale;
+    CGRect bounds = CGRectZero;
+    CGFloat scale = 0;
 #if (TARGET_OS_IOS || TARGET_OS_TV)
-    bounds = UIScreen.mainScreen.bounds;
-    scale = UIScreen.mainScreen.scale;
+    UIWindow *window = nil;
+#if (TARGET_OS_IOS)
+    if (@available(iOS 13.0, *)) {
+#elif (TARGET_OS_TV)
+    if (@available(tvOS 13.0, *)) {
+#endif
+        for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
+            if ([scene isKindOfClass:[UIWindowScene class]]) {
+                window = ((UIWindowScene *)scene).windows.firstObject;
+                break;
+            }
+        }
+        if(window){
+            bounds = window.bounds;
+            scale = window.traitCollection.displayScale;
+        }
+    } else {
+        bounds = UIScreen.mainScreen.bounds;
+        scale = UIScreen.mainScreen.scale;
+    }
 #elif (TARGET_OS_WATCH)
     bounds = WKInterfaceDevice.currentDevice.screenBounds;
     scale = WKInterfaceDevice.currentDevice.screenScale;
@@ -519,3 +537,4 @@ static dispatch_once_t onceToken;
 }
 
 @end
+

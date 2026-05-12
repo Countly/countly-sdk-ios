@@ -377,7 +377,7 @@ void CountlyPrint(NSString *stringToPrint)
             }
         }
     } else {
-        window = UIApplication.sharedApplication.delegate.window;
+        window = [[UIApplication sharedApplication].delegate window];
     }
 
     if (!window) return CGSizeZero;
