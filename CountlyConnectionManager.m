@@ -370,7 +370,6 @@ static dispatch_once_t onceToken;
     self.connection = [self.URLSession dataTaskWithRequest:request completionHandler:^(NSData * data, NSURLResponse * response, NSError * error)
     {
         self.connection = nil;
-        atomic_store(&self->_isProcessingQueue, NO);
         NSDate *endTimeRequest = [NSDate date];
         long duration = (long)[endTimeRequest timeIntervalSinceDate:startTimeRequest];
         
@@ -402,6 +401,11 @@ static dispatch_once_t onceToken;
 
                 [CountlyPersistency.sharedInstance saveToFile];
 
+                // Clear the processing flag only after the head has been removed
+                // from the queue. Clearing it earlier would let a concurrent
+                // proceedOnQueue caller re-send the same head request.
+                atomic_store(&self->_isProcessingQueue, NO);
+
                 if(CountlyServerConfig.sharedInstance.backoffMechanism && [self backoff:duration queryString:queryString]){
                     CLY_LOG_D(@"%s, backed off dropping proceeding the queue", __FUNCTION__);
                     self.startTime = nil;
@@ -431,6 +435,7 @@ static dispatch_once_t onceToken;
                 [CountlyHealthTracker.sharedInstance logFailedNetworkRequestWithStatusCode:((NSHTTPURLResponse*)response).statusCode errorResponse: [data cly_stringUTF8]];
                 [CountlyHealthTracker.sharedInstance saveState];
                 self.startTime = nil;
+                atomic_store(&self->_isProcessingQueue, NO);
             }
         }
         else
@@ -452,6 +457,7 @@ static dispatch_once_t onceToken;
             [CountlyPersistency.sharedInstance saveToFile];
 #endif
             self.startTime = nil;
+            atomic_store(&self->_isProcessingQueue, NO);
         }
     }];
 

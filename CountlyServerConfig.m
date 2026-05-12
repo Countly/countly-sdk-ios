@@ -612,7 +612,8 @@ static dispatch_once_t onceToken;
         }
     };
     // Set default values
-    NSURLSessionTask *task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self serverConfigRequest] completionHandler:handler];
+    NSURLSessionTask *task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:[self serverConfigRequest] completionHandler:handler];
+    // IMMEDIATE REQUEST to find them better in search
     [task resume];
 }
 
