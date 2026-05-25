@@ -87,6 +87,7 @@ NSString* const kCountlyPNKeyActionButtonURL    = @"l";
 
     [[NSURLSession.sharedSession downloadTaskWithURL:[NSURL URLWithString:attachmentURL] completionHandler:^(NSURL * location, NSURLResponse * response, NSError * error)
     {
+        // IMMEDIATE REQUEST to find them better in search, but uses NSURLSession.sharedSession as it should not be blocked by SDK configurations
         if (!error)
         {
             COUNTLY_EXT_LOG(@"Attachment download completed!");

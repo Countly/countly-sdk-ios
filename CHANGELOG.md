@@ -9,8 +9,11 @@
 * Added `providedUserProperties` to `CountlyConfig` to set initial user properties that are applied and saved automatically right after `start`.
 * Added `setMaxValueSizePicture:` to `CountlySDKLimitsConfig` to control the maximum size of picture URLs and picture paths independently of other value limits (default 4096).
 * Improved `$push` / `$pull` / `$addToSet` wire format: values are now always sent as arrays so multiple consecutive calls on the same key accumulate correctly.
+* Updated resolution extraction to accommodate iOS 26 deprecations.
 
 * Mitigated a race condition in the request queue that could drop or duplicate requests.
+* Mitigated an issue where non-queued requests were affected from request timeout settings.
+* Mitigated a race condition for tests in the request queue that could drop or duplicate requests.
 * Mitigated an issue where server config defaults overrode user-provided SDK limits.
 * Mitigated an issue where invalid or unknown `sdkBehaviorSettings` keys were persisted.
 * Mitigated an issue where listing-filter conflicts cleared keys across unrelated categories.
