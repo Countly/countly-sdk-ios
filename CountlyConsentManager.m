@@ -273,7 +273,7 @@ static dispatch_once_t onceToken;
     {
         CLY_LOG_D(@"Consent for Session is given.");
 
-        if (!CountlyCommon.sharedInstance.manualSessionHandling)
+        if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
             [CountlyConnectionManager.sharedInstance beginSession];
     }
     else

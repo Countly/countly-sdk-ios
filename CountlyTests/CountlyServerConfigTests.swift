@@ -1512,6 +1512,267 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
 
     // MARK: - All Features with Listing Filters
 
+    // MARK: - Automatic Tracking Flags (ast / avt / acr) and Journey Trigger Views (jtv)
+
+    /**
+     * Tests that the automatic tracking flags are seeded from the developer config when the server is silent.
+     * Verifies for each developer config fixture that:
+     * 1. The resolved ast/avt/acr values equal the developer's choices (drop-in behavior)
+     * 2. A begin_session request is sent automatically only when ast resolves to true
+     */
+    func test_automaticTrackingFlags_seededFromDeveloperConfig() {
+        // (manualSessionHandling, enableAutomaticViewTracking, crashFeature, expected ast, expected avt, expected acr)
+        let fixtures: [(Bool, Bool, Bool, Bool, Bool, Bool)] = [
+            (false, false, false, true, false, false),
+            (true, true, true, false, true, true),
+        ]
+
+        for (manualSessions, autoViews, crashFeature, ast, avt, acr) in fixtures {
+            let reason = "fixture: manualSessions=\(manualSessions), autoViews=\(autoViews), crashFeature=\(crashFeature)"
+            let config = TestUtils.createBaseConfig()
+            config.manualSessionHandling = manualSessions
+            config.enableAutomaticViewTracking = autoViews
+            config.features = crashFeature ? [CLYFeature.crashReporting] : []
+
+            Countly.sharedInstance().start(with: config)
+
+            XCTAssertEqual(ast, CountlyServerConfig.sharedInstance()?.automaticSessionTrackingEnabled(), reason)
+            XCTAssertEqual(avt, CountlyServerConfig.sharedInstance()?.automaticViewTrackingEnabled(), reason)
+            XCTAssertEqual(acr, CountlyServerConfig.sharedInstance()?.automaticCrashReportingEnabled(), reason)
+
+            let beginSessionCount = TestUtils.getCurrentRQ()?.filter { $0.contains("begin_session") }.count ?? 0
+            XCTAssertEqual(ast ? 1 : 0, beginSessionCount, reason)
+
+            TestUtils.cleanup()
+        }
+    }
+
+    /**
+     * Tests that the server can force automatic session tracking on an app using manual session control.
+     * Verifies that:
+     * 1. A begin_session request is sent automatically at init despite manualSessionHandling
+     * 2. The manual session API is ignored while automatic session tracking is active
+     */
+    func test_ast_serverOverridesManualSessionControl() {
+        setServerConfig(ServerConfigBuilder().automaticSessionTracking(true).buildJson())
+        let config = TestUtils.createBaseConfig()
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+
+        XCTAssertEqual(true, CountlyServerConfig.sharedInstance()?.automaticSessionTrackingEnabled())
+        XCTAssertTrue(TestUtils.getCurrentRQ()![0].contains("begin_session"), "automatic begin_session expected at init")
+
+        // Manual session API must be ignored while automatic session tracking is active
+        Countly.sharedInstance().updateSession()
+        Countly.sharedInstance().endSession()
+        Countly.sharedInstance().beginSession()
+
+        let rq = TestUtils.getCurrentRQ()!
+        XCTAssertEqual(1, rq.filter { $0.contains("begin_session") }.count)
+        XCTAssertEqual(0, rq.filter { $0.contains("end_session") }.count)
+        XCTAssertEqual(0, rq.filter { $0.contains("session_duration") }.count)
+    }
+
+    /**
+     * Tests that the server can disable automatic session tracking on an app using automatic sessions.
+     * Verifies that:
+     * 1. No begin_session request is sent at init
+     * 2. The manual session API becomes functional
+     */
+    func test_ast_serverDisablesAutomaticSessions() {
+        setServerConfig(ServerConfigBuilder().automaticSessionTracking(false).buildJson())
+        let config = TestUtils.createBaseConfig()
+        Countly.sharedInstance().start(with: config)
+
+        XCTAssertEqual(false, CountlyServerConfig.sharedInstance()?.automaticSessionTrackingEnabled())
+        XCTAssertEqual(0, TestUtils.getCurrentRQ()?.filter { $0.contains("begin_session") }.count)
+
+        Countly.sharedInstance().beginSession()
+        Countly.sharedInstance().endSession()
+
+        let rq = TestUtils.getCurrentRQ()!
+        XCTAssertEqual(1, rq.filter { $0.contains("begin_session") }.count, "manual beginSession should work when ast is false")
+        XCTAssertEqual(1, rq.filter { $0.contains("end_session") }.count, "manual endSession should work when ast is false")
+    }
+
+    /**
+     * Tests that the server can force-enable automatic view tracking when the developer did not opt in.
+     */
+    func test_avt_serverForceEnables() {
+        setServerConfig(ServerConfigBuilder().automaticViewTracking(true).buildJson())
+        let config = TestUtils.createBaseConfig()
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+
+        XCTAssertEqual(true, CountlyServerConfig.sharedInstance()?.automaticViewTrackingEnabled())
+        XCTAssertTrue(CountlyViewTrackingInternal.sharedInstance().isAutoViewTrackingActive,
+                      "automatic view tracking should be force-enabled by the server")
+    }
+
+    /**
+     * Tests that the server can disable automatic view tracking enabled by the developer,
+     * while manual view recording keeps working.
+     */
+    func test_avt_serverForceDisables() {
+        setServerConfig(ServerConfigBuilder().automaticViewTracking(false).buildJson())
+        let config = TestUtils.createBaseConfig()
+        config.manualSessionHandling = true
+        config.enableAutomaticViewTracking = true
+        Countly.sharedInstance().start(with: config)
+
+        XCTAssertEqual(false, CountlyServerConfig.sharedInstance()?.automaticViewTrackingEnabled())
+        XCTAssertFalse(CountlyViewTrackingInternal.sharedInstance().isAutoViewTrackingActive,
+                       "automatic view tracking should stay off when the server disables avt")
+
+        // Manual view recording is governed by 'vt' (true by default), not 'avt'
+        Countly.sharedInstance().views().startView("manual_view")
+        let eq = TestUtils.getCurrentEQ()!
+        let viewEvent = eq.first { $0.key == "[CLY]_view" }
+        XCTAssertNotNil(viewEvent, "manual startView should still record when avt is false")
+        XCTAssertEqual("manual_view", viewEvent?.segmentation["name"] as? String)
+    }
+
+    /**
+     * Tests that the server can disable automatic crash reporting enabled by the developer.
+     * Verifies that:
+     * 1. The uncaught exception handler is not installed
+     * 2. Manually recorded exceptions still produce a crash request (governed by 'crt' only)
+     */
+    func test_acr_serverDisablesAutomaticCrashReporting() {
+        NSSetUncaughtExceptionHandler(nil)
+        setServerConfig(ServerConfigBuilder().automaticCrashReporting(false).buildJson())
+        let config = TestUtils.createBaseConfig()
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+
+        XCTAssertEqual(false, CountlyServerConfig.sharedInstance()?.automaticCrashReportingEnabled())
+        XCTAssertNil(NSGetUncaughtExceptionHandler(), "uncaught exception handler should not be installed when acr is false")
+
+        Countly.sharedInstance().record(NSException(name: NSExceptionName("TestException"), reason: "test", userInfo: nil))
+        let crashRequests = TestUtils.getCurrentRQ()!.filter { $0.contains("crash=") }
+        XCTAssertEqual(1, crashRequests.count, "manually recorded exceptions stay governed by crt only")
+    }
+
+    /**
+     * Tests that the server can force-enable automatic crash reporting when the developer did not opt in.
+     */
+    func test_acr_serverForceEnables() {
+        NSSetUncaughtExceptionHandler(nil)
+        setServerConfig(ServerConfigBuilder().automaticCrashReporting(true).buildJson())
+        let config = TestUtils.createBaseConfig()
+        config.manualSessionHandling = true
+        config.features = []
+        Countly.sharedInstance().start(with: config)
+
+        XCTAssertEqual(true, CountlyServerConfig.sharedInstance()?.automaticCrashReportingEnabled())
+        XCTAssertNotNil(NSGetUncaughtExceptionHandler(), "uncaught exception handler should be installed when the server enables acr")
+    }
+
+    /**
+     * Tests that recording a view whose name is a journey trigger view force-flushes the event queue.
+     * Verifies that:
+     * 1. Regular events and non-matching views stay in the event queue (high threshold)
+     * 2. A matching view flushes all queued events to the request queue with a callback_id
+     */
+    func test_jtv_triggersEventFlushForMatchingView() {
+        setServerConfig(ServerConfigBuilder()
+            .journeyTriggerViews(["jtv_view"])
+            .eventQueueSize(100)
+            .buildJson())
+        let config = TestUtils.createBaseConfig()
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+
+        XCTAssertTrue(CountlyServerConfig.sharedInstance()!.isJourneyTriggerView("jtv_view"))
+        XCTAssertFalse(CountlyServerConfig.sharedInstance()!.isJourneyTriggerView("other_view"))
+
+        Countly.sharedInstance().recordEvent("regular_event")
+        Countly.sharedInstance().views().startView("other_view")
+        XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count, "non-matching views should not flush the event queue")
+        XCTAssertEqual(2, TestUtils.getCurrentEQ()?.count)
+
+        Countly.sharedInstance().views().startView("jtv_view")
+        XCTAssertEqual(1, TestUtils.getCurrentRQ()?.count, "a journey trigger view should flush the event queue")
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
+
+        let request = TestUtils.getCurrentRQ()![0]
+        XCTAssertTrue(request.contains("regular_event"))
+        XCTAssertTrue(request.contains("other_view"))
+        XCTAssertTrue(request.contains("jtv_view"))
+        XCTAssertTrue(request.contains("callback_id"))
+    }
+
+    /**
+     * Tests that the four new keys are parsed from a provided configuration and that
+     * an invalid jtv type is ignored, keeping the default empty set.
+     */
+    func test_automaticTrackingFlags_providedValuesAndInvalidJtv() {
+        let builder = ServerConfigBuilder()
+            .automaticSessionTracking(false)
+            .automaticViewTracking(true)
+            .automaticCrashReporting(true)
+            .journeyTriggerViews(["jtv_view_a", "jtv_view_b"])
+        setServerConfig(builder.buildJson())
+
+        let config = TestUtils.createBaseConfig()
+        config.manualSessionHandling = false
+        Countly.sharedInstance().start(with: config)
+
+        TestUtils.sleep(1) {
+            builder.validateAgainst()
+        }
+
+        TestUtils.cleanup()
+
+        // Invalid jtv type (dictionary instead of array) is ignored; the default empty set is kept
+        let invalidConfig: [String: Any] = [
+            "v": 1,
+            "t": Int(Date().timeIntervalSince1970),
+            "c": ["jtv": ["not": "an array"]]
+        ]
+        setServerConfig(invalidConfig)
+        let config2 = TestUtils.createBaseConfig()
+        config2.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config2)
+
+        XCTAssertFalse(CountlyServerConfig.sharedInstance()!.isJourneyTriggerView("not"))
+        XCTAssertFalse(CountlyServerConfig.sharedInstance()!.isJourneyTriggerView("jtv_view_a"))
+    }
+
+    /**
+     * Tests that a server response received at runtime updates the resolved automatic tracking values.
+     * Verifies that:
+     * 1. ast/avt/acr flip to the server values after the fetch
+     * 2. Automatic view tracking starts reactively
+     * 3. The uncaught exception handler installs reactively
+     */
+    func test_automaticTrackingFlags_runtimeChangeFromServer() {
+        NSSetUncaughtExceptionHandler(nil)
+        let serverConfig = ServerConfigBuilder()
+            .automaticSessionTracking(false)
+            .automaticViewTracking(true)
+            .automaticCrashReporting(true)
+            .build()
+
+        let config = TestUtils.createBaseConfig()
+        config.features = []
+        config.urlSessionConfiguration = createUrlSessionConfigForResponse(serverConfig)
+        Countly.sharedInstance().start(with: config)
+
+        // Seeded values before the fetch lands are the developer's: ast true, avt false, acr false.
+        // After the mocked fetch they must flip to the server values.
+        TestUtils.sleep(2) {
+            XCTAssertEqual(false, CountlyServerConfig.sharedInstance()?.automaticSessionTrackingEnabled())
+            XCTAssertEqual(true, CountlyServerConfig.sharedInstance()?.automaticViewTrackingEnabled())
+            XCTAssertEqual(true, CountlyServerConfig.sharedInstance()?.automaticCrashReportingEnabled())
+
+            XCTAssertTrue(CountlyViewTrackingInternal.sharedInstance().isAutoViewTrackingActive,
+                          "automatic view tracking should start reactively on a runtime avt enable")
+            XCTAssertNotNil(NSGetUncaughtExceptionHandler(),
+                            "crash handler should install reactively on a runtime acr enable")
+        }
+    }
+
     /**
      * Tests all features work correctly with event blacklist applied.
      * Sessions, views, crashes, etc. should still work while custom events are filtered.

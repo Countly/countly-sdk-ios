@@ -1,4 +1,5 @@
 ## XX.XX.XX
+* Added support for SDK behavior settings that control the SDK's automatic session tracking, automatic view tracking, automatic crash reporting, and Journey Trigger Views.
 * Updated resolution extraction to accommodate iOS 26 deprecations.
 
 * Mitigated an issue where non-queued requests were affected from request timeout settings.
