@@ -83,7 +83,7 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
 
     if (self.birthYear) {
         if ([self.birthYear isKindOfClass:NSNumber.class] && ((NSNumber *)self.birthYear).integerValue < 0) {
-            // Negative byear means "clear on server"
+            // Negative byear is sent as null on the wire (Android behavior).
             userDictionary[kCountlyUDKeyBirthyear] = NSNull.null;
         } else {
             userDictionary[kCountlyUDKeyBirthyear] = self.birthYear;
@@ -445,8 +445,8 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
         for (NSUInteger i = 0; i < kCountlyUDNamedFieldsCount; i++) {
             if ([kCountlyUDNamedFields[i] isEqualToString:key]) {
                 isNamed = YES;
-                [self assignNamedField:key value:value];
-                anyChange = YES;
+                if ([self assignNamedField:key value:value])
+                    anyChange = YES;
                 break;
             }
         }
@@ -485,17 +485,17 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
     }
 
     NSString *str = (NSString *)field;
-    if (str.length == 0) {
-        // Empty string means "clear on server"
-        userDictionary[key] = NSNull.null;
-        return;
-    }
-
+    // Empty strings are sent to the server as-is: the server clears a field
+    // on "" but ignores null, so converting "" to null (Android behavior)
+    // would defeat the clear.
     userDictionary[key] = isPicture ? [str cly_truncatedPictureValue:explanation]
                                     : [str cly_truncatedValue:explanation];
 }
 
-- (void)assignNamedField:(NSString *)key value:(id)value {
+// Returns YES when the field was actually assigned, NO when the value was
+// rejected — so the caller only marks a change (and flushes events) for
+// values that will end up in the next user-details request.
+- (BOOL)assignNamedField:(NSString *)key value:(id)value {
     BOOL isNull = (value == [NSNull null]);
     id stringOrNull = isNull ? NSNull.null : [value description];
 
@@ -529,18 +529,28 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
     } else if ([key isEqualToString:kCountlyUDKeyBirthyear]) {
         if (isNull) {
             self.birthYear = NSNull.null;
-        } else if ([value isKindOfClass:[NSNumber class]]) {
-            self.birthYear = (NSNumber *)value;
-        } else if ([value isKindOfClass:[NSString class]]) {
-            NSNumberFormatter *formatter = [NSNumberFormatter new];
-            NSNumber *parsed = [formatter numberFromString:(NSString *)value];
-            if (parsed) {
-                self.birthYear = parsed;
+        } else {
+            NSNumber *parsed = nil;
+            if ([value isKindOfClass:[NSNumber class]]) {
+                parsed = (NSNumber *)value;
+            } else if ([value isKindOfClass:[NSString class]]) {
+                NSNumberFormatter *formatter = [NSNumberFormatter new];
+                parsed = [formatter numberFromString:(NSString *)value];
+                if (!parsed) {
+                    CLY_LOG_W(@"%s incorrect byear number format: %@", __FUNCTION__, value);
+                    return NO;
+                }
             } else {
-                CLY_LOG_W(@"%s incorrect byear number format: %@", __FUNCTION__, value);
+                return NO;
             }
+
+            self.birthYear = parsed;
         }
+    } else {
+        return NO;
     }
+
+    return YES;
 }
 
 - (void)filterAndLimitUserProperties:(NSMutableDictionary *)properties

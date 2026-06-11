@@ -789,9 +789,10 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
 
     // MARK: - iOS-specific Android-parity tests (gaps B, C, A, F, E)
 
-    /// Gap B parity: empty string for a named string field serializes as null
-    /// (clear-on-server semantics).
-    func test_emptyStringForNamedField_serializesAsNull() {
+    /// Gap B: empty string for a named string field is sent to the server
+    /// as-is — the server clears a field on "" but ignores null, so the
+    /// Android-style "" → null conversion would defeat the clear.
+    func test_emptyStringForNamedField_isSentAsIs() {
         let config = createBaseConfig()
         config.requiresConsent = false
         config.manualSessionHandling = true
@@ -814,29 +815,43 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
             XCTFail("user_details missing"); return
         }
 
-        // After serialization, name was empty string — should be NSNull (clear).
-        XCTAssertTrue(userDetails["name"] is NSNull,
-                      "Empty string should serialize as null. Got: \(String(describing: userDetails["name"]))")
+        // The empty string must survive serialization untouched (clear-on-server).
+        XCTAssertEqual("", userDetails["name"] as? String,
+                       "Empty string should be sent as-is. Got: \(String(describing: userDetails["name"]))")
     }
 
-    /// Gap C parity: negative byear serializes as null (clear-on-server).
+    /// Gap C parity: a negative byear is accepted and serialized as null on
+    /// the wire (Android behavior). It counts as a property change, so it
+    /// flushes pending events and dirties the cache like any other value.
     func test_negativeBirthYear_serializesAsNull() {
+        purgePersistedState()
+
         let config = createBaseConfig()
         config.requiresConsent = false
         config.manualSessionHandling = true
         Countly.sharedInstance().start(with: config)
 
+        // A negative byear is a real property change: pending events flush.
+        Countly.sharedInstance().recordEvent("pendingEvent")
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count ?? -1)
+        XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count ?? -1)
+
         Countly.user().setProperty("byear", value: -1)
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count ?? -1,
+                       "byear change should flush pending events")
+        XCTAssertEqual(1, TestUtils.getCurrentRQ()?.count ?? -1)
+
         Countly.user().save()
+        XCTAssertEqual(2, TestUtils.getCurrentRQ()?.count ?? -1)
 
-        guard let rq = TestUtils.getCurrentRQ(),
-              let request = rq.first(where: { $0.contains("user_details=") }) else {
-            XCTFail("No user_details request"); return
+        guard let rq = TestUtils.getCurrentRQ(), rq.count == 2 else {
+            XCTFail("Expected exactly 2 requests, got: \(TestUtils.getCurrentRQ() ?? [])"); return
         }
+        validateEvents(request: rq[0], keysToCheck: ["pendingEvent"])
 
-        let parsed = TestUtils.parseQueryString(request)
+        let parsed = TestUtils.parseQueryString(rq[1])
         guard let userDetails = parsed["user_details"] as? [String: Any] else {
-            XCTFail("user_details missing"); return
+            XCTFail("user_details missing in request: \(rq[1])"); return
         }
         XCTAssertTrue(userDetails["byear"] is NSNull,
                       "Negative byear should serialize as null. Got: \(String(describing: userDetails["byear"]))")
