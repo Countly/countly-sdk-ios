@@ -2,7 +2,6 @@
 * Added a new user properties functions on `CountlyUserDetails`:
   * `setProperty:value:` for setting a single predefined or custom user property.
   * `setProperties:` for setting multiple predefined and custom properties in one call.
-  * `clear` to drop queued user property changes without sending them to the server.
   * Empty-string-as-clear semantics for predefined string fields (`name`, `username`, `email`, `organization`, `phone`, `gender`, `picture`, `picturePath`) — passing `@""` sends `null` to the server to clear the field.
   * Negative-value-as-clear semantics for `byear` — passing a negative `NSNumber` sends `null` to clear the field.
   * Pending events are flushed before the next user details request when a user property changes via this new functions, so they reach the server in the right order.

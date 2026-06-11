@@ -864,30 +864,79 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
     }
 
     /// Gap E parity: changing a user property triggers an event-queue flush
-    /// (Android `onUserPropertiesChanged`). When events are pending and a
-    /// property change occurs, the events get drained into the request queue.
+    /// (Android `onUserPropertiesChanged`). Walks through an interleaved
+    /// set-property / record-event sequence and validates EQ and RQ sizes
+    /// after every single call, then the exact request order and contents.
     func test_propertyChange_flushesPendingEvents() {
+        purgePersistedState()
+
         let config = createBaseConfig()
         config.requiresConsent = false
         config.manualSessionHandling = true
         Countly.sharedInstance().start(with: config)
 
+        // Clean start: nothing queued anywhere.
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count ?? -1)
+        XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count ?? -1)
+
+        // Events recorded with a clean property cache stay in the EQ.
         Countly.sharedInstance().recordEvent("eventA")
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count ?? -1)
+        XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count ?? -1)
+
         Countly.sharedInstance().recordEvent("eventB")
+        XCTAssertEqual(2, TestUtils.getCurrentEQ()?.count ?? -1)
+        XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count ?? -1)
 
-        // Before the property change, events sit in the event queue.
-        XCTAssertEqual(2, TestUtils.getCurrentEQ()?.count ?? 0)
-
+        // Property change drains the EQ into a single events request; the
+        // property itself only goes into the cache (no user_details yet).
         Countly.user().setProperty("level", value: 42)
-
-        // After the property change, the event queue should be drained.
-        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count ?? 0,
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count ?? -1,
                        "Auto-flush should drain the event queue when a user property changes")
+        XCTAssertEqual(1, TestUtils.getCurrentRQ()?.count ?? -1,
+                       "Drained events should land in the RQ as one events request")
+
+        // Recording an event with a dirty property cache saves the cache
+        // first (user_details request), then queues the event in the EQ.
+        Countly.sharedInstance().recordEvent("eventC")
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count ?? -1)
+        XCTAssertEqual(2, TestUtils.getCurrentRQ()?.count ?? -1,
+                       "Recording an event with pending property changes should enqueue a user_details request first")
+
+        // Second property change flushes eventC the same way.
+        Countly.user().setProperty("level", value: 43)
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count ?? -1)
+        XCTAssertEqual(3, TestUtils.getCurrentRQ()?.count ?? -1)
+
+        // Explicit save drains the cache into a final user_details request.
+        Countly.user().save()
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count ?? -1)
+        XCTAssertEqual(4, TestUtils.getCurrentRQ()?.count ?? -1)
+
+        // Saving again with a clean cache must not enqueue anything.
+        Countly.user().save()
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count ?? -1)
+        XCTAssertEqual(4, TestUtils.getCurrentRQ()?.count ?? -1,
+                       "save() with no unsynced changes should be a no-op")
+
+        // Strict order: events always precede the user_details request that
+        // carries the property state they were recorded under.
+        guard let rq = TestUtils.getCurrentRQ(), rq.count == 4 else {
+            XCTFail("Expected exactly 4 requests, got: \(TestUtils.getCurrentRQ() ?? [])"); return
+        }
+        validateEvents(request: rq[0], keysToCheck: ["eventA", "eventB"])
+        assertOnlyCustomProperty(rq[1], key: "level", expected: 42)
+        validateEvents(request: rq[2], keysToCheck: ["eventC"])
+        assertOnlyCustomProperty(rq[3], key: "level", expected: 43)
     }
 
     /// Gap D parity: `providedUserProperties` from CountlyConfig is applied
-    /// at SDK start and saved automatically.
+    /// at SDK start and saved automatically, leaving a clean property cache.
+    /// Then interleaves event recording and a property overwrite, validating
+    /// EQ and RQ sizes after every call plus exact request order and contents.
     func test_providedUserPropertiesAtInit_appliedAndSaved() {
+        purgePersistedState()
+
         let config = createBaseConfig()
         config.requiresConsent = false
         config.manualSessionHandling = true
@@ -897,18 +946,82 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         ]
         Countly.sharedInstance().start(with: config)
 
-        guard let rq = TestUtils.getCurrentRQ(),
-              let request = rq.first(where: { $0.contains("user_details=") }) else {
-            XCTFail("Expected a user_details request from providedUserProperties"); return
+        // Init properties are saved automatically at start: exactly one
+        // user_details request, empty EQ, no leftover cache.
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count ?? -1)
+        XCTAssertEqual(1, TestUtils.getCurrentRQ()?.count ?? -1,
+                       "providedUserProperties should produce exactly one user_details request at init")
+
+        // Cache was cleared by the init save: this event must stay in the
+        // EQ without triggering another user_details request.
+        Countly.sharedInstance().recordEvent("postInitEvent")
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count ?? -1)
+        XCTAssertEqual(1, TestUtils.getCurrentRQ()?.count ?? -1,
+                       "Recording an event after the init save should not enqueue a new user_details request")
+
+        // Overwriting an init property flushes the pending event into the
+        // RQ; the new value only goes into the cache.
+        Countly.user().setProperty("favorite_color", value: "red")
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count ?? -1,
+                       "Property change should drain the pending event")
+        XCTAssertEqual(2, TestUtils.getCurrentRQ()?.count ?? -1)
+
+        // Recording another event saves the dirty cache first, then queues
+        // the event.
+        Countly.sharedInstance().recordEvent("secondEvent")
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count ?? -1)
+        XCTAssertEqual(3, TestUtils.getCurrentRQ()?.count ?? -1)
+
+        guard let rq = TestUtils.getCurrentRQ(), rq.count == 3 else {
+            XCTFail("Expected exactly 3 requests, got: \(TestUtils.getCurrentRQ() ?? [])"); return
         }
 
-        let parsed = TestUtils.parseQueryString(request)
+        // Request 0: init save — named field at top level, custom key nested.
+        let parsed = TestUtils.parseQueryString(rq[0])
         guard let userDetails = parsed["user_details"] as? [String: Any] else {
-            XCTFail("user_details missing"); return
+            XCTFail("user_details missing in init request: \(rq[0])"); return
         }
         XCTAssertEqual("init@example.com", userDetails["email"] as? String)
-        let custom = userDetails["custom"] as? [String: Any]
-        XCTAssertEqual("blue", custom?["favorite_color"] as? String)
+        guard let custom = userDetails["custom"] as? [String: Any] else {
+            XCTFail("custom missing in init user_details: \(userDetails)"); return
+        }
+        XCTAssertEqual(1, custom.count, "Init custom payload should hold only favorite_color")
+        XCTAssertEqual("blue", custom["favorite_color"] as? String)
+
+        // Request 1: the event recorded under favorite_color=blue.
+        validateEvents(request: rq[1], keysToCheck: ["postInitEvent"])
+
+        // Request 2: the overwritten property value.
+        assertOnlyCustomProperty(rq[2], key: "favorite_color", expected: "red")
+
+        // The second event is still pending in the EQ.
+        XCTAssertEqual("secondEvent", TestUtils.getCurrentEQ()?.first?.key)
+    }
+
+    /// A previous (possibly crashed) run can leave persisted requests and a
+    /// generated device ID on disk; setUp's halt(true) is a no-op before the
+    /// first start in a process. Start + halt(true) wipes storage so the
+    /// exact queue-size assertions begin from a truly clean slate.
+    private func purgePersistedState() {
+        let purgeConfig = createBaseConfig()
+        purgeConfig.requiresConsent = false
+        purgeConfig.manualSessionHandling = true
+        Countly.sharedInstance().start(with: purgeConfig)
+        Countly.sharedInstance().halt(true)
+    }
+
+    /// Asserts the request carries a user_details payload whose custom
+    /// dictionary contains exactly one entry: `key` with `expected` value.
+    private func assertOnlyCustomProperty(_ request: String, key: String, expected: Any) {
+        let parsed = TestUtils.parseQueryString(request)
+        guard let userDetails = parsed["user_details"] as? [String: Any] else {
+            XCTFail("user_details missing in request: \(request)"); return
+        }
+        guard let custom = userDetails["custom"] as? [String: Any] else {
+            XCTFail("custom missing in user_details: \(userDetails)"); return
+        }
+        XCTAssertEqual(1, custom.count, "Expected exactly one custom property, got: \(custom)")
+        XCTAssertEqual("\(expected)", "\(custom[key] ?? "nil")", "Custom property '\(key)' mismatch")
     }
 }
 
