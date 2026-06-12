@@ -9,6 +9,7 @@
 
 extern const NSUInteger kCountlyMaxKeyLength;
 extern const NSUInteger kCountlyMaxValueSize;
+extern const NSUInteger kCountlyMaxValueSizePicture;
 extern const NSUInteger kCountlyMaxBreadcrumbCount;
 extern const NSUInteger kCountlyMaxSegmentationValues;
 extern const NSUInteger kCountlyMaxStackTraceLineLength;
@@ -19,6 +20,7 @@ extern const NSUInteger kCountlyMaxStackTraceLinesPerThread;
 
 - (void)setMaxKeyLength:(NSUInteger)maxKeyLength;
 - (void)setMaxValueSize:(NSUInteger)maxValueSize;
+- (void)setMaxValueSizePicture:(NSUInteger)maxValueSizePicture;
 - (void)setMaxBreadcrumbCount:(NSUInteger)maxBreadcrumbCount;
 - (void)setMaxSegmentationValues:(NSUInteger)maxSegmentationValues;
 - (void)setMaxStackTraceLineLength:(NSUInteger)maxStackTraceLineLength;
@@ -26,6 +28,7 @@ extern const NSUInteger kCountlyMaxStackTraceLinesPerThread;
 
 - (NSUInteger)getMaxKeyLength;
 - (NSUInteger)getMaxValueSize;
+- (NSUInteger)getMaxValueSizePicture;
 - (NSUInteger)getMaxBreadcrumbCount;
 - (NSUInteger)getMaxSegmentationValues;
 - (NSUInteger)getMaxStackTraceLineLength;

@@ -286,6 +286,13 @@ class TestUtils {
         return result
     }
 
+    /// Best-effort array coercion that handles both Swift `[T]` and bridged NSArray.
+    static func asArray(_ value: Any) -> [Any]? {
+        if let arr = value as? [Any] { return arr }
+        if let nsArr = value as? NSArray { return nsArr as? [Any] }
+        return nil
+    }
+
     static func compareDictionaries(_ dict1: [String: Any], _ dict2: [String: Any]) -> Bool {
         guard dict1.count == dict2.count else {
             return false
@@ -299,6 +306,13 @@ class TestUtils {
             if let nestedDict1 = value as? [String: Any], let nestedDict2 = otherValue as? [String: Any] {
                 if !compareDictionaries(nestedDict1, nestedDict2) {
                     return false
+                }
+            } else if let arr1 = TestUtils.asArray(value), let arr2 = TestUtils.asArray(otherValue) {
+                // Element-by-element string comparison so Swift `[String]` matches
+                // NSArray bridged from JSON-parsed request payloads.
+                if arr1.count != arr2.count { return false }
+                for (a, b) in zip(arr1, arr2) {
+                    if "\(a)" != "\(b)" { return false }
                 }
             } else if "\(value)" != "\(otherValue)" {
                 return false

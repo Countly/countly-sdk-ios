@@ -73,6 +73,7 @@ static dispatch_once_t onceToken;
     _hasFinishedInit       = false;
     _maxKeyLength = kCountlyMaxKeyLength;
     _maxValueLength = kCountlyMaxValueSize;
+    _maxValueLengthPicture = kCountlyMaxValueSizePicture;
     _maxSegmentationValues = kCountlyMaxSegmentationValues;
     onceToken = 0;
     s_sharedInstance = nil;
@@ -648,6 +649,17 @@ NSString* CountlyJSONFromObject(id object)
     return self;
 }
 
+- (NSString *)cly_truncatedPictureValue:(NSString *)explanation
+{
+    NSUInteger limit = CountlyCommon.sharedInstance.maxValueLengthPicture;
+    if (self.length > limit)
+    {
+        CLY_LOG_W(@"%@ length is more than the picture limit (%ld)! So, it will be truncated: %@.", explanation, (long)limit, self);
+        return [self substringToIndex:limit];
+    }
+    return self;
+}
+
 - (NSString *)cly_truncatedValue:(NSString *)explanation
 {
     if (self.length > CountlyCommon.sharedInstance.maxValueLength)
@@ -738,7 +750,7 @@ NSString* CountlyJSONFromObject(id object)
         
         if ([value isKindOfClass:[NSNumber class]] ||
             [value isKindOfClass:[NSString class]] ||
-            ([value isKindOfClass:[NSArray class]] && (value = [value cly_filterSupportedDataTypes]))) {
+            ([value isKindOfClass:[NSArray class]] && (value = [(NSArray *)value cly_filterSupportedDataTypes]))) {
             [filteredDictionary setObject:value forKey:key];
         } else {
             CLY_LOG_W(@"%s, Removed invalid type for key %@: %@", __FUNCTION__, key, [value class]);
