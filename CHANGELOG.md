@@ -2,8 +2,6 @@
 * Added a new user properties functions on `CountlyUserDetails`:
   * `setProperty:value:` for setting a single predefined or custom user property.
   * `setProperties:` for setting multiple predefined and custom properties in one call.
-  * Empty string clears predefined string fields (`name`, `username`, `email`, `organization`, `phone`, `gender`, `picture`, `picturePath`).
-  * Pending events are flushed before the next user details request when a user property changes via this new functions, so they reach the server in the right order.
 * Added `providedUserProperties` to `CountlyConfig` to set initial user properties that are applied and saved automatically right after `start`.
 * Added `setMaxValueSizePicture:` to `CountlySDKLimitsConfig` to control the maximum size of picture URLs and picture paths independently of other value limits (default 4096).
 * Improved `$push` / `$pull` / `$addToSet` wire format: values are now always sent as arrays so multiple consecutive calls on the same key accumulate correctly.
