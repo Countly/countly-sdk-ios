@@ -271,9 +271,9 @@ static dispatch_once_t onceToken;
 {
     @synchronized (self.recordedEvents)
     {
-        if([Countly.user hasUnsyncedChanges])
+        if ([CountlyUserDetails.sharedInstance hasUnsyncedChanges])
         {
-            [Countly.user save];
+            [CountlyUserDetails.sharedInstance save];
         }
         
         [self.recordedEvents addObject:event];

@@ -10,6 +10,7 @@
 
 const NSUInteger kCountlyMaxKeyLength = 128;
 const NSUInteger kCountlyMaxValueSize = 256;
+const NSUInteger kCountlyMaxValueSizePicture = 4096;
 const NSUInteger kCountlyMaxSegmentationValues = 100;
 const NSUInteger kCountlyMaxBreadcrumbCount = 100;
 const NSUInteger kCountlyMaxStackTraceLinesPerThread = 30;
@@ -19,6 +20,7 @@ const NSUInteger kCountlyMaxStackTraceLineLength = 200;
 {
     NSUInteger _maxKeyLength;
     NSUInteger _maxValueSize;
+    NSUInteger _maxValueSizePicture;
     NSUInteger _maxSegmentationValues;
     NSUInteger _maxBreadcrumbCount;
     NSUInteger _maxStackTraceLinesPerThread;
@@ -33,12 +35,13 @@ const NSUInteger kCountlyMaxStackTraceLineLength = 200;
     {
         _maxKeyLength = kCountlyMaxKeyLength;
         _maxValueSize = kCountlyMaxValueSize;
+        _maxValueSizePicture = kCountlyMaxValueSizePicture;
         _maxSegmentationValues = kCountlyMaxSegmentationValues;
         _maxBreadcrumbCount = kCountlyMaxBreadcrumbCount;
         _maxStackTraceLinesPerThread = kCountlyMaxStackTraceLinesPerThread;
         _maxStackTraceLineLength = kCountlyMaxStackTraceLineLength;
     }
-    
+
     return self;
 }
 
@@ -50,6 +53,11 @@ const NSUInteger kCountlyMaxStackTraceLineLength = 200;
 - (void)setMaxValueSize:(NSUInteger)maxValueSize
 {
     _maxValueSize = maxValueSize;
+}
+
+- (void)setMaxValueSizePicture:(NSUInteger)maxValueSizePicture
+{
+    _maxValueSizePicture = maxValueSizePicture;
 }
 
 - (void)setMaxSegmentationValues:(NSUInteger)maxSegmentationValues
@@ -80,6 +88,11 @@ const NSUInteger kCountlyMaxStackTraceLineLength = 200;
 - (NSUInteger)getMaxValueSize
 {
     return _maxValueSize;
+}
+
+- (NSUInteger)getMaxValueSizePicture
+{
+    return _maxValueSizePicture;
 }
 
 - (NSUInteger)getMaxSegmentationValues

@@ -612,9 +612,9 @@ static dispatch_once_t onceToken;
     }
 #endif
 
-    if([Countly.user hasUnsyncedChanges])
+    if ([CountlyUserDetails.sharedInstance hasUnsyncedChanges])
     {
-        [Countly.user save];
+        [CountlyUserDetails.sharedInstance save];
     }
 
     isSessionStarted = YES;
@@ -655,9 +655,9 @@ static dispatch_once_t onceToken;
         return;
     }
     
-    if([Countly.user hasUnsyncedChanges])
+    if ([CountlyUserDetails.sharedInstance hasUnsyncedChanges])
     {
-        [Countly.user save];
+        [CountlyUserDetails.sharedInstance save];
     }
 
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%d",
@@ -697,9 +697,9 @@ static dispatch_once_t onceToken;
 
 - (void)sendEventsWithSaveIfNeeded
 {
-    if([Countly.user hasUnsyncedChanges])
+    if ([CountlyUserDetails.sharedInstance hasUnsyncedChanges])
     {
-        [Countly.user save];
+        [CountlyUserDetails.sharedInstance save];
     }
     else
     {
