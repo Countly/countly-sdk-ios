@@ -433,6 +433,7 @@ static dispatch_once_t onceToken;
                 }
 
                 [CountlyHealthTracker.sharedInstance logFailedNetworkRequestWithStatusCode:((NSHTTPURLResponse*)response).statusCode errorResponse: [data cly_stringUTF8]];
+                [CountlyHealthTracker.sharedInstance recordLogCode:@"e301"];
                 [CountlyHealthTracker.sharedInstance saveState];
                 self.startTime = nil;
                 atomic_store(&self->_isProcessingQueue, NO);

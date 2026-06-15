@@ -156,6 +156,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 - (NSString *)startView:(NSString *)viewName segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"views" method:@"start"];
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually start view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
@@ -169,6 +170,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 - (NSString *)startAutoStoppedView:(NSString *)viewName segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"views" method:@"startAuto"];
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually start view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
@@ -182,6 +184,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 - (void)stopViewWithName:(NSString *)viewName segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"views" method:@"stop"];
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually stop view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
@@ -195,6 +198,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 - (void)stopViewWithID:(NSString *)viewID segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewID, segmentation);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"views" method:@"stop"];
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually stop view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);

@@ -643,6 +643,7 @@ NSString* CountlyJSONFromObject(id object)
     if (self.length > CountlyCommon.sharedInstance.maxKeyLength)
     {
         CLY_LOG_W(@"%@ length is more than the limit (%ld)! So, it will be truncated: %@.", explanation, (long)CountlyCommon.sharedInstance.maxKeyLength, self);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w201"];
         return [self substringToIndex:CountlyCommon.sharedInstance.maxKeyLength];
     }
 
@@ -665,6 +666,7 @@ NSString* CountlyJSONFromObject(id object)
     if (self.length > CountlyCommon.sharedInstance.maxValueLength)
     {
         CLY_LOG_W(@"%@ length is more than the limit (%ld)! So, it will be truncated: %@.", explanation, (long)CountlyCommon.sharedInstance.maxValueLength, self);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w202"];
         return [self substringToIndex:CountlyCommon.sharedInstance.maxValueLength];
     }
 
@@ -734,6 +736,7 @@ NSString* CountlyJSONFromObject(id object)
     [excessKeys removeObjectsInRange:(NSRange){0, CountlyCommon.sharedInstance.maxSegmentationValues}];
 
     CLY_LOG_W(@"%s, Number of key-value pairs in %@ is more than the limit (%ld)! So, some of them will be removed %@", __FUNCTION__, explanation, (long)CountlyCommon.sharedInstance.maxSegmentationValues, [excessKeys description]);
+    [CountlyHealthTracker.sharedInstance recordLogCode:@"w203"];
 
     NSMutableDictionary* limitedDict = self.mutableCopy;
     [limitedDict removeObjectsForKeys:excessKeys];

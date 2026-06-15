@@ -108,6 +108,7 @@
 - (void)downloadKeys:(RCDownloadCallback)completionHandler
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, completionHandler);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"remote-config" method:@"fetch"];
     [CountlyRemoteConfigInternal.sharedInstance downloadValuesForKeys:nil omitKeys:nil completionHandler:completionHandler];
     
 }
@@ -115,6 +116,7 @@
 - (void)downloadSpecificKeys:(NSArray *)keys completionHandler:(RCDownloadCallback)completionHandler
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, keys, completionHandler);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"remote-config" method:@"fetch"];
     [CountlyRemoteConfigInternal.sharedInstance downloadValuesForKeys:keys omitKeys:nil completionHandler:completionHandler];
     
 }
@@ -122,6 +124,7 @@
 - (void)downloadOmittingKeys:(NSArray *)omitKeys completionHandler:(RCDownloadCallback)completionHandler
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, omitKeys, completionHandler);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"remote-config" method:@"fetch"];
     [CountlyRemoteConfigInternal.sharedInstance downloadValuesForKeys:nil omitKeys:omitKeys completionHandler:completionHandler];
 }
 

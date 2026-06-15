@@ -344,6 +344,7 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
 - (void)save
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"users" method:@"set"];
 
     if (!CountlyCommon.sharedInstance.hasStarted)
         return;

@@ -22,7 +22,12 @@
 @property (nonatomic, assign) BOOL healthCheckEnabled;
 @property (nonatomic, assign) BOOL healthCheckSent;
 
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableDictionary<NSString *, NSNumber *> *> *methodUsage;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *logCodes;
+
 @property (nonatomic, strong) dispatch_queue_t hcQueue;
+
+- (NSDictionary *)deepCopyMethodUsage;
 @end
 
 @implementation CountlyHealthTracker
@@ -41,6 +46,14 @@ NSString * const requestKeyRequestError = @"em";
 NSString * const requestKeyBackoffRequest = @"bom";
 NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
 
+NSString * const keyMethodUsage = @"MU";
+NSString * const keyLogCodes = @"LC";
+
+NSString * const requestKeyMethodUsage = @"fu";
+NSString * const requestKeyLogCodes = @"lc";
+
+static const long kCountlyHCCountCap = 65535;
+
 + (instancetype)sharedInstance {
     static CountlyHealthTracker *instance = nil;
     static dispatch_once_t onceToken;
@@ -57,6 +70,9 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
         _statusCode = -1;
         _healthCheckSent = NO;
         _healthCheckEnabled = YES;
+
+        _methodUsage = NSMutableDictionary.new;
+        _logCodes = NSMutableDictionary.new;
 
         // queue for health tracker state
         _hcQueue = dispatch_queue_create("ly.count.healthtracker.queue", DISPATCH_QUEUE_SERIAL);
@@ -79,6 +95,19 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
     self.countBackoffRequest = [initialState[keyBackoffRequest] longValue];
     self.consecutiveBackoffRequest = [initialState[keyConsecutiveBackoffRequest] longValue];
 
+    NSDictionary *storedUsage = initialState[keyMethodUsage];
+    if ([storedUsage isKindOfClass:NSDictionary.class]) {
+        [storedUsage enumerateKeysAndObjectsUsingBlock:^(NSString *area, NSDictionary *methods, BOOL *stop) {
+            if ([methods isKindOfClass:NSDictionary.class]) {
+                self.methodUsage[area] = [methods mutableCopy];
+            }
+        }];
+    }
+    NSDictionary *storedCodes = initialState[keyLogCodes];
+    if ([storedCodes isKindOfClass:NSDictionary.class]) {
+        [self.logCodes addEntriesFromDictionary:storedCodes];
+    }
+
     CLY_LOG_D(@"%s loaded initial health check state: [%@]", __FUNCTION__, initialState);
 }
 
@@ -91,6 +120,35 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
 - (void)logError {
     dispatch_async(self.hcQueue, ^{
         self.countLogError++;
+    });
+}
+
+- (void)recordUsage:(NSString *)area method:(NSString *)method {
+    if (area.length == 0 || method.length == 0)
+        return;
+
+    dispatch_async(self.hcQueue, ^{
+        NSMutableDictionary<NSString *, NSNumber *> *methods = self.methodUsage[area];
+        if (!methods) {
+            methods = NSMutableDictionary.new;
+            self.methodUsage[area] = methods;
+        }
+        long current = [methods[method] longValue];
+        if (current < kCountlyHCCountCap) {
+            methods[method] = @(current + 1);
+        }
+    });
+}
+
+- (void)recordLogCode:(NSString *)code {
+    if (code.length == 0)
+        return;
+
+    dispatch_async(self.hcQueue, ^{
+        long current = [self.logCodes[code] longValue];
+        if (current < kCountlyHCCountCap) {
+            self.logCodes[code] = @(current + 1);
+        }
     });
 }
 
@@ -148,11 +206,21 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
             keyStatusCode: @(self.statusCode),
             keyErrorMessage: self.errorMessage ?: @"",
             keyBackoffRequest: @(self.countBackoffRequest),
-            keyConsecutiveBackoffRequest: @(self.consecutiveBackoffRequest)
+            keyConsecutiveBackoffRequest: @(self.consecutiveBackoffRequest),
+            keyMethodUsage: [self deepCopyMethodUsage],
+            keyLogCodes: [self.logCodes copy]
         };
 
         [CountlyPersistency.sharedInstance storeHealthCheckTrackerState:healthCheckState];
     });
+}
+
+- (NSDictionary *)deepCopyMethodUsage {
+    NSMutableDictionary *copy = NSMutableDictionary.new;
+    [self.methodUsage enumerateKeysAndObjectsUsingBlock:^(NSString *area, NSMutableDictionary *methods, BOOL *stop) {
+        copy[area] = [methods copy];
+    }];
+    return copy;
 }
 
 - (void)resetInstance {
@@ -175,6 +243,8 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
     self.countBackoffRequest = 0;
     self.consecutiveBackoffRequest = 0;
     self.countConsecutiveBackoffRequest = 0;
+    [self.methodUsage removeAllObjects];
+    [self.logCodes removeAllObjects];
 }
 
 - (void)sendHealthCheck {
@@ -245,6 +315,8 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
     __block NSString *snapshotErrorMessage;
     __block long snapshotBackoffRequest;
     __block long snapshotConsecutiveBackoffRequest;
+    __block NSDictionary *snapshotMethodUsage;
+    __block NSDictionary *snapshotLogCodes;
 
     dispatch_sync(self.hcQueue, ^{
         snapshotLogError = self.countLogError;
@@ -253,18 +325,28 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
         snapshotErrorMessage = [self.errorMessage copy] ?: @"";
         snapshotBackoffRequest = self.countBackoffRequest;
         snapshotConsecutiveBackoffRequest = self.consecutiveBackoffRequest;
+        snapshotMethodUsage = [self deepCopyMethodUsage];
+        snapshotLogCodes = [self.logCodes copy];
     });
 
     NSString *queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
 
-    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"hc", [self dictionaryToJsonString:@{
+    NSMutableDictionary *hcDict = [@{
         requestKeyErrorCount: @(snapshotLogError),
         requestKeyWarningCount: @(snapshotLogWarning),
         requestKeyStatusCode: @(snapshotStatusCode),
         requestKeyRequestError: snapshotErrorMessage,
         requestKeyBackoffRequest: @(snapshotBackoffRequest),
         requestKeyConsecutiveBackoffRequest: @(snapshotConsecutiveBackoffRequest)
-    }]];
+    } mutableCopy];
+    if (snapshotMethodUsage.count > 0) {
+        hcDict[requestKeyMethodUsage] = snapshotMethodUsage;
+    }
+    if (snapshotLogCodes.count > 0) {
+        hcDict[requestKeyLogCodes] = snapshotLogCodes;
+    }
+
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"hc", [self dictionaryToJsonString:hcDict]];
     
     queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"metrics", [self dictionaryToJsonString:@{
         CLYMetricKeyAppVersion: CountlyDeviceInfo.appVersion

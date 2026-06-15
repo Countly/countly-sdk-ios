@@ -398,4 +398,163 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
             XCTAssertEqual(result, .success, "Concurrent performance test did not complete in time")
         }
     }
+
+    // MARK: - Method Usage & Log Code Tests
+
+    /// Drains the serial hcQueue by enqueuing saveState (which runs on the same queue as
+    /// recordUsage/recordLogCode) and waiting briefly, so asynchronous counter writes are applied.
+    private func drainHealthCheckQueue(_ tracker: CountlyHealthTracker, timeout: TimeInterval = 5) {
+        let exp = expectation(description: "drain hc queue")
+        tracker.saveState()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { exp.fulfill() }
+        wait(for: [exp], timeout: timeout)
+    }
+
+    /// recordUsage/recordLogCode accumulate counts per area/method and per code.
+    func testRecordUsageAndLogCodeAccumulate() {
+        let tracker = CountlyHealthTracker.sharedInstance()
+        tracker.methodUsage.removeAllObjects()
+        tracker.logCodes.removeAllObjects()
+
+        tracker.recordUsage("events", method: "record")
+        tracker.recordUsage("events", method: "record")
+        tracker.recordUsage("views", method: "start")
+        tracker.recordLogCode("w204")
+        tracker.recordLogCode("e301")
+
+        drainHealthCheckQueue(tracker)
+
+        XCTAssertEqual((tracker.methodUsage["events"] as? [String: NSNumber])?["record"], 2)
+        XCTAssertEqual((tracker.methodUsage["views"] as? [String: NSNumber])?["start"], 1)
+        XCTAssertEqual(tracker.logCodes["w204"] as? NSNumber, 1)
+        XCTAssertEqual(tracker.logCodes["e301"] as? NSNumber, 1)
+    }
+
+    /// Empty area/method/code inputs are ignored (no map entries created).
+    func testRecordUsageIgnoresEmptyInputs() {
+        let tracker = CountlyHealthTracker.sharedInstance()
+        tracker.methodUsage.removeAllObjects()
+        tracker.logCodes.removeAllObjects()
+
+        tracker.recordUsage("", method: "record")
+        tracker.recordUsage("events", method: "")
+        tracker.recordLogCode("")
+
+        drainHealthCheckQueue(tracker)
+
+        XCTAssertEqual(tracker.methodUsage.count, 0)
+        XCTAssertEqual(tracker.logCodes.count, 0)
+    }
+
+    /// All mutation goes through the serial hcQueue, so concurrent recordUsage must not crash.
+    func testRecordUsageThreadSafety() {
+        let tracker = CountlyHealthTracker.sharedInstance()
+        tracker.methodUsage.removeAllObjects()
+        runConcurrentStressTest(
+            iterations: 10_000,
+            writerBlock: { _ in tracker.recordUsage("events", method: "record") },
+            readerBlock: { tracker.saveState() }
+        )
+        // No crash / no exception under contention is the primary assertion;
+        // also confirm the count is positive and within the cap.
+        drainHealthCheckQueue(tracker, timeout: 10)
+        let count = (tracker.methodUsage["events"] as? [String: NSNumber])?["record"]?.intValue ?? 0
+        XCTAssertTrue(count > 0 && count <= 65535, "expected 0 < count <= 65535, got \(count)")
+    }
+
+    /// Maps persist into the health-tracker state dict and are cleared on clearAndSave.
+    func testUsageAndLogCodesPersistAndClear() {
+        let tracker = CountlyHealthTracker.sharedInstance()
+        tracker.methodUsage.removeAllObjects()
+        tracker.logCodes.removeAllObjects()
+        tracker.recordUsage("events", method: "record")
+        tracker.recordLogCode("w204")
+
+        drainHealthCheckQueue(tracker)
+
+        let state = CountlyPersistency.sharedInstance().retrieveHealthCheckTrackerState()
+        let mu = state["MU"] as? [String: [String: NSNumber]]
+        let lc = state["LC"] as? [String: NSNumber]
+        XCTAssertEqual(mu?["events"]?["record"], 1)
+        XCTAssertEqual(lc?["w204"], 1)
+
+        // clearAndSave empties the maps.
+        let exp = expectation(description: "clear")
+        tracker.clearAndSave()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { exp.fulfill() }
+        wait(for: [exp], timeout: 5)
+        XCTAssertEqual(tracker.methodUsage.count, 0)
+        XCTAssertEqual(tracker.logCodes.count, 0)
+    }
+
+    /// fu/lc keys appear in the hc request only when the maps are non-empty.
+    func testHealthCheckRequestIncludesFuLcWhenPresent() {
+        let tracker = CountlyHealthTracker.sharedInstance()
+        let config = createBaseConfig()
+        Countly.sharedInstance().start(with: config)
+        drainHealthCheckQueue(tracker)
+
+        tracker.methodUsage.removeAllObjects()
+        tracker.logCodes.removeAllObjects()
+        tracker.recordUsage("events", method: "record")
+        tracker.recordLogCode("w204")
+        drainHealthCheckQueue(tracker)
+
+        let request = tracker.healthCheckRequest()
+        let query = request.url?.query ?? String(data: request.httpBody ?? Data(), encoding: .utf8) ?? ""
+        let decoded = query.removingPercentEncoding ?? query
+        XCTAssertTrue(decoded.contains("\"fu\""), "hc should contain fu; got: \(decoded)")
+        XCTAssertTrue(decoded.contains("\"lc\""), "hc should contain lc; got: \(decoded)")
+        XCTAssertTrue(decoded.contains("\"record\""))
+        XCTAssertTrue(decoded.contains("\"w204\""))
+    }
+
+    func testHealthCheckRequestOmitsFuLcWhenEmpty() {
+        let tracker = CountlyHealthTracker.sharedInstance()
+        let config = createBaseConfig()
+        Countly.sharedInstance().start(with: config)
+        drainHealthCheckQueue(tracker)
+
+        tracker.methodUsage.removeAllObjects()
+        tracker.logCodes.removeAllObjects()
+        drainHealthCheckQueue(tracker)
+
+        let request = tracker.healthCheckRequest()
+        let query = request.url?.query ?? String(data: request.httpBody ?? Data(), encoding: .utf8) ?? ""
+        let decoded = query.removingPercentEncoding ?? query
+        XCTAssertFalse(decoded.contains("\"fu\""))
+        XCTAssertFalse(decoded.contains("\"lc\""))
+    }
+
+    /// Calling a public API records usage under the shared taxonomy.
+    func testPublicMethodsPopulateUsage() {
+        let tracker = CountlyHealthTracker.sharedInstance()
+        tracker.methodUsage.removeAllObjects()
+
+        let config = createBaseConfig()
+        Countly.sharedInstance().start(with: config)
+        Countly.sharedInstance().recordEvent("test_event")
+        Countly.sharedInstance().recordEvent("test_event_2")
+
+        drainHealthCheckQueue(tracker)
+
+        let count = (tracker.methodUsage["events"] as? [String: NSNumber])?["record"]?.intValue ?? 0
+        XCTAssertTrue(count >= 2, "expected >=2 events.record, got \(count)")
+    }
+
+    /// A consent-blocked action records the w401 log code.
+    func testConsentBlockedRecordsLogCode() {
+        let tracker = CountlyHealthTracker.sharedInstance()
+        tracker.logCodes.removeAllObjects()
+
+        let config = createBaseConfig()
+        config.requiresConsent = true   // no consent given
+        Countly.sharedInstance().start(with: config)
+        // an event recorded without events consent should be blocked and record w401
+        Countly.sharedInstance().recordEvent("blocked_event")
+
+        drainHealthCheckQueue(tracker)
+
+        XCTAssertNotNil(tracker.logCodes["w401"], "expected w401 consent-blocked code")
+    }
 }
