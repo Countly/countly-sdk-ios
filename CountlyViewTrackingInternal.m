@@ -160,6 +160,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually start view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
         return nil;
     }
 #endif
@@ -174,11 +175,28 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually start view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
         return nil;
     }
 #endif
     NSString* viewID = [self startViewInternal:viewName customSegmentation:segmentation isAutoStoppedView:YES];
     return viewID;
+}
+
+// Backing call for the deprecated `recordView:` API. Mirrors `startAutoStoppedView:` but records
+// the usage under `start:d` so deprecated view calls are distinguishable from the current API.
+- (NSString *)recordViewDeprecated:(NSString *)viewName segmentation:(NSDictionary *)segmentation
+{
+    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"views" method:@"start:d"];
+#if (TARGET_OS_IOS || TARGET_OS_TV)
+    if (self.isAutoViewTrackingActive) {
+        CLY_LOG_W(@"%s Manually start view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
+        return nil;
+    }
+#endif
+    return [self startViewInternal:viewName customSegmentation:segmentation isAutoStoppedView:YES];
 }
 
 - (void)stopViewWithName:(NSString *)viewName segmentation:(NSDictionary *)segmentation
@@ -188,6 +206,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually stop view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
         return;
     }
 #endif
@@ -202,6 +221,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually stop view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
         return;
     }
 #endif
@@ -214,6 +234,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually pause view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
         return;
     }
 #endif
@@ -226,6 +247,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually resume view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
         return;
     }
 #endif
@@ -238,6 +260,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually stop view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
         return;
     }
 #endif
@@ -265,6 +288,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     
     UIViewController* topVC = CountlyCommon.sharedInstance.topViewController;
     NSString* viewTitle = [self titleForViewController:topVC];
+    [CountlyHealthTracker.sharedInstance recordUsage:@"views" method:@"start:a"];
     [self startViewInternal:viewTitle customSegmentation:nil];
 }
 
@@ -720,7 +744,10 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     }
     
     if (!isException)
+    {
+        [CountlyHealthTracker.sharedInstance recordUsage:@"views" method:@"start:a"];
         [self startViewInternal:viewTitle customSegmentation:nil];
+    }
 }
 
 

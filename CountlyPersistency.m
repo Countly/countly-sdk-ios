@@ -334,6 +334,7 @@ static dispatch_once_t onceToken;
         if (self.startedEvents[event.key])
         {
             CLY_LOG_W(@"Event with key '%@' already started!", event.key);
+            [CountlyHealthTracker.sharedInstance recordLogCode:@"w722"];
             return;
         }
 

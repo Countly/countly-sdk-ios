@@ -412,7 +412,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
 
     /// recordUsage/recordLogCode accumulate counts per area/method and per code.
     func testRecordUsageAndLogCodeAccumulate() {
-        let tracker = CountlyHealthTracker.sharedInstance()
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
         tracker.methodUsage.removeAllObjects()
         tracker.logCodes.removeAllObjects()
 
@@ -432,7 +432,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
 
     /// Empty area/method/code inputs are ignored (no map entries created).
     func testRecordUsageIgnoresEmptyInputs() {
-        let tracker = CountlyHealthTracker.sharedInstance()
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
         tracker.methodUsage.removeAllObjects()
         tracker.logCodes.removeAllObjects()
 
@@ -448,7 +448,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
 
     /// All mutation goes through the serial hcQueue, so concurrent recordUsage must not crash.
     func testRecordUsageThreadSafety() {
-        let tracker = CountlyHealthTracker.sharedInstance()
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
         tracker.methodUsage.removeAllObjects()
         runConcurrentStressTest(
             iterations: 10_000,
@@ -464,7 +464,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
 
     /// Maps persist into the health-tracker state dict and are cleared on clearAndSave.
     func testUsageAndLogCodesPersistAndClear() {
-        let tracker = CountlyHealthTracker.sharedInstance()
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
         tracker.methodUsage.removeAllObjects()
         tracker.logCodes.removeAllObjects()
         tracker.recordUsage("events", method: "record")
@@ -472,7 +472,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
 
         drainHealthCheckQueue(tracker)
 
-        let state = CountlyPersistency.sharedInstance().retrieveHealthCheckTrackerState()
+        let state = CountlyPersistency.sharedInstance().retrieveHealthCheckTrackerState() ?? [:]
         let mu = state["MU"] as? [String: [String: NSNumber]]
         let lc = state["LC"] as? [String: NSNumber]
         XCTAssertEqual(mu?["events"]?["record"], 1)
@@ -489,7 +489,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
 
     /// fu/lc keys appear in the hc request only when the maps are non-empty.
     func testHealthCheckRequestIncludesFuLcWhenPresent() {
-        let tracker = CountlyHealthTracker.sharedInstance()
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
         let config = createBaseConfig()
         Countly.sharedInstance().start(with: config)
         drainHealthCheckQueue(tracker)
@@ -500,7 +500,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         tracker.recordLogCode("w204")
         drainHealthCheckQueue(tracker)
 
-        let request = tracker.healthCheckRequest()
+        let request: URLRequest = tracker.healthCheckRequest()!
         let query = request.url?.query ?? String(data: request.httpBody ?? Data(), encoding: .utf8) ?? ""
         let decoded = query.removingPercentEncoding ?? query
         XCTAssertTrue(decoded.contains("\"fu\""), "hc should contain fu; got: \(decoded)")
@@ -510,7 +510,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
     }
 
     func testHealthCheckRequestOmitsFuLcWhenEmpty() {
-        let tracker = CountlyHealthTracker.sharedInstance()
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
         let config = createBaseConfig()
         Countly.sharedInstance().start(with: config)
         drainHealthCheckQueue(tracker)
@@ -519,7 +519,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         tracker.logCodes.removeAllObjects()
         drainHealthCheckQueue(tracker)
 
-        let request = tracker.healthCheckRequest()
+        let request: URLRequest = tracker.healthCheckRequest()!
         let query = request.url?.query ?? String(data: request.httpBody ?? Data(), encoding: .utf8) ?? ""
         let decoded = query.removingPercentEncoding ?? query
         XCTAssertFalse(decoded.contains("\"fu\""))
@@ -528,7 +528,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
 
     /// Calling a public API records usage under the shared taxonomy.
     func testPublicMethodsPopulateUsage() {
-        let tracker = CountlyHealthTracker.sharedInstance()
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
         tracker.methodUsage.removeAllObjects()
 
         let config = createBaseConfig()
@@ -544,7 +544,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
 
     /// A consent-blocked action records the w401 log code.
     func testConsentBlockedRecordsLogCode() {
-        let tracker = CountlyHealthTracker.sharedInstance()
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
         tracker.logCodes.removeAllObjects()
 
         let config = createBaseConfig()
@@ -556,5 +556,126 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         drainHealthCheckQueue(tracker)
 
         XCTAssertNotNil(tracker.logCodes["w401"], "expected w401 consent-blocked code")
+    }
+
+    // MARK: - Auto / Manual & Deprecated differentiation
+
+    /// The current `startView` API records the bare `start` leaf, while the deprecated `recordView`
+    /// API records `start:d` — the two are distinct keys and the deprecated call must NOT leak into
+    /// the modern `startAuto` leaf.
+    func testManualAndDeprecatedViewAreDistinct() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        tracker.methodUsage.removeAllObjects()
+
+        let config = createBaseConfig()
+        Countly.sharedInstance().start(with: config)
+        let _ = Countly.sharedInstance().views().startView("CurrentScreen")
+        Countly.sharedInstance().recordView("LegacyScreen")
+
+        drainHealthCheckQueue(tracker)
+
+        let views = tracker.methodUsage["views"] as? [String: NSNumber]
+        XCTAssertEqual(views?["start"], 1, "current startView should record bare start")
+        XCTAssertEqual(views?["start:d"], 1, "deprecated recordView should record start:d")
+        XCTAssertNil(views?["startAuto"], "deprecated recordView must not record startAuto")
+    }
+
+    /// The deprecated handled/unhandled exception APIs record `crashes` `record:d`, distinct from the
+    /// current `recordException` API which records bare `record`.
+    func testDeprecatedExceptionRecordsRecordD() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        tracker.methodUsage.removeAllObjects()
+
+        let config = createBaseConfig()
+        Countly.sharedInstance().start(with: config)
+        let exception = NSException(name: .genericException, reason: "test", userInfo: nil)
+        Countly.sharedInstance().recordHandledException(exception)
+        Countly.sharedInstance().recordUnhandledException(exception, withStackTrace: [])
+
+        drainHealthCheckQueue(tracker)
+
+        let crashes = tracker.methodUsage["crashes"] as? [String: NSNumber]
+        XCTAssertEqual(crashes?["record:d"], 2, "deprecated exception APIs should record record:d")
+        XCTAssertNil(crashes?["record"], "deprecated APIs must not record the bare record leaf")
+    }
+
+    /// Modifier-suffixed leaves coexist with their bare counterparts as separate keys
+    /// (auto `:a` and deprecated `:d` are tracked independently of the manual/current call).
+    func testModifierLeavesAreIndependentKeys() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        tracker.methodUsage.removeAllObjects()
+
+        tracker.recordUsage("sessions", method: "begin")
+        tracker.recordUsage("sessions", method: "begin:a")
+        tracker.recordUsage("sessions", method: "begin:a")
+        tracker.recordUsage("views", method: "start:d")
+
+        drainHealthCheckQueue(tracker)
+
+        let sessions = tracker.methodUsage["sessions"] as? [String: NSNumber]
+        XCTAssertEqual(sessions?["begin"], 1, "manual begin tracked separately")
+        XCTAssertEqual(sessions?["begin:a"], 2, "automatic begin:a tracked separately")
+        XCTAssertEqual((tracker.methodUsage["views"] as? [String: NSNumber])?["start:d"], 1)
+    }
+
+    // MARK: - Log codes from real call sites
+
+    /// Starting the SDK a second time is ignored and records the w110 init-twice code.
+    func testInitTwiceRecordsW110() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        tracker.logCodes.removeAllObjects()
+
+        let config = createBaseConfig()
+        Countly.sharedInstance().start(with: config)
+        Countly.sharedInstance().start(with: config)   // second start is ignored
+
+        drainHealthCheckQueue(tracker)
+
+        XCTAssertNotNil(tracker.logCodes["w110"], "second start should record w110")
+    }
+
+    /// Ending or cancelling a timed event that was never started records w720 each time.
+    func testEndingNonStartedTimedEventRecordsW720() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        tracker.logCodes.removeAllObjects()
+
+        let config = createBaseConfig()
+        Countly.sharedInstance().start(with: config)
+        Countly.sharedInstance().endEvent("never_started")
+        Countly.sharedInstance().cancelEvent("also_never_started")
+
+        drainHealthCheckQueue(tracker)
+
+        XCTAssertEqual(tracker.logCodes["w720"] as? NSNumber, 2, "end + cancel of non-started events → 2x w720")
+    }
+
+    /// Starting the same timed-event key twice records w722.
+    func testDuplicateStartEventRecordsW722() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        tracker.logCodes.removeAllObjects()
+
+        let config = createBaseConfig()
+        Countly.sharedInstance().start(with: config)
+        Countly.sharedInstance().startEvent("dup_key")
+        Countly.sharedInstance().startEvent("dup_key")   // already started
+
+        drainHealthCheckQueue(tracker)
+
+        XCTAssertNotNil(tracker.logCodes["w722"], "second startEvent with same key → w722")
+    }
+
+    /// A manual view call while automatic view tracking is active is ignored and records w740.
+    func testManualViewDuringAutoTrackingRecordsW740() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        tracker.logCodes.removeAllObjects()
+
+        let config = createBaseConfig()
+        config.enableAutomaticViewTracking = true
+        Countly.sharedInstance().start(with: config)
+        let _ = Countly.sharedInstance().views().startView("ManualWhileAuto")
+
+        drainHealthCheckQueue(tracker)
+
+        XCTAssertNotNil(tracker.logCodes["w740"], "manual startView during auto tracking → w740")
     }
 }
