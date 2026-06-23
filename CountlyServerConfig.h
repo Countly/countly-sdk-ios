@@ -23,6 +23,9 @@ extern NSString* const kCountlySCKeySC;
 - (NSInteger)sessionInterval;
 - (NSInteger)eventQueueSize;
 - (BOOL)crashReportingEnabled;
+- (BOOL)automaticSessionTrackingEnabled;
+- (BOOL)automaticViewTrackingEnabled;
+- (BOOL)automaticCrashReportingEnabled;
 - (BOOL)loggingEnabled;
 - (NSInteger)limitKeyLength;
 - (NSInteger)limitValueSize;
@@ -53,6 +56,7 @@ extern NSString* const kCountlySCKeySC;
 - (BOOL)shouldRecordUserProperty:(NSString *)propertyKey;
 - (NSDictionary *)filterSegmentation:(NSDictionary *)segmentation eventKey:(NSString *)eventKey;
 - (BOOL)isJourneyTriggerEvent:(NSString *)eventKey;
+- (BOOL)isJourneyTriggerView:(NSString *)viewName;
 - (NSInteger)userPropertyCacheLimit;
 
 @end

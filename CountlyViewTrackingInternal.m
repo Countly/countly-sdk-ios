@@ -249,9 +249,11 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)startAutoViewTracking
 {
-    if (!self.isEnabledOnInitialConfig)
+    // Gated on the resolved 'avt' value (seeded from the developer config, overridable by the server),
+    // so the server can force-enable automatic view tracking even when the developer did not opt in
+    if (!CountlyServerConfig.sharedInstance.automaticViewTrackingEnabled)
         return;
-    
+
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
     
@@ -274,9 +276,11 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)setIsAutoViewTrackingActive:(BOOL)isAutoViewTrackingActive
 {
-    if (!self.isEnabledOnInitialConfig)
+    // Allowed when the developer enabled automatic view tracking, when the resolved 'avt' value enables it,
+    // or when it is currently active (so a server force-enabled tracker can still be turned off)
+    if (!self.isEnabledOnInitialConfig && !CountlyServerConfig.sharedInstance.automaticViewTrackingEnabled && !_isAutoViewTrackingActive)
         return;
-    
+
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
     if (_isAutoViewTrackingActive != isAutoViewTrackingActive) {
@@ -691,7 +695,11 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 {
     if (!self.isAutoViewTrackingActive)
         return;
-    
+
+    // Checked per view appearance so a runtime 'avt' = false from the server takes effect immediately
+    if (!CountlyServerConfig.sharedInstance.automaticViewTrackingEnabled)
+        return;
+
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
     

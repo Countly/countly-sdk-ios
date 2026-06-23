@@ -52,6 +52,9 @@ NSString* const kCountlyCRKeyOB                = @"_ob";
 
 
 @interface CountlyCrashReporter ()
+// Tracks whether the unhandled crash handlers have been installed, so they are installed only once
+// and can be removed even when they were force-enabled by the server instead of the developer config
+@property (nonatomic) BOOL unhandledCrashHandlerInstalled;
 @property (nonatomic) NSMutableArray* customCrashLogs;
 @property (nonatomic) NSDateFormatter* dateFormatter;
 @property (nonatomic) NSString* buildUUID;
@@ -91,11 +94,21 @@ NSString* const kCountlyCRKeyOB                = @"_ob";
 
 - (void)startCrashReporting
 {
-    if (!self.isEnabledOnInitialConfig)
+    // For the default handler path the live handler is checked instead of only the flag, since the
+    // global handler can be replaced externally while the singleton (and its flag) lives on
+    BOOL alreadyInstalled = self.unhandledCrashHandlerInstalled && (self.shouldUsePLCrashReporter || NSGetUncaughtExceptionHandler() == &CountlyUncaughtExceptionHandler);
+    if (alreadyInstalled)
+        return;
+
+    // Gated on the resolved 'acr' value (seeded from the developer config, overridable by the server),
+    // so the server can enable automatic crash reporting even when the developer did not opt in
+    if (!CountlyServerConfig.sharedInstance.automaticCrashReportingEnabled)
         return;
 
     if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
         return;
+
+    self.unhandledCrashHandlerInstalled = YES;
 
     if (self.shouldUsePLCrashReporter)
     {
@@ -123,8 +136,10 @@ NSString* const kCountlyCRKeyOB                = @"_ob";
 
 - (void)stopCrashReporting
 {
-    if (!self.isEnabledOnInitialConfig)
+    if (!self.unhandledCrashHandlerInstalled)
         return;
+
+    self.unhandledCrashHandlerInstalled = NO;
 
     NSSetUncaughtExceptionHandler(NULL);
 
@@ -246,7 +261,14 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
 {
     if (!CountlyServerConfig.sharedInstance.crashReportingEnabled)
         return;
-    
+
+    // Automatically detected crashes are additionally gated on the resolved 'acr' value, so a runtime
+    // 'acr' = false from the server disables them without uninstalling the handler. Manually recorded
+    // exceptions stay governed by 'crt' only.
+    if (isAutoDetect && !CountlyServerConfig.sharedInstance.automaticCrashReportingEnabled)
+        return;
+
+
     NSArray* stackTrace = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
     if (!stackTrace)
         stackTrace = exception.callStackSymbols;

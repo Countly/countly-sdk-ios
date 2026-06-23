@@ -33,6 +33,9 @@ class ServerConfigBuilder {
         static let consentRequired = "cr"
         static let dropOldRequestTime = "dort"
         static let crashReporting = "crt"
+        static let automaticSessionTracking = "ast"
+        static let automaticViewTracking = "avt"
+        static let automaticCrashReporting = "acr"
         static let serverConfigUpdateInterval = "scui"
         static let eventBlacklist = "eb"
         static let eventWhitelist = "ew"
@@ -44,6 +47,7 @@ class ServerConfigBuilder {
         static let eventSegmentationBlacklist = "esb"
         static let eventSegmentationWhitelist = "esw"
         static let journeyTriggerEvents = "jte"
+        static let journeyTriggerViews = "jtv"
     }
 
     // MARK: - Feature Flags
@@ -69,6 +73,24 @@ class ServerConfigBuilder {
     @discardableResult
     func viewTracking(_ enabled: Bool) -> ServerConfigBuilder {
         config[Keys.viewTracking] = enabled
+        return this
+    }
+
+    @discardableResult
+    func automaticSessionTracking(_ enabled: Bool) -> ServerConfigBuilder {
+        config[Keys.automaticSessionTracking] = enabled
+        return this
+    }
+
+    @discardableResult
+    func automaticViewTracking(_ enabled: Bool) -> ServerConfigBuilder {
+        config[Keys.automaticViewTracking] = enabled
+        return this
+    }
+
+    @discardableResult
+    func automaticCrashReporting(_ enabled: Bool) -> ServerConfigBuilder {
+        config[Keys.automaticCrashReporting] = enabled
         return this
     }
 
@@ -161,6 +183,12 @@ class ServerConfigBuilder {
     @discardableResult
     func journeyTriggerEvents(_ keys: [String]) -> ServerConfigBuilder {
         config[Keys.journeyTriggerEvents] = keys
+        return this
+    }
+
+    @discardableResult
+    func journeyTriggerViews(_ names: [String]) -> ServerConfigBuilder {
+        config[Keys.journeyTriggerViews] = names
         return this
     }
 
@@ -335,6 +363,15 @@ class ServerConfigBuilder {
         if let val = config[Keys.sessionTracking] as? Bool {
             XCTAssertEqual(val, moduleConfig?.sessionTrackingEnabled())
         }
+        if let val = config[Keys.automaticSessionTracking] as? Bool {
+            XCTAssertEqual(val, moduleConfig?.automaticSessionTrackingEnabled())
+        }
+        if let val = config[Keys.automaticViewTracking] as? Bool {
+            XCTAssertEqual(val, moduleConfig?.automaticViewTrackingEnabled())
+        }
+        if let val = config[Keys.automaticCrashReporting] as? Bool {
+            XCTAssertEqual(val, moduleConfig?.automaticCrashReportingEnabled())
+        }
         if let val = config[Keys.customEventTracking] as? Bool {
             XCTAssertEqual(val, moduleConfig?.customEventTrackingEnabled())
         }
@@ -421,6 +458,14 @@ class ServerConfigBuilder {
                 XCTAssertTrue(moduleConfig!.isJourneyTriggerEvent(key))
             }
             XCTAssertFalse(moduleConfig!.isJourneyTriggerEvent("nonexistent_jte_xyz"))
+        }
+
+        // Journey trigger views
+        if let journeyTriggerViews = config[Keys.journeyTriggerViews] as? [String] {
+            for name in journeyTriggerViews {
+                XCTAssertTrue(moduleConfig!.isJourneyTriggerView(name))
+            }
+            XCTAssertFalse(moduleConfig!.isJourneyTriggerView("nonexistent_jtv_xyz"))
         }
     }
 

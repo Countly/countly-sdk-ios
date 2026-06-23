@@ -1,4 +1,5 @@
 ## XX.XX.XX
+* Added support for SDK behavior settings that control the SDK's automatic session tracking, automatic view tracking, automatic crash reporting, and Journey Trigger Views.
 * Added a new user properties functions on `CountlyUserDetails`:
   * `setProperty:value:` for setting a single predefined or custom user property.
   * `setProperties:` for setting multiple predefined and custom properties in one call.
