@@ -571,7 +571,10 @@ static dispatch_once_t onceToken;
     }
     
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+    {
+        CLY_LOG_W(@"%s, fetch is skipped while in temporary device ID mode", __FUNCTION__);
         return;
+    }
 
     _lastFetchTimestamp = NSDate.date.timeIntervalSince1970 * 1000;
 

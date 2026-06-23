@@ -152,12 +152,91 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      * Verifies that the configuration is properly handled when received through the request generator.
      */
     func test_serverConfig_withImmediateRequestGenerator() throws {
-        
+
         try initServerConfigWithValues { config, serverConfig in
             config.urlSessionConfiguration = createUrlSessionConfigForResponse(serverConfig)
         }
     }
-    
+
+    /**
+     * Regression test for SDK Behavior Settings (server config) deferral in temporary device ID mode.
+     *
+     * The server config fetch is an immediate request carrying device_id. When the SDK starts in
+     * temporary device ID mode it must not be sent (it would create a CLYTemporaryDeviceID user), but
+     * it must not be lost either: it should be deferred and run once a real device ID is assigned.
+     *
+     * 1- Start the SDK already in temporary device ID mode, with a mock session that counts method=sc requests
+     * 2- Verify NO server config request is sent while in temporary mode (inverted expectation)
+     * 3- Assign a real device ID (leaving temporary mode)
+     * 4- Verify the deferred server config request now runs
+     */
+    func test_serverConfigFetch_isDeferred_untilLeavingTemporaryDeviceIDMode() {
+        let realDeviceID = "real_user_after_temp"
+
+        // A distinctive server config so we can prove the re-fetched response is actually applied
+        // through the cached config (i.e. the cached config is valid and the re-fetch works end-to-end).
+        let builder = ServerConfigBuilder()
+            .networking(true)
+            .sessionUpdateInterval(120)
+            .limitKeyLength(89)
+            .limitValueSize(43)
+        let serverConfigJson = builder.build()
+
+        let noFetchInTempMode = self.expectation(description: "No server config fetch while in temporary device ID mode")
+        noFetchInTempMode.isInverted = true
+        let fetchAfterExit = self.expectation(description: "Deferred server config fetch runs after leaving temporary mode")
+        fetchAfterExit.assertForOverFulfill = false
+
+        var inTemporaryMode = true
+        var capturedSCRequestURL: String?
+        MockURLProtocol.requestHandler = { request in
+            let urlString = request.url?.absoluteString ?? ""
+            if urlString.contains("method=sc") {
+                if inTemporaryMode {
+                    noFetchInTempMode.fulfill()
+                } else {
+                    capturedSCRequestURL = urlString
+                    fetchAfterExit.fulfill()
+                }
+                let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+                return (serverConfigJson.data(using: .utf8), response, nil)
+            }
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            return ("{}".data(using: .utf8), response, nil)
+        }
+
+        let config = TestUtils.createBaseConfig()
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [MockURLProtocol.self]
+        config.urlSessionConfiguration = sessionConfig
+        config.enableTemporaryDeviceIDMode()
+
+        let countly = createLocalCountly()
+        countly.start(with: config)
+
+        // Phase 1: nothing should hit the server config endpoint while in temporary mode
+        wait(for: [noFetchInTempMode], timeout: 4)
+
+        // Phase 2: leaving temporary mode should run the deferred fetch using the cached config
+        inTemporaryMode = false
+        countly.changeDeviceIDWithoutMerge(realDeviceID)
+
+        wait(for: [fetchAfterExit], timeout: 10)
+
+        // The re-fetch must carry the real device ID (the cached config / ordering must not leak the
+        // temporary device ID, which is what created the CLYTemporaryDeviceID user in the first place).
+        XCTAssertNotNil(capturedSCRequestURL, "A server config request should have been made after leaving temporary mode")
+        XCTAssertTrue(capturedSCRequestURL?.contains("device_id=\(realDeviceID)") ?? false, "SBS re-fetch must use the real device ID")
+        XCTAssertFalse(capturedSCRequestURL?.contains("CLYTemporaryDeviceID") ?? true, "SBS re-fetch must not leak the temporary device ID")
+        // The re-fetch must use the cached config's app key.
+        XCTAssertTrue(capturedSCRequestURL?.contains("app_key=\(TestUtils.commonAppKey)") ?? false, "SBS re-fetch must use the cached config app key")
+
+        // The re-fetched response must actually be applied to the SDK. This proves the cached config is
+        // valid and the re-fetch path works end-to-end (not just that a request was sent).
+        TestUtils.sleep(2, { builder.validateAgainst() })
+    }
+
+
     /**
      * Tests that all features work correctly with default server configuration.
      * Verifies that all SDK features (sessions, events, views, crashes, etc.) function as expected

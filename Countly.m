@@ -10,6 +10,7 @@
 {
     NSTimer* timer;
     BOOL isSuspended;
+    CountlyConfig* _startConfig;
 }
 @end
 
@@ -103,7 +104,8 @@ static dispatch_once_t onceToken;
     CountlyCommon.sharedInstance.internalLogLevel = config.internalLogLevel;
 
     config = [self checkAndFixInternalLimitsConfig:config];
-    
+    _startConfig = config;
+
     if (config.disableSDKBehaviorSettingsUpdates) {
         [CountlyServerConfig.sharedInstance disableSDKBehaviourSettings];
     }
@@ -739,8 +741,10 @@ static dispatch_once_t onceToken;
 
         [CountlyConnectionManager.sharedInstance proceedOnQueue];
 
+        [CountlyServerConfig.sharedInstance fetchServerConfig:_startConfig];
+
         [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfigAutomatically];
-        
+
         [CountlyHealthTracker.sharedInstance sendHealthCheck];
 
         return;
