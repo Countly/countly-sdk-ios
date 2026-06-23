@@ -232,5 +232,60 @@ class CountlyContentBuilderTests: CountlyBaseTestCase {
 
         XCTAssertEqual(fetchCount, countAfterFirstFetch, "No additional content fetches should occur after exitContentZone")
     }
+
+    /**
+     * <pre>
+     * Reproduction + regression test for the temporary-device-ID leak.
+     *
+     * The content fetch is an immediate request (it bypasses the persisted request queue and its
+     * temporary-ID guard) and it carries device_id. While in temporary device ID mode it must not be
+     * sent, otherwise a "CLYTemporaryDeviceID" user is created on the server.
+     *
+     * 1- Init SDK with MockURLProtocol, then enter temporary device ID mode
+     * 2- Enter content zone with zero initial delay
+     * 3- Verify NO request to /o/sdk/content is made while in temporary mode (inverted expectation)
+     * 4- Exit content zone, switch to a real device ID (leaving temporary mode)
+     * 5- Re-enter content zone and verify the content fetch now fires normally
+     * </pre>
+     */
+    func test_fetchContent_isBlocked_inTemporaryDeviceIDMode() {
+        let noFetchInTempMode = self.expectation(description: "No content fetch while in temporary device ID mode")
+        noFetchInTempMode.isInverted = true
+        let fetchAfterExit = self.expectation(description: "Content fetch resumes after leaving temporary mode")
+        fetchAfterExit.assertForOverFulfill = false
+
+        var inTemporaryMode = true
+        MockURLProtocol.requestHandler = { request in
+            if let url = request.url?.absoluteString, url.contains("/o/sdk/content") {
+                if inTemporaryMode {
+                    noFetchInTempMode.fulfill()
+                } else {
+                    fetchAfterExit.fulfill()
+                }
+            }
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: nil)!
+            return ("{}".data(using: .utf8)!, response, nil)
+        }
+
+        let config = createContentTestConfig()
+        Countly.sharedInstance().start(with: config)
+        Countly.sharedInstance().enableTemporaryDeviceIDMode()
+
+        CountlyContentBuilderInternal.sharedInstance().contentInitialDelay = 0
+        CountlyContentBuilderInternal.sharedInstance().enterContentZone([])
+
+        // Phase 1: nothing should hit the content endpoint while in temporary mode
+        wait(for: [noFetchInTempMode], timeout: 5)
+
+        // Phase 2: leave temporary mode by assigning a real device ID, then re-enter the content zone
+        CountlyContentBuilderInternal.sharedInstance().exitContentZone()
+        inTemporaryMode = false
+        Countly.sharedInstance().changeDeviceIDWithoutMerge("real_user_after_temp")
+
+        CountlyContentBuilderInternal.sharedInstance().contentInitialDelay = 0
+        CountlyContentBuilderInternal.sharedInstance().enterContentZone([])
+
+        wait(for: [fetchAfterExit], timeout: 15)
+    }
 }
 #endif

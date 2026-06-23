@@ -197,7 +197,13 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
         return;
-    
+
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+    {
+        CLY_LOG_W(@"%s content can not be fetched while in temporary device ID mode", __FUNCTION__);
+        return;
+    }
+
     if(_isCurrentlyContentShown){
         CLY_LOG_I(@"%s a content is already shown, skipping" ,__FUNCTION__);
         return;

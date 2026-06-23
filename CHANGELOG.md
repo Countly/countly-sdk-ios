@@ -14,6 +14,7 @@
 * Mitigated an issue where invalid or unknown `sdkBehaviorSettings` keys were persisted.
 * Mitigated an issue where listing-filter conflicts cleared keys across unrelated categories.
 * Mitigated an issue where consent could be sent twice during initialization.
+* Mitigated an issue where content fetches and remote config requests could be sent while in temporary device ID mode, creating a `CLYTemporaryDeviceID` user on the server.
 
 * Deprecated the direct property setters on `CountlyUserDetails`: `name`, `username`, `email`, `organization`, `phone`, `gender`, `pictureURL`, `pictureLocalPath`, `birthYear`, `custom`. Use `setProperty:value:` or `setProperties:` instead.
 * Deprecated `set:value:`, `set:numberValue:`, `set:boolValue:` on `CountlyUserDetails`. Use `setProperty:value:` instead.
