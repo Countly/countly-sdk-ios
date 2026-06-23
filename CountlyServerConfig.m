@@ -620,8 +620,9 @@ static dispatch_once_t onceToken;
 
 - (NSURLRequest *)serverConfigRequest
 {
-    NSString *queryString = [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%@&%@=%@&%@=%@", kCountlyQSKeyMethod, kCountlySCKeySC, kCountlyQSKeyAppKey, CountlyConnectionManager.sharedInstance.appKey.cly_URLEscaped, kCountlyQSKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped,
-                                                       kCountlyQSKeySDKName, CountlyCommon.sharedInstance.SDKName, kCountlyQSKeySDKVersion, CountlyCommon.sharedInstance.SDKVersion];
+    NSString *queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
+
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMethod, kCountlySCKeySC];
 
     queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyAppVersionKey, CountlyDeviceInfo.appVersion];
 
