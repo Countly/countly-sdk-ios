@@ -66,7 +66,7 @@ static dispatch_once_t onceToken;
 
 - (void)resetInstance {
     CLY_LOG_I(@"%s", __FUNCTION__);
-#if (TARGET_OS_IOS || TARGET_OS_VISION )
+#if (TARGET_OS_IOS)
     [NSNotificationCenter.defaultCenter removeObserver:self name:UIDeviceOrientationDidChangeNotification object:nil];
 #endif
     _hasStarted = false;

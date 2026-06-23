@@ -1,4 +1,4 @@
-// swift-tools-version:5.3
+// swift-tools-version:5.9
 
 import PackageDescription
 
@@ -11,7 +11,8 @@ let package = Package(
         .iOS(.v10),
         .macOS(.v10_14),
         .tvOS(.v10),
-        .watchOS(.v4)
+        .watchOS(.v4),
+        .visionOS(.v1)
     ],
  
     products: 
@@ -45,14 +46,14 @@ let package = Package(
             linkerSettings: 
             [
                 .linkedFramework("Foundation"),
-                .linkedFramework("UIKit", .when(platforms: [.iOS, .tvOS])),
+                .linkedFramework("UIKit", .when(platforms: [.iOS, .tvOS, .visionOS])),
                 .linkedFramework("WatchKit", .when(platforms: [.watchOS])),
                 .linkedFramework("WatchConnectivity", .when(platforms: [.iOS, .watchOS])),
                 .linkedFramework("AppKit", .when(platforms: [.macOS])),
                 .linkedFramework("IOKit", .when(platforms: [.macOS])),
-                .linkedFramework("UserNotifications", .when(platforms: [.iOS, .macOS])),
+                .linkedFramework("UserNotifications", .when(platforms: [.iOS, .macOS, .visionOS])),
                 .linkedFramework("CoreLocation"),
-                .linkedFramework("WebKit", .when(platforms: [.iOS])),
+                .linkedFramework("WebKit", .when(platforms: [.iOS, .visionOS])),
                 .linkedFramework("CoreTelephony", .when(platforms: [.iOS])),
             ]),
         .testTarget(
