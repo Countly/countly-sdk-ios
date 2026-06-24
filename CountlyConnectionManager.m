@@ -18,6 +18,7 @@
 
 @property (nonatomic, strong) NSDate *startTime;
 @property (nonatomic, assign) atomic_bool backoff;
+@property (nonatomic, assign) atomic_bool isProcessingQueue;
 @property (nonatomic, strong) NSMutableDictionary<NSString *, CLYRequestCallback> *internalRequestCallbacks;
 @property (nonatomic, strong) NSMutableArray<CLYQueueFlushRunnable> *queueFlushRunnables;
 @property (nonatomic) BOOL hasAnyRequestFailed;
@@ -109,6 +110,7 @@ static dispatch_once_t onceToken;
         unsentSessionLength = 0.0;
         isSessionStarted = NO;
         atomic_init(&_backoff, NO);
+        atomic_init(&_isProcessingQueue, NO);
         _internalRequestCallbacks = [NSMutableDictionary dictionary];
         _queueFlushRunnables = [NSMutableArray array];
         _hasAnyRequestFailed = NO;
@@ -133,6 +135,7 @@ static dispatch_once_t onceToken;
         [self->_queueFlushRunnables removeAllObjects];
     });
     _hasAnyRequestFailed = NO;
+    atomic_store(&_isProcessingQueue, NO);
 }
 
 - (void)setHost:(NSString *)host
@@ -194,33 +197,37 @@ static dispatch_once_t onceToken;
         return;
     }
     
-    if (self.connection)
+    if (self.connection || atomic_exchange(&_isProcessingQueue, YES))
     {
         CLY_LOG_D(@"Proceeding on queue is aborted: Already has a request in process!");
         return;
     }
-    
+
     if (isCrashing)
     {
         CLY_LOG_D(@"Proceeding on queue is aborted: Application is crashing!");
+        atomic_store(&_isProcessingQueue, NO);
         return;
     }
-    
+
     if (self.isTerminating)
     {
         CLY_LOG_D(@"Proceeding on queue is aborted: Application is terminating!");
+        atomic_store(&_isProcessingQueue, NO);
         return;
     }
-    
+
     if (CountlyPersistency.sharedInstance.isQueueBeingModified)
     {
         CLY_LOG_D(@"Proceeding on queue is aborted: Queue is being modified!");
+        atomic_store(&_isProcessingQueue, NO);
         return;
     }
-    
+
     BOOL backoffFlag = atomic_load(&_backoff) ? YES : NO;
     if (backoffFlag) {
         CLY_LOG_I(@"%s, currently backed off, skipping proceeding the queue", __FUNCTION__);
+        atomic_store(&_isProcessingQueue, NO);
         return;
     }
     
@@ -263,6 +270,7 @@ static dispatch_once_t onceToken;
         // Reset start time and failure flag for future queue processing
         self.startTime = nil;
         self.hasAnyRequestFailed = NO;
+        atomic_store(&_isProcessingQueue, NO);
         return;
     }
     
@@ -272,17 +280,19 @@ static dispatch_once_t onceToken;
         [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
         
         [CountlyPersistency.sharedInstance saveToFile];
-        
+
+        atomic_store(&_isProcessingQueue, NO);
         [self proceedOnQueue];
-        
+
         return;
     }
-    
+
 
     NSString* temporaryDeviceIDQueryString = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, CLYTemporaryDeviceID];
     if ([firstItemInQueue containsString:temporaryDeviceIDQueryString])
     {
         CLY_LOG_D(@"Proceeding on queue is aborted: Device ID in request is CLYTemporaryDeviceID!");
+        atomic_store(&_isProcessingQueue, NO);
         return;
     }
 
@@ -391,6 +401,11 @@ static dispatch_once_t onceToken;
 
                 [CountlyPersistency.sharedInstance saveToFile];
 
+                // Clear the processing flag only after the head has been removed
+                // from the queue. Clearing it earlier would let a concurrent
+                // proceedOnQueue caller re-send the same head request.
+                atomic_store(&self->_isProcessingQueue, NO);
+
                 if(CountlyServerConfig.sharedInstance.backoffMechanism && [self backoff:duration queryString:queryString]){
                     CLY_LOG_D(@"%s, backed off dropping proceeding the queue", __FUNCTION__);
                     self.startTime = nil;
@@ -420,6 +435,7 @@ static dispatch_once_t onceToken;
                 [CountlyHealthTracker.sharedInstance logFailedNetworkRequestWithStatusCode:((NSHTTPURLResponse*)response).statusCode errorResponse: [data cly_stringUTF8]];
                 [CountlyHealthTracker.sharedInstance saveState];
                 self.startTime = nil;
+                atomic_store(&self->_isProcessingQueue, NO);
             }
         }
         else
@@ -441,6 +457,7 @@ static dispatch_once_t onceToken;
             [CountlyPersistency.sharedInstance saveToFile];
 #endif
             self.startTime = nil;
+            atomic_store(&self->_isProcessingQueue, NO);
         }
     }];
 
@@ -595,9 +612,9 @@ static dispatch_once_t onceToken;
     }
 #endif
 
-    if([Countly.user hasUnsyncedChanges])
+    if ([CountlyUserDetails.sharedInstance hasUnsyncedChanges])
     {
-        [Countly.user save];
+        [CountlyUserDetails.sharedInstance save];
     }
 
     isSessionStarted = YES;
@@ -638,9 +655,9 @@ static dispatch_once_t onceToken;
         return;
     }
     
-    if([Countly.user hasUnsyncedChanges])
+    if ([CountlyUserDetails.sharedInstance hasUnsyncedChanges])
     {
-        [Countly.user save];
+        [CountlyUserDetails.sharedInstance save];
     }
 
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%d",
@@ -680,9 +697,9 @@ static dispatch_once_t onceToken;
 
 - (void)sendEventsWithSaveIfNeeded
 {
-    if([Countly.user hasUnsyncedChanges])
+    if ([CountlyUserDetails.sharedInstance hasUnsyncedChanges])
     {
-        [Countly.user save];
+        [CountlyUserDetails.sharedInstance save];
     }
     else
     {

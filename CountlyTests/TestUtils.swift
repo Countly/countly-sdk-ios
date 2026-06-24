@@ -13,7 +13,7 @@ class TestUtils {
     static let commonDeviceId: String = "deviceId"
     static let commonAppKey: String = "appkey"
     static let host: String = "https://YOUR_SERVER"
-    static let SDK_VERSION = "26.1.1"
+    static let SDK_VERSION = "26.1.2"
     static let SDK_NAME = "objc-native-ios"
 
     static func cleanup() {
@@ -46,12 +46,12 @@ class TestUtils {
         }
     }
 
-    static func validateRequest(_ params: [String: Any], _ idx: Int) {
-        validateRequest(params, idx, { request in })
+    static func validateRequest(_ params: [String: Any], _ idx: Int, from source: [String]? = nil) {
+        validateRequest(params, idx, { request in }, from: source)
     }
 
-    static func validateRequest(_ params: [String: Any], _ idx: Int, _ customValidator: ([String: Any]) -> Void) {
-        guard let rq = getCurrentRQ() else {
+    static func validateRequest(_ params: [String: Any], _ idx: Int, _ customValidator: ([String: Any]) -> Void, from source: [String]? = nil) {
+        guard let rq = source ?? getCurrentRQ() else {
             XCTFail("Request queue is nil.")
             return
         }
@@ -60,7 +60,7 @@ class TestUtils {
             return
         }
 
-        let requestStr = getCurrentRQ()![idx]
+        let requestStr = rq[idx]
         let request = parseQueryString(requestStr)
         validateRequiredParams(request)
 
@@ -91,9 +91,9 @@ class TestUtils {
 
     static func validateEventInRQ(
         _ eventName: String, _ segmentation: [String: Any], _ idx: Int, _ rqCount: Int, _ eventIdx: Int,
-        _ eventCount: Int
+        _ eventCount: Int, from source: [String]? = nil
     ) throws {
-        let requestStr = getCurrentRQ()![idx]
+        let requestStr = (source ?? getCurrentRQ())![idx]
         let request = parseQueryString(requestStr)
         validateRequiredParams(request)
 
@@ -286,6 +286,13 @@ class TestUtils {
         return result
     }
 
+    /// Best-effort array coercion that handles both Swift `[T]` and bridged NSArray.
+    static func asArray(_ value: Any) -> [Any]? {
+        if let arr = value as? [Any] { return arr }
+        if let nsArr = value as? NSArray { return nsArr as? [Any] }
+        return nil
+    }
+
     static func compareDictionaries(_ dict1: [String: Any], _ dict2: [String: Any]) -> Bool {
         guard dict1.count == dict2.count else {
             return false
@@ -299,6 +306,13 @@ class TestUtils {
             if let nestedDict1 = value as? [String: Any], let nestedDict2 = otherValue as? [String: Any] {
                 if !compareDictionaries(nestedDict1, nestedDict2) {
                     return false
+                }
+            } else if let arr1 = TestUtils.asArray(value), let arr2 = TestUtils.asArray(otherValue) {
+                // Element-by-element string comparison so Swift `[String]` matches
+                // NSArray bridged from JSON-parsed request payloads.
+                if arr1.count != arr2.count { return false }
+                for (a, b) in zip(arr1, arr2) {
+                    if "\(a)" != "\(b)" { return false }
                 }
             } else if "\(value)" != "\(otherValue)" {
                 return false

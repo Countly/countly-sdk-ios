@@ -29,7 +29,7 @@ NSString* const kCountlyVisibility = @"cly_v";
 #endif
 @end
 
-NSString* const kCountlySDKVersion = @"26.1.1";
+NSString* const kCountlySDKVersion = @"26.1.2";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
@@ -66,12 +66,14 @@ static dispatch_once_t onceToken;
 
 - (void)resetInstance {
     CLY_LOG_I(@"%s", __FUNCTION__);
-#if (TARGET_OS_IOS || TARGET_OS_VISION )
+#if (TARGET_OS_IOS)
     [NSNotificationCenter.defaultCenter removeObserver:self name:UIDeviceOrientationDidChangeNotification object:nil];
 #endif
     _hasStarted = false;
+    _hasFinishedInit       = false;
     _maxKeyLength = kCountlyMaxKeyLength;
     _maxValueLength = kCountlyMaxValueSize;
+    _maxValueLengthPicture = kCountlyMaxValueSizePicture;
     _maxSegmentationValues = kCountlyMaxSegmentationValues;
     onceToken = 0;
     s_sharedInstance = nil;
@@ -341,6 +343,22 @@ void CountlyPrint(NSString *stringToPrint)
     }
 }
 
+- (NSURLSession *)ImmediateURLSession
+{
+    // Base on the user-provided URLSessionConfiguration so that things like
+    // protocolClasses (test mocks), cookie policy, etc. are preserved.
+    // If none was provided, fall back to default session configuration.
+    NSURLSessionConfiguration *userConfig = CountlyConnectionManager.sharedInstance.URLSessionConfiguration;
+    NSURLSessionConfiguration *immediateConfig = userConfig ? [userConfig copy] : [NSURLSessionConfiguration defaultSessionConfiguration];
+
+    // Immediate requests must not be constrained by the SDK's configured
+    // request timeout — reset to the system defaults.
+    immediateConfig.timeoutIntervalForRequest = 60;
+    immediateConfig.timeoutIntervalForResource = 7 * 24 * 60 * 60;
+
+    return [NSURLSession sessionWithConfiguration:immediateConfig];
+}
+
 #if (TARGET_OS_IOS)
 - (bool) hasTopNotch:(UIEdgeInsets)safeArea
 {
@@ -360,7 +378,7 @@ void CountlyPrint(NSString *stringToPrint)
             }
         }
     } else {
-        window = UIApplication.sharedApplication.delegate.window;
+        window = [[UIApplication sharedApplication].delegate window];
     }
 
     if (!window) return CGSizeZero;
@@ -631,6 +649,17 @@ NSString* CountlyJSONFromObject(id object)
     return self;
 }
 
+- (NSString *)cly_truncatedPictureValue:(NSString *)explanation
+{
+    NSUInteger limit = CountlyCommon.sharedInstance.maxValueLengthPicture;
+    if (self.length > limit)
+    {
+        CLY_LOG_W(@"%@ length is more than the picture limit (%ld)! So, it will be truncated: %@.", explanation, (long)limit, self);
+        return [self substringToIndex:limit];
+    }
+    return self;
+}
+
 - (NSString *)cly_truncatedValue:(NSString *)explanation
 {
     if (self.length > CountlyCommon.sharedInstance.maxValueLength)
@@ -721,7 +750,7 @@ NSString* CountlyJSONFromObject(id object)
         
         if ([value isKindOfClass:[NSNumber class]] ||
             [value isKindOfClass:[NSString class]] ||
-            ([value isKindOfClass:[NSArray class]] && (value = [value cly_filterSupportedDataTypes]))) {
+            ([value isKindOfClass:[NSArray class]] && (value = [(NSArray *)value cly_filterSupportedDataTypes]))) {
             [filteredDictionary setObject:value forKey:key];
         } else {
             CLY_LOG_W(@"%s, Removed invalid type for key %@: %@", __FUNCTION__, key, [value class]);

@@ -441,6 +441,14 @@ typedef enum : NSUInteger
 - (CountlySDKLimitsConfig *)sdkInternalLimits;
 
 /**
+ * User properties to set automatically right after SDK init.
+ * @discussion Equivalent to calling @c [Countly.user setProperties:data] followed by @c save once the SDK has started.
+ * @discussion Keys matching predefined fields (name, username, email, organization, phone, gender, picture, picturePath, byear)
+ * are routed to the corresponding top-level user-detail field. All other keys are stored as custom user properties.
+ */
+@property (nonatomic, copy) NSDictionary<NSString *, id> * _Nullable providedUserProperties;
+
+/**
  * For sending all requests using HTTP POST method.
  * @discussion If set, all requests will be sent using HTTP POST method. Otherwise; only the requests with a file upload or data size more than 2048 bytes will be sent using HTTP POST method.
  */

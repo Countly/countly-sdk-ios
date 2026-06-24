@@ -86,6 +86,7 @@
 		96095A5F2F20105600FDE933 /* TouchDelegatingView.h in Headers */ = {isa = PBXBuildFile; fileRef = 96095A5E2F20105600FDE933 /* TouchDelegatingView.h */; };
 		962485BA2D9E971800FA3C20 /* TestUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 962485B92D9E971400FA3C20 /* TestUtils.swift */; };
 		96329DE02D9426F300BFD641 /* CountlyServerConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96329DDF2D9426F300BFD641 /* CountlyServerConfigTests.swift */; };
+		ABCDE001000000000000ABCD /* CountlyServerConfigValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABCDE002000000000000ABCD /* CountlyServerConfigValidationTests.swift */; };
 		96329DE22D94299D00BFD641 /* ServerConfigBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96329DE12D94299D00BFD641 /* ServerConfigBuilder.swift */; };
 		96329DE42D952F1500BFD641 /* MockURLProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96329DE32D952F1500BFD641 /* MockURLProtocol.swift */; };
 		965A2E9C2DDDCDAC00F28F6A /* CountlyHealthTracker.m in Sources */ = {isa = PBXBuildFile; fileRef = 965A2E9B2DDDCDAC00F28F6A /* CountlyHealthTracker.m */; };
@@ -93,6 +94,7 @@
 		9673567F2EC60CD400C742D8 /* TestURLProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9673567E2EC60CD400C742D8 /* TestURLProtocol.swift */; };
 		968426812BF2302C007B303E /* CountlyConnectionManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 968426802BF2302C007B303E /* CountlyConnectionManagerTests.swift */; };
 		96CB10A12F04B3A100D1E2F0 /* CountlyContentBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96CB10A02F04B3A100D1E2F0 /* CountlyContentBuilderTests.swift */; };
+		AB10000011112222333344A1 /* CountlyScreenMetricsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB10000011112222333344A0 /* CountlyScreenMetricsTests.swift */; };
 		9691B7652F1FA35500A6ADCB /* CountlyOverlayWindow.h in Headers */ = {isa = PBXBuildFile; fileRef = 9691B7642F1FA35500A6ADCB /* CountlyOverlayWindow.h */; };
 		9691B7672F1FA35C00A6ADCB /* CountlyOverlayWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = 9691B7662F1FA35C00A6ADCB /* CountlyOverlayWindow.m */; };
 		969E5BCE2ECC4D3200AB406A /* CountlyConsentManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 969E5BCD2ECC4D2C00AB406A /* CountlyConsentManagerTests.swift */; };
@@ -210,6 +212,7 @@
 		96095A5E2F20105600FDE933 /* TouchDelegatingView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TouchDelegatingView.h; sourceTree = "<group>"; };
 		962485B92D9E971400FA3C20 /* TestUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestUtils.swift; sourceTree = "<group>"; };
 		96329DDF2D9426F300BFD641 /* CountlyServerConfigTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyServerConfigTests.swift; sourceTree = "<group>"; };
+		ABCDE002000000000000ABCD /* CountlyServerConfigValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyServerConfigValidationTests.swift; sourceTree = "<group>"; };
 		96329DE12D94299D00BFD641 /* ServerConfigBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerConfigBuilder.swift; sourceTree = "<group>"; };
 		96329DE32D952F1500BFD641 /* MockURLProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockURLProtocol.swift; sourceTree = "<group>"; };
 		965A2E9A2DDDCDAC00F28F6A /* CountlyHealthTracker.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyHealthTracker.h; sourceTree = "<group>"; };
@@ -218,6 +221,7 @@
 		9673567E2EC60CD400C742D8 /* TestURLProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestURLProtocol.swift; sourceTree = "<group>"; };
 		968426802BF2302C007B303E /* CountlyConnectionManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyConnectionManagerTests.swift; sourceTree = "<group>"; };
 		96CB10A02F04B3A100D1E2F0 /* CountlyContentBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyContentBuilderTests.swift; sourceTree = "<group>"; };
+		AB10000011112222333344A0 /* CountlyScreenMetricsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyScreenMetricsTests.swift; sourceTree = "<group>"; };
 		9691B7642F1FA35500A6ADCB /* CountlyOverlayWindow.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyOverlayWindow.h; sourceTree = "<group>"; };
 		9691B7662F1FA35C00A6ADCB /* CountlyOverlayWindow.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyOverlayWindow.m; sourceTree = "<group>"; };
 		969E5BCD2ECC4D2C00AB406A /* CountlyConsentManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyConsentManagerTests.swift; sourceTree = "<group>"; };
@@ -268,11 +272,13 @@
 				96329DE32D952F1500BFD641 /* MockURLProtocol.swift */,
 				96329DE12D94299D00BFD641 /* ServerConfigBuilder.swift */,
 				96329DDF2D9426F300BFD641 /* CountlyServerConfigTests.swift */,
+				ABCDE002000000000000ABCD /* CountlyServerConfigValidationTests.swift */,
 				1A5C4C962B35B0850032EE1F /* CountlyTests.swift */,
 				1A50D7042B3C5AA3009C6938 /* CountlyBaseTestCase.swift */,
 				1AFD79012B3EF82C00772FBD /* CountlyTests-Bridging-Header.h */,
 				968426802BF2302C007B303E /* CountlyConnectionManagerTests.swift */,
 				96CB10A02F04B3A100D1E2F0 /* CountlyContentBuilderTests.swift */,
+				AB10000011112222333344A0 /* CountlyScreenMetricsTests.swift */,
 				96E680412BFF89AC0091E105 /* CountlyCrashReporterTests.swift */,
 				EBD1642D826B471A80175BE3 /* CountlyWebViewManagerTests.swift */,
 				265156CB5F59417EA14BAC2F /* CountlyWebViewManager+Tests.h */,
@@ -555,8 +561,10 @@
 				3979E47D2C0760E900FA1CA4 /* CountlyUserProfileTests.swift in Sources */,
 				968426812BF2302C007B303E /* CountlyConnectionManagerTests.swift in Sources */,
 				96CB10A12F04B3A100D1E2F0 /* CountlyContentBuilderTests.swift in Sources */,
+				AB10000011112222333344A1 /* CountlyScreenMetricsTests.swift in Sources */,
 				96329DE42D952F1500BFD641 /* MockURLProtocol.swift in Sources */,
 				96329DE02D9426F300BFD641 /* CountlyServerConfigTests.swift in Sources */,
+				ABCDE001000000000000ABCD /* CountlyServerConfigValidationTests.swift in Sources */,
 				3966DBCF2C11EE270002ED97 /* CountlyDeviceIDTests.swift in Sources */,
 				3964A3E72C2AF8E90091E677 /* CountlySegmentationTests.swift in Sources */,
 				96DA74BB2D9FB687006FA6FF /* MockFeedbackWidget.swift in Sources */,
@@ -736,13 +744,13 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				MACOSX_DEPLOYMENT_TARGET = 10.14;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = "";
-				SUPPORTED_PLATFORMS = "watchsimulator watchos macosx iphonesimulator iphoneos appletvsimulator appletvos";
+				SUPPORTED_PLATFORMS = "watchsimulator watchos macosx iphonesimulator iphoneos appletvsimulator appletvos xros xrsimulator";
 				SUPPORTS_MACCATALYST = YES;
 				VERSIONING_SYSTEM = "apple-generic";
 				VERSION_INFO_PREFIX = "";
@@ -797,12 +805,12 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				MACOSX_DEPLOYMENT_TARGET = 10.14;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = "";
-				SUPPORTED_PLATFORMS = "watchsimulator watchos macosx iphonesimulator iphoneos appletvsimulator appletvos";
+				SUPPORTED_PLATFORMS = "watchsimulator watchos macosx iphonesimulator iphoneos appletvsimulator appletvos xros xrsimulator";
 				SUPPORTS_MACCATALYST = YES;
 				VALIDATE_PRODUCT = YES;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -823,14 +831,14 @@
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.14;
-				MARKETING_VERSION = 26.1.1;
+				MARKETING_VERSION = 26.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = ly.count.CountlyiOSSDK;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -855,14 +863,14 @@
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
-				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@loader_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.14;
-				MARKETING_VERSION = 26.1.1;
+				MARKETING_VERSION = 26.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = ly.count.CountlyiOSSDK;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

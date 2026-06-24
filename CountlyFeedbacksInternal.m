@@ -252,8 +252,9 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         return;
 
     NSURLRequest* feedbackWidgetCheckRequest = [self widgetCheckURLRequest:widgetID];
-    NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:feedbackWidgetCheckRequest completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:feedbackWidgetCheckRequest completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
+        // IMMEDIATE REQUEST to find them better in search
         NSDictionary* widgetInfo = nil;
 
         if (!error)
@@ -300,7 +301,8 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 {
     __block CLYInternalViewController* webVC = CLYInternalViewController.new;
     webVC.view.backgroundColor = UIColor.whiteColor;
-    webVC.view.bounds = UIScreen.mainScreen.bounds;
+    CGSize windowSize = [CountlyCommon.sharedInstance getWindowSize];
+    webVC.view.bounds = CGRectMake(0, 0, windowSize.width, windowSize.height);
     webVC.modalPresentationStyle = UIModalPresentationCustom;
 
     WKWebView* webView = [WKWebView.alloc initWithFrame:webVC.view.bounds];
@@ -437,8 +439,9 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         return;
     }
 
-    NSURLSessionTask* task = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self feedbacksRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:[self feedbacksRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
+        // IMMEDIATE REQUEST to find them better in search
         NSDictionary *feedbacksResponse = nil;
 
         if (!error)

@@ -22,6 +22,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)enterContentZone:(NSArray<NSString *> *)tags;
 - (void)exitContentZone;
+- (void)resetInstance;
 - (void)changeContent:(NSArray<NSString *> *)tags;
 - (void)refreshContentZone;
 - (void)refreshContentZoneJTE;

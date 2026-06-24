@@ -1,3 +1,25 @@
+## 26.1.2
+* ! Minor breaking change ! Raised the minimum supported deployment target to iOS 12 and tvOS 12 (previously iOS 10 and tvOS 10) for compatibility with Xcode 26 and the iOS 26 SDK. Apps targeting iOS 10/11 or tvOS 10/11 are no longer supported.
+
+* Added support for building against the iOS 26 SDK with Xcode 26.
+* Added a new user properties functions on `CountlyUserDetails`:
+  * `setProperty:value:` for setting a single predefined or custom user property.
+  * `setProperties:` for setting multiple predefined and custom properties in one call.
+* Added `providedUserProperties` to `CountlyConfig` to set initial user properties that are applied and saved automatically right after `start`.
+* Added `setMaxValueSizePicture:` to `CountlySDKLimitsConfig` to control the maximum size of picture URLs and picture paths independently of other value limits (default 4096).
+* Updated resolution extraction to accommodate iOS 26 deprecations.
+
+* Mitigated a race condition in the request queue that could drop or duplicate requests.
+* Mitigated an issue where non-queued requests were affected from request timeout settings.
+* Mitigated an issue where default SDK behavior settings overrode user-provided SDK limits.
+* Mitigated an issue where consent could be sent twice during initialization when enabled via SDK Behavior Settings.
+* Mitigated an issue where content fetches and remote config requests could be sent while in temporary device ID mode, creating a `CLYTemporaryDeviceID` user on the server.
+
+* Deprecated the direct property setters on `CountlyUserDetails`: `name`, `username`, `email`, `organization`, `phone`, `gender`, `pictureURL`, `pictureLocalPath`, `birthYear`, `custom`. Use `setProperty:value:` or `setProperties:` instead.
+* Deprecated `set:value:`, `set:numberValue:`, `set:boolValue:` on `CountlyUserDetails`. Use `setProperty:value:` instead.
+* Deprecated `unSet:` on `CountlyUserDetails`. Use `setProperty:value:` with an empty string `@""` to clear a property on the server.
+* Deprecated the `+ user` class accessor on `Countly`. Use `Countly.sharedInstance.userProfile` instead.
+
 ## 26.1.1
 * Added POST method support for contents. 
 * Added robust resource loading checks before displaying content

@@ -49,35 +49,35 @@ extern NSString* const kCountlyLocalPicturePath;
  * @discussion It can be set to an @c NSString, or @c NSNull for clearing it on server.
  * It will be sent to server when @c recordUserDetails method is called.
  */
-@property (nonatomic, copy) id<CountlyUserDetailsNullableString> _Nullable name;
+@property (nonatomic, copy) id<CountlyUserDetailsNullableString> _Nullable name DEPRECATED_MSG_ATTRIBUTE("Use -setProperty:value: with key 'name' instead. Pass @\"\" to clear the field on server.");
 
 /**
  * Default @c username property for user's username in User Profiles.
  * @discussion It can be set to an @c NSString, or @c NSNull for clearing it on server.
  * It will be sent to server when @c recordUserDetails method is called.
  */
-@property (nonatomic, copy) id<CountlyUserDetailsNullableString> _Nullable username;
+@property (nonatomic, copy) id<CountlyUserDetailsNullableString> _Nullable username DEPRECATED_MSG_ATTRIBUTE("Use -setProperty:value: with key 'username' instead.");
 
 /**
  * Default @c email property for user's e-mail in User Profiles.
  * @discussion It can be set to an @c NSString, or @c NSNull for clearing it on server.
  * It will be sent to server when @c recordUserDetails method is called.
  */
-@property (nonatomic, copy) id<CountlyUserDetailsNullableString> _Nullable email;
+@property (nonatomic, copy) id<CountlyUserDetailsNullableString> _Nullable email DEPRECATED_MSG_ATTRIBUTE("Use -setProperty:value: with key 'email' instead.");
 
 /**
  * Default @c organization property for user's organization/company in User Profiles.
  * @discussion It can be set to an @c NSString, or @c NSNull for clearing it on server.
  * It will be sent to server when @c recordUserDetails method is called.
  */
-@property (nonatomic, copy) id<CountlyUserDetailsNullableString> _Nullable organization;
+@property (nonatomic, copy) id<CountlyUserDetailsNullableString> _Nullable organization DEPRECATED_MSG_ATTRIBUTE("Use -setProperty:value: with key 'organization' instead.");
 
 /**
  * Default @c phone property for user's phone number in User Profiles.
  * @discussion It can be set to an @c NSString, or @c NSNull for clearing it on server.
  * It will be sent to server when @c recordUserDetails method is called.
  */
-@property (nonatomic, copy) id<CountlyUserDetailsNullableString> _Nullable phone;
+@property (nonatomic, copy) id<CountlyUserDetailsNullableString> _Nullable phone DEPRECATED_MSG_ATTRIBUTE("Use -setProperty:value: with key 'phone' instead.");
 
 /**
  * Default @c gender property for user's gender in User Profiles.
@@ -85,7 +85,7 @@ extern NSString* const kCountlyLocalPicturePath;
  * It will be sent to server when @c recordUserDetails method is called.
  * @discussion If it is set to case-insensitive @c m or @c f, it is displayed as @c Male or @c Female. Otherwise it will displayed as @c Unknown.
  */
-@property (nonatomic, copy) id<CountlyUserDetailsNullableString> _Nullable gender;
+@property (nonatomic, copy) id<CountlyUserDetailsNullableString> _Nullable gender DEPRECATED_MSG_ATTRIBUTE("Use -setProperty:value: with key 'gender' instead.");
 
 /**
  * Default @c pictureURL property for user's profile photo in User Profiles.
@@ -93,7 +93,7 @@ extern NSString* const kCountlyLocalPicturePath;
  * It will be sent to server when @c recordUserDetails method is called.
  * @discussion It should be a publicly accessible URL string to user's profile photo, so server can download it.
  */
-@property (nonatomic, copy) id<CountlyUserDetailsNullableString> _Nullable pictureURL;
+@property (nonatomic, copy) id<CountlyUserDetailsNullableString> _Nullable pictureURL DEPRECATED_MSG_ATTRIBUTE("Use -setProperty:value: with key 'picture' instead.");
 
 /**
  * Default @c pictureLocalPath property for user's profile photo in User Profiles.
@@ -102,14 +102,14 @@ extern NSString* const kCountlyLocalPicturePath;
  * @discussion It should be a valid local path string to user's profile photo on the device, so it can be uploaded to server.
  * If @c pictureURL is also set at the same time, @c pictureLocalPath will be ignored and @c pictureURL will be used.
  */
-@property (nonatomic, copy) id<CountlyUserDetailsNullableString> _Nullable pictureLocalPath;
+@property (nonatomic, copy) id<CountlyUserDetailsNullableString> _Nullable pictureLocalPath DEPRECATED_MSG_ATTRIBUTE("Use -setProperty:value: with key 'picturePath' instead.");
 
 /**
  * Default @c birthYear property for user's birth year in User Profiles.
  * @discussion It can be set to an @c NSNumber, or @c NSNull for clearing it on server.
  * It will be sent to server when @c recordUserDetails method is called.
  */
-@property (nonatomic, copy) id<CountlyUserDetailsNullableNumber> _Nullable birthYear;
+@property (nonatomic, copy) id<CountlyUserDetailsNullableNumber> _Nullable birthYear DEPRECATED_MSG_ATTRIBUTE("Use -setProperty:value: with key 'byear' instead.");
 
 /**
  * @c custom property for user's custom information as key-value pairs in User Profiles.
@@ -117,12 +117,12 @@ extern NSString* const kCountlyLocalPicturePath;
  * It will be sent to server when @c recordUserDetails method is called.
  * @discussion Key-value pairs in @c custom property can also be modified using custom property modifier methods.
  */
-@property (nonatomic, copy) id<CountlyUserDetailsNullableDictionary> _Nullable custom;
+@property (nonatomic, copy) id<CountlyUserDetailsNullableDictionary> _Nullable custom DEPRECATED_MSG_ATTRIBUTE("Use -setProperties: instead to set multiple custom properties at once.");
 
 /**
  * Returns @c CountlyUserDetails singleton to be used throughout the app.
  * @return The shared @c CountlyUserDetails object
- * @discussion @c Countly.user convenience accessor can also be used.
+ * @discussion @c Countly.sharedInstance.userProfile convenience accessor can also be used and is the recommended way.
  */
 + (instancetype)sharedInstance;
 
@@ -134,7 +134,7 @@ extern NSString* const kCountlyLocalPicturePath;
  * @param key Key for custom property key-value pair
  * @param value String value for custom property key-value pair
  */
-- (void)set:(NSString *)key value:(NSString *)value;
+- (void)set:(NSString *)key value:(NSString *)value DEPRECATED_MSG_ATTRIBUTE("Use -setProperty:value: instead. This method always treats the key as a custom property; -setProperty: routes predefined keys (name, email, etc.) to top-level fields.");
 
 /**
  * Custom user details property modifier for setting a key-value pair where the value is a number.
@@ -142,7 +142,7 @@ extern NSString* const kCountlyLocalPicturePath;
  * @param key Key for custom property key-value pair
  * @param value Number value for custom property key-value pair
  */
-- (void)set:(NSString *)key numberValue:(NSNumber *)value;
+- (void)set:(NSString *)key numberValue:(NSNumber *)value DEPRECATED_MSG_ATTRIBUTE("Use -setProperty:value: instead.");
 
 /**
  * Custom user details property modifier for setting a key-value pair where the value is a boolean.
@@ -150,7 +150,7 @@ extern NSString* const kCountlyLocalPicturePath;
  * @param key Key for custom property key-value pair
  * @param value Boolean value for custom property key-value pair
  */
-- (void)set:(NSString *)key boolValue:(BOOL)value;
+- (void)set:(NSString *)key boolValue:(BOOL)value DEPRECATED_MSG_ATTRIBUTE("Use -setProperty:value: with @(boolValue) instead.");
 
 /**
  * Custom user details property modifier for setting a key-value pair if not set before.
@@ -181,7 +181,7 @@ extern NSString* const kCountlyLocalPicturePath;
  * @discussion When called, this modifier is added to a non-persistent queue and sent to server only when @c save method is called.
  * @param key Key for custom property key-value pair
  */
-- (void)unSet:(NSString *)key;
+- (void)unSet:(NSString *)key DEPRECATED_MSG_ATTRIBUTE("Use -setProperty:value: with an empty string @\"\" to clear a property on the server.");
 
 /**
  * Custom user details property modifier for incrementing a key-value pair's value by 1.
@@ -324,7 +324,39 @@ extern NSString* const kCountlyLocalPicturePath;
  */
 - (void)save;
 
-- (BOOL) hasUnsyncedChanges;
+#pragma mark - User Properties
+
+/**
+ * Sets a single user property by key.
+ * @discussion The key may be either a predefined property (@c name, @c username, @c email, @c organization, @c phone, @c gender, @c picture, @c picturePath, @c byear) or a custom property. Predefined keys are routed to the matching top-level user-detail field; all other keys are stored as custom user properties.
+ * @discussion The change is queued and sent to server when @c save is called. Pending events in the event queue are flushed first so they reach the server in the right order.
+ * @discussion Pass an empty string @c @"" to clear a predefined string field on the server. Pass a negative @c NSNumber for @c byear to clear it.
+ * @param key The user property key. Must not be @c nil.
+ * @param value The user property value. Supported types are @c NSString, @c NSNumber, and @c NSArray (of supported scalar types). Must not be @c nil or @c NSNull.
+ */
+- (void)setProperty:(NSString *)key value:(id)value;
+
+/**
+ * Sets multiple user properties in one call.
+ * @discussion Equivalent to calling @c setProperty:value: for each key-value pair, but bundled into a single batch. Each entry is routed individually — predefined keys go to top-level fields, custom keys are stored under the @c custom dictionary.
+ * @discussion The change is queued and sent to server when @c save is called. Pending events in the event queue are flushed first so they reach the server in the right order.
+ * @discussion Pass an empty string @c @"" as a value to clear the corresponding predefined string field on the server. Entries with @c nil or @c NSNull values are skipped with a warning.
+ * @param data Dictionary of user properties. Must not be @c nil. Empty dictionaries are ignored.
+ */
+- (void)setProperties:(NSDictionary<NSString *, id> *)data;
+
+/**
+ * Clears all queued user property changes without sending them to the server.
+ * @discussion Drops all named-field updates and pending custom property modifications accumulated since the last successful @c save call. No request is made.
+ * @discussion Use this to discard a batch of pending changes before they are sent — for example, if user input is cancelled before submission.
+ */
+- (void)clear;
+
+/**
+ * Indicates whether there are queued user property changes that have not been sent to the server yet.
+ * @return @c YES if a subsequent @c save call would produce a user-details request; @c NO otherwise.
+ */
+- (BOOL)hasUnsyncedChanges;
 
 NS_ASSUME_NONNULL_END
 

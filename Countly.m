@@ -10,6 +10,7 @@
 {
     NSTimer* timer;
     BOOL isSuspended;
+    CountlyConfig* _startConfig;
 }
 @end
 
@@ -101,9 +102,10 @@ static dispatch_once_t onceToken;
     CountlyCommon.sharedInstance.shouldIgnoreTrustCheck = config.shouldIgnoreTrustCheck;
     CountlyCommon.sharedInstance.loggerDelegate = config.loggerDelegate;
     CountlyCommon.sharedInstance.internalLogLevel = config.internalLogLevel;
-    
+
     config = [self checkAndFixInternalLimitsConfig:config];
-    
+    _startConfig = config;
+
     if (config.disableSDKBehaviorSettingsUpdates) {
         [CountlyServerConfig.sharedInstance disableSDKBehaviourSettings];
     }
@@ -111,6 +113,7 @@ static dispatch_once_t onceToken;
 
     CountlyCommon.sharedInstance.maxKeyLength = config.sdkInternalLimits.getMaxKeyLength;
     CountlyCommon.sharedInstance.maxValueLength = config.sdkInternalLimits.getMaxValueSize;
+    CountlyCommon.sharedInstance.maxValueLengthPicture = config.sdkInternalLimits.getMaxValueSizePicture;
     CountlyCommon.sharedInstance.maxSegmentationValues = config.sdkInternalLimits.getMaxSegmentationValues;
     
     // For backward compatibility, deprecated values are only set incase new values are not provided using sdkInternalLimits interface
@@ -165,8 +168,13 @@ static dispatch_once_t onceToken;
     
     NSDictionary* customMetricsTruncated = [config.customMetrics cly_truncated:@"Custom metric"];
     CountlyDeviceInfo.sharedInstance.customMetrics = [customMetricsTruncated cly_limited:@"Custom metric"];
-    
-    [Countly.user save];
+
+    if (config.providedUserProperties.count > 0) {
+        CLY_LOG_I(@"%s applying providedUserProperties at init [%lu]", __FUNCTION__, (unsigned long)config.providedUserProperties.count);
+        [Countly.sharedInstance.userProfile setProperties:config.providedUserProperties];
+    }
+
+    [Countly.sharedInstance.userProfile save];
     // If something added related to server config, make sure to check CountlyServerConfig.notifySdkConfigChange
     [CountlyServerConfig.sharedInstance fetchServerConfig:config];
     
@@ -326,6 +334,8 @@ static dispatch_once_t onceToken;
         [self recordIndirectAttribution:config.indirectAttribution];
     
     [CountlyHealthTracker.sharedInstance sendHealthCheck];
+
+    CountlyCommon.sharedInstance.hasFinishedInit = YES;
 }
 
 - (CountlyConfig *) checkAndFixInternalLimitsConfig:(CountlyConfig *)config
@@ -731,8 +741,10 @@ static dispatch_once_t onceToken;
 
         [CountlyConnectionManager.sharedInstance proceedOnQueue];
 
+        [CountlyServerConfig.sharedInstance fetchServerConfig:_startConfig];
+
         [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfigAutomatically];
-        
+
         [CountlyHealthTracker.sharedInstance sendHealthCheck];
 
         return;
@@ -1544,6 +1556,9 @@ static dispatch_once_t onceToken;
     [CountlyDeviceInfo.sharedInstance resetInstance];
     [CountlyConnectionManager.sharedInstance resetInstance];
     [CountlyServerConfig.sharedInstance resetInstance];
+#if (TARGET_OS_IOS)
+    [CountlyContentBuilderInternal.sharedInstance resetInstance];
+#endif
     [CountlyUserDetails.sharedInstance clearUserDetails];
     [self resetInstance];
     [CountlyCommon.sharedInstance resetInstance];
@@ -1609,6 +1624,11 @@ static dispatch_once_t onceToken;
 
 - (CountlyRemoteConfig *) remoteConfig {
     return CountlyRemoteConfig.sharedInstance;
+}
+
+- (CountlyUserDetails *) userProfile
+{
+    return CountlyUserDetails.sharedInstance;
 }
 
 @end

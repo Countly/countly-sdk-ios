@@ -80,6 +80,7 @@ extern NSString* const kCountlySDKName;
 @property (nonatomic, copy) NSString* SDKName;
 
 @property (nonatomic) BOOL hasStarted;
+@property (nonatomic) BOOL hasFinishedInit;
 @property (nonatomic) BOOL enableDebug;
 
 @property (nonatomic) BOOL shouldIgnoreTrustCheck;
@@ -95,6 +96,7 @@ extern NSString* const kCountlySDKName;
 
 @property (nonatomic) NSUInteger maxKeyLength;
 @property (nonatomic) NSUInteger maxValueLength;
+@property (nonatomic) NSUInteger maxValueLengthPicture;
 @property (nonatomic) NSUInteger maxSegmentationValues;
 
 void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...) NS_FORMAT_FUNCTION(2, 3);
@@ -125,6 +127,8 @@ void CountlyPrint(NSString *stringToPrint);
 
 - (NSURLSession *)URLSession;
 
+- (NSURLSession *)ImmediateURLSession;
+
 - (CGSize)getWindowSize;
 @end
 
@@ -154,6 +158,7 @@ void CountlyPrint(NSString *stringToPrint);
 - (NSString *)cly_valueForQueryStringKey:(NSString *)key;
 - (NSString *)cly_truncatedKey:(NSString *)explanation;
 - (NSString *)cly_truncatedValue:(NSString *)explanation;
+- (NSString *)cly_truncatedPictureValue:(NSString *)explanation;
 @end
 
 @interface NSArray (Countly)

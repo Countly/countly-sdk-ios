@@ -25,6 +25,15 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         super.setUp()
         // Initialize or reset necessary objects here
         Countly.sharedInstance().halt(true)
+
+        // sdkInternalLimits() returns a file-scope static singleton, not a
+        // per-config instance — so a test setting setMaxValueSize/setMaxKeyLength
+        // mutates state visible to every later test. Reset to defaults here.
+        let limits = CountlyConfig().sdkInternalLimits()
+        limits.setMaxKeyLength(128)
+        limits.setMaxValueSize(256)
+        limits.setMaxValueSizePicture(4096)
+        limits.setMaxSegmentationValues(100)
     }
 
     override func tearDown() {
@@ -496,6 +505,8 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
     }
     
     func getUserDataMap()-> [String: Any]{
+        // Single-call $push/$pull/$addToSet serialize as the bare value;
+        // accumulation across multiple calls upgrades to array.
         let userProperties = ["a12345": "My Property",
                               "b12345": ["$inc": 1],
                               "c12345": ["$inc": 10],
@@ -515,7 +526,518 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         Countly.user().set("a12345", value: "3");
         Countly.user().set("a12345", value: "4");
     }
-    
+
+    // MARK: - New API tests (Android `ModuleUserProfileTests` parity)
+
+    /// Android parity: `setAndSaveValues` (line 40)
+    /// `setProperties` with named + custom keys, then `save`, produces a single
+    /// user_details request with named fields at top level and custom keys nested.
+    func test_setAndSaveValues_namedAndCustomBundled() {
+        let config = createBaseConfig()
+        config.requiresConsent = false
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+
+        let userProperties: [String: Any] = [
+            "name": "Test Test",
+            "username": "test",
+            "email": "test@gmail.com",
+            "organization": "Tester",
+            "phone": "+1234567890",
+            "gender": "M",
+            "picture": "http://domain.com/test.png",
+            "byear": 2000,
+            "key1": "value1",
+            "key2": "value2"
+        ]
+
+        Countly.user().setProperties(userProperties)
+        Countly.user().save()
+
+        guard let rq = TestUtils.getCurrentRQ() else {
+            XCTFail("RQ is nil"); return
+        }
+        guard let userDetailsRequest = rq.first(where: { $0.contains("user_details=") }) else {
+            XCTFail("No user_details request in RQ"); return
+        }
+
+        let parsed = TestUtils.parseQueryString(userDetailsRequest)
+        guard let userDetails = parsed["user_details"] as? [String: Any] else {
+            XCTFail("user_details missing or not a dict"); return
+        }
+
+        XCTAssertEqual("Test Test", userDetails["name"] as? String)
+        XCTAssertEqual("test", userDetails["username"] as? String)
+        XCTAssertEqual("test@gmail.com", userDetails["email"] as? String)
+        XCTAssertEqual("Tester", userDetails["organization"] as? String)
+        XCTAssertEqual("+1234567890", userDetails["phone"] as? String)
+        XCTAssertEqual("M", userDetails["gender"] as? String)
+        XCTAssertEqual("http://domain.com/test.png", userDetails["picture"] as? String)
+        XCTAssertEqual(2000, userDetails["byear"] as? Int)
+
+        guard let custom = userDetails["custom"] as? [String: Any] else {
+            XCTFail("custom dict missing"); return
+        }
+        XCTAssertEqual("value1", custom["key1"] as? String)
+        XCTAssertEqual("value2", custom["key2"] as? String)
+    }
+
+    /// Android parity: `testClear` (line 289)
+    /// After `clear`, `hasUnsyncedChanges` returns false and `save` produces no
+    /// user_details request.
+    func test_clear_dropsAllPendingChanges() {
+        let config = createBaseConfig()
+        config.requiresConsent = false
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+
+        Countly.user().setProperties([
+            "name": "Test",
+            "email": "test@example.com",
+            "key1": "value1"
+        ])
+        XCTAssertTrue(Countly.user().hasUnsyncedChanges())
+
+        // `Countly.user().clear()` is ambiguous from Swift due to a duplicated
+        // `clear` import (Countly module + bridging-header view of
+        // CountlyUserDetails.h). Resolving via runtime selector lookup.
+        _ = Countly.user().perform(NSSelectorFromString("clear"))
+        XCTAssertFalse(Countly.user().hasUnsyncedChanges())
+
+        let rqBefore = TestUtils.getCurrentRQ()?.count ?? 0
+        Countly.user().save()
+        let rqAfter = TestUtils.getCurrentRQ()?.count ?? 0
+        XCTAssertEqual(rqBefore, rqAfter, "save() after clear() must not enqueue a request")
+    }
+
+    /// Android parity: `testCustomModifiers` (line 272)
+    /// Multiple `pushUnique` calls on the same key accumulate into an array
+    /// (the array-merge fix). Scalar values like `$inc` and `$mul` stay as numbers.
+    func test_customModifiers_addToSetAccumulates() {
+        let config = createBaseConfig()
+        config.requiresConsent = false
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+
+        Countly.user().increment(by: "key_inc", value: 1)
+        Countly.user().multiply("key_mul", value: 2)
+        Countly.user().pushUnique("key_set", value: "test1")
+        Countly.user().pushUnique("key_set", value: "test2")
+        Countly.user().save()
+
+        guard let rq = TestUtils.getCurrentRQ(),
+              let request = rq.first(where: { $0.contains("user_details=") }) else {
+            XCTFail("No user_details request"); return
+        }
+
+        let parsed = TestUtils.parseQueryString(request)
+        guard let userDetails = parsed["user_details"] as? [String: Any],
+              let custom = userDetails["custom"] as? [String: Any] else {
+            XCTFail("custom missing"); return
+        }
+
+        XCTAssertEqual(1, (custom["key_inc"] as? [String: Any])?["$inc"] as? Int)
+        XCTAssertEqual(2, (custom["key_mul"] as? [String: Any])?["$mul"] as? Int)
+
+        guard let setEntry = custom["key_set"] as? [String: Any],
+              let setArray = setEntry["$addToSet"] as? [Any] else {
+            XCTFail("key_set should hold an $addToSet array"); return
+        }
+        XCTAssertEqual(2, setArray.count)
+        XCTAssertEqual("test1", setArray[0] as? String)
+        XCTAssertEqual("test2", setArray[1] as? String)
+    }
+
+    /// Android parity: `testCustomData` (line 243)
+    /// `setProperty` with a custom key lands in the custom dict.
+    func test_setProperty_customKeyLandsInCustom() {
+        let config = createBaseConfig()
+        config.requiresConsent = false
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+
+        Countly.user().setProperties(["key1": "value1", "key2": "value2"])
+        Countly.user().setProperty("key_prop", value: "value_prop")
+        Countly.user().save()
+
+        guard let rq = TestUtils.getCurrentRQ(),
+              let request = rq.first(where: { $0.contains("user_details=") }) else {
+            XCTFail("No user_details request"); return
+        }
+
+        let parsed = TestUtils.parseQueryString(request)
+        guard let userDetails = parsed["user_details"] as? [String: Any],
+              let custom = userDetails["custom"] as? [String: Any] else {
+            XCTFail("custom missing"); return
+        }
+        XCTAssertEqual("value1", custom["key1"] as? String)
+        XCTAssertEqual("value2", custom["key2"] as? String)
+        XCTAssertEqual("value_prop", custom["key_prop"] as? String)
+    }
+
+    /// Android parity: `internalLimit_testCustomData` (line 441)
+    /// With maxKeyLength=10, custom keys longer than 10 are truncated and merge.
+    /// Note (Android difference): Android does NOT truncate predefined keys;
+    /// iOS doesn't pass predefined names through key truncation either since the
+    /// named-field switch matches the full constant.
+    func test_internalLimit_truncatesCustomKeys() {
+        let config = createBaseConfig()
+        config.requiresConsent = false
+        config.manualSessionHandling = true
+        config.sdkInternalLimits().setMaxKeyLength(10)
+        Countly.sharedInstance().start(with: config)
+
+        Countly.user().setProperties([
+            "hair_color_id": 4567,
+            "hair_color_tone": "bold"
+        ])
+        Countly.user().setProperty("hair_color", value: "black")
+        Countly.user().setProperty("hair_skin_tone", value: "yellow")
+        Countly.user().save()
+
+        guard let rq = TestUtils.getCurrentRQ(),
+              let request = rq.first(where: { $0.contains("user_details=") }) else {
+            XCTFail("No user_details request"); return
+        }
+
+        let parsed = TestUtils.parseQueryString(request)
+        guard let userDetails = parsed["user_details"] as? [String: Any],
+              let custom = userDetails["custom"] as? [String: Any] else {
+            XCTFail("custom missing"); return
+        }
+        XCTAssertEqual("black", custom["hair_color"] as? String,
+                       "hair_color_id (truncated to hair_color), then hair_color_tone (also truncated to hair_color), then hair_color literal — last write wins")
+        XCTAssertEqual("yellow", custom["hair_skin_"] as? String,
+                       "hair_skin_tone truncated to hair_skin_")
+    }
+
+    /// Android parity: `internalLimit_testCustomModifiers` (line 468)
+    /// With maxKeyLength=10, two `push` calls on different long keys whose
+    /// truncated form collides should accumulate into the same array.
+    /// This exercises the truncated-key merge fix and the array-merge fix together.
+    func test_internalLimit_pushKeysCollideAndAccumulate() {
+        let config = createBaseConfig()
+        config.requiresConsent = false
+        config.manualSessionHandling = true
+        config.sdkInternalLimits().setMaxKeyLength(10)
+        Countly.sharedInstance().start(with: config)
+
+        Countly.user().push("key_push_reminder", value: "test1")
+        Countly.user().push("key_push_rock", value: "test3")
+        Countly.user().save()
+
+        guard let rq = TestUtils.getCurrentRQ(),
+              let request = rq.first(where: { $0.contains("user_details=") }) else {
+            XCTFail("No user_details request"); return
+        }
+
+        let parsed = TestUtils.parseQueryString(request)
+        guard let userDetails = parsed["user_details"] as? [String: Any],
+              let custom = userDetails["custom"] as? [String: Any] else {
+            XCTFail("custom missing"); return
+        }
+
+        guard let entry = custom["key_push_r"] as? [String: Any],
+              let pushArray = entry["$push"] as? [Any] else {
+            XCTFail("Expected key_push_r with $push array"); return
+        }
+        XCTAssertEqual(2, pushArray.count)
+        XCTAssertEqual("test1", pushArray[0] as? String)
+        XCTAssertEqual("test3", pushArray[1] as? String)
+    }
+
+    /// Android parity: `internalLimit_setProperties_maxValueSizePicture` (line 591)
+    /// Picture URL uses the picture-specific limit (4096), independent of maxValueSize.
+    func test_internalLimit_pictureUsesItsOwnLimit() {
+        let config = createBaseConfig()
+        config.requiresConsent = false
+        config.manualSessionHandling = true
+        config.sdkInternalLimits().setMaxValueSize(2)
+        Countly.sharedInstance().start(with: config)
+
+        let longURL = String(repeating: "a", count: 6000)
+        Countly.user().setProperty("picture", value: longURL)
+        Countly.user().save()
+
+        guard let rq = TestUtils.getCurrentRQ(),
+              let request = rq.first(where: { $0.contains("user_details=") }) else {
+            XCTFail("No user_details request"); return
+        }
+
+        let parsed = TestUtils.parseQueryString(request)
+        guard let userDetails = parsed["user_details"] as? [String: Any] else {
+            XCTFail("user_details missing"); return
+        }
+        let pic = userDetails["picture"] as? String
+        XCTAssertEqual(4096, pic?.count, "picture should be truncated to 4096, not maxValueSize=2")
+    }
+
+    /// Android parity: `setUserProperties_null` (line 695)
+    /// NSNull values are skipped with a warning; nothing reaches the wire.
+    func test_setProperties_nullValuesSkipped() {
+        let config = createBaseConfig()
+        config.requiresConsent = false
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+
+        let rqBefore = TestUtils.getCurrentRQ()?.count ?? 0
+        Countly.user().setProperties(["null_key": NSNull()])
+        Countly.user().save()
+        let rqAfter = TestUtils.getCurrentRQ()?.count ?? 0
+        XCTAssertEqual(rqBefore, rqAfter, "NSNull-only setProperties + save should not enqueue a user_details request")
+    }
+
+    // MARK: - iOS-specific Android-parity tests (gaps B, C, A, F, E)
+
+    /// Gap B: empty string for a named string field is sent to the server
+    /// as-is — the server clears a field on "" but ignores null, so the
+    /// Android-style "" → null conversion would defeat the clear.
+    func test_emptyStringForNamedField_isSentAsIs() {
+        let config = createBaseConfig()
+        config.requiresConsent = false
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+
+        Countly.user().setProperties(["name": "Joe"])
+        Countly.user().save()
+        Countly.user().setProperty("name", value: "")
+        Countly.user().save()
+
+        guard let rq = TestUtils.getCurrentRQ() else {
+            XCTFail("RQ is nil"); return
+        }
+        let userDetailsRequests = rq.filter { $0.contains("user_details=") }
+        XCTAssertGreaterThanOrEqual(userDetailsRequests.count, 2)
+
+        let lastClearRequest = userDetailsRequests.last!
+        let parsed = TestUtils.parseQueryString(lastClearRequest)
+        guard let userDetails = parsed["user_details"] as? [String: Any] else {
+            XCTFail("user_details missing"); return
+        }
+
+        // The empty string must survive serialization untouched (clear-on-server).
+        XCTAssertEqual("", userDetails["name"] as? String,
+                       "Empty string should be sent as-is. Got: \(String(describing: userDetails["name"]))")
+    }
+
+    /// Gap C parity: a negative byear is accepted and serialized as null on
+    /// the wire (Android behavior). It counts as a property change, so it
+    /// flushes pending events and dirties the cache like any other value.
+    func test_negativeBirthYear_serializesAsNull() {
+        purgePersistedState()
+
+        let config = createBaseConfig()
+        config.requiresConsent = false
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+
+        // A negative byear is a real property change: pending events flush.
+        Countly.sharedInstance().recordEvent("pendingEvent")
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count ?? -1)
+        XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count ?? -1)
+
+        Countly.user().setProperty("byear", value: -1)
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count ?? -1,
+                       "byear change should flush pending events")
+        XCTAssertEqual(1, TestUtils.getCurrentRQ()?.count ?? -1)
+
+        Countly.user().save()
+        XCTAssertEqual(2, TestUtils.getCurrentRQ()?.count ?? -1)
+
+        guard let rq = TestUtils.getCurrentRQ(), rq.count == 2 else {
+            XCTFail("Expected exactly 2 requests, got: \(TestUtils.getCurrentRQ() ?? [])"); return
+        }
+        validateEvents(request: rq[0], keysToCheck: ["pendingEvent"])
+
+        let parsed = TestUtils.parseQueryString(rq[1])
+        guard let userDetails = parsed["user_details"] as? [String: Any] else {
+            XCTFail("user_details missing in request: \(rq[1])"); return
+        }
+        XCTAssertTrue(userDetails["byear"] is NSNull,
+                      "Negative byear should serialize as null. Got: \(String(describing: userDetails["byear"]))")
+    }
+
+    /// Gap A parity: `picturePath` pointing at a non-existent file is dropped
+    /// with a warning; pictureLocalPath remains nil.
+    func test_picturePath_nonExistentFile_isDropped() {
+        let config = createBaseConfig()
+        config.requiresConsent = false
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+
+        Countly.user().setProperty("picturePath", value: "/definitely/not/a/real/file.jpg")
+        Countly.user().save()
+
+        // No request should fire because pictureLocalPath got nilled out and
+        // no other user-detail change happened.
+        guard let rq = TestUtils.getCurrentRQ() else {
+            XCTFail("RQ is nil"); return
+        }
+        let userDetailsRequests = rq.filter { $0.contains("user_details=") }
+        XCTAssertEqual(0, userDetailsRequests.count,
+                       "Non-existent picturePath should not produce a user_details request")
+    }
+
+    /// Gap E parity: changing a user property triggers an event-queue flush
+    /// (Android `onUserPropertiesChanged`). Walks through an interleaved
+    /// set-property / record-event sequence and validates EQ and RQ sizes
+    /// after every single call, then the exact request order and contents.
+    func test_propertyChange_flushesPendingEvents() {
+        purgePersistedState()
+
+        let config = createBaseConfig()
+        config.requiresConsent = false
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+
+        // Clean start: nothing queued anywhere.
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count ?? -1)
+        XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count ?? -1)
+
+        // Events recorded with a clean property cache stay in the EQ.
+        Countly.sharedInstance().recordEvent("eventA")
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count ?? -1)
+        XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count ?? -1)
+
+        Countly.sharedInstance().recordEvent("eventB")
+        XCTAssertEqual(2, TestUtils.getCurrentEQ()?.count ?? -1)
+        XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count ?? -1)
+
+        // Property change drains the EQ into a single events request; the
+        // property itself only goes into the cache (no user_details yet).
+        Countly.user().setProperty("level", value: 42)
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count ?? -1,
+                       "Auto-flush should drain the event queue when a user property changes")
+        XCTAssertEqual(1, TestUtils.getCurrentRQ()?.count ?? -1,
+                       "Drained events should land in the RQ as one events request")
+
+        // Recording an event with a dirty property cache saves the cache
+        // first (user_details request), then queues the event in the EQ.
+        Countly.sharedInstance().recordEvent("eventC")
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count ?? -1)
+        XCTAssertEqual(2, TestUtils.getCurrentRQ()?.count ?? -1,
+                       "Recording an event with pending property changes should enqueue a user_details request first")
+
+        // Second property change flushes eventC the same way.
+        Countly.user().setProperty("level", value: 43)
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count ?? -1)
+        XCTAssertEqual(3, TestUtils.getCurrentRQ()?.count ?? -1)
+
+        // Explicit save drains the cache into a final user_details request.
+        Countly.user().save()
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count ?? -1)
+        XCTAssertEqual(4, TestUtils.getCurrentRQ()?.count ?? -1)
+
+        // Saving again with a clean cache must not enqueue anything.
+        Countly.user().save()
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count ?? -1)
+        XCTAssertEqual(4, TestUtils.getCurrentRQ()?.count ?? -1,
+                       "save() with no unsynced changes should be a no-op")
+
+        // Strict order: events always precede the user_details request that
+        // carries the property state they were recorded under.
+        guard let rq = TestUtils.getCurrentRQ(), rq.count == 4 else {
+            XCTFail("Expected exactly 4 requests, got: \(TestUtils.getCurrentRQ() ?? [])"); return
+        }
+        validateEvents(request: rq[0], keysToCheck: ["eventA", "eventB"])
+        assertOnlyCustomProperty(rq[1], key: "level", expected: 42)
+        validateEvents(request: rq[2], keysToCheck: ["eventC"])
+        assertOnlyCustomProperty(rq[3], key: "level", expected: 43)
+    }
+
+    /// Gap D parity: `providedUserProperties` from CountlyConfig is applied
+    /// at SDK start and saved automatically, leaving a clean property cache.
+    /// Then interleaves event recording and a property overwrite, validating
+    /// EQ and RQ sizes after every call plus exact request order and contents.
+    func test_providedUserPropertiesAtInit_appliedAndSaved() {
+        purgePersistedState()
+
+        let config = createBaseConfig()
+        config.requiresConsent = false
+        config.manualSessionHandling = true
+        config.providedUserProperties = [
+            "email": "init@example.com",
+            "favorite_color": "blue"
+        ]
+        Countly.sharedInstance().start(with: config)
+
+        // Init properties are saved automatically at start: exactly one
+        // user_details request, empty EQ, no leftover cache.
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count ?? -1)
+        XCTAssertEqual(1, TestUtils.getCurrentRQ()?.count ?? -1,
+                       "providedUserProperties should produce exactly one user_details request at init")
+
+        // Cache was cleared by the init save: this event must stay in the
+        // EQ without triggering another user_details request.
+        Countly.sharedInstance().recordEvent("postInitEvent")
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count ?? -1)
+        XCTAssertEqual(1, TestUtils.getCurrentRQ()?.count ?? -1,
+                       "Recording an event after the init save should not enqueue a new user_details request")
+
+        // Overwriting an init property flushes the pending event into the
+        // RQ; the new value only goes into the cache.
+        Countly.user().setProperty("favorite_color", value: "red")
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count ?? -1,
+                       "Property change should drain the pending event")
+        XCTAssertEqual(2, TestUtils.getCurrentRQ()?.count ?? -1)
+
+        // Recording another event saves the dirty cache first, then queues
+        // the event.
+        Countly.sharedInstance().recordEvent("secondEvent")
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count ?? -1)
+        XCTAssertEqual(3, TestUtils.getCurrentRQ()?.count ?? -1)
+
+        guard let rq = TestUtils.getCurrentRQ(), rq.count == 3 else {
+            XCTFail("Expected exactly 3 requests, got: \(TestUtils.getCurrentRQ() ?? [])"); return
+        }
+
+        // Request 0: init save — named field at top level, custom key nested.
+        let parsed = TestUtils.parseQueryString(rq[0])
+        guard let userDetails = parsed["user_details"] as? [String: Any] else {
+            XCTFail("user_details missing in init request: \(rq[0])"); return
+        }
+        XCTAssertEqual("init@example.com", userDetails["email"] as? String)
+        guard let custom = userDetails["custom"] as? [String: Any] else {
+            XCTFail("custom missing in init user_details: \(userDetails)"); return
+        }
+        XCTAssertEqual(1, custom.count, "Init custom payload should hold only favorite_color")
+        XCTAssertEqual("blue", custom["favorite_color"] as? String)
+
+        // Request 1: the event recorded under favorite_color=blue.
+        validateEvents(request: rq[1], keysToCheck: ["postInitEvent"])
+
+        // Request 2: the overwritten property value.
+        assertOnlyCustomProperty(rq[2], key: "favorite_color", expected: "red")
+
+        // The second event is still pending in the EQ.
+        XCTAssertEqual("secondEvent", TestUtils.getCurrentEQ()?.first?.key)
+    }
+
+    /// A previous (possibly crashed) run can leave persisted requests and a
+    /// generated device ID on disk; setUp's halt(true) is a no-op before the
+    /// first start in a process. Start + halt(true) wipes storage so the
+    /// exact queue-size assertions begin from a truly clean slate.
+    private func purgePersistedState() {
+        let purgeConfig = createBaseConfig()
+        purgeConfig.requiresConsent = false
+        purgeConfig.manualSessionHandling = true
+        Countly.sharedInstance().start(with: purgeConfig)
+        Countly.sharedInstance().halt(true)
+    }
+
+    /// Asserts the request carries a user_details payload whose custom
+    /// dictionary contains exactly one entry: `key` with `expected` value.
+    private func assertOnlyCustomProperty(_ request: String, key: String, expected: Any) {
+        let parsed = TestUtils.parseQueryString(request)
+        guard let userDetails = parsed["user_details"] as? [String: Any] else {
+            XCTFail("user_details missing in request: \(request)"); return
+        }
+        guard let custom = userDetails["custom"] as? [String: Any] else {
+            XCTFail("custom missing in user_details: \(userDetails)"); return
+        }
+        XCTAssertEqual(1, custom.count, "Expected exactly one custom property, got: \(custom)")
+        XCTAssertEqual("\(expected)", "\(custom[key] ?? "nil")", "Custom property '\(key)' mismatch")
+    }
 }
 
 

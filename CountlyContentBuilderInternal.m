@@ -180,11 +180,17 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 - (void)clearContentState {
     [_requestTimer invalidate];
     _requestTimer = nil;
-    
+
     [_minuteTimer invalidate];
     _minuteTimer = nil;
     self.currentTags = nil;
     [self setRequestQueueLockedThreadSafe:NO];
+}
+
+- (void)resetInstance {
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    [self clearContentState];
+    _isCurrentlyContentShown = NO;
 }
 
 - (void)fetchContents {
@@ -197,7 +203,13 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
         return;
-    
+
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+    {
+        CLY_LOG_W(@"%s content can not be fetched while in temporary device ID mode", __FUNCTION__);
+        return;
+    }
+
     if(_isCurrentlyContentShown){
         CLY_LOG_I(@"%s a content is already shown, skipping" ,__FUNCTION__);
         return;
@@ -209,7 +221,8 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     
     [self setRequestQueueLockedThreadSafe:YES];
     
-    NSURLSessionTask *dataTask = [CountlyCommon.sharedInstance.URLSession dataTaskWithRequest:[self fetchContentsRequest: contentId] completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+    NSURLSessionTask *dataTask = [[CountlyCommon.sharedInstance ImmediateURLSession] dataTaskWithRequest:[self fetchContentsRequest:contentId] completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        // IMMEDIATE REQUEST to find them better in search
         if (error) {
             CLY_LOG_I(@"%s fetch content details failed: [%@]", __FUNCTION__, error);
             [self setRequestQueueLockedThreadSafe:NO];
