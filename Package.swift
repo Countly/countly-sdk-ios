@@ -8,9 +8,9 @@ let package = Package(
 
     platforms: 
     [
-        .iOS(.v10),
+        .iOS(.v12),
         .macOS(.v10_14),
-        .tvOS(.v10),
+        .tvOS(.v12),
         .watchOS(.v4),
         .visionOS(.v1)
     ],
@@ -53,7 +53,7 @@ let package = Package(
                 .linkedFramework("IOKit", .when(platforms: [.macOS])),
                 .linkedFramework("UserNotifications", .when(platforms: [.iOS, .macOS, .visionOS])),
                 .linkedFramework("CoreLocation"),
-                .linkedFramework("WebKit", .when(platforms: [.iOS, .visionOS])),
+                .linkedFramework("WebKit", .when(platforms: [.iOS])),
                 .linkedFramework("CoreTelephony", .when(platforms: [.iOS])),
             ]),
         .testTarget(
