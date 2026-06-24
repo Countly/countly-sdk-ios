@@ -21,12 +21,12 @@ Pod::Spec.new do |s|
     core.public_header_files = 'Countly.h', 'CountlyUserDetails.h', 'CountlyConfig.h', 'CountlyFeedbackWidget.h', 'CountlyRCData.h', 'CountlyRemoteConfig.h', 'CountlyViewTracking.h', 'CountlyExperimentInformation.h', 'CountlyAPMConfig.h', 'CountlySDKLimitsConfig.h', 'Resettable.h', "CountlyCrashesConfig.h", "CountlyCrashData.h", "CountlyContentBuilder.h", "CountlyExperimentalConfig.h", "CountlyContentConfig.h", "CountlyFeedbacks.h"
     core.preserve_path = 'countly_dsym_uploader.sh'
     core.ios.frameworks = ['Foundation', 'UIKit', 'UserNotifications', 'CoreLocation', 'WebKit', 'CoreTelephony', 'WatchConnectivity']
-    core.visionos.frameworks = ['Foundation', 'UIKit', 'UserNotifications', 'CoreLocation', 'WebKit']
+    core.visionos.frameworks = ['Foundation', 'UIKit', 'UserNotifications', 'CoreLocation']
   end
 
   s.subspec 'NotificationService' do |ns|
     ns.source_files = 'CountlyNotificationService.{m,h}'
-    ns.ios.deployment_target = '10.0'
+    ns.ios.deployment_target = '12.0'
     ns.ios.frameworks = ['Foundation', 'UserNotifications']
   end
 
