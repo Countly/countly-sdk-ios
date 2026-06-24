@@ -180,11 +180,17 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 - (void)clearContentState {
     [_requestTimer invalidate];
     _requestTimer = nil;
-    
+
     [_minuteTimer invalidate];
     _minuteTimer = nil;
     self.currentTags = nil;
     [self setRequestQueueLockedThreadSafe:NO];
+}
+
+- (void)resetInstance {
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    [self clearContentState];
+    _isCurrentlyContentShown = NO;
 }
 
 - (void)fetchContents {

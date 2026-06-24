@@ -5,6 +5,12 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
 
     class CountTracker {
         var counts: [Int] = [0, 0, 0, 0, 0]
+        // When true, the mock returns 200 for stored /i requests and records them (in send
+        // order) in `sentRequests`, so the request queue actually drains and the content
+        // refresh queue-flush runnable fires. Default false preserves the 400 behavior that
+        // every other test relies on (requests stay in the RQ for index-based inspection).
+        var drainQueue = false
+        var sentRequests: [String] = []
     }
 
     /// Local Countly instances created during tests.
@@ -338,24 +344,33 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     func test_sessionsDisabled_allFeatures() throws {
         let sc = ServerConfigBuilder()
         sc.sessionTracking(false)
-        let tracker = setupTestAllFeatures(sc.buildJson())
-        
+        let tracker = setupTestAllFeatures(sc.buildJson(), drainQueue: true)
+
         XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count)
         XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
-        
+
         let stackTrace = flowAllFeatures()
-        
+        immediateFlowAllFeatures()
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
+        feedbackFlowAllFeatures()
+        waitForQueueToDrain(tracker, expected: 8)
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
+
+        let sent = tracker.sentRequests
+        XCTAssertEqual(8, sent.count, "Sent request count mismatch")
+
+        // Sessions disabled => no begin_session; the crash request is first.
         TestUtils.validateRequest([:], 0, { request in
             let crash = request["crash"] as? [String: Any]
             XCTAssertTrue(crash != nil)
-        })
-        try TestUtils.validateEventInRQ("test_event", [:], 1, 7, 0, 2)
-        try TestUtils.validateEventInRQ("[CLY]_view", ["name": "test_view", "segment": "iOS", "visit": "1"], 1, 7, 1, 2)
+        }, from: sent)
+        try TestUtils.validateEventInRQ("test_event", [:], 1, 7, 0, 2, from: sent)
+        try TestUtils.validateEventInRQ("[CLY]_view", ["name": "test_view", "segment": "iOS", "visit": "1"], 1, 7, 1, 2, from: sent)
         TestUtils.validateRequest([:], 2, { request in
             let userDetails = request["user_details"] as! [String: Any]
             XCTAssertTrue(TestUtils.compareDictionaries(userDetails["custom"] as! [String: Any], ["test_property": "test_value"]))
-        })
-        TestUtils.validateRequest(["location": "33.689500,139.691700"], 3)
+        }, from: sent)
+        TestUtils.validateRequest(["location": "33.689500,139.691700"], 3, from: sent)
         TestUtils.validateRequest([:], 4, { request in
             let apm = request["apm"] as! [String: Any]
             XCTAssertEqual("test_trace", apm["name"] as! String)
@@ -365,16 +380,9 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
                                                          "response_code": 400,
                                                          "request_payload_size": 2000,
                                                          "response_payload_size": 2000]))
-        })
-        TestUtils.validateRequest(["attribution_data": "test_data"], 5)
-        TestUtils.validateRequest(["key": "value"], 6)
-        
-        XCTAssertEqual(7, TestUtils.getCurrentRQ()?.count)
-        immediateFlowAllFeatures()
-        
-        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
-        feedbackFlowAllFeatures()
-        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
+        }, from: sent)
+        TestUtils.validateRequest(["attribution_data": "test_data"], 5, from: sent)
+        TestUtils.validateRequest(["key": "value"], 6, from: sent)
 
         try TestUtils.validateEventInRQ("[CLY]_star_rating", [
             "platform": "iOS",
@@ -384,16 +392,14 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             "contactMe": "1",
             "email": "test",
             "comment": "test"
-        ], 7, 8, 0, 2)
-        
+        ], 7, 8, 0, 2, from: sent)
+
         try TestUtils.validateEventInRQ("[CLY]_nps", [
             "app_version": CountlyDeviceInfo.appVersion()!,
             "widget_id": "test",
             "closed": "1",
             "platform": "iOS"
-        ], 7, 8, 1, 2)
-        
-        XCTAssertEqual(8, TestUtils.getCurrentRQ()?.count)
+        ], 7, 8, 1, 2, from: sent)
 
         validateCounts(tracker.counts, hc: 1, fc: 1, rc: 1, cc: 2, sc: 1)
     }
@@ -579,28 +585,29 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         func test_eventsDisabled_allFeatures() throws {
             let sc = ServerConfigBuilder()
                 .customEventTracking(false)
-            let tracker = setupTestAllFeatures(sc.buildJson())
-            
+            let tracker = setupTestAllFeatures(sc.buildJson(), drainQueue: true)
+
             XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count)
             XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
-            
+
             let stackTrace = flowAllFeatures()
             immediateFlowAllFeatures()
+            waitForQueueToDrain(tracker, expected: 8)
+            let sent = tracker.sentRequests
 
-            
-            XCTAssertTrue(TestUtils.getCurrentRQ()![0].contains("begin_session"))
+            XCTAssertTrue(sent[0].contains("begin_session"))
             // Events should not be tracked
-            XCTAssertFalse(containsEventWithKey(TestUtils.getCurrentRQ()!, "test_event"))
-            
+            XCTAssertFalse(containsEventWithKey(sent, "test_event"))
+
             // But other features should work
-            try TestUtils.validateEventInRQ("[CLY]_view", ["name": "test_view", "segment": "iOS", "visit": "1", "start": "1"], 2, 7, 0, 1)
+            try TestUtils.validateEventInRQ("[CLY]_view", ["name": "test_view", "segment": "iOS", "visit": "1", "start": "1"], 2, 7, 0, 1, from: sent)
             TestUtils.validateRequest([:], 3, { request in
                 let userDetails = request["user_details"] as! [String: Any]
                 XCTAssertTrue(TestUtils.compareDictionaries(userDetails["custom"] as! [String: Any], ["test_property": "test_value"]))
-            })
-            
-            XCTAssertEqual(8, TestUtils.getCurrentRQ()?.count)
-            XCTAssertFalse(containsEventWithKey(TestUtils.getCurrentRQ()!, "test_event"))
+            }, from: sent)
+
+            XCTAssertEqual(8, sent.count)
+            XCTAssertFalse(containsEventWithKey(sent, "test_event"))
             XCTAssertTrue(TestUtils.getCurrentEQ()!.isEmpty)
             validateCounts(tracker.counts, hc: 1, fc: 1, rc: 1, cc: 2, sc: 1)
         }
@@ -614,21 +621,23 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         func test_crashesDisabled_allFeatures() throws {
             let sc = ServerConfigBuilder()
                 .crashReporting(false)
-            let tracker = setupTestAllFeatures(sc.buildJson())
-            
+            let tracker = setupTestAllFeatures(sc.buildJson(), drainQueue: true)
+
             XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count)
-            
+
             let stackTrace = flowAllFeatures()
             immediateFlowAllFeatures()
+            waitForQueueToDrain(tracker, expected: 7)
+            let sent = tracker.sentRequests
             // Verify that crash is not recorded
-            for request in TestUtils.getCurrentRQ()! {
+            for request in sent {
                 XCTAssertFalse(request.contains("crash="))
             }
-            
+
             // But other features should work
-            XCTAssertTrue(TestUtils.getCurrentRQ()![0].contains("begin_session"))
-            try TestUtils.validateEventInRQ("test_event", [:], 2, 7, 0, 2)
-            
+            XCTAssertTrue(sent[0].contains("begin_session"))
+            try TestUtils.validateEventInRQ("test_event", [:], 2, 7, 0, 2, from: sent)
+
             validateCounts(tracker.counts, hc: 1, fc: 1, rc: 1, cc: 2, sc: 1)
         }
         
@@ -641,33 +650,35 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
                 .sessionTracking(false)
                 .customEventTracking(false)
                 .viewTracking(false)
-            let tracker = setupTestAllFeatures(sc.buildJson())
-            
+            let tracker = setupTestAllFeatures(sc.buildJson(), drainQueue: true)
+
             XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count)
-            
+
             let stackTrace = flowAllFeatures()
             immediateFlowAllFeatures()
+            waitForQueueToDrain(tracker, expected: 6)
+            let sent = tracker.sentRequests
             // Verify no sessions, events, or views are recorded
-            for request in TestUtils.getCurrentRQ()! {
+            for request in sent {
                 XCTAssertFalse(request.contains("begin_session"))
-                XCTAssertFalse(containsEventWithKey(TestUtils.getCurrentRQ()!, "test_event"))
-                XCTAssertFalse(containsEventWithKey(TestUtils.getCurrentRQ()!, "[CLY]_view"))
+                XCTAssertFalse(containsEventWithKey(sent, "test_event"))
+                XCTAssertFalse(containsEventWithKey(sent, "[CLY]_view"))
             }
-            
-            XCTAssertEqual(6, TestUtils.getCurrentRQ()?.count)
-            
+
+            XCTAssertEqual(6, sent.count)
+
             TestUtils.validateRequest([:], 0, { request in
                 XCTAssertTrue(request.contains(where: { (key: String, value: Any) in
                     return key.elementsEqual("crash")
                 }))
-            })
+            }, from: sent)
             TestUtils.validateRequest([:], 1, { request in
                 let userDetails = request["user_details"] as! [String: Any]
                 XCTAssertTrue(TestUtils.compareDictionaries(userDetails["custom"] as! [String: Any], ["test_property": "test_value"]))
-            })
-            TestUtils.validateRequest(["location": "33.689500,139.691700"], 2)
+            }, from: sent)
+            TestUtils.validateRequest(["location": "33.689500,139.691700"], 2, from: sent)
 
-            
+
             validateCounts(tracker.counts, hc: 1, fc: 1, rc: 1, cc: 2, sc: 1)
         }
         
@@ -883,9 +894,44 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         
     }
     
-    private func setupTestAllFeatures(_ serverConfig: [String: Any]) -> CountTracker {
+    /// Returns the query string of a captured request: the POST body (read from the body
+    /// stream, since URLProtocol nils out `httpBody`) when present, otherwise the URL query.
+    /// `parseQueryString` expects a bare `app_key=...&...` string, which is exactly what the
+    /// stored /i request body contains.
+    static func capturedQueryString(_ request: URLRequest) -> String {
+        if let body = request.httpBody, let s = String(data: body, encoding: .utf8), !s.isEmpty {
+            return s
+        }
+        if let stream = request.httpBodyStream {
+            stream.open()
+            defer { stream.close() }
+            let bufferSize = 8192
+            let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferSize)
+            defer { buffer.deallocate() }
+            var data = Data()
+            while stream.hasBytesAvailable {
+                let read = stream.read(buffer, maxLength: bufferSize)
+                if read > 0 { data.append(buffer, count: read) } else { break }
+            }
+            if let s = String(data: data, encoding: .utf8), !s.isEmpty { return s }
+        }
+        return request.url?.query ?? ""
+    }
+
+    /// Spins until the stored request queue has fully drained (so the captured `sentRequests`
+    /// are complete and the content-refresh queue-flush runnable has run). Used by the
+    /// drainQueue-mode tests.
+    private func waitForQueueToDrain(_ tracker: CountTracker, expected: Int) {
+        for _ in 0..<12 {
+            if tracker.sentRequests.count >= expected && (TestUtils.getCurrentRQ()?.isEmpty ?? true) { break }
+            TestUtils.sleep(0.5) {}
+        }
+    }
+
+    private func setupTestAllFeatures(_ serverConfig: [String: Any], drainQueue: Bool = false) -> CountTracker {
         let tracker = CountTracker()
-                
+        tracker.drainQueue = drainQueue
+
         // Define the mock behavior
         MockURLProtocol.requestHandler = { request in
             let requestString = request.url?.absoluteString ?? ""
@@ -907,8 +953,14 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
                 } catch {
                     //ignored
                 }
+            } else if tracker.drainQueue {
+                // Stored /i request: record its query string (POST body / GET query) in send
+                // order and return success so the request queue drains, letting the
+                // content-refresh queue-flush runnable run.
+                tracker.sentRequests.append(CountlyServerConfigTests.capturedQueryString(request))
+                responseString = "{\"result\":\"Success\"}".data(using: .utf8)
             }
-            
+
             if(responseString != nil){
                 return (responseString, HTTPURLResponse(url: request.url!,
                                                 statusCode: 200,
@@ -1002,27 +1054,44 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         
         let sc = ServerConfigBuilder()
         consumer(sc)
-        let tracker = setupTestAllFeatures(sc.buildJson())
-        
+        let tracker = setupTestAllFeatures(sc.buildJson(), drainQueue: true)
+
         XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count)
         XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
-        
-        let stackTrace = flowAllFeatures()
-        XCTAssertEqual(8, TestUtils.getCurrentRQ()?.count)
 
-        XCTAssertTrue(TestUtils.getCurrentRQ()![0].contains("begin_session"))
+        // Record the whole flow first. Under drainQueue the stored /i requests are answered
+        // with 200 and removed as they go, so we validate against the ordered `sentRequests`
+        // the mock saw (same FIFO order as the live RQ) rather than the live RQ, which empties
+        // asynchronously. Draining the queue is also what lets refreshContentZone's queue-flush
+        // runnable fire, producing the second content request (cc == 2).
+        let stackTrace = flowAllFeatures()
+        immediateFlowAllFeatures()
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
+        feedbackFlowAllFeatures()
+
+        // Wait until the queue has fully drained (all 9 stored requests sent).
+        for _ in 0..<10 {
+            if tracker.sentRequests.count >= 9 && (TestUtils.getCurrentRQ()?.isEmpty ?? true) { break }
+            TestUtils.sleep(0.5) {}
+        }
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
+
+        let sent = tracker.sentRequests
+        XCTAssertEqual(9, sent.count, "Sent request count mismatch")
+
+        XCTAssertTrue(sent[0].contains("begin_session"))
         TestUtils.validateRequest([:], 1, { request in
             let crash = request["crash"] as? [String: Any]
             XCTAssertTrue(crash != nil)
-        })
+        }, from: sent)
         //try TestUtils.validateEventInRQ("[CLY]_orientation", ["mode": "portrait"], 2, 8, 0, 3)
-        try TestUtils.validateEventInRQ("test_event", [:], 2, 8, 0, 2) // 1, 3
-        try TestUtils.validateEventInRQ("[CLY]_view", ["name": "test_view", "segment": "iOS", "visit": "1", "start": "1"], 2, 8, 1, 2) // 2, 3
+        try TestUtils.validateEventInRQ("test_event", [:], 2, 8, 0, 2, from: sent) // 1, 3
+        try TestUtils.validateEventInRQ("[CLY]_view", ["name": "test_view", "segment": "iOS", "visit": "1", "start": "1"], 2, 8, 1, 2, from: sent) // 2, 3
         TestUtils.validateRequest([:], 3, { request in
             let userDetails = request["user_details"] as! [String: Any]
             XCTAssertTrue(TestUtils.compareDictionaries(userDetails["custom"] as! [String: Any], ["test_property": "test_value"]))
-        })
-        TestUtils.validateRequest(["location": "33.689500,139.691700"], 4)
+        }, from: sent)
+        TestUtils.validateRequest(["location": "33.689500,139.691700"], 4, from: sent)
         TestUtils.validateRequest([:], 5, { request in
             let apm = request["apm"] as! [String: Any]
             XCTAssertEqual("test_trace", apm["name"] as! String)
@@ -1032,17 +1101,10 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
                                                          "response_code": 400,
                                                          "request_payload_size": 2000,
                                                          "response_payload_size": 2000]))
-        })
-        TestUtils.validateRequest(["attribution_data": "test_data"], 6)
-        TestUtils.validateRequest(["key": "value"], 7)
-        
-        immediateFlowAllFeatures()
-        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
-        feedbackFlowAllFeatures()
+        }, from: sent)
+        TestUtils.validateRequest(["attribution_data": "test_data"], 6, from: sent)
+        TestUtils.validateRequest(["key": "value"], 7, from: sent)
 
-        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
-        XCTAssertEqual(9, TestUtils.getCurrentRQ()?.count)
-        
         try TestUtils.validateEventInRQ("[CLY]_star_rating", [
             "platform": "iOS",
             "app_version": CountlyDeviceInfo.appVersion()!,
@@ -1051,17 +1113,15 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             "contactMe": 1,
             "email": "test",
             "comment": "test"
-        ], 8, 9, 0, 2)
-        
+        ], 8, 9, 0, 2, from: sent)
+
         try TestUtils.validateEventInRQ("[CLY]_nps", [
             "app_version": CountlyDeviceInfo.appVersion()!,
             "widget_id": "test",
             "closed": "1",
             "platform": "iOS"
-        ], 8, 9, 1, 2)
-        
-        XCTAssertEqual(9, TestUtils.getCurrentRQ()?.count)
-        
+        ], 8, 9, 1, 2, from: sent)
+
         validateCounts(tracker.counts, hc: hc, fc: fc, rc: rc, cc: cc, sc: scc)
     }
 
