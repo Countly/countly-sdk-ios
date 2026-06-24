@@ -1556,6 +1556,9 @@ static dispatch_once_t onceToken;
     [CountlyDeviceInfo.sharedInstance resetInstance];
     [CountlyConnectionManager.sharedInstance resetInstance];
     [CountlyServerConfig.sharedInstance resetInstance];
+#if (TARGET_OS_IOS)
+    [CountlyContentBuilderInternal.sharedInstance resetInstance];
+#endif
     [CountlyUserDetails.sharedInstance clearUserDetails];
     [self resetInstance];
     [CountlyCommon.sharedInstance resetInstance];

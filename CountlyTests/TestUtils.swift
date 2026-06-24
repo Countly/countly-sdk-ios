@@ -46,12 +46,12 @@ class TestUtils {
         }
     }
 
-    static func validateRequest(_ params: [String: Any], _ idx: Int) {
-        validateRequest(params, idx, { request in })
+    static func validateRequest(_ params: [String: Any], _ idx: Int, from source: [String]? = nil) {
+        validateRequest(params, idx, { request in }, from: source)
     }
 
-    static func validateRequest(_ params: [String: Any], _ idx: Int, _ customValidator: ([String: Any]) -> Void) {
-        guard let rq = getCurrentRQ() else {
+    static func validateRequest(_ params: [String: Any], _ idx: Int, _ customValidator: ([String: Any]) -> Void, from source: [String]? = nil) {
+        guard let rq = source ?? getCurrentRQ() else {
             XCTFail("Request queue is nil.")
             return
         }
@@ -60,7 +60,7 @@ class TestUtils {
             return
         }
 
-        let requestStr = getCurrentRQ()![idx]
+        let requestStr = rq[idx]
         let request = parseQueryString(requestStr)
         validateRequiredParams(request)
 
@@ -91,9 +91,9 @@ class TestUtils {
 
     static func validateEventInRQ(
         _ eventName: String, _ segmentation: [String: Any], _ idx: Int, _ rqCount: Int, _ eventIdx: Int,
-        _ eventCount: Int
+        _ eventCount: Int, from source: [String]? = nil
     ) throws {
-        let requestStr = getCurrentRQ()![idx]
+        let requestStr = (source ?? getCurrentRQ())![idx]
         let request = parseQueryString(requestStr)
         validateRequiredParams(request)
 

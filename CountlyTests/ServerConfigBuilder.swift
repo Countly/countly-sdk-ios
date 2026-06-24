@@ -271,7 +271,11 @@ class ServerConfigBuilder {
         requestQueueSize(1000)
         eventQueueSize(100)
         logging(false)
-        sessionUpdateInterval(60)
+        // CountlyServerConfig.sessionInterval defaults to 0 when no SBS is applied; 0 is the
+        // sentinel meaning "fall back to config.updateSessionPeriod (60s)" (see CountlyServerConfig
+        // populateConfig: `config.updateSessionPeriod = _sessionInterval ?: ...`). So the default
+        // of the server-config field itself is 0, not 60.
+        sessionUpdateInterval(0)
         contentZoneInterval(30)
         consentRequired(false)
         dropOldRequestTime(0)
