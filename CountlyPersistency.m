@@ -99,6 +99,7 @@ static dispatch_once_t onceToken;
                 // in other case if exceeded count is 36 and out limit is 100 we can only remove 36 items because we have that amount
                 NSUInteger gonnaRemoveSize = MIN(exceededSize, kCountlyRequestRemovalLoopLimit) + 1;
                 CLY_LOG_W(@"[CountlyPersistency] addToQueue, request queue size:[ %lu ] exceeded limit:[ %lu ], will remove first:[ %lu ] request(s)", self.queuedRequests.count, self.storedRequestsLimit, gonnaRemoveSize);
+                [CountlyHealthTracker.sharedInstance recordLogCode:@"w310"];
                 NSRange itemsToRemove = NSMakeRange(0, gonnaRemoveSize);
                 [self.queuedRequests removeObjectsInRange:itemsToRemove];
             }
@@ -333,6 +334,7 @@ static dispatch_once_t onceToken;
         if (self.startedEvents[event.key])
         {
             CLY_LOG_W(@"Event with key '%@' already started!", event.key);
+            [CountlyHealthTracker.sharedInstance recordLogCode:@"w722"];
             return;
         }
 

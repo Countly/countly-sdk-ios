@@ -95,7 +95,11 @@ static dispatch_once_t onceToken;
 - (void)startWithConfig:(CountlyConfig *)config
 {
     if (CountlyCommon.sharedInstance.hasStarted_)
+    {
+        CLY_LOG_W(@"%s SDK is already started! Countly configuration will not be applied again.", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w110"];
         return;
+    }
     
     CountlyCommon.sharedInstance.hasStarted = YES;
     CountlyCommon.sharedInstance.enableDebug = config.enableDebug;
@@ -196,7 +200,10 @@ static dispatch_once_t onceToken;
     }
     
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
+    {
+        [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"begin:a"];
         [CountlyConnectionManager.sharedInstance beginSession];
+    }
     else
         [CountlyCommon.sharedInstance recordOrientation];
     
@@ -398,11 +405,13 @@ static dispatch_once_t onceToken;
     
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
     {
+        [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"update:a"];
         [CountlyConnectionManager.sharedInstance updateSession];
     }
     // this condtion is called only when both manual session handling and hybrid mode is enabled.
     else if (CountlyCommon.sharedInstance.enableManualSessionControlHybridMode)
     {
+        [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"update:a"];
         [CountlyConnectionManager.sharedInstance updateSession];
     }
     
@@ -430,8 +439,11 @@ static dispatch_once_t onceToken;
     [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
     
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
+    {
+        [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"end:a"];
         [CountlyConnectionManager.sharedInstance endSession];
-    
+    }
+
     [CountlyPersistency.sharedInstance saveToFile];
 }
 
@@ -458,8 +470,11 @@ static dispatch_once_t onceToken;
     CLY_LOG_D(@"%s manualSessions: [%d]", __FUNCTION__, CountlyCommon.sharedInstance.manualSessionHandling);
     
     if (!CountlyCommon.sharedInstance.manualSessionHandling)
+    {
+        [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"begin:a"];
         [CountlyConnectionManager.sharedInstance beginSession];
-    
+    }
+
     [CountlyViewTrackingInternal.sharedInstance applicationWillEnterForeground];
     
     isSuspended = NO;
@@ -617,6 +632,7 @@ static dispatch_once_t onceToken;
 - (void)beginSession
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"begin"];
     
     if (CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance beginSession];
@@ -625,6 +641,7 @@ static dispatch_once_t onceToken;
 - (void)updateSession
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"update"];
     
     if (CountlyCommon.sharedInstance.manualSessionHandling)
         [CountlyConnectionManager.sharedInstance updateSession];
@@ -633,6 +650,7 @@ static dispatch_once_t onceToken;
 - (void)endSession
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"end"];
     
     if (CountlyCommon.sharedInstance.manualSessionHandling)
     {
@@ -690,19 +708,16 @@ static dispatch_once_t onceToken;
 }
 
 - (void)changeDeviceIDWithMerge:(NSString * _Nullable)deviceID {
-    CLY_LOG_I(@"%s", __FUNCTION__);
-    [self setIDInternal:deviceID onServer:YES];
+    CLY_LOG_I(@"%s", __FUNCTION__);    [self setIDInternal:deviceID onServer:YES];
 }
 
 - (void)changeDeviceIDWithoutMerge:(NSString * _Nullable)deviceID {
-    CLY_LOG_I(@"%s", __FUNCTION__);
-    [self setIDInternal:deviceID onServer:NO];
+    CLY_LOG_I(@"%s", __FUNCTION__);    [self setIDInternal:deviceID onServer:NO];
 }
 
 - (void)enableTemporaryDeviceIDMode
 {
-    CLY_LOG_I(@"%s", __FUNCTION__);
-    [Countly.sharedInstance setIDInternal:CLYTemporaryDeviceID onServer:NO];
+    CLY_LOG_I(@"%s", __FUNCTION__);    [Countly.sharedInstance setIDInternal:CLYTemporaryDeviceID onServer:NO];
 }
 
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer
@@ -805,8 +820,7 @@ static dispatch_once_t onceToken;
 
 - (void)giveConsentForFeatures:(NSArray *)features
 {
-    CLY_LOG_I(@"%s features: [%@]", __FUNCTION__, features);
-    [CountlyConsentManager.sharedInstance giveConsentForFeatures:features];
+    CLY_LOG_I(@"%s features: [%@]", __FUNCTION__, features);    [CountlyConsentManager.sharedInstance giveConsentForFeatures:features];
 }
 
 - (void)giveConsentForAllFeatures
@@ -833,8 +847,7 @@ static dispatch_once_t onceToken;
 
 - (void)cancelConsentForFeatures:(NSArray *)features
 {
-    CLY_LOG_I(@"%s features: [%@]", __FUNCTION__, features);
-    [CountlyConsentManager.sharedInstance cancelConsentForFeatures:features];
+    CLY_LOG_I(@"%s features: [%@]", __FUNCTION__, features);    [CountlyConsentManager.sharedInstance cancelConsentForFeatures:features];
 }
 
 - (void)cancelConsentForAllFeatures
@@ -889,6 +902,7 @@ static dispatch_once_t onceToken;
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration
 {
     CLY_LOG_I(@"%s key: [%@], segmentation: [%@], count: [%lu], sum: [%f], duration: [%f]", __FUNCTION__, key, segmentation, (unsigned long)count, sum, duration);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"events" method:@"record"];
 
     NSNumber* isReservedEvent = [self isReservedEvent:key];
 
@@ -898,11 +912,13 @@ static dispatch_once_t onceToken;
         if (!isReservedEvent.boolValue)
         {
             CLY_LOG_W(@"%s, No consent given for the reserved event! Event will not be recorded.", __FUNCTION__);
+            [CountlyHealthTracker.sharedInstance recordLogCode:@"w401"];
             return;
         }
         CLY_LOG_V(@"%s, Specific consent given for the reserved event! So, it will be recorded.", __FUNCTION__);
     } else if (!CountlyConsentManager.sharedInstance.consentForEvents) {
         CLY_LOG_W(@"%s, Consent for events not given! Event will not be recorded.", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w401"];
         return;
     }
     
@@ -1089,6 +1105,7 @@ static dispatch_once_t onceToken;
 - (void)startEvent:(NSString *)key
 {
     CLY_LOG_I(@"%s key: [%@]", __FUNCTION__, key);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"events" method:@"start"];
 
     if (!CountlyConsentManager.sharedInstance.consentForEvents)
         return;
@@ -1108,6 +1125,7 @@ static dispatch_once_t onceToken;
 - (void)endEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum
 {
     CLY_LOG_I(@"%s key: [%@], segmentation: [%@], count: [%lu], sum: [%f]", __FUNCTION__, key, segmentation, (unsigned long)count, sum);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"events" method:@"end"];
 
     if (!CountlyConsentManager.sharedInstance.consentForEvents)
         return;
@@ -1117,6 +1135,7 @@ static dispatch_once_t onceToken;
     if (!event)
     {
         CLY_LOG_W(@"%s Event with key '%@' not started yet or cancelled/ended before!", __FUNCTION__, key);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w720"];
         return;
     }
 
@@ -1127,6 +1146,7 @@ static dispatch_once_t onceToken;
 - (void)cancelEvent:(NSString *)key
 {
     CLY_LOG_I(@"%s key: [%@]", __FUNCTION__, key);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"events" method:@"cancel"];
 
     if (!CountlyConsentManager.sharedInstance.consentForEvents)
         return;
@@ -1136,6 +1156,7 @@ static dispatch_once_t onceToken;
     if (!event)
     {
         CLY_LOG_W(@"%s Event with key '%@' not started yet or cancelled/ended before!", __FUNCTION__, key);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w720"];
         return;
     }
 
@@ -1161,14 +1182,12 @@ static dispatch_once_t onceToken;
 
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex;
 {
-    CLY_LOG_I(@"%s userInfo: [%@], buttonIndex: [%ld]", __FUNCTION__, userInfo, (long)buttonIndex);
-    [CountlyPushNotifications.sharedInstance recordActionForNotification:userInfo clickedButtonIndex:buttonIndex];
+    CLY_LOG_I(@"%s userInfo: [%@], buttonIndex: [%ld]", __FUNCTION__, userInfo, (long)buttonIndex);    [CountlyPushNotifications.sharedInstance recordActionForNotification:userInfo clickedButtonIndex:buttonIndex];
 }
 
 - (void)recordPushNotificationToken
 {
-    CLY_LOG_I(@"%s", __FUNCTION__);
-    [CountlyPushNotifications.sharedInstance sendToken];
+    CLY_LOG_I(@"%s", __FUNCTION__);    [CountlyPushNotifications.sharedInstance sendToken];
 }
 
 - (void)clearPushNotificationToken
@@ -1185,14 +1204,12 @@ static dispatch_once_t onceToken;
 
 - (void)recordLocation:(CLLocationCoordinate2D)location city:(NSString * _Nullable)city ISOCountryCode:(NSString * _Nullable)ISOCountryCode IP:(NSString * _Nullable)IP
 {
-    CLY_LOG_I(@"%s lat: [%f], long: [%f], city: [%@], country: [%@], ip: [%@]", __FUNCTION__, location.latitude, location.longitude, city, ISOCountryCode, IP);
-    [CountlyLocationManager.sharedInstance recordLocation:location city:city ISOCountryCode:ISOCountryCode IP:IP];
+    CLY_LOG_I(@"%s lat: [%f], long: [%f], city: [%@], country: [%@], ip: [%@]", __FUNCTION__, location.latitude, location.longitude, city, ISOCountryCode, IP);    [CountlyLocationManager.sharedInstance recordLocation:location city:city ISOCountryCode:ISOCountryCode IP:IP];
 }
 
 - (void)disableLocationInfo
 {
-    CLY_LOG_I(@"%s", __FUNCTION__);
-    [CountlyLocationManager.sharedInstance disableLocationInfo];
+    CLY_LOG_I(@"%s", __FUNCTION__);    [CountlyLocationManager.sharedInstance disableLocationInfo];
 }
 
 
@@ -1214,6 +1231,7 @@ static dispatch_once_t onceToken;
 - (void)recordException:(NSException *)exception isFatal:(BOOL)isFatal stackTrace:(NSArray *)stackTrace segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s exception: [%@], isFatal: [%d], stackTrace: [%@], segmentation: [%@]", __FUNCTION__, exception, isFatal, stackTrace, segmentation);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"crashes" method:@"record"];
     [CountlyCrashReporter.sharedInstance recordException:exception isFatal:isFatal stackTrace:stackTrace segmentation:segmentation];
 }
 
@@ -1226,30 +1244,35 @@ static dispatch_once_t onceToken;
 - (void)recordError:(NSString *)errorName isFatal:(BOOL)isFatal stackTrace:(NSArray * _Nullable)stackTrace segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s errorName: [%@], isFatal: [%d], stackTrace: [%@], segmentation: [%@]", __FUNCTION__, errorName, isFatal, stackTrace, segmentation);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"crashes" method:@"record"];
     [CountlyCrashReporter.sharedInstance recordError:errorName isFatal:isFatal stackTrace:stackTrace segmentation:segmentation];
 }
 
 - (void)recordHandledException:(NSException *)exception
 {
     CLY_LOG_I(@"%s exception: [%@]", __FUNCTION__, exception);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"crashes" method:@"record:d"];
     [CountlyCrashReporter.sharedInstance recordException:exception isFatal:NO stackTrace:nil segmentation:nil];
 }
 
 - (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray *)stackTrace
 {
     CLY_LOG_I(@"%s exception: [%@], stackTrace: [%@]", __FUNCTION__, exception, stackTrace);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"crashes" method:@"record:d"];
     [CountlyCrashReporter.sharedInstance recordException:exception isFatal:NO stackTrace:stackTrace segmentation:nil];
 }
 
 - (void)recordUnhandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace
 {
     CLY_LOG_I(@"%s exception: [%@], stackTrace: [%@]", __FUNCTION__, exception, stackTrace);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"crashes" method:@"record:d"];
     [CountlyCrashReporter.sharedInstance recordException:exception isFatal:YES stackTrace:stackTrace segmentation:nil];
 }
 
 - (void)recordCrashLog:(NSString *)log
 {
     CLY_LOG_I(@"%s log: [%@]", __FUNCTION__, log);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"crashes" method:@"log"];
     [CountlyCrashReporter.sharedInstance log:log];
 }
 
@@ -1268,14 +1291,14 @@ static dispatch_once_t onceToken;
 - (void)recordView:(NSString *)viewName;
 {
     CLY_LOG_I(@"%s viewName: [%@]", __FUNCTION__, viewName);
-    [CountlyViewTrackingInternal.sharedInstance startAutoStoppedView:viewName segmentation:nil];
+    [CountlyViewTrackingInternal.sharedInstance recordViewDeprecated:viewName segmentation:nil];
 }
 
 - (void)recordView:(NSString *)viewName segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s viewName: [%@], segmentation: [%@]", __FUNCTION__, viewName, segmentation);
 
-    [CountlyViewTrackingInternal.sharedInstance startAutoStoppedView:viewName segmentation:segmentation];
+    [CountlyViewTrackingInternal.sharedInstance recordViewDeprecated:viewName segmentation:segmentation];
 }
 
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV )
@@ -1311,8 +1334,7 @@ static dispatch_once_t onceToken;
 
 - (void)askForStarRating:(void(^)(NSInteger rating))completion
 {
-    CLY_LOG_I(@"%s completion: [%@]", __FUNCTION__, completion);
-    [CountlyFeedbacksInternal.sharedInstance showDialog:completion];
+    CLY_LOG_I(@"%s completion: [%@]", __FUNCTION__, completion);    [CountlyFeedbacksInternal.sharedInstance showDialog:completion];
 }
 
 - (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
@@ -1331,15 +1353,13 @@ static dispatch_once_t onceToken;
 - (void)presentRatingWidgetWithID:(NSString *)widgetID closeButtonText:(NSString * _Nullable)closeButtonText  completionHandler:(void (^)(NSError * __nullable error))completionHandler
 {
     
-    CLY_LOG_I(@"%s widgetID: [%@], closeButtonText: [%@], completionHandler: [%@]", __FUNCTION__, widgetID, closeButtonText, completionHandler);
-    
+    CLY_LOG_I(@"%s widgetID: [%@], closeButtonText: [%@], completionHandler: [%@]", __FUNCTION__, widgetID, closeButtonText, completionHandler);    
     [CountlyFeedbacksInternal.sharedInstance presentRatingWidgetWithID:widgetID closeButtonText:closeButtonText completionHandler:completionHandler];
 }
 
 - (void)recordRatingWidgetWithID:(NSString *)widgetID rating:(NSInteger)rating email:(NSString * _Nullable)email comment:(NSString * _Nullable)comment userCanBeContacted:(BOOL)userCanBeContacted
 {
     CLY_LOG_I(@"%s widgetID: [%@], rating: [%ld], email: [%@], comment: [%@], userCanBeContacted: [%d]", __FUNCTION__, widgetID, (long)rating, email, comment, userCanBeContacted);
-
     [CountlyFeedbacksInternal.sharedInstance recordRatingWidgetWithID:widgetID rating:rating email:email comment:comment userCanBeContacted:userCanBeContacted];
 }
 
@@ -1366,7 +1386,6 @@ static dispatch_once_t onceToken;
 - (void)recordDirectAttributionWithCampaignType:(NSString *)campaignType andCampaignData:(NSString *)campaignData
 {
     CLY_LOG_I(@"%s campaignType: [%@], campaignData: [%@]", __FUNCTION__, campaignType, campaignData);
-
     if (!CountlyConsentManager.sharedInstance.consentForAttribution)
         return;
 
@@ -1421,7 +1440,6 @@ static dispatch_once_t onceToken;
 - (void)recordIndirectAttribution:(NSDictionary<NSString *, NSString *> *)attribution
 {
     CLY_LOG_I(@"%s attribution: [%@]", __FUNCTION__, attribution);
-
     if (!CountlyConsentManager.sharedInstance.consentForAttribution)
         return;
 
@@ -1469,20 +1487,17 @@ static dispatch_once_t onceToken;
 - (void)recordNetworkTrace:(NSString *)traceName requestPayloadSize:(NSInteger)requestPayloadSize responsePayloadSize:(NSInteger)responsePayloadSize responseStatusCode:(NSInteger)responseStatusCode startTime:(long long)startTime endTime:(long long)endTime
 {
     CLY_LOG_I(@"%s traceName: [%@], requestPayloadSize: [%ld], responsePayloadSize: [%ld], responseStatusCode: [%ld], startTime: [%lld], endTime: [%lld]", __FUNCTION__, traceName, (long)requestPayloadSize, (long)responsePayloadSize, (long)responseStatusCode, startTime, endTime);
-
     [CountlyPerformanceMonitoring.sharedInstance recordNetworkTrace:traceName requestPayloadSize:requestPayloadSize responsePayloadSize:responsePayloadSize responseStatusCode:responseStatusCode startTime:startTime endTime:endTime];
 }
 
 - (void)startCustomTrace:(NSString *)traceName
 {
-    CLY_LOG_I(@"%s traceName: [%@]", __FUNCTION__, traceName);
-    [CountlyPerformanceMonitoring.sharedInstance startCustomTrace:traceName];
+    CLY_LOG_I(@"%s traceName: [%@]", __FUNCTION__, traceName);    [CountlyPerformanceMonitoring.sharedInstance startCustomTrace:traceName];
 }
 
 - (void)endCustomTrace:(NSString *)traceName metrics:(NSDictionary * _Nullable)metrics
 {
-    CLY_LOG_I(@"%s traceName: [%@], metrics: [%@]", __FUNCTION__, traceName, metrics);
-    [CountlyPerformanceMonitoring.sharedInstance endCustomTrace:traceName metrics:metrics];
+    CLY_LOG_I(@"%s traceName: [%@], metrics: [%@]", __FUNCTION__, traceName, metrics);    [CountlyPerformanceMonitoring.sharedInstance endCustomTrace:traceName metrics:metrics];
 }
 
 - (void)cancelCustomTrace:(NSString *)traceName
@@ -1500,7 +1515,6 @@ static dispatch_once_t onceToken;
 - (void)appLoadingFinished
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
-
     long long appLoadEndTime = floor(NSDate.date.timeIntervalSince1970 * 1000);
 
     [CountlyPerformanceMonitoring.sharedInstance recordAppStartDurationTraceWithStartTime:appLoadStartTime endTime:appLoadEndTime];

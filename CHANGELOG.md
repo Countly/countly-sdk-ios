@@ -9,6 +9,7 @@
 * Added `setMaxValueSizePicture:` to `CountlySDKLimitsConfig` to control the maximum size of picture URLs and picture paths independently of other value limits (default 4096).
 * Improved `$push` / `$pull` / `$addToSet` wire format: values are now always sent as arrays so multiple consecutive calls on the same key accumulate correctly.
 * Updated resolution extraction to accommodate iOS 26 deprecations.
+* Health check now reports anonymous SDK method usage (`fu`) and triggered log codes (`lc`) to help diagnose integration issues.
 
 * Mitigated a race condition in the request queue that could drop or duplicate requests.
 * Mitigated an issue where non-queued requests were affected from request timeout settings.

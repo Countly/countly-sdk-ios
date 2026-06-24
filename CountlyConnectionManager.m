@@ -418,7 +418,7 @@ static dispatch_once_t onceToken;
             }
             else
             {
-                CLY_LOG_D(@"%s, request:[ <%p> ] failed! response:[ %@ ]", __FUNCTION__, request, [data cly_stringUTF8]);
+                CLY_LOG_E(@"%s, request:[ <%p> ] failed! response:[ %@ ]", __FUNCTION__, request, [data cly_stringUTF8]);
 
                 self.hasAnyRequestFailed = YES; // Mark that a request has failed
 
@@ -433,6 +433,7 @@ static dispatch_once_t onceToken;
                 }
 
                 [CountlyHealthTracker.sharedInstance logFailedNetworkRequestWithStatusCode:((NSHTTPURLResponse*)response).statusCode errorResponse: [data cly_stringUTF8]];
+                [CountlyHealthTracker.sharedInstance recordLogCode:@"e301"];
                 [CountlyHealthTracker.sharedInstance saveState];
                 self.startTime = nil;
                 atomic_store(&self->_isProcessingQueue, NO);
