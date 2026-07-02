@@ -422,29 +422,137 @@
     // none action yet
 }
 
+// The action URL is percent-decoded once here (a malformed escape falls back to the raw string so
+// the action is not dropped). Two params can carry a literal '&' in their value: "link" (sent
+// unencoded, may hold its own query string) and a decoded "event"/"resize_me" JSON (segmentation
+// strings can contain '&'). A plain '&' split would therefore mis-slice them, and the params can
+// appear in any order. Instead we span the query from the END: at each step we take the right-most
+// reserved marker ("&<key>=") whose value VALIDATES for that key (event/resize_me = JSON, close =
+// 0/1, action = a known verb, link = has a URI scheme), record it, and shrink the span to its left.
+// A marker whose value does NOT validate is treated as ordinary text inside an enclosing value (so
+// it is skipped and absorbed by an outer param). What remains at the front is the comm-url-adjacent
+// identifier ("cly_x_action_event=1" / "cly_widget_command=1"), parsed verbatim. Reserved-name
+// limitation (documented for integrators): a value that literally contains "&<key>=<valid-value>"
+// may be mis-split.
 - (NSDictionary *)parseQueryString:(NSString *)url {
     NSMutableDictionary *queryDict = [NSMutableDictionary dictionary];
-    NSArray *urlComponents = [url componentsSeparatedByString:@"?"];
 
-    if (urlComponents.count > 1) {
-        NSArray *queryItems = [urlComponents[1] componentsSeparatedByString:@"&"];
-        
-        for (NSString *item in queryItems) {
-            NSArray *keyValue = [item componentsSeparatedByString:@"="];
-            if (keyValue.count == 2) {
-                NSString *key = keyValue[0];
-                NSString *value = keyValue[1];
-                queryDict[key] = value;
+    NSString *decodedUrl = [url stringByRemovingPercentEncoding] ?: url;
+
+    NSRange qMark = [decodedUrl rangeOfString:@"?"];
+    if (qMark.location == NSNotFound) {
+        return queryDict;
+    }
+    NSString *query = [decodedUrl substringFromIndex:qMark.location + 1];
+
+    NSArray<NSString *> *reservedKeys = @[@"action", @"event", @"resize_me", @"close", @"link"];
+    NSInteger end = (NSInteger)query.length;
+
+    while (end > 0) {
+        NSInteger chosenIdx = -1;
+        NSString *chosenKey = nil;
+        NSString *chosenValue = nil;
+
+        // Right-to-left, pick the first reserved marker whose value validates. Scanning from the
+        // right lets an inner (invalid) marker be absorbed into an outer, valid value.
+        NSInteger searchFrom = end;
+        while (searchFrom > 0) {
+            NSInteger marker = -1;
+            NSString *markerKey = nil;
+            for (NSString *key in reservedKeys) {
+                NSString *needle = [NSString stringWithFormat:@"&%@=", key];
+                NSRange r = [query rangeOfString:needle options:NSBackwardsSearch range:NSMakeRange(0, searchFrom)];
+                if (r.location != NSNotFound && (NSInteger)r.location > marker && (NSInteger)(r.location + needle.length) <= end) {
+                    marker = (NSInteger)r.location;
+                    markerKey = key;
+                }
             }
+            if (marker < 0) {
+                break;
+            }
+            NSInteger valueStart = marker + (NSInteger)markerKey.length + 2; // "&" + key + "="
+            NSString *value = [query substringWithRange:NSMakeRange(valueStart, end - valueStart)];
+            if ([self isReservedValue:value validForKey:markerKey]) {
+                chosenIdx = marker;
+                chosenKey = markerKey;
+                chosenValue = value;
+                break;
+            }
+            // Not a real param -> ordinary text; keep looking further left.
+            searchFrom = marker;
+        }
+
+        if (chosenIdx < 0) {
+            break;
+        }
+        queryDict[chosenKey] = chosenValue;
+        end = chosenIdx;
+    }
+
+    // Remaining prefix is the identifier param(s) adjacent to the comm URL.
+    NSString *head = [query substringToIndex:end];
+    for (NSString *pair in [head componentsSeparatedByString:@"&"]) {
+        NSRange eq = [pair rangeOfString:@"="];
+        if (eq.location != NSNotFound) {
+            queryDict[[pair substringToIndex:eq.location]] = [pair substringFromIndex:eq.location + 1];
         }
     }
 
     return queryDict;
 }
 
+// Validates a reserved param value. Returns NO if it does not validate (meaning the "&<key>=" was
+// actually text inside an enclosing value, not a real parameter).
+- (BOOL)isReservedValue:(NSString *)value validForKey:(NSString *)key {
+    if ([key isEqualToString:@"event"]) {
+        return [self isValidJSONOfClass:[NSArray class] string:value];
+    } else if ([key isEqualToString:@"resize_me"]) {
+        return [self isValidJSONOfClass:[NSDictionary class] string:value];
+    } else if ([key isEqualToString:@"close"]) {
+        return [value isEqualToString:@"0"] || [value isEqualToString:@"1"];
+    } else if ([key isEqualToString:@"action"]) {
+        return [value isEqualToString:@"event"] || [value isEqualToString:@"link"] || [value isEqualToString:@"resize_me"];
+    } else if ([key isEqualToString:@"link"]) {
+        return [self hasURIScheme:value];
+    }
+    return NO;
+}
+
+- (BOOL)isValidJSONOfClass:(Class)klass string:(NSString *)value {
+    NSData *data = [value dataUsingEncoding:NSUTF8StringEncoding];
+    if (!data) {
+        return NO;
+    }
+    id obj = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+    return [obj isKindOfClass:klass];
+}
+
+// YES if value begins with a URI scheme (ALPHA *( ALPHA / DIGIT / "+" / "-" / "." ) ":"), covering
+// http(s) URLs and custom-scheme deeplinks. The server prepends "https://" to schemeless links, so
+// a valid link value always carries a scheme.
+- (BOOL)hasURIScheme:(NSString *)value {
+    NSRange colon = [value rangeOfString:@":"];
+    if (colon.location == NSNotFound || colon.location == 0) {
+        return NO;
+    }
+    for (NSUInteger i = 0; i < colon.location; i++) {
+        unichar c = [value characterAtIndex:i];
+        BOOL ok;
+        if (i == 0) {
+            ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+        } else {
+            ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '+' || c == '-' || c == '.';
+        }
+        if (!ok) {
+            return NO;
+        }
+    }
+    return YES;
+}
+
 - (void)recordEventsWithJSONString:(NSString *)jsonString {
-    // Decode the URL-encoded JSON string
-    NSString *decodedString = [jsonString stringByRemovingPercentEncoding];
+    // The value is already percent-decoded by parseQueryString; use it directly.
+    NSString *decodedString = jsonString;
 
     // Convert the decoded string to NSData
     NSData *data = [decodedString dataUsingEncoding:NSUTF8StringEncoding];
@@ -487,6 +595,12 @@
 
 - (void)openExternalLink:(NSString *)urlString {
     NSURL *url = [NSURL URLWithString:urlString];
+    if (!url) {
+        // The decoded link may contain characters NSURL rejects (e.g. a space from a decoded '%20').
+        // Re-encode the illegal characters while preserving URL structure, then retry.
+        NSString *encoded = [urlString stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLFragmentAllowedCharacterSet]];
+        url = encoded ? [NSURL URLWithString:encoded] : nil;
+    }
     if (url) {
         [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:^(BOOL success) {
             if (success) {
@@ -500,8 +614,8 @@
 
 - (void)resizeWebViewWithJSONString:(NSString *)jsonString {
 
-    // Decode the URL-encoded JSON string
-    NSString *decodedString = [jsonString stringByRemovingPercentEncoding];
+    // The value is already percent-decoded by parseQueryString; use it directly.
+    NSString *decodedString = jsonString;
 
     // Convert the decoded string to NSData
     NSData *data = [decodedString dataUsingEncoding:NSUTF8StringEncoding];
