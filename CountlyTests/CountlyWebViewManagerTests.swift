@@ -73,6 +73,157 @@ class CountlyWebViewManagerTests: XCTestCase {
         XCTAssertTrue(result.isEmpty)
     }
 
+    // MARK: - link query-param preservation (backward-validating span)
+
+    func testParseQueryString_linkWithSingleQueryParam_preserved() {
+        let url = "https://countly_action_event/?cly_x_action_event=1&action=link&link=https://example.com/path?foo=bar"
+        let result = manager.parseQueryString(url)!
+
+        XCTAssertEqual(result["link"] as? String, "https://example.com/path?foo=bar")
+        XCTAssertEqual(result["action"] as? String, "link")
+    }
+
+    func testParseQueryString_linkWithMultipleQueryParams_preserved() {
+        let url = "https://countly_action_event/?cly_x_action_event=1&action=link&link=https://example.com/path?foo=bar&baz=qux&n=42"
+        let result = manager.parseQueryString(url)!
+
+        XCTAssertEqual(result["link"] as? String, "https://example.com/path?foo=bar&baz=qux&n=42")
+        XCTAssertNil(result["baz"])
+        XCTAssertNil(result["n"])
+    }
+
+    func testParseQueryString_deeplinkWithQueryParams_preserved() {
+        let url = "https://countly_action_event/?cly_x_action_event=1&action=link&link=myapp://open?screen=home&id=42&ref=push"
+        let result = manager.parseQueryString(url)!
+
+        XCTAssertEqual(result["link"] as? String, "myapp://open?screen=home&id=42&ref=push")
+    }
+
+    func testParseQueryString_linkWithoutQueryParams_preserved() {
+        let url = "https://countly_action_event/?cly_x_action_event=1&action=link&link=https://example.com/landing"
+        let result = manager.parseQueryString(url)!
+
+        XCTAssertEqual(result["link"] as? String, "https://example.com/landing")
+    }
+
+    func testParseQueryString_eventAfterLink_separatedFromLink() {
+        let url = "https://countly_action_event/?cly_x_action_event=1&action=link&link=https://x.com/p?a=b&c=d&event=[{\"key\":\"e\",\"sg\":{\"x\":\"y\"}}]"
+        let result = manager.parseQueryString(url)!
+
+        XCTAssertEqual(result["link"] as? String, "https://x.com/p?a=b&c=d")
+        XCTAssertEqual(result["event"] as? String, "[{\"key\":\"e\",\"sg\":{\"x\":\"y\"}}]")
+    }
+
+    func testParseQueryString_invalidReservedMarkerInLink_staysInLink() {
+        let url = "https://countly_action_event/?cly_x_action_event=1&action=link&link=https://x.com/p?a=b&event=notjson"
+        let result = manager.parseQueryString(url)!
+
+        XCTAssertEqual(result["link"] as? String, "https://x.com/p?a=b&event=notjson")
+        XCTAssertNil(result["event"])
+    }
+
+    func testParseQueryString_eventJsonContainingReservedText_parsedWhole() {
+        let url = "https://countly_action_event/?cly_x_action_event=1&action=event&event=[{\"key\":\"k\",\"sg\":{\"u\":\"a&close=1\"}}]"
+        let result = manager.parseQueryString(url)!
+
+        XCTAssertEqual(result["event"] as? String, "[{\"key\":\"k\",\"sg\":{\"u\":\"a&close=1\"}}]")
+        XCTAssertNil(result["close"])
+    }
+
+    func testParseQueryString_closeBeforeLink_separated() {
+        let url = "https://countly_action_event/?cly_x_action_event=1&action=link&close=1&link=https://example.com/path?foo=bar&baz=qux"
+        let result = manager.parseQueryString(url)!
+
+        XCTAssertEqual(result["link"] as? String, "https://example.com/path?foo=bar&baz=qux")
+        XCTAssertEqual(result["close"] as? String, "1")
+    }
+
+    func testParseQueryString_linkWithTrailingClose_separated() {
+        let url = "https://countly_action_event/?cly_x_action_event=1&action=link&link=https://example.com/path?foo=bar&baz=qux&close=1"
+        let result = manager.parseQueryString(url)!
+
+        XCTAssertEqual(result["link"] as? String, "https://example.com/path?foo=bar&baz=qux")
+        XCTAssertEqual(result["close"] as? String, "1")
+    }
+
+    func testParseQueryString_linkWithTrailingCloseZero_separated() {
+        let url = "https://countly_action_event/?cly_x_action_event=1&action=link&link=https://example.com/path?a=1&b=2&close=0"
+        let result = manager.parseQueryString(url)!
+
+        XCTAssertEqual(result["link"] as? String, "https://example.com/path?a=1&b=2")
+        XCTAssertEqual(result["close"] as? String, "0")
+    }
+
+    func testParseQueryString_linkEndingInReservedClose_consumedAsFlag() {
+        let url = "https://countly_action_event/?cly_x_action_event=1&action=link&link=https://x.com?a=b&c=d&close=1&close=1"
+        let result = manager.parseQueryString(url)!
+
+        XCTAssertEqual(result["link"] as? String, "https://x.com?a=b&c=d")
+        XCTAssertEqual(result["close"] as? String, "1")
+    }
+
+    func testParseQueryString_encodedEventValue_decodedAndAvailable() {
+        // Encoded on the wire: [{"key":"test_key","sg":{"color":"blue"}}] — parseQueryString decodes.
+        let url = "https://countly_action_event/?cly_x_action_event=1&action=event&event=%5B%7B%22key%22%3A%22test_key%22%2C%22sg%22%3A%7B%22color%22%3A%22blue%22%7D%7D%5D"
+        let result = manager.parseQueryString(url)!
+
+        XCTAssertEqual(result["action"] as? String, "event")
+        XCTAssertEqual(result["event"] as? String, "[{\"key\":\"test_key\",\"sg\":{\"color\":\"blue\"}}]")
+    }
+
+    func testParseQueryString_linkWithFragment_preserved() {
+        let url = "https://countly_action_event/?cly_x_action_event=1&action=link&link=https://example.com/path?a=b#section"
+        let result = manager.parseQueryString(url)!
+
+        XCTAssertEqual(result["link"] as? String, "https://example.com/path?a=b#section")
+    }
+
+    func testParseQueryString_linkWithRepeatedQuestionMark_preserved() {
+        // Regression guard: the old parser used componentsSeparatedByString:"?"[1] and dropped
+        // everything after the link's own "?".
+        let url = "https://countly_action_event/?cly_x_action_event=1&action=link&link=https://example.com/p?a=b?c=d"
+        let result = manager.parseQueryString(url)!
+
+        XCTAssertEqual(result["link"] as? String, "https://example.com/p?a=b?c=d")
+    }
+
+    func testParseQueryString_linkEventAndClose_allSeparated() {
+        let url = "https://countly_action_event/?cly_x_action_event=1&action=link&link=https://x.com/p?a=b&c=d&event=[{\"key\":\"e\"}]&close=1"
+        let result = manager.parseQueryString(url)!
+
+        XCTAssertEqual(result["link"] as? String, "https://x.com/p?a=b&c=d")
+        XCTAssertEqual(result["close"] as? String, "1")
+        XCTAssertEqual(result["event"] as? String, "[{\"key\":\"e\"}]")
+    }
+
+    func testParseQueryString_invalidCloseValue_staysInLink() {
+        let url = "https://countly_action_event/?cly_x_action_event=1&action=link&link=https://x.com/p?a=b&close=2"
+        let result = manager.parseQueryString(url)!
+
+        XCTAssertEqual(result["link"] as? String, "https://x.com/p?a=b&close=2")
+        XCTAssertNil(result["close"])
+    }
+
+    func testParseQueryString_schemelessLink_fallbackTruncates() {
+        // A schemeless link fails link validation (no URI scheme), so the query falls back to the
+        // plain '&' split, which truncates a multi-param link. The server always prepends "https://",
+        // so this is an edge case; the test pins the current behavior.
+        let url = "https://countly_action_event/?cly_x_action_event=1&action=link&link=example.com/p?a=b&c=d"
+        let result = manager.parseQueryString(url)!
+
+        XCTAssertEqual(result["link"] as? String, "example.com/p?a=b")
+        XCTAssertEqual(result["c"] as? String, "d")
+    }
+
+    func testParseQueryString_linkWithPlus_preservesPlus() {
+        // Characterization: stringByRemovingPercentEncoding leaves a literal '+' untouched, so the
+        // link keeps its '+'. This differs from Android (URLDecoder decodes '+' to a space).
+        let url = "https://countly_action_event/?cly_x_action_event=1&action=link&link=https://x.com/search?q=a+b&lang=en"
+        let result = manager.parseQueryString(url)!
+
+        XCTAssertEqual(result["link"] as? String, "https://x.com/search?q=a+b&lang=en")
+    }
+
     // MARK: - notifyPageLoaded tests
 
     func testNotifyPageLoaded_callsAppearBlock() {
