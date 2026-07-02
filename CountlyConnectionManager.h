@@ -14,6 +14,7 @@ extern NSString* const kCountlyQSKeySDKVersion;
 extern NSString* const kCountlyQSKeySDKName;
 extern NSString* const kCountlyQSKeyMethod;
 extern NSString* const kCountlyQSKeyMetrics;
+extern NSString* const kCountlyQSKeyTheme;
 
 extern NSString* const kCountlyEndpointI;
 extern NSString* const kCountlyEndpointO;

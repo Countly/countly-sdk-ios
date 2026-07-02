@@ -336,8 +336,9 @@ NSString* const kCountlyFBKeyShown          = @"shown";
         // Append the custom parameter to the URL
         [URL appendFormat:@"&custom=%@", customString.cly_URLEscaped];
     }
-    
-    return [NSURL URLWithString:URL];
+
+    NSString *finalURL = [CountlyDeviceInfo URLStringByAppendingThemeMode:URL];
+    return [NSURL URLWithString:finalURL];
 }
 
 
