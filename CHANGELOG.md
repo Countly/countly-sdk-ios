@@ -1,3 +1,6 @@
+## XX.XX.XX
+* Added support for reporting the app's current theme (light or dark) when presenting feedback widgets, rating widgets, and content, so they are displayed in matching conditions.
+
 ## 26.1.2
 * ! Minor breaking change ! Raised the minimum supported deployment target to iOS 12 and tvOS 12 (previously iOS 10 and tvOS 10) for compatibility with Xcode 26 and the iOS 26 SDK. Apps targeting iOS 10/11 or tvOS 10/11 are no longer supported.
 

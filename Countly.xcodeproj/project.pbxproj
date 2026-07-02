@@ -95,6 +95,7 @@
 		968426812BF2302C007B303E /* CountlyConnectionManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 968426802BF2302C007B303E /* CountlyConnectionManagerTests.swift */; };
 		96CB10A12F04B3A100D1E2F0 /* CountlyContentBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96CB10A02F04B3A100D1E2F0 /* CountlyContentBuilderTests.swift */; };
 		AB10000011112222333344A1 /* CountlyScreenMetricsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB10000011112222333344A0 /* CountlyScreenMetricsTests.swift */; };
+		AB10000011112222333344B1 /* CountlyThemeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB10000011112222333344B0 /* CountlyThemeTests.swift */; };
 		9691B7652F1FA35500A6ADCB /* CountlyOverlayWindow.h in Headers */ = {isa = PBXBuildFile; fileRef = 9691B7642F1FA35500A6ADCB /* CountlyOverlayWindow.h */; };
 		9691B7672F1FA35C00A6ADCB /* CountlyOverlayWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = 9691B7662F1FA35C00A6ADCB /* CountlyOverlayWindow.m */; };
 		969E5BCE2ECC4D3200AB406A /* CountlyConsentManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 969E5BCD2ECC4D2C00AB406A /* CountlyConsentManagerTests.swift */; };
@@ -222,6 +223,7 @@
 		968426802BF2302C007B303E /* CountlyConnectionManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyConnectionManagerTests.swift; sourceTree = "<group>"; };
 		96CB10A02F04B3A100D1E2F0 /* CountlyContentBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyContentBuilderTests.swift; sourceTree = "<group>"; };
 		AB10000011112222333344A0 /* CountlyScreenMetricsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyScreenMetricsTests.swift; sourceTree = "<group>"; };
+		AB10000011112222333344B0 /* CountlyThemeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyThemeTests.swift; sourceTree = "<group>"; };
 		9691B7642F1FA35500A6ADCB /* CountlyOverlayWindow.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyOverlayWindow.h; sourceTree = "<group>"; };
 		9691B7662F1FA35C00A6ADCB /* CountlyOverlayWindow.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyOverlayWindow.m; sourceTree = "<group>"; };
 		969E5BCD2ECC4D2C00AB406A /* CountlyConsentManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyConsentManagerTests.swift; sourceTree = "<group>"; };
@@ -279,6 +281,7 @@
 				968426802BF2302C007B303E /* CountlyConnectionManagerTests.swift */,
 				96CB10A02F04B3A100D1E2F0 /* CountlyContentBuilderTests.swift */,
 				AB10000011112222333344A0 /* CountlyScreenMetricsTests.swift */,
+				AB10000011112222333344B0 /* CountlyThemeTests.swift */,
 				96E680412BFF89AC0091E105 /* CountlyCrashReporterTests.swift */,
 				EBD1642D826B471A80175BE3 /* CountlyWebViewManagerTests.swift */,
 				265156CB5F59417EA14BAC2F /* CountlyWebViewManager+Tests.h */,
@@ -562,6 +565,7 @@
 				968426812BF2302C007B303E /* CountlyConnectionManagerTests.swift in Sources */,
 				96CB10A12F04B3A100D1E2F0 /* CountlyContentBuilderTests.swift in Sources */,
 				AB10000011112222333344A1 /* CountlyScreenMetricsTests.swift in Sources */,
+				AB10000011112222333344B1 /* CountlyThemeTests.swift in Sources */,
 				96329DE42D952F1500BFD641 /* MockURLProtocol.swift in Sources */,
 				96329DE02D9426F300BFD641 /* CountlyServerConfigTests.swift in Sources */,
 				ABCDE001000000000000ABCD /* CountlyServerConfigValidationTests.swift in Sources */,

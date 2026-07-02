@@ -70,6 +70,7 @@ NSString* const kCountlyQSKeyAPM              = @"apm";
 NSString* const kCountlyQSKeyRemainingRequest = @"rr";
 
 NSString* const kCountlyQSKeyMethod           = @"method";
+NSString* const kCountlyQSKeyTheme            = @"th";
 
 NSString* const kCountlyRCKeyABOptIn          = @"ab";
 NSString* const kCountlyRCKeyABOptOut         = @"ab_opt_out";

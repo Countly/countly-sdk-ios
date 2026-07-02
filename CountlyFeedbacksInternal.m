@@ -377,6 +377,8 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
                            kCountlyEndpointFeedback,
                            queryString];
 
+    URLString = [CountlyDeviceInfo URLStringByAppendingThemeMode:URLString];
+
     return [NSURL URLWithString:URLString];
 }
 

@@ -343,10 +343,14 @@ NSString* const kCountlyCBFetchContent  = @"queue";
         
         CGRect frame = CGRectMake(x, y, width, height);
         
+        // Append the current theme so the content renders matching the app (resolved on the main
+        // thread here, where the trait collection is safe to read).
+        NSURL *themedURL = [NSURL URLWithString:[CountlyDeviceInfo URLStringByAppendingThemeMode:urlString]] ?: url;
+
         // Log the URL and the frame
-        CLY_LOG_I(@"%s showing content from URL: [%@], frame: [%@]", __FUNCTION__, url, NSStringFromCGRect(frame));
+        CLY_LOG_I(@"%s showing content from URL: [%@], frame: [%@]", __FUNCTION__, themedURL, NSStringFromCGRect(frame));
         CountlyWebViewManager* webViewManager =  CountlyWebViewManager.new;
-            [webViewManager createWebViewWithURL:url frame:frame appearBlock:^
+            [webViewManager createWebViewWithURL:themedURL frame:frame appearBlock:^
              {
                 CLY_LOG_I(@"%s webview should be appeared", __FUNCTION__);
             } dismissBlock:^
