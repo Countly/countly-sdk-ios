@@ -20,6 +20,7 @@
 * Added `providedUserProperties` to `CountlyConfig` to set initial user properties that are applied and saved automatically right after `start`.
 * Added `setMaxValueSizePicture:` to `CountlySDKLimitsConfig` to control the maximum size of picture URLs and picture paths independently of other value limits (default 4096).
 * Updated resolution extraction to accommodate iOS 26 deprecations.
+* Health check now reports anonymous SDK method usage (`fu`) and triggered log codes (`lc`) to help diagnose integration issues.
 
 * Mitigated a race condition in the request queue that could drop or duplicate requests.
 * Mitigated an issue where non-queued requests were affected from request timeout settings.

@@ -246,7 +246,10 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
 {
     if (!CountlyServerConfig.sharedInstance.crashReportingEnabled)
         return;
-    
+
+    if (isAutoDetect)
+        [CountlyHealthTracker.sharedInstance recordUsage:@"crashes" method:@"record:a"];
+
     NSArray* stackTrace = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
     if (!stackTrace)
         stackTrace = exception.callStackSymbols;

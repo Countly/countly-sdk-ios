@@ -28,6 +28,10 @@
 
 - (void)sendHealthCheck;
 
+- (void)recordUsage:(NSString *)area method:(NSString *)method;
+
+- (void)recordLogCode:(NSString *)code;
+
 // Exposed for testing purposes only.
 - (void)resetInstance;
 

@@ -37,6 +37,7 @@ extern NSString* const kCountlyVTKeyVisit;
 - (void)setGlobalViewSegmentation:(NSDictionary *)segmentation;
 - (void)updateGlobalViewSegmentation:(NSDictionary *)segmentation;
 - (NSString *)startAutoStoppedView:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
+- (NSString *)recordViewDeprecated:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
 - (NSString *)startView:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
 - (void)stopViewWithName:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
 - (void)stopViewWithID:(NSString *)viewID segmentation:(NSDictionary *)segmentation;
