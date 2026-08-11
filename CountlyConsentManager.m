@@ -444,7 +444,7 @@ static dispatch_once_t onceToken;
 {
     _consentForFeedback = consentForFeedback;
 
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
     if (consentForFeedback)
     {
         CLY_LOG_D(@"Consent for Feedback is given.");
@@ -499,7 +499,7 @@ static dispatch_once_t onceToken;
     else
     {
         CLY_LOG_D(@"Consent for Content is cancelled.");
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
         [CountlyContentBuilderInternal.sharedInstance exitContentZone];
 #endif
     }

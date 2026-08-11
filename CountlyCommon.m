@@ -29,7 +29,7 @@ NSString* const kCountlyVisibility = @"cly_v";
 #endif
 @end
 
-NSString* const kCountlySDKVersion = @"26.1.1";
+NSString* const kCountlySDKVersion = @"26.1.4";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
@@ -66,7 +66,7 @@ static dispatch_once_t onceToken;
 
 - (void)resetInstance {
     CLY_LOG_I(@"%s", __FUNCTION__);
-#if (TARGET_OS_IOS || TARGET_OS_VISION )
+#if (TARGET_OS_IOS)
     [NSNotificationCenter.defaultCenter removeObserver:self name:UIDeviceOrientationDidChangeNotification object:nil];
 #endif
     _hasStarted = false;
@@ -281,13 +281,76 @@ void CountlyPrint(NSString *stringToPrint)
 #endif
 }
 
-#if (TARGET_OS_IOS || TARGET_OS_TV)
-- (UIViewController *)topViewController
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
++ (UIWindow *)keyWindow
 {
+    if (@available(iOS 13.0, *))
+    {
+        // connectedScenes is an unordered NSSet, so never rely on iteration order: search
+        // explicitly for the correct window rather than acting on whichever scene comes first.
+        NSArray<UIScene *> *scenes = UIApplication.sharedApplication.connectedScenes.allObjects;
+
+        // 1) The key window of the foreground-active scene (the one the user is interacting with).
+        for (UIScene *scene in scenes)
+        {
+            if (scene.activationState == UISceneActivationStateForegroundActive && [scene isKindOfClass:[UIWindowScene class]])
+            {
+                for (UIWindow *window in ((UIWindowScene *)scene).windows)
+                    if (window.isKeyWindow)
+                        return window;
+            }
+        }
+
+        // 2) Any key window across all scenes.
+        for (UIScene *scene in scenes)
+        {
+            if ([scene isKindOfClass:[UIWindowScene class]])
+            {
+                for (UIWindow *window in ((UIWindowScene *)scene).windows)
+                    if (window.isKeyWindow)
+                        return window;
+            }
+        }
+
+        // 3) Fall back to the first window of a foreground-active scene.
+        for (UIScene *scene in scenes)
+        {
+            if (scene.activationState == UISceneActivationStateForegroundActive && [scene isKindOfClass:[UIWindowScene class]])
+            {
+                UIWindow *window = ((UIWindowScene *)scene).windows.firstObject;
+                if (window)
+                    return window;
+            }
+        }
+    }
+#if (TARGET_OS_VISION)
+    return nil;
+#else
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    UIViewController* topVC = UIApplication.sharedApplication.keyWindow.rootViewController;
+    return UIApplication.sharedApplication.keyWindow;
 #pragma GCC diagnostic pop
+#endif
+}
+
++ (CGRect)screenBounds
+{
+    UIWindow *window = [self keyWindow];
+    if (window)
+        return window.bounds;
+#if (TARGET_OS_VISION)
+    return CGRectZero;
+#else
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    return UIScreen.mainScreen.bounds;
+#pragma GCC diagnostic pop
+#endif
+}
+
+- (UIViewController *)topViewController
+{
+    UIViewController* topVC = CountlyCommon.keyWindow.rootViewController;
 
     while (YES)
     {
@@ -359,7 +422,7 @@ void CountlyPrint(NSString *stringToPrint)
     return [NSURLSession sessionWithConfiguration:immediateConfig];
 }
 
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 - (bool) hasTopNotch:(UIEdgeInsets)safeArea
 {
     return safeArea.top >= 44;
@@ -367,19 +430,8 @@ void CountlyPrint(NSString *stringToPrint)
 #endif
 
 - (CGSize)getWindowSize{
-#if (TARGET_OS_IOS)
-    UIWindow *window = nil;
-
-    if (@available(iOS 13.0, *)) {
-        for (UIScene *scene in UIApplication.sharedApplication.connectedScenes) {
-            if ([scene isKindOfClass:[UIWindowScene class]]) {
-                window = ((UIWindowScene *)scene).windows.firstObject;
-                break;
-            }
-        }
-    } else {
-        window = [[UIApplication sharedApplication].delegate window];
-    }
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+    UIWindow *window = [CountlyCommon keyWindow];
 
     if (!window) return CGSizeZero;
 
@@ -402,12 +454,32 @@ void CountlyPrint(NSString *stringToPrint)
 #endif
 }
 
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+- (UIInterfaceOrientation)interfaceOrientation
+{
+    if (@available(iOS 13.0, *))
+    {
+        UIWindowScene *windowScene = [CountlyCommon keyWindow].windowScene;
+        if (windowScene)
+            return windowScene.interfaceOrientation;
+    }
+#if (TARGET_OS_IOS)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    return UIApplication.sharedApplication.statusBarOrientation;
+#pragma GCC diagnostic pop
+#else
+    return UIInterfaceOrientationPortrait;
+#endif
+}
+#endif
+
 
 @end
 
 
 #pragma mark - Internal ViewController
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 @implementation CLYInternalViewController : UIViewController
 
 - (void)viewWillLayoutSubviews
@@ -421,10 +493,7 @@ void CountlyPrint(NSString *stringToPrint)
         UIEdgeInsets insets = UIEdgeInsetsZero;
         if (@available(iOS 11.0, *))
         {
-            #pragma GCC diagnostic push
-            #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            insets = UIApplication.sharedApplication.keyWindow.safeAreaInsets;
-            #pragma GCC diagnostic pop
+            insets = CountlyCommon.keyWindow.safeAreaInsets;
         }
 
         self.webView.navigationDelegate = self;
@@ -530,10 +599,7 @@ const CGFloat kCountlyDismissButtonStandardStatusBarHeight = 20.0;
     {
         if (@available(iOS 11.0, *))
         {
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-            CGFloat top = UIApplication.sharedApplication.keyWindow.safeAreaInsets.top;
-#pragma GCC diagnostic pop
+            CGFloat top = CountlyCommon.keyWindow.safeAreaInsets.top;
 
             if (top)
             {

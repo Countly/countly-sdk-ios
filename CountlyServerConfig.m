@@ -523,16 +523,18 @@ static dispatch_once_t onceToken;
     {
         CountlyContentBuilderInternal.sharedInstance.zoneTimerInterval = config.content.getZoneTimerInterval;
     }
+    // clearContentState, not exitContentZone: this runs on every config apply, and exitContentZone
+    // would pull displayed content off screen.
     if (!_enterContentZone)
     {
         dispatch_async(dispatch_get_main_queue(), ^{
-            [CountlyContentBuilderInternal.sharedInstance exitContentZone];
+            [CountlyContentBuilderInternal.sharedInstance clearContentState];
         });
     }
     else
     {
         dispatch_async(dispatch_get_main_queue(), ^{
-            [CountlyContentBuilderInternal.sharedInstance exitContentZone];
+            [CountlyContentBuilderInternal.sharedInstance clearContentState];
             [CountlyContentBuilderInternal.sharedInstance enterContentZone:@[]];
         });
     }
@@ -618,7 +620,10 @@ static dispatch_once_t onceToken;
     }
     
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+    {
+        CLY_LOG_W(@"%s, fetch is skipped while in temporary device ID mode", __FUNCTION__);
         return;
+    }
 
     _lastFetchTimestamp = NSDate.date.timeIntervalSince1970 * 1000;
 
@@ -667,8 +672,9 @@ static dispatch_once_t onceToken;
 
 - (NSURLRequest *)serverConfigRequest
 {
-    NSString *queryString = [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%@&%@=%@&%@=%@", kCountlyQSKeyMethod, kCountlySCKeySC, kCountlyQSKeyAppKey, CountlyConnectionManager.sharedInstance.appKey.cly_URLEscaped, kCountlyQSKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped,
-                                                       kCountlyQSKeySDKName, CountlyCommon.sharedInstance.SDKName, kCountlyQSKeySDKVersion, CountlyCommon.sharedInstance.SDKVersion];
+    NSString *queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
+
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMethod, kCountlySCKeySC];
 
     queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyAppVersionKey, CountlyDeviceInfo.appVersion];
 

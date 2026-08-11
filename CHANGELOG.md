@@ -1,20 +1,36 @@
 ## XX.XX.XX
 * Added support for SDK behavior settings that control the SDK's automatic session tracking, automatic view tracking, automatic crash reporting, and Journey Trigger Views.
+
+## 26.1.4
+* Added support for reporting the app's current theme (light or dark) when presenting feedback widgets, rating widgets, and content, so they are displayed in matching conditions.
+* Added visionOS support for feedback widgets (NPS, Survey, and Rating) and content.
+* Added a content configuration option "disableRotation" on "CountlyContentConfig" that pins displayed content to the portrait layout.
+* Calling "exitContentZone" now also closes content that is currently displayed, instead of only stopping content retrieval.
+
+* Mitigated an issue where feedback widgets could be closed automatically after about a minute even while the user was still interacting with them.
+
+## 26.1.3
+* Added a content configuration option to reload the content web view when its load stalls, enabled via "enableContentReloadOnStall" on "CountlyContentConfig", with a configurable stall timeout "setContentReloadOnStallTimeout:" in milliseconds (default 1000).
+* Added a content configuration option to disable pinch zoom, disabled via "disableZoom".
+* Added a content configuration option to provide a handler for links opened from the content web view, so the app can route its own deep links instead of the SDK opening the system browser, set via "setContentURLHandler:".
+* Improved link handling for content and feedback widgets, so links that carry their own query parameters, such as deep links, are parsed correctly.
+
+## 26.1.2
+* ! Minor breaking change ! Raised the minimum supported deployment target to iOS 12 and tvOS 12 (previously iOS 10 and tvOS 10) for compatibility with Xcode 26 and the iOS 26 SDK. Apps targeting iOS 10/11 or tvOS 10/11 are no longer supported.
+
+* Added support for building against the iOS 26 SDK with Xcode 26.
 * Added a new user properties functions on `CountlyUserDetails`:
   * `setProperty:value:` for setting a single predefined or custom user property.
   * `setProperties:` for setting multiple predefined and custom properties in one call.
 * Added `providedUserProperties` to `CountlyConfig` to set initial user properties that are applied and saved automatically right after `start`.
 * Added `setMaxValueSizePicture:` to `CountlySDKLimitsConfig` to control the maximum size of picture URLs and picture paths independently of other value limits (default 4096).
-* Improved `$push` / `$pull` / `$addToSet` wire format: values are now always sent as arrays so multiple consecutive calls on the same key accumulate correctly.
 * Updated resolution extraction to accommodate iOS 26 deprecations.
 
 * Mitigated a race condition in the request queue that could drop or duplicate requests.
 * Mitigated an issue where non-queued requests were affected from request timeout settings.
-* Mitigated a race condition for tests in the request queue that could drop or duplicate requests.
-* Mitigated an issue where server config defaults overrode user-provided SDK limits.
-* Mitigated an issue where invalid or unknown `sdkBehaviorSettings` keys were persisted.
-* Mitigated an issue where listing-filter conflicts cleared keys across unrelated categories.
-* Mitigated an issue where consent could be sent twice during initialization.
+* Mitigated an issue where default SDK behavior settings overrode user-provided SDK limits.
+* Mitigated an issue where consent could be sent twice during initialization when enabled via SDK Behavior Settings.
+* Mitigated an issue where content fetches and remote config requests could be sent while in temporary device ID mode, creating a `CLYTemporaryDeviceID` user on the server.
 
 * Deprecated the direct property setters on `CountlyUserDetails`: `name`, `username`, `email`, `organization`, `phone`, `gender`, `pictureURL`, `pictureLocalPath`, `birthYear`, `custom`. Use `setProperty:value:` or `setProperties:` instead.
 * Deprecated `set:value:`, `set:numberValue:`, `set:boolValue:` on `CountlyUserDetails`. Use `setProperty:value:` instead.

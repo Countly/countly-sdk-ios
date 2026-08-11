@@ -311,6 +311,65 @@ static dispatch_once_t onceToken;
     return [NSString stringWithFormat:@"@%dx", (int)scale];
 }
 
++ (NSString *)themeMode
+{
+#if (TARGET_OS_IOS || TARGET_OS_TV)
+    @try
+    {
+        if (@available(iOS 12.0, tvOS 12.0, *))
+        {
+            UITraitCollection *traits = nil;
+
+            if (@available(iOS 13.0, tvOS 13.0, *))
+            {
+                for (UIScene *scene in UIApplication.sharedApplication.connectedScenes)
+                {
+                    if ([scene isKindOfClass:UIWindowScene.class])
+                    {
+                        UIWindow *window = ((UIWindowScene *)scene).windows.firstObject;
+                        if (window)
+                            traits = window.traitCollection;
+                        break;
+                    }
+                }
+            }
+
+            if (!traits)
+                traits = UIScreen.mainScreen.traitCollection;
+
+            switch (traits.userInterfaceStyle)
+            {
+                case UIUserInterfaceStyleDark:
+                    return @"d";
+                case UIUserInterfaceStyleLight:
+                    return @"l";
+                default:
+                    return nil;
+            }
+        }
+    }
+    @catch (NSException *exception)
+    {
+        CLY_LOG_W(@"%s, failed to resolve theme mode: %@", __FUNCTION__, exception);
+    }
+#endif
+    return nil;
+}
+
++ (NSString *)URLStringByAppendingThemeMode:(NSString *)urlString
+{
+    return [self URLString:urlString byAppendingThemeMode:[self themeMode]];
+}
+
++ (NSString *)URLString:(NSString *)urlString byAppendingThemeMode:(NSString *)theme
+{
+    if (!theme.length)
+        return urlString;
+
+    NSString *separator = [urlString containsString:@"?"] ? @"&" : @"?";
+    return [urlString stringByAppendingFormat:@"%@%@=%@", separator, kCountlyQSKeyTheme, theme];
+}
+
 + (NSString *)locale
 {
     return NSLocale.currentLocale.localeIdentifier;

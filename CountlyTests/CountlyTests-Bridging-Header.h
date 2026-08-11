@@ -3,6 +3,7 @@
 #import "CountlyViewTrackingInternal.h"
 #import "CountlyHealthTracker.h"
 #import "CountlyContentBuilderInternal.h"
+#import "CountlyContentBuilderInternal+Tests.h"
 #import "CountlyWebViewManager.h"
 #import "CountlyWebViewManager+Tests.h"
 #import "PassThroughBackgroundView.h"

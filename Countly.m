@@ -10,6 +10,7 @@
 {
     NSTimer* timer;
     BOOL isSuspended;
+    CountlyConfig* _startConfig;
 }
 @end
 
@@ -103,7 +104,8 @@ static dispatch_once_t onceToken;
     CountlyCommon.sharedInstance.internalLogLevel = config.internalLogLevel;
 
     config = [self checkAndFixInternalLimitsConfig:config];
-    
+    _startConfig = config;
+
     if (config.disableSDKBehaviorSettingsUpdates) {
         [CountlyServerConfig.sharedInstance disableSDKBehaviourSettings];
     }
@@ -296,6 +298,11 @@ static dispatch_once_t onceToken;
     if(config.content.getWebViewDisplayOption){
         CountlyContentBuilderInternal.sharedInstance.webViewDisplayOption = config.content.getWebViewDisplayOption;
     }
+    CountlyContentBuilderInternal.sharedInstance.enableContentReloadOnStall = config.content.getEnableContentReloadOnStall;
+    CountlyContentBuilderInternal.sharedInstance.contentReloadOnStallTimeout = config.content.getContentReloadOnStallTimeout / 1000.0;
+    CountlyContentBuilderInternal.sharedInstance.disableZoom = config.content.getDisableZoom;
+    CountlyContentBuilderInternal.sharedInstance.disableRotation = config.content.getDisableRotation;
+    CountlyContentBuilderInternal.sharedInstance.contentURLHandler = config.content.getContentURLHandler;
 #endif
     
     [CountlyPerformanceMonitoring.sharedInstance startWithConfig:config.apm];
@@ -755,8 +762,10 @@ static dispatch_once_t onceToken;
 
         [CountlyConnectionManager.sharedInstance proceedOnQueue];
 
+        [CountlyServerConfig.sharedInstance fetchServerConfig:_startConfig];
+
         [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfigAutomatically];
-        
+
         [CountlyHealthTracker.sharedInstance sendHealthCheck];
 
         return;
@@ -1340,7 +1349,7 @@ static dispatch_once_t onceToken;
 }
 #endif
 #pragma mark - Star Rating
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 
 - (void)askForStarRating:(void(^)(NSInteger rating))completion
 {
@@ -1589,6 +1598,9 @@ static dispatch_once_t onceToken;
     [CountlyDeviceInfo.sharedInstance resetInstance];
     [CountlyConnectionManager.sharedInstance resetInstance];
     [CountlyServerConfig.sharedInstance resetInstance];
+#if (TARGET_OS_IOS)
+    [CountlyContentBuilderInternal.sharedInstance resetInstance];
+#endif
     [CountlyUserDetails.sharedInstance clearUserDetails];
     [self resetInstance];
     [CountlyCommon.sharedInstance resetInstance];
@@ -1630,7 +1642,7 @@ static dispatch_once_t onceToken;
 }
 
 #pragma mark - Interfaces
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 - (CountlyContentBuilder *) content
 {
     return CountlyContentBuilder.sharedInstance;

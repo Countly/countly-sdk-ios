@@ -6,7 +6,7 @@
 
 #import "CountlyCommon.h"
 #import "CountlyWebViewManager.h"
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 #import <WebKit/WebKit.h>
 #endif
 
@@ -21,7 +21,7 @@ NSString* const kCountlyReservedEventRating = @"[CLY]_star_rating";
 NSString* const kCountlyFBKeyClosed         = @"closed";
 NSString* const kCountlyFBKeyShown          = @"shown";
 
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 @interface CountlyFeedbackWidget () <WKNavigationDelegate>
 #else
 @interface CountlyFeedbackWidget ()
@@ -33,14 +33,14 @@ NSString* const kCountlyFBKeyShown          = @"shown";
 @property (nonatomic) NSArray<NSString*>* tags;
 @property (nonatomic) NSDictionary* data;
 @property (nonatomic) WidgetCallback widgetCallback;
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 @property (nonatomic) CLYInternalViewController* webVC;
 #endif
 @end
 
 
 @implementation CountlyFeedbackWidget
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 
 + (CountlyFeedbackWidget *)createWithDictionary:(NSDictionary *)dictionary
 {
@@ -336,8 +336,9 @@ NSString* const kCountlyFBKeyShown          = @"shown";
         // Append the custom parameter to the URL
         [URL appendFormat:@"&custom=%@", customString.cly_URLEscaped];
     }
-    
-    return [NSURL URLWithString:URL];
+
+    NSString *finalURL = [CountlyDeviceInfo URLStringByAppendingThemeMode:URL];
+    return [NSURL URLWithString:finalURL];
 }
 
 

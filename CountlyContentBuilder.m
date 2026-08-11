@@ -9,7 +9,7 @@
 #import "CountlyCommon.h"
 
 @implementation CountlyContentBuilder
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)

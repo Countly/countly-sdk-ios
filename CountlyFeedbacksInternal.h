@@ -16,7 +16,7 @@ extern NSString* const kCountlyFBKeyID;
 extern NSString* const kCountlyReservedEventStarRating;
 
 @interface CountlyFeedbacksInternal : NSObject
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 + (instancetype)sharedInstance;
 
 - (void)showDialog:(void(^)(NSInteger rating))completion;

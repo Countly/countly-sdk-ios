@@ -4,14 +4,14 @@
 //
 // Please visit www.count.ly for more information.
 
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 #import <UIKit/UIKit.h>
 #import <WebKit/WebKit.h>
 #endif
 #import "CountlyCommon.h"
 
 NS_ASSUME_NONNULL_BEGIN
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 typedef NS_ENUM(NSUInteger, AnimationType) {
     AnimationTypeSlideInFromBottom,
     AnimationTypeSlideInFromTop,
@@ -29,6 +29,9 @@ typedef NS_ENUM(NSUInteger, AnimationType) {
                      frame:(CGRect)frame
                  appearBlock:(void(^ __nullable)(void))appearBlock
                 dismissBlock:(void(^ __nullable)(void))dismissBlock;
+
+/// Tears down the web view and overlay window and invokes the dismiss block. Any thread, idempotent.
+- (void)closeWebView;
 
 
 

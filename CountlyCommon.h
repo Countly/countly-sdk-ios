@@ -39,7 +39,7 @@
 #define CLY_LOG_D(fmt, ...) CountlyInternalLog(CLYInternalLogLevelDebug, fmt, ##__VA_ARGS__)
 #define CLY_LOG_V(fmt, ...) CountlyInternalLog(CLYInternalLogLevelVerbose, fmt, ##__VA_ARGS__)
 
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 #import <UIKit/UIKit.h>
 #import <WebKit/WebKit.h>
 #endif
@@ -117,6 +117,12 @@ void CountlyPrint(NSString *stringToPrint);
 - (UIViewController *)topViewController;
 - (void)tryPresentingViewController:(UIViewController *)viewController;
 - (void)tryPresentingViewController:(UIViewController *)viewController withCompletion:(void (^ __nullable) (void))completion;
++ (UIWindow *)keyWindow;
++ (CGRect)screenBounds;
+#endif
+
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+- (UIInterfaceOrientation)interfaceOrientation;
 #endif
 
 - (void)observeDeviceOrientationChanges;
@@ -133,7 +139,7 @@ void CountlyPrint(NSString *stringToPrint);
 @end
 
 
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 @interface CLYInternalViewController : UIViewController <WKNavigationDelegate>
 @property (nonatomic, weak) WKWebView* webView;
 @end

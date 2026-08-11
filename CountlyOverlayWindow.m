@@ -5,8 +5,9 @@
 // Please visit www.count.ly for more information.
 #import "CountlyOverlayWindow.h"
 #import "CountlyWebViewController.h"
+#import "CountlyCommon.h"
 
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 @implementation CountlyOverlayWindow
 - (instancetype)init
 {
@@ -36,7 +37,7 @@
 
   if (!initialized)
   {
-    if (self = [super initWithFrame:UIScreen.mainScreen.bounds])
+    if (self = [super initWithFrame:CountlyCommon.screenBounds])
     {
       initialized = YES;
     }

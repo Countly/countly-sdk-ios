@@ -5,7 +5,7 @@
 // Please visit www.count.ly for more information.
 
 #import "CountlyCommon.h"
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 #import <WebKit/WebKit.h>
 #endif
 
@@ -16,7 +16,7 @@
 
 
 @interface CountlyFeedbacksInternal ()
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 @property (nonatomic) UIAlertController* alertController;
 @property (nonatomic, copy) void (^ratingCompletion)(NSInteger);
 #endif
@@ -42,7 +42,7 @@ NSString* const kCountlyFBKeyContactMe      = @"contactMe";
 const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 @implementation CountlyFeedbacksInternal
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 {
     UIButton* btn_star[5];
 }
@@ -376,6 +376,8 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
                            CountlyConnectionManager.sharedInstance.host,
                            kCountlyEndpointFeedback,
                            queryString];
+
+    URLString = [CountlyDeviceInfo URLStringByAppendingThemeMode:URLString];
 
     return [NSURL URLWithString:URLString];
 }

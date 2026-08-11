@@ -3,14 +3,14 @@
 // This code is provided under the MIT License.
 //
 // Please visit www.count.ly for more information.
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
   #import <UIKit/UIKit.h>
 #endif
 
 #import "CountlyCommon.h"
 
 NS_ASSUME_NONNULL_BEGIN
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 @interface                         TouchDelegatingView : UIView
 @property(nonatomic, weak) UIView *touchDelegate;
 @end

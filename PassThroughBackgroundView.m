@@ -6,18 +6,22 @@
 
 #import "PassThroughBackgroundView.h"
 
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 @implementation PassThroughBackgroundView
 
 @synthesize webView;
 
 - (instancetype)initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
+    if (self) {
+        _baseWebViewFrame = CGRectNull;
+    }
 #if (TARGET_OS_IOS)
-    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleScreenChange) name:UIDeviceOrientationDidChangeNotification object:nil];
+    // No device-orientation observer: rotation is driven by the controller's transition callback,
+    // which fires once the new size has settled. This one fired mid-rotation and duplicated it.
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleScreenChange) name:UIScreenModeDidChangeNotification object:nil];
-    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleScreenChange) name:UIApplicationDidBecomeActiveNotification object:nil];
 #endif
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleScreenChange) name:UIApplicationDidBecomeActiveNotification object:nil];
     return self;
 }
 
@@ -54,8 +58,18 @@
     });
 }
 
+// Swaps a landscape measurement to its portrait equivalent, matching how resolutionJson transposes
+// the dimensions it sends the server.
+- (CGSize)portraitAdjustedSize:(CGSize)size {
+    if (!self.reportPortraitSizeOnly || size.width <= size.height) {
+        return size;
+    }
+
+    return CGSizeMake(size.height, size.width);
+}
+
 - (void)updateWindowSize {
-    CGSize size = [CountlyCommon.sharedInstance getWindowSize];
+    CGSize size = [self portraitAdjustedSize:[CountlyCommon.sharedInstance getWindowSize]];
     CGFloat width = size.width;
     CGFloat height = size.height;
     

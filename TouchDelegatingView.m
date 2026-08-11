@@ -6,7 +6,7 @@
 //  Copyright © 2026 Countly. All rights reserved.
 //
 #import "TouchDelegatingView.h"
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 @implementation TouchDelegatingView
 
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event

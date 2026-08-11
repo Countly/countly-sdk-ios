@@ -34,7 +34,16 @@ class CountlyBaseTestCase: XCTestCase {
     }
     
     func cleanupState() {
-        // All cleanup logic now handled inside Countly.halt(true)
+        // Fully purge any state persisted by a previous test *process*. halt(true) alone does
+        // not reliably clear stale persisted requests when the SDK was never started in this
+        // process (this is the edge case the historical `testDummy` was added to work around).
+        // Starting first wires up persistency/connection-manager and loads the stale state, then
+        // halt(true) forces a full reset + empty save — so every test, including ones run in
+        // isolation, begins from a clean slate.
+        let config = createBaseConfig()
+        config.requiresConsent = false
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
         Countly.sharedInstance().halt(true)
     }
 }
