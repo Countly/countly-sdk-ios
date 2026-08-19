@@ -560,25 +560,36 @@ static dispatch_once_t onceToken;
         _backoffMechanism = NO;
     }
 
-#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
-    BOOL shouldAutoTrackViews = _viewTrackingEnabled && _automaticViewTracking;
-    dispatch_async(dispatch_get_main_queue(), ^{
-        if (shouldAutoTrackViews && !CountlyViewTrackingInternal.sharedInstance.isAutoViewTrackingActive)
-        {
-            [CountlyViewTrackingInternal.sharedInstance startAutoViewTracking];
-        }
-        else if (!shouldAutoTrackViews && CountlyViewTrackingInternal.sharedInstance.isAutoViewTrackingActive)
-        {
-            [CountlyViewTrackingInternal.sharedInstance stopAutoViewTracking];
-        }
-    });
+// The platform guard matches where automatic view tracking is actually implemented, which is narrower
+// than what the header declares
+#if (TARGET_OS_IOS || TARGET_OS_TV)
+    // Reactive start/stop, so a runtime 'avt' change from the server takes effect immediately.
+    // Skipped while init is still running: 'startWithConfig' applies the resolved 'avt' value itself
+    // once the view tracking configuration is in place.
+    if (CountlyCommon.sharedInstance.hasFinishedInit)
+    {
+        BOOL shouldAutoTrackViews = _viewTrackingEnabled && _automaticViewTracking;
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (shouldAutoTrackViews && !CountlyViewTrackingInternal.sharedInstance.isAutoViewTrackingActive)
+            {
+                [CountlyViewTrackingInternal.sharedInstance startAutoViewTracking];
+            }
+            else if (!shouldAutoTrackViews && CountlyViewTrackingInternal.sharedInstance.isAutoViewTrackingActive)
+            {
+                [CountlyViewTrackingInternal.sharedInstance stopAutoViewTracking];
+            }
+        });
+    }
 #endif
 
-    if (_crashReportingEnabled && _automaticCrashReporting)
+    // Reactive install: lets the server force-enable automatic crash reporting at runtime.
+    // 'startCrashReporting' is idempotent and checks consent internally. A runtime 'acr' = false
+    // does not uninstall the handler; the handler no-ops through its own runtime check instead.
+    // Skipped while init is still running: 'shouldUsePLCrashReporter' is not assigned until later in
+    // 'startWithConfig', so installing here would take the default handler path and then block
+    // PLCrashReporter from ever starting. 'startWithConfig' performs the init-time install itself.
+    if (CountlyCommon.sharedInstance.hasFinishedInit && _crashReportingEnabled && _automaticCrashReporting)
     {
-        // Reactive install: lets the server force-enable automatic crash reporting at runtime.
-        // 'startCrashReporting' is idempotent and checks consent internally. A runtime 'acr' = false
-        // does not uninstall the handler; the handler no-ops through its own runtime check instead.
         [CountlyCrashReporter.sharedInstance startCrashReporting];
     }
 }

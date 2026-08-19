@@ -94,8 +94,10 @@ NSString* const kCountlyCRKeyOB                = @"_ob";
 
 - (void)startCrashReporting
 {
-    // For the default handler path the live handler is checked instead of only the flag, since the
-    // global handler can be replaced externally while the singleton (and its flag) lives on
+    // 'unhandledCrashHandlerInstalled' is only set once an install has actually succeeded. For the
+    // default handler path the live handler is checked as well, since the global handler can be
+    // replaced externally while the singleton (and its flag) lives on, and the handler should then
+    // be reinstalled. The PLCrashReporter path installs its own handlers, so the flag is all we have.
     BOOL alreadyInstalled = self.unhandledCrashHandlerInstalled && (self.shouldUsePLCrashReporter || NSGetUncaughtExceptionHandler() == &CountlyUncaughtExceptionHandler);
     if (alreadyInstalled)
         return;
@@ -108,13 +110,13 @@ NSString* const kCountlyCRKeyOB                = @"_ob";
     if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
         return;
 
-    self.unhandledCrashHandlerInstalled = YES;
-
     if (self.shouldUsePLCrashReporter)
     {
 #ifdef COUNTLY_PLCRASHREPORTER_EXISTS
         [self startPLCrashReporter];
+        self.unhandledCrashHandlerInstalled = YES;
 #else
+        // Raises, so the flag stays unset and the missing dependency keeps being reported
         [NSException raise:@"CountlyPLCrashReporterDependencyNotFoundException" format:@"PLCrashReporter dependency can not be found in Project"];
 #endif
         return;
@@ -131,6 +133,8 @@ NSString* const kCountlyCRKeyOB                = @"_ob";
     signal(SIGPIPE, CountlySignalHandler);
     signal(SIGTRAP, CountlySignalHandler);
 #endif
+
+    self.unhandledCrashHandlerInstalled = YES;
 }
 
 
