@@ -58,6 +58,7 @@ extern NSString* const kCountlySCKeySC;
 - (BOOL)isJourneyTriggerEvent:(NSString *)eventKey;
 - (BOOL)isJourneyTriggerView:(NSString *)viewName;
 - (NSInteger)userPropertyCacheLimit;
+- (void)applyAutomaticTrackingState;
 
 @end
 

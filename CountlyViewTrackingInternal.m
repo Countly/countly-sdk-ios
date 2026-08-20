@@ -278,7 +278,8 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 {
     // Allowed when the developer enabled automatic view tracking, when the resolved 'avt' value enables it,
     // or when it is currently active (so a server force-enabled tracker can still be turned off)
-    if (!self.isEnabledOnInitialConfig && !CountlyServerConfig.sharedInstance.automaticViewTrackingEnabled && !_isAutoViewTrackingActive)
+    BOOL isAllowed = self.isEnabledOnInitialConfig || CountlyServerConfig.sharedInstance.automaticViewTrackingEnabled || _isAutoViewTrackingActive;
+    if (!isAllowed)
         return;
 
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
@@ -761,7 +762,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 #pragma mark - Public function for application state
 
 - (void)applicationWillEnterForeground {
-#if (TARGET_OS_IOS  || TARGET_OS_VISION || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     if (!self.isAutoViewTrackingActive && self.isManualViewRestartActive) {
         [self startStoppedViewsInternal];
     }
@@ -772,7 +773,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 #endif
 }
 - (void)applicationDidEnterBackground {
-#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         [self stopCurrentView];
     }

@@ -344,6 +344,11 @@ static dispatch_once_t onceToken;
     [CountlyHealthTracker.sharedInstance sendHealthCheck];
 
     CountlyCommon.sharedInstance.hasFinishedInit = YES;
+
+    // The behavior settings response for the fetch started above can arrive before init finishes, in
+    // which case it deliberately did not touch automatic tracking. Apply the resolved values now that
+    // the configuration is complete, so a server side 'avt' or 'acr' is never silently dropped.
+    [CountlyServerConfig.sharedInstance applyAutomaticTrackingState];
 }
 
 - (CountlyConfig *) checkAndFixInternalLimitsConfig:(CountlyConfig *)config
@@ -400,16 +405,12 @@ static dispatch_once_t onceToken;
 
 - (void)onTimer:(NSTimer *)timer
 {
-    CLY_LOG_D(@"%s tick is happening sending events, manualSessions: [%d], hybridSessions: [%d], isSuspended: [%d]", __FUNCTION__, CountlyCommon.sharedInstance.manualSessionHandling, CountlyCommon.sharedInstance.enableManualSessionControlHybridMode, isSuspended);
+    CLY_LOG_D(@"%s tick is happening sending events, automaticSessions: [%d], hybridSessions: [%d], isSuspended: [%d]", __FUNCTION__, CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled, CountlyCommon.sharedInstance.enableManualSessionControlHybridMode, isSuspended);
     if (isSuspended)
         return;
     
-    if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
-    {
-        [CountlyConnectionManager.sharedInstance updateSession];
-    }
-    // this condtion is called only when automatic session tracking is not active and hybrid mode is enabled.
-    else if (CountlyCommon.sharedInstance.enableManualSessionControlHybridMode)
+    // Hybrid mode keeps the automatic session update going even when automatic session tracking is not active
+    if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled || CountlyCommon.sharedInstance.enableManualSessionControlHybridMode)
     {
         [CountlyConnectionManager.sharedInstance updateSession];
     }
@@ -429,7 +430,7 @@ static dispatch_once_t onceToken;
     if (isSuspended)
         return;
     
-    CLY_LOG_D(@"%s sending events, saving the state, manualSessions: [%d]", __FUNCTION__, CountlyCommon.sharedInstance.manualSessionHandling);
+    CLY_LOG_D(@"%s sending events, saving the state, automaticSessions: [%d]", __FUNCTION__, CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled);
 
     isSuspended = YES;
     
@@ -463,7 +464,7 @@ static dispatch_once_t onceToken;
     }
 #endif
     
-    CLY_LOG_D(@"%s manualSessions: [%d]", __FUNCTION__, CountlyCommon.sharedInstance.manualSessionHandling);
+    CLY_LOG_D(@"%s automaticSessions: [%d]", __FUNCTION__, CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled);
     
     if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
         [CountlyConnectionManager.sharedInstance beginSession];
@@ -1025,18 +1026,10 @@ static dispatch_once_t onceToken;
         }
         event.key = key;
         event.segmentation = [self processSegmentation:filteredSegmentations eventKey:key];
-        id callback = nil;
-        if ([CountlyServerConfig.sharedInstance isJourneyTriggerEvent:key]){
-            callback = ^(NSString *response, BOOL success) {
-                if (success)
-                {
-    #if (TARGET_OS_IOS)
-                    dispatch_async(dispatch_get_main_queue(), ^{
-                        [CountlyContentBuilderInternal.sharedInstance refreshContentZoneJTE];
-                    });
-    #endif
-                }
-            };
+        CLYRequestCallback callback = nil;
+        if ([CountlyServerConfig.sharedInstance isJourneyTriggerEvent:key])
+        {
+            callback = [self journeyTriggerCallback];
         }
         [CountlyPersistency.sharedInstance recordEvent:event callback:callback];
 #if __has_include(<os/lock.h>)
@@ -1047,29 +1040,35 @@ static dispatch_once_t onceToken;
     {
         event.key = key;
         event.segmentation = [self processSegmentation:filteredSegmentations eventKey:key];
-        id callback = nil;
-        // Journey trigger views mirror the journey trigger events behavior: a matching view name force-flushes
-        // the event queue and refreshes the content zone when the request succeeds. The 'name' segmentation value
-        // is matched as sent (after truncation and filtering), same as the wire format.
+        CLYRequestCallback callback = nil;
+        // Journey trigger views mirror the journey trigger events behavior. The 'name' segmentation value is
+        // matched as sent (after truncation and filtering), same as the wire format.
         if ([key isEqualToString:kCountlyReservedEventView])
         {
             NSString* viewName = event.segmentation[kCountlyVTKeyName];
             if ([viewName isKindOfClass:NSString.class] && [CountlyServerConfig.sharedInstance isJourneyTriggerView:viewName])
             {
-                callback = ^(NSString *response, BOOL success) {
-                    if (success)
-                    {
-    #if (TARGET_OS_IOS)
-                        dispatch_async(dispatch_get_main_queue(), ^{
-                            [CountlyContentBuilderInternal.sharedInstance refreshContentZoneJTE];
-                        });
-    #endif
-                    }
-                };
+                callback = [self journeyTriggerCallback];
             }
         }
         [CountlyPersistency.sharedInstance recordEvent:event callback:callback];
     }
+}
+
+// Callback used for both journey trigger kinds: recording an event with a callback force-flushes the event
+// queue, and the content zone is refreshed once that request succeeds.
+- (CLYRequestCallback)journeyTriggerCallback
+{
+    return ^(NSString *response, BOOL success) {
+        if (success)
+        {
+#if (TARGET_OS_IOS)
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [CountlyContentBuilderInternal.sharedInstance refreshContentZoneJTE];
+            });
+#endif
+        }
+    };
 }
 
 - (NSDictionary *)processSegmentation:(NSMutableDictionary *)segmentation eventKey:(NSString *)eventKey {
@@ -1325,27 +1324,43 @@ static dispatch_once_t onceToken;
 {
     CLY_LOG_I(@"%s exception: [%@]", __FUNCTION__, exception);
 
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     [CountlyViewTrackingInternal.sharedInstance addExceptionForAutoViewTracking:exception.copy];
+#else
+    CLY_LOG_W(@"%s automatic view tracking is not available on this platform, call ignored", __FUNCTION__);
+#endif
 }
 
 - (void)removeExceptionForAutoViewTracking:(NSString *)exception
 {
     CLY_LOG_I(@"%s exception: [%@]", __FUNCTION__, exception);
 
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     [CountlyViewTrackingInternal.sharedInstance removeExceptionForAutoViewTracking:exception.copy];
+#else
+    CLY_LOG_W(@"%s automatic view tracking is not available on this platform, call ignored", __FUNCTION__);
+#endif
 }
 
 - (void)setIsAutoViewTrackingActive:(BOOL)isAutoViewTrackingActive
 {
     CLY_LOG_I(@"%s isAutoViewTrackingActive: [%d]", __FUNCTION__, isAutoViewTrackingActive);
 
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     CountlyViewTrackingInternal.sharedInstance.isAutoViewTrackingActive = isAutoViewTrackingActive;
+#else
+    CLY_LOG_W(@"%s automatic view tracking is not available on this platform, call ignored", __FUNCTION__);
+#endif
 }
 
 - (BOOL)isAutoViewTrackingActive
 {
     CLY_LOG_I(@"%s", __FUNCTION__);
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     return CountlyViewTrackingInternal.sharedInstance.isAutoViewTrackingActive;
+#else
+    return NO;
+#endif
 }
 #endif
 #pragma mark - Star Rating
@@ -1569,7 +1584,11 @@ static dispatch_once_t onceToken;
         [viewTracking setValue:nil forKey:@"currentViewName"];
         [viewTracking setValue:nil forKey:@"previousViewID"];
         [viewTracking setValue:nil forKey:@"previousViewName"];
+#if (TARGET_OS_IOS || TARGET_OS_TV)
+        // Only declared on the platforms that implement automatic view tracking; setting it elsewhere
+        // would raise NSUnknownKeyException, which the compiler cannot catch for a string key
         [viewTracking setValue:@NO forKey:@"isAutoViewTrackingActive"];
+#endif
         [viewTracking resetFirstView];
     }
 

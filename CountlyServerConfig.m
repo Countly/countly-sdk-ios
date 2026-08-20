@@ -175,7 +175,11 @@ static dispatch_once_t onceToken;
     // silent, the resolved value equals the developer config, so behavior stays drop-in.
     _automaticSessionTracking = !config.manualSessionHandling;
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    // CLYAutoViewTracking is deprecated but still supported, so the seed has to keep honouring it
     _automaticViewTracking = config.enableAutomaticViewTracking || [config.features containsObject:CLYAutoViewTracking];
+#pragma clang diagnostic pop
 #endif
     _automaticCrashReporting = [config.features containsObject:CLYCrashReporting];
 
@@ -560,35 +564,40 @@ static dispatch_once_t onceToken;
         _backoffMechanism = NO;
     }
 
+    // Skipped while init is still running: 'shouldUsePLCrashReporter' is not assigned until later in
+    // 'startWithConfig', so installing the crash handler here would take the default handler path and then
+    // block PLCrashReporter from ever starting. 'startWithConfig' calls this itself once init is complete.
+    if (CountlyCommon.sharedInstance.hasFinishedInit)
+    {
+        [self applyAutomaticTrackingState];
+    }
+}
+
+// Brings automatic view tracking and automatic crash reporting in line with the resolved 'avt' and 'acr'
+// values. Safe to call repeatedly: the view tracking calls act only on an actual state change, and
+// 'startCrashReporting' is idempotent and re-checks 'acr' and consent itself.
+- (void)applyAutomaticTrackingState
+{
 // The platform guard matches where automatic view tracking is actually implemented, which is narrower
 // than what the header declares
 #if (TARGET_OS_IOS || TARGET_OS_TV)
-    // Reactive start/stop, so a runtime 'avt' change from the server takes effect immediately.
-    // Skipped while init is still running: 'startWithConfig' applies the resolved 'avt' value itself
-    // once the view tracking configuration is in place.
-    if (CountlyCommon.sharedInstance.hasFinishedInit)
-    {
-        BOOL shouldAutoTrackViews = _viewTrackingEnabled && _automaticViewTracking;
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (shouldAutoTrackViews && !CountlyViewTrackingInternal.sharedInstance.isAutoViewTrackingActive)
-            {
-                [CountlyViewTrackingInternal.sharedInstance startAutoViewTracking];
-            }
-            else if (!shouldAutoTrackViews && CountlyViewTrackingInternal.sharedInstance.isAutoViewTrackingActive)
-            {
-                [CountlyViewTrackingInternal.sharedInstance stopAutoViewTracking];
-            }
-        });
-    }
+    BOOL shouldAutoTrackViews = _viewTrackingEnabled && _automaticViewTracking;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        BOOL isActive = CountlyViewTrackingInternal.sharedInstance.isAutoViewTrackingActive;
+        if (shouldAutoTrackViews && !isActive)
+        {
+            [CountlyViewTrackingInternal.sharedInstance startAutoViewTracking];
+        }
+        else if (!shouldAutoTrackViews && isActive)
+        {
+            [CountlyViewTrackingInternal.sharedInstance stopAutoViewTracking];
+        }
+    });
 #endif
 
-    // Reactive install: lets the server force-enable automatic crash reporting at runtime.
-    // 'startCrashReporting' is idempotent and checks consent internally. A runtime 'acr' = false
-    // does not uninstall the handler; the handler no-ops through its own runtime check instead.
-    // Skipped while init is still running: 'shouldUsePLCrashReporter' is not assigned until later in
-    // 'startWithConfig', so installing here would take the default handler path and then block
-    // PLCrashReporter from ever starting. 'startWithConfig' performs the init-time install itself.
-    if (CountlyCommon.sharedInstance.hasFinishedInit && _crashReportingEnabled && _automaticCrashReporting)
+    // A runtime 'acr' = false does not uninstall the handler; it no-ops through its own runtime check
+    // instead, so a later 'acr' = true does not have to reinstall it.
+    if (_crashReportingEnabled && _automaticCrashReporting)
     {
         [CountlyCrashReporter.sharedInstance startCrashReporting];
     }

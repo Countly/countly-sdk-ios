@@ -386,7 +386,9 @@ static dispatch_once_t onceToken;
 {
     _consentForViewTracking = consentForViewTracking;
 
-#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
+// Automatic view tracking is only implemented for iOS and tvOS, so the guard must not include
+// visionOS: the methods below would be declared but have no definition there
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     if (consentForViewTracking)
     {
         CLY_LOG_D(@"Consent for ViewTracking is given.");
