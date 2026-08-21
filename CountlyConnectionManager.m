@@ -68,6 +68,7 @@ NSString* const kCountlyQSKeyChecksum256      = @"checksum256";
 NSString* const kCountlyQSKeyConsent          = @"consent";
 NSString* const kCountlyQSKeyAPM              = @"apm";
 NSString* const kCountlyQSKeyRemainingRequest = @"rr";
+NSString* const kCountlyQSSdkLogs              = @"sdk_logs";
 
 NSString* const kCountlyQSKeyMethod           = @"method";
 NSString* const kCountlyQSKeyTheme            = @"th";
@@ -874,6 +875,20 @@ static dispatch_once_t onceToken;
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
                              kCountlyQSKeyDeviceIDOld, oldDeviceID.cly_URLEscaped];
+
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
+
+    [self proceedOnQueue];
+}
+
+- (void)sendSdkLogs:(NSDictionary *)sdkLogs
+{
+    
+    NSString * sdkLogsString = [NSString stringWithFormat:@"&%@=%@", kCountlyQSSdkLogs, [sdkLogs cly_JSONify]];
+    if (!sdkLogsString)
+        return;
+
+    NSString* queryString = [[self queryEssentials] stringByAppendingString:sdkLogsString];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 

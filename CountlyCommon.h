@@ -136,6 +136,10 @@ void CountlyPrint(NSString *stringToPrint);
 - (NSURLSession *)ImmediateURLSession;
 
 - (CGSize)getWindowSize;
+
+- (void)updateLogGatheringState:(BOOL)enabled levels:(NSString *)levels batch:(NSInteger)batch lgid:(NSString *)lgid;
+
+- (void)flushSdkLogs;
 @end
 
 

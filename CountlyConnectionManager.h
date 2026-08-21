@@ -49,6 +49,7 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 
 - (void)sendEventsWithSaveIfNeeded;
 - (void)sendEvents;
+- (void)sendSdkLogs:(NSDictionary *)sdkLogs;
 - (void)attemptToSendStoredRequests;
 - (void)sendPushToken:(NSString *)token;
 - (void)sendLocationInfo;

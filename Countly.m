@@ -412,6 +412,9 @@ static dispatch_once_t onceToken;
     }
     
     [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
+
+    // a buffer that never reaches the batch size would otherwise sit in memory for the whole run
+    [CountlyCommon.sharedInstance flushSdkLogs];
 }
 
 - (void)suspend

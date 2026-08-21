@@ -108,6 +108,13 @@ NSString *const kREventSegmentationBlacklist = @"esb";
 NSString *const kREventSegmentationWhitelist = @"esw";
 NSString *const kRJourneyTriggerEvents = @"jte";
 
+// sdk log keys
+NSString *const kRLogGathering = @"lg"; // a top level key, siblings of c, v and t
+NSString *const kRLGEnabled = @"e";
+NSString *const kRLGId = @"i";
+NSString *const kRLGLevels = @"l";
+NSString *const kRLGBatchSize = @"b";
+
 static CountlyServerConfig *s_sharedInstance = nil;
 static dispatch_once_t onceToken;
 
@@ -181,8 +188,8 @@ static dispatch_once_t onceToken;
 - (void)mergeBehaviorSettings:(NSMutableDictionary *)baseConfig
                           withConfig:(NSDictionary *)newConfig
 {
-    // c, t and v paramters must exist
-    if(newConfig.count != 3 || !newConfig[kRConfig]) {
+    // c must exist, other top level keys, like lg, are independent of it and handled on their own
+    if(!newConfig[kRConfig]) {
         CLY_LOG_D(@"%s, missing entries for a behavior settings omitting", __FUNCTION__);
         return;
     }
@@ -193,7 +200,7 @@ static dispatch_once_t onceToken;
         return;
     }
     
-    if(!([newConfig[kRConfig] isKindOfClass:[NSDictionary class]]) || ((NSDictionary *)newConfig[kRConfig]).count == 0){
+    if(!([newConfig[kRConfig] isKindOfClass:[NSDictionary class]])){ // it can be empty now
         CLY_LOG_D(@"%s, invalid behavior settings omitting", __FUNCTION__);
         return;
     }
@@ -241,6 +248,20 @@ static dispatch_once_t onceToken;
         CLY_LOG_W(@"%s, Invalid type for bool key '%@', removing", __FUNCTION__, key);
         [dictionary removeObjectForKey:key];
     }
+}
+
+// lg is a top level key, a sibling of c, so a directive still applies when c is missing or unusable.
+// A nil or malformed directive means the server is not asking for logs
+- (void)applyLogGatheringDirective:(id)directive
+{
+    NSDictionary* lg = [directive isKindOfClass:NSDictionary.class] ? directive : nil;
+
+    NSNumber* enabled = [lg[kRLGEnabled] isKindOfClass:NSNumber.class] ? lg[kRLGEnabled] : nil;
+    NSNumber* batchSize = [lg[kRLGBatchSize] isKindOfClass:NSNumber.class] ? lg[kRLGBatchSize] : nil;
+    NSString* levels = [lg[kRLGLevels] isKindOfClass:NSString.class] ? lg[kRLGLevels] : nil;
+    NSString* gatherId = [lg[kRLGId] isKindOfClass:NSString.class] ? lg[kRLGId] : nil;
+
+    [CountlyCommon.sharedInstance updateLogGatheringState:enabled.boolValue levels:levels batch:batchSize.integerValue lgid:gatherId];
 }
 
 - (void)setIntegerProperty:(NSInteger *)property fromDictionary:(NSMutableDictionary *)dictionary key:(NSString *)key logString:(NSMutableString *)logString
@@ -616,6 +637,10 @@ static dispatch_once_t onceToken;
             [self populateServerConfig:persistentBehaviorSettings withConfig:config];
             [CountlyPersistency.sharedInstance storeServerConfig:persistentBehaviorSettings];
         }
+
+        // only a fresh response decides log gathering, never a stored config, and a fetch that failed
+        // decides against it: nothing else would tell the SDK to let go of the lines it is holding
+        [self applyLogGatheringDirective:error ? nil : serverConfigResponse[kRLogGathering]];
     };
     // Set default values
     NSURLSessionTask *task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:[self serverConfigRequest] completionHandler:handler];
