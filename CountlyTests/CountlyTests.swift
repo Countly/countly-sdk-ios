@@ -21,7 +21,7 @@ class CountlyTests: CountlyBaseTestCase {
         
         let sdkGeneratedDeviceID = Countly.sharedInstance().deviceID()
         XCTAssertTrue(CountlyCommon.sharedInstance().hasStarted, "Countly initialization failed.")
-        XCTAssertTrue(Countly.sharedInstance().deviceIDType() == CLYDeviceIDType.IDFV, "Countly deviced id type should be IDFV when no device id is provided during init.")
+        XCTAssertTrue(Countly.sharedInstance().deviceIDType() == TestPlatform.defaultDeviceIDType, "Countly deviced id type should be the platform default (IDFV on iOS/tvOS/visionOS, NSUUID on watchOS/macOS) when no device id is provided during init.")
         Countly.sharedInstance().halt(false)
         XCTAssertTrue(!CountlyCommon.sharedInstance().hasStarted, "Countly halt failed.")
         
@@ -33,7 +33,7 @@ class CountlyTests: CountlyBaseTestCase {
         
         XCTAssertTrue(CountlyCommon.sharedInstance().hasStarted, "Countly initialization failed.")
         XCTAssertTrue(Countly.sharedInstance().deviceID() == sdkGeneratedDeviceID, "Countly device id not match with provided device id.")
-        XCTAssertTrue(Countly.sharedInstance().deviceIDType() == CLYDeviceIDType.IDFV, "Countly deviced id type should be custom when device id is provided during init.")
+        XCTAssertTrue(Countly.sharedInstance().deviceIDType() == TestPlatform.defaultDeviceIDType, "Countly deviced id type should stay the platform default when the stored id is reused.")
     }
     
     func testPerformanceExample() async throws {

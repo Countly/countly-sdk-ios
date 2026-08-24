@@ -9,6 +9,8 @@
 
 import Countly
 
+// CountlyFeedbackWidget only exposes its API on iOS/visionOS, so this mock is iOS-only.
+#if os(iOS)
 class MockFeedbackWidget: CountlyFeedbackWidget {
     private let _id: String
     private let _type: CLYFeedbackWidgetType
@@ -25,3 +27,4 @@ class MockFeedbackWidget: CountlyFeedbackWidget {
         super.init()
     }
 }
+#endif

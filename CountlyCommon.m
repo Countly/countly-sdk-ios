@@ -71,6 +71,9 @@ static dispatch_once_t onceToken;
 #endif
     _hasStarted = false;
     _hasFinishedInit       = false;
+    // `startWithConfig:` only ever sets this flag to YES, so without clearing it here it
+    // would survive a `halt:` and leak visibility segmentation into the next start.
+    _enableVisibiltyTracking = NO;
     _maxKeyLength = kCountlyMaxKeyLength;
     _maxValueLength = kCountlyMaxValueSize;
     _maxValueLengthPicture = kCountlyMaxValueSizePicture;

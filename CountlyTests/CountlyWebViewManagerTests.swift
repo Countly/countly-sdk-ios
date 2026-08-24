@@ -7,10 +7,10 @@
 //
 
 import XCTest
-import WebKit
 @testable import Countly
 
 #if os(iOS)
+import WebKit
 
 /// Records how many times the SDK prompts the page with a `{type:'resize'}` message.
 private final class ResizePromptSpy: PassThroughBackgroundView {

@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        env: 
+        env:
           [
             { os_version: 14, sdk: "macosx14.5", xcode: "15.4" },
             { os_version: 14, sdk: "iphoneos17.5", xcode: "15.4"},
@@ -32,9 +32,9 @@ jobs:
             { os_version: 14, sdk: "watchos10.2", xcode: "15.2" },
             { os_version: 14, sdk: "xros1.0", xcode: "15.2" },
             { os_version: 15, sdk: "macosx15.5", xcode: "16.4" },
-            { os_version: 15, sdk: "iphoneos18.5", xcode: "16.4" }, 
-            { os_version: 15, sdk: "appletvos18.5", xcode: "16.4" }, 
-            { os_version: 15, sdk: "watchos11.5", xcode: "16.4" },  
+            { os_version: 15, sdk: "iphoneos18.5", xcode: "16.4" },
+            { os_version: 15, sdk: "appletvos18.5", xcode: "16.4" },
+            { os_version: 15, sdk: "watchos11.5", xcode: "16.4" },
             { os_version: 15, sdk: "xros2.5", xcode: "16.4" },
             { os_version: 26, sdk: "macosx26.2", xcode: "26.2"},
             { os_version: 26, sdk: "iphoneos26.2", xcode: "26.2"},
@@ -49,9 +49,106 @@ jobs:
 
       - name: Set up Xcode
         run: sudo xcode-select -switch /Applications/Xcode_${{ matrix.env.xcode }}.app
-    
+
       - name: Build for the sdk ${{ matrix.env.sdk }} on macOS ${{ matrix.env.os_version }}
         run: xcodebuild -project Countly.xcodeproj build -sdk ${{ matrix.env.sdk }}
 
-      - name: Run the tests for the sdk ${{ matrix.env.sdk }} on macOS ${{ matrix.env.os_version }}
-        run: echo good #xcodebuild -project Countly.xcodeproj test -destination ${{ matrix.env.destination }} -scheme CountlyTests
+  # The CountlyTests bundle is built and run for every platform the SDK ships to.
+  # Device SDKs cannot host tests, so each build matrix cell is mirrored here against
+  # the matching simulator (or the runner itself for macOS).
+  test:
+    name: Test ${{ matrix.env.platform }} ${{ matrix.env.os }} (Xcode ${{ matrix.env.xcode }})
+    runs-on: macos-${{ matrix.env.os_version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        env:
+          [
+            { os_version: 14, platform: "macOS",    os: "14.5", xcode: "15.4" },
+            { os_version: 14, platform: "iOS",      os: "17.5", xcode: "15.4" },
+            { os_version: 14, platform: "tvOS",     os: "17.5", xcode: "15.4" },
+            { os_version: 14, platform: "watchOS",  os: "10.5", xcode: "15.4" },
+            { os_version: 14, platform: "visionOS", os: "1.2",  xcode: "15.4" },
+            { os_version: 14, platform: "macOS",    os: "14.2", xcode: "15.2" },
+            { os_version: 14, platform: "iOS",      os: "17.2", xcode: "15.2" },
+            { os_version: 14, platform: "tvOS",     os: "17.2", xcode: "15.2" },
+            { os_version: 14, platform: "watchOS",  os: "10.2", xcode: "15.2" },
+            { os_version: 14, platform: "visionOS", os: "1.0",  xcode: "15.2" },
+            { os_version: 15, platform: "macOS",    os: "15.5", xcode: "16.4" },
+            { os_version: 15, platform: "iOS",      os: "18.5", xcode: "16.4" },
+            { os_version: 15, platform: "tvOS",     os: "18.5", xcode: "16.4" },
+            { os_version: 15, platform: "watchOS",  os: "11.5", xcode: "16.4" },
+            { os_version: 15, platform: "visionOS", os: "2.5",  xcode: "16.4" },
+            { os_version: 26, platform: "macOS",    os: "26.2", xcode: "26.2" },
+            { os_version: 26, platform: "iOS",      os: "26.2", xcode: "26.2" },
+            { os_version: 26, platform: "tvOS",     os: "26.2", xcode: "26.2" },
+            { os_version: 26, platform: "watchOS",  os: "26.2", xcode: "26.2" },
+            { os_version: 26, platform: "visionOS", os: "26.2", xcode: "26.2" }
+          ]
+    steps:
+      - name: Checkout SDK code
+        uses: actions/checkout@v4
+
+      - name: Set up Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_${{ matrix.env.xcode }}.app
+
+      # Simulator device names differ between runner images, so the destination is
+      # resolved from what the scheme actually reports. The requested runtime is
+      # preferred; if the image does not ship it we fall back to the newest available
+      # one for the same platform and annotate the run so the substitution is visible.
+      - name: Resolve test destination
+        id: destination
+        env:
+          PLATFORM: ${{ matrix.env.platform }}
+          WANTED_OS: ${{ matrix.env.os }}
+        run: |
+          set -euo pipefail
+          if [ "$PLATFORM" = "macOS" ]; then
+            echo "destination=platform=macOS" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          xcodebuild -project Countly.xcodeproj -scheme CountlyTests -showdestinations \
+            > destinations.txt 2>/dev/null || true
+
+          # Drop the "Any <platform> Simulator Device" placeholder rows, which carry no OS.
+          available=$(grep "platform:$PLATFORM Simulator" destinations.txt | grep "OS:" || true)
+          if [ -z "$available" ]; then
+            echo "::error::No $PLATFORM Simulator destination is available on this runner."
+            cat destinations.txt
+            exit 1
+          fi
+
+          match=$(printf '%s\n' "$available" | grep "OS:$WANTED_OS," | head -1 || true)
+          if [ -z "$match" ]; then
+            # Newest available runtime for this platform: prefix each row with its OS
+            # version, version-sort, take the last, then drop the prefix.
+            match=$(printf '%s\n' "$available" \
+              | sed -E 's/.*OS:([^,]*).*/\1\t&/' | sort -V -k1,1 | tail -1 | cut -f2-)
+            got=$(printf '%s' "$match" | sed -n 's/.*OS:\([^,]*\).*/\1/p')
+            echo "::warning::$PLATFORM $WANTED_OS runtime is not installed; testing against $got instead."
+          fi
+
+          udid=$(printf '%s' "$match" | sed -n 's/.*id:\([0-9A-Fa-f-]*\).*/\1/p')
+          if [ -z "$udid" ]; then
+            echo "::error::Could not parse a simulator id out of: $match"
+            exit 1
+          fi
+          echo "destination=platform=$PLATFORM Simulator,id=$udid" >> "$GITHUB_OUTPUT"
+
+      - name: Run the CountlyTests bundle
+        run: |
+          xcodebuild test \
+            -project Countly.xcodeproj \
+            -scheme CountlyTests \
+            -destination '${{ steps.destination.outputs.destination }}' \
+            -resultBundlePath "TestResults-${{ matrix.env.platform }}-${{ matrix.env.xcode }}.xcresult" \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.env.platform }}-${{ matrix.env.os }}-xcode${{ matrix.env.xcode }}
+          path: TestResults-*.xcresult
+          if-no-files-found: ignore

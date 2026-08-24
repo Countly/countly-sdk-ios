@@ -248,6 +248,9 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      * Verifies that all SDK features (sessions, events, views, crashes, etc.) function as expected
      * when using default configuration values.
      */
+    // The all-features flows exercise feedback widgets and the content zone, which are
+    // compiled out on watchOS, tvOS and macOS, and assert exact per-platform request counts.
+    #if os(iOS)
     func test_serverConfig_defaults_allFeatures() throws {
         
         try baseAllFeatures({ _ in }, hc: 1, fc: 1, rc: 1, cc: 2, scc: 1)
@@ -414,6 +417,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      * 3. New events are queued after the batch is sent
      * 4. Event order is maintained in the queue
      */
+    #endif
     func test_eventQueueSize() throws {
         let countlyConfig = TestUtils.createBaseConfig()
         countlyConfig.manualSessionHandling = true
@@ -575,6 +579,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         XCTAssertEqual(CountlyServerConfig.sharedInstance().requestQueueSize(), 10)
     }
     
+    #if os(iOS)
     /**
          * Tests that event tracking is properly disabled when configured.
          * Verifies that:
@@ -682,6 +687,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             validateCounts(tracker.counts, hc: 1, fc: 1, rc: 1, cc: 2, sc: 1)
         }
         
+    #endif
     /**
      * Tests the behavior when server configuration changes between app launches.
      * Verifies that the SDK correctly applies the new configuration when starting.
@@ -984,7 +990,9 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         countlyConfig.urlSessionConfiguration = config;
         
         Countly.sharedInstance().start(with: countlyConfig)
+        #if os(iOS)
         CountlyContentBuilderInternal.sharedInstance().contentInitialDelay = 0;
+        #endif
 
         // Wait for async server config fetch to complete
         TestUtils.sleep(2) {}
@@ -1024,6 +1032,8 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     private func immediateFlowAllFeatures() {
         Countly.sharedInstance().remoteConfig().downloadKeys { response, error, fullValueUpdate, downloadedValues in
          }
+        // Feedback widgets and the content zone are iOS/visionOS-only.
+        #if os(iOS)
         Countly.sharedInstance().feedback().getAvailableFeedbackWidgets { (feedbackWidgets: [CountlyFeedbackWidget]?, error) in
             if (error != nil)
             {
@@ -1039,15 +1049,19 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             Countly.sharedInstance().content().refreshContentZone()
         }
         TestUtils.sleep(2){}
+        #endif
     }
     
     private func feedbackFlowAllFeatures() {
+        // Rating/feedback widgets are compiled out on watchOS, tvOS and macOS.
+        #if os(iOS)
         Countly.sharedInstance().recordRatingWidget(withID: "test", rating: 5, email: "test", comment: "test", userCanBeContacted: true)
         let mockWidget = MockFeedbackWidget(
             id: "test",
             type: CLYFeedbackWidgetType.NPS
         )
         mockWidget.recordResult(nil)
+        #endif
     }
     
     private func baseAllFeatures(_ consumer: (ServerConfigBuilder) -> Void, hc: Int, fc: Int, rc: Int, cc: Int, scc: Int) throws {
@@ -1655,6 +1669,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      * Tests all features work correctly with event blacklist applied.
      * Sessions, views, crashes, etc. should still work while custom events are filtered.
      */
+    #if os(iOS)
     func test_eventBlacklist_allFeatures() throws {
         let sc = ServerConfigBuilder()
             .eventBlacklist(["test_event"])
@@ -1675,4 +1690,5 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
 
         validateCounts(tracker.counts, hc: 1, fc: 0, rc: 0, cc: 0, sc: 1)
     }
+    #endif
 }

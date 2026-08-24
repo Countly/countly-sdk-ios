@@ -7,7 +7,7 @@
 #import "CountlyCommon.h"
 
 @interface CountlyViewTrackingInternal ()
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
 @property (nonatomic) NSMutableSet* automaticViewTrackingExclusionList;
 #endif
 @property (nonatomic, strong) NSMutableDictionary<NSString*, CountlyViewData *> * viewDataDictionary;
@@ -32,7 +32,7 @@ NSString* const kCountlyVTKeyView     = @"view";
 NSString* const kCountlyVTKeyDomain   = @"domain";
 NSString* const kCountlyVTKeyDur      = @"dur";
 
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
 @interface UIViewController (CountlyViewTracking)
 - (void)Countly_viewDidAppear:(BOOL)animated;
 - (void)Countly_viewDidDisappear:(BOOL)animated;
@@ -56,7 +56,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 {
     if (self = [super init])
     {
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
         self.automaticViewTrackingExclusionList =
         @[
             @"CLYInternalViewController",
@@ -156,7 +156,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 - (NSString *)startView:(NSString *)viewName segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually start view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return nil;
@@ -169,7 +169,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 - (NSString *)startAutoStoppedView:(NSString *)viewName segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually start view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return nil;
@@ -182,7 +182,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 - (void)stopViewWithName:(NSString *)viewName segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually stop view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return;
@@ -195,7 +195,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 - (void)stopViewWithID:(NSString *)viewID segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewID, segmentation);
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually stop view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return;
@@ -207,7 +207,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 - (void)pauseViewWithID:(NSString *)viewID
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, viewID);
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually pause view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return;
@@ -219,7 +219,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 - (void)resumeViewWithID:(NSString *)viewID
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, viewID);
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually resume view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return;
@@ -231,7 +231,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 - (void)stopAllViews:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, segmentation);
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually stop view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return;
@@ -241,7 +241,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
     
 }
 
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
 - (void)addAutoViewTrackingExclutionList:(NSArray *)viewTrackingExclusionList
 {
     [self.automaticViewTrackingExclusionList addObjectsFromArray:viewTrackingExclusionList];
@@ -669,7 +669,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 #pragma mark - Internal auto view tracking methods
 
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
 
 - (void)swizzleViewTrackingMethods
 {
@@ -793,7 +793,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 #pragma mark -
 
-#if (TARGET_OS_IOS || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
 @implementation UIViewController (CountlyViewTracking)
 - (void)Countly_viewDidAppear:(BOOL)animated
 {

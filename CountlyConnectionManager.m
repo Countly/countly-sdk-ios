@@ -596,7 +596,7 @@ static dispatch_once_t onceToken;
         return;
     }
     
-#if TARGET_OS_IOS || TARGET_OS_TV
+#if TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION
     if (!CountlyCommon.sharedInstance.manualSessionHandling && [UIApplication sharedApplication].applicationState == UIApplicationStateBackground) {
         CLY_LOG_W(@"%s App is in the background, 'beginSession' will be ignored", __FUNCTION__);
         return;

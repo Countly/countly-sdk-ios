@@ -86,6 +86,19 @@ static dispatch_once_t onceToken;
                                                selector:@selector(applicationWillTerminate:)
                                                    name:NSApplicationWillTerminateNotification
                                                  object:nil];
+
+        //NOTE: macOS has no background state, so there is no `suspend` counterpart here.
+        //      `applicationDidBecomeActive:` is observed so that a `begin_session` dropped by
+        //      the "app is not active" guard in `beginSession` (app launched hidden, as a login
+        //      item, or opened by another app) is recovered on the first activation.
+        [NSNotificationCenter.defaultCenter addObserver:self
+                                               selector:@selector(applicationDidBecomeActive:)
+                                                   name:NSApplicationDidBecomeActiveNotification
+                                                 object:nil];
+        [NSNotificationCenter.defaultCenter addObserver:self
+                                               selector:@selector(applicationWillResignActive:)
+                                                   name:NSApplicationWillResignActiveNotification
+                                                 object:nil];
 #endif
     }
     
@@ -241,7 +254,7 @@ static dispatch_once_t onceToken;
         }
     }
 
-#if (TARGET_OS_IOS || TARGET_OS_TV )
+#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION )
     if (config.enableAutomaticViewTracking || [config.features containsObject:CLYAutoViewTracking])
     {
         // Print deprecation flag for feature
@@ -1058,7 +1071,7 @@ static dispatch_once_t onceToken;
 }
 
 - (BOOL)isAppInForeground {
-#if TARGET_OS_IOS || TARGET_OS_TV
+#if TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION
     UIApplicationState state = [UIApplication sharedApplication].applicationState;
     return state == UIApplicationStateActive;
 #elif TARGET_OS_OSX
@@ -1532,7 +1545,10 @@ static dispatch_once_t onceToken;
         [viewTracking setValue:nil forKey:@"currentViewName"];
         [viewTracking setValue:nil forKey:@"previousViewID"];
         [viewTracking setValue:nil forKey:@"previousViewName"];
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV )
+        // Auto view tracking only exists on UIKit platforms; the key is undefined elsewhere.
         [viewTracking setValue:@NO forKey:@"isAutoViewTrackingActive"];
+#endif
         [viewTracking resetFirstView];
     }
 

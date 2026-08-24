@@ -42,6 +42,12 @@ class CountlyCallbackBaseTestCase: XCTestCase {
 
     // MARK: - Instance Setup/Teardown
 
+    override func setUpWithError() throws {
+        try super.setUpWithError()
+        // These tests all fake HTTP responses through MockURLProtocol, which watchOS ignores.
+        try TestPlatform.skipUnlessHTTPInterceptable()
+    }
+
     override func setUp() {
         super.setUp()
         // Reset MockURLProtocol to success handler for each test
