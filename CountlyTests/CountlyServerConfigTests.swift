@@ -368,7 +368,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             XCTAssertTrue(crash != nil)
         }, from: sent)
         try TestUtils.validateEventInRQ("test_event", [:], 1, 7, 0, 2, from: sent)
-        try TestUtils.validateEventInRQ("[CLY]_view", ["name": "test_view", "segment": TestPlatform.osName, "visit": "1"], 1, 7, 1, 2, from: sent)
+        try TestUtils.validateEventInRQ("[CLY]_view", ["name": "test_view", "segment": CountlyDeviceInfo.osName(), "visit": "1"], 1, 7, 1, 2, from: sent)
         TestUtils.validateRequest([:], 2, { request in
             let userDetails = request["user_details"] as! [String: Any]
             XCTAssertTrue(TestUtils.compareDictionaries(userDetails["custom"] as! [String: Any], ["test_property": "test_value"]))
@@ -388,7 +388,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         TestUtils.validateRequest(["key": "value"], 6, from: sent)
 
         try TestUtils.validateEventInRQ("[CLY]_star_rating", [
-            "platform": TestPlatform.osName,
+            "platform": CountlyDeviceInfo.osName(),
             "app_version": CountlyDeviceInfo.appVersion()!,
             "rating": "5",
             "widget_id": "test",
@@ -401,12 +401,13 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             "app_version": CountlyDeviceInfo.appVersion()!,
             "widget_id": "test",
             "closed": "1",
-            "platform": TestPlatform.osName
+            "platform": CountlyDeviceInfo.osName()
         ], 7, 8, 1, 2, from: sent)
 
         validateCounts(tracker.counts, hc: 1, fc: 1, rc: 1, cc: 2, sc: 1)
     }
-    
+    #endif
+
     // MARK: - Queue Size Tests
     
     /**
@@ -417,7 +418,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      * 3. New events are queued after the batch is sent
      * 4. Event order is maintained in the queue
      */
-    #endif
     func test_eventQueueSize() throws {
         let countlyConfig = TestUtils.createBaseConfig()
         countlyConfig.manualSessionHandling = true
@@ -605,7 +605,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             XCTAssertFalse(containsEventWithKey(sent, "test_event"))
 
             // But other features should work
-            try TestUtils.validateEventInRQ("[CLY]_view", ["name": "test_view", "segment": TestPlatform.osName, "visit": "1", "start": "1"], 2, 7, 0, 1, from: sent)
+            try TestUtils.validateEventInRQ("[CLY]_view", ["name": "test_view", "segment": CountlyDeviceInfo.osName(), "visit": "1", "start": "1"], 2, 7, 0, 1, from: sent)
             TestUtils.validateRequest([:], 3, { request in
                 let userDetails = request["user_details"] as! [String: Any]
                 XCTAssertTrue(TestUtils.compareDictionaries(userDetails["custom"] as! [String: Any], ["test_property": "test_value"]))
@@ -1100,7 +1100,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         }, from: sent)
         //try TestUtils.validateEventInRQ("[CLY]_orientation", ["mode": "portrait"], 2, 8, 0, 3)
         try TestUtils.validateEventInRQ("test_event", [:], 2, 8, 0, 2, from: sent) // 1, 3
-        try TestUtils.validateEventInRQ("[CLY]_view", ["name": "test_view", "segment": TestPlatform.osName, "visit": "1", "start": "1"], 2, 8, 1, 2, from: sent) // 2, 3
+        try TestUtils.validateEventInRQ("[CLY]_view", ["name": "test_view", "segment": CountlyDeviceInfo.osName(), "visit": "1", "start": "1"], 2, 8, 1, 2, from: sent) // 2, 3
         TestUtils.validateRequest([:], 3, { request in
             let userDetails = request["user_details"] as! [String: Any]
             XCTAssertTrue(TestUtils.compareDictionaries(userDetails["custom"] as! [String: Any], ["test_property": "test_value"]))
@@ -1120,7 +1120,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         TestUtils.validateRequest(["key": "value"], 7, from: sent)
 
         try TestUtils.validateEventInRQ("[CLY]_star_rating", [
-            "platform": TestPlatform.osName,
+            "platform": CountlyDeviceInfo.osName(),
             "app_version": CountlyDeviceInfo.appVersion()!,
             "rating": "5",
             "widget_id": "test",
@@ -1133,7 +1133,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             "app_version": CountlyDeviceInfo.appVersion()!,
             "widget_id": "test",
             "closed": "1",
-            "platform": TestPlatform.osName
+            "platform": CountlyDeviceInfo.osName()
         ], 8, 9, 1, 2, from: sent)
 
         validateCounts(tracker.counts, hc: hc, fc: fc, rc: rc, cc: cc, sc: scc)

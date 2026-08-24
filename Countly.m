@@ -101,13 +101,13 @@ static dispatch_once_t onceToken;
         //      `applicationDidBecomeActive:` is observed so that a `begin_session` dropped by
         //      the "app is not active" guard in `beginSession` (app launched hidden, as a login
         //      item, or opened by another app) is recovered on the first activation.
+        //NOTE: Resign-active is deliberately NOT observed. Its handler saves health tracker
+        //      state, which forces an NSUserDefaults synchronize, and on macOS the user
+        //      switches away from the app constantly. `applicationWillTerminate:` already
+        //      saves that state.
         [NSNotificationCenter.defaultCenter addObserver:self
                                                selector:@selector(applicationDidBecomeActive:)
                                                    name:NSApplicationDidBecomeActiveNotification
-                                                 object:nil];
-        [NSNotificationCenter.defaultCenter addObserver:self
-                                               selector:@selector(applicationWillResignActive:)
-                                                   name:NSApplicationWillResignActiveNotification
                                                  object:nil];
 #endif
     }

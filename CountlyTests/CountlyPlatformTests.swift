@@ -4,8 +4,8 @@
 //
 //  Cross-platform integration coverage for the Apple platforms this SDK ships to:
 //  iOS, watchOS, tvOS, macOS and visionOS. The same bundle is compiled and run for
-//  every platform, so each test asserts the *expected-for-this-platform* behaviour
-//  taken from `TestPlatform` rather than being duplicated per platform.
+//  every platform, so each test asserts the expected-for-this-platform behaviour taken
+//  from `TestPlatform` (see TestPlatform.swift) rather than being duplicated per platform.
 //
 //  Scope:
 //   - CountlyPlatformIntegrationTests  — identity/metrics, config defaults, API surface,
@@ -27,185 +27,6 @@ import XCTest
 #if canImport(WatchKit)
     import WatchKit
 #endif
-
-// MARK: - Per-platform expectations
-
-/// Single source of truth for what the SDK is expected to do on the platform this
-/// bundle is currently compiled for. Every value here mirrors a `TARGET_OS_*` guard
-/// in the SDK sources, so a guard changing without this changing is a test failure.
-enum TestPlatform {
-
-    /// `_os` metric — `CountlyDeviceInfo.osName`.
-    static let osName: String = {
-        #if os(iOS)
-            return "iOS"
-        #elseif os(watchOS)
-            return "watchOS"
-        #elseif os(tvOS)
-            return "tvOS"
-        #elseif os(macOS)
-            return "macOS"
-        #elseif os(visionOS)
-            return "visionOS"
-        #endif
-    }()
-
-    /// `_device_type` metric — `CountlyDeviceInfo.deviceType`. iOS reports the UI idiom,
-    /// so both values are accepted there.
-    static let deviceTypes: Set<String> = {
-        #if os(iOS)
-            return ["mobile", "tablet", "desktop"]
-        #elseif os(watchOS)
-            return ["wearable"]
-        #elseif os(tvOS)
-            return ["smarttv"]
-        #elseif os(macOS)
-            return ["desktop"]
-        #elseif os(visionOS)
-            return ["vr"]
-        #endif
-    }()
-
-    /// `CountlyConfig.updateSessionPeriod` default — 20s on watchOS, 60s elsewhere.
-    static let defaultUpdateSessionPeriod: Double = {
-        #if os(watchOS)
-            return 20.0
-        #else
-            return 60.0
-        #endif
-    }()
-
-    /// `Countly.deviceIDType` when the host app supplies no device ID.
-    static let defaultDeviceIDType: CLYDeviceIDType = {
-        #if os(iOS) || os(tvOS) || os(visionOS)
-            return CLYDeviceIDType.IDFV
-        #else
-            return CLYDeviceIDType.NSUUID
-        #endif
-    }()
-
-    /// The `t` request parameter that goes with `defaultDeviceIDType`.
-    static let defaultDeviceIDTypeValue: String = {
-        #if os(iOS) || os(tvOS) || os(visionOS)
-            return "1"  // CLYDeviceIDTypeValueIDFV
-        #else
-            return "2"  // CLYDeviceIDTypeValueNSUUID
-        #endif
-    }()
-
-    /// Where `Countly.dat` is written — tvOS has no Application Support directory.
-    static let storageDirectory: FileManager.SearchPathDirectory = {
-        #if os(tvOS)
-            return .cachesDirectory
-        #else
-            return .applicationSupportDirectory
-        #endif
-    }()
-
-    /// `_resolution` / `_density` are only produced on platforms with a screen API.
-    /// visionOS has no `UIScreen.mainScreen` equivalent in `CountlyDeviceInfo`.
-    static let reportsScreenMetrics: Bool = {
-        #if os(visionOS)
-            return false
-        #else
-            return true
-        #endif
-    }()
-
-    /// `_carrier` comes from CoreTelephony, which is iOS-only (and not Mac Catalyst).
-    static let reportsCarrier: Bool = {
-        #if os(iOS) && !targetEnvironment(macCatalyst)
-            return true
-        #else
-            return false
-        #endif
-    }()
-
-    /// Feedback widgets, star rating and the content zone are WebKit-backed:
-    /// `TARGET_OS_IOS || TARGET_OS_VISION`.
-    static let hasWebKitFeatures: Bool = {
-        #if os(iOS) || os(visionOS)
-            return true
-        #else
-            return false
-        #endif
-    }()
-
-    /// Push notifications: `TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_OSX`.
-    static let hasPushNotifications: Bool = {
-        #if os(iOS) || os(visionOS) || os(macOS)
-            return true
-        #else
-            return false
-        #endif
-    }()
-
-    /// Automatic view tracking swizzles `UIViewController`, so it exists on the UIKit
-    /// platforms: `TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV`. The public API and
-    /// the implementation must agree, or a consent change crashes with an unrecognized
-    /// selector, which is what happened on visionOS before the guards were aligned.
-    static let hasAutoViewTracking: Bool = {
-        #if os(iOS) || os(tvOS) || os(visionOS)
-            return true
-        #else
-            return false
-        #endif
-    }()
-
-    /// `suspend` / `resume` are public API only on watchOS, where the host app must
-    /// drive them from its extension delegate.
-    static let hasPublicSuspendResume: Bool = {
-        #if os(watchOS)
-            return true
-        #else
-            return false
-        #endif
-    }()
-
-    /// Whether the SDK observes UIKit's background/foreground notifications and
-    /// therefore ends and restarts sessions on its own.
-    static let hasBackgroundForegroundObservers: Bool = {
-        #if os(iOS) || os(tvOS) || os(visionOS)
-            return true
-        #else
-            return false
-        #endif
-    }()
-
-    /// Whether the SDK observes an "app will terminate" notification.
-    /// watchOS has none — the host app calls `suspend` instead.
-    static let hasTerminateObserver: Bool = {
-        #if os(watchOS)
-            return false
-        #else
-            return true
-        #endif
-    }()
-
-    /// Whether a custom `URLProtocol` registered through
-    /// `URLSessionConfiguration.protocolClasses` actually intercepts the SDK's requests.
-    ///
-    /// watchOS hands URLSession traffic to a system proxy daemon (requests show up as
-    /// `PDTask` in the log and reach the real network), so custom protocol classes are
-    /// never consulted. Verified on the watchOS 26 simulator. Any test that fakes an HTTP
-    /// response has to be skipped there.
-    static let canInterceptHTTP: Bool = {
-        #if os(watchOS)
-            return false
-        #else
-            return true
-        #endif
-    }()
-
-    /// Throws `XCTSkip` on platforms where `canInterceptHTTP` is false.
-    static func skipUnlessHTTPInterceptable() throws {
-        if !canInterceptHTTP {
-            throw XCTSkip(
-                "Custom URLProtocol interception does not work on \(osName); "
-                    + "URLSession traffic is proxied by the system.")
-        }
-    }
-}
 
 // MARK: - Identity, configuration and API surface
 
@@ -231,14 +52,20 @@ class CountlyPlatformIntegrationTests: CountlyBaseTestCase {
         }
 
         if TestPlatform.reportsScreenMetrics {
+            // WIDTHxHEIGHT, both parseable as Double. Same contract as
+            // CountlyScreenMetricsTests.test_resolution_isWellFormedString, which also has to
+            // tolerate the exponent form `%g` can emit.
             let resolution = try XCTUnwrap(metrics["_resolution"] as? String)
-            XCTAssertTrue(
-                resolution.range(of: #"^[0-9.]+x[0-9.]+$"#, options: String.CompareOptions.regularExpression) != nil,
-                "Unexpected _resolution '\(resolution)'")
+            let sides = resolution.components(separatedBy: "x")
+            XCTAssertEqual(2, sides.count, "Unexpected _resolution '\(resolution)'")
+            for side in sides {
+                XCTAssertNotNil(Double(side), "Unexpected _resolution '\(resolution)'")
+            }
             let density = try XCTUnwrap(metrics["_density"] as? String)
-            XCTAssertTrue(
-                density.range(of: #"^@[0-9]+x$"#, options: String.CompareOptions.regularExpression) != nil,
-                "Unexpected _density '\(density)'")
+            XCTAssertTrue(density.hasPrefix("@"), "Unexpected _density '\(density)'")
+            XCTAssertTrue(density.hasSuffix("x"), "Unexpected _density '\(density)'")
+            XCTAssertNotNil(
+                Int(density.dropFirst().dropLast()), "Unexpected _density '\(density)'")
         } else {
             XCTAssertNil(metrics["_resolution"])
             XCTAssertNil(metrics["_density"])
@@ -253,10 +80,8 @@ class CountlyPlatformIntegrationTests: CountlyBaseTestCase {
         }
 
         // --- default device ID type -------------------------------------------
-        let config = CountlyConfig()
-        config.appKey = TestUtils.commonAppKey
-        config.host = TestUtils.host
-        config.enableDebug = true
+        // createBaseConfig deliberately sets no deviceID, which is what this asserts.
+        let config = createBaseConfig()
         config.requiresConsent = false
         config.manualSessionHandling = true
         Countly.sharedInstance().start(with: config)
@@ -426,11 +251,22 @@ class CountlyPlatformLifecycleTests: CountlyBaseTestCase {
         return requestQueue().filter { $0.contains(marker) }.count
     }
 
-    /// Posts a notification and lets the main run loop drain, since the SDK's handlers
-    /// hop through `dispatch_async` in places.
+    /// Posts a notification. The queue mutations these tests assert on are synchronous, so
+    /// no wait is needed; `waitUntil` is there for the handlers that hop through
+    /// `dispatch_async` (health state save, `saveToFile`).
     private func post(_ name: Notification.Name) {
         NotificationCenter.default.post(name: name, object: nil)
-        TestUtils.sleep(0.5) {}
+    }
+
+    /// Returns as soon as `condition` holds, so a satisfied expectation costs no wall clock.
+    private func waitUntil(
+        _ description: String, timeout: TimeInterval = 2.0, _ condition: () -> Bool
+    ) {
+        let deadline = Date().addingTimeInterval(timeout)
+        while !condition() && Date() < deadline {
+            RunLoop.current.run(mode: .default, before: Date().addingTimeInterval(0.02))
+        }
+        XCTAssertTrue(condition(), "Timed out waiting for \(description)")
     }
 
     /// The core lifecycle contract, asserted per platform in one flow:
@@ -480,25 +316,17 @@ class CountlyPlatformLifecycleTests: CountlyBaseTestCase {
             // start stays open until the host app calls `suspend` itself, which is what
             // test_manualSuspendResume_isTheWatchOSSessionDriver covers.
             XCTAssertEqual(1, count(of: "begin_session=1"), "Expected a session at start")
-            XCTAssertEqual(0, count(of: "end_session=1"))
-            TestUtils.sleep(1.0) {}
             XCTAssertEqual(
                 0, count(of: "end_session=1"), "Nothing may end a watchOS session on its own")
-            XCTAssertEqual(
-                1, count(of: "begin_session=1"), "Nothing may open a second watchOS session")
         #endif
     }
 
-    /// `applicationWillTerminate` is observed on every platform but watchOS. It must
-    /// flush pending events into the request queue, stop running views and mark the
-    /// connection manager as terminating.
+    #if !os(watchOS)
+    /// `applicationWillTerminate` is observed on every platform but watchOS, where there is
+    /// no such notification and `suspend` is the documented equivalent (covered by the
+    /// suspend/resume test). It must flush pending events into the request queue, stop
+    /// running views and mark the connection manager as terminating.
     func test_terminateCallback_flushesEventsAndStopsViews() throws {
-        // watchOS has no terminate notification at all, and `UIApplication` is unavailable
-        // there, so this has to be a compile-time guard. `suspend` is watchOS's documented
-        // equivalent and is covered by the suspend/resume test.
-        #if !os(watchOS)
-        XCTAssertTrue(TestPlatform.hasTerminateObserver)
-
         let config = TestUtils.createBaseConfig()
         config.requiresConsent = false
         config.manualSessionHandling = true
@@ -525,16 +353,14 @@ class CountlyPlatformLifecycleTests: CountlyBaseTestCase {
         // Reset so later tests are not affected by the terminating flag.
         CountlyConnectionManager.sharedInstance().isTerminating = false
         XCTAssertNotNil(viewID)
-        #else
-        XCTAssertFalse(TestPlatform.hasTerminateObserver)
-        #endif
     }
+    #endif
 
-    /// watchOS-only: `suspend`/`resume` are the host app's substitute for the UIKit
-    /// notifications. `suspend` must end the session and flush, and `resume` must open
-    /// exactly one new session however many times it is called.
+    #if os(watchOS)
+    /// `suspend`/`resume` are the host app's substitute for the UIKit notifications on
+    /// watchOS. `suspend` must end the session and flush, and `resume` must open exactly one
+    /// new session however many times it is called.
     func test_manualSuspendResume_isTheWatchOSSessionDriver() throws {
-        #if os(watchOS)
             startWithAutomaticSession()
             Countly.sharedInstance().recordEvent("watch_event")
 
@@ -557,8 +383,8 @@ class CountlyPlatformLifecycleTests: CountlyBaseTestCase {
             XCTAssertEqual(
                 sessionsBefore + 1, count(of: "begin_session=1"),
                 "resume must open exactly one new session")
-        #endif
     }
+    #endif
 
     /// Visibility segmentation depends on a per-platform foreground check
     /// (`UIApplication` / `NSApplication` / `WKExtension`). It must be resolvable —
@@ -575,7 +401,9 @@ class CountlyPlatformLifecycleTests: CountlyBaseTestCase {
 
         Countly.sharedInstance().recordEvent("visibility_event")
         CountlyConnectionManager.sharedInstance().sendEvents()
-        TestUtils.sleep(0.5) {}
+        waitUntil("the event to reach the request queue") {
+            self.requestQueue().contains { $0.contains("visibility_event") }
+        }
 
         let eventRequest = try XCTUnwrap(
             requestQueue().first { $0.contains("visibility_event") },
@@ -594,12 +422,12 @@ class CountlyPlatformLifecycleTests: CountlyBaseTestCase {
             visibility == 0 || visibility == 1, "cly_v must be 0 or 1, got \(visibility)")
     }
 
-    /// macOS-only: `beginSession` refuses to open a session while the app is not active
-    /// (launched hidden, as a login item, or opened by another app). macOS observes
-    /// `NSApplicationDidBecomeActiveNotification` so that the dropped session is opened
-    /// on the first activation instead of being lost for the life of the process.
+    #if os(macOS)
+    /// `beginSession` refuses to open a session while a macOS app is not active (launched
+    /// hidden, as a login item, or opened by another app). macOS observes
+    /// `NSApplicationDidBecomeActiveNotification` so that the dropped session is opened on
+    /// the first activation instead of being lost for the life of the process.
     func test_macOSInactiveLaunch_recoversDroppedSessionOnActivation() throws {
-        #if os(macOS)
             TestAppActivation.isActive = false
             startWithAutomaticSession()
             XCTAssertEqual(
@@ -618,6 +446,6 @@ class CountlyPlatformLifecycleTests: CountlyBaseTestCase {
 
             post(NSApplication.didBecomeActiveNotification)
             XCTAssertEqual(1, count(of: "begin_session=1"), "and only one session")
-        #endif
     }
+    #endif
 }

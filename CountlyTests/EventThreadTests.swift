@@ -9,13 +9,11 @@
 import XCTest
 @testable import Countly
 
-final class EventRaceReproTests: XCTestCase {
+final class EventRaceReproTests: CountlyBaseTestCase {
     func testPreviousEventIDRace() {
-        // This class does not derive from CountlyBaseTestCase, so purge the state (and the
-        // previous-event chain) left behind by whichever class ran before it. Without this
-        // the first event asserted below inherits a `peid` from the previous test.
-        Countly.sharedInstance().halt(true)
-
+        // CountlyBaseTestCase.setUpWithError purges the state, including the previous-event
+        // chain, left behind by whichever class ran before this one. Without that the first
+        // event asserted below inherits a `peid` from the previous test.
         let config = CountlyConfig()
         config.appKey = "appkey"
         config.host = "https://127.0.0.1"
@@ -23,6 +21,9 @@ final class EventRaceReproTests: XCTestCase {
         config.requiresConsent = false
         config.eventSendThreshold = UInt(10_000)
         config.experimental().enablePreviousNameRecording = true;
+        // `CountlyConfig.experimental` is a process-wide shared object, so leaving the flag
+        // set would turn previous-name recording on for every later test.
+        defer { config.experimental().enablePreviousNameRecording = false }
         Countly.sharedInstance().start(with: config)
 
         Countly.sharedInstance().recordEvent("warmup")

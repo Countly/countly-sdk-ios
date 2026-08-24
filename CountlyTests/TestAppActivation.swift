@@ -25,7 +25,11 @@
     enum TestAppActivation {
 
         /// What `NSApp.isActive` reports to the SDK. Reset to `true` before every test.
-        static var isActive: Bool = true
+        /// Writing it installs the stub, so there is no install-before-use ordering to get
+        /// wrong from the various test base classes.
+        static var isActive: Bool = true {
+            didSet { _ = installed }
+        }
 
         /// Swaps `NSApplication.isActive` for a stub backed by `isActive`. Idempotent.
         static func installIfNeeded() {

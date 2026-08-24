@@ -19,33 +19,33 @@ on:
 # why the two halves use different selectors: `-sdk` to build, `-destination` to test.
 jobs:
   build:
-    name: ${{ matrix.env.platform }} ${{ matrix.env.os }} (Xcode ${{ matrix.env.xcode }})
+    name: ${{ matrix.env.sdk }} (Xcode ${{ matrix.env.xcode }})
     runs-on: macos-${{ matrix.env.os_version }}
     strategy:
       fail-fast: false
       matrix:
         env:
           [
-            { os_version: 14, xcode: "15.4", platform: "macOS", sdk: "macosx14.5", os: "14.5" },
-            { os_version: 14, xcode: "15.4", platform: "iOS", sdk: "iphoneos17.5", os: "17.5" },
-            { os_version: 14, xcode: "15.4", platform: "tvOS", sdk: "appletvos17.5", os: "17.5" },
-            { os_version: 14, xcode: "15.4", platform: "watchOS", sdk: "watchos10.5", os: "10.5" },
-            { os_version: 14, xcode: "15.4", platform: "visionOS", sdk: "xros1.2", os: "1.2" },
-            { os_version: 14, xcode: "15.2", platform: "macOS", sdk: "macosx14.2", os: "14.2" },
-            { os_version: 14, xcode: "15.2", platform: "iOS", sdk: "iphoneos17.2", os: "17.2" },
-            { os_version: 14, xcode: "15.2", platform: "tvOS", sdk: "appletvos17.2", os: "17.2" },
-            { os_version: 14, xcode: "15.2", platform: "watchOS", sdk: "watchos10.2", os: "10.2" },
-            { os_version: 14, xcode: "15.2", platform: "visionOS", sdk: "xros1.0", os: "1.0" },
-            { os_version: 15, xcode: "16.4", platform: "macOS", sdk: "macosx15.5", os: "15.5" },
-            { os_version: 15, xcode: "16.4", platform: "iOS", sdk: "iphoneos18.5", os: "18.5" },
-            { os_version: 15, xcode: "16.4", platform: "tvOS", sdk: "appletvos18.5", os: "18.5" },
-            { os_version: 15, xcode: "16.4", platform: "watchOS", sdk: "watchos11.5", os: "11.5" },
-            { os_version: 15, xcode: "16.4", platform: "visionOS", sdk: "xros2.5", os: "2.5" },
-            { os_version: 26, xcode: "26.2", platform: "macOS", sdk: "macosx26.2", os: "26.2" },
-            { os_version: 26, xcode: "26.2", platform: "iOS", sdk: "iphoneos26.2", os: "26.2" },
-            { os_version: 26, xcode: "26.2", platform: "tvOS", sdk: "appletvos26.2", os: "26.2" },
-            { os_version: 26, xcode: "26.2", platform: "watchOS", sdk: "watchos26.2", os: "26.2" },
-            { os_version: 26, xcode: "26.2", platform: "visionOS", sdk: "xros26.2", os: "26.2" }
+            { os_version: 14, xcode: "15.4", sdk: "macosx14.5" },
+            { os_version: 14, xcode: "15.4", sdk: "iphoneos17.5" },
+            { os_version: 14, xcode: "15.4", sdk: "appletvos17.5" },
+            { os_version: 14, xcode: "15.4", sdk: "watchos10.5" },
+            { os_version: 14, xcode: "15.4", sdk: "xros1.2" },
+            { os_version: 14, xcode: "15.2", sdk: "macosx14.2" },
+            { os_version: 14, xcode: "15.2", sdk: "iphoneos17.2" },
+            { os_version: 14, xcode: "15.2", sdk: "appletvos17.2" },
+            { os_version: 14, xcode: "15.2", sdk: "watchos10.2" },
+            { os_version: 14, xcode: "15.2", sdk: "xros1.0" },
+            { os_version: 15, xcode: "16.4", sdk: "macosx15.5" },
+            { os_version: 15, xcode: "16.4", sdk: "iphoneos18.5" },
+            { os_version: 15, xcode: "16.4", sdk: "appletvos18.5" },
+            { os_version: 15, xcode: "16.4", sdk: "watchos11.5" },
+            { os_version: 15, xcode: "16.4", sdk: "xros2.5" },
+            { os_version: 26, xcode: "26.2", sdk: "macosx26.2" },
+            { os_version: 26, xcode: "26.2", sdk: "iphoneos26.2" },
+            { os_version: 26, xcode: "26.2", sdk: "appletvos26.2" },
+            { os_version: 26, xcode: "26.2", sdk: "watchos26.2" },
+            { os_version: 26, xcode: "26.2", sdk: "xros26.2" }
           ]
     steps:
       - name: Checkout SDK code
@@ -54,49 +54,58 @@ jobs:
       - name: Set up Xcode
         run: sudo xcode-select -switch /Applications/Xcode_${{ matrix.env.xcode }}.app
 
-      - name: Build for the sdk ${{ matrix.env.sdk }}
-        run: xcodebuild -project Countly.xcodeproj build -sdk ${{ matrix.env.sdk }}
-
+      # Resolved before the build so a runner image missing the runtime fails the job in
+      # seconds instead of after a full compile.
+      #
       # `xcodebuild -showdestinations` only reports placeholder simulator entries on the
-      # runner images, so the destination is resolved through simctl: prefer the requested
-      # runtime, fall back to the newest installed one, and create a device when the image
-      # ships a runtime without any.
+      # runner images, so this goes through simctl: prefer the runtime named by the sdk, fall
+      # back to the newest installed one, and create a device when the image ships a runtime
+      # without any.
       - name: Resolve test destination
         id: destination
-        if: matrix.env.platform != 'macOS'
         env:
-          PLATFORM: ${{ matrix.env.platform }}
-          WANTED_OS: ${{ matrix.env.os }}
+          SDK: ${{ matrix.env.sdk }}
         run: |
           python3 - <<'PYEOF'
-          import json, os, subprocess, sys
+          import json, os, re, subprocess, sys
 
-          PLATFORM = os.environ["PLATFORM"]          # iOS | tvOS | watchOS | visionOS
-          WANTED = os.environ["WANTED_OS"]           # e.g. "26.2"
-          # simctl calls visionOS runtimes "xrOS".
-          SIMCTL_PLATFORM = {"visionOS": "xrOS"}.get(PLATFORM, PLATFORM)
+          # `sdk` is the single source of truth: "iphoneos17.5" -> platform iOS, version 17.5.
+          SDK = os.environ["SDK"]
+          SDK_PREFIX_TO_PLATFORM = {
+              "macosx": "macOS", "iphoneos": "iOS", "appletvos": "tvOS",
+              "watchos": "watchOS", "xros": "visionOS",
+          }
+          prefix = re.match(r"[a-z]+", SDK).group(0)
+          PLATFORM = SDK_PREFIX_TO_PLATFORM[prefix]
+          WANTED = SDK[len(prefix):]
 
 
-          def simctl(*args):
-              out = subprocess.run(["xcrun", "simctl"] + list(args), capture_output=True, text=True)
-              if out.returncode != 0:
-                  sys.exit("::error::xcrun simctl %s failed: %s" % (" ".join(args), out.stderr.strip()))
-              return out.stdout
+          def emit(destination):
+              print("Testing on %s" % destination)
+              with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+                  fh.write("destination=%s\n" % destination)
+              sys.exit(0)
+
+
+          # macOS tests run on the runner itself, no simulator involved.
+          if PLATFORM == "macOS":
+              emit("platform=macOS")
 
 
           def version(text):
-              parts = []
-              for chunk in text.split("."):
-                  try:
-                      parts.append(int(chunk))
-                  except ValueError:
-                      parts.append(0)
-              return tuple(parts)
+              return tuple(int(c) if c.isdigit() else 0 for c in text.split("."))
 
 
+          listing = subprocess.run(["xcrun", "simctl", "list", "-j"], capture_output=True, text=True)
+          if listing.returncode != 0:
+              sys.exit("::error::xcrun simctl list failed: %s" % listing.stderr.strip())
+          listing = json.loads(listing.stdout)
+
+          # simctl calls visionOS runtimes "xrOS".
+          simctl_platform = "xrOS" if PLATFORM == "visionOS" else PLATFORM
           runtimes = [
-              r for r in json.loads(simctl("list", "-j", "runtimes"))["runtimes"]
-              if r.get("isAvailable") and r.get("platform") == SIMCTL_PLATFORM
+              r for r in listing["runtimes"]
+              if r.get("isAvailable") and r.get("platform") == simctl_platform
           ]
           if not runtimes:
               sys.exit("::error::No %s simulator runtime is installed on this runner." % PLATFORM)
@@ -107,41 +116,39 @@ jobs:
               print("::warning::%s %s runtime is not installed; testing against %s instead."
                     % (PLATFORM, WANTED, runtime.get("version")))
 
-          devices = json.loads(simctl("list", "-j", "devices", "available"))["devices"]
-          usable = [d for d in devices.get(runtime["identifier"], []) if d.get("isAvailable")]
-
+          usable = [d for d in listing["devices"].get(runtime["identifier"], []) if d.get("isAvailable")]
           if usable:
               udid = usable[0]["udid"]
-              name = usable[0].get("name")
           else:
               # Runner images ship runtimes without devices for some platforms, so make one.
               types = runtime.get("supportedDeviceTypes") or []
               if not types:
                   sys.exit("::error::No device type supports %s %s." % (PLATFORM, runtime.get("version")))
-              name = types[0]["name"]
-              udid = simctl("create", "cly-ci-%s" % PLATFORM, types[0]["identifier"],
-                            runtime["identifier"]).strip()
-              print("::notice::Created %s simulator '%s' for %s %s."
-                    % (PLATFORM, name, PLATFORM, runtime.get("version")))
+              udid = subprocess.run(
+                  ["xcrun", "simctl", "create", "cly-ci", types[0]["identifier"], runtime["identifier"]],
+                  capture_output=True, text=True, check=True).stdout.strip()
+              print("Created %s '%s' on %s" % (PLATFORM, types[0]["name"], runtime.get("version")))
 
-          print("Using %s Simulator '%s' (%s) on %s" % (PLATFORM, name, udid, runtime.get("version")))
-          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
-              fh.write("destination=platform=%s Simulator,id=%s\n" % (PLATFORM, udid))
+          emit("platform=%s Simulator,id=%s" % (PLATFORM, udid))
           PYEOF
+
+      - name: Build for the sdk ${{ matrix.env.sdk }}
+        run: xcodebuild -project Countly.xcodeproj build -sdk ${{ matrix.env.sdk }}
 
       - name: Run the CountlyTests bundle
         run: |
           xcodebuild test \
             -project Countly.xcodeproj \
             -scheme CountlyTests \
-            -destination "${{ matrix.env.platform == 'macOS' && 'platform=macOS' || steps.destination.outputs.destination }}" \
-            -resultBundlePath "TestResults-${{ matrix.env.platform }}-${{ matrix.env.xcode }}.xcresult" \
+            -destination '${{ steps.destination.outputs.destination }}' \
+            -resultBundlePath TestResults.xcresult \
             CODE_SIGNING_ALLOWED=NO
 
+      # Only on failure: a green run's result bundle is tens of MB nobody opens.
       - name: Upload test results
-        if: always()
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.env.platform }}-${{ matrix.env.os }}-xcode${{ matrix.env.xcode }}
-          path: TestResults-*.xcresult
+          name: test-results-${{ matrix.env.sdk }}-xcode${{ matrix.env.xcode }}
+          path: TestResults.xcresult
           if-no-files-found: ignore

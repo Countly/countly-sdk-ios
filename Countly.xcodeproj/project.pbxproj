@@ -98,6 +98,7 @@
 		AB10000011112222333344B1 /* CountlyThemeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB10000011112222333344B0 /* CountlyThemeTests.swift */; };
 		AB10000011112222333355C1 /* CountlyPlatformTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB10000011112222333355C0 /* CountlyPlatformTests.swift */; };
 		AB10000011112222333356C1 /* TestAppActivation.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB10000011112222333356C0 /* TestAppActivation.swift */; };
+		AB10000011112222333357C1 /* TestPlatform.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB10000011112222333357C0 /* TestPlatform.swift */; };
 		9691B7652F1FA35500A6ADCB /* CountlyOverlayWindow.h in Headers */ = {isa = PBXBuildFile; fileRef = 9691B7642F1FA35500A6ADCB /* CountlyOverlayWindow.h */; };
 		9691B7672F1FA35C00A6ADCB /* CountlyOverlayWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = 9691B7662F1FA35C00A6ADCB /* CountlyOverlayWindow.m */; };
 		969E5BCE2ECC4D3200AB406A /* CountlyConsentManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 969E5BCD2ECC4D2C00AB406A /* CountlyConsentManagerTests.swift */; };
@@ -228,6 +229,7 @@
 		AB10000011112222333344B0 /* CountlyThemeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyThemeTests.swift; sourceTree = "<group>"; };
 		AB10000011112222333355C0 /* CountlyPlatformTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyPlatformTests.swift; sourceTree = "<group>"; };
 		AB10000011112222333356C0 /* TestAppActivation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestAppActivation.swift; sourceTree = "<group>"; };
+		AB10000011112222333357C0 /* TestPlatform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestPlatform.swift; sourceTree = "<group>"; };
 		9691B7642F1FA35500A6ADCB /* CountlyOverlayWindow.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyOverlayWindow.h; sourceTree = "<group>"; };
 		9691B7662F1FA35C00A6ADCB /* CountlyOverlayWindow.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyOverlayWindow.m; sourceTree = "<group>"; };
 		969E5BCD2ECC4D2C00AB406A /* CountlyConsentManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyConsentManagerTests.swift; sourceTree = "<group>"; };
@@ -288,6 +290,7 @@
 				AB10000011112222333344B0 /* CountlyThemeTests.swift */,
 				AB10000011112222333355C0 /* CountlyPlatformTests.swift */,
 				AB10000011112222333356C0 /* TestAppActivation.swift */,
+				AB10000011112222333357C0 /* TestPlatform.swift */,
 				96E680412BFF89AC0091E105 /* CountlyCrashReporterTests.swift */,
 				EBD1642D826B471A80175BE3 /* CountlyWebViewManagerTests.swift */,
 				265156CB5F59417EA14BAC2F /* CountlyWebViewManager+Tests.h */,
@@ -574,6 +577,7 @@
 				AB10000011112222333344B1 /* CountlyThemeTests.swift in Sources */,
 				AB10000011112222333355C1 /* CountlyPlatformTests.swift in Sources */,
 				AB10000011112222333356C1 /* TestAppActivation.swift in Sources */,
+				AB10000011112222333357C1 /* TestPlatform.swift in Sources */,
 				96329DE42D952F1500BFD641 /* MockURLProtocol.swift in Sources */,
 				96329DE02D9426F300BFD641 /* CountlyServerConfigTests.swift in Sources */,
 				ABCDE001000000000000ABCD /* CountlyServerConfigValidationTests.swift in Sources */,
