@@ -41,15 +41,28 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 @implementation CountlyViewTrackingInternal
 
+static CountlyViewTrackingInternal* s_sharedInstance = nil;
+static dispatch_once_t onceToken;
+
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
         return nil;
     
-    static CountlyViewTrackingInternal* s_sharedInstance = nil;
-    static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
     return s_sharedInstance;
+}
+
+//NOTE: Dropping the singleton is what clears the view state and the one-way configuration
+//      flags (isEnabledOnInitialConfig, enablePreviousNameRecording, isManualViewRestartActive,
+//      isAutoViewTrackingActive); `init` re-establishes the defaults on the next start.
+//      The UIViewController swizzling is guarded by its own process-wide flag, so it is not
+//      applied twice.
+- (void)resetInstance
+{
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    onceToken = 0;
+    s_sharedInstance = nil;
 }
 
 - (instancetype)init

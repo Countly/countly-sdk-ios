@@ -13,7 +13,7 @@ extern NSString* const kCountlyPreviousView;
 extern NSString* const kCountlyPreviousEventName;
 extern NSString* const kCountlyVTKeyVisit;
 
-@interface CountlyViewTrackingInternal : NSObject
+@interface CountlyViewTrackingInternal : NSObject <Resettable>
 @property (nonatomic) BOOL isEnabledOnInitialConfig;
 @property (nonatomic) NSString* currentViewID;
 @property (nonatomic) NSString* previousViewID;

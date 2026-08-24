@@ -250,7 +250,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      */
     // The all-features flows exercise feedback widgets and the content zone, which are
     // compiled out on watchOS, tvOS and macOS, and assert exact per-platform request counts.
-    #if os(iOS)
+    #if os(iOS) || os(visionOS)
     func test_serverConfig_defaults_allFeatures() throws {
         
         try baseAllFeatures({ _ in }, hc: 1, fc: 1, rc: 1, cc: 2, scc: 1)
@@ -368,7 +368,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             XCTAssertTrue(crash != nil)
         }, from: sent)
         try TestUtils.validateEventInRQ("test_event", [:], 1, 7, 0, 2, from: sent)
-        try TestUtils.validateEventInRQ("[CLY]_view", ["name": "test_view", "segment": "iOS", "visit": "1"], 1, 7, 1, 2, from: sent)
+        try TestUtils.validateEventInRQ("[CLY]_view", ["name": "test_view", "segment": TestPlatform.osName, "visit": "1"], 1, 7, 1, 2, from: sent)
         TestUtils.validateRequest([:], 2, { request in
             let userDetails = request["user_details"] as! [String: Any]
             XCTAssertTrue(TestUtils.compareDictionaries(userDetails["custom"] as! [String: Any], ["test_property": "test_value"]))
@@ -388,7 +388,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         TestUtils.validateRequest(["key": "value"], 6, from: sent)
 
         try TestUtils.validateEventInRQ("[CLY]_star_rating", [
-            "platform": "iOS",
+            "platform": TestPlatform.osName,
             "app_version": CountlyDeviceInfo.appVersion()!,
             "rating": "5",
             "widget_id": "test",
@@ -401,7 +401,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             "app_version": CountlyDeviceInfo.appVersion()!,
             "widget_id": "test",
             "closed": "1",
-            "platform": "iOS"
+            "platform": TestPlatform.osName
         ], 7, 8, 1, 2, from: sent)
 
         validateCounts(tracker.counts, hc: 1, fc: 1, rc: 1, cc: 2, sc: 1)
@@ -579,7 +579,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         XCTAssertEqual(CountlyServerConfig.sharedInstance().requestQueueSize(), 10)
     }
     
-    #if os(iOS)
+    #if os(iOS) || os(visionOS)
     /**
          * Tests that event tracking is properly disabled when configured.
          * Verifies that:
@@ -605,7 +605,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             XCTAssertFalse(containsEventWithKey(sent, "test_event"))
 
             // But other features should work
-            try TestUtils.validateEventInRQ("[CLY]_view", ["name": "test_view", "segment": "iOS", "visit": "1", "start": "1"], 2, 7, 0, 1, from: sent)
+            try TestUtils.validateEventInRQ("[CLY]_view", ["name": "test_view", "segment": TestPlatform.osName, "visit": "1", "start": "1"], 2, 7, 0, 1, from: sent)
             TestUtils.validateRequest([:], 3, { request in
                 let userDetails = request["user_details"] as! [String: Any]
                 XCTAssertTrue(TestUtils.compareDictionaries(userDetails["custom"] as! [String: Any], ["test_property": "test_value"]))
@@ -990,7 +990,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         countlyConfig.urlSessionConfiguration = config;
         
         Countly.sharedInstance().start(with: countlyConfig)
-        #if os(iOS)
+        #if os(iOS) || os(visionOS)
         CountlyContentBuilderInternal.sharedInstance().contentInitialDelay = 0;
         #endif
 
@@ -1033,7 +1033,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         Countly.sharedInstance().remoteConfig().downloadKeys { response, error, fullValueUpdate, downloadedValues in
          }
         // Feedback widgets and the content zone are iOS/visionOS-only.
-        #if os(iOS)
+        #if os(iOS) || os(visionOS)
         Countly.sharedInstance().feedback().getAvailableFeedbackWidgets { (feedbackWidgets: [CountlyFeedbackWidget]?, error) in
             if (error != nil)
             {
@@ -1054,7 +1054,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     
     private func feedbackFlowAllFeatures() {
         // Rating/feedback widgets are compiled out on watchOS, tvOS and macOS.
-        #if os(iOS)
+        #if os(iOS) || os(visionOS)
         Countly.sharedInstance().recordRatingWidget(withID: "test", rating: 5, email: "test", comment: "test", userCanBeContacted: true)
         let mockWidget = MockFeedbackWidget(
             id: "test",
@@ -1100,7 +1100,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         }, from: sent)
         //try TestUtils.validateEventInRQ("[CLY]_orientation", ["mode": "portrait"], 2, 8, 0, 3)
         try TestUtils.validateEventInRQ("test_event", [:], 2, 8, 0, 2, from: sent) // 1, 3
-        try TestUtils.validateEventInRQ("[CLY]_view", ["name": "test_view", "segment": "iOS", "visit": "1", "start": "1"], 2, 8, 1, 2, from: sent) // 2, 3
+        try TestUtils.validateEventInRQ("[CLY]_view", ["name": "test_view", "segment": TestPlatform.osName, "visit": "1", "start": "1"], 2, 8, 1, 2, from: sent) // 2, 3
         TestUtils.validateRequest([:], 3, { request in
             let userDetails = request["user_details"] as! [String: Any]
             XCTAssertTrue(TestUtils.compareDictionaries(userDetails["custom"] as! [String: Any], ["test_property": "test_value"]))
@@ -1120,7 +1120,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         TestUtils.validateRequest(["key": "value"], 7, from: sent)
 
         try TestUtils.validateEventInRQ("[CLY]_star_rating", [
-            "platform": "iOS",
+            "platform": TestPlatform.osName,
             "app_version": CountlyDeviceInfo.appVersion()!,
             "rating": "5",
             "widget_id": "test",
@@ -1133,7 +1133,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             "app_version": CountlyDeviceInfo.appVersion()!,
             "widget_id": "test",
             "closed": "1",
-            "platform": "iOS"
+            "platform": TestPlatform.osName
         ], 8, 9, 1, 2, from: sent)
 
         validateCounts(tracker.counts, hc: hc, fc: fc, rc: rc, cc: cc, sc: scc)
@@ -1669,7 +1669,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      * Tests all features work correctly with event blacklist applied.
      * Sessions, views, crashes, etc. should still work while custom events are filtered.
      */
-    #if os(iOS)
+    #if os(iOS) || os(visionOS)
     func test_eventBlacklist_allFeatures() throws {
         let sc = ServerConfigBuilder()
             .eventBlacklist(["test_event"])

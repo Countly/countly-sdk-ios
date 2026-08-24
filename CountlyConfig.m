@@ -7,17 +7,6 @@
 #import "CountlyCommon.h"
 
 @interface CountlyConfig ()
-{
-    //NOTE: These are lazily created per config object. They used to be file scope globals,
-    //      which made every CountlyConfig instance share one set of sub configurations.
-    CountlyAPMConfig *apmConfig;
-    CountlyCrashesConfig *crashes;
-    CountlySDKLimitsConfig *sdkLimitsConfig;
-    CountlyExperimentalConfig *experimental;
-#if (TARGET_OS_IOS)
-    CountlyContentConfig *content;
-#endif
-}
 @property (nonatomic) NSMutableArray<RCDownloadCallback> *remoteConfigGlobalCallbacks;
 @end
 
@@ -42,6 +31,15 @@ CLYFeature const CLYAutoViewTracking    = @"CLYAutoViewTracking";
 #elif (TARGET_OS_OSX)
 CLYFeature const CLYPushNotifications   = @"CLYPushNotifications";
 CLYFeature const CLYCrashReporting      = @"CLYCrashReporting";
+#endif
+
+CountlyAPMConfig *apmConfig = nil;
+CountlyCrashesConfig *crashes = nil;
+CountlySDKLimitsConfig *sdkLimitsConfig = nil;
+CountlyExperimentalConfig *experimental = nil;
+
+#if (TARGET_OS_IOS)
+CountlyContentConfig *content = nil;
 #endif
 
 //NOTE: Device ID options

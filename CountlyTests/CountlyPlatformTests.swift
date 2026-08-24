@@ -475,12 +475,17 @@ class CountlyPlatformLifecycleTests: CountlyBaseTestCase {
                 1, count(of: "begin_session=1"), "Re-activation must not open a second session")
 
         #elseif os(watchOS)
-            // watchOS registers no observers at all: only the host app's suspend/resume
-            // calls move the session. Nothing here should change the queue.
-            let before = requestQueue().count
+            // watchOS registers no lifecycle observers, and there is no notification to post
+            // there in the first place. The observable contract is that the session opened at
+            // start stays open until the host app calls `suspend` itself, which is what
+            // test_manualSuspendResume_isTheWatchOSSessionDriver covers.
+            XCTAssertEqual(1, count(of: "begin_session=1"), "Expected a session at start")
             XCTAssertEqual(0, count(of: "end_session=1"))
-            TestUtils.sleep(0.5) {}
-            XCTAssertEqual(before, requestQueue().count, "watchOS must not react to any notification")
+            TestUtils.sleep(1.0) {}
+            XCTAssertEqual(
+                0, count(of: "end_session=1"), "Nothing may end a watchOS session on its own")
+            XCTAssertEqual(
+                1, count(of: "begin_session=1"), "Nothing may open a second watchOS session")
         #endif
     }
 
@@ -563,6 +568,9 @@ class CountlyPlatformLifecycleTests: CountlyBaseTestCase {
         config.requiresConsent = false
         config.manualSessionHandling = true
         config.experimental().enableVisibiltyTracking = true
+        // `CountlyConfig.experimental` is a process-wide shared object, so leaving the flag
+        // set would turn visibility segmentation on for every later test.
+        defer { config.experimental().enableVisibiltyTracking = false }
         Countly.sharedInstance().start(with: config)
 
         Countly.sharedInstance().recordEvent("visibility_event")

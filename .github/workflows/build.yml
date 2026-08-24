@@ -13,84 +13,49 @@ on:
       branches:
         - master
         - staging
+
+# Each cell builds the SDK against a device SDK and then runs the CountlyTests bundle on the
+# matching simulator (the runner itself for macOS). Device SDKs cannot host tests, which is
+# why the two halves use different selectors: `-sdk` to build, `-destination` to test.
 jobs:
   build:
+    name: ${{ matrix.env.platform }} ${{ matrix.env.os }} (Xcode ${{ matrix.env.xcode }})
     runs-on: macos-${{ matrix.env.os_version }}
     strategy:
       fail-fast: false
       matrix:
         env:
           [
-            { os_version: 14, sdk: "macosx14.5", xcode: "15.4" },
-            { os_version: 14, sdk: "iphoneos17.5", xcode: "15.4"},
-            { os_version: 14, sdk: "appletvos17.5", xcode: "15.4"},
-            { os_version: 14, sdk: "watchos10.5", xcode: "15.4" },
-            { os_version: 14, sdk: "xros1.2", xcode: "15.4" },
-            { os_version: 14, sdk: "iphoneos17.2", xcode: "15.2" },
-            { os_version: 14, sdk: "macosx14.2", xcode: "15.2" },
-            { os_version: 14, sdk: "appletvos17.2", xcode: "15.2" },
-            { os_version: 14, sdk: "watchos10.2", xcode: "15.2" },
-            { os_version: 14, sdk: "xros1.0", xcode: "15.2" },
-            { os_version: 15, sdk: "macosx15.5", xcode: "16.4" },
-            { os_version: 15, sdk: "iphoneos18.5", xcode: "16.4" },
-            { os_version: 15, sdk: "appletvos18.5", xcode: "16.4" },
-            { os_version: 15, sdk: "watchos11.5", xcode: "16.4" },
-            { os_version: 15, sdk: "xros2.5", xcode: "16.4" },
-            { os_version: 26, sdk: "macosx26.2", xcode: "26.2"},
-            { os_version: 26, sdk: "iphoneos26.2", xcode: "26.2"},
-            { os_version: 26, sdk: "appletvos26.2", xcode: "26.2"},
-            { os_version: 26, sdk: "watchos26.2", xcode: "26.2"},
-            { os_version: 26, sdk: "xros26.2", xcode: "26.2"}
+            { os_version: 14, xcode: "15.4", platform: "macOS", sdk: "macosx14.5", os: "14.5" },
+            { os_version: 14, xcode: "15.4", platform: "iOS", sdk: "iphoneos17.5", os: "17.5" },
+            { os_version: 14, xcode: "15.4", platform: "tvOS", sdk: "appletvos17.5", os: "17.5" },
+            { os_version: 14, xcode: "15.4", platform: "watchOS", sdk: "watchos10.5", os: "10.5" },
+            { os_version: 14, xcode: "15.4", platform: "visionOS", sdk: "xros1.2", os: "1.2" },
+            { os_version: 14, xcode: "15.2", platform: "macOS", sdk: "macosx14.2", os: "14.2" },
+            { os_version: 14, xcode: "15.2", platform: "iOS", sdk: "iphoneos17.2", os: "17.2" },
+            { os_version: 14, xcode: "15.2", platform: "tvOS", sdk: "appletvos17.2", os: "17.2" },
+            { os_version: 14, xcode: "15.2", platform: "watchOS", sdk: "watchos10.2", os: "10.2" },
+            { os_version: 14, xcode: "15.2", platform: "visionOS", sdk: "xros1.0", os: "1.0" },
+            { os_version: 15, xcode: "16.4", platform: "macOS", sdk: "macosx15.5", os: "15.5" },
+            { os_version: 15, xcode: "16.4", platform: "iOS", sdk: "iphoneos18.5", os: "18.5" },
+            { os_version: 15, xcode: "16.4", platform: "tvOS", sdk: "appletvos18.5", os: "18.5" },
+            { os_version: 15, xcode: "16.4", platform: "watchOS", sdk: "watchos11.5", os: "11.5" },
+            { os_version: 15, xcode: "16.4", platform: "visionOS", sdk: "xros2.5", os: "2.5" },
+            { os_version: 26, xcode: "26.2", platform: "macOS", sdk: "macosx26.2", os: "26.2" },
+            { os_version: 26, xcode: "26.2", platform: "iOS", sdk: "iphoneos26.2", os: "26.2" },
+            { os_version: 26, xcode: "26.2", platform: "tvOS", sdk: "appletvos26.2", os: "26.2" },
+            { os_version: 26, xcode: "26.2", platform: "watchOS", sdk: "watchos26.2", os: "26.2" },
+            { os_version: 26, xcode: "26.2", platform: "visionOS", sdk: "xros26.2", os: "26.2" }
           ]
     steps:
-      # To check the github context
       - name: Checkout SDK code
         uses: actions/checkout@v4
 
       - name: Set up Xcode
         run: sudo xcode-select -switch /Applications/Xcode_${{ matrix.env.xcode }}.app
 
-      - name: Build for the sdk ${{ matrix.env.sdk }} on macOS ${{ matrix.env.os_version }}
+      - name: Build for the sdk ${{ matrix.env.sdk }}
         run: xcodebuild -project Countly.xcodeproj build -sdk ${{ matrix.env.sdk }}
-
-  # The CountlyTests bundle is built and run for every platform the SDK ships to.
-  # Device SDKs cannot host tests, so each build matrix cell is mirrored here against
-  # the matching simulator (or the runner itself for macOS).
-  test:
-    name: Test ${{ matrix.env.platform }} ${{ matrix.env.os }} (Xcode ${{ matrix.env.xcode }})
-    runs-on: macos-${{ matrix.env.os_version }}
-    strategy:
-      fail-fast: false
-      matrix:
-        env:
-          [
-            { os_version: 14, platform: "macOS",    os: "14.5", xcode: "15.4" },
-            { os_version: 14, platform: "iOS",      os: "17.5", xcode: "15.4" },
-            { os_version: 14, platform: "tvOS",     os: "17.5", xcode: "15.4" },
-            { os_version: 14, platform: "watchOS",  os: "10.5", xcode: "15.4" },
-            { os_version: 14, platform: "visionOS", os: "1.2",  xcode: "15.4" },
-            { os_version: 14, platform: "macOS",    os: "14.2", xcode: "15.2" },
-            { os_version: 14, platform: "iOS",      os: "17.2", xcode: "15.2" },
-            { os_version: 14, platform: "tvOS",     os: "17.2", xcode: "15.2" },
-            { os_version: 14, platform: "watchOS",  os: "10.2", xcode: "15.2" },
-            { os_version: 14, platform: "visionOS", os: "1.0",  xcode: "15.2" },
-            { os_version: 15, platform: "macOS",    os: "15.5", xcode: "16.4" },
-            { os_version: 15, platform: "iOS",      os: "18.5", xcode: "16.4" },
-            { os_version: 15, platform: "tvOS",     os: "18.5", xcode: "16.4" },
-            { os_version: 15, platform: "watchOS",  os: "11.5", xcode: "16.4" },
-            { os_version: 15, platform: "visionOS", os: "2.5",  xcode: "16.4" },
-            { os_version: 26, platform: "macOS",    os: "26.2", xcode: "26.2" },
-            { os_version: 26, platform: "iOS",      os: "26.2", xcode: "26.2" },
-            { os_version: 26, platform: "tvOS",     os: "26.2", xcode: "26.2" },
-            { os_version: 26, platform: "watchOS",  os: "26.2", xcode: "26.2" },
-            { os_version: 26, platform: "visionOS", os: "26.2", xcode: "26.2" }
-          ]
-    steps:
-      - name: Checkout SDK code
-        uses: actions/checkout@v4
-
-      - name: Set up Xcode
-        run: sudo xcode-select -switch /Applications/Xcode_${{ matrix.env.xcode }}.app
 
       # `xcodebuild -showdestinations` only reports placeholder simulator entries on the
       # runner images, so the destination is resolved through simctl: prefer the requested

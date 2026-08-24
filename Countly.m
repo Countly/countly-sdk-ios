@@ -1544,23 +1544,10 @@ static dispatch_once_t onceToken;
 {
     CLY_LOG_I(@"%s clearStorage: [%d]", __FUNCTION__, clearStorage);
 
-    // Reset view tracking state BEFORE halt — sharedInstance() returns nil after halt.
-    // Use KVC to clear internal state directly since stopAllViews checks consent
-    // and may be a no-op if previous test required consent.
-    if (CountlyViewTrackingInternal.sharedInstance)
-    {
-        CountlyViewTrackingInternal* viewTracking = CountlyViewTrackingInternal.sharedInstance;
-        [viewTracking setValue:NSMutableDictionary.new forKey:@"viewDataDictionary"];
-        [viewTracking setValue:nil forKey:@"currentViewID"];
-        [viewTracking setValue:nil forKey:@"currentViewName"];
-        [viewTracking setValue:nil forKey:@"previousViewID"];
-        [viewTracking setValue:nil forKey:@"previousViewName"];
-#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV )
-        // Auto view tracking only exists on UIKit platforms; the key is undefined elsewhere.
-        [viewTracking setValue:@NO forKey:@"isAutoViewTrackingActive"];
-#endif
-        [viewTracking resetFirstView];
-    }
+    // Reset view tracking BEFORE halt: sharedInstance returns nil once hasStarted is false.
+    // Dropping its singleton clears the recorded views and the one-way configuration flags,
+    // which stopAllViews cannot do because it is gated on view tracking consent.
+    [CountlyViewTrackingInternal.sharedInstance resetInstance];
 
     // Reset health tracker state
     [CountlyHealthTracker.sharedInstance resetInstance];
