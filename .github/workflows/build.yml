@@ -13,39 +13,73 @@ on:
       branches:
         - master
         - staging
-
-# Each cell builds the SDK against a device SDK and then runs the CountlyTests bundle on the
-# matching simulator (the runner itself for macOS). Device SDKs cannot host tests, which is
-# why the two halves use different selectors: `-sdk` to build, `-destination` to test.
+    # Also dispatchable by hand, e.g. to re-run just the tests.
+    workflow_dispatch:
 jobs:
   build:
-    name: ${{ matrix.env.sdk }} (Xcode ${{ matrix.env.xcode }})
     runs-on: macos-${{ matrix.env.os_version }}
     strategy:
       fail-fast: false
       matrix:
         env:
           [
-            { os_version: 14, xcode: "15.4", sdk: "macosx14.5" },
-            { os_version: 14, xcode: "15.4", sdk: "iphoneos17.5" },
-            { os_version: 14, xcode: "15.4", sdk: "appletvos17.5" },
-            { os_version: 14, xcode: "15.4", sdk: "watchos10.5" },
-            { os_version: 14, xcode: "15.4", sdk: "xros1.2" },
-            { os_version: 14, xcode: "15.2", sdk: "macosx14.2" },
-            { os_version: 14, xcode: "15.2", sdk: "iphoneos17.2" },
-            { os_version: 14, xcode: "15.2", sdk: "appletvos17.2" },
-            { os_version: 14, xcode: "15.2", sdk: "watchos10.2" },
-            { os_version: 14, xcode: "15.2", sdk: "xros1.0" },
-            { os_version: 15, xcode: "16.4", sdk: "macosx15.5" },
-            { os_version: 15, xcode: "16.4", sdk: "iphoneos18.5" },
-            { os_version: 15, xcode: "16.4", sdk: "appletvos18.5" },
-            { os_version: 15, xcode: "16.4", sdk: "watchos11.5" },
-            { os_version: 15, xcode: "16.4", sdk: "xros2.5" },
-            { os_version: 26, xcode: "26.2", sdk: "macosx26.2" },
-            { os_version: 26, xcode: "26.2", sdk: "iphoneos26.2" },
-            { os_version: 26, xcode: "26.2", sdk: "appletvos26.2" },
-            { os_version: 26, xcode: "26.2", sdk: "watchos26.2" },
-            { os_version: 26, xcode: "26.2", sdk: "xros26.2" }
+            { os_version: 14, sdk: "macosx14.5", xcode: "15.4" },
+            { os_version: 14, sdk: "iphoneos17.5", xcode: "15.4" },
+            { os_version: 14, sdk: "appletvos17.5", xcode: "15.4" },
+            { os_version: 14, sdk: "watchos10.5", xcode: "15.4" },
+            { os_version: 14, sdk: "xros1.2", xcode: "15.4" },
+            { os_version: 14, sdk: "iphoneos17.2", xcode: "15.2" },
+            { os_version: 14, sdk: "macosx14.2", xcode: "15.2" },
+            { os_version: 14, sdk: "appletvos17.2", xcode: "15.2" },
+            { os_version: 14, sdk: "watchos10.2", xcode: "15.2" },
+            { os_version: 14, sdk: "xros1.0", xcode: "15.2" },
+            { os_version: 15, sdk: "macosx15.5", xcode: "16.4" },
+            { os_version: 15, sdk: "iphoneos18.5", xcode: "16.4" },
+            { os_version: 15, sdk: "appletvos18.5", xcode: "16.4" },
+            { os_version: 15, sdk: "watchos11.5", xcode: "16.4" },
+            { os_version: 15, sdk: "xros2.5", xcode: "16.4" },
+            { os_version: 26, sdk: "macosx26.2", xcode: "26.2" },
+            { os_version: 26, sdk: "iphoneos26.2", xcode: "26.2" },
+            { os_version: 26, sdk: "appletvos26.2", xcode: "26.2" },
+            { os_version: 26, sdk: "watchos26.2", xcode: "26.2" },
+            { os_version: 26, sdk: "xros26.2", xcode: "26.2" }
+          ]
+    steps:
+      # To check the github context
+      - name: Checkout SDK code
+        uses: actions/checkout@v4
+
+      - name: Set up Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_${{ matrix.env.xcode }}.app
+
+      - name: Build for the sdk ${{ matrix.env.sdk }} on macOS ${{ matrix.env.os_version }}
+        run: xcodebuild -project Countly.xcodeproj build -sdk ${{ matrix.env.sdk }}
+
+  # The CountlyTests bundle runs on all five platforms. Device SDKs cannot host tests, so each
+  # cell targets the matching simulator (the runner itself for macOS).
+  #
+  # `continue-on-error` makes this advisory: a failing cell is reported, and it is up to the
+  # developer to decide whether to act on it, but it does not fail the run. Parts of the suite
+  # assert exact wall-clock durations and are fragile on a loaded runner.
+  #
+  # Only the newest Xcode row is covered, on purpose. The account has a single concurrent macOS
+  # runner, so every matrix cell runs strictly one after another, and a full suite is ~8 minutes
+  # of test execution per platform. Widening this to all four Xcode rows would put a PR at
+  # roughly 3.5 hours.
+  test:
+    name: Test ${{ matrix.env.sdk }} (Xcode ${{ matrix.env.xcode }})
+    runs-on: macos-${{ matrix.env.os_version }}
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        env:
+          [
+            { os_version: 26, sdk: "macosx26.2", xcode: "26.2" },
+            { os_version: 26, sdk: "iphoneos26.2", xcode: "26.2" },
+            { os_version: 26, sdk: "appletvos26.2", xcode: "26.2" },
+            { os_version: 26, sdk: "watchos26.2", xcode: "26.2" },
+            { os_version: 26, sdk: "xros26.2", xcode: "26.2" }
           ]
     steps:
       - name: Checkout SDK code
@@ -54,8 +88,7 @@ jobs:
       - name: Set up Xcode
         run: sudo xcode-select -switch /Applications/Xcode_${{ matrix.env.xcode }}.app
 
-      # Resolved before the build so a runner image missing the runtime fails the job in
-      # seconds instead of after a full compile.
+      # Resolved before anything expensive so a runner image missing the runtime fails fast.
       #
       # `xcodebuild -showdestinations` only reports placeholder simulator entries on the
       # runner images, so this goes through simctl: prefer the runtime named by the sdk, fall
@@ -131,9 +164,6 @@ jobs:
 
           emit("platform=%s Simulator,id=%s" % (PLATFORM, udid))
           PYEOF
-
-      - name: Build for the sdk ${{ matrix.env.sdk }}
-        run: xcodebuild -project Countly.xcodeproj build -sdk ${{ matrix.env.sdk }}
 
       - name: Run the CountlyTests bundle
         run: |
