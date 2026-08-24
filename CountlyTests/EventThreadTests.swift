@@ -11,6 +11,11 @@ import XCTest
 
 final class EventRaceReproTests: XCTestCase {
     func testPreviousEventIDRace() {
+        // This class does not derive from CountlyBaseTestCase, so purge the state (and the
+        // previous-event chain) left behind by whichever class ran before it. Without this
+        // the first event asserted below inherits a `peid` from the previous test.
+        Countly.sharedInstance().halt(true)
+
         let config = CountlyConfig()
         config.appKey = "appkey"
         config.host = "https://127.0.0.1"

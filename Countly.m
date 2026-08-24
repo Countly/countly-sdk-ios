@@ -52,6 +52,16 @@ static dispatch_once_t onceToken;
     }
     // Remove all notification observers to avoid duplicate registrations after re-init in tests.
     [NSNotificationCenter.defaultCenter removeObserver:self];
+    // Break the previous-event chain, otherwise the first event recorded after a restart
+    // carries the `peid` / `pen` of an event from the previous SDK lifetime.
+#if __has_include(<os/lock.h>)
+    os_unfair_lock_lock(&previousEventLock);
+#endif
+    previousEventID = nil;
+    previousEventName = nil;
+#if __has_include(<os/lock.h>)
+    os_unfair_lock_unlock(&previousEventLock);
+#endif
     isSuspended = NO;
     onceToken = 0;
     s_sharedCountly = nil;

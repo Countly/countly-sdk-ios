@@ -92,56 +92,84 @@ jobs:
       - name: Set up Xcode
         run: sudo xcode-select -switch /Applications/Xcode_${{ matrix.env.xcode }}.app
 
-      # Simulator device names differ between runner images, so the destination is
-      # resolved from what the scheme actually reports. The requested runtime is
-      # preferred; if the image does not ship it we fall back to the newest available
-      # one for the same platform and annotate the run so the substitution is visible.
+      # `xcodebuild -showdestinations` only reports placeholder simulator entries on the
+      # runner images, so the destination is resolved through simctl: prefer the requested
+      # runtime, fall back to the newest installed one, and create a device when the image
+      # ships a runtime without any.
       - name: Resolve test destination
         id: destination
+        if: matrix.env.platform != 'macOS'
         env:
           PLATFORM: ${{ matrix.env.platform }}
           WANTED_OS: ${{ matrix.env.os }}
         run: |
-          set -euo pipefail
-          if [ "$PLATFORM" = "macOS" ]; then
-            echo "destination=platform=macOS" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
+          python3 - <<'PYEOF'
+          import json, os, subprocess, sys
 
-          xcodebuild -project Countly.xcodeproj -scheme CountlyTests -showdestinations \
-            > destinations.txt 2>/dev/null || true
+          PLATFORM = os.environ["PLATFORM"]          # iOS | tvOS | watchOS | visionOS
+          WANTED = os.environ["WANTED_OS"]           # e.g. "26.2"
+          # simctl calls visionOS runtimes "xrOS".
+          SIMCTL_PLATFORM = {"visionOS": "xrOS"}.get(PLATFORM, PLATFORM)
 
-          # Drop the "Any <platform> Simulator Device" placeholder rows, which carry no OS.
-          available=$(grep "platform:$PLATFORM Simulator" destinations.txt | grep "OS:" || true)
-          if [ -z "$available" ]; then
-            echo "::error::No $PLATFORM Simulator destination is available on this runner."
-            cat destinations.txt
-            exit 1
-          fi
 
-          match=$(printf '%s\n' "$available" | grep "OS:$WANTED_OS," | head -1 || true)
-          if [ -z "$match" ]; then
-            # Newest available runtime for this platform: prefix each row with its OS
-            # version, version-sort, take the last, then drop the prefix.
-            match=$(printf '%s\n' "$available" \
-              | sed -E 's/.*OS:([^,]*).*/\1\t&/' | sort -V -k1,1 | tail -1 | cut -f2-)
-            got=$(printf '%s' "$match" | sed -n 's/.*OS:\([^,]*\).*/\1/p')
-            echo "::warning::$PLATFORM $WANTED_OS runtime is not installed; testing against $got instead."
-          fi
+          def simctl(*args):
+              out = subprocess.run(["xcrun", "simctl"] + list(args), capture_output=True, text=True)
+              if out.returncode != 0:
+                  sys.exit("::error::xcrun simctl %s failed: %s" % (" ".join(args), out.stderr.strip()))
+              return out.stdout
 
-          udid=$(printf '%s' "$match" | sed -n 's/.*id:\([0-9A-Fa-f-]*\).*/\1/p')
-          if [ -z "$udid" ]; then
-            echo "::error::Could not parse a simulator id out of: $match"
-            exit 1
-          fi
-          echo "destination=platform=$PLATFORM Simulator,id=$udid" >> "$GITHUB_OUTPUT"
+
+          def version(text):
+              parts = []
+              for chunk in text.split("."):
+                  try:
+                      parts.append(int(chunk))
+                  except ValueError:
+                      parts.append(0)
+              return tuple(parts)
+
+
+          runtimes = [
+              r for r in json.loads(simctl("list", "-j", "runtimes"))["runtimes"]
+              if r.get("isAvailable") and r.get("platform") == SIMCTL_PLATFORM
+          ]
+          if not runtimes:
+              sys.exit("::error::No %s simulator runtime is installed on this runner." % PLATFORM)
+
+          runtime = next((r for r in runtimes if r.get("version") == WANTED), None)
+          if runtime is None:
+              runtime = max(runtimes, key=lambda r: version(r.get("version", "0")))
+              print("::warning::%s %s runtime is not installed; testing against %s instead."
+                    % (PLATFORM, WANTED, runtime.get("version")))
+
+          devices = json.loads(simctl("list", "-j", "devices", "available"))["devices"]
+          usable = [d for d in devices.get(runtime["identifier"], []) if d.get("isAvailable")]
+
+          if usable:
+              udid = usable[0]["udid"]
+              name = usable[0].get("name")
+          else:
+              # Runner images ship runtimes without devices for some platforms, so make one.
+              types = runtime.get("supportedDeviceTypes") or []
+              if not types:
+                  sys.exit("::error::No device type supports %s %s." % (PLATFORM, runtime.get("version")))
+              name = types[0]["name"]
+              udid = simctl("create", "cly-ci-%s" % PLATFORM, types[0]["identifier"],
+                            runtime["identifier"]).strip()
+              print("::notice::Created %s simulator '%s' for %s %s."
+                    % (PLATFORM, name, PLATFORM, runtime.get("version")))
+
+          print("Using %s Simulator '%s' (%s) on %s" % (PLATFORM, name, udid, runtime.get("version")))
+          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+              fh.write("destination=platform=%s Simulator,id=%s\n" % (PLATFORM, udid))
+          PYEOF
 
       - name: Run the CountlyTests bundle
         run: |
           xcodebuild test \
             -project Countly.xcodeproj \
             -scheme CountlyTests \
-            -destination '${{ steps.destination.outputs.destination }}' \
+            -destination "${{ matrix.env.platform == 'macOS' && 'platform=macOS' || steps.destination.outputs.destination }}" \
             -resultBundlePath "TestResults-${{ matrix.env.platform }}-${{ matrix.env.xcode }}.xcresult" \
             CODE_SIGNING_ALLOWED=NO
 
