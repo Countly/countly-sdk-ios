@@ -25,15 +25,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         super.setUp()
         // Initialize or reset necessary objects here
         Countly.sharedInstance().halt(true)
-
-        // sdkInternalLimits() returns a file-scope static singleton, not a
-        // per-config instance — so a test setting setMaxValueSize/setMaxKeyLength
-        // mutates state visible to every later test. Reset to defaults here.
-        let limits = CountlyConfig().sdkInternalLimits()
-        limits.setMaxKeyLength(128)
-        limits.setMaxValueSize(256)
-        limits.setMaxValueSizePicture(4096)
-        limits.setMaxSegmentationValues(100)
+        // The shared SDK limits are restored by CountlyBaseTestCase.setUpWithError.
     }
 
     override func tearDown() {

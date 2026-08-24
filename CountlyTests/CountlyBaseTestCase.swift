@@ -23,7 +23,22 @@ class CountlyBaseTestCase: XCTestCase {
             TestAppActivation.installIfNeeded()
             TestAppActivation.isActive = true
         #endif
+        resetSharedSDKLimits()
         cleanupState()
+    }
+
+    /// `CountlyConfig.sdkInternalLimits` is a process-wide object, not per-config, so a test
+    /// (or a server config response) that lowers a limit leaves it lowered for every test
+    /// that runs afterwards. Restore the defaults from `CountlySDKLimitsConfig`.
+    func resetSharedSDKLimits() {
+        let limits = CountlyConfig().sdkInternalLimits()
+        limits.setMaxKeyLength(128)
+        limits.setMaxValueSize(256)
+        limits.setMaxValueSizePicture(4096)
+        limits.setMaxSegmentationValues(100)
+        limits.setMaxBreadcrumbCount(100)
+        limits.setMaxStackTraceLineLength(200)
+        limits.setMaxStackTraceLinesPerThread(30)
     }
     
     func createBaseConfig() -> CountlyConfig {

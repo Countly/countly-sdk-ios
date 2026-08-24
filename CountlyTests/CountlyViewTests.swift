@@ -84,7 +84,7 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
         // Call validateRecordedEvents to check if the events match expectations
         validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
         
-        validateRecordedEventSegmentations(forEventID: viewID ?? "", expectedSegmentations: ["name": "View1", "visit": 1, "key": "value", "segment": CountlyDeviceInfo.osName()])
+        validateRecordedEventSegmentations(forEventID: viewID ?? "", expectedSegmentations: ["name": "View1", "visit": 1, "key": "value", "segment": CountlyDeviceInfo.osName()!])
     }
     
     func testStartViewAndStopViewWithID() throws {
@@ -485,8 +485,8 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
         // Wait for all expectations to be fulfilled
         wait(for: [waitForStart, waitForSecondSegmentation, waitForStop], timeout: 12.0)
         
-        validateRecordedEventSegmentations(forEventID: viewID ?? "", expectedSegmentations: ["name": "View1", "visit": 1, "startKey": "startValue", "segment": CountlyDeviceInfo.osName()])
-        validateRecordedEventSegmentations(forEventID: viewID ?? "", expectedSegmentations: ["name": "View1", "key1": "value1", "key2": "value2", "segment": CountlyDeviceInfo.osName()])
+        validateRecordedEventSegmentations(forEventID: viewID ?? "", expectedSegmentations: ["name": "View1", "visit": 1, "startKey": "startValue", "segment": CountlyDeviceInfo.osName()!])
+        validateRecordedEventSegmentations(forEventID: viewID ?? "", expectedSegmentations: ["name": "View1", "key1": "value1", "key2": "value2", "segment": CountlyDeviceInfo.osName()!])
     }
     
     func testStartViewWithConsentNotGiven() throws {
@@ -554,8 +554,8 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
         // Wait for all expectations to be fulfilled
         wait(for: [stopView1Expectation, startView2Expectation, stopView2Expectation], timeout: 12.0)
         
-        validateRecordedEventSegmentations(forEventID: viewID2, expectedSegmentations: ["visit": 1, "key": "value", "name": "View2", "segment": CountlyDeviceInfo.osName()])
-        validateRecordedEventSegmentations(forEventID: viewID2, expectedSegmentations: ["key": "newValue", "name": "View2", "segment": CountlyDeviceInfo.osName()])
+        validateRecordedEventSegmentations(forEventID: viewID2, expectedSegmentations: ["visit": 1, "key": "value", "name": "View2", "segment": CountlyDeviceInfo.osName()!])
+        validateRecordedEventSegmentations(forEventID: viewID2, expectedSegmentations: ["key": "newValue", "name": "View2", "segment": CountlyDeviceInfo.osName()!])
     }
 
 }
