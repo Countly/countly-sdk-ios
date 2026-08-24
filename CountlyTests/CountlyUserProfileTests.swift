@@ -79,7 +79,11 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         Countly.sharedInstance().start(with: config);
         sendUserProperty()
         setUserData()
-        XCTAssertEqual(2, CountlyPersistency.sharedInstance().remainingRequestCount()) // consents, location
+        // consents, location. Both are enqueued asynchronously, so poll rather than assuming
+        // they have landed by the time this line runs.
+        TestUtils.waitUntil("the consent and location requests to be queued") {
+            CountlyPersistency.sharedInstance().remainingRequestCount() == 2
+        }
     }
     
     func test_203_CNR_A() {

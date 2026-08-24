@@ -97,9 +97,11 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         
         Countly.sharedInstance().addCustomNetworkRequestHeaders(customHeaders)
         Countly.sharedInstance().addDirectRequest(["test": "request"])
-        
-        TestUtils.sleep(2) {}
-        
+
+        TestUtils.waitUntil("the request to carry the custom headers") {
+            TestURLProtocol.capturedHeaders()?["Authorization"] == "Bearer 123"
+        }
+
         let captured = TestURLProtocol.capturedHeaders()
         XCTAssertEqual(captured?["Authorization"], "Bearer 123")
         XCTAssertEqual(captured?["X-Test"], "Value1")
@@ -166,9 +168,9 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         
         Countly.sharedInstance().addCustomNetworkRequestHeaders(customHeaders)
         Countly.sharedInstance().addDirectRequest(["test": "request"])
-        
-        TestUtils.sleep(2) {}
-        
+
+        TestUtils.waitUntil("a request to be intercepted") { TestURLProtocol.capturedHeaders() != nil }
+
         let captured = try XCTUnwrap(TestURLProtocol.capturedHeaders(), "No request was intercepted")
         // The empty key must never be forwarded.
         XCTAssertNil(captured[""])

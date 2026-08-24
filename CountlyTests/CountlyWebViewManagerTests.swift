@@ -246,7 +246,7 @@ class CountlyWebViewManagerTests: XCTestCase {
 
         manager.notifyPageLoaded()
 
-        waitForExpectations(timeout: 1.0)
+        waitForExpectations(timeout: TestUtils.asyncTimeout)
         XCTAssertTrue(manager.hasAppeared)
     }
 
@@ -317,7 +317,7 @@ class CountlyWebViewManagerTests: XCTestCase {
 
         manager.loadDidTimeout()
 
-        waitForExpectations(timeout: 3.0)
+        waitForExpectations(timeout: TestUtils.asyncTimeout)
         XCTAssertTrue(manager.webViewClosed)
     }
 
@@ -336,7 +336,7 @@ class CountlyWebViewManagerTests: XCTestCase {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             exp.fulfill()
         }
-        waitForExpectations(timeout: 1.0)
+        waitForExpectations(timeout: TestUtils.asyncTimeout)
 
         XCTAssertFalse(dismissCalled)
         XCTAssertFalse(manager.webViewClosed)
@@ -356,7 +356,7 @@ class CountlyWebViewManagerTests: XCTestCase {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             exp.fulfill()
         }
-        waitForExpectations(timeout: 1.0)
+        waitForExpectations(timeout: TestUtils.asyncTimeout)
 
         XCTAssertFalse(dismissCalled)
     }
@@ -407,7 +407,7 @@ class CountlyWebViewManagerTests: XCTestCase {
         """
         webView.evaluateJavaScript(js, completionHandler: nil)
 
-        waitForExpectations(timeout: 3.0)
+        waitForExpectations(timeout: TestUtils.asyncTimeout)
         XCTAssertTrue(manager.hasAppeared)
 
         contentController.removeScriptMessageHandler(forName: "resourceLoadError")
@@ -444,7 +444,7 @@ class CountlyWebViewManagerTests: XCTestCase {
         """
         webView.evaluateJavaScript(js, completionHandler: nil)
 
-        waitForExpectations(timeout: 3.0)
+        waitForExpectations(timeout: TestUtils.asyncTimeout)
         XCTAssertTrue(manager.webViewClosed)
         XCTAssertFalse(manager.hasAppeared)
         XCTAssertEqual(manager.resourceRetryCount, 0)  // verify path does not retry
@@ -483,7 +483,7 @@ class CountlyWebViewManagerTests: XCTestCase {
 
         let settle = expectation(description: "settle")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { settle.fulfill() }
-        waitForExpectations(timeout: 2.0)
+        waitForExpectations(timeout: TestUtils.asyncTimeout)
 
         XCTAssertFalse(manager.webViewClosed)  // deferred to the in-flight retry
         XCTAssertFalse(dismissCalled)
@@ -515,7 +515,7 @@ class CountlyWebViewManagerTests: XCTestCase {
         """
         webView.evaluateJavaScript(js, completionHandler: nil)
 
-        waitForExpectations(timeout: 3.0)
+        waitForExpectations(timeout: TestUtils.asyncTimeout)
         XCTAssertTrue(manager.hasAppeared)
 
         contentController.removeScriptMessageHandler(forName: "resourceLoadError")
@@ -551,7 +551,7 @@ class CountlyWebViewManagerTests: XCTestCase {
 
         let settle = expectation(description: "settle")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { settle.fulfill() }
-        waitForExpectations(timeout: 2.0)
+        waitForExpectations(timeout: TestUtils.asyncTimeout)
 
         XCTAssertFalse(manager.hasAppeared)   // deferred, did not appear
         XCTAssertFalse(appeared)
@@ -593,7 +593,7 @@ class CountlyWebViewManagerTests: XCTestCase {
         let scheduled = XCTNSPredicateExpectation(predicate: NSPredicate(block: { [weak manager] _, _ in
             manager?.pendingReloadBlock != nil
         }), object: nil)
-        wait(for: [scheduled], timeout: 5.0)
+        wait(for: [scheduled], timeout: TestUtils.asyncTimeout)
 
         XCTAssertFalse(manager.webViewClosed)
         XCTAssertFalse(dismissCalled)
@@ -628,7 +628,7 @@ class CountlyWebViewManagerTests: XCTestCase {
         """
         webView.evaluateJavaScript(js, completionHandler: nil)
 
-        waitForExpectations(timeout: 3.0)
+        waitForExpectations(timeout: TestUtils.asyncTimeout)
         XCTAssertTrue(manager.webViewClosed)
         XCTAssertEqual(manager.resourceRetryCount, 0)  // did not retry
 
@@ -665,7 +665,7 @@ class CountlyWebViewManagerTests: XCTestCase {
         """
         webView.evaluateJavaScript(js, completionHandler: nil)
 
-        waitForExpectations(timeout: 3.0)
+        waitForExpectations(timeout: TestUtils.asyncTimeout)
         XCTAssertTrue(manager.webViewClosed)
     }
 
@@ -687,7 +687,7 @@ class CountlyWebViewManagerTests: XCTestCase {
 
         let settle = expectation(description: "settle")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { settle.fulfill() }
-        waitForExpectations(timeout: 2.0)
+        waitForExpectations(timeout: TestUtils.asyncTimeout)
 
         XCTAssertFalse(manager.webViewClosed)
         XCTAssertFalse(dismissCalled)
@@ -715,7 +715,7 @@ class CountlyWebViewManagerTests: XCTestCase {
         // Wait past the retry delay (0.6s): the cancelled reload must not fire or close the view.
         let settle = expectation(description: "settle")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { settle.fulfill() }
-        waitForExpectations(timeout: 2.0)
+        waitForExpectations(timeout: TestUtils.asyncTimeout)
         XCTAssertFalse(manager.webViewClosed)
         XCTAssertTrue(manager.hasAppeared)
     }
@@ -733,7 +733,7 @@ class CountlyWebViewManagerTests: XCTestCase {
         // The reload must not fire after cancellation.
         let settle = expectation(description: "settle")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { settle.fulfill() }
-        waitForExpectations(timeout: 2.0)
+        waitForExpectations(timeout: TestUtils.asyncTimeout)
         XCTAssertFalse(manager.webViewClosed)
         XCTAssertFalse(manager.hasAppeared)
     }
@@ -754,7 +754,7 @@ class CountlyWebViewManagerTests: XCTestCase {
 
         manager.contentShownDeadlineReached()
 
-        waitForExpectations(timeout: 3.0)
+        waitForExpectations(timeout: TestUtils.asyncTimeout)
         XCTAssertTrue(manager.webViewClosed)
     }
 
@@ -833,7 +833,7 @@ class CountlyWebViewManagerTests: XCTestCase {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             exp.fulfill()
         }
-        waitForExpectations(timeout: 2.0)
+        waitForExpectations(timeout: TestUtils.asyncTimeout)
 
         XCTAssertFalse(appearCalled)
         XCTAssertFalse(dismissCalled)
@@ -870,7 +870,7 @@ class CountlyWebViewManagerTests: XCTestCase {
         """
         webView.evaluateJavaScript(js, completionHandler: nil)
 
-        waitForExpectations(timeout: 3.0)
+        waitForExpectations(timeout: TestUtils.asyncTimeout)
         XCTAssertTrue(manager.webViewClosed)
         XCTAssertFalse(manager.hasAppeared)
         XCTAssertEqual(manager.resourceRetryCount, 0)  // verify path does not retry
@@ -904,7 +904,7 @@ class CountlyWebViewManagerTests: XCTestCase {
         """
         webView.evaluateJavaScript(js, completionHandler: nil)
 
-        waitForExpectations(timeout: 3.0)
+        waitForExpectations(timeout: TestUtils.asyncTimeout)
         XCTAssertTrue(manager.hasAppeared)
         XCTAssertFalse(manager.webViewClosed)
 

@@ -999,8 +999,9 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         CountlyContentBuilderInternal.sharedInstance().contentInitialDelay = 0;
         #endif
 
-        // Wait for async server config fetch to complete
-        TestUtils.sleep(2) {}
+        // Wait for the async server config fetch to land. A fixed sleep here was the cause of
+        // the `allFeatures` flakiness on CI, where the fetch needs longer than 2 seconds.
+        TestUtils.waitUntil("the server config response to be applied") { tracker.counts[4] >= 1 }
 
         return tracker
     }

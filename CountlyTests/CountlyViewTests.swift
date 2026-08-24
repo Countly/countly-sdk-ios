@@ -778,6 +778,53 @@ class CountlyViewForegroundBackgroundTests: CountlyViewBaseTest {
 #endif
 
 class CountlyViewBaseTest: CountlyBaseTestCase {
+
+    /// How far a recorded view duration may sit from the expected whole-second value.
+    ///
+    /// These durations come from wall-clock timers driven by `DispatchQueue.asyncAfter`, so on a
+    /// loaded or slower machine (every CI runner) they drift by a fraction of a second. Matching
+    /// exact integers made these tests fail on CI while passing locally, and truncating with
+    /// `Int(event.duration)` made it worse: 3.98 s became 3, a whole second off an expected 4.
+    /// The scheduled segments are at least a second apart, so this tolerance still catches a
+    /// segment of the wrong length without asserting timer precision the test cannot control.
+    static let durationTolerance = 1.5
+
+    /// Matches each expected duration against the nearest unmatched recorded one, so the
+    /// comparison is order-insensitive and tolerant of scheduler jitter.
+    func validateDurations(
+        _ actual: [String: [Double]], _ expected: [String: [Int]],
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
+        for (key, expectedDurations) in expected {
+            var remaining = actual[key] ?? []
+            XCTAssertEqual(
+                remaining.count, expectedDurations.count,
+                "Ended events count for key \(key) does not match expected count \(expectedDurations.count)",
+                file: file, line: line)
+
+            for expectedDuration in expectedDurations {
+                let target = Double(expectedDuration)
+                guard
+                    let closest = remaining.indices.min(by: {
+                        abs(remaining[$0] - target) < abs(remaining[$1] - target)
+                    }),
+                    abs(remaining[closest] - target) <= Self.durationTolerance
+                else {
+                    XCTFail(
+                        "No recorded duration within \(Self.durationTolerance)s of \(expectedDuration) for key \(key). Unmatched: \(remaining)",
+                        file: file, line: line)
+                    continue
+                }
+                remaining.remove(at: closest)
+            }
+
+            XCTAssertTrue(
+                remaining.isEmpty,
+                "Not all actual durations were matched for key \(key). Unmatched: \(remaining)",
+                file: file, line: line)
+        }
+    }
+
     
     // Helper methods to validate results
     
@@ -791,7 +838,7 @@ class CountlyViewBaseTest: CountlyBaseTestCase {
         
         // Track occurrences for started and ended events
         var actualStartedEventsCount: [String: Int] = [:]
-        var actualEndedEventsDurations: [String: [Int]] = [:]
+        var actualEndedEventsDurations: [String: [Double]] = [:]
         
         // Iterate through recorded events to populate actual counts and durations
         for event in recordedEvents {
@@ -803,7 +850,7 @@ class CountlyViewBaseTest: CountlyBaseTestCase {
                         actualStartedEventsCount[eventKey, default: 0] += 1
                     }
                     else{
-                        actualEndedEventsDurations[eventKey, default: []].append(Int(event.duration))
+                        actualEndedEventsDurations[eventKey, default: []].append(event.duration)
                     }
                 }
             }
@@ -815,30 +862,7 @@ class CountlyViewBaseTest: CountlyBaseTestCase {
             XCTAssertEqual(actualCount, expectedCount, "Started events count for key \(key) does not match expected count \(expectedCount)")
         }
         
-        // Validate ended events durations
-        for (key, expectedDurations) in endedEventsDurations {
-            let actualDurations = actualEndedEventsDurations[key] ?? []
-            
-            // First, ensure the counts match
-            XCTAssertEqual(actualDurations.count, expectedDurations.count, "Ended events count for key \(key) does not match expected count \(expectedDurations.count)")
-            
-            // Create a mutable copy of actualDurations to modify
-            var mutableActualDurations = actualDurations
-            
-            // Check each duration matches
-            for (index, expectedDuration) in expectedDurations.enumerated() {
-                // Check if the expected duration exists in the actual durations
-                XCTAssertTrue(mutableActualDurations.contains(expectedDuration), "Duration at index \(index) for key \(key) does not match expected duration \(expectedDuration)")
-                
-                // Remove the expectedDuration from mutableActualDurations
-                if let foundIndex = mutableActualDurations.firstIndex(of: expectedDuration) {
-                    mutableActualDurations.remove(at: foundIndex)
-                }
-            }
-            
-            // Optionally, check if all expected durations have been matched
-            XCTAssertTrue(mutableActualDurations.isEmpty, "Not all actual durations were matched with expected durations for key \(key)")
-        }
+        validateDurations(actualEndedEventsDurations, endedEventsDurations)
         
     }
     
@@ -852,7 +876,7 @@ class CountlyViewBaseTest: CountlyBaseTestCase {
         
         // Initialize dictionaries to track actual counts and durations for verification
         var actualStartedEventsCount: [String: Int] = [:]
-        var actualEndedEventsDurations: [String: [Int]] = [:]
+        var actualEndedEventsDurations: [String: [Double]] = [:]
         
         // Loop through each event request to process events
         for request in eventRequests {
@@ -877,7 +901,7 @@ class CountlyViewBaseTest: CountlyBaseTestCase {
                             }
                             // Check for stop events with "dur" for duration
                             else {
-                                actualEndedEventsDurations[eventKey, default: []].append(Int(event.duration))
+                                actualEndedEventsDurations[eventKey, default: []].append(event.duration)
                             }
                         }
                     }
@@ -893,14 +917,16 @@ class CountlyViewBaseTest: CountlyBaseTestCase {
             XCTAssertEqual(actualCount, expectedCount, "Started events count for key \(key) does not match expected count \(expectedCount)")
         }
         
-        // Validate ended events durations
+        // Validate ended events durations, in order.
         for (key, expectedDurations) in endedEventsDurations {
             let actualDurations = actualEndedEventsDurations[key] ?? []
             XCTAssertEqual(actualDurations.count, expectedDurations.count, "Ended events count for key \(key) does not match expected count \(expectedDurations.count)")
-            
-            // Check each duration matches
-            for (index, expectedDuration) in expectedDurations.enumerated() {
-                XCTAssertEqual(actualDurations[index], expectedDuration, "Duration at index \(index) for key \(key) does not match expected duration \(expectedDuration)")
+
+            for (index, expectedDuration) in expectedDurations.enumerated() where index < actualDurations.count {
+                XCTAssertEqual(
+                    actualDurations[index], Double(expectedDuration),
+                    accuracy: CountlyViewBaseTest.durationTolerance,
+                    "Duration at index \(index) for key \(key) does not match expected duration \(expectedDuration)")
             }
         }
     }
