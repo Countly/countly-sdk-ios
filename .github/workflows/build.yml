@@ -67,6 +67,9 @@ jobs:
   # of test execution per platform. Widening this to all four Xcode rows would put a PR at
   # roughly 3.5 hours.
   test:
+    # Builds come first: with a single concurrent runner they would otherwise queue behind the
+    # much slower test cells, and a broken build makes the test results moot anyway.
+    needs: build
     name: Test ${{ matrix.env.sdk }} (Xcode ${{ matrix.env.xcode }})
     runs-on: macos-${{ matrix.env.os_version }}
     continue-on-error: true
