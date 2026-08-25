@@ -291,14 +291,14 @@ NSString* const kCountlyFBKeyShown          = @"shown";
         NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:URL]];
         request.HTTPMethod = @"POST";
         request.HTTPBody = [queryString cly_dataUTF8];
-        CLY_LOG_V(@"%s widget data request built as POST, widgetID: [%@], url: [%@], body: [%@]", __FUNCTION__, self.ID, URL, queryString);
+        CLY_LOG_D(@"%s widget data request built as POST, widgetID: [%@], url: [%@], body: [%@]", __FUNCTION__, self.ID, URL, queryString);
         return request.copy;
     }
     else
     {
         [URL appendFormat:@"?%@", queryString];
         NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:URL]];
-        CLY_LOG_V(@"%s widget data request built as GET, widgetID: [%@], url: [%@]", __FUNCTION__, self.ID, URL);
+        CLY_LOG_D(@"%s widget data request built as GET, widgetID: [%@], url: [%@]", __FUNCTION__, self.ID, URL);
         return request;
     }
 }
@@ -358,7 +358,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
 
     NSString *finalURL = [CountlyDeviceInfo URLStringByAppendingThemeMode:URL];
 
-    CLY_LOG_V(@"%s widget URL generated, widgetID: [%@], widgetType: [%@], url: [%@]", __FUNCTION__, self.ID, self.type, finalURL);
+    CLY_LOG_D(@"%s widget URL generated, widgetID: [%@], widgetType: [%@], url: [%@]", __FUNCTION__, self.ID, self.type, finalURL);
 
     return [NSURL URLWithString:finalURL];
 }

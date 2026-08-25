@@ -457,14 +457,14 @@ NSString* const kCountlyCBFetchContent  = @"queue";
         NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:contentEndpoint]];
         request.HTTPMethod = @"POST";
         request.HTTPBody = [queryString cly_dataUTF8];
-        CLY_LOG_V(@"%s the content fetch request built as POST, url: [%@], body: [%@]", __FUNCTION__, contentEndpoint, queryString);
+        CLY_LOG_D(@"%s the content fetch request built as POST, url: [%@], body: [%@]", __FUNCTION__, contentEndpoint, queryString);
         return request.copy;
     }
     else
     {
         NSString* withQueryString = [contentEndpoint stringByAppendingFormat:@"?%@", queryString];
         NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:withQueryString]];
-        CLY_LOG_V(@"%s the content fetch request built as GET, url: [%@]", __FUNCTION__, withQueryString);
+        CLY_LOG_D(@"%s the content fetch request built as GET, url: [%@]", __FUNCTION__, withQueryString);
         return request;
     }
 }

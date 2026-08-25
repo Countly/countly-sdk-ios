@@ -494,7 +494,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         // IMMEDIATE REQUEST to find them better in search
         NSDictionary *feedbacksResponse = nil;
 
-        CLY_LOG_V(@"%s feedback widget list raw response received, url: [%@], responseBody: [%@]", __FUNCTION__, response.URL.absoluteString, [data cly_stringUTF8]);
+        CLY_LOG_D(@"%s feedback widget list raw response received, url: [%@], responseBody: [%@]", __FUNCTION__, response.URL.absoluteString, [data cly_stringUTF8]);
 
         if (!error)
         {

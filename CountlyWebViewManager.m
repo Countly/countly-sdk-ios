@@ -302,7 +302,7 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
 
     if ([url hasPrefix:@"https://countly_action_event"]) {
         NSDictionary *queryParameters = [self parseQueryString:url];
-        CLY_LOG_V(@"%s action event URL parsed, url: [%@], queryParameters: [%@]", __FUNCTION__, url, queryParameters);
+        CLY_LOG_D(@"%s action event URL parsed, url: [%@], queryParameters: [%@]", __FUNCTION__, url, queryParameters);
 
         if([url containsString:@"cly_x_action_event=1"]){
             [self contentURLAction:queryParameters];
@@ -339,13 +339,13 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
     if (handler && handler(url)) {
         // Host and path only: the link query string can carry identifiers.
         CLY_LOG_I(@"%s the URL was handled by the app's content URL handler, host: [%@], path: [%@]", __FUNCTION__, url.host, url.path);
-        CLY_LOG_V(@"%s the URL handed to the app's content URL handler, url: [%@]", __FUNCTION__, url.absoluteString);
+        CLY_LOG_D(@"%s the URL handed to the app's content URL handler, url: [%@]", __FUNCTION__, url.absoluteString);
         return;
     }
 
     [UIApplication.sharedApplication openURL:url options:@{} completionHandler:^(BOOL success) {
         CLY_LOG_I(@"%s the URL was handed to the browser, host: [%@], path: [%@], opened: [%@]", __FUNCTION__, url.host, url.path, success ? @"YES" : @"NO");
-        CLY_LOG_V(@"%s the URL handed to the browser, url: [%@], opened: [%@]", __FUNCTION__, url.absoluteString, success ? @"YES" : @"NO");
+        CLY_LOG_D(@"%s the URL handed to the browser, url: [%@], opened: [%@]", __FUNCTION__, url.absoluteString, success ? @"YES" : @"NO");
     }];
 }
 
@@ -882,7 +882,7 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
         CLY_LOG_D(@"%s parsing the content events JSON failed, error: [%@], domain: [%@], code: [%ld], jsonLength: [%lu]", __FUNCTION__, error.localizedDescription, error.domain, (long)error.code, (unsigned long)jsonString.length);
     }
 
-    CLY_LOG_V(@"%s content events JSON parsed, json: [%@], events: [%@]", __FUNCTION__, jsonString, events);
+    CLY_LOG_D(@"%s content events JSON parsed, json: [%@], events: [%@]", __FUNCTION__, jsonString, events);
 
     if (!events || ![events isKindOfClass:[NSArray class]]) {
             CLY_LOG_E(@"%s the content events payload is nil or not an array, ignoring the action", __FUNCTION__);
@@ -915,7 +915,7 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
                 self.contentShownDeadlineTimer = nil;
             }
 
-            CLY_LOG_V(@"%s recording a content event, key: [%@], segmentation: [%@]", __FUNCTION__, key, segmentation);
+            CLY_LOG_D(@"%s recording a content event, key: [%@], segmentation: [%@]", __FUNCTION__, key, segmentation);
 
             [Countly.sharedInstance recordEvent:key segmentation:segmentation];
     }
@@ -930,7 +930,7 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
 }
 
 - (void)openExternalLink:(NSString *)urlString {
-    CLY_LOG_V(@"%s an external link was requested by the content, link: [%@]", __FUNCTION__, urlString);
+    CLY_LOG_D(@"%s an external link was requested by the content, link: [%@]", __FUNCTION__, urlString);
     NSURL *url = [NSURL URLWithString:urlString];
     if (!url) {
         // The decoded link may contain characters NSURL rejects (e.g. a space from a decoded '%20').
@@ -965,7 +965,7 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
         return;
     }
 
-    CLY_LOG_V(@"%s the resize payload parsed, json: [%@], resizeDict: [%@]", __FUNCTION__, jsonString, resizeDict);
+    CLY_LOG_D(@"%s the resize payload parsed, json: [%@], resizeDict: [%@]", __FUNCTION__, jsonString, resizeDict);
 
     // Retrieve portrait and landscape dimensions
     NSDictionary *portraitDimensions = resizeDict[@"p"];
