@@ -33,11 +33,16 @@
 #import "CountlyExperimentalConfig.h"
 #import "CountlyHealthTracker.h"
 
+//NOTE: Error and Warning call through unconditionally, because CountlyInternalLog also increments the
+//health tracker's error and warning counters, which must keep counting even when logging is disabled.
 #define CLY_LOG_E(fmt, ...) CountlyInternalLog(CLYInternalLogLevelError, fmt, ##__VA_ARGS__)
 #define CLY_LOG_W(fmt, ...) CountlyInternalLog(CLYInternalLogLevelWarning, fmt, ##__VA_ARGS__)
-#define CLY_LOG_I(fmt, ...) CountlyInternalLog(CLYInternalLogLevelInfo, fmt, ##__VA_ARGS__)
-#define CLY_LOG_D(fmt, ...) CountlyInternalLog(CLYInternalLogLevelDebug, fmt, ##__VA_ARGS__)
-#define CLY_LOG_V(fmt, ...) CountlyInternalLog(CLYInternalLogLevelVerbose, fmt, ##__VA_ARGS__)
+
+//NOTE: Info, Debug and Verbose are guarded so their arguments are not evaluated when the level is not
+//active. Without the guard, every argument expression runs on every call even with logging disabled.
+#define CLY_LOG_I(fmt, ...) do { if (CountlyInternalLogIsEnabled(CLYInternalLogLevelInfo)) CountlyInternalLog(CLYInternalLogLevelInfo, fmt, ##__VA_ARGS__); } while (0)
+#define CLY_LOG_D(fmt, ...) do { if (CountlyInternalLogIsEnabled(CLYInternalLogLevelDebug)) CountlyInternalLog(CLYInternalLogLevelDebug, fmt, ##__VA_ARGS__); } while (0)
+#define CLY_LOG_V(fmt, ...) do { if (CountlyInternalLogIsEnabled(CLYInternalLogLevelVerbose)) CountlyInternalLog(CLYInternalLogLevelVerbose, fmt, ##__VA_ARGS__); } while (0)
 
 #if (TARGET_OS_IOS || TARGET_OS_VISION)
 #import <UIKit/UIKit.h>
@@ -100,6 +105,7 @@ extern NSString* const kCountlySDKName;
 @property (nonatomic) NSUInteger maxSegmentationValues;
 
 void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...) NS_FORMAT_FUNCTION(2, 3);
+BOOL CountlyInternalLogIsEnabled(CLYInternalLogLevel level);
 void CountlyPrint(NSString *stringToPrint);
 
 + (instancetype)sharedInstance;

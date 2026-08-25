@@ -142,7 +142,7 @@ static dispatch_once_t onceToken;
 
 - (void)resetInstance
 {
-    CLY_LOG_I(@"%s", __FUNCTION__);
+    CLY_LOG_I(@"%s resetting behavior settings state and shared instance", __FUNCTION__);
     _timestamp = 0;
     _version = 0;
     _currentServerConfigUpdateInterval = 4;
@@ -162,6 +162,7 @@ static dispatch_once_t onceToken;
 - (void)retrieveServerConfigFromStorage:(CountlyConfig *)config
 {
     NSMutableDictionary *persistentBehaviorSettings = [CountlyPersistency.sharedInstance retrieveServerConfig];
+    CLY_LOG_D(@"%s behavior settings read from persisted cache, keyCount: [%lu], developerSuppliedSettings: [%@]", __FUNCTION__, (unsigned long)persistentBehaviorSettings.count, config.sdkBehaviorSettings ? @"YES" : @"NO");
     if (persistentBehaviorSettings.count == 0 && config.sdkBehaviorSettings)
     {
         NSError *error = nil;
@@ -169,8 +170,9 @@ static dispatch_once_t onceToken;
 
         if ([parsed isKindOfClass:[NSDictionary class]]) {
             persistentBehaviorSettings = [(NSDictionary *)parsed mutableCopy];
+            CLY_LOG_D(@"%s cache was empty, falling back to developer supplied behavior settings, keyCount: [%lu]", __FUNCTION__, (unsigned long)persistentBehaviorSettings.count);
         } else {
-            CLY_LOG_W(@"%s, Failed to parse sdkBehaviorSettings or not a dictionary: %@", __FUNCTION__, error);
+            CLY_LOG_E(@"%s could not parse developer supplied sdkBehaviorSettings, they will be ignored, error: [%@]", __FUNCTION__, error.localizedDescription);
         }
     }
 
@@ -183,18 +185,18 @@ static dispatch_once_t onceToken;
 {
     // c, t and v paramters must exist
     if(newConfig.count != 3 || !newConfig[kRConfig]) {
-        CLY_LOG_D(@"%s, missing entries for a behavior settings omitting", __FUNCTION__);
+        CLY_LOG_W(@"%s incoming behavior settings will be ignored, expected 3 entries including a config section, entryCount: [%lu]", __FUNCTION__, (unsigned long)newConfig.count);
         return;
     }
-    
+
     if (!newConfig[kRVersion] || !newConfig[kRTimestamp])
     {
-        CLY_LOG_D(@"%s, version or timestamp is missing in the behavioır settings omitting", __FUNCTION__);
+        CLY_LOG_W(@"%s incoming behavior settings will be ignored, version or timestamp entry is missing", __FUNCTION__);
         return;
     }
-    
+
     if(!([newConfig[kRConfig] isKindOfClass:[NSDictionary class]]) || ((NSDictionary *)newConfig[kRConfig]).count == 0){
-        CLY_LOG_D(@"%s, invalid behavior settings omitting", __FUNCTION__);
+        CLY_LOG_W(@"%s incoming behavior settings will be ignored, config section is empty or not a dictionary", __FUNCTION__);
         return;
     }
             
@@ -222,6 +224,7 @@ static dispatch_once_t onceToken;
 
         [self removeConflictingFilterKeys:cMerged newConfig:cNew];
         baseConfig[kRConfig] = cMerged;
+        CLY_LOG_D(@"%s incoming behavior settings merged into the stored ones, incomingKeyCount: [%lu], mergedKeyCount: [%lu]", __FUNCTION__, (unsigned long)cNew.count, (unsigned long)cMerged.count);
     }
 }
 
@@ -238,7 +241,7 @@ static dispatch_once_t onceToken;
     }
     else
     {
-        CLY_LOG_W(@"%s, Invalid type for bool key '%@', removing", __FUNCTION__, key);
+        CLY_LOG_W(@"%s dropping behavior setting, a boolean was expected, key: [%@], receivedType: [%@]", __FUNCTION__, key, [value class]);
         [dictionary removeObjectForKey:key];
     }
 }
@@ -264,13 +267,13 @@ static dispatch_once_t onceToken;
         }
         else
         {
-            CLY_LOG_W(@"%s, Invalid value (%ld) for integer key '%@' (min: %ld), removing", __FUNCTION__, (long)intVal, key, (long)minValue);
+            CLY_LOG_W(@"%s dropping behavior setting, value is below the accepted minimum, key: [%@], value: [%ld], minValue: [%ld]", __FUNCTION__, key, (long)intVal, (long)minValue);
             [dictionary removeObjectForKey:key];
         }
     }
     else
     {
-        CLY_LOG_W(@"%s, Invalid type for integer key '%@', removing", __FUNCTION__, key);
+        CLY_LOG_W(@"%s dropping behavior setting, an integer was expected, key: [%@], receivedType: [%@]", __FUNCTION__, key, [value class]);
         [dictionary removeObjectForKey:key];
     }
 }
@@ -291,13 +294,13 @@ static dispatch_once_t onceToken;
         }
         else
         {
-            CLY_LOG_W(@"%s, Invalid value (%lf) for double key '%@', removing", __FUNCTION__, dblVal, key);
+            CLY_LOG_W(@"%s dropping behavior setting, value is out of the accepted range, key: [%@], value: [%.4f], acceptedRange: [0.0 - 1.0]", __FUNCTION__, key, dblVal);
             [dictionary removeObjectForKey:key];
         }
     }
     else
     {
-        CLY_LOG_W(@"%s, Invalid type for double key '%@', removing", __FUNCTION__, key);
+        CLY_LOG_W(@"%s dropping behavior setting, a double was expected, key: [%@], receivedType: [%@]", __FUNCTION__, key, [value class]);
         [dictionary removeObjectForKey:key];
     }
 }
@@ -312,7 +315,7 @@ static dispatch_once_t onceToken;
 
     if (!serverConfig[kRConfig])
     {
-        CLY_LOG_D(@"%s, config key is missing in the server configuration omitting", __FUNCTION__);
+        CLY_LOG_D(@"%s no config section in the behavior settings, falling back to SDK defaults", __FUNCTION__);
         return;
     }
 
@@ -323,19 +326,21 @@ static dispatch_once_t onceToken;
     }
     else
     {
-        CLY_LOG_D(@"%s, config is not a dictionary, omitting", __FUNCTION__);
+        CLY_LOG_W(@"%s config section is not a dictionary, falling back to SDK defaults, receivedType: [%@]", __FUNCTION__, [serverConfig[kRConfig] class]);
         return;
     }
 
     if (!serverConfig[kRVersion] || !serverConfig[kRTimestamp])
     {
-        CLY_LOG_D(@"%s, version or timestamp is missing in the server configuration omitting", __FUNCTION__);
+        CLY_LOG_W(@"%s version or timestamp is missing in the behavior settings, falling back to SDK defaults", __FUNCTION__);
         return;
     }
-    
+
     _version = [serverConfig[kRVersion] integerValue];
     _timestamp = [serverConfig[kRTimestamp] longLongValue];
-    
+
+    CLY_LOG_D(@"%s applying behavior settings, version: [%ld], timestamp: [%lld], configKeyCount: [%lu], requestTimeoutDuration: [%ld]", __FUNCTION__, (long)_version, _timestamp, (unsigned long)dictionary.count, (long)_requestTimeoutDuration);
+
     NSMutableString *logString = [NSMutableString stringWithString:@"Server Config: "];
 
     // Known keys set — used to remove unknown keys after validation
@@ -385,7 +390,7 @@ static dispatch_once_t onceToken;
     {
         if (![knownKeys containsObject:key])
         {
-            CLY_LOG_W(@"%s, Unknown config key '%@', removing", __FUNCTION__, key);
+            CLY_LOG_D(@"%s unknown behavior setting key will be dropped, key: [%@]", __FUNCTION__, key);
             [dictionary removeObjectForKey:key];
         }
     }
@@ -430,7 +435,12 @@ static dispatch_once_t onceToken;
         [self notifySdkConfigChange: config];
     }
 
-    CLY_LOG_D(@"%s, version:[%li], timestamp:[%lli], %@", __FUNCTION__, _version, _timestamp, logString);
+    CLY_LOG_D(@"%s behavior settings applied, version: [%ld], timestamp: [%lld], appliedValues: [%@]", __FUNCTION__, (long)_version, _timestamp, logString);
+
+    CLY_LOG_D(@"%s resolved behavior settings, tracking: [%@], networking: [%@], crashReporting: [%@], sessionTracking: [%@], viewTracking: [%@], customEventTracking: [%@], locationTracking: [%@], refreshContentZone: [%@], enterContentZone: [%@], consentRequired: [%@], backoffMechanism: [%@], loggingForcedByServer: [%@], keyLength: [%ld], valueSize: [%ld], segValues: [%ld], breadcrumb: [%ld], traceLine: [%ld], traceLength: [%ld], sessionInterval: [%ld], eventQueueSize: [%ld], requestQueueSize: [%ld], contentZoneInterval: [%ld], dropOldRequestTime: [%ld], updateIntervalHours: [%ld], userPropertyCacheLimit: [%ld], backoffAcceptedTimeoutSeconds: [%ld], backoffRQPercentage: [%.4f], backoffRequestAgeHours: [%ld], backoffDurationSeconds: [%ld]", __FUNCTION__,
+              _trackingEnabled ? @"YES" : @"NO", _networkingEnabled ? @"YES" : @"NO", _crashReportingEnabled ? @"YES" : @"NO", _sessionTrackingEnabled ? @"YES" : @"NO", _viewTrackingEnabled ? @"YES" : @"NO", _customEventTrackingEnabled ? @"YES" : @"NO", _locationTracking ? @"YES" : @"NO", _refreshContentZone ? @"YES" : @"NO", _enterContentZone ? @"YES" : @"NO", _consentRequired ? @"YES" : @"NO", _backoffMechanism ? @"YES" : @"NO", _loggingEnabled ? @"YES" : @"NO",
+              (long)_limitKeyLength, (long)_limitValueSize, (long)_limitSegValues, (long)_limitBreadcrumb, (long)_limitTraceLine, (long)_limitTraceLength, (long)_sessionInterval, (long)_eventQueueSize, (long)_requestQueueSize, (long)_contentZoneInterval, (long)_dropOldRequestTime, (long)_serverConfigUpdateInterval, (long)_userPropertyCacheLimit,
+              (long)_bomAcceptedTimeoutSeconds, _bomRQPercentage, (long)_bomRequestAge, (long)_bomDuration);
 }
 
 - (void)notifySdkConfigChange:(CountlyConfig *)config
@@ -480,11 +490,16 @@ static dispatch_once_t onceToken;
 
     config.updateSessionPeriod = _sessionInterval ?: config.updateSessionPeriod;
     _sessionInterval = config.updateSessionPeriod;
-    
+
+    CLY_LOG_D(@"%s effective limits and queue settings applied, maxKeyLength: [%lu], maxValueLength: [%lu], maxValueLengthPicture: [%lu], maxSegmentationValues: [%lu], maxBreadcrumbCount: [%lu], eventSendThreshold: [%lu], requestDropAgeHours: [%lu], storedRequestsLimit: [%lu], updateSessionPeriod: [%.1f]", __FUNCTION__,
+              (unsigned long)CountlyCommon.sharedInstance.maxKeyLength, (unsigned long)CountlyCommon.sharedInstance.maxValueLength, (unsigned long)CountlyCommon.sharedInstance.maxValueLengthPicture, (unsigned long)CountlyCommon.sharedInstance.maxSegmentationValues, (unsigned long)config.sdkInternalLimits.getMaxBreadcrumbCount,
+              (unsigned long)config.eventSendThreshold, (unsigned long)config.requestDropAgeHours, (unsigned long)config.storedRequestsLimit, config.updateSessionPeriod);
+
     BOOL consentDidChange = !config.requiresConsent && _consentRequired;
     config.requiresConsent = _consentRequired ?: config.requiresConsent;
     CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
     if(consentDidChange && CountlyCommon.sharedInstance.hasFinishedInit){
+        CLY_LOG_D(@"%s consent requirement was turned on by behavior settings, consents will be resent", __FUNCTION__);
         [CountlyConsentManager.sharedInstance sendConsents];
         if (!CountlyConsentManager.sharedInstance.consentForLocation)
         {
@@ -518,6 +533,7 @@ static dispatch_once_t onceToken;
 
     if (_serverConfigUpdateInterval && _serverConfigUpdateInterval != _currentServerConfigUpdateInterval && _requestTimer)
     {
+        CLY_LOG_D(@"%s behavior settings refresh timer will be rescheduled, intervalHours: [%ld]", __FUNCTION__, (long)_serverConfigUpdateInterval);
         _currentServerConfigUpdateInterval = _serverConfigUpdateInterval;
         [_requestTimer invalidate];
         _requestTimer = nil;
@@ -527,11 +543,13 @@ static dispatch_once_t onceToken;
 
     if (!_locationTracking && !CountlyLocationManager.sharedInstance.isLocationInfoDisabled)
     {
+        CLY_LOG_D(@"%s location tracking is disabled by behavior settings, location info will be cleared", __FUNCTION__);
         [CountlyLocationManager.sharedInstance disableLocation];
         [CountlyConnectionManager.sharedInstance sendLocationInfo];
     }
-    
+
     if(_backoffMechanism && config.disableBackoffMechanism){
+        CLY_LOG_D(@"%s backoff mechanism is enabled by behavior settings but disabled in the developer config, it will stay off", __FUNCTION__);
         _backoffMechanism = NO;
     }
 }
@@ -539,6 +557,7 @@ static dispatch_once_t onceToken;
 - (void)fetchServerConfigTimer:(NSTimer *)timer
 {
     CountlyConfig *config = (CountlyConfig *)timer.userInfo; // Retrieve CountlyConfig from userInfo
+    CLY_LOG_D(@"%s behavior settings refresh timer fired, configAvailable: [%@]", __FUNCTION__, config ? @"YES" : @"NO");
     if (config)
     {
         [self fetchServerConfig:config];
@@ -548,9 +567,10 @@ static dispatch_once_t onceToken;
 - (void)fetchServerConfigIfTimeIsUp
 {
     if (_serverConfigUpdatesDisabled) {
+        CLY_LOG_D(@"%s periodic behavior settings check skipped, updates are disabled", __FUNCTION__);
         return;
     }
-    
+
     if (_lastFetchTimestamp)
     {
         long long currentTime = NSDate.date.timeIntervalSince1970 * 1000;
@@ -558,6 +578,7 @@ static dispatch_once_t onceToken;
 
         if (timePassed > _currentServerConfigUpdateInterval * 60 * 60 * 1000)
         {
+            CLY_LOG_D(@"%s behavior settings refresh interval elapsed, a fetch will be triggered, timePassedMs: [%lld], intervalHours: [%ld]", __FUNCTION__, timePassed, (long)_currentServerConfigUpdateInterval);
             [self fetchServerConfig:CountlyConfig.new];
         }
     }
@@ -565,16 +586,16 @@ static dispatch_once_t onceToken;
 
 - (void)fetchServerConfig:(CountlyConfig *)config
 {
-    CLY_LOG_D(@"%s, fetching sdk behavior settings", __FUNCTION__);
-    
+    CLY_LOG_D(@"%s starting a behavior settings fetch, currentVersion: [%ld], updateIntervalHours: [%ld]", __FUNCTION__, (long)_version, (long)_currentServerConfigUpdateInterval);
+
     if (_serverConfigUpdatesDisabled) {
-        CLY_LOG_D(@"%s, sdk behavior settings updates disabled, omitting fetch", __FUNCTION__);
+        CLY_LOG_D(@"%s fetch aborted, behavior settings updates are disabled", __FUNCTION__);
         return;
     }
-    
+
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
     {
-        CLY_LOG_W(@"%s, fetch is skipped while in temporary device ID mode", __FUNCTION__);
+        CLY_LOG_D(@"%s fetch aborted, sdk is in temporary device ID mode", __FUNCTION__);
         return;
     }
 
@@ -591,7 +612,7 @@ static dispatch_once_t onceToken;
         if (!error)
         {
             serverConfigResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
-            CLY_LOG_D(@"Server Config Fetched: %@", serverConfigResponse.description);
+            CLY_LOG_D(@"[CountlyServerConfig] fetchServerConfig response, behavior settings received from network, statusCode: [%ld], responseKeyCount: [%lu], parsed: [%@]", (long)((NSHTTPURLResponse *)response).statusCode, (unsigned long)serverConfigResponse.count, error ? @"NO" : @"YES");
         }
 
         if (!error)
@@ -606,7 +627,7 @@ static dispatch_once_t onceToken;
 
         if (error)
         {
-            CLY_LOG_E(@"Error while fetching server configs: %@", error.description);
+            CLY_LOG_D(@"[CountlyServerConfig] fetchServerConfig response, behavior settings fetch failed, statusCode: [%ld], error: [%@]", (long)((NSHTTPURLResponse *)response).statusCode, error.localizedDescription);
         }
 
         if (serverConfigResponse[kRConfig] != nil)
@@ -615,6 +636,11 @@ static dispatch_once_t onceToken;
             [self mergeBehaviorSettings:persistentBehaviorSettings withConfig:serverConfigResponse];
             [self populateServerConfig:persistentBehaviorSettings withConfig:config];
             [CountlyPersistency.sharedInstance storeServerConfig:persistentBehaviorSettings];
+            CLY_LOG_D(@"[CountlyServerConfig] fetchServerConfig response, fetched behavior settings were merged and persisted, storedKeyCount: [%lu]", (unsigned long)persistentBehaviorSettings.count);
+        }
+        else
+        {
+            CLY_LOG_D(@"[CountlyServerConfig] fetchServerConfig response, no config section in the response, previously stored behavior settings will be kept");
         }
     };
     // Set default values
@@ -639,6 +665,7 @@ static dispatch_once_t onceToken;
 
     if (queryString.length > kCountlyGETRequestMaxLength || CountlyConnectionManager.sharedInstance.alwaysUsePOST)
     {
+        CLY_LOG_D(@"%s behavior settings request prepared as POST, queryLength: [%lu]", __FUNCTION__, (unsigned long)queryString.length);
         NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:URL]];
         request.HTTPMethod = @"POST";
         request.HTTPBody = [queryString cly_dataUTF8];
@@ -646,12 +673,11 @@ static dispatch_once_t onceToken;
     }
     else
     {
+        CLY_LOG_D(@"%s behavior settings request prepared as GET, queryLength: [%lu]", __FUNCTION__, (unsigned long)queryString.length);
         [URL appendFormat:@"?%@", queryString];
         NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:URL]];
         return request;
     }
-
-    CLY_LOG_D(@"serverConfigRequest URL :%@", URL);
 }
 
 - (void)setDefaultValues {
@@ -694,9 +720,12 @@ static dispatch_once_t onceToken;
     _eventSegmentationFilterMap = @{};
     _eventSegmentationFilterIsWhitelist = NO;
     _journeyTriggerEvents = [NSSet set];
+
+    CLY_LOG_D(@"%s behavior settings reset to built in SDK defaults", __FUNCTION__);
 }
 
 - (void)disableSDKBehaviourSettings {
+    CLY_LOG_I(@"%s behavior settings updates are being disabled", __FUNCTION__);
     _serverConfigUpdatesDisabled = YES;
 }
 
@@ -982,6 +1011,8 @@ static dispatch_once_t onceToken;
         if (jte)
             [dictionary removeObjectForKey:kRJourneyTriggerEvents];
     }
+
+    CLY_LOG_D(@"%s resolved listing filters, eventFilterCount: [%lu], eventFilterIsWhitelist: [%@], userPropertyFilterCount: [%lu], userPropertyFilterIsWhitelist: [%@], segmentationFilterCount: [%lu], segmentationFilterIsWhitelist: [%@], eventSegmentationFilteredEventCount: [%lu], eventSegmentationFilterIsWhitelist: [%@], journeyTriggerEventCount: [%lu]", __FUNCTION__, (unsigned long)_eventFilterSet.count, _eventFilterIsWhitelist ? @"YES" : @"NO", (unsigned long)_userPropertyFilterSet.count, _userPropertyFilterIsWhitelist ? @"YES" : @"NO", (unsigned long)_segmentationFilterSet.count, _segmentationFilterIsWhitelist ? @"YES" : @"NO", (unsigned long)_eventSegmentationFilterMap.count, _eventSegmentationFilterIsWhitelist ? @"YES" : @"NO", (unsigned long)_journeyTriggerEvents.count);
 }
 
 - (BOOL)shouldRecordEvent:(NSString *)eventKey
@@ -1013,11 +1044,11 @@ static dispatch_once_t onceToken;
     NSMutableDictionary *result = [segmentation mutableCopy];
     for (NSString *key in segmentation.allKeys) {
         if (hasGlobalFilter && _segmentationFilterIsWhitelist != [_segmentationFilterSet containsObject:key]) {
-            CLY_LOG_D(@"Filtering out segmentation key '%@' by global segmentation filter", key);
+            CLY_LOG_V(@"%s dropping segmentation key by the global segmentation filter, key: [%@], filterIsWhitelist: [%@]", __FUNCTION__, key, _segmentationFilterIsWhitelist ? @"YES" : @"NO");
             [result removeObjectForKey:key];
         }
         else if (hasEventFilter && _eventSegmentationFilterIsWhitelist != [eventFilter containsObject:key]) {
-            CLY_LOG_D(@"Filtering out segmentation key '%@' for event '%@' by event segmentation filter", key, eventKey);
+            CLY_LOG_V(@"%s dropping segmentation key by the event level segmentation filter, key: [%@], eventKey: [%@]", __FUNCTION__, key, eventKey);
             [result removeObjectForKey:key];
         }
     }

@@ -79,7 +79,7 @@
                              height];
     [self.webView evaluateJavaScript:postMessage completionHandler:^(id result, NSError *err) {
         if (err != nil) {
-            CLY_LOG_E(@"%s updateWindowSize, %@", __FUNCTION__, err);
+            CLY_LOG_E(@"%s posting the resize message to the page failed, error: [%@], domain: [%@], code: [%ld]", __FUNCTION__, err.localizedDescription, err.domain, (long)err.code);
         }
     }];
 }

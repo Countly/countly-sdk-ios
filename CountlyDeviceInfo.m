@@ -98,7 +98,11 @@ static dispatch_once_t onceToken;
 
 - (void)initializeDeviceID:(NSString *)deviceID
 {
+    CLY_LOG_D(@"%s device ID will be initialized, providedLength: [%lu]", __FUNCTION__, (unsigned long)deviceID.length);
+    CLY_LOG_D(@"%s provided device ID value detail, deviceID: [%@]", __FUNCTION__, deviceID);
+
     self.deviceID = [self ensafeDeviceID:deviceID];
+    CLY_LOG_D(@"%s resolved device ID value detail, deviceID: [%@]", __FUNCTION__, self.deviceID);
 
     [CountlyPersistency.sharedInstance storeDeviceID:self.deviceID];
 }
@@ -139,7 +143,7 @@ static dispatch_once_t onceToken;
     if ([deviceIDType isEqual:CLYDeviceIDTypeTemporary])
         return CLYDeviceIDTypeValueTemporary;
 
-    CLY_LOG_E(@"Device ID type is not one of the defined types.");
+    CLY_LOG_D(@"%s device ID type is not one of the defined types, type: [%@]", __FUNCTION__, deviceIDType);
 
     return (CLYDeviceIDTypeValue)-1;
 }
@@ -350,7 +354,7 @@ static dispatch_once_t onceToken;
     }
     @catch (NSException *exception)
     {
-        CLY_LOG_W(@"%s, failed to resolve theme mode: %@", __FUNCTION__, exception);
+        CLY_LOG_E(@"%s failed to resolve theme mode, exception: [%@]", __FUNCTION__, exception.reason);
     }
 #endif
     return nil;
@@ -404,6 +408,9 @@ static dispatch_once_t onceToken;
 
     [metricsDictionary addEntriesFromDictionary:CountlyDeviceInfo.sharedInstance.customMetrics];
 
+    CLY_LOG_D(@"%s metrics collected, keys: [%@], count: [%lu]", __FUNCTION__, metricsDictionary.allKeys, (unsigned long)metricsDictionary.count);
+    CLY_LOG_D(@"%s collected metrics dictionary value detail, metrics: [%@]", __FUNCTION__, metricsDictionary);
+
     return metricsDictionary;
 }
 
@@ -456,7 +463,7 @@ static dispatch_once_t onceToken;
     }
     @catch (NSException *exception)
     {
-        CLY_LOG_W(@"%s, Connection type can not be retrieved, got exception: %@", __FUNCTION__, exception);
+        CLY_LOG_D(@"%s connection type can not be retrieved, exception: [%@]", __FUNCTION__, exception.reason);
     }
 
     return connType;
@@ -589,7 +596,8 @@ static dispatch_once_t onceToken;
 
 - (void)resetInstance
 {
-  CLY_LOG_I(@"%s", __FUNCTION__);
+    CLY_LOG_I(@"%s device info instance will be reset", __FUNCTION__);
+
     self.deviceID = nil;
     onceToken = 0;
     s_sharedInstance = nil;

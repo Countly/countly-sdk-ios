@@ -73,7 +73,7 @@ CLYDeviceIDType const CLYDeviceIDTypeNSUUID     = @"CLYDeviceIDTypeNSUUID";
         
         self.URLSessionConfiguration = NSURLSessionConfiguration.defaultSessionConfiguration;
         
-        self.internalLogLevel = CLYInternalLogLevelVerbose;
+        self.internalLogLevel = CLYInternalLogLevelDebug;
         
         self.enableOrientationTracking = YES;
         self.remoteConfigGlobalCallbacks = NSMutableArray.new;
