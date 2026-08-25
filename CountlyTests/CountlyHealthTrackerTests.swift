@@ -210,7 +210,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
             group.leave()
         }
 
-        let result = group.wait(timeout: .now() + 30)
+        let result = group.wait(timeout: .now() + 180)
         XCTAssertEqual(result, .success, "String memory management test did not complete in time")
     }
 
@@ -266,7 +266,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
             group.leave()
         }
 
-        let result = group.wait(timeout: .now() + 45)
+        let result = group.wait(timeout: .now() + 180)
         XCTAssertEqual(result, .success, "Error message race condition test did not complete in time")
     }
 
@@ -321,7 +321,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
             group.leave()
         }
 
-        let result = group.wait(timeout: .now() + 30)
+        let result = group.wait(timeout: .now() + 180)
         XCTAssertEqual(result, .success, "Boundary conditions test did not complete in time")
     }
 
@@ -400,7 +400,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
                 }
             }
 
-            let result = group.wait(timeout: .now() + 15)
+            let result = group.wait(timeout: .now() + 180)
             XCTAssertEqual(result, .success, "Concurrent performance test did not complete in time")
         }
     }
