@@ -249,9 +249,11 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)startAutoViewTracking
 {
-    if (!self.isEnabledOnInitialConfig)
+    // Gated on the resolved 'avt' value (seeded from the developer config, overridable by the server),
+    // so the server can force-enable automatic view tracking even when the developer did not opt in
+    if (!CountlyServerConfig.sharedInstance.automaticViewTrackingEnabled)
         return;
-    
+
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
     
@@ -274,15 +276,25 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)setIsAutoViewTrackingActive:(BOOL)isAutoViewTrackingActive
 {
-    if (!self.isEnabledOnInitialConfig)
-        return;
-    
-    if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
-        return;
+    // Only the enabling transition is gated. Enabling needs the resolved 'avt' value (seeded from the
+    // developer config, overridable by the server) and view tracking consent, so a server or consent
+    // driven disable can not be undone by the developer setter while automatic views would not be
+    // recorded anyway. Disabling is always allowed, so a server force-enabled tracker can be turned off
+    // and a consent revocation (which flips consent before calling 'stopAutoViewTracking') actually
+    // clears the active state instead of leaving it stuck on.
+    if (isAutoViewTrackingActive)
+    {
+        if (!CountlyServerConfig.sharedInstance.automaticViewTrackingEnabled)
+            return;
+
+        if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
+            return;
+    }
+
     if (_isAutoViewTrackingActive != isAutoViewTrackingActive) {
         [self stopAllViewsInternal:nil];
     }
-    
+
     _isAutoViewTrackingActive = isAutoViewTrackingActive;
 }
 
@@ -691,7 +703,11 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 {
     if (!self.isAutoViewTrackingActive)
         return;
-    
+
+    // Checked per view appearance so a runtime 'avt' = false from the server takes effect immediately
+    if (!CountlyServerConfig.sharedInstance.automaticViewTrackingEnabled)
+        return;
+
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
     
@@ -753,7 +769,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 #pragma mark - Public function for application state
 
 - (void)applicationWillEnterForeground {
-#if (TARGET_OS_IOS  || TARGET_OS_VISION || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     if (!self.isAutoViewTrackingActive && self.isManualViewRestartActive) {
         [self startStoppedViewsInternal];
     }
@@ -764,7 +780,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 #endif
 }
 - (void)applicationDidEnterBackground {
-#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         [self stopCurrentView];
     }

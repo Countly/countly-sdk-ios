@@ -12,6 +12,9 @@
 @property (nonatomic) BOOL trackingEnabled;
 @property (nonatomic) BOOL networkingEnabled;
 @property (nonatomic) BOOL crashReportingEnabled;
+@property (nonatomic) BOOL automaticSessionTrackingEnabled;
+@property (nonatomic) BOOL automaticViewTrackingEnabled;
+@property (nonatomic) BOOL automaticCrashReportingEnabled;
 @property (nonatomic) BOOL loggingEnabled;
 @property (nonatomic) BOOL customEventTrackingEnabled;
 @property (nonatomic) BOOL viewTrackingEnabled;
@@ -53,6 +56,7 @@
 @property (nonatomic) NSDictionary<NSString *, NSSet<NSString *> *> *eventSegmentationFilterMap;
 @property (nonatomic) BOOL eventSegmentationFilterIsWhitelist;
 @property (nonatomic) NSSet<NSString *> *journeyTriggerEvents;
+@property (nonatomic) NSSet<NSString *> *journeyTriggerViews;
 
 @property (nonatomic) NSInteger version;
 @property (nonatomic) long long timestamp;
@@ -91,6 +95,9 @@ NSString *const kRContentZoneInterval = @"czi";
 NSString *const kRConsentRequired = @"cr";
 NSString *const kRDropOldRequestTime = @"dort";
 NSString *const kRCrashReporting = @"crt";
+NSString *const kRAutomaticSessionTracking = @"ast";
+NSString *const kRAutomaticViewTracking = @"avt";
+NSString *const kRAutomaticCrashReporting = @"acr";
 NSString *const kRServerConfigUpdateInterval = @"scui";
 NSString *const kRBOMAcceptedTimeout = @"bom_at";
 NSString *const kRBOMRQPercentage = @"bom_rqp";
@@ -107,6 +114,7 @@ NSString *const kRSegmentationWhitelist = @"sw";
 NSString *const kREventSegmentationBlacklist = @"esb";
 NSString *const kREventSegmentationWhitelist = @"esw";
 NSString *const kRJourneyTriggerEvents = @"jte";
+NSString *const kRJourneyTriggerViews = @"jtv";
 
 // sdk log keys
 NSString *const kRLogGathering = @"lg"; // a top level key, siblings of c, v and t
@@ -168,6 +176,20 @@ static dispatch_once_t onceToken;
 
 - (void)retrieveServerConfigFromStorage:(CountlyConfig *)config
 {
+    // Seed the automatic tracking flags from the developer config: it is the lowest-precedence layer.
+    // The SBS layers override them below (provided -> stored here, server in fetchServerConfig), giving
+    // the precedence: server SBS > stored SBS > provided SBS > developer config. When the server is
+    // silent, the resolved value equals the developer config, so behavior stays drop-in.
+    _automaticSessionTrackingEnabled = !config.manualSessionHandling;
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    // CLYAutoViewTracking is deprecated but still supported, so the seed has to keep honouring it
+    _automaticViewTrackingEnabled = config.enableAutomaticViewTracking || [config.features containsObject:CLYAutoViewTracking];
+#pragma clang diagnostic pop
+#endif
+    _automaticCrashReportingEnabled = [config.features containsObject:CLYCrashReporting];
+
     NSMutableDictionary *persistentBehaviorSettings = [CountlyPersistency.sharedInstance retrieveServerConfig];
     if (persistentBehaviorSettings.count == 0 && config.sdkBehaviorSettings)
     {
@@ -367,6 +389,9 @@ static dispatch_once_t onceToken;
         kRReqQueueSize,
         kREventQueueSize,
         kRCrashReporting,
+        kRAutomaticSessionTracking,
+        kRAutomaticViewTracking,
+        kRAutomaticCrashReporting,
         kRSessionTracking,
         kRLogging,
         kRLimitKeyLength,
@@ -398,7 +423,8 @@ static dispatch_once_t onceToken;
         kRSegmentationWhitelist,
         kREventSegmentationBlacklist,
         kREventSegmentationWhitelist,
-        kRJourneyTriggerEvents
+        kRJourneyTriggerEvents,
+        kRJourneyTriggerViews
     ]];
 
     // Remove unknown keys
@@ -417,6 +443,9 @@ static dispatch_once_t onceToken;
     [self setIntegerProperty:&_requestQueueSize fromDictionary:dictionary key:kRReqQueueSize logString:logString];
     [self setIntegerProperty:&_eventQueueSize fromDictionary:dictionary key:kREventQueueSize logString:logString];
     [self setBoolProperty:&_crashReportingEnabled fromDictionary:dictionary key:kRCrashReporting logString:logString];
+    [self setBoolProperty:&_automaticSessionTrackingEnabled fromDictionary:dictionary key:kRAutomaticSessionTracking logString:logString];
+    [self setBoolProperty:&_automaticViewTrackingEnabled fromDictionary:dictionary key:kRAutomaticViewTracking logString:logString];
+    [self setBoolProperty:&_automaticCrashReportingEnabled fromDictionary:dictionary key:kRAutomaticCrashReporting logString:logString];
     [self setBoolProperty:&_sessionTrackingEnabled fromDictionary:dictionary key:kRSessionTracking logString:logString];
     [self setBoolProperty:&_loggingEnabled fromDictionary:dictionary key:kRLogging logString:logString];
     [self setIntegerProperty:&_limitKeyLength fromDictionary:dictionary key:kRLimitKeyLength logString:logString];
@@ -555,6 +584,44 @@ static dispatch_once_t onceToken;
     if(_backoffMechanism && config.disableBackoffMechanism){
         _backoffMechanism = NO;
     }
+
+    // Skipped while init is still running: 'shouldUsePLCrashReporter' is not assigned until later in
+    // 'startWithConfig', so installing the crash handler here would take the default handler path and then
+    // block PLCrashReporter from ever starting. 'startWithConfig' calls this itself once init is complete.
+    if (CountlyCommon.sharedInstance.hasFinishedInit)
+    {
+        [self applyAutomaticTrackingState];
+    }
+}
+
+// Brings automatic view tracking and automatic crash reporting in line with the resolved 'avt' and 'acr'
+// values. Safe to call repeatedly: the view tracking calls act only on an actual state change, and
+// 'startCrashReporting' is idempotent and re-checks 'acr' and consent itself.
+- (void)applyAutomaticTrackingState
+{
+// The platform guard matches where automatic view tracking is actually implemented, which is narrower
+// than what the header declares
+#if (TARGET_OS_IOS || TARGET_OS_TV)
+    BOOL shouldAutoTrackViews = _viewTrackingEnabled && _automaticViewTrackingEnabled;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        BOOL isActive = CountlyViewTrackingInternal.sharedInstance.isAutoViewTrackingActive;
+        if (shouldAutoTrackViews && !isActive)
+        {
+            [CountlyViewTrackingInternal.sharedInstance startAutoViewTracking];
+        }
+        else if (!shouldAutoTrackViews && isActive)
+        {
+            [CountlyViewTrackingInternal.sharedInstance stopAutoViewTracking];
+        }
+    });
+#endif
+
+    // A runtime 'acr' = false does not uninstall the handler; it no-ops through its own runtime check
+    // instead, so a later 'acr' = true does not have to reinstall it.
+    if (_crashReportingEnabled && _automaticCrashReportingEnabled)
+    {
+        [CountlyCrashReporter.sharedInstance startCrashReporting];
+    }
 }
 
 - (void)fetchServerConfigTimer:(NSTimer *)timer
@@ -683,6 +750,9 @@ static dispatch_once_t onceToken;
     _trackingEnabled = YES;
     _networkingEnabled = YES;
     _crashReportingEnabled = YES;
+    _automaticSessionTrackingEnabled = YES;
+    _automaticViewTrackingEnabled = NO;
+    _automaticCrashReportingEnabled = NO;
     _customEventTrackingEnabled = YES;
     _enterContentZone = NO;
     _locationTracking = YES;
@@ -719,6 +789,7 @@ static dispatch_once_t onceToken;
     _eventSegmentationFilterMap = @{};
     _eventSegmentationFilterIsWhitelist = NO;
     _journeyTriggerEvents = [NSSet set];
+    _journeyTriggerViews = [NSSet set];
 }
 
 - (void)disableSDKBehaviourSettings {
@@ -753,6 +824,21 @@ static dispatch_once_t onceToken;
 - (BOOL)crashReportingEnabled
 {
     return _crashReportingEnabled;
+}
+
+- (BOOL)automaticSessionTrackingEnabled
+{
+    return _automaticSessionTrackingEnabled;
+}
+
+- (BOOL)automaticViewTrackingEnabled
+{
+    return _automaticViewTrackingEnabled;
+}
+
+- (BOOL)automaticCrashReportingEnabled
+{
+    return _automaticCrashReportingEnabled;
 }
 
 - (BOOL)sessionTrackingEnabled
@@ -1007,6 +1093,16 @@ static dispatch_once_t onceToken;
         if (jte)
             [dictionary removeObjectForKey:kRJourneyTriggerEvents];
     }
+
+    // Journey trigger views (jtv)
+    NSArray *jtv = dictionary[kRJourneyTriggerViews];
+    if ([jtv isKindOfClass:NSArray.class]) {
+        _journeyTriggerViews = [NSSet setWithArray:jtv];
+        [logString appendFormat:@"%@: %@, ", kRJourneyTriggerViews, jtv];
+    } else {
+        if (jtv)
+            [dictionary removeObjectForKey:kRJourneyTriggerViews];
+    }
 }
 
 - (BOOL)shouldRecordEvent:(NSString *)eventKey
@@ -1053,6 +1149,11 @@ static dispatch_once_t onceToken;
 - (BOOL)isJourneyTriggerEvent:(NSString *)eventKey
 {
     return [_journeyTriggerEvents containsObject:eventKey];
+}
+
+- (BOOL)isJourneyTriggerView:(NSString *)viewName
+{
+    return [_journeyTriggerViews containsObject:viewName];
 }
 
 @end
