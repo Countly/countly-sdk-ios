@@ -175,10 +175,12 @@ void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...)
     
     char logLevelPrefixesShort[] = {'n', 'e', 'w', 'i', 'd', 'v'};
 
-    logString = [NSString stringWithFormat:@"[%@] %@", logLevelPrefixes[level], logString];
-    
-    // above the gates below on purpose, gathering has to work while console logging is off
+    // above the gates below on purpose, gathering has to work while console logging is off. Also
+    // before the level prefix is added: a gathered line carries its level in its own field, and the
+    // dashboard renders that, so a prefix here would only be the same level a second time
     [CountlyCommon.sharedInstance captureSdkLogLine:logString level:logLevelPrefixesShort[level]];
+
+    logString = [NSString stringWithFormat:@"[%@] %@", logLevelPrefixes[level], logString];
     
     if (!CountlyCommon.sharedInstance.enableDebug && !CountlyCommon.sharedInstance.loggerDelegate)
         return;

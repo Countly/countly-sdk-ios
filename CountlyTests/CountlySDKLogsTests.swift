@@ -341,6 +341,28 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
         XCTAssertTrue(held.allSatisfy { !$0.contains("sdk_logs") }, "held a line describing the upload: \(held)")
     }
 
+    func testLogGathering_realLogLinesCarryNoLevelPrefixInTheMessage() throws {
+        startSDK()
+        common.updateLogGatheringState(true, levels: allLevels, batch: defaultBatchSize, lgid: "gather_prefix")
+        clearBuffer()
+
+        // real lines, through CountlyInternalLog, not the capture funnel directly
+        Countly.sharedInstance().recordEvent("prefix_probe")
+        Countly.sharedInstance().recordView("prefix_probe_view")
+
+        let messages = bufferedLines.compactMap { $0["m"] as? String }
+        XCTAssertFalse(messages.isEmpty, "the SDK logged nothing to check")
+
+        // the level travels in the line's own field, and the dashboard renders it from there, so a
+        // prefix in the message would be the same level a second time
+        let prefixes = ["[Error]", "[Warning]", "[Info]", "[Debug]", "[Verbose]"]
+        let offenders = messages.filter { message in prefixes.contains { message.hasPrefix($0) } }
+        XCTAssertTrue(offenders.isEmpty, "level prefix duplicated into the message: \(offenders.prefix(3))")
+
+        XCTAssertTrue(bufferedLines.allSatisfy { allLevels.contains(($0["l"] as? String) ?? "") },
+                      "and every line still carries its level in its own field")
+    }
+
     func testLogGathering_capturedLineCarryingTheTransportMarkerIsIgnored() throws {
         common.updateLogGatheringState(true, levels: allLevels, batch: defaultBatchSize, lgid: "gather_marker")
         clearBuffer()
