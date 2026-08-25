@@ -23,8 +23,11 @@ class CountlyBaseTestCase: XCTestCase {
             TestAppActivation.installIfNeeded()
             TestAppActivation.isActive = true
         #endif
-        resetSharedSDKLimits()
+        // Order matters: cleanupState() starts the SDK, which reloads the persisted server
+        // config from the previous test and re-applies any limits it carried, so the reset has
+        // to happen after it rather than before.
         cleanupState()
+        resetSharedSDKLimits()
     }
 
     /// `CountlyConfig.sdkInternalLimits` is a process-wide object, not per-config, so a test

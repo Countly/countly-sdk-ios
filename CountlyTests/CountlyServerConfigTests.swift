@@ -295,7 +295,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
         
         // hc 1 because server returned networking not getting applied before hc sent
-        validateCounts(tracker.counts, hc: 1, fc: 0, rc: 0, cc: 0, sc: 1)
+        validateCounts(tracker, hc: 1, fc: 0, rc: 0, cc: 0, sc: 1)
     }
     
     /**
@@ -339,7 +339,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         TestUtils.validateRequest(["consent": consents], 0)
         TestUtils.validateRequest(["location": ""], 1)
 
-        validateCounts(tracker.counts, hc: 1, fc: 0, rc: 0, cc: 0, sc: 1)
+        validateCounts(tracker, hc: 1, fc: 0, rc: 0, cc: 0, sc: 1)
     }
     
     /**
@@ -409,7 +409,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             "platform": CountlyDeviceInfo.osName()!
         ], 7, 8, 1, 2, from: sent)
 
-        validateCounts(tracker.counts, hc: 1, fc: 1, rc: 1, cc: 2, sc: 1)
+        validateCounts(tracker, hc: 1, fc: 1, rc: 1, cc: 2, sc: 1)
     }
     #endif
 
@@ -619,7 +619,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             XCTAssertEqual(8, sent.count)
             XCTAssertFalse(containsEventWithKey(sent, "test_event"))
             XCTAssertTrue(TestUtils.getCurrentEQ()!.isEmpty)
-            validateCounts(tracker.counts, hc: 1, fc: 1, rc: 1, cc: 2, sc: 1)
+            validateCounts(tracker, hc: 1, fc: 1, rc: 1, cc: 2, sc: 1)
         }
     
     /**
@@ -648,7 +648,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             XCTAssertTrue(sent[0].contains("begin_session"))
             try TestUtils.validateEventInRQ("test_event", [:], 2, 7, 0, 2, from: sent)
 
-            validateCounts(tracker.counts, hc: 1, fc: 1, rc: 1, cc: 2, sc: 1)
+            validateCounts(tracker, hc: 1, fc: 1, rc: 1, cc: 2, sc: 1)
         }
         
         /**
@@ -689,7 +689,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             TestUtils.validateRequest(["location": "33.689500,139.691700"], 2, from: sent)
 
 
-            validateCounts(tracker.counts, hc: 1, fc: 1, rc: 1, cc: 2, sc: 1)
+            validateCounts(tracker, hc: 1, fc: 1, rc: 1, cc: 2, sc: 1)
         }
         
     #endif
@@ -779,7 +779,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             }
         }
         
-        validateCounts(tracker.counts, hc: 1, fc: 0, rc: 0, cc: 0, sc: 1)
+        validateCounts(tracker, hc: 1, fc: 0, rc: 0, cc: 0, sc: 1)
     }
     // MARK: - Helper Methods
     
@@ -1006,6 +1006,18 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         return tracker
     }
     
+    /// Waits for the tracker to reach the expected request counts before asserting.
+    ///
+    /// These counts are produced by asynchronous requests, so sampling `tracker.counts` the
+    /// instant the flow returns is a race: it passes on an idle machine and fails on a busy
+    /// one, which is why a different test in this family failed on each CI cell. Polling first
+    /// costs nothing when the counts are already there.
+    private func validateCounts(_ tracker: CountTracker, hc: Int, fc: Int, rc: Int, cc: Int, sc: Int) {
+        let expected = [hc, fc, rc, cc, sc]
+        TestUtils.waitUntil("request counts \(expected)") { tracker.counts == expected }
+        validateCounts(tracker, hc: hc, fc: fc, rc: rc, cc: cc, sc: sc)
+    }
+
     private func validateCounts(_ counts: [Int], hc: Int, fc: Int, rc: Int, cc: Int, sc: Int) {
         XCTAssertEqual(hc, counts[0], "Health check count mismatch. Expected: \(hc), Got: \(counts[0])")
         XCTAssertEqual(fc, counts[1], "Feedback request count mismatch. Expected: \(fc), Got: \(counts[1])")
@@ -1142,7 +1154,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             "platform": CountlyDeviceInfo.osName()!
         ], 8, 9, 1, 2, from: sent)
 
-        validateCounts(tracker.counts, hc: hc, fc: fc, rc: rc, cc: cc, sc: scc)
+        validateCounts(tracker, hc: hc, fc: fc, rc: rc, cc: cc, sc: scc)
     }
 
     private func setServerConfig(_ serverConfig: [String: Any]){
@@ -1694,7 +1706,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         // Views should still work (reserved events bypass custom event filters)
         XCTAssertTrue(containsEventWithKey(TestUtils.getCurrentRQ()!, "[CLY]_view"))
 
-        validateCounts(tracker.counts, hc: 1, fc: 0, rc: 0, cc: 0, sc: 1)
+        validateCounts(tracker, hc: 1, fc: 0, rc: 0, cc: 0, sc: 1)
     }
     #endif
 }

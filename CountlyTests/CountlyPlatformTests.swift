@@ -237,7 +237,14 @@ class CountlyPlatformLifecycleTests: CountlyBaseTestCase {
 
     /// Starts the SDK with automatic session handling and a live session, so lifecycle
     /// notifications have something observable to act on.
+    ///
+    /// The assertions below count `begin_session` / `end_session` occurrences in the whole
+    /// request queue, so the queue has to start empty. `cleanupState()` in setUp is not enough
+    /// on its own: classes that start the SDK once per class rather than per test can leave
+    /// requests behind, which showed up as "expected 1 session, got 2". halt(true) here runs
+    /// while the SDK is live, so it genuinely wipes the persisted queue.
     private func startWithAutomaticSession() {
+        Countly.sharedInstance().halt(true)
         let config = TestUtils.createBaseConfig()
         config.requiresConsent = false
         Countly.sharedInstance().start(with: config)

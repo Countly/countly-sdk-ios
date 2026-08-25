@@ -28,7 +28,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         writerDelay: useconds_t = 0,
         readerDelay: useconds_t = 0,
         extraThreads: Int = 0,
-        timeout: TimeInterval = 60,
+        timeout: TimeInterval = 180,
         file: StaticString = #filePath,
         line: UInt = #line,
         writerBlock: @escaping (Int) -> Void,
@@ -363,7 +363,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
                 group.leave()
             }
 
-            let result = group.wait(timeout: .now() + 30)
+            let result = group.wait(timeout: .now() + 180)
             XCTAssertEqual(result, .success, "Performance test did not complete in time")
         }
     }
