@@ -1,14 +1,6 @@
 ## XX.XX.XX
 * Added support for SDK behavior settings that control the SDK's automatic session tracking, automatic view tracking, automatic crash reporting, and Journey Trigger Views.
-
-* Improved internal logging. Logs now name the class and function, carry the relevant parameter values, and use more accurate log levels.
-* Changed the default log level from verbose to debug.
-* Improved logging performance by not evaluating log arguments when the level is inactive.
-
-* Fixed a crash when recording a pending crash report after a crash.
-* Fixed a deadlock while handling a crash, which could lose the crash report.
-* Fixed a crash when a notification from another push provider was received.
-* Fixed a crash when performance monitoring traces were used from multiple threads.
+* Improved internal logging and changed the default log level from verbose to debug.
 
 ## 26.1.4
 * Added support for reporting the app's current theme (light or dark) when presenting feedback widgets, rating widgets, and content, so they are displayed in matching conditions.
