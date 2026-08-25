@@ -276,18 +276,25 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)setIsAutoViewTrackingActive:(BOOL)isAutoViewTrackingActive
 {
-    // Allowed when the developer enabled automatic view tracking, when the resolved 'avt' value enables it,
-    // or when it is currently active (so a server force-enabled tracker can still be turned off)
-    BOOL isAllowed = self.isEnabledOnInitialConfig || CountlyServerConfig.sharedInstance.automaticViewTrackingEnabled || _isAutoViewTrackingActive;
-    if (!isAllowed)
-        return;
+    // Only the enabling transition is gated. Enabling needs the resolved 'avt' value (seeded from the
+    // developer config, overridable by the server) and view tracking consent, so a server or consent
+    // driven disable can not be undone by the developer setter while automatic views would not be
+    // recorded anyway. Disabling is always allowed, so a server force-enabled tracker can be turned off
+    // and a consent revocation (which flips consent before calling 'stopAutoViewTracking') actually
+    // clears the active state instead of leaving it stuck on.
+    if (isAutoViewTrackingActive)
+    {
+        if (!CountlyServerConfig.sharedInstance.automaticViewTrackingEnabled)
+            return;
 
-    if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
-        return;
+        if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
+            return;
+    }
+
     if (_isAutoViewTrackingActive != isAutoViewTrackingActive) {
         [self stopAllViewsInternal:nil];
     }
-    
+
     _isAutoViewTrackingActive = isAutoViewTrackingActive;
 }
 

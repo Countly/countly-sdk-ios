@@ -1769,6 +1769,43 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         let viewEvent = eq.first { $0.key == "[CLY]_view" }
         XCTAssertNotNil(viewEvent, "manual startView should still record when avt is false")
         XCTAssertEqual("manual_view", viewEvent?.segmentation["name"] as? String)
+
+        // The deprecated developer setter must not undo a server disable: automatic views would not be
+        // recorded anyway, so leaving the flag on would only misreport the state
+        Countly.sharedInstance().isAutoViewTrackingActive = true
+        XCTAssertFalse(CountlyViewTrackingInternal.sharedInstance().isAutoViewTrackingActive,
+                       "the developer setter should not re-enable automatic view tracking while the server keeps avt false")
+    }
+
+    /**
+     * Tests that revoking view tracking consent clears the automatic view tracking active state,
+     * even for a tracker the server force-enabled. Verifies that:
+     * 1. Automatic view tracking becomes active once view tracking consent is given
+     * 2. Revoking the consent turns it off (the consent flag flips before 'stopAutoViewTracking' runs)
+     * 3. Giving the consent back re-activates it
+     */
+    func test_avt_consentRevocationClearsActiveState() {
+        setServerConfig(ServerConfigBuilder().automaticViewTracking(true).buildJson())
+        let config = TestUtils.createBaseConfig()
+        config.manualSessionHandling = true
+        config.requiresConsent = true
+        Countly.sharedInstance().start(with: config)
+
+        XCTAssertEqual(true, CountlyServerConfig.sharedInstance()?.automaticViewTrackingEnabled())
+        XCTAssertFalse(CountlyViewTrackingInternal.sharedInstance().isAutoViewTrackingActive,
+                       "automatic view tracking should not be active before view tracking consent is given")
+
+        Countly.sharedInstance().giveConsent(forFeature: CLYConsent.viewTracking)
+        XCTAssertTrue(CountlyViewTrackingInternal.sharedInstance().isAutoViewTrackingActive,
+                      "automatic view tracking should start once view tracking consent is given")
+
+        Countly.sharedInstance().cancelConsent(forFeature: CLYConsent.viewTracking)
+        XCTAssertFalse(CountlyViewTrackingInternal.sharedInstance().isAutoViewTrackingActive,
+                       "automatic view tracking should stop when view tracking consent is revoked")
+
+        Countly.sharedInstance().giveConsent(forFeature: CLYConsent.viewTracking)
+        XCTAssertTrue(CountlyViewTrackingInternal.sharedInstance().isAutoViewTrackingActive,
+                      "automatic view tracking should start again when view tracking consent is given back")
     }
 
     /**

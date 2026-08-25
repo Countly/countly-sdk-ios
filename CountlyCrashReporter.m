@@ -169,6 +169,11 @@ typedef NS_ENUM(NSInteger, CLYCrashHandlerInstallation)
 
 - (void)stopCrashReporting
 {
+    // Cleared before the installation check: breadcrumbs are gathered under crash consent alone, so they
+    // can exist even when no handler was ever installed (for example with 'acr' resolved to false), and a
+    // consent revocation has to drop them either way
+    [self clearCrashLogs];
+
     if (self.crashHandlerInstallation == CLYCrashHandlerInstallationNone)
         return;
 
@@ -186,8 +191,6 @@ typedef NS_ENUM(NSInteger, CLYCrashHandlerInstallation)
     }
 
     self.crashHandlerInstallation = CLYCrashHandlerInstallationNone;
-
-    [self clearCrashLogs];
 }
 
 - (void)uninstallDefaultCrashHandlers
