@@ -84,6 +84,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         TestUtils.waitUntil("the consent and location requests to be queued") {
             CountlyPersistency.sharedInstance().remainingRequestCount() == 2
         }
+        XCTAssertEqual(2, CountlyPersistency.sharedInstance().remainingRequestCount())
     }
     
     func test_203_CNR_A() {

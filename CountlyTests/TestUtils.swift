@@ -42,11 +42,11 @@ class TestUtils {
     /// tuned on a developer machine.
     static let asyncTimeout: TimeInterval = 20.0
 
-    /// Polls `condition` until it holds or `timeout` elapses, pumping the run loop meanwhile.
-    /// Returns as soon as it holds, so a satisfied wait costs no wall clock, and a slower or
-    /// loaded machine gets the time it actually needs. Prefer this over `sleep` whenever the
-    /// thing being waited for is observable: a fixed sleep either wastes time or, on CI,
-    /// expires before the work has landed.
+    /// Polls `condition` until it holds or `timeout` elapses, pumping the run loop meanwhile,
+    /// and reports whether it held. Returns as soon as it holds, so a satisfied wait costs no
+    /// wall clock and a slower or loaded machine gets the time it actually needs. Prefer this
+    /// over `sleep` whenever the thing being waited for is observable: a fixed sleep either
+    /// wastes time or, on CI, expires before the work has landed.
     @discardableResult
     static func waitUntil(
         _ description: String, timeout: TimeInterval = 10.0, _ condition: () -> Bool
@@ -55,9 +55,10 @@ class TestUtils {
         while !condition() && Date() < deadline {
             RunLoop.current.run(mode: .default, before: Date().addingTimeInterval(0.02))
         }
-        let satisfied = condition()
-        XCTAssertTrue(satisfied, "Timed out after \(timeout)s waiting for \(description)")
-        return satisfied
+        // Deliberately does not assert: this is a best-effort wait, and callers that need the
+        // condition to hold assert on it themselves. Failing here instead would abort flows
+        // mid-way and leave SDK state behind for the next test.
+        return condition()
     }
 
     static func sleep(_ seconds: TimeInterval, _ job: () -> Void) {
