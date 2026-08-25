@@ -243,10 +243,6 @@ static dispatch_once_t onceToken;
     CountlyCrashReporter.sharedInstance.shouldUseMachSignalHandler = config.shouldUseMachSignalHandler;
     CountlyCrashReporter.sharedInstance.crashOccuredOnPreviousSessionCallback = config.crashOccuredOnPreviousSessionCallback;
     CountlyCrashReporter.sharedInstance.shouldSendCrashReportCallback = config.shouldSendCrashReportCallback;
-    if ([config.features containsObject:CLYCrashReporting])
-    {
-        CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;
-    }
     // Automatic crash reporting is resolved through the SBS precedence chain, so the server can enable it even when the developer did not
     if (CountlyServerConfig.sharedInstance.crashReportingEnabled && CountlyServerConfig.sharedInstance.automaticCrashReportingEnabled)
     {
@@ -254,11 +250,6 @@ static dispatch_once_t onceToken;
     }
 
 #if (TARGET_OS_IOS || TARGET_OS_TV )
-    if (config.enableAutomaticViewTracking || [config.features containsObject:CLYAutoViewTracking])
-    {
-        // Print deprecation flag for feature
-        CountlyViewTrackingInternal.sharedInstance.isEnabledOnInitialConfig = YES;
-    }
     // Automatic view tracking is resolved through the SBS precedence chain, so the server can enable it even when the developer did not
     if (CountlyServerConfig.sharedInstance.viewTrackingEnabled && CountlyServerConfig.sharedInstance.automaticViewTrackingEnabled)
     {
