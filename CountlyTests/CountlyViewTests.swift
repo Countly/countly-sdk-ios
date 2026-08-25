@@ -785,6 +785,16 @@ class CountlyViewForegroundBackgroundTests: CountlyViewBaseTest {
 
 class CountlyViewBaseTest: CountlyBaseTestCase {
 
+    /// These tests run for up to 20 seconds and then read the *event queue* to inspect the
+    /// views they recorded. `updateSessionPeriod` defaults to 20 s on watchOS (60 s elsewhere),
+    /// so the session timer fired mid-test and flushed the event queue into the request queue,
+    /// leaving nothing to assert on. Push it well past the longest test.
+    override func createBaseConfig() -> CountlyConfig {
+        let config = super.createBaseConfig()
+        config.updateSessionPeriod = 300
+        return config
+    }
+
     /// How far a recorded view duration may sit from the expected whole-second value.
     ///
     /// These durations come from wall-clock timers driven by `DispatchQueue.asyncAfter`, so on a

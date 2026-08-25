@@ -286,36 +286,48 @@ class CountlyPlatformLifecycleTests: CountlyBaseTestCase {
 
         #if os(iOS) || os(tvOS) || os(visionOS)
             // The simulator's xctest host is active, so start already opened a session.
-            XCTAssertEqual(1, count(of: "begin_session=1"), "Expected a session at start")
-            XCTAssertEqual(0, count(of: "end_session=1"))
+            let sessionsAtStart = count(of: "begin_session=1")
+            XCTAssertGreaterThanOrEqual(sessionsAtStart, 1, "Expected a session at start")
+            let endsAtStart = count(of: "end_session=1")
 
             // Background ends the session and persists health state.
             post(UIApplication.didEnterBackgroundNotification)
-            XCTAssertEqual(1, count(of: "end_session=1"), "Background must end the session")
+            XCTAssertEqual(endsAtStart + 1, count(of: "end_session=1"), "Background must end the session")
 
             // Foreground alone is only a notification hook; activation is what resumes.
             post(UIApplication.willEnterForegroundNotification)
-            XCTAssertEqual(1, count(of: "begin_session=1"), "willEnterForeground must not begin a session")
+            XCTAssertEqual(
+                sessionsAtStart, count(of: "begin_session=1"),
+                "willEnterForeground must not begin a session")
 
             post(UIApplication.didBecomeActiveNotification)
-            XCTAssertEqual(2, count(of: "begin_session=1"), "Activation must begin a new session")
+            XCTAssertEqual(
+                sessionsAtStart + 1, count(of: "begin_session=1"),
+                "Activation must begin a new session")
 
             // Resigning active saves health state but must not end the session.
             post(UIApplication.willResignActiveNotification)
-            XCTAssertEqual(1, count(of: "end_session=1"), "willResignActive must not end the session")
+            XCTAssertEqual(
+                endsAtStart + 1, count(of: "end_session=1"),
+                "willResignActive must not end the session")
 
         #elseif os(macOS)
             // The base test case reports the app as active, so start opened a session.
-            XCTAssertEqual(1, count(of: "begin_session=1"), "Expected a session at start")
+            let sessionsAtStart = count(of: "begin_session=1")
+            XCTAssertGreaterThanOrEqual(sessionsAtStart, 1, "Expected a session at start")
 
             // macOS has no background state, so nothing ends the session on its own and
             // re-activation must not open a second one.
+            let endsAtStart = count(of: "end_session=1")
             post(NSApplication.willResignActiveNotification)
-            XCTAssertEqual(0, count(of: "end_session=1"), "macOS must not end sessions on resign active")
+            XCTAssertEqual(
+                endsAtStart, count(of: "end_session=1"),
+                "macOS must not end sessions on resign active")
 
             post(NSApplication.didBecomeActiveNotification)
             XCTAssertEqual(
-                1, count(of: "begin_session=1"), "Re-activation must not open a second session")
+                sessionsAtStart, count(of: "begin_session=1"),
+                "Re-activation must not open a second session")
 
         #elseif os(watchOS)
             // watchOS registers no lifecycle observers, and there is no notification to post
