@@ -70,6 +70,9 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
                 dismissBlock:(void(^ __nullable)(void))dismissBlock {
     self.isFeedbackWidget = [self isFeedbackWidgetURL:url];
     BOOL pinnedToPortrait = !self.isFeedbackWidget && CountlyContentBuilderInternal.sharedInstance.disableRotation;
+    // Host and path only: the content and widget URL query strings carry the app key and the device ID.
+    CLY_LOG_I(@"%s web view presentation requested, host: [%@], path: [%@], isFeedbackWidget: [%@], pinnedToPortrait: [%@], appearCallbackProvided: [%@], dismissCallbackProvided: [%@]", __FUNCTION__, url.host, url.path, self.isFeedbackWidget ? @"YES" : @"NO", pinnedToPortrait ? @"YES" : @"NO", (appearBlock != nil) ? @"YES" : @"NO", (dismissBlock != nil) ? @"YES" : @"NO");
+    CLY_LOG_D(@"%s web view presentation URL detail, url: [%@], isFeedbackWidget: [%@]", __FUNCTION__, url.absoluteString, self.isFeedbackWidget ? @"YES" : @"NO");
     self.dismissBlock = dismissBlock;
     self.appearBlock = appearBlock;
     self.hasAppeared = NO;
@@ -89,6 +92,7 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
     UIViewController *rootViewController = CountlyCommon.keyWindow.rootViewController;
     modal.modalPresentationCapturesStatusBarAppearance = YES;
     CGRect backgroundFrame = rootViewController.view.bounds;
+    CLY_LOG_D(@"%s frames computed, webViewFrame: [%@], backgroundFrame: [%@]", __FUNCTION__, NSStringFromCGRect(frame), NSStringFromCGRect(backgroundFrame));
     self.backgroundView = [[PassThroughBackgroundView alloc] initWithFrame:backgroundFrame];
     self.backgroundView.backgroundColor = [UIColor clearColor];
     self.backgroundView.hidden = YES;
@@ -145,6 +149,7 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
        // the layout the content declared. The scroll-view pinch gesture is also disabled in
        // configureWebView: as a native backstop.
        if (CountlyContentBuilderInternal.sharedInstance.disableZoom) {
+           CLY_LOG_D(@"%s zoom is disabled by the config, injecting the no zoom viewport script", __FUNCTION__);
            NSString *disableZoomJS =
             @"(function(){"
              "var m=document.querySelector('meta[name=viewport]');"
@@ -219,7 +224,7 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
     if (self.isFeedbackWidget) {
         CGSize windowSize = [CountlyCommon.sharedInstance getWindowSize];
         CGRect frame = CGRectMake(0.0, 0.0, windowSize.width, windowSize.height);
-        CLY_LOG_D(@"%s, re-placing feedback widget to [%@]", __FUNCTION__, NSStringFromCGRect(frame));
+        CLY_LOG_D(@"%s re-placing the feedback widget after an interface size change, frame: [%@]", __FUNCTION__, NSStringFromCGRect(frame));
         self.backgroundView.baseWebViewFrame = frame;
         self.backgroundView.webView.frame = frame;
         [self.presentingController updatePlacementRespectToSafeAreas];
@@ -231,7 +236,7 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
     // reportPortraitSizeOnly), and re-asking is what corrects a page that laid out for the wrong
     // orientation — e.g. content first shown while the device was already landscape.
 
-    CLY_LOG_D(@"%s, prompting the page for size [%@]", __FUNCTION__, NSStringFromCGSize(newSize));
+    CLY_LOG_D(@"%s prompting the page for its size after an interface size change, size: [%@]", __FUNCTION__, NSStringFromCGSize(newSize));
     [self.backgroundView updateWindowSize];
 }
 
@@ -255,6 +260,7 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
 
 - (void)configureDismissButton:(CLYButton *)dismissButton forWebView:(WKWebView *)webView {
     dismissButton.onClick = ^(id sender) {
+        CLY_LOG_I(@"%s the dismiss button was tapped, reason: [user-closed]", __FUNCTION__);
         if (self.dismissBlock) {
             dispatch_async(dispatch_get_main_queue(), ^{
                 [self.loadTimeoutTimer invalidate];
@@ -279,13 +285,15 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
     NSString *url = navigationAction.request.URL.absoluteString;
 
     if (!url) {
-        CLY_LOG_I(@"%s Navigation action with nil URL (possible proxy tunnel), allowing", __FUNCTION__);
+        CLY_LOG_D(@"%s the navigation action carries no URL (possible proxy tunnel), allowing it", __FUNCTION__);
         decisionHandler(WKNavigationActionPolicyAllow);
         return;
     }
 
     if ([url containsString:@"cly_x_int=1"]) {
-        CLY_LOG_I(@"%s Opening external url [%@]", __FUNCTION__, url);
+        // Host and path only: the link query string can carry identifiers.
+        CLY_LOG_I(@"%s the content asked to open an external URL, host: [%@], path: [%@]", __FUNCTION__, navigationAction.request.URL.host, navigationAction.request.URL.path);
+        CLY_LOG_D(@"%s external URL request detail, url: [%@]", __FUNCTION__, url);
         // Routed through the app's content URL handler if one is set, else the system browser.
         [self openExternalURL:navigationAction.request.URL];
         decisionHandler(WKNavigationActionPolicyCancel);
@@ -294,14 +302,17 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
 
     if ([url hasPrefix:@"https://countly_action_event"]) {
         NSDictionary *queryParameters = [self parseQueryString:url];
+        CLY_LOG_D(@"%s action event URL parsed, url: [%@], queryParameters: [%@]", __FUNCTION__, url, queryParameters);
 
         if([url containsString:@"cly_x_action_event=1"]){
             [self contentURLAction:queryParameters];
         } else if([url containsString:@"cly_widget_command=1"]){
+            CLY_LOG_D(@"%s handling a widget command, paramCount: [%lu]", __FUNCTION__, (unsigned long)queryParameters.count);
             [self widgetURLAction:queryParameters];
         }
 
         if ([queryParameters[@"close"] boolValue]) {
+            CLY_LOG_I(@"%s dismissing the web view, reason: [JS-requested]", __FUNCTION__);
             [self closeWebView];
         }
 
@@ -318,16 +329,23 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
 // YES if it took over. If there is no handler, or it returns NO, the SDK opens the URL in the
 // system browser as before.
 - (void)openExternalURL:(NSURL *)url {
-    if (!url) return;
+    if (!url) {
+        CLY_LOG_W(@"%s there is no valid URL to open, skipping", __FUNCTION__);
+        CLY_LOG_D(@"%s the URL to open was nil, no URL detail is available", __FUNCTION__);
+        return;
+    }
 
     ContentURLHandler handler = CountlyContentBuilderInternal.sharedInstance.contentURLHandler;
     if (handler && handler(url)) {
-        CLY_LOG_I(@"%s URL [%@] handled by the app's content URL handler.", __FUNCTION__, url.absoluteString);
+        // Host and path only: the link query string can carry identifiers.
+        CLY_LOG_I(@"%s the URL was handled by the app's content URL handler, host: [%@], path: [%@]", __FUNCTION__, url.host, url.path);
+        CLY_LOG_D(@"%s the URL handed to the app's content URL handler, url: [%@]", __FUNCTION__, url.absoluteString);
         return;
     }
 
     [UIApplication.sharedApplication openURL:url options:@{} completionHandler:^(BOOL success) {
-        CLY_LOG_I(@"%s URL [%@] opened in browser: %@.", __FUNCTION__, url.absoluteString, success ? @"YES" : @"NO");
+        CLY_LOG_I(@"%s the URL was handed to the browser, host: [%@], path: [%@], opened: [%@]", __FUNCTION__, url.host, url.path, success ? @"YES" : @"NO");
+        CLY_LOG_D(@"%s the URL handed to the browser, url: [%@], opened: [%@]", __FUNCTION__, url.absoluteString, success ? @"YES" : @"NO");
     }];
 }
 
@@ -342,10 +360,14 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
         headers = http.allHeaderFields;
     }
 
-    CLY_LOG_I(@"%s Navigation response received: URL=%@, MIME=%@, status=%ld, headers=%@", __FUNCTION__, response.URL.absoluteString, mimeType, statusCode, headers);
+    // Host and path only, and header names are never printed: the response headers and the URL
+    // query string can carry identifiers.
+    CLY_LOG_D(@"%s navigation response received, host: [%@], path: [%@], mimeType: [%@], status: [%ld], headerCount: [%lu]", __FUNCTION__, response.URL.host, response.URL.path, mimeType, statusCode, (unsigned long)headers.count);
+
+    CLY_LOG_D(@"%s navigation response detail, url: [%@], status: [%ld], headers: [%@]", __FUNCTION__, response.URL.absoluteString, statusCode, headers);
 
     if (statusCode >= 400) {
-        CLY_LOG_I(@"%s Cancelling navigation due to HTTP status code: %ld", __FUNCTION__, statusCode);
+        CLY_LOG_E(@"%s cancelling the navigation because of an HTTP error status, status: [%ld], path: [%@], dismissing the web view, reason: [http-error]", __FUNCTION__, statusCode, response.URL.path);
         decisionHandler(WKNavigationResponsePolicyCancel);
         dispatch_async(dispatch_get_main_queue(), ^{
             [self closeWebView];
@@ -357,40 +379,37 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
 }
 
 - (void)webView:(WKWebView *)webView didReceiveServerRedirectForProvisionalNavigation:(WKNavigation *)navigation {
-    CLY_LOG_I(@"%s Server redirect received for navigation: %@", __FUNCTION__, navigation);
+    CLY_LOG_D(@"%s a server redirect was received for the provisional navigation, host: [%@], path: [%@]", __FUNCTION__, webView.URL.host, webView.URL.path);
+    CLY_LOG_D(@"%s server redirect destination detail, url: [%@]", __FUNCTION__, webView.URL.absoluteString);
 }
 
 - (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error {
     [self.loadTimeoutTimer invalidate];
     self.loadTimeoutTimer = nil;
-    CLY_LOG_I(@"%s Provisional navigation failed: %@ (%ld). Closing web view.", __FUNCTION__, error.localizedDescription, (long)error.code);
+    CLY_LOG_D(@"%s the provisional navigation failed, error: [%@], domain: [%@], code: [%ld], dismissing the web view, reason: [navigation-failure]", __FUNCTION__, error.localizedDescription, error.domain, (long)error.code);
     [self closeWebView];
-}
-
-- (void)webView:(WKWebView *)webView didCommitNavigation:(WKNavigation *)navigation {
-    CLY_LOG_I(@"%s Content started arriving (didCommitNavigation).", __FUNCTION__);
 }
 
 - (void)webView:(WKWebView *)webView didFailNavigation:(WKNavigation *)navigation withError:(NSError *)error {
     [self.loadTimeoutTimer invalidate];
     self.loadTimeoutTimer = nil;
-    CLY_LOG_I(@"%s Navigation failed after commit: %@ (%ld). Closing web view.", __FUNCTION__, error.localizedDescription, (long)error.code);
+    CLY_LOG_D(@"%s the navigation failed after being committed, error: [%@], domain: [%@], code: [%ld], dismissing the web view, reason: [navigation-failure]", __FUNCTION__, error.localizedDescription, error.domain, (long)error.code);
     [self closeWebView];
 }
 
 - (void)webView:(WKWebView *)webView didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential *credential))completionHandler {
-    CLY_LOG_I(@"%s Received authentication challenge for host: %@, protectionSpace: %@", __FUNCTION__, challenge.protectionSpace.host, challenge.protectionSpace.authenticationMethod);
+    CLY_LOG_D(@"%s an authentication challenge was received, host: [%@], authenticationMethod: [%@], performing the default handling", __FUNCTION__, challenge.protectionSpace.host, challenge.protectionSpace.authenticationMethod);
     // sth custom if needed later?
     completionHandler(NSURLSessionAuthChallengePerformDefaultHandling, nil);
 }
 
 - (void)webViewWebContentProcessDidTerminate:(WKWebView *)webView {
-    CLY_LOG_I(@"%s Web content process terminated for URL: %@.", __FUNCTION__, webView.URL.absoluteString);
+    CLY_LOG_E(@"%s the web content process terminated, host: [%@], path: [%@]", __FUNCTION__, webView.URL.host, webView.URL.path);
+    CLY_LOG_D(@"%s the terminated web content process URL detail, url: [%@]", __FUNCTION__, webView.URL.absoluteString);
     // reload?
 }
 
 - (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(WKNavigation *)navigation {
-    CLY_LOG_I(@"%s Web view has started loading", __FUNCTION__);
     [self.loadTimeoutTimer invalidate];
     __weak typeof(self) weakSelf = self;
     // Fast stall-detect (reload) when enabled, using the configurable stall timeout;
@@ -405,6 +424,8 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
         [strongSelf loadDidTimeout];
     }];
     self.loadStartDate = [NSDate date];
+    CLY_LOG_D(@"%s the navigation started and the load timeout was armed, host: [%@], path: [%@], timeout: [%.1f] seconds, reloadOnStall: [%@]", __FUNCTION__, webView.URL.host, webView.URL.path, timeout, CountlyContentBuilderInternal.sharedInstance.enableContentReloadOnStall ? @"YES" : @"NO");
+    CLY_LOG_D(@"%s the navigation started URL detail, url: [%@]", __FUNCTION__, webView.URL.absoluteString);
 }
 
 - (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
@@ -414,12 +435,10 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
 
     if (self.webViewClosed) return;
 
-    CLY_LOG_I(@"%s Web view has finished loading", __FUNCTION__);
-    if (self.loadStartDate) {
-        NSTimeInterval loadDuration = [[NSDate date] timeIntervalSinceDate:self.loadStartDate];
-        CLY_LOG_I(@"%s Web view load duration: %.3f seconds", __FUNCTION__, loadDuration);
-        self.loadStartDate = nil;
-    }
+    NSTimeInterval loadDuration = self.loadStartDate ? [[NSDate date] timeIntervalSinceDate:self.loadStartDate] : 0;
+    self.loadStartDate = nil;
+    CLY_LOG_I(@"%s the navigation finished, host: [%@], path: [%@], duration: [%.3f] seconds", __FUNCTION__, webView.URL.host, webView.URL.path, loadDuration);
+    CLY_LOG_D(@"%s the navigation finished URL detail, url: [%@]", __FUNCTION__, webView.URL.absoluteString);
 
     [self verifyResourceStatuses:webView];
 }
@@ -451,7 +470,7 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
 
     [webView evaluateJavaScript:js completionHandler:^(id result, NSError *error) {
         if (error) {
-            CLY_LOG_I(@"%s Error injecting verify script: %@", __FUNCTION__, error.localizedDescription);
+            CLY_LOG_D(@"%s injecting the resource verification script failed, error: [%@], domain: [%@], code: [%ld], continuing without verification", __FUNCTION__, error.localizedDescription, error.domain, (long)error.code);
             [self notifyPageLoaded];
         }
     }];
@@ -469,6 +488,7 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
     [self.loadTimeoutTimer invalidate];
     self.loadTimeoutTimer = nil;
 
+    CLY_LOG_D(@"%s the load verified good, revealing the web view, resourceRetryCount: [%ld]", __FUNCTION__, (long)self.resourceRetryCount);
     [self.presentingController updatePlacementRespectToSafeAreas];
     self.hasAppeared = YES;
     self.backgroundView.hidden = NO;
@@ -493,13 +513,13 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
     // input, and re-firing on-load analytics) or dismiss content the user is using. The
     // retry mechanism only recovers failures during the initial load.
     if (self.hasAppeared) {
-        CLY_LOG_I(@"%s %@ — content already visible, treating as non-fatal.", __FUNCTION__, reason);
+        CLY_LOG_D(@"%s a load failure arrived while the content is already visible, treating it as non-fatal, reason: [%@]", __FUNCTION__, reason);
         return;
     }
 
     // Reload-on-failure is opt-in. When disabled, keep the original behavior: close on failure.
     if (!CountlyContentBuilderInternal.sharedInstance.enableContentReloadOnStall) {
-        CLY_LOG_I(@"%s %@ — reload-on-stall disabled, closing web view.", __FUNCTION__, reason);
+        CLY_LOG_D(@"%s reload on stall is disabled, dismissing the web view, reason: [resource-failure], detail: [%@]", __FUNCTION__, reason);
         [self closeWebView];
         return;
     }
@@ -507,12 +527,12 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
     // A reload is already scheduled for this load cycle — coalesce further failures.
     // pendingReloadBlock being non-nil is the single source of truth for "a reload is pending".
     if (self.pendingReloadBlock) {
-        CLY_LOG_I(@"%s %@ — retry already scheduled, ignoring.", __FUNCTION__, reason);
+        CLY_LOG_D(@"%s a reload is already scheduled for this load cycle, ignoring this failure, reason: [%@]", __FUNCTION__, reason);
         return;
     }
 
     if (self.resourceRetryCount >= kCLYMaxResourceRetries) {
-        CLY_LOG_I(@"%s %@ — retries exhausted (%ld/%ld). Closing web view.", __FUNCTION__, reason, (long)self.resourceRetryCount, (long)kCLYMaxResourceRetries);
+        CLY_LOG_W(@"%s the load retries are exhausted, retryCount: [%ld], maxRetries: [%ld], dismissing the web view, reason: [resource-failure-retries-exhausted], detail: [%@]", __FUNCTION__, (long)self.resourceRetryCount, (long)kCLYMaxResourceRetries, reason);
         [self closeWebView];
         return;
     }
@@ -524,7 +544,7 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
     [self.loadTimeoutTimer invalidate];
     self.loadTimeoutTimer = nil;
     NSTimeInterval delay = kCLYResourceRetryBaseDelay * self.resourceRetryCount;
-    CLY_LOG_I(@"%s %@ — retrying load (%ld/%ld) in %.1fs.", __FUNCTION__, reason, (long)self.resourceRetryCount, (long)kCLYMaxResourceRetries, delay);
+    CLY_LOG_D(@"%s scheduling a reload, retry: [%ld], maxRetries: [%ld], delay: [%.1f] seconds, reason: [%@]", __FUNCTION__, (long)self.resourceRetryCount, (long)kCLYMaxResourceRetries, delay, reason);
 
     __weak typeof(self) weakSelf = self;
     // Cancellable so a load that succeeds during the delay window can cancel this reload
@@ -539,10 +559,11 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
         if (strongSelf.webViewClosed || strongSelf.hasAppeared) return;
         WKWebView *webView = strongSelf.backgroundView.webView;
         if (!webView) {
+            CLY_LOG_D(@"%s the web view is gone when the reload fired, dismissing the web view, reason: [resource-failure]", __FUNCTION__);
             [strongSelf closeWebView];
             return;
         }
-        CLY_LOG_I(@"%s Reloading web view (retry %ld/%ld).", __FUNCTION__, (long)strongSelf.resourceRetryCount, (long)kCLYMaxResourceRetries);
+        CLY_LOG_D(@"%s reloading the web view now, retry: [%ld], maxRetries: [%ld]", __FUNCTION__, (long)strongSelf.resourceRetryCount, (long)kCLYMaxResourceRetries);
         [webView reload];
     });
     self.pendingReloadBlock = reloadBlock;
@@ -564,7 +585,7 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
 // so reaching here means nothing was ever actually shown (e.g. a blank-but-HTTP-200 page).
 - (void)contentShownDeadlineReached {
     if (self.webViewClosed) return;
-    CLY_LOG_I(@"%s [CLY]_content_shown not received within %.0fs; closing web view.", __FUNCTION__, kCLYContentShownDeadline);
+    CLY_LOG_W(@"%s the content never reported that it is shown, deadline: [%.0f] seconds, dismissing the web view, reason: [content-shown-deadline]", __FUNCTION__, kCLYContentShownDeadline);
     [self closeWebView];
 }
 
@@ -590,11 +611,16 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
     if ([message.name isEqualToString:@"resourceLoadError"]) {
         NSDictionary *body = message.body;
         NSString *tag = body[@"tag"];
-        NSString *url = body[@"url"];
+        // Host and path only: a resource URL can carry a query string. The page controlled url is
+        // an untyped id, so it is type checked before NSURL sees it.
+        NSString *url = [body[@"url"] isKindOfClass:NSString.class] ? body[@"url"] : nil;
+        NSURL *failedResourceURL = url ? [NSURL URLWithString:url] : nil;
 
-        CLY_LOG_I(@"%s Critical resource (%@) failed to load: [%@].", __FUNCTION__, tag, url);
+        CLY_LOG_D(@"%s a critical resource failed to load, resourceKind: [%@], host: [%@], path: [%@]", __FUNCTION__, tag, failedResourceURL.host, failedResourceURL.path);
 
-        NSString *reason = [NSString stringWithFormat:@"Critical resource (%@) failed to load: [%@]", tag, url];
+        CLY_LOG_D(@"%s the failed critical resource detail, resourceKind: [%@], url: [%@], messageBody: [%@]", __FUNCTION__, tag, url, message.body);
+
+        NSString *reason = [NSString stringWithFormat:@"a critical resource failed to load, resourceKind: [%@]", tag];
         dispatch_async(dispatch_get_main_queue(), ^{
             [self retryOrCloseWebViewForReason:reason];
         });
@@ -608,8 +634,10 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
             for (NSDictionary *entry in results) {
                 NSInteger status = [entry[@"status"] integerValue];
                 if (status >= 400) {
-                    CLY_LOG_I(@"%s Critical resource (%@) returned HTTP %ld: [%@].",
-                              __FUNCTION__, entry[@"tag"], (long)status, entry[@"url"]);
+                    // Resource kind and status only: a resource URL can carry a query string.
+                    CLY_LOG_D(@"%s the post load verification found a critical resource with an HTTP error status, resourceKind: [%@], status: [%ld]",
+                              __FUNCTION__, entry[@"tag"], (long)status);
+                    CLY_LOG_D(@"%s the post load verification failing resource detail, status: [%ld], entry: [%@]", __FUNCTION__, (long)status, entry);
                     // This is the post-load HEAD verification (runs on didFinishNavigation):
                     // the page has already finished loading and run its on-load JS, so a
                     // reload from here would re-fire any analytics it recorded. Do NOT retry
@@ -617,8 +645,10 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
                     // resourceLoadError path. Defer to an in-flight retry if one is already
                     // scheduled, never tear down already-visible content, otherwise close.
                     if (self.hasAppeared || self.pendingReloadBlock) {
+                        CLY_LOG_D(@"%s deferring the verified resource failure, contentVisible: [%@], reloadPending: [%@]", __FUNCTION__, self.hasAppeared ? @"YES" : @"NO", (self.pendingReloadBlock != nil) ? @"YES" : @"NO");
                         return;
                     }
+                    CLY_LOG_E(@"%s a verified critical resource is broken, dismissing the web view, reason: [resource-http-error]", __FUNCTION__);
                     dispatch_async(dispatch_get_main_queue(), ^{
                         [self closeWebView];
                     });
@@ -637,7 +667,7 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
             // still-running load-timeout timer, will drive the retry/close. When reload-on-stall
             // is off there is no reload to protect, so keep the original show-anyway behavior.
             if (anyUnreachable && !self.hasAppeared && CountlyContentBuilderInternal.sharedInstance.enableContentReloadOnStall) {
-                CLY_LOG_I(@"%s A critical resource is unreachable (status 0); deferring to reload instead of appearing.", __FUNCTION__);
+                CLY_LOG_D(@"%s a critical resource is unreachable, resourceKind: [any], status: [0], deferring to a reload instead of appearing", __FUNCTION__);
                 return;
             }
         }
@@ -684,6 +714,8 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
 - (void)contentURLAction:(NSDictionary *)queryParameters {
     NSString *action = queryParameters[@"action"];
     if(action) {
+        CLY_LOG_D(@"%s a content action was received, action: [%@]", __FUNCTION__, action);
+        CLY_LOG_D(@"%s the content action detail, action: [%@], queryParameters: [%@]", __FUNCTION__, action, queryParameters);
         if ([action isEqualToString:@"event"]) {
             NSString *eventsJson = queryParameters[@"event"];
             if(eventsJson) {
@@ -847,45 +879,58 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
     NSArray *events = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
 
     if (error) {
-        CLY_LOG_I(@"%s Error parsing JSON: %@", __FUNCTION__, error);
-    } else {
-        CLY_LOG_I(@"%s Parsed JSON: %@", __FUNCTION__, events);
+        CLY_LOG_D(@"%s parsing the content events JSON failed, error: [%@], domain: [%@], code: [%ld], jsonLength: [%lu]", __FUNCTION__, error.localizedDescription, error.domain, (long)error.code, (unsigned long)jsonString.length);
     }
 
+    CLY_LOG_D(@"%s content events JSON parsed, json: [%@], events: [%@]", __FUNCTION__, jsonString, events);
+
     if (!events || ![events isKindOfClass:[NSArray class]]) {
-            CLY_LOG_I(@"Events array should not be empty or nil, and should be of type NSArray");
+            CLY_LOG_E(@"%s the content events payload is nil or not an array, ignoring the action", __FUNCTION__);
             return;
     }
+    NSUInteger skippedCount = 0;
     for (NSDictionary *event in events) {
             NSString *key = event[@"key"];
             NSDictionary *segmentation = event[@"segmentation"];
             NSDictionary *sg = event[@"sg"];
             if(!key) {
-                CLY_LOG_I(@"Skipping the event due to key is empty or nil");
+                CLY_LOG_V(@"%s skipping a content event, reason: [the event key is nil or empty]", __FUNCTION__);
+                skippedCount++;
                 continue;
             }
             if(sg) {
                 segmentation = sg;
             }
             if(!segmentation) {
-                CLY_LOG_I(@"Skipping the event due to missing segmentation");
+                CLY_LOG_V(@"%s skipping a content event, reason: [the event has no segmentation], key: [%@]", __FUNCTION__, key);
+                skippedCount++;
                 continue;
             }
 
             // The page reported it is actually showing content: cancel the absolute
             // content-shown deadline so a genuinely-displayed content is never torn down.
             if ([key isEqualToString:@"[CLY]_content_shown"]) {
+                CLY_LOG_D(@"%s the page reported that the content is shown, cancelling the content shown deadline", __FUNCTION__);
                 [self.contentShownDeadlineTimer invalidate];
                 self.contentShownDeadlineTimer = nil;
             }
 
+            CLY_LOG_D(@"%s recording a content event, key: [%@], segmentation: [%@]", __FUNCTION__, key, segmentation);
+
             [Countly.sharedInstance recordEvent:key segmentation:segmentation];
+    }
+
+    if (skippedCount) {
+        CLY_LOG_D(@"%s some content events were dropped, dropped: [%lu], recorded: [%lu]", __FUNCTION__, (unsigned long)skippedCount, (unsigned long)(events.count - skippedCount));
+    } else {
+        CLY_LOG_I(@"%s content events recorded, count: [%lu]", __FUNCTION__, (unsigned long)events.count);
     }
 
     [CountlyConnectionManager.sharedInstance attemptToSendStoredRequests];
 }
 
 - (void)openExternalLink:(NSString *)urlString {
+    CLY_LOG_D(@"%s an external link was requested by the content, link: [%@]", __FUNCTION__, urlString);
     NSURL *url = [NSURL URLWithString:urlString];
     if (!url) {
         // The decoded link may contain characters NSURL rejects (e.g. a space from a decoded '%20').
@@ -910,22 +955,24 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
     NSDictionary *resizeDict = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
 
     if (!resizeDict) {
-        CLY_LOG_I(@"Resize dictionary should not be empty or nil. Error: %@", error);
+        CLY_LOG_E(@"%s parsing the resize JSON failed or it was empty, error: [%@], jsonLength: [%lu]", __FUNCTION__, error.localizedDescription, (unsigned long)jsonString.length);
         return;
     }
 
     // Ensure resizeDict is a dictionary
     if (![resizeDict isKindOfClass:[NSDictionary class]]) {
-        CLY_LOG_I(@"Resize dictionary should be of type NSDictionary");
+        CLY_LOG_E(@"%s the resize payload is not a dictionary, ignoring the resize", __FUNCTION__);
         return;
     }
+
+    CLY_LOG_D(@"%s the resize payload parsed, json: [%@], resizeDict: [%@]", __FUNCTION__, jsonString, resizeDict);
 
     // Retrieve portrait and landscape dimensions
     NSDictionary *portraitDimensions = resizeDict[@"p"];
     NSDictionary *landscapeDimensions = resizeDict[@"l"];
 
     if (!portraitDimensions && !landscapeDimensions) {
-        CLY_LOG_I(@"Resize dimensions should not be empty or nil");
+        CLY_LOG_W(@"%s the resize payload carries neither portrait nor landscape dimensions, ignoring the resize", __FUNCTION__);
         return;
     }
 
@@ -957,7 +1004,7 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
         self.backgroundView.webView.frame = base;
         [self.presentingController updatePlacementRespectToSafeAreas];
     } completion:^(BOOL finished) {
-        CLY_LOG_I(@"%s, Resized web view to width: %f, height: %f", __FUNCTION__, base.size.width, base.size.height);
+        CLY_LOG_D(@"%s the web view was resized on the page's request, frame: [%@], finished: [%@]", __FUNCTION__, NSStringFromCGRect(base), finished ? @"YES" : @"NO");
     }];
 }
 
@@ -972,8 +1019,10 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
 {
     dispatch_async(dispatch_get_main_queue(), ^{
         if (!self.backgroundView.webView) {
+            CLY_LOG_D(@"%s the web view is already dismissed, skipping this dismissal", __FUNCTION__);
             return;
         }
+        CLY_LOG_I(@"%s dismissing the web view, hadAppeared: [%@], resourceRetryCount: [%ld], dismissCallbackProvided: [%@]", __FUNCTION__, self.hasAppeared ? @"YES" : @"NO", (long)self.resourceRetryCount, (self.dismissBlock != nil) ? @"YES" : @"NO");
         self.webViewClosed = YES;
         self.window.hidden = YES;
         self.loadStartDate = nil;
@@ -1015,12 +1064,12 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
 
 - (void)loadDidTimeout {
     if (self.hasAppeared || self.webViewClosed) return;
-    CLY_LOG_I(@"%s Web view load stalled after %.1fs.", __FUNCTION__, self.loadTimeoutInterval);
+    CLY_LOG_D(@"%s the web view load stalled, timeout: [%.1f] seconds, routing it through the retry path", __FUNCTION__, self.loadTimeoutInterval);
     // A stalled load fires no JS 'error' event, so it never reaches the resource-error
     // retry path. Route it through the same retry here: reload (observed to recover)
     // up to the retry cap, then close. Do NOT set webViewClosed first — that would make
     // retryOrCloseWebViewForReason: bail out before it can retry.
-    [self retryOrCloseWebViewForReason:@"load stalled (no appearance)"];
+    [self retryOrCloseWebViewForReason:@"the load stalled with no appearance"];
 }
   #endif
 @end

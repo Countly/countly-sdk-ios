@@ -61,11 +61,16 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_OSX)
 - (void)startPushNotifications
 {
+    CLY_LOG_I(@"%s push notifications registration requested, enabledOnInitialConfig: [%@]", __FUNCTION__, self.isEnabledOnInitialConfig ? @"YES" : @"NO");
+
     if (!self.isEnabledOnInitialConfig)
         return;
 
     if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
+    {
+        CLY_LOG_V(@"%s no push consent given, remote notification registration is skipped", __FUNCTION__);
         return;
+    }
 
     UNUserNotificationCenter.currentNotificationCenter.delegate = self;
 
@@ -82,6 +87,8 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
 - (void)stopPushNotifications
 {
+    CLY_LOG_I(@"%s push notifications unregistration requested, enabledOnInitialConfig: [%@]", __FUNCTION__, self.isEnabledOnInitialConfig ? @"YES" : @"NO");
+
     if (!self.isEnabledOnInitialConfig)
         return;
 
@@ -95,7 +102,10 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 {
     static BOOL alreadySwizzled;
     if (alreadySwizzled)
+    {
+        CLY_LOG_D(@"%s app delegate methods are already swizzled, skipping", __FUNCTION__);
         return;
+    }
 
     alreadySwizzled = YES;
 
@@ -110,6 +120,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
     {
         SEL originalSelector = NSSelectorFromString(selectorString);
         Method originalMethod = class_getInstanceMethod(appDelegateClass, originalSelector);
+        BOOL wasImplementedByHost = (originalMethod != NULL);
 
         if (originalMethod == NULL)
         {
@@ -123,19 +134,31 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
         SEL countlySelector = NSSelectorFromString([@"Countly_" stringByAppendingString:selectorString]);
         Method countlyMethod = class_getInstanceMethod(appDelegateClass, countlySelector);
         method_exchangeImplementations(originalMethod, countlyMethod);
+
+        CLY_LOG_D(@"%s app delegate method swizzled, selector: [%@], wasImplementedByHost: [%@]", __FUNCTION__, selectorString, wasImplementedByHost ? @"YES" : @"NO");
     }
 }
 
 - (void)askForNotificationPermissionWithOptions:(NSUInteger)options completionHandler:(void (^)(BOOL granted, NSError * error))completionHandler
 {
+    CLY_LOG_I(@"%s notification permission requested, options: [%lu], completionHandlerProvided: [%@]", __FUNCTION__, (unsigned long)options, (completionHandler != nil) ? @"YES" : @"NO");
+
     if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
+    {
+        CLY_LOG_V(@"%s no push consent given, notification permission is not requested", __FUNCTION__);
         return;
+    }
 
     if (options == 0)
         options = UNAuthorizationOptionBadge | UNAuthorizationOptionSound | UNAuthorizationOptionAlert;
 
     [UNUserNotificationCenter.currentNotificationCenter requestAuthorizationWithOptions:options completionHandler:^(BOOL granted, NSError* error)
     {
+        if (error)
+            CLY_LOG_E(@"%s notification permission request returned an error, granted: [%@], error: [%@]", __FUNCTION__, granted ? @"YES" : @"NO", error.localizedDescription);
+        else
+            CLY_LOG_I(@"%s notification permission result received, granted: [%@]", __FUNCTION__, granted ? @"YES" : @"NO");
+
         if (completionHandler)
             completionHandler(granted, error);
 
@@ -146,19 +169,27 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 - (void)sendToken
 {
     if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
+    {
+        CLY_LOG_V(@"%s no push consent given, push token is not sent", __FUNCTION__);
         return;
+    }
 
     if (!self.token)
+    {
+        CLY_LOG_D(@"%s push token is not sent, no token has been received yet", __FUNCTION__);
         return;
+    }
 
     if ([self.token isEqualToString:kCountlyTokenError])
     {
+        CLY_LOG_D(@"%s push token is in error state, an empty token will be sent to the server instead", __FUNCTION__);
         [self clearToken];
         return;
     }
 
     if (self.sendPushTokenAlways)
     {
+        CLY_LOG_I(@"%s push token is being sent without checking the permission state, tokenLength: [%lu]", __FUNCTION__, (unsigned long)self.token.length);
         [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
         return;
     }
@@ -175,26 +206,39 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
         if (settings.authorizationStatus == UNAuthorizationStatusAuthorized || hasProvisionalPermission)
         {
+            CLY_LOG_I(@"%s notification permission is granted, push token is being sent, tokenLength: [%lu], provisional: [%@]", __FUNCTION__, (unsigned long)self.token.length, hasProvisionalPermission ? @"YES" : @"NO");
             [CountlyConnectionManager.sharedInstance sendPushToken:self.token];
             [CountlyPersistency.sharedInstance storeNotificationPermission:YES];
         }
         else if (hasNotificationPermissionBefore)
         {
+            CLY_LOG_I(@"%s notification permission has been revoked, the stored push token is being cleared, authorizationStatus: [%ld]", __FUNCTION__, (long)settings.authorizationStatus);
             [self clearToken];
             [CountlyPersistency.sharedInstance storeNotificationPermission:NO];
+        }
+        else
+        {
+            CLY_LOG_D(@"%s notification permission is not granted and was not granted before, push token is not sent, authorizationStatus: [%ld]", __FUNCTION__, (long)settings.authorizationStatus);
         }
     }];
 }
 
 - (void)clearToken
 {
+    CLY_LOG_D(@"%s clearing the push token on the server by sending an empty token", __FUNCTION__);
+
     [CountlyConnectionManager.sharedInstance sendPushToken:@""];
 }
 
 - (void)openURL:(NSString *)URLString
 {
     if (!URLString)
+    {
+        CLY_LOG_V(@"%s no URL is attached to the notification action, nothing will be opened", __FUNCTION__);
         return;
+    }
+
+    CLY_LOG_D(@"%s opening the URL attached to the notification action, URLLength: [%lu]", __FUNCTION__, (unsigned long)URLString.length);
 
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.01 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
     {
@@ -208,8 +252,13 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
 - (void)recordActionForNotification:(NSDictionary *)userInfo clickedButtonIndex:(NSInteger)buttonIndex
 {
+    CLY_LOG_I(@"%s notification action recording requested, buttonIndex: [%ld]", __FUNCTION__, (long)buttonIndex);
+
     if (!CountlyConsentManager.sharedInstance.consentForPushNotifications)
+    {
+        CLY_LOG_V(@"%s no push consent given, notification action is not recorded", __FUNCTION__);
         return;
+    }
 
     NSDictionary* countlyPayload = userInfo[kCountlyPNKeyCountlyPayload];
     NSString* notificationID = countlyPayload[kCountlyPNKeyNotificationID];
@@ -220,7 +269,12 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 - (void)recordActionEvent:(NSString *)notificationID buttonIndex:(NSInteger)buttonIndex
 {
     if (!notificationID)
+    {
+        CLY_LOG_W(@"%s notification action event is dropped, the notification has no Countly notification ID", __FUNCTION__);
         return;
+    }
+
+    CLY_LOG_D(@"%s notification action taken, notificationID: [%@], buttonIndex: [%ld]", __FUNCTION__, notificationID, (long)buttonIndex);
 
     NSString* platform = @"unknown";
 #if (TARGET_OS_IOS || TARGET_OS_VISION)
@@ -243,8 +297,8 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions options))completionHandler API_AVAILABLE(ios(10.0), macos(10.14))
 {
-    CLY_LOG_D(@"userNotificationCenter:willPresentNotification:withCompletionHandler:");
-    CLY_LOG_D(@"%@", notification.request.content.userInfo.description);
+    CLY_LOG_D(@"%s notification received while the app is in the foreground, doNotShowAlertForNotifications: [%@]", __FUNCTION__, self.doNotShowAlertForNotifications ? @"YES" : @"NO");
+    CLY_LOG_D(@"%s foreground notification payload detail, userInfo: [%@]", __FUNCTION__, notification.request.content.userInfo);
 
     if (!self.doNotShowAlertForNotifications)
     {
@@ -279,8 +333,8 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
 - (void)userNotificationCenter:(UNUserNotificationCenter *)center didReceiveNotificationResponse:(UNNotificationResponse *)response withCompletionHandler:(void (^)(void))completionHandler API_AVAILABLE(ios(10.0), macos(10.14))
 {
-    CLY_LOG_D(@"userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:");
-    CLY_LOG_D(@"%@", response.notification.request.content.userInfo.description);
+    CLY_LOG_D(@"%s notification response received, actionIdentifier: [%@]", __FUNCTION__, response.actionIdentifier);
+    CLY_LOG_D(@"%s notification response payload detail, userInfo: [%@]", __FUNCTION__, response.notification.request.content.userInfo);
 
     if (CountlyConsentManager.sharedInstance.consentForPushNotifications)
     {
@@ -292,7 +346,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
             NSInteger buttonIndex = 0;
             NSString* URL = nil;
 
-            CLY_LOG_D(@"Action Identifier: %@", response.actionIdentifier);
+            CLY_LOG_D(@"%s resolving the tapped notification action, notificationID: [%@]", __FUNCTION__, notificationID);
 
             if ([response.actionIdentifier isEqualToString:UNNotificationDefaultActionIdentifier])
             {
@@ -341,7 +395,8 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_OSX)
 - (void)Countly_application:(CLYApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken
 {
-    CLY_LOG_D(@"App didRegisterForRemoteNotificationsWithDeviceToken: %@", deviceToken);
+    CLY_LOG_I(@"%s push device token received from the system, tokenByteLength: [%lu]", __FUNCTION__, (unsigned long)deviceToken.length);
+    CLY_LOG_D(@"%s push device token detail, rawToken: [%@]", __FUNCTION__, deviceToken);
 
     const char* bytes = [deviceToken bytes];
     NSMutableString *token = NSMutableString.new;
@@ -357,7 +412,7 @@ CLYPushTestMode const CLYPushTestModeTestFlightOrAdHoc = @"CLYPushTestModeTestFl
 
 - (void)Countly_application:(CLYApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error
 {
-    CLY_LOG_D(@"App didFailToRegisterForRemoteNotificationsWithError: %@", error);
+    CLY_LOG_E(@"%s remote notification registration failed, error: [%@]", __FUNCTION__, error.localizedDescription);
 
     CountlyPushNotifications.sharedInstance.token = kCountlyTokenError;
 

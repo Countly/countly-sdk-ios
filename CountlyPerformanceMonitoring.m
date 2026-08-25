@@ -50,6 +50,8 @@ BOOL enableForegroundBackgroundTracking;
 
 - (void) startWithConfig:(CountlyAPMConfig *) apmConfig
 {
+    CLY_LOG_I(@"%s apm module starting, enableAppStartTimeTracking: [%@], enableManualAppLoadedTrigger: [%@], enableForegroundBackgroundTracking: [%@]", __FUNCTION__, apmConfig.enableAppStartTimeTracking ? @"YES" : @"NO", apmConfig.enableManualAppLoadedTrigger ? @"YES" : @"NO", apmConfig.enableForegroundBackgroundTracking ? @"YES" : @"NO");
+
     enableAppStartTimeTracking = apmConfig.enableAppStartTimeTracking;
     enableManualAppLoadedTrigger = apmConfig.enableManualAppLoadedTrigger;
     if(enableAppStartTimeTracking && !enableManualAppLoadedTrigger) {
@@ -74,12 +76,18 @@ BOOL enableForegroundBackgroundTracking;
 - (void)startPerformanceMonitoring
 {
     if (!enableForegroundBackgroundTracking)
+    {
+        CLY_LOG_D(@"%s foreground and background tracking is not enabled in config, observers will not be added", __FUNCTION__);
         return;
+    }
 
     if (!CountlyConsentManager.sharedInstance.consentForPerformanceMonitoring)
+    {
+        CLY_LOG_V(@"%s no apm consent given, foreground and background tracking is not started", __FUNCTION__);
         return;
+    }
     
-    CLY_LOG_D(@"Starting performance monitoring foreground/background tracking...");
+    CLY_LOG_D(@"%s foreground and background tracking is starting, isInBackground: [%@]", __FUNCTION__, CountlyDeviceInfo.isInBackground ? @"YES" : @"NO");
 
 #if (TARGET_OS_OSX)
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(applicationDidBecomeActive:) name:NSApplicationDidBecomeActiveNotification object:nil];
@@ -97,6 +105,8 @@ BOOL enableForegroundBackgroundTracking;
 
 - (void)stopPerformanceMonitoring
 {
+    CLY_LOG_D(@"%s foreground and background tracking observers are being removed", __FUNCTION__);
+
 #if (TARGET_OS_OSX)
     [NSNotificationCenter.defaultCenter removeObserver:self name:NSApplicationDidBecomeActiveNotification object:nil];
     [NSNotificationCenter.defaultCenter removeObserver:self name:NSApplicationWillResignActiveNotification object:nil];
@@ -112,7 +122,7 @@ BOOL enableForegroundBackgroundTracking;
 
 - (void)applicationDidBecomeActive:(NSNotification *)notification
 {
-    CLY_LOG_D(@"applicationDidBecomeActive: (Performance Monitoring)");
+    CLY_LOG_V(@"%s did become active notification received by the apm module", __FUNCTION__);
     
     if (!enableForegroundBackgroundTracking)
         return;
@@ -123,7 +133,7 @@ BOOL enableForegroundBackgroundTracking;
 
 - (void)applicationWillResignActive:(NSNotification *)notification
 {
-    CLY_LOG_D(@"applicationWillResignActive: (Performance Monitoring)");
+    CLY_LOG_V(@"%s will resign active notification received by the apm module", __FUNCTION__);
     
     if (!enableForegroundBackgroundTracking)
         return;
@@ -170,24 +180,32 @@ BOOL enableForegroundBackgroundTracking;
 
 - (void)recordAppStartDurationTraceWithStartTime:(long long)startTime endTime:(long long)endTime
 {
+    CLY_LOG_I(@"%s app start duration trace recording requested, startTime: [%lld], endTime: [%lld]", __FUNCTION__, startTime, endTime);
+
     if (!CountlyConsentManager.sharedInstance.consentForPerformanceMonitoring)
+    {
+        CLY_LOG_V(@"%s no apm consent given, app start duration trace is not recorded", __FUNCTION__);
         return;
+    }
 
     if(!enableAppStartTimeTracking || !enableManualAppLoadedTrigger)
     {
-        CLY_LOG_W(@"Set 'enableAppStartTimeTracking' and 'enableManualAppLoadedTrigger' in config to record App start duration trace!");
+        CLY_LOG_D(@"%s app start duration trace is dropped, set 'enableAppStartTimeTracking' and 'enableManualAppLoadedTrigger' in config to record it", __FUNCTION__);
         return;
     }
     
     if (self.hasAlreadyRecordedAppStartDurationTrace)
     {
-        CLY_LOG_W(@"App start duration trace can be recorded once per app launch. So, it will not be recorded this time!");
+        CLY_LOG_W(@"%s app start duration trace is dropped, it can only be recorded once per app launch", __FUNCTION__);
         return;
     }
 
     long long appStartDuration = endTime - startTime;
 
-    CLY_LOG_D(@"App is loaded and displayed its first view in %lld milliseconds.", appStartDuration);
+    if (appStartDuration < 0)
+        CLY_LOG_W(@"%s app start duration is negative, it will still be recorded, duration: [%lld]", __FUNCTION__, appStartDuration);
+
+    CLY_LOG_D(@"%s app start trace recorded, traceName: [%@], duration: [%lld] ms", __FUNCTION__, kCountlyPMKeyAppStart, appStartDuration);
 
     NSDictionary* metrics =
     @{
@@ -215,11 +233,22 @@ BOOL enableForegroundBackgroundTracking;
                  startTime:(long long)startTime
                    endTime:(long long)endTime
 {
+    CLY_LOG_I(@"%s network trace recording requested, traceName: [%@], requestPayloadSize: [%ld], responsePayloadSize: [%ld], responseStatusCode: [%ld]", __FUNCTION__, traceName, (long)requestPayloadSize, (long)responsePayloadSize, (long)responseStatusCode);
+
     if (!CountlyConsentManager.sharedInstance.consentForPerformanceMonitoring)
+    {
+        CLY_LOG_V(@"%s no apm consent given, network trace is not recorded", __FUNCTION__);
         return;
+    }
 
     if (!traceName.length)
+    {
+        CLY_LOG_E(@"%s network trace is dropped, trace name is empty or nil", __FUNCTION__);
         return;
+    }
+
+    if (endTime - startTime < 0)
+        CLY_LOG_W(@"%s network trace response time is negative, traceName: [%@], responseTime: [%lld] ms", __FUNCTION__, traceName, endTime - startTime);
 
     traceName = [traceName cly_truncatedKey:@"Network trace name"];
 
@@ -240,39 +269,60 @@ BOOL enableForegroundBackgroundTracking;
         kCountlyPMKeyEndTime: @(endTime),
     };
 
+    CLY_LOG_D(@"%s network trace recorded, traceName: [%@], responseTime: [%lld] ms", __FUNCTION__, traceName, endTime - startTime);
+
     [CountlyConnectionManager.sharedInstance sendPerformanceMonitoringTrace:[trace cly_JSONify]];
 }
 
 - (void)startCustomTrace:(NSString *)traceName
 {
+    CLY_LOG_I(@"%s custom trace start requested, traceName: [%@]", __FUNCTION__, traceName);
+
     if (!CountlyConsentManager.sharedInstance.consentForPerformanceMonitoring)
+    {
+        CLY_LOG_V(@"%s no apm consent given, custom trace is not started", __FUNCTION__);
         return;
+    }
 
     if (!traceName.length)
+    {
+        CLY_LOG_E(@"%s custom trace start is dropped, trace name is empty or nil", __FUNCTION__);
         return;
+    }
+
+    NSUInteger runningTraceCount = 0;
 
     @synchronized (self.startedCustomTraces)
     {
         if (self.startedCustomTraces[traceName])
         {
-            CLY_LOG_W(@"Custom trace with name '%@' already started!", traceName);
+            CLY_LOG_W(@"%s custom trace start is ignored, a trace with the same name is already running, traceName: [%@]", __FUNCTION__, traceName);
             return;
         }
 
         NSNumber* startTime = @((long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000));
         self.startedCustomTraces[traceName] = startTime;
+        runningTraceCount = self.startedCustomTraces.count;
     }
-    
-    CLY_LOG_D(@"Custom trace with name '%@' just started!", traceName);
+
+    CLY_LOG_D(@"%s custom trace started, traceName: [%@], runningTraceCount: [%lu]", __FUNCTION__, traceName, (unsigned long)runningTraceCount);
 }
 
 - (void)endCustomTrace:(NSString *)traceName metrics:(NSDictionary *)metrics
 {
+    CLY_LOG_I(@"%s custom trace end requested, traceName: [%@], metricCount: [%lu]", __FUNCTION__, traceName, (unsigned long)metrics.count);
+
     if (!CountlyConsentManager.sharedInstance.consentForPerformanceMonitoring)
+    {
+        CLY_LOG_V(@"%s no apm consent given, custom trace is not ended", __FUNCTION__);
         return;
+    }
 
     if (!traceName.length)
+    {
+        CLY_LOG_E(@"%s custom trace end is dropped, trace name is empty or nil", __FUNCTION__);
         return;
+    }
 
     NSNumber* startTime = nil;
 
@@ -284,7 +334,7 @@ BOOL enableForegroundBackgroundTracking;
 
     if (!startTime)
     {
-        CLY_LOG_W(@"Custom trace with name '%@' not started yet or cancelled/ended before!", traceName);
+        CLY_LOG_W(@"%s custom trace end is a no-op, no running trace with this name, traceName: [%@]", __FUNCTION__, traceName);
         return;
     }
 
@@ -310,40 +360,54 @@ BOOL enableForegroundBackgroundTracking;
         kCountlyPMKeyEndTime: endTime,
     };
 
-    CLY_LOG_D(@"Custom trace with name '%@' just ended with duration %lld ms.", traceName, duration);
+    if (duration < 0)
+        CLY_LOG_W(@"%s custom trace duration is negative, it will still be recorded, traceName: [%@], duration: [%lld]", __FUNCTION__, traceName, duration);
+
+    CLY_LOG_D(@"%s custom trace ended, traceName: [%@], duration: [%lld] ms, metricCount: [%lu]", __FUNCTION__, traceName, duration, (unsigned long)mutableMetrics.count);
 
     [CountlyConnectionManager.sharedInstance sendPerformanceMonitoringTrace:[trace cly_JSONify]];    
 }
 
 - (void)cancelCustomTrace:(NSString *)traceName
 {
+    CLY_LOG_I(@"%s custom trace cancellation requested, traceName: [%@]", __FUNCTION__, traceName);
+
     if (!CountlyConsentManager.sharedInstance.consentForPerformanceMonitoring)
+    {
+        CLY_LOG_V(@"%s no apm consent given, custom trace is not cancelled", __FUNCTION__);
         return;
+    }
 
     if (!traceName.length)
+    {
+        CLY_LOG_E(@"%s custom trace cancellation is dropped, trace name is empty or nil", __FUNCTION__);
         return;
+    }
 
     NSNumber* startTime = nil;
+    NSUInteger runningTraceCount = 0;
 
     @synchronized (self.startedCustomTraces)
     {
         startTime = self.startedCustomTraces[traceName];
         [self.startedCustomTraces removeObjectForKey:traceName];
+        runningTraceCount = self.startedCustomTraces.count;
     }
 
     if (!startTime)
     {
-        CLY_LOG_W(@"Custom trace with name '%@' not started yet or cancelled/ended before!", traceName);
+        CLY_LOG_D(@"%s custom trace cancellation is a no-op, no running trace with this name, traceName: [%@]", __FUNCTION__, traceName);
         return;
     }
 
-    CLY_LOG_D(@"Custom trace with name '%@' cancelled!", traceName);
+    CLY_LOG_D(@"%s custom trace cancelled, its duration is discarded, traceName: [%@], startTime: [%lld], runningTraceCount: [%lu]", __FUNCTION__, traceName, startTime.longLongValue, (unsigned long)runningTraceCount);
 }
 
 - (void)clearAllCustomTraces
 {
     @synchronized (self.startedCustomTraces)
     {
+        CLY_LOG_D(@"%s clearing all running custom traces, runningTraceCount: [%lu]", __FUNCTION__, (unsigned long)self.startedCustomTraces.count);
         [self.startedCustomTraces removeAllObjects];
     }
 }
