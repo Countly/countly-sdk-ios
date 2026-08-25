@@ -101,11 +101,19 @@ enum TestPlatform {
         static let hasPushNotifications = false
     #endif
 
-    /// Automatic view tracking swizzles `UIViewController`, so it exists on the UIKit
-    /// platforms: `TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV`. The public API and the
-    /// implementation must agree, or a consent change crashes with an unrecognized selector,
-    /// which is what happened on visionOS before the guards were aligned.
+    /// The auto-view-tracking *public API* is declared for
+    /// `TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV`.
     #if os(iOS) || os(tvOS) || os(visionOS)
+        static let hasAutoViewTrackingAPI = true
+    #else
+        static let hasAutoViewTrackingAPI = false
+    #endif
+
+    /// Whether it is actually implemented. It swizzles `UIViewController` and is compiled only
+    /// for iOS and tvOS, so on visionOS the public API is a logged no-op. The two must be
+    /// tracked separately: every call site that reaches the internal methods has to be guarded
+    /// to the narrower set, or a consent change is an unrecognized-selector crash.
+    #if os(iOS) || os(tvOS)
         static let hasAutoViewTracking = true
     #else
         static let hasAutoViewTracking = false

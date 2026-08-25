@@ -156,11 +156,11 @@ class CountlyPlatformIntegrationTests: CountlyBaseTestCase {
         // `startAutoViewTracking` wherever the API is declared, so a narrower
         // implementation guard is an unrecognized-selector crash on consent changes.
         XCTAssertEqual(
-            TestPlatform.hasAutoViewTracking,
+            TestPlatform.hasAutoViewTrackingAPI,
             countly.responds(to: NSSelectorFromString("isAutoViewTrackingActive")),
             "Auto view tracking API availability does not match \(TestPlatform.osName)")
         XCTAssertEqual(
-            TestPlatform.hasAutoViewTracking,
+            TestPlatform.hasAutoViewTrackingAPI,
             CountlyConfig().responds(to: NSSelectorFromString("enableAutomaticViewTracking")),
             "enableAutomaticViewTracking availability does not match \(TestPlatform.osName)")
         // Checked on the class, not the singleton: `CountlyViewTrackingInternal.sharedInstance`

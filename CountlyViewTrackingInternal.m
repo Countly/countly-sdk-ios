@@ -7,7 +7,7 @@
 #import "CountlyCommon.h"
 
 @interface CountlyViewTrackingInternal ()
-#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
 @property (nonatomic) NSMutableSet* automaticViewTrackingExclusionList;
 #endif
 @property (nonatomic, strong) NSMutableDictionary<NSString*, CountlyViewData *> * viewDataDictionary;
@@ -32,7 +32,7 @@ NSString* const kCountlyVTKeyView     = @"view";
 NSString* const kCountlyVTKeyDomain   = @"domain";
 NSString* const kCountlyVTKeyDur      = @"dur";
 
-#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
 @interface UIViewController (CountlyViewTracking)
 - (void)Countly_viewDidAppear:(BOOL)animated;
 - (void)Countly_viewDidDisappear:(BOOL)animated;
@@ -69,7 +69,7 @@ static dispatch_once_t onceToken;
 {
     if (self = [super init])
     {
-#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
         self.automaticViewTrackingExclusionList =
         @[
             @"CLYInternalViewController",
@@ -169,7 +169,7 @@ static dispatch_once_t onceToken;
 - (NSString *)startView:(NSString *)viewName segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
-#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually start view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return nil;
@@ -182,7 +182,7 @@ static dispatch_once_t onceToken;
 - (NSString *)startAutoStoppedView:(NSString *)viewName segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
-#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually start view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return nil;
@@ -195,7 +195,7 @@ static dispatch_once_t onceToken;
 - (void)stopViewWithName:(NSString *)viewName segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewName, segmentation);
-#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually stop view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return;
@@ -208,7 +208,7 @@ static dispatch_once_t onceToken;
 - (void)stopViewWithID:(NSString *)viewID segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@ %@", __FUNCTION__, viewID, segmentation);
-#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually stop view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return;
@@ -220,7 +220,7 @@ static dispatch_once_t onceToken;
 - (void)pauseViewWithID:(NSString *)viewID
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, viewID);
-#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually pause view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return;
@@ -232,7 +232,7 @@ static dispatch_once_t onceToken;
 - (void)resumeViewWithID:(NSString *)viewID
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, viewID);
-#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually resume view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return;
@@ -244,7 +244,7 @@ static dispatch_once_t onceToken;
 - (void)stopAllViews:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s %@", __FUNCTION__, segmentation);
-#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s Manually stop view tracking is not allowed when automatic tracking is enabled!", __FUNCTION__);
         return;
@@ -254,7 +254,7 @@ static dispatch_once_t onceToken;
     
 }
 
-#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
 - (void)addAutoViewTrackingExclutionList:(NSArray *)viewTrackingExclusionList
 {
     [self.automaticViewTrackingExclusionList addObjectsFromArray:viewTrackingExclusionList];
@@ -262,9 +262,11 @@ static dispatch_once_t onceToken;
 
 - (void)startAutoViewTracking
 {
-    if (!self.isEnabledOnInitialConfig)
+    // Gated on the resolved 'avt' value (seeded from the developer config, overridable by the server),
+    // so the server can force-enable automatic view tracking even when the developer did not opt in
+    if (!CountlyServerConfig.sharedInstance.automaticViewTrackingEnabled)
         return;
-    
+
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
     
@@ -287,15 +289,25 @@ static dispatch_once_t onceToken;
 
 - (void)setIsAutoViewTrackingActive:(BOOL)isAutoViewTrackingActive
 {
-    if (!self.isEnabledOnInitialConfig)
-        return;
-    
-    if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
-        return;
+    // Only the enabling transition is gated. Enabling needs the resolved 'avt' value (seeded from the
+    // developer config, overridable by the server) and view tracking consent, so a server or consent
+    // driven disable can not be undone by the developer setter while automatic views would not be
+    // recorded anyway. Disabling is always allowed, so a server force-enabled tracker can be turned off
+    // and a consent revocation (which flips consent before calling 'stopAutoViewTracking') actually
+    // clears the active state instead of leaving it stuck on.
+    if (isAutoViewTrackingActive)
+    {
+        if (!CountlyServerConfig.sharedInstance.automaticViewTrackingEnabled)
+            return;
+
+        if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
+            return;
+    }
+
     if (_isAutoViewTrackingActive != isAutoViewTrackingActive) {
         [self stopAllViewsInternal:nil];
     }
-    
+
     _isAutoViewTrackingActive = isAutoViewTrackingActive;
 }
 
@@ -682,7 +694,7 @@ static dispatch_once_t onceToken;
 
 #pragma mark - Internal auto view tracking methods
 
-#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
 
 - (void)swizzleViewTrackingMethods
 {
@@ -704,7 +716,11 @@ static dispatch_once_t onceToken;
 {
     if (!self.isAutoViewTrackingActive)
         return;
-    
+
+    // Checked per view appearance so a runtime 'avt' = false from the server takes effect immediately
+    if (!CountlyServerConfig.sharedInstance.automaticViewTrackingEnabled)
+        return;
+
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
         return;
     
@@ -766,7 +782,7 @@ static dispatch_once_t onceToken;
 #pragma mark - Public function for application state
 
 - (void)applicationWillEnterForeground {
-#if (TARGET_OS_IOS  || TARGET_OS_VISION || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     if (!self.isAutoViewTrackingActive && self.isManualViewRestartActive) {
         [self startStoppedViewsInternal];
     }
@@ -777,7 +793,7 @@ static dispatch_once_t onceToken;
 #endif
 }
 - (void)applicationDidEnterBackground {
-#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         [self stopCurrentView];
     }
@@ -806,7 +822,7 @@ static dispatch_once_t onceToken;
 
 #pragma mark -
 
-#if (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
 @implementation UIViewController (CountlyViewTracking)
 - (void)Countly_viewDidAppear:(BOOL)animated
 {

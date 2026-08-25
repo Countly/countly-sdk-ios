@@ -280,8 +280,9 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
         validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
     }
     
-    // Automatic view tracking exists on the UIKit platforms; see TestPlatform.hasAutoViewTracking.
-    #if os(iOS) || os(tvOS) || os(visionOS)
+    // Automatic view tracking is only implemented for iOS and tvOS; on visionOS the public API
+    // is a logged no-op, so manual view recording is not suppressed there.
+    #if os(iOS) || os(tvOS)
     func testStartViewWhileAutoViewTrackingEnabled() throws {
         let config = createBaseConfig()
         config.enableAutomaticViewTracking = true // Enable auto view tracking

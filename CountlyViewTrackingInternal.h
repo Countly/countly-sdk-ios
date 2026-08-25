@@ -12,6 +12,7 @@ extern NSString* const kCountlyCurrentView;
 extern NSString* const kCountlyPreviousView;
 extern NSString* const kCountlyPreviousEventName;
 extern NSString* const kCountlyVTKeyVisit;
+extern NSString* const kCountlyVTKeyName;
 
 @interface CountlyViewTrackingInternal : NSObject <Resettable>
 @property (nonatomic) BOOL isEnabledOnInitialConfig;
@@ -26,7 +27,9 @@ extern NSString* const kCountlyVTKeyVisit;
 
 + (instancetype)sharedInstance;
 
-#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
+// Automatic view tracking is only implemented for iOS and tvOS, so the guard must not include
+// visionOS: the methods below would be declared but have no definition there
+#if (TARGET_OS_IOS || TARGET_OS_TV)
 - (void)startAutoViewTracking;
 - (void)stopAutoViewTracking;
 - (void)addExceptionForAutoViewTracking:(NSString *)exception;
@@ -52,7 +55,7 @@ extern NSString* const kCountlyVTKeyVisit;
 - (void)addSegmentationToViewWithID:(NSString *)viewID segmentation:(NSDictionary *)segmentation;
 - (void)addSegmentationToViewWithName:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
 
-#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
 - (void)addAutoViewTrackingExclutionList:(NSArray *)viewTrackingExclusionList;
 #endif
 @end

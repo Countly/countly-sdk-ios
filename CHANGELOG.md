@@ -1,6 +1,6 @@
 ## XX.XX.XX
+* Added support for SDK behavior settings that control the SDK's automatic session tracking, automatic view tracking, automatic crash reporting, and Journey Trigger Views.
 * Added "userProfile" access on watchOS, tvOS and macOS.
-* Added automatic view tracking support on visionOS.
 * Improved state cleanup for events and view tracking when "halt" is called.
 
 * Fixed a crash on visionOS when view tracking consent was given or cancelled.
