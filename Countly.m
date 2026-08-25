@@ -205,7 +205,8 @@ static dispatch_once_t onceToken;
         [CountlyLocationManager.sharedInstance updateLocation:config.location city:config.city ISOCountryCode:config.ISOCountryCode IP:config.IP];
     }
     
-    if (!CountlyCommon.sharedInstance.manualSessionHandling)
+    // Automatic session tracking is resolved through the SBS precedence chain (server can override the developer's manual session control choice)
+    if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
         [CountlyConnectionManager.sharedInstance beginSession];
     else
         [CountlyCommon.sharedInstance recordOrientation];
@@ -245,10 +246,11 @@ static dispatch_once_t onceToken;
     if ([config.features containsObject:CLYCrashReporting])
     {
         CountlyCrashReporter.sharedInstance.isEnabledOnInitialConfig = YES;
-        if (CountlyServerConfig.sharedInstance.crashReportingEnabled)
-        {
+    }
+    // Automatic crash reporting is resolved through the SBS precedence chain, so the server can enable it even when the developer did not
+    if (CountlyServerConfig.sharedInstance.crashReportingEnabled && CountlyServerConfig.sharedInstance.automaticCrashReportingEnabled)
+    {
         [CountlyCrashReporter.sharedInstance startCrashReporting];
-        }
     }
 
 #if (TARGET_OS_IOS || TARGET_OS_TV )
@@ -256,10 +258,11 @@ static dispatch_once_t onceToken;
     {
         // Print deprecation flag for feature
         CountlyViewTrackingInternal.sharedInstance.isEnabledOnInitialConfig = YES;
-        if (CountlyServerConfig.sharedInstance.viewTrackingEnabled)
-        {
-            [CountlyViewTrackingInternal.sharedInstance startAutoViewTracking];
-        }
+    }
+    // Automatic view tracking is resolved through the SBS precedence chain, so the server can enable it even when the developer did not
+    if (CountlyServerConfig.sharedInstance.viewTrackingEnabled && CountlyServerConfig.sharedInstance.automaticViewTrackingEnabled)
+    {
+        [CountlyViewTrackingInternal.sharedInstance startAutoViewTracking];
     }
     if (config.automaticViewTrackingExclusionList) {
         [CountlyViewTrackingInternal.sharedInstance addAutoViewTrackingExclutionList:config.automaticViewTrackingExclusionList];
@@ -351,6 +354,11 @@ static dispatch_once_t onceToken;
     [CountlyHealthTracker.sharedInstance sendHealthCheck];
 
     CountlyCommon.sharedInstance.hasFinishedInit = YES;
+
+    // The behavior settings response for the fetch started above can arrive before init finishes, in
+    // which case it deliberately did not touch automatic tracking. Apply the resolved values now that
+    // the configuration is complete, so a server side 'avt' or 'acr' is never silently dropped.
+    [CountlyServerConfig.sharedInstance applyAutomaticTrackingState];
 }
 
 - (CountlyConfig *) checkAndFixInternalLimitsConfig:(CountlyConfig *)config
@@ -407,16 +415,12 @@ static dispatch_once_t onceToken;
 
 - (void)onTimer:(NSTimer *)timer
 {
-    CLY_LOG_D(@"%s session timer fired, manualSessions: [%@], hybridSessions: [%@], isSuspended: [%@]", __FUNCTION__, CountlyCommon.sharedInstance.manualSessionHandling ? @"YES" : @"NO", CountlyCommon.sharedInstance.enableManualSessionControlHybridMode ? @"YES" : @"NO", isSuspended ? @"YES" : @"NO");
+    CLY_LOG_D(@"%s session timer fired, automaticSessions: [%@], hybridSessions: [%@], isSuspended: [%@]", __FUNCTION__, CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled ? @"YES" : @"NO", CountlyCommon.sharedInstance.enableManualSessionControlHybridMode ? @"YES" : @"NO", isSuspended ? @"YES" : @"NO");
     if (isSuspended)
         return;
     
-    if (!CountlyCommon.sharedInstance.manualSessionHandling)
-    {
-        [CountlyConnectionManager.sharedInstance updateSession];
-    }
-    // this condtion is called only when both manual session handling and hybrid mode is enabled.
-    else if (CountlyCommon.sharedInstance.enableManualSessionControlHybridMode)
+    // Hybrid mode keeps the automatic session update going even when automatic session tracking is not active
+    if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled || CountlyCommon.sharedInstance.enableManualSessionControlHybridMode)
     {
         [CountlyConnectionManager.sharedInstance updateSession];
     }
@@ -440,7 +444,7 @@ static dispatch_once_t onceToken;
         return;
     }
     
-    CLY_LOG_D(@"%s flushing events and saving the state before suspend, manualSessions: [%@]", __FUNCTION__, CountlyCommon.sharedInstance.manualSessionHandling ? @"YES" : @"NO");
+    CLY_LOG_D(@"%s flushing events and saving the state before suspend, automaticSessions: [%@]", __FUNCTION__, CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled ? @"YES" : @"NO");
 
     isSuspended = YES;
     
@@ -448,9 +452,9 @@ static dispatch_once_t onceToken;
     
     [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
     
-    if (!CountlyCommon.sharedInstance.manualSessionHandling)
+    if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
         [CountlyConnectionManager.sharedInstance endSession];
-    
+
     [CountlyPersistency.sharedInstance saveToFile];
 }
 
@@ -476,11 +480,11 @@ static dispatch_once_t onceToken;
     }
 #endif
     
-    CLY_LOG_D(@"%s restarting session handling after resume, manualSessions: [%@]", __FUNCTION__, CountlyCommon.sharedInstance.manualSessionHandling ? @"YES" : @"NO");
+    CLY_LOG_D(@"%s restarting session handling after resume, automaticSessions: [%@]", __FUNCTION__, CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled ? @"YES" : @"NO");
     
-    if (!CountlyCommon.sharedInstance.manualSessionHandling)
+    if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
         [CountlyConnectionManager.sharedInstance beginSession];
-    
+
     [CountlyViewTrackingInternal.sharedInstance applicationWillEnterForeground];
     
     isSuspended = NO;
@@ -641,35 +645,42 @@ static dispatch_once_t onceToken;
 
 - (void)beginSession
 {
-    CLY_LOG_I(@"%s a manual session begin is requested, manualSessions: [%@]", __FUNCTION__, CountlyCommon.sharedInstance.manualSessionHandling ? @"YES" : @"NO");
-    
-    if (CountlyCommon.sharedInstance.manualSessionHandling)
-        [CountlyConnectionManager.sharedInstance beginSession];
-    else
-        CLY_LOG_W(@"%s omitting the session begin, manual session handling is not enabled", __FUNCTION__);
+    CLY_LOG_I(@"%s a manual session begin is requested, automaticSessions: [%@]", __FUNCTION__, CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled ? @"YES" : @"NO");
+
+    if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
+    {
+        CLY_LOG_W(@"%s omitting the session begin, automatic session tracking is active", __FUNCTION__);
+        return;
+    }
+
+    [CountlyConnectionManager.sharedInstance beginSession];
 }
 
 - (void)updateSession
 {
-    CLY_LOG_I(@"%s a manual session update is requested, manualSessions: [%@]", __FUNCTION__, CountlyCommon.sharedInstance.manualSessionHandling ? @"YES" : @"NO");
-    
-    if (CountlyCommon.sharedInstance.manualSessionHandling)
-        [CountlyConnectionManager.sharedInstance updateSession];
-    else
-        CLY_LOG_W(@"%s omitting the session update, manual session handling is not enabled", __FUNCTION__);
+    CLY_LOG_I(@"%s a manual session update is requested, automaticSessions: [%@]", __FUNCTION__, CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled ? @"YES" : @"NO");
+
+    if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
+    {
+        CLY_LOG_W(@"%s omitting the session update, automatic session tracking is active", __FUNCTION__);
+        return;
+    }
+
+    [CountlyConnectionManager.sharedInstance updateSession];
 }
 
 - (void)endSession
 {
-    CLY_LOG_I(@"%s a manual session end is requested, manualSessions: [%@]", __FUNCTION__, CountlyCommon.sharedInstance.manualSessionHandling ? @"YES" : @"NO");
-    
-    if (CountlyCommon.sharedInstance.manualSessionHandling)
+    CLY_LOG_I(@"%s a manual session end is requested, automaticSessions: [%@]", __FUNCTION__, CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled ? @"YES" : @"NO");
+
+    if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
     {
-        [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
-        [CountlyConnectionManager.sharedInstance endSession];
+        CLY_LOG_W(@"%s omitting the session end, automatic session tracking is active", __FUNCTION__);
+        return;
     }
-    else
-        CLY_LOG_W(@"%s omitting the session end, manual session handling is not enabled", __FUNCTION__);
+
+    [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
+    [CountlyConnectionManager.sharedInstance endSession];
 }
 
 
@@ -1048,18 +1059,10 @@ static dispatch_once_t onceToken;
         }
         event.key = key;
         event.segmentation = [self processSegmentation:filteredSegmentations eventKey:key];
-        id callback = nil;
-        if ([CountlyServerConfig.sharedInstance isJourneyTriggerEvent:key]){
-            callback = ^(NSString *response, BOOL success) {
-                if (success)
-                {
-    #if (TARGET_OS_IOS)
-                    dispatch_async(dispatch_get_main_queue(), ^{
-                        [CountlyContentBuilderInternal.sharedInstance refreshContentZoneJTE];
-                    });
-    #endif
-                }
-            };
+        CLYRequestCallback callback = nil;
+        if ([CountlyServerConfig.sharedInstance isJourneyTriggerEvent:key])
+        {
+            callback = [self journeyTriggerCallback];
         }
         [CountlyPersistency.sharedInstance recordEvent:event callback:callback];
 #if __has_include(<os/lock.h>)
@@ -1070,8 +1073,35 @@ static dispatch_once_t onceToken;
     {
         event.key = key;
         event.segmentation = [self processSegmentation:filteredSegmentations eventKey:key];
-        [CountlyPersistency.sharedInstance recordEvent:event];
+        CLYRequestCallback callback = nil;
+        // Journey trigger views mirror the journey trigger events behavior. The 'name' segmentation value is
+        // matched as sent (after truncation and filtering), same as the wire format.
+        if ([key isEqualToString:kCountlyReservedEventView])
+        {
+            NSString* viewName = event.segmentation[kCountlyVTKeyName];
+            if ([viewName isKindOfClass:NSString.class] && [CountlyServerConfig.sharedInstance isJourneyTriggerView:viewName])
+            {
+                callback = [self journeyTriggerCallback];
+            }
+        }
+        [CountlyPersistency.sharedInstance recordEvent:event callback:callback];
     }
+}
+
+// Callback used for both journey trigger kinds: recording an event with a callback force-flushes the event
+// queue, and the content zone is refreshed once that request succeeds.
+- (CLYRequestCallback)journeyTriggerCallback
+{
+    return ^(NSString *response, BOOL success) {
+        if (success)
+        {
+#if (TARGET_OS_IOS)
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [CountlyContentBuilderInternal.sharedInstance refreshContentZoneJTE];
+            });
+#endif
+        }
+    };
 }
 
 - (NSDictionary *)processSegmentation:(NSMutableDictionary *)segmentation eventKey:(NSString *)eventKey {
@@ -1338,12 +1368,20 @@ static dispatch_once_t onceToken;
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV )
 - (void)addExceptionForAutoViewTracking:(NSString *)exception
 {
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     [CountlyViewTrackingInternal.sharedInstance addExceptionForAutoViewTracking:exception.copy];
+#else
+    CLY_LOG_W(@"%s omitting the call, automatic view tracking is not available on this platform, the exception is not added", __FUNCTION__);
+#endif
 }
 
 - (void)removeExceptionForAutoViewTracking:(NSString *)exception
 {
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     [CountlyViewTrackingInternal.sharedInstance removeExceptionForAutoViewTracking:exception.copy];
+#else
+    CLY_LOG_W(@"%s omitting the call, automatic view tracking is not available on this platform, the exception is not removed", __FUNCTION__);
+#endif
 }
 
 - (void)setIsAutoViewTrackingActive:(BOOL)isAutoViewTrackingActive
@@ -1351,13 +1389,22 @@ static dispatch_once_t onceToken;
     CLY_LOG_I(@"%s isAutoViewTrackingActive: [%@]", __FUNCTION__, isAutoViewTrackingActive ? @"YES" : @"NO");
     CLY_LOG_W(@"%s deprecated property used, 'isAutoViewTrackingActive' will be removed in a future release", __FUNCTION__);
 
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     CountlyViewTrackingInternal.sharedInstance.isAutoViewTrackingActive = isAutoViewTrackingActive;
+#else
+    CLY_LOG_W(@"%s omitting the call, automatic view tracking is not available on this platform, the state change is ignored", __FUNCTION__);
+#endif
 }
 
 - (BOOL)isAutoViewTrackingActive
 {
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     CLY_LOG_I(@"%s the auto view tracking state is requested, isActive: [%@]", __FUNCTION__, CountlyViewTrackingInternal.sharedInstance.isAutoViewTrackingActive ? @"YES" : @"NO");
     return CountlyViewTrackingInternal.sharedInstance.isAutoViewTrackingActive;
+#else
+    CLY_LOG_I(@"%s the auto view tracking state is requested, automatic view tracking is not available on this platform", __FUNCTION__);
+    return NO;
+#endif
 }
 #endif
 #pragma mark - Star Rating
@@ -1585,7 +1632,11 @@ static dispatch_once_t onceToken;
         [viewTracking setValue:nil forKey:@"currentViewName"];
         [viewTracking setValue:nil forKey:@"previousViewID"];
         [viewTracking setValue:nil forKey:@"previousViewName"];
+#if (TARGET_OS_IOS || TARGET_OS_TV)
+        // Only declared on the platforms that implement automatic view tracking; setting it elsewhere
+        // would raise NSUnknownKeyException, which the compiler cannot catch for a string key
         [viewTracking setValue:@NO forKey:@"isAutoViewTrackingActive"];
+#endif
         [viewTracking resetFirstView];
     }
 

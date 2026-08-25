@@ -623,17 +623,17 @@ static dispatch_once_t onceToken;
     }
     
 #if TARGET_OS_IOS || TARGET_OS_TV
-    if (!CountlyCommon.sharedInstance.manualSessionHandling && [UIApplication sharedApplication].applicationState == UIApplicationStateBackground) {
+    if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled && [UIApplication sharedApplication].applicationState == UIApplicationStateBackground) {
         CLY_LOG_D(@"%s App is in the background, 'beginSession' will be ignored", __FUNCTION__);
         return;
     }
 #elif TARGET_OS_OSX
-    if (!CountlyCommon.sharedInstance.manualSessionHandling && ![NSApplication sharedApplication].isActive) {
+    if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled && ![NSApplication sharedApplication].isActive) {
         CLY_LOG_D(@"%s App is not active, 'beginSession' will be ignored", __FUNCTION__);
         return;
     }
 #elif TARGET_OS_WATCH
-    if (!CountlyCommon.sharedInstance.manualSessionHandling && [WKExtension sharedExtension].applicationState == WKApplicationStateBackground) {
+    if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled && [WKExtension sharedExtension].applicationState == WKApplicationStateBackground) {
         CLY_LOG_D(@"%s watch app is in the background, 'beginSession' will be ignored", __FUNCTION__);
         return;
     }
@@ -854,7 +854,7 @@ static dispatch_once_t onceToken;
 
     [self sendEventsWithSaveIfNeeded];
 
-    if (!CountlyCommon.sharedInstance.manualSessionHandling)
+    if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
         [self endSession];
 
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)

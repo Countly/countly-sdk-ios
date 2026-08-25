@@ -265,9 +265,11 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)startAutoViewTracking
 {
-    if (!self.isEnabledOnInitialConfig)
+    // Gated on the resolved 'avt' value (seeded from the developer config, overridable by the server),
+    // so the server can force-enable automatic view tracking even when the developer did not opt in
+    if (!CountlyServerConfig.sharedInstance.automaticViewTrackingEnabled)
     {
-        CLY_LOG_D(@"%s automatic view tracking is not enabled on initial config, it will not be started", __FUNCTION__);
+        CLY_LOG_D(@"%s automatic view tracking is not enabled by behavior settings, it will not be started", __FUNCTION__);
         return;
     }
 
@@ -298,22 +300,32 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 
 - (void)setIsAutoViewTrackingActive:(BOOL)isAutoViewTrackingActive
 {
-    if (!self.isEnabledOnInitialConfig)
+    // Only the enabling transition is gated. Enabling needs the resolved 'avt' value (seeded from the
+    // developer config, overridable by the server) and view tracking consent, so a server or consent
+    // driven disable can not be undone by the developer setter while automatic views would not be
+    // recorded anyway. Disabling is always allowed, so a server force-enabled tracker can be turned off
+    // and a consent revocation (which flips consent before calling 'stopAutoViewTracking') actually
+    // clears the active state instead of leaving it stuck on.
+    if (isAutoViewTrackingActive)
     {
-        CLY_LOG_D(@"%s automatic view tracking is not enabled on initial config, active state change to [%@] will be ignored", __FUNCTION__, isAutoViewTrackingActive ? @"YES" : @"NO");
-        return;
+        if (!CountlyServerConfig.sharedInstance.automaticViewTrackingEnabled)
+        {
+            CLY_LOG_D(@"%s automatic view tracking is not enabled by behavior settings, active state change to [%@] will be ignored", __FUNCTION__, isAutoViewTrackingActive ? @"YES" : @"NO");
+            return;
+        }
+
+        if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
+        {
+            CLY_LOG_V(@"%s no consent for views, automatic view tracking active state change will be ignored", __FUNCTION__);
+            return;
+        }
     }
 
-    if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
-    {
-        CLY_LOG_V(@"%s no consent for views, automatic view tracking active state change will be ignored", __FUNCTION__);
-        return;
-    }
     if (_isAutoViewTrackingActive != isAutoViewTrackingActive) {
         CLY_LOG_D(@"%s automatic view tracking active state changing from [%@] to [%@], all running views will be stopped", __FUNCTION__, _isAutoViewTrackingActive ? @"YES" : @"NO", isAutoViewTrackingActive ? @"YES" : @"NO");
         [self stopAllViewsInternal:nil];
     }
-    
+
     _isAutoViewTrackingActive = isAutoViewTrackingActive;
 }
 
@@ -792,6 +804,13 @@ NSString* const kCountlyVTKeyDur      = @"dur";
         return;
     }
 
+    // Checked per view appearance so a runtime 'avt' = false from the server takes effect immediately
+    if (!CountlyServerConfig.sharedInstance.automaticViewTrackingEnabled)
+    {
+        CLY_LOG_D(@"%s automatic view tracking is disabled by behavior settings, appeared view controller will be ignored", __FUNCTION__);
+        return;
+    }
+
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
     {
         CLY_LOG_V(@"%s no consent for views, automatic view start will be ignored", __FUNCTION__);
@@ -859,7 +878,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 #pragma mark - Public function for application state
 
 - (void)applicationWillEnterForeground {
-#if (TARGET_OS_IOS  || TARGET_OS_VISION || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     if (!self.isAutoViewTrackingActive && self.isManualViewRestartActive) {
         CLY_LOG_D(@"%s app entered foreground with manual view restart active, stopped views will be started automatically", __FUNCTION__);
         [self startStoppedViewsInternal];
@@ -872,7 +891,7 @@ NSString* const kCountlyVTKeyDur      = @"dur";
 #endif
 }
 - (void)applicationDidEnterBackground {
-#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_D(@"%s app entered background while automatic view tracking is active, current view will be stopped automatically", __FUNCTION__);
         [self stopCurrentView];

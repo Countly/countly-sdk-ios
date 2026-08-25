@@ -51,7 +51,19 @@ NSString* const kCountlyCRKeyImageBuildUUID    = @"id";
 NSString* const kCountlyCRKeyOB                = @"_ob";
 
 
+// Which mechanism, if any, currently has Countly's unhandled crash handlers installed. Tracking the
+// mechanism instead of a plain flag keeps two things correct: 'stopCrashReporting' only tears down the
+// handlers Countly itself installed, and a change of 'shouldUsePLCrashReporter' between calls is not
+// mistaken for "already installed"
+typedef NS_ENUM(NSInteger, CLYCrashHandlerInstallation)
+{
+    CLYCrashHandlerInstallationNone = 0,
+    CLYCrashHandlerInstallationDefault,
+    CLYCrashHandlerInstallationPLCrashReporter
+};
+
 @interface CountlyCrashReporter ()
+@property (nonatomic) CLYCrashHandlerInstallation crashHandlerInstallation;
 @property (nonatomic) NSMutableArray* customCrashLogs;
 @property (nonatomic) NSDateFormatter* dateFormatter;
 @property (nonatomic) NSString* buildUUID;
@@ -91,55 +103,120 @@ NSString* const kCountlyCRKeyOB                = @"_ob";
 
 - (void)startCrashReporting
 {
-    if (!self.isEnabledOnInitialConfig)
+    // Serialized because the behavior settings response handler calls this from a background thread while
+    // init and consent changes call it from another. 'stopCrashReporting' is deliberately left unlocked,
+    // since it is also reached from the crash handler itself, where blocking on a lock is not acceptable.
+    @synchronized (self)
     {
-        CLY_LOG_D(@"%s crash handlers are not installed, crash reporting is disabled in the initial config", __FUNCTION__);
-        return;
-    }
+        // Already installed through the mechanism that is currently configured. For the default handler path
+        // the live handler is checked as well, since the global handler can be replaced externally while the
+        // singleton (and its state) lives on, and it should then be reinstalled. PLCrashReporter installs its
+        // own handlers, so for that path the recorded state is all there is to go on.
+        if (self.crashHandlerInstallation == CLYCrashHandlerInstallationPLCrashReporter && self.shouldUsePLCrashReporter)
+        {
+            CLY_LOG_D(@"%s PLCrashReporter based crash handlers are already installed, nothing to do", __FUNCTION__);
+            return;
+        }
 
-    if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
-    {
-        CLY_LOG_V(@"%s no crashes consent given, crash handlers are not installed", __FUNCTION__);
-        return;
-    }
+        if (self.crashHandlerInstallation == CLYCrashHandlerInstallationDefault && !self.shouldUsePLCrashReporter
+            && NSGetUncaughtExceptionHandler() == &CountlyUncaughtExceptionHandler)
+        {
+            CLY_LOG_D(@"%s built in crash handlers are already installed, nothing to do", __FUNCTION__);
+            return;
+        }
 
-    if (self.shouldUsePLCrashReporter)
-    {
-        CLY_LOG_D(@"%s installing PLCrashReporter based crash handlers, useMachSignalHandler: [%@]", __FUNCTION__, self.shouldUseMachSignalHandler ? @"YES" : @"NO");
+        // Gated on the resolved 'acr' value (seeded from the developer config, overridable by the server),
+        // so the server can enable automatic crash reporting even when the developer did not opt in
+        if (!CountlyServerConfig.sharedInstance.automaticCrashReportingEnabled)
+        {
+            CLY_LOG_D(@"%s crash handlers are not installed, automatic crash reporting is disabled", __FUNCTION__);
+            return;
+        }
+
+        if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
+        {
+            CLY_LOG_V(@"%s no crashes consent given, crash handlers are not installed", __FUNCTION__);
+            return;
+        }
+
+        if (self.shouldUsePLCrashReporter)
+        {
+            if (self.crashHandlerInstallation == CLYCrashHandlerInstallationDefault)
+            {
+                // 'shouldUsePLCrashReporter' changed since the last install, so remove the default handlers
+                // Countly put in place before handing over to PLCrashReporter
+                CLY_LOG_D(@"%s built in crash handlers are being removed before handing over to PLCrashReporter", __FUNCTION__);
+                [self uninstallDefaultCrashHandlers];
+                self.crashHandlerInstallation = CLYCrashHandlerInstallationNone;
+            }
+
+            CLY_LOG_D(@"%s installing PLCrashReporter based crash handlers, useMachSignalHandler: [%@]", __FUNCTION__, self.shouldUseMachSignalHandler ? @"YES" : @"NO");
 #ifdef COUNTLY_PLCRASHREPORTER_EXISTS
-        [self startPLCrashReporter];
+            [self startPLCrashReporter];
+            // 'startPLCrashReporter' does not report whether PLCrashReporter accepted the install
+            self.crashHandlerInstallation = CLYCrashHandlerInstallationPLCrashReporter;
 #else
-        [NSException raise:@"CountlyPLCrashReporterDependencyNotFoundException" format:@"PLCrashReporter dependency can not be found in Project"];
+            // Logged rather than raised: this is a build configuration mistake, and this method is also reached
+            // from the behavior settings response handler on a background thread, where raising would crash the
+            // app, and from init, where it would abort the rest of 'startWithConfig'
+            CLY_LOG_E(@"%s PLCrashReporter dependency can not be found in Project, automatic crash reporting will not start", __FUNCTION__);
 #endif
-        return;
-    }
+            return;
+        }
 
-    CLY_LOG_D(@"%s installing the built in uncaught exception handler and signal handlers", __FUNCTION__);
+        CLY_LOG_D(@"%s installing the built in uncaught exception handler and signal handlers", __FUNCTION__);
 
-    NSSetUncaughtExceptionHandler(&CountlyUncaughtExceptionHandler);
+        NSSetUncaughtExceptionHandler(&CountlyUncaughtExceptionHandler);
 
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV || TARGET_OS_OSX)
-    signal(SIGABRT, CountlySignalHandler);
-    signal(SIGILL, CountlySignalHandler);
-    signal(SIGSEGV, CountlySignalHandler);
-    signal(SIGFPE, CountlySignalHandler);
-    signal(SIGBUS, CountlySignalHandler);
-    signal(SIGPIPE, CountlySignalHandler);
-    signal(SIGTRAP, CountlySignalHandler);
+        signal(SIGABRT, CountlySignalHandler);
+        signal(SIGILL, CountlySignalHandler);
+        signal(SIGSEGV, CountlySignalHandler);
+        signal(SIGFPE, CountlySignalHandler);
+        signal(SIGBUS, CountlySignalHandler);
+        signal(SIGPIPE, CountlySignalHandler);
+        signal(SIGTRAP, CountlySignalHandler);
 #endif
+
+        self.crashHandlerInstallation = CLYCrashHandlerInstallationDefault;
+    }
 }
 
 
 - (void)stopCrashReporting
 {
-    if (!self.isEnabledOnInitialConfig)
+    // Cleared before the installation check: breadcrumbs are gathered under crash consent alone, so they
+    // can exist even when no handler was ever installed (for example with 'acr' resolved to false), and a
+    // consent revocation has to drop them either way
+    [self clearCrashLogs];
+
+    if (self.crashHandlerInstallation == CLYCrashHandlerInstallationNone)
     {
-        CLY_LOG_D(@"%s crash handler uninstall is a no-op, crash reporting was never enabled in the initial config", __FUNCTION__);
+        CLY_LOG_D(@"%s crash handler uninstall is a no-op, no crash handlers were installed by the SDK", __FUNCTION__);
         return;
     }
 
-    CLY_LOG_D(@"%s uninstalling the uncaught exception handler and restoring default signal handlers, breadcrumbCount: [%lu]", __FUNCTION__, (unsigned long)self.customCrashLogs.count);
+    if (self.crashHandlerInstallation == CLYCrashHandlerInstallationPLCrashReporter)
+    {
+        // PLCrashReporter can not be uninstalled once enabled, and Countly never installed the default
+        // handlers on that path, so they are left alone rather than clobbering handlers that belong to the
+        // host app or another SDK. Reporting is suppressed by the consent and 'acr' checks in
+        // 'CountlyExceptionHandler' instead.
+        // NOTE: kept at Debug on purpose, this method is reachable from the signal handler and the Error and
+        // Warning macros are not async signal safe
+        CLY_LOG_D(@"%s PLCrashReporter can not be uninstalled, automatically detected crashes stay captured until the next launch", __FUNCTION__);
+    }
+    else
+    {
+        CLY_LOG_D(@"%s uninstalling the uncaught exception handler and restoring default signal handlers", __FUNCTION__);
+        [self uninstallDefaultCrashHandlers];
+    }
 
+    self.crashHandlerInstallation = CLYCrashHandlerInstallationNone;
+}
+
+- (void)uninstallDefaultCrashHandlers
+{
     NSSetUncaughtExceptionHandler(NULL);
 
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV || TARGET_OS_OSX)
@@ -151,8 +228,6 @@ NSString* const kCountlyCRKeyOB                = @"_ob";
     signal(SIGPIPE, SIG_DFL);
     signal(SIGTRAP, SIG_DFL);
 #endif
-
-    [self clearCrashLogs];
 }
 
 #ifdef COUNTLY_PLCRASHREPORTER_EXISTS
@@ -271,7 +346,13 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
 {
     if (!CountlyServerConfig.sharedInstance.crashReportingEnabled)
         return;
-    
+
+    // Automatically detected crashes are additionally gated on the resolved 'acr' value, so a runtime
+    // 'acr' = false from the server disables them without uninstalling the handler. Manually recorded
+    // exceptions stay governed by 'crt' only.
+    if (isAutoDetect && !CountlyServerConfig.sharedInstance.automaticCrashReportingEnabled)
+        return;
+
     NSArray* stackTrace = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
     if (!stackTrace)
         stackTrace = exception.callStackSymbols;

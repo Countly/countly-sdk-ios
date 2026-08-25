@@ -291,7 +291,7 @@ static dispatch_once_t onceToken;
     {
         CLY_LOG_D(@"%s consent granted, feature: [%@], begin session will be requested unless manual session handling is enabled", __FUNCTION__, CLYConsentSessions);
 
-        if (!CountlyCommon.sharedInstance.manualSessionHandling)
+        if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
             [CountlyConnectionManager.sharedInstance beginSession];
     }
     else
@@ -404,7 +404,9 @@ static dispatch_once_t onceToken;
 {
     _consentForViewTracking = consentForViewTracking;
 
-#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
+// Automatic view tracking is only implemented for iOS and tvOS, so the guard must not include
+// visionOS: the methods below would be declared but have no definition there
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     if (consentForViewTracking)
     {
         CLY_LOG_D(@"%s consent granted, feature: [%@], automatic view tracking will be started", __FUNCTION__, CLYConsentViewTracking);

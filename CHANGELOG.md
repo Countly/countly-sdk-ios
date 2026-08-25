@@ -1,4 +1,6 @@
 ## XX.XX.XX
+* Added support for SDK behavior settings that control the SDK's automatic session tracking, automatic view tracking, automatic crash reporting, and Journey Trigger Views.
+
 * Improved internal logging. Logs now name the class and function, carry the relevant parameter values, and use more accurate log levels.
 * Changed the default log level from verbose to debug.
 * Improved logging performance by not evaluating log arguments when the level is inactive.
