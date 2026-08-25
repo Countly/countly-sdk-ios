@@ -23,11 +23,7 @@ class CountlyBaseTestCase: XCTestCase {
             TestAppActivation.installIfNeeded()
             TestAppActivation.isActive = true
         #endif
-        // Order matters: cleanupState() starts the SDK, which reloads the persisted server
-        // config from the previous test and re-applies any limits it carried, so the reset has
-        // to happen after it rather than before.
         cleanupState()
-        resetSharedSDKLimits()
     }
 
     /// `CountlyConfig.sdkInternalLimits` is a process-wide object, not per-config, so a test
@@ -54,7 +50,10 @@ class CountlyBaseTestCase: XCTestCase {
     }
     
     override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+        // Restore the shared SDK limits here rather than in setUp: a test legitimately lowers
+        // them through its own server config, so resetting beforehand would fight the test
+        // itself. Cleaning up afterwards leaves the next test unaffected either way.
+        resetSharedSDKLimits()
     }
     
     func cleanupState() {

@@ -999,9 +999,14 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         CountlyContentBuilderInternal.sharedInstance().contentInitialDelay = 0;
         #endif
 
-        // Wait for the async server config fetch to land. A fixed sleep here was the cause of
-        // the `allFeatures` flakiness on CI, where the fetch needs longer than 2 seconds.
-        TestUtils.waitUntil("the server config response to be applied") { tracker.counts[4] >= 1 }
+        // Wait for the async server config response to be *applied*, not merely requested.
+        // Keying on the request count was wrong: the SDK parses the response afterwards, so
+        // tests could set user properties or record events before the filters existed, which is
+        // why the filter tests failed even run in isolation. `populateServerConfig:` stores the
+        // merged settings as its last step, so a non-empty stored config means it has landed.
+        TestUtils.waitUntil("the server config response to be applied") {
+            CountlyPersistency.sharedInstance().retrieveServerConfig().count > 0
+        }
 
         return tracker
     }
