@@ -468,7 +468,15 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         countlyConfig.manualSessionHandling = true
         countlyConfig.urlSessionConfiguration = createUrlSessionConfigForResponse(ServerConfigBuilder().requestQueueSize(3).build())
         Countly.sharedInstance().start(with: countlyConfig)
-        
+
+        // This test asserts absolute queue indices, so it needs the limit actually in effect and
+        // a queue with nothing else in it. An earlier test's in-flight flush can land here after
+        // setUp purged, which is why this passed locally and failed on CI.
+        TestUtils.waitUntil("the request queue size limit to be applied") {
+            CountlyServerConfig.sharedInstance().requestQueueSize() == 3
+        }
+        CountlyPersistency.sharedInstance().flushQueue()
+
         Countly.sharedInstance().beginSession()
         XCTAssertTrue(TestUtils.getCurrentRQ()![0].contains("begin_session"))
         

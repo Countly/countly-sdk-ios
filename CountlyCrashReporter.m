@@ -113,19 +113,31 @@ typedef NS_ENUM(NSInteger, CLYCrashHandlerInstallation)
         // singleton (and its state) lives on, and it should then be reinstalled. PLCrashReporter installs its
         // own handlers, so for that path the recorded state is all there is to go on.
         if (self.crashHandlerInstallation == CLYCrashHandlerInstallationPLCrashReporter && self.shouldUsePLCrashReporter)
+        {
+            CLY_LOG_D(@"%s PLCrashReporter based crash handlers are already installed, nothing to do", __FUNCTION__);
             return;
+        }
 
         if (self.crashHandlerInstallation == CLYCrashHandlerInstallationDefault && !self.shouldUsePLCrashReporter
             && NSGetUncaughtExceptionHandler() == &CountlyUncaughtExceptionHandler)
+        {
+            CLY_LOG_D(@"%s built in crash handlers are already installed, nothing to do", __FUNCTION__);
             return;
+        }
 
         // Gated on the resolved 'acr' value (seeded from the developer config, overridable by the server),
         // so the server can enable automatic crash reporting even when the developer did not opt in
         if (!CountlyServerConfig.sharedInstance.automaticCrashReportingEnabled)
+        {
+            CLY_LOG_D(@"%s crash handlers are not installed, automatic crash reporting is disabled", __FUNCTION__);
             return;
+        }
 
         if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
+        {
+            CLY_LOG_V(@"%s no crashes consent given, crash handlers are not installed", __FUNCTION__);
             return;
+        }
 
         if (self.shouldUsePLCrashReporter)
         {
@@ -133,10 +145,12 @@ typedef NS_ENUM(NSInteger, CLYCrashHandlerInstallation)
             {
                 // 'shouldUsePLCrashReporter' changed since the last install, so remove the default handlers
                 // Countly put in place before handing over to PLCrashReporter
+                CLY_LOG_D(@"%s built in crash handlers are being removed before handing over to PLCrashReporter", __FUNCTION__);
                 [self uninstallDefaultCrashHandlers];
                 self.crashHandlerInstallation = CLYCrashHandlerInstallationNone;
             }
 
+            CLY_LOG_D(@"%s installing PLCrashReporter based crash handlers, useMachSignalHandler: [%@]", __FUNCTION__, self.shouldUseMachSignalHandler ? @"YES" : @"NO");
 #ifdef COUNTLY_PLCRASHREPORTER_EXISTS
             [self startPLCrashReporter];
             // 'startPLCrashReporter' does not report whether PLCrashReporter accepted the install
@@ -149,6 +163,8 @@ typedef NS_ENUM(NSInteger, CLYCrashHandlerInstallation)
 #endif
             return;
         }
+
+        CLY_LOG_D(@"%s installing the built in uncaught exception handler and signal handlers", __FUNCTION__);
 
         NSSetUncaughtExceptionHandler(&CountlyUncaughtExceptionHandler);
 
@@ -175,7 +191,10 @@ typedef NS_ENUM(NSInteger, CLYCrashHandlerInstallation)
     [self clearCrashLogs];
 
     if (self.crashHandlerInstallation == CLYCrashHandlerInstallationNone)
+    {
+        CLY_LOG_D(@"%s crash handler uninstall is a no-op, no crash handlers were installed by the SDK", __FUNCTION__);
         return;
+    }
 
     if (self.crashHandlerInstallation == CLYCrashHandlerInstallationPLCrashReporter)
     {
@@ -183,10 +202,13 @@ typedef NS_ENUM(NSInteger, CLYCrashHandlerInstallation)
         // handlers on that path, so they are left alone rather than clobbering handlers that belong to the
         // host app or another SDK. Reporting is suppressed by the consent and 'acr' checks in
         // 'CountlyExceptionHandler' instead.
-        CLY_LOG_W(@"%s PLCrashReporter can not be uninstalled, automatically detected crashes stay captured until the next launch", __FUNCTION__);
+        // NOTE: kept at Debug on purpose, this method is reachable from the signal handler and the Error and
+        // Warning macros are not async signal safe
+        CLY_LOG_D(@"%s PLCrashReporter can not be uninstalled, automatically detected crashes stay captured until the next launch", __FUNCTION__);
     }
     else
     {
+        CLY_LOG_D(@"%s uninstalling the uncaught exception handler and restoring default signal handlers", __FUNCTION__);
         [self uninstallDefaultCrashHandlers];
     }
 
@@ -217,6 +239,8 @@ typedef NS_ENUM(NSInteger, CLYCrashHandlerInstallation)
 
     self.crashReporter = [PLCrashReporter.alloc initWithConfiguration:config];
 
+    CLY_LOG_D(@"%s PLCrashReporter is configured, hasPendingCrashReport: [%@]", __FUNCTION__, self.crashReporter.hasPendingCrashReport ? @"YES" : @"NO");
+
     if (self.crashReporter.hasPendingCrashReport)
         [self handlePendingCrashReport];
     else
@@ -232,14 +256,14 @@ typedef NS_ENUM(NSInteger, CLYCrashHandlerInstallation)
     NSData* crashData = [self.crashReporter loadPendingCrashReportDataAndReturnError:&error];
     if (!crashData)
     {
-        CLY_LOG_W(@"Could not load crash report data: %@", error);
+        CLY_LOG_E(@"%s pending crash report data could not be loaded from disk, error: [%@]", __FUNCTION__, error.localizedDescription);
         return;
     }
 
     PLCrashReport *report = [PLCrashReport.alloc initWithData:crashData error:&error];
     if (!report)
     {
-        CLY_LOG_W(@"Could not initialize crash report using data %@", error);
+        CLY_LOG_E(@"%s pending crash report could not be parsed from the loaded data, error: [%@]", __FUNCTION__, error.localizedDescription);
         return;
     }
 
@@ -258,17 +282,17 @@ typedef NS_ENUM(NSInteger, CLYCrashHandlerInstallation)
     BOOL shouldSend = YES;
     if (self.shouldSendCrashReportCallback)
     {
-        CLY_LOG_D(@"shouldSendCrashReportCallback is set, asking it if the report should be sent or not.");
+        CLY_LOG_D(@"%s asking shouldSendCrashReportCallback whether the pending report should be sent", __FUNCTION__);
         shouldSend = self.shouldSendCrashReportCallback(crashReport);
 
-        if (shouldSend)
-            CLY_LOG_D(@"shouldSendCrashReportCallback returned YES, sending the report.");
-        else
-            CLY_LOG_D(@"shouldSendCrashReportCallback returned NO, not sending the report.");
+        CLY_LOG_D(@"%s shouldSendCrashReportCallback decision received, shouldSend: [%@]", __FUNCTION__, shouldSend ? @"YES" : @"NO");
     }
 
     if (shouldSend)
     {
+        CLY_LOG_I(@"%s pending crash report recorded, isFatal: [%@], breadcrumbLength: [%lu], customSegmentationProvided: [%@]", __FUNCTION__, @"YES", (unsigned long)[(NSString *)crashReport[kCountlyCRKeyCustom] length], (self.crashSegmentation.count > 0) ? @"YES" : @"NO");
+        CLY_LOG_D(@"%s pending crash report detail, report: [%@]", __FUNCTION__, crashReport);
+
         [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:NO];
     }
 
@@ -280,8 +304,14 @@ typedef NS_ENUM(NSInteger, CLYCrashHandlerInstallation)
 
 - (void)recordException:(NSException *)exception isFatal:(BOOL)isFatal stackTrace:(NSArray *)stackTrace segmentation:(NSDictionary *)segmentation
 {
+    CLY_LOG_I(@"%s exception recording requested, exceptionName: [%@], isFatal: [%@], stackTraceFrameCount: [%lu], segmentationKeyCount: [%lu]", __FUNCTION__, exception.name, isFatal ? @"YES" : @"NO", (unsigned long)stackTrace.count, (unsigned long)segmentation.count);
+    CLY_LOG_D(@"%s exception recording detail, exception: [%@], stackTrace: [%@], segmentation: [%@]", __FUNCTION__, exception, stackTrace, segmentation);
+
     if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
+    {
+        CLY_LOG_V(@"%s no crashes consent given, exception is not recorded", __FUNCTION__);
         return;
+    }
 
     if (stackTrace || segmentation)
     {
@@ -300,6 +330,9 @@ typedef NS_ENUM(NSInteger, CLYCrashHandlerInstallation)
 
 - (void)recordError:(NSString *)errorName isFatal:(BOOL)isFatal stackTrace:(NSArray *)stackTrace segmentation:(NSDictionary *)segmentation
 {
+    CLY_LOG_I(@"%s error recording requested, errorNameLength: [%lu], isFatal: [%@], stackTraceFrameCount: [%lu], segmentationKeyCount: [%lu]", __FUNCTION__, (unsigned long)errorName.length, isFatal ? @"YES" : @"NO", (unsigned long)stackTrace.count, (unsigned long)segmentation.count);
+    CLY_LOG_D(@"%s error recording detail, errorName: [%@], stackTrace: [%@], segmentation: [%@]", __FUNCTION__, errorName, stackTrace, segmentation);
+
     NSException* exception = [NSException exceptionWithName:@"Swift Error" reason:errorName userInfo:nil];
     [self recordException:exception isFatal:isFatal stackTrace:stackTrace segmentation:segmentation];
 }
@@ -358,7 +391,7 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     //NOTE: Do not send crash report if it is matching optional regex filter.
     if (matchesFilter || filterCrash)
     {
-        CLY_LOG_D(@"Crash matches filter and it will not be processed.");
+        CLY_LOG_D(@"%s crash report is filtered out and will not be processed, matchesRegexFilter: [%@], matchesFilterCallback: [%@]", __FUNCTION__, matchesFilter ? @"YES" : @"NO", filterCrash ? @"YES" : @"NO");
     }
     else
     {
@@ -387,6 +420,9 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
         if (crashData.breadcrumbs) {
             crashReport[kCountlyCRKeyLogs] = [crashData.breadcrumbs componentsJoinedByString:@"\n"];
         }
+
+        CLY_LOG_I(@"%s crash recorded, isFatal: [%@], isAutoDetected: [%@], customSegmentationKeyCount: [%lu], breadcrumbCount: [%lu]", __FUNCTION__, crashData.fatal ? @"YES" : @"NO", isAutoDetect ? @"YES" : @"NO", (unsigned long)crashData.crashSegmentation.count, (unsigned long)crashData.breadcrumbs.count);
+        CLY_LOG_D(@"%s crash detail, breadcrumbs: [%@], crashSegmentation: [%@], stackTrace: [%@]", __FUNCTION__, crashData.breadcrumbs, crashData.crashSegmentation, crashData.stackTrace);
 
         [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:isAutoDetect];
     }
@@ -425,12 +461,18 @@ void CountlySignalHandler(int signalCode)
 - (void)log:(NSString *)log
 {
     if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
+    {
+        CLY_LOG_V(@"%s no crashes consent given, breadcrumb is not recorded", __FUNCTION__);
         return;
+    }
     
     log = [log cly_truncatedValue:@"Custom Crash log"];
 
+    CLY_LOG_D(@"%s breadcrumb text detail, log: [%@]", __FUNCTION__, log);
+
     if (self.shouldUsePLCrashReporter)
     {
+        CLY_LOG_D(@"%s breadcrumb is being written to the crash log file", __FUNCTION__);
         [CountlyPersistency.sharedInstance writeCustomCrashLogToFile:log];
     }
     else
@@ -438,12 +480,21 @@ void CountlySignalHandler(int signalCode)
         [self.customCrashLogs addObject:log];
 
         if (self.customCrashLogs.count > self.crashLogLimit)
+        {
+            CLY_LOG_D(@"%s breadcrumb buffer is full, the oldest breadcrumb is dropped, breadcrumbCount: [%lu], limit: [%lu]", __FUNCTION__, (unsigned long)self.customCrashLogs.count, (unsigned long)self.crashLogLimit);
             [self.customCrashLogs removeObjectAtIndex:0];
+        }
+        else
+        {
+            CLY_LOG_D(@"%s breadcrumb added to the in memory buffer, breadcrumbCount: [%lu]", __FUNCTION__, (unsigned long)self.customCrashLogs.count);
+        }
     }
 }
 
 - (void)clearCrashLogs
 {
+    CLY_LOG_D(@"%s breadcrumbs are being cleared, breadcrumbCount: [%lu]", __FUNCTION__, (unsigned long)self.customCrashLogs.count);
+
     if (self.shouldUsePLCrashReporter)
     {
         [CountlyPersistency.sharedInstance deleteCustomCrashLogFile];
@@ -479,7 +530,7 @@ void CountlySignalHandler(int signalCode)
         const char* imageNameChar = _dyld_get_image_name(i);
         if (imageNameChar == NULL)
         {
-            CLY_LOG_W(@"Image Name can not be retrieved!");
+            CLY_LOG_V(@"%s binary image name can not be retrieved, it will be skipped, imageIndex: [%u]", __FUNCTION__, i);
             continue;
         }
 
@@ -491,12 +542,12 @@ void CountlySignalHandler(int signalCode)
             continue;
         }
 
-        CLY_LOG_D(@"%s, imageName:[%@] is in the stack trace, so it will be used!", __FUNCTION__, imageName);
+        CLY_LOG_V(@"%s, imageName:[%@] is in the stack trace, so it will be used!", __FUNCTION__, imageName);
 
         const struct mach_header* imageHeader = _dyld_get_image_header(i);
         if (imageHeader == NULL)
         {
-            CLY_LOG_W(@"Image Header can not be retrieved!");
+            CLY_LOG_V(@"%s binary image header can not be retrieved, it will be skipped, imageName: [%@]", __FUNCTION__, imageName);
             continue;
         }
 
@@ -525,7 +576,7 @@ void CountlySignalHandler(int signalCode)
         
         if (!imageUUID)
         {
-            CLY_LOG_W(@"Image UUID can not be retrieved!");
+            CLY_LOG_V(@"%s binary image UUID can not be retrieved, symbolication may fail for it, imageName: [%@]", __FUNCTION__, imageName);
             continue;
         }
 
@@ -542,6 +593,9 @@ void CountlySignalHandler(int signalCode)
     }
     
     CountlyCrashReporter.sharedInstance.architecture = [CountlyDeviceInfo architectureNameForCPUType:cpuType subtype:cpuSubType];
+
+    CLY_LOG_D(@"%s binary images resolved for the stack trace, loadedImageCount: [%u], matchedImageCount: [%lu]", __FUNCTION__, imageCount, (unsigned long)binaryImages.count);
+
     return [NSDictionary dictionaryWithDictionary:binaryImages];
 }
 
@@ -560,13 +614,16 @@ void CountlySignalHandler(int signalCode)
 
 -(void) setCrashSegmentation:(NSDictionary<NSString *, NSString *>*) crashSegmentation
 {
+    CLY_LOG_I(@"%s global crash segmentation is being set, keyCount: [%lu], keys: [%@]", __FUNCTION__, (unsigned long)crashSegmentation.count, crashSegmentation.allKeys);
+    CLY_LOG_D(@"%s global crash segmentation detail, segmentation: [%@]", __FUNCTION__, crashSegmentation);
+
     NSDictionary* truncatedSegmentation = [crashSegmentation cly_truncated:@"Crash segmentation"];
     _crashSegmentation = [truncatedSegmentation cly_limited:@"Crash segmentation"];
 }
 
 - (CountlyCrashData *)prepareCrashDataWithError:(NSString *)error name:(NSString *)name description:(NSString *)description isFatal:(BOOL)isFatal customSegmentation:(NSMutableDictionary *)customSegmentation {
     if(error == nil) {
-        CLY_LOG_W(@"Error must not be nil");
+        CLY_LOG_D(@"%s crash data is being prepared with a nil stack trace, crashName: [%@], isFatal: [%@]", __FUNCTION__, name, isFatal ? @"YES" : @"NO");
     }
     
     NSDictionary* truncatedSegmentation = [customSegmentation cly_truncated:@"Exception segmentation"];

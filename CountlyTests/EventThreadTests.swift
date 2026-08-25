@@ -97,8 +97,11 @@ final class EventRaceReproTests: CountlyBaseTestCase {
         XCTAssertFalse(queuedEvents.isEmpty, "No events found in queued requests")
 
         let expectedNonReservedCount = 1 + (workers * iterations)
+        // Match only this test's own events. Filtering merely on "not reserved" also picked up a
+        // custom event left by a neighbouring test whose flush completed after setUp purged the
+        // queue, which showed up as one extra event and a non-empty chain at index 0.
         let nonReservedEvents = queuedEvents
-            .filter { !$0.key.hasPrefix("[CLY]_") }
+            .filter { $0.key == "warmup" || $0.key.hasPrefix("Login Result #") }
 
         XCTAssertEqual(nonReservedEvents.count, expectedNonReservedCount)
 

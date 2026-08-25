@@ -127,7 +127,7 @@ static dispatch_once_t onceToken;
 }
 
 - (void)resetInstance {
-    CLY_LOG_I(@"%s", __FUNCTION__);
+    CLY_LOG_I(@"%s connection manager is being reset, pending request callbacks and queue flush runnables will be cleared", __FUNCTION__);
     onceToken = 0;
     s_sharedInstance = nil;
     isSessionStarted = NO;
@@ -143,8 +143,7 @@ static dispatch_once_t onceToken;
 {
     if ([host hasSuffix:@"/"])
     {
-        CLY_LOG_W(@"Host has an extra \"/\" at the end! It will be removed by the SDK.\
-                  But please make sure you fix it to avoid this warning in the future.");
+        CLY_LOG_W(@"%s host has an extra \"/\" at the end, it will be removed by the SDK, please fix it to avoid this warning in the future", __FUNCTION__);
         _host = [host substringToIndex:host.length - 1];
     }
     else
@@ -157,6 +156,7 @@ static dispatch_once_t onceToken;
 {
     if (URLSessionConfiguration != nil)
     {
+        CLY_LOG_D(@"%s custom URL session configuration is set, the URL session will be recreated on the next request", __FUNCTION__);
         _URLSessionConfiguration = URLSessionConfiguration;
         _URLSession = nil;
     }
@@ -164,6 +164,7 @@ static dispatch_once_t onceToken;
 
 - (void)addCustomNetworkRequestHeaders:(NSDictionary<NSString *, NSString *> *_Nullable)customHeaderValues {
     if (_URLSessionConfiguration == nil) {
+        CLY_LOG_W(@"%s custom network request headers are ignored, reason: URL session configuration is not set, provided header count: [%lu]", __FUNCTION__, (unsigned long)customHeaderValues.count);
         return;
     }
 
@@ -171,11 +172,16 @@ static dispatch_once_t onceToken;
     NSMutableDictionary *updatedHeaders = [NSMutableDictionary dictionaryWithDictionary:_URLSessionConfiguration.HTTPAdditionalHeaders ?: @{}];
 
     // Enumerate and validate custom headers
+    __block NSUInteger skippedHeaderCount = 0;
     [customHeaderValues enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *value, BOOL *stop) {
         if (key == nil || key.length == 0) {
+            skippedHeaderCount++;
+            CLY_LOG_V(@"[CountlyConnectionManager] addCustomNetworkRequestHeaders, a custom network request header with a nil or empty key is skipped");
             return; // Skip empty key
         }
         if (value == nil) {
+            skippedHeaderCount++;
+            CLY_LOG_V(@"[CountlyConnectionManager] addCustomNetworkRequestHeaders, a custom network request header with a nil value is skipped, header key: [%@]", key);
             return; // Skip nil value
         }
 
@@ -183,51 +189,55 @@ static dispatch_once_t onceToken;
         updatedHeaders[key] = value;
     }];
 
+    if (skippedHeaderCount)
+    {
+        CLY_LOG_W(@"%s some custom network request headers are skipped, reason: nil or empty key or nil value, skipped header count: [%lu]", __FUNCTION__, (unsigned long)skippedHeaderCount);
+    }
+
     // Apply updated headers
+    CLY_LOG_I(@"%s custom network request headers are applied, total header count: [%lu]", __FUNCTION__, (unsigned long)updatedHeaders.count);
     _URLSessionConfiguration.HTTPAdditionalHeaders = [updatedHeaders copy];
     _URLSession = nil;
 }
 
 - (void)proceedOnQueue
 {
-    CLY_LOG_D(@"Proceeding on queue...");
-    
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
     {
-        CLY_LOG_D(@"Proceeding on queue is aborted: SDK Networking is disabled from server config!");
+        CLY_LOG_D(@"%s aborting queue processing, reason: SDK networking is disabled from server config", __FUNCTION__);
         return;
     }
     
     if (self.connection || atomic_exchange(&_isProcessingQueue, YES))
     {
-        CLY_LOG_D(@"Proceeding on queue is aborted: Already has a request in process!");
+        CLY_LOG_D(@"%s aborting queue processing, reason: another request is already in process", __FUNCTION__);
         return;
     }
 
     if (isCrashing)
     {
-        CLY_LOG_D(@"Proceeding on queue is aborted: Application is crashing!");
+        CLY_LOG_D(@"%s aborting queue processing, reason: application is crashing", __FUNCTION__);
         atomic_store(&_isProcessingQueue, NO);
         return;
     }
 
     if (self.isTerminating)
     {
-        CLY_LOG_D(@"Proceeding on queue is aborted: Application is terminating!");
+        CLY_LOG_D(@"%s aborting queue processing, reason: application is terminating", __FUNCTION__);
         atomic_store(&_isProcessingQueue, NO);
         return;
     }
 
     if (CountlyPersistency.sharedInstance.isQueueBeingModified)
     {
-        CLY_LOG_D(@"Proceeding on queue is aborted: Queue is being modified!");
+        CLY_LOG_D(@"%s aborting queue processing, reason: request queue is being modified", __FUNCTION__);
         atomic_store(&_isProcessingQueue, NO);
         return;
     }
 
     BOOL backoffFlag = atomic_load(&_backoff) ? YES : NO;
     if (backoffFlag) {
-        CLY_LOG_I(@"%s, currently backed off, skipping proceeding the queue", __FUNCTION__);
+        CLY_LOG_D(@"%s aborting queue processing, reason: backoff is currently active", __FUNCTION__);
         atomic_store(&_isProcessingQueue, NO);
         return;
     }
@@ -235,7 +245,7 @@ static dispatch_once_t onceToken;
     if (!self.startTime) {
         self.startTime = [NSDate date]; // Record start time only when it's not already recorded
         self.hasAnyRequestFailed = NO; // Reset failure flag when starting queue processing
-        CLY_LOG_D(@"%s, Proceeding on queue started, queued request count %lu", __FUNCTION__, [CountlyPersistency.sharedInstance remainingRequestCount]);
+        CLY_LOG_D(@"%s queue processing is started, queued request count: [%lu]", __FUNCTION__, (unsigned long)[CountlyPersistency.sharedInstance remainingRequestCount]);
     }
 
     NSString* firstItemInQueue = [CountlyPersistency.sharedInstance firstItemInQueue];
@@ -243,7 +253,7 @@ static dispatch_once_t onceToken;
     {
         // Calculate total time when the queue becomes empty
         NSTimeInterval elapsedTime = -[self.startTime timeIntervalSinceNow];
-        CLY_LOG_D(@"%s, Queue is empty. All requests are processed. Total time taken: %.2f seconds", __FUNCTION__, elapsedTime);
+        CLY_LOG_D(@"%s request queue is empty, all requests are processed, total time taken: [%.2f] seconds", __FUNCTION__, elapsedTime);
 
         // Execute and clear runnables only if all requests succeeded
         if (!self.hasAnyRequestFailed) {
@@ -251,7 +261,7 @@ static dispatch_once_t onceToken;
             __block NSArray<CLYQueueFlushRunnable> *runnablesToExecute = nil;
             dispatch_sync(_callbackQueue, ^{
                 if (self->_queueFlushRunnables.count > 0) {
-                    CLY_LOG_D(@"%s, All requests succeeded. Executing %lu queue flush runnables.", __FUNCTION__, (unsigned long)self->_queueFlushRunnables.count);
+                    CLY_LOG_D(@"[CountlyConnectionManager] proceedOnQueue, all requests succeeded, executing queue flush runnables, count: [%lu]", (unsigned long)self->_queueFlushRunnables.count);
                     runnablesToExecute = [self->_queueFlushRunnables copy];
                     [self->_queueFlushRunnables removeAllObjects];
                 }
@@ -262,10 +272,10 @@ static dispatch_once_t onceToken;
                 for (CLYQueueFlushRunnable runnable in runnablesToExecute) {
                     runnable();
                 }
-                CLY_LOG_D(@"%s, All queue flush runnables executed and removed.", __FUNCTION__);
+                CLY_LOG_D(@"%s all queue flush runnables are executed and removed", __FUNCTION__);
             }
         } else {
-            CLY_LOG_D(@"%s, Some requests failed. Runnables will not be executed.", __FUNCTION__);
+            CLY_LOG_D(@"%s at least one request failed, queue flush runnables will not be executed", __FUNCTION__);
         }
 
         // Reset start time and failure flag for future queue processing
@@ -278,6 +288,7 @@ static dispatch_once_t onceToken;
     BOOL isOldRequest = [CountlyPersistency.sharedInstance isOldRequest:firstItemInQueue];
     if(isOldRequest)
     {
+        CLY_LOG_W(@"%s dropping the request at the head of the queue, reason: request age exceeded the configured drop age, request size: [%lu] bytes", __FUNCTION__, (unsigned long)firstItemInQueue.length);
         [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
         
         [CountlyPersistency.sharedInstance saveToFile];
@@ -292,7 +303,7 @@ static dispatch_once_t onceToken;
     NSString* temporaryDeviceIDQueryString = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, CLYTemporaryDeviceID];
     if ([firstItemInQueue containsString:temporaryDeviceIDQueryString])
     {
-        CLY_LOG_D(@"Proceeding on queue is aborted: Device ID in request is CLYTemporaryDeviceID!");
+        CLY_LOG_D(@"%s aborting queue processing, reason: device ID of the request at the head of the queue is the temporary device ID", __FUNCTION__);
         atomic_store(&_isProcessingQueue, NO);
         return;
     }
@@ -353,6 +364,7 @@ static dispatch_once_t onceToken;
         [pictureUploadData appendData:[boundaryEnd cly_dataUTF8]];
         request.HTTPMethod = @"POST";
         request.HTTPBody = pictureUploadData;
+        CLY_LOG_D(@"%s request will be sent as a multipart POST with picture data, endpoint: [%@], upload data size: [%lu] bytes", __FUNCTION__, endPoint, (unsigned long)pictureUploadData.length);
     }
     else if (queryString.length > kCountlyGETRequestMaxLength || self.alwaysUsePOST)
     {
@@ -374,11 +386,10 @@ static dispatch_once_t onceToken;
         NSDate *endTimeRequest = [NSDate date];
         long duration = (long)[endTimeRequest timeIntervalSinceDate:startTimeRequest];
         
-        CLY_LOG_V(@"Approximate received data size for request <%p> is %ld bytes.", (id)request, (long)data.length);
-        
         if(response) {
             NSInteger code = ((NSHTTPURLResponse*)response).statusCode;
-            CLY_LOG_V(@"%s, Response received from server with status code:[ %ld ] request:[ %@ ]", __FUNCTION__, (long)code, ((NSHTTPURLResponse*)response).URL);
+            CLY_LOG_D(@"[CountlyConnectionManager] proceedOnQueue completion, response received, endpoint: [%@], status code: [%ld], response size: [%ld] bytes, duration: [%ld] seconds", request.URL.path, (long)code, (long)data.length, duration);
+            CLY_LOG_D(@"[CountlyConnectionManager] proceedOnQueue completion, response detail, full response URL: [%@], status code: [%ld]", request.URL.absoluteString, (long)code);
         }
         
 
@@ -386,7 +397,7 @@ static dispatch_once_t onceToken;
         {
             if ([self isRequestSuccessful:response data:data])
             {
-                CLY_LOG_D(@"Request <%p> successfully completed.", request);
+                CLY_LOG_D(@"[CountlyConnectionManager] proceedOnQueue completion, request completed successfully, endpoint: [%@], duration: [%ld] seconds", request.URL.path, duration);
 
                 if(requestCallback){
                     requestCallback([response description], YES);
@@ -408,7 +419,7 @@ static dispatch_once_t onceToken;
                 atomic_store(&self->_isProcessingQueue, NO);
 
                 if(CountlyServerConfig.sharedInstance.backoffMechanism && [self backoff:duration queryString:queryString]){
-                    CLY_LOG_D(@"%s, backed off dropping proceeding the queue", __FUNCTION__);
+                    CLY_LOG_D(@"[CountlyConnectionManager] proceedOnQueue completion, stopping queue processing, reason: backoff is triggered, last response duration: [%ld] seconds", duration);
                     self.startTime = nil;
                     self.hasAnyRequestFailed = NO; // Reset on backoff
                     [self backoffCountdown];
@@ -419,7 +430,13 @@ static dispatch_once_t onceToken;
             }
             else
             {
-                CLY_LOG_D(@"%s, request:[ <%p> ] failed! response:[ %@ ]", __FUNCTION__, request, [data cly_stringUTF8]);
+                CLY_LOG_D(@"[CountlyConnectionManager] proceedOnQueue completion, request failed, endpoint: [%@], status code: [%ld], response size: [%ld] bytes", request.URL.path, (long)((NSHTTPURLResponse*)response).statusCode, (long)data.length);
+
+                if (CountlyInternalLogIsEnabled(CLYInternalLogLevelDebug))
+                {
+                    NSString* errorResponseBody = [data cly_stringUTF8];
+                    CLY_LOG_D(@"[CountlyConnectionManager] proceedOnQueue completion, failed request detail, full response URL: [%@], server error response body: [%@]", request.URL.absoluteString, errorResponseBody);
+                }
 
                 self.hasAnyRequestFailed = YES; // Mark that a request has failed
 
@@ -441,7 +458,7 @@ static dispatch_once_t onceToken;
         }
         else
         {
-            CLY_LOG_D(@"%s, request:[ <%p> ] failed! error:[ %@ ]", __FUNCTION__, request, error);
+            CLY_LOG_D(@"[CountlyConnectionManager] proceedOnQueue completion, request failed with a network error, endpoint: [%@], error domain: [%@], error code: [%ld], error description: [%@]", request.URL.path, error.domain, (long)error.code, error.localizedDescription);
 
             self.hasAnyRequestFailed = YES; // Mark that a request has failed
 
@@ -469,17 +486,15 @@ static dispatch_once_t onceToken;
 
 - (void)recordMetrics:(nullable NSDictionary *)metricsOverride
 {
-    CLY_LOG_I(@"%s", __FUNCTION__, metricsOverride);
+    CLY_LOG_I(@"%s recording metrics, override metric count: [%lu]", __FUNCTION__, (unsigned long)metricsOverride.count);
     if (!CountlyConsentManager.sharedInstance.consentForMetrics)
     return;
     
     NSDictionary *defaultMetrics = [CountlyDeviceInfo metricsDictionary];
     if (!defaultMetrics) {
-        CLY_LOG_W(@"%s Default metrics is nil, aborting", __FUNCTION__);
+        CLY_LOG_W(@"%s aborting metrics recording, reason: default metrics dictionary is nil", __FUNCTION__);
         return;
     }
-    CLY_LOG_I(@"%s default metrics:[%@]", __FUNCTION__, defaultMetrics);
-    
     NSDictionary *finalMetrics;
     if (metricsOverride && metricsOverride.count > 0) {
         NSMutableDictionary *mutableMetrics = [defaultMetrics mutableCopy];
@@ -488,7 +503,10 @@ static dispatch_once_t onceToken;
     } else {
         finalMetrics = defaultMetrics;
     }
-    CLY_LOG_I(@"%s final metrics:[%@]", __FUNCTION__, finalMetrics);
+    CLY_LOG_D(@"%s metrics request is being prepared, final metric count: [%lu]", __FUNCTION__, (unsigned long)finalMetrics.count);
+    CLY_LOG_V(@"%s final metric keys: [%@]", __FUNCTION__, finalMetrics.allKeys);
+    CLY_LOG_D(@"%s default metrics detail, default metrics: [%@]", __FUNCTION__, defaultMetrics);
+    CLY_LOG_D(@"%s final metrics detail, final metrics: [%@]", __FUNCTION__, finalMetrics);
     
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
                              kCountlyQSKeyMetrics, [finalMetrics cly_JSONify]];
@@ -514,6 +532,7 @@ static dispatch_once_t onceToken;
             if (requestAgeInSeconds <= [CountlyServerConfig.sharedInstance bomRequestAge] * 3600.0) {
                 // Server is too busy, back off
                 result = YES;
+                CLY_LOG_W(@"%s backoff is triggered, response time: [%ld] seconds, remaining request count: [%lu], request count threshold: [%lu], request age: [%.2f] seconds", __FUNCTION__, responseTimeSeconds, (unsigned long)remainingRequests, (unsigned long)threshold, requestAgeInSeconds);
                 [CountlyHealthTracker.sharedInstance logBackoffRequest];
             }
         }
@@ -523,13 +542,15 @@ static dispatch_once_t onceToken;
         [CountlyHealthTracker.sharedInstance logConsecutiveBackoffRequest];
     }
     
+    CLY_LOG_D(@"%s backoff evaluation is completed, decision: [%@], response time: [%ld] seconds", __FUNCTION__, result ? @"YES" : @"NO", responseTimeSeconds);
+
     return result;
 }
 
 - (void)backoffCountdown
 {
     __weak typeof(self) weakSelf = self;
-    CLY_LOG_D(@"%s, backed off, countdown start for %f seconds", __FUNCTION__, [CountlyServerConfig.sharedInstance bomDuration]);
+    CLY_LOG_D(@"%s backoff countdown is started, queue processing will be paused for [%ld] seconds", __FUNCTION__, (long)[CountlyServerConfig.sharedInstance bomDuration]);
 
     atomic_store(&_backoff, YES);
     dispatch_time_t delay = dispatch_time(DISPATCH_TIME_NOW, (int64_t)([CountlyServerConfig.sharedInstance bomDuration] * NSEC_PER_SEC));
@@ -538,7 +559,7 @@ static dispatch_once_t onceToken;
         if (!strongSelf) return;
         
         
-        CLY_LOG_D(@"%s, countdown finished, running tick in background thread", __FUNCTION__);
+        CLY_LOG_D(@"[CountlyConnectionManager] backoffCountdown, backoff countdown is finished, resuming queue processing on a background thread");
         atomic_store(&strongSelf->_backoff, NO);
         [strongSelf proceedOnQueue];
     });
@@ -546,39 +567,44 @@ static dispatch_once_t onceToken;
 
 - (NSString*)extractAndRemoveParameter:(NSString **)queryString parameter:(NSString*)parameter
 {
-    CLY_LOG_D(@"%s, Extracting parameter: %@", __FUNCTION__, parameter);
-
     if([*queryString containsString:parameter]) {
         NSString* parameterExtracted = [*queryString cly_valueForQueryStringKey:parameter];
         if(parameterExtracted) {
             NSString* stringToRemove = [NSString stringWithFormat:@"&%@=%@",parameter,parameterExtracted];
             *queryString = [*queryString stringByReplacingOccurrencesOfString:stringToRemove withString:@""];
-            CLY_LOG_D(@"%s, Parameter extracted successfully: %@ = %@", __FUNCTION__, parameter, parameterExtracted);
+            CLY_LOG_D(@"%s parameter is extracted and removed from the query string, parameter: [%@], value length: [%lu]", __FUNCTION__, parameter, (unsigned long)parameterExtracted.length);
             return parameterExtracted;
         }
-        CLY_LOG_D(@"%s, Parameter found but value extraction failed for: %@", __FUNCTION__, parameter);
+        CLY_LOG_W(@"%s parameter is present in the query string but its value could not be extracted, parameter: [%@]", __FUNCTION__, parameter);
     } else {
-        CLY_LOG_D(@"%s, Parameter not found in query string: %@", __FUNCTION__, parameter);
+        CLY_LOG_V(@"%s parameter is not present in the query string, parameter: [%@]", __FUNCTION__, parameter);
     }
     return nil;
 }
 
 - (void)logRequest:(NSURLRequest *)request
 {
-    NSString* bodyAsString = @"";
     NSInteger sentSize = request.URL.absoluteString.length;
 
     if (request.HTTPBody)
     {
-        bodyAsString = [request.HTTPBody cly_stringUTF8];
-        if (!bodyAsString)
-            bodyAsString = @"Picture uploading...";
-
         sentSize += request.HTTPBody.length;
     }
 
-    CLY_LOG_D(@"%s, request:[ <%p> ] started. [%@] %@ %@", __FUNCTION__, (id)request, request.HTTPMethod, request.URL.absoluteString, bodyAsString);
-    CLY_LOG_V(@"Approximate sent data size for request <%p> is %ld bytes.", (id)request, (long)sentSize);
+    CLY_LOG_I(@"%s sending request, endpoint: [%@], method: [%@], approximate sent data size: [%ld] bytes, body size: [%ld] bytes", __FUNCTION__, request.URL.path, request.HTTPMethod, (long)sentSize, (long)request.HTTPBody.length);
+
+    if (CountlyInternalLogIsEnabled(CLYInternalLogLevelDebug))
+    {
+        NSString* bodyAsString = @"";
+        if (request.HTTPBody)
+        {
+            bodyAsString = [request.HTTPBody cly_stringUTF8];
+            if (!bodyAsString)
+                bodyAsString = @"Picture uploading...";
+        }
+
+        CLY_LOG_D(@"%s request detail, request: [<%p>], method: [%@], URL: [%@], body: [%@]", __FUNCTION__, request, request.HTTPMethod, request.URL.absoluteString, bodyAsString);
+    }
 }
 
 #pragma mark ---
@@ -598,17 +624,17 @@ static dispatch_once_t onceToken;
     
 #if TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION
     if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled && [UIApplication sharedApplication].applicationState == UIApplicationStateBackground) {
-        CLY_LOG_W(@"%s App is in the background, 'beginSession' will be ignored", __FUNCTION__);
+        CLY_LOG_D(@"%s App is in the background, 'beginSession' will be ignored", __FUNCTION__);
         return;
     }
 #elif TARGET_OS_OSX
     if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled && ![NSApplication sharedApplication].isActive) {
-        CLY_LOG_W(@"%s App is not active, 'beginSession' will be ignored", __FUNCTION__);
+        CLY_LOG_D(@"%s App is not active, 'beginSession' will be ignored", __FUNCTION__);
         return;
     }
 #elif TARGET_OS_WATCH
     if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled && [WKExtension sharedExtension].applicationState == WKApplicationStateBackground) {
-        CLY_LOG_W(@"%s App is in the background, 'beginSession' will be ignored", __FUNCTION__);
+        CLY_LOG_D(@"%s watch app is in the background, 'beginSession' will be ignored", __FUNCTION__);
         return;
     }
 #endif
@@ -652,7 +678,7 @@ static dispatch_once_t onceToken;
         return;
     
     if (!isSessionStarted) {
-        CLY_LOG_W(@"%s No session is running, this 'updateSession' will be ignored", __FUNCTION__);
+        CLY_LOG_D(@"%s No session is running, this 'updateSession' will be ignored", __FUNCTION__);
         return;
     }
     
@@ -678,7 +704,7 @@ static dispatch_once_t onceToken;
         return;
     
     if (!isSessionStarted) {
-        CLY_LOG_W(@"%s No session is running, this 'endSession' will be ignored", __FUNCTION__);
+        CLY_LOG_D(@"%s No session is running, this 'endSession' will be ignored", __FUNCTION__);
         return;
     }
 
@@ -797,15 +823,19 @@ static dispatch_once_t onceToken;
 
 - (void)sendCrashReport:(NSString *)report immediately:(BOOL)immediately;
 {
+    // NOTE: this method is reachable from CountlySignalHandler through
+    // CountlyUncaughtExceptionHandler and CountlyExceptionHandler, so every log on it stays at Debug or
+    // lower. CountlyInternalLog would otherwise call into CountlyHealthTracker, which touches
+    // dispatch_once, dispatch_queue_create and dispatch_async, none of which are async-signal-safe.
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
     {
-        CLY_LOG_D(@"'sendCrashReport' is aborted: SDK Networking is disabled from server config!");
+        CLY_LOG_D(@"%s crash report is dropped, reason: SDK networking is disabled from server config, crash report length: [%lu]", __FUNCTION__, (unsigned long)report.length);
         return;
     }
     
     if (!report)
     {
-        CLY_LOG_W(@"Crash report is nil. Converting to JSON may have failed due to custom objects in initial config's crashSegmentation property.");
+        CLY_LOG_D(@"%s crash report is nil, converting it to JSON may have failed due to custom objects in the initial config crashSegmentation property", __FUNCTION__);
         return;
     }
 
@@ -829,7 +859,7 @@ static dispatch_once_t onceToken;
 
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
     {
-        CLY_LOG_D(@"Device ID is set as CLYTemporaryDeviceID! Crash report stored to be sent later!");
+        CLY_LOG_D(@"%s crash report is stored to be sent later, reason: device ID is the temporary device ID, crash report length: [%lu]", __FUNCTION__, (unsigned long)report.length);
 
         [CountlyPersistency.sharedInstance addToQueue:queryString];
         [CountlyPersistency.sharedInstance saveToFileSync];
@@ -846,19 +876,21 @@ static dispatch_once_t onceToken;
     request.HTTPMethod = @"POST";
     request.HTTPBody = [[self appendChecksum:queryString] cly_dataUTF8];
 
+    CLY_LOG_I(@"%s sending crash report immediately, endpoint: [%@], method: [%@], body size: [%lu] bytes", __FUNCTION__, kCountlyEndpointI, request.HTTPMethod, (unsigned long)request.HTTPBody.length);
+
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 
     [[self.URLSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError*  error)
     {
         if (error || ![self isRequestSuccessful:response data:data])
         {
-            CLY_LOG_D(@"%s, request: [ %p ] failed! %@: %@", __FUNCTION__, request, error ? @"Error" : @"Server reply", error ?: [data cly_stringUTF8]);
+            CLY_LOG_D(@"[CountlyConnectionManager] sendCrashReport completion, immediate crash report request failed and it is queued to be sent later, endpoint: [%@], status code: [%ld], response size: [%ld] bytes, error domain: [%@], error code: [%ld], error description: [%@]", request.URL.path, (long)((NSHTTPURLResponse*)response).statusCode, (long)data.length, error.domain ?: @"none", (long)error.code, error.localizedDescription ?: @"none");
             [CountlyPersistency.sharedInstance addToQueue:queryString];
             [CountlyPersistency.sharedInstance saveToFileSync];
         }
         else
         {
-            CLY_LOG_D(@"Request <%p> successfully completed.", request);
+            CLY_LOG_D(@"[CountlyConnectionManager] sendCrashReport completion, immediate crash report request completed successfully, endpoint: [%@], response size: [%ld] bytes", request.URL.path, (long)data.length);
         }
 
         dispatch_semaphore_signal(semaphore);
@@ -902,6 +934,8 @@ static dispatch_once_t onceToken;
     {
         [queryString appendFormat:@"&%@=%@", kCountlyQSKeyCampaignUser, campaignUserID];
     }
+
+    CLY_LOG_I(@"%s direct attribution request is being queued, campaign ID: [%@], campaign user ID provided: [%@]", __FUNCTION__, campaignID, campaignUserID.length ? @"YES" : @"NO");
 
     [CountlyPersistency.sharedInstance addToQueue:queryString.copy];
 
@@ -960,7 +994,7 @@ static dispatch_once_t onceToken;
     }
     
     queryString = [queryString stringByAppendingFormat:@"%@%@%@", kCountlyEndPointOverrideTag, kCountlyEndpointO, kCountlyEndpointSDK];
-    
+
     [CountlyPersistency.sharedInstance addToQueue:queryString];
     
     [self proceedOnQueue];
@@ -969,11 +1003,13 @@ static dispatch_once_t onceToken;
 - (void)sendExitABRequestForKeys:(NSArray*)keys
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMethod, kCountlyRCKeyABOptOut];
-    
+
     if (keys)
     {
         queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyRCKeyKeys, [keys cly_JSONify]];
     }   
+    
+    CLY_LOG_I(@"%s A/B test exit request is being queued, key count: [%lu]", __FUNCTION__, (unsigned long)keys.count);
     
     [CountlyPersistency.sharedInstance addToQueue:queryString];
     
@@ -993,12 +1029,14 @@ static dispatch_once_t onceToken;
     {
         if (mutableRequestParameters[reservedKey])
         {
-            CLY_LOG_W(@"A reserved query string key detected in direct request parameters and it will be removed: %@", reservedKey);
+            CLY_LOG_W(@"%s a reserved query string key is detected in the direct request parameters and it will be removed, key: [%@]", __FUNCTION__, reservedKey);
             [mutableRequestParameters removeObjectForKey:reservedKey];
         }
     }
     
     mutableRequestParameters[@"dr"] = [NSNumber numberWithInt:1];
+
+    CLY_LOG_I(@"%s direct request is being queued, parameter count: [%lu]", __FUNCTION__, (unsigned long)mutableRequestParameters.count);
     NSMutableString* queryString = [self queryEssentials].mutableCopy;
 
     [mutableRequestParameters enumerateKeysAndObjectsUsingBlock:^(NSString * key, NSString * value, BOOL * stop)
@@ -1110,7 +1148,7 @@ static dispatch_once_t onceToken;
     if (!localPicturePath.length)
         return nil;
 
-    CLY_LOG_D(@"Local picture path successfully extracted from query string: %@", localPicturePath);
+    CLY_LOG_D(@"%s local picture path is extracted from the query string, path length: [%lu], file extension: [%@]", __FUNCTION__, (unsigned long)localPicturePath.length, localPicturePath.pathExtension.lowercaseString);
 
     NSArray* allowedFileTypes = @[@"gif", @"png", @"jpg", @"jpeg"];
     NSString* fileExt = localPicturePath.pathExtension.lowercaseString;
@@ -1118,7 +1156,7 @@ static dispatch_once_t onceToken;
 
     if (fileExtIndex == NSNotFound)
     {
-        CLY_LOG_W(@"Unsupported file extension for picture upload: %@", fileExt);
+        CLY_LOG_W(@"%s picture upload is skipped, reason: unsupported file extension, extension: [%@]", __FUNCTION__, fileExt);
         return nil;
     }
 
@@ -1126,11 +1164,11 @@ static dispatch_once_t onceToken;
 
     if (!imageData)
     {
-        CLY_LOG_W(@"Local picture data can not be read!");
+        CLY_LOG_W(@"%s picture upload is skipped, reason: local picture data can not be read, extension: [%@]", __FUNCTION__, fileExt);
         return nil;
     }
 
-    CLY_LOG_D(@"Local picture data read successfully.");
+    CLY_LOG_D(@"%s local picture data is read successfully, size: [%lu] bytes", __FUNCTION__, (unsigned long)imageData.length);
 
     //NOTE: Overcome failing PNG file upload if data is directly read from disk
     if (fileExtIndex == 1)
@@ -1169,6 +1207,7 @@ static dispatch_once_t onceToken;
     if (self.secretSalt)
     {
         NSString* checksum = [[queryString stringByAppendingString:self.secretSalt] cly_SHA256];
+        CLY_LOG_V(@"%s checksum is appended to the query string, query string length: [%lu]", __FUNCTION__, (unsigned long)queryString.length);
         return [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyChecksum256, checksum];
     }
 
@@ -1197,25 +1236,28 @@ static dispatch_once_t onceToken;
 
         if (error)
         {
-            CLY_LOG_W(@"Server reply is not a valid JSON!");
+            CLY_LOG_E(@"%s server reply is not a valid JSON, the request is considered failed, response size: [%ld] bytes, error description: [%@]", __FUNCTION__, (long)data.length, error.localizedDescription);
             return NO;
         }
         
-        CLY_LOG_V(@"%s, response:[ %@ ] request:[ %@ ]", __FUNCTION__, serverReply, ((NSHTTPURLResponse*)response).URL);
-        
+        CLY_LOG_D(@"%s server reply detail, full response URL: [%@], parsed server reply: [%@]", __FUNCTION__, response.URL.absoluteString, serverReply);
+
         NSString* result = serverReply[@"result"];
         
         if(result)
         {
             return YES;
         }
+
+        CLY_LOG_E(@"%s server reply does not contain the result field, the request is considered failed, response size: [%ld] bytes", __FUNCTION__, (long)data.length);
         
         return NO;
         
     }
     else
     {
-        CLY_LOG_V(@"HTTP status code is not 2XX series.");
+        CLY_LOG_V(@"%s HTTP status code is not in the 2XX series, status code: [%ld], response size: [%ld] bytes", __FUNCTION__, (long)code, (long)data.length);
+        CLY_LOG_D(@"%s non 2XX response detail, full response URL: [%@]", __FUNCTION__, response.URL.absoluteString);
         return NO;        
     }
 }
@@ -1238,7 +1280,7 @@ static dispatch_once_t onceToken;
     {
         if (self.pinnedCertificates)
         {
-            CLY_LOG_D(@"%d pinned certificate(s) specified in config.", (int)self.pinnedCertificates.count);
+            CLY_LOG_D(@"%s creating the URL session with certificate pinning, pinned certificate count: [%d]", __FUNCTION__, (int)self.pinnedCertificates.count);
             _URLSession = [NSURLSession sessionWithConfiguration:self.URLSessionConfiguration delegate:self delegateQueue:nil];
         }
         else
@@ -1300,7 +1342,7 @@ static dispatch_once_t onceToken;
 
         if (serverKey != NULL && localKey != NULL && [(__bridge id)serverKey isEqual:(__bridge id)localKey])
         {
-            CLY_LOG_D(@"Pinned certificate and server certificate match.");
+            CLY_LOG_D(@"%s pinned certificate and server certificate match", __FUNCTION__);
 
             isLocalAndServerCertMatch = YES;
             CFRelease(localKey);
@@ -1329,18 +1371,18 @@ static dispatch_once_t onceToken;
 
     if (isLocalAndServerCertMatch && isServerCertValid)
     {
-        CLY_LOG_D(@"Pinned certificate check is successful. Proceeding with request.");
+        CLY_LOG_D(@"%s pinned certificate check is successful, proceeding with the request, host: [%@]", __FUNCTION__, challenge.protectionSpace.host);
         completionHandler(NSURLSessionAuthChallengeUseCredential, [NSURLCredential credentialForTrust:serverTrust]);
     }
     else
     {
         if (!isLocalAndServerCertMatch)
-            CLY_LOG_W(@"Pinned certificate and server certificate does not match!");
+            CLY_LOG_D(@"%s pinned certificate and server certificate do not match", __FUNCTION__);
 
         if (!isServerCertValid)
-            CLY_LOG_W(@"Server certificate is not valid! SecTrustEvaluate result is: %u", serverTrustResult);
+            CLY_LOG_D(@"%s server certificate is not valid, SecTrustEvaluate result: [%u]", __FUNCTION__, (unsigned int)serverTrustResult);
 
-        CLY_LOG_D(@"Pinned certificate check failed! Cancelling request.");
+        CLY_LOG_E(@"%s pinned certificate check failed, cancelling the request, host: [%@]", __FUNCTION__, challenge.protectionSpace.host);
         completionHandler(NSURLSessionAuthChallengeCancelAuthenticationChallenge, NULL);
     }
 
@@ -1356,18 +1398,18 @@ static dispatch_once_t onceToken;
 {
     if (!callbackID || callbackID.length == 0)
     {
-        CLY_LOG_W(@"%s, Callback ID is nil or empty. Callback registration ignored.", __FUNCTION__);
+        CLY_LOG_W(@"%s request callback registration is ignored, reason: callback ID is nil or empty", __FUNCTION__);
         return;
     }
 
     if (!callback)
     {
-        CLY_LOG_W(@"%s, Callback block is nil. Callback registration ignored.", __FUNCTION__);
+        CLY_LOG_W(@"%s request callback registration is ignored, reason: callback block is nil, callback ID: [%@]", __FUNCTION__, callbackID);
         return;
     }
 
     dispatch_sync(_callbackQueue, ^{
-        CLY_LOG_D(@"%s, Registering request callback with ID: %@", __FUNCTION__, callbackID);
+        CLY_LOG_D(@"[CountlyConnectionManager] registerRequestCallback, registering a request callback, callback ID: [%@], registered callback count before registration: [%lu]", callbackID, (unsigned long)self.internalRequestCallbacks.count);
         self.internalRequestCallbacks[callbackID] = callback;
     });
 }
@@ -1376,12 +1418,12 @@ static dispatch_once_t onceToken;
 {
     if (!callbackID || callbackID.length == 0)
     {
-        CLY_LOG_W(@"%s, Callback ID is nil or empty. Callback removal ignored.", __FUNCTION__);
+        CLY_LOG_W(@"%s request callback removal is ignored, reason: callback ID is nil or empty", __FUNCTION__);
         return;
     }
 
     dispatch_sync(_callbackQueue, ^{
-        CLY_LOG_D(@"%s, Removing request callback with ID: %@", __FUNCTION__, callbackID);
+        CLY_LOG_D(@"[CountlyConnectionManager] removeRequestCallback, removing a request callback, callback ID: [%@], registered callback count before removal: [%lu]", callbackID, (unsigned long)self.internalRequestCallbacks.count);
         [self.internalRequestCallbacks removeObjectForKey:callbackID];
     });
 }
@@ -1390,13 +1432,13 @@ static dispatch_once_t onceToken;
 {
     if (!runnable)
     {
-        CLY_LOG_W(@"%s, Runnable is nil. Cannot add to queue flush runnables.", __FUNCTION__);
+        CLY_LOG_W(@"%s queue flush runnable is not added, reason: runnable is nil", __FUNCTION__);
         return;
     }
 
     CLYQueueFlushRunnable runnableCopy = [runnable copy];
     dispatch_sync(_callbackQueue, ^{
-        CLY_LOG_D(@"%s, Adding queue flush runnable. Total count: %lu", __FUNCTION__, (unsigned long)(self->_queueFlushRunnables.count + 1));
+        CLY_LOG_D(@"[CountlyConnectionManager] addQueueFlushRunnable, adding a queue flush runnable, total runnable count: [%lu]", (unsigned long)(self->_queueFlushRunnables.count + 1));
         [self->_queueFlushRunnables addObject:runnableCopy];
     });
 }
@@ -1404,16 +1446,18 @@ static dispatch_once_t onceToken;
 - (void)clearQueueFlushRunnables
 {
     dispatch_sync(_callbackQueue, ^{
-        CLY_LOG_D(@"%s, Clearing %lu queue flush runnables.", __FUNCTION__, (unsigned long)self->_queueFlushRunnables.count);
+        CLY_LOG_D(@"[CountlyConnectionManager] clearQueueFlushRunnables, clearing all queue flush runnables, count: [%lu]", (unsigned long)self->_queueFlushRunnables.count);
         [self->_queueFlushRunnables removeAllObjects];
     });
 }
 
 - (void)addToQueueWithCallback:(NSString *)queryString callback:(CLYRequestCallback)callback
 {
+    // NOTE: reachable from CountlySignalHandler through sendCrashReport, keep every log here at
+    // Debug or lower. See the note on sendCrashReport.
     if (!queryString || queryString.length == 0)
     {
-        CLY_LOG_W(@"%s, Query string is nil or empty. Cannot add to queue with callback.", __FUNCTION__);
+        CLY_LOG_D(@"%s request is not queued, reason: query string is nil or empty, callback provided: [%@]", __FUNCTION__, (callback != nil) ? @"YES" : @"NO");
         return;
     }
 
@@ -1425,7 +1469,7 @@ static dispatch_once_t onceToken;
 
     // Generate a unique callback ID
     NSString* callbackID = [[NSUUID UUID] UUIDString];
-    CLY_LOG_D(@"%s, Adding request to queue with callback ID: %@", __FUNCTION__, callbackID);
+    CLY_LOG_D(@"%s queueing a request with a callback, callback ID: [%@], query string length: [%lu]", __FUNCTION__, callbackID, (unsigned long)queryString.length);
 
     // Register the callback
     [self registerRequestCallback:callbackID callback:callback];

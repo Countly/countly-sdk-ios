@@ -65,7 +65,7 @@ static dispatch_once_t onceToken;
 }
 
 - (void)resetInstance {
-    CLY_LOG_I(@"%s", __FUNCTION__);
+    CLY_LOG_I(@"%s resetting shared state, sdkVersion: [%@], sdkName: [%@]", __FUNCTION__, kCountlySDKVersion, kCountlySDKName);
 #if (TARGET_OS_IOS)
     [NSNotificationCenter.defaultCenter removeObserver:self name:UIDeviceOrientationDidChangeNotification object:nil];
 #endif
@@ -95,6 +95,14 @@ static dispatch_once_t onceToken;
 - (BOOL)hasStarted_
 {
     return _hasStarted;
+}
+
+BOOL CountlyInternalLogIsEnabled(CLYInternalLogLevel level)
+{
+    if (!CountlyCommon.sharedInstance.enableDebug && !CountlyCommon.sharedInstance.loggerDelegate)
+        return NO;
+
+    return level <= CountlyCommon.sharedInstance.internalLogLevel;
 }
 
 void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...)
@@ -220,7 +228,7 @@ void CountlyPrint(NSString *stringToPrint)
         return;
     
     if ([UIApplication sharedApplication].applicationState == UIApplicationStateBackground) {
-        CLY_LOG_W(@"%s App is in the background, 'Record Orientation' will be ignored", __FUNCTION__);
+        CLY_LOG_D(@"%s app is in the background, orientation recording will be ignored", __FUNCTION__);
         return;
     }
 #pragma GCC diagnostic push
@@ -236,17 +244,17 @@ void CountlyPrint(NSString *stringToPrint)
 
     if (!mode)
     {
-        CLY_LOG_D(@"Interface orientation is not landscape or portrait.");
+        CLY_LOG_D(@"%s interface orientation is neither landscape nor portrait, orientation event will be skipped", __FUNCTION__);
         return;
     }
 
     if ([mode isEqualToString:self.lastInterfaceOrientation])
     {
-        CLY_LOG_V(@"Interface orientation is still same: %@", self.lastInterfaceOrientation);
+        CLY_LOG_V(@"%s interface orientation did not change, orientation event will be skipped, mode: [%@]", __FUNCTION__, self.lastInterfaceOrientation);
         return;
     }
 
-    CLY_LOG_D(@"Interface orientation is now: %@", mode);
+    CLY_LOG_D(@"%s interface orientation changed, previousMode: [%@], mode: [%@]", __FUNCTION__, self.lastInterfaceOrientation, mode);
 
     if (!CountlyConsentManager.sharedInstance.consentForUserDetails)
         return;
@@ -506,15 +514,18 @@ void CountlyPrint(NSString *stringToPrint)
 }
 
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
-    NSString *url = navigationAction.request.URL.absoluteString;
-    if ([url containsString:@"cly_x_int=1"]) {
-        CLY_LOG_I(@"%s Opening url [%@] in external browser", __FUNCTION__, url);
-        [[UIApplication sharedApplication] openURL:navigationAction.request.URL options:@{} completionHandler:^(BOOL success) {
+    NSURL *contentURL = navigationAction.request.URL;
+    if ([contentURL.absoluteString containsString:@"cly_x_int=1"]) {
+        CLY_LOG_I(@"%s content url is marked for the external browser and will be handed over, host: [%@], path: [%@]", __FUNCTION__, contentURL.host, contentURL.path);
+        CLY_LOG_D(@"%s external browser handover content url detail, contentURL: [%@]", __FUNCTION__, contentURL.absoluteString);
+        [[UIApplication sharedApplication] openURL:contentURL options:@{} completionHandler:^(BOOL success) {
             if (success) {
-                CLY_LOG_I(@"%s url [%@] opened in external browser", __FUNCTION__, url);
+                CLY_LOG_I(@"[CLYInternalViewController] openURL completion, external browser accepted the content url, host: [%@], path: [%@]", contentURL.host, contentURL.path);
+                CLY_LOG_D(@"[CLYInternalViewController] openURL completion detail, the content url accepted by the external browser, contentURL: [%@]", contentURL.absoluteString);
             }
             else {
-                CLY_LOG_I(@"%s unable to open url [%@] in external browser", __FUNCTION__, url);
+                CLY_LOG_W(@"[CLYInternalViewController] openURL completion, external browser could not open the content url, host: [%@], path: [%@]", contentURL.host, contentURL.path);
+                CLY_LOG_D(@"[CLYInternalViewController] openURL completion detail, the content url rejected by the external browser, contentURL: [%@]", contentURL.absoluteString);
             }
         }];
         decisionHandler(WKNavigationActionPolicyCancel);
@@ -525,12 +536,12 @@ void CountlyPrint(NSString *stringToPrint)
 
 - (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(null_unspecified WKNavigation *)navigation
 {
-    CLY_LOG_I(@"%s Web view has start loading", __FUNCTION__);
-    
+    CLY_LOG_D(@"%s internal web view started loading", __FUNCTION__);
+
 }
 
 - (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
-    CLY_LOG_I(@"%s Web view has finished loading", __FUNCTION__);
+    CLY_LOG_D(@"%s internal web view finished loading", __FUNCTION__);
 }
 
 
@@ -653,7 +664,7 @@ NSString* CountlyJSONFromObject(id object)
 
     if (![NSJSONSerialization isValidJSONObject:object])
     {
-        CLY_LOG_W(@"Object is not valid for converting to JSON!");
+        CLY_LOG_E(@"%s object can not be represented as JSON and will be dropped, objectType: [%@]", __FUNCTION__, [object class]);
         return nil;
     }
 
@@ -661,7 +672,7 @@ NSString* CountlyJSONFromObject(id object)
     NSData *data = [NSJSONSerialization dataWithJSONObject:object options:0 error:&error];
     if (error)
     {
-        CLY_LOG_W(@"%s, JSON can not be created error:[ %@ ]", __FUNCTION__, error);
+        CLY_LOG_E(@"%s JSON serialization failed and the data will be lost, objectType: [%@], error: [%@]", __FUNCTION__, [object class], error.localizedDescription);
     }
 
     return [data cly_stringUTF8];
@@ -711,7 +722,7 @@ NSString* CountlyJSONFromObject(id object)
 {
     if (self.length > CountlyCommon.sharedInstance.maxKeyLength)
     {
-        CLY_LOG_W(@"%@ length is more than the limit (%ld)! So, it will be truncated: %@.", explanation, (long)CountlyCommon.sharedInstance.maxKeyLength, self);
+        CLY_LOG_D(@"%s key exceeds the SDK key length limit and will be truncated, target: [%@], key: [%@], keyLength: [%lu], truncatedTo: [%lu]", __FUNCTION__, explanation, self, (unsigned long)self.length, (unsigned long)CountlyCommon.sharedInstance.maxKeyLength);
         return [self substringToIndex:CountlyCommon.sharedInstance.maxKeyLength];
     }
 
@@ -723,7 +734,8 @@ NSString* CountlyJSONFromObject(id object)
     NSUInteger limit = CountlyCommon.sharedInstance.maxValueLengthPicture;
     if (self.length > limit)
     {
-        CLY_LOG_W(@"%@ length is more than the picture limit (%ld)! So, it will be truncated: %@.", explanation, (long)limit, self);
+        CLY_LOG_D(@"%s value exceeds the SDK picture value limit and will be truncated, target: [%@], valueLength: [%lu], truncatedTo: [%lu]", __FUNCTION__, explanation, (unsigned long)self.length, (unsigned long)limit);
+        CLY_LOG_D(@"%s truncated picture value detail, target: [%@], fullValue: [%@]", __FUNCTION__, explanation, self);
         return [self substringToIndex:limit];
     }
     return self;
@@ -733,7 +745,8 @@ NSString* CountlyJSONFromObject(id object)
 {
     if (self.length > CountlyCommon.sharedInstance.maxValueLength)
     {
-        CLY_LOG_W(@"%@ length is more than the limit (%ld)! So, it will be truncated: %@.", explanation, (long)CountlyCommon.sharedInstance.maxValueLength, self);
+        CLY_LOG_D(@"%s value exceeds the SDK value length limit and will be truncated, target: [%@], valueLength: [%lu], truncatedTo: [%lu]", __FUNCTION__, explanation, (unsigned long)self.length, (unsigned long)CountlyCommon.sharedInstance.maxValueLength);
+        CLY_LOG_D(@"%s truncated value detail, target: [%@], fullValue: [%@]", __FUNCTION__, explanation, self);
         return [self substringToIndex:CountlyCommon.sharedInstance.maxValueLength];
     }
 
@@ -754,7 +767,7 @@ NSString* CountlyJSONFromObject(id object)
         if ([obj isKindOfClass:[NSNumber class]] || [obj isKindOfClass:[NSString class]]) {
             [filteredArray addObject:obj];
         } else {
-            CLY_LOG_W(@"%s, Removed invalid type from array: %@", __FUNCTION__, [obj class]);
+            CLY_LOG_D(@"%s dropping array element with an unsupported type, only NSNumber and NSString are allowed, receivedType: [%@]", __FUNCTION__, [obj class]);
         }
     }
     return filteredArray.copy;
@@ -802,7 +815,7 @@ NSString* CountlyJSONFromObject(id object)
     NSMutableArray* excessKeys = allKeys.mutableCopy;
     [excessKeys removeObjectsInRange:(NSRange){0, CountlyCommon.sharedInstance.maxSegmentationValues}];
 
-    CLY_LOG_W(@"%s, Number of key-value pairs in %@ is more than the limit (%ld)! So, some of them will be removed %@", __FUNCTION__, explanation, (long)CountlyCommon.sharedInstance.maxSegmentationValues, [excessKeys description]);
+    CLY_LOG_D(@"%s segmentation exceeds the SDK segmentation value limit and will be trimmed, target: [%@], keyCount: [%lu], trimmedTo: [%lu], droppedKeyCount: [%lu], droppedKeys: [%@]", __FUNCTION__, explanation, (unsigned long)allKeys.count, (unsigned long)CountlyCommon.sharedInstance.maxSegmentationValues, (unsigned long)excessKeys.count, excessKeys);
 
     NSMutableDictionary* limitedDict = self.mutableCopy;
     [limitedDict removeObjectsForKeys:excessKeys];
@@ -822,7 +835,7 @@ NSString* CountlyJSONFromObject(id object)
             ([value isKindOfClass:[NSArray class]] && (value = [(NSArray *)value cly_filterSupportedDataTypes]))) {
             [filteredDictionary setObject:value forKey:key];
         } else {
-            CLY_LOG_W(@"%s, Removed invalid type for key %@: %@", __FUNCTION__, key, [value class]);
+            CLY_LOG_D(@"%s dropping dictionary entry with an unsupported value type, key: [%@], receivedType: [%@]", __FUNCTION__, key, [value class]);
         }
     }
     
