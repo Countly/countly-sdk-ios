@@ -260,8 +260,13 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
             stopExpectation.fulfill()
         }
         
-        Countly.sharedInstance().views().startView("View1")
-        Countly.sharedInstance().views().stopView(withName: "View1")
+        // A second, immediately stopped view with the SAME name. It has to be stopped by ID:
+        // `stopView(withName:)` resolves a name by enumerating an NSMutableDictionary and taking
+        // the first match, so with two running views called "View1" which one it stops is
+        // undefined. That is what made this test pass locally and fail on CI, where the name
+        // lookup killed the view the scheduled pause/resume calls below reference.
+        let secondViewID = Countly.sharedInstance().views().startView("View1")
+        Countly.sharedInstance().views().stopView(withID: secondViewID)
         
         // Wait for all expectations to be fulfilled
         wait(for: [pauseExpectation, resumeExpectation,pauseExpectation1, resumeExpectation1, stopExpectation], timeout: 35.0)
