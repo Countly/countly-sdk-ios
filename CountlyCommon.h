@@ -137,9 +137,13 @@ void CountlyPrint(NSString *stringToPrint);
 
 - (CGSize)getWindowSize;
 
-- (void)updateLogGatheringState:(BOOL)enabled levels:(NSString *)levels batch:(NSInteger)batch lgid:(NSString *)lgid;
+- (void)updateLogGatheringState:(BOOL)enabled levels:(nullable NSString *)levels batch:(NSInteger)batch lgid:(nullable NSString *)lgid;
 
 - (void)flushSdkLogs;
+
+// the capture funnel, called from CountlyInternalLog above the console logging gates. Declared here
+// so tests can feed it exact lines instead of going through a variadic C function
+- (void)captureSdkLogLine:(NSString *)logString level:(char)levelChar;
 @end
 
 

@@ -86,6 +86,7 @@
 		96095A5F2F20105600FDE933 /* TouchDelegatingView.h in Headers */ = {isa = PBXBuildFile; fileRef = 96095A5E2F20105600FDE933 /* TouchDelegatingView.h */; };
 		962485BA2D9E971800FA3C20 /* TestUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 962485B92D9E971400FA3C20 /* TestUtils.swift */; };
 		96329DE02D9426F300BFD641 /* CountlyServerConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96329DDF2D9426F300BFD641 /* CountlyServerConfigTests.swift */; };
+		96329DE22D9426F300BFD6A2 /* CountlySDKLogsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96329DE12D9426F300BFD6A1 /* CountlySDKLogsTests.swift */; };
 		ABCDE001000000000000ABCD /* CountlyServerConfigValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABCDE002000000000000ABCD /* CountlyServerConfigValidationTests.swift */; };
 		96329DE22D94299D00BFD641 /* ServerConfigBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96329DE12D94299D00BFD641 /* ServerConfigBuilder.swift */; };
 		96329DE42D952F1500BFD641 /* MockURLProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96329DE32D952F1500BFD641 /* MockURLProtocol.swift */; };
@@ -213,6 +214,7 @@
 		96095A5E2F20105600FDE933 /* TouchDelegatingView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TouchDelegatingView.h; sourceTree = "<group>"; };
 		962485B92D9E971400FA3C20 /* TestUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestUtils.swift; sourceTree = "<group>"; };
 		96329DDF2D9426F300BFD641 /* CountlyServerConfigTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyServerConfigTests.swift; sourceTree = "<group>"; };
+		96329DE12D9426F300BFD6A1 /* CountlySDKLogsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlySDKLogsTests.swift; sourceTree = "<group>"; };
 		ABCDE002000000000000ABCD /* CountlyServerConfigValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyServerConfigValidationTests.swift; sourceTree = "<group>"; };
 		96329DE12D94299D00BFD641 /* ServerConfigBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerConfigBuilder.swift; sourceTree = "<group>"; };
 		96329DE32D952F1500BFD641 /* MockURLProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockURLProtocol.swift; sourceTree = "<group>"; };
@@ -274,6 +276,7 @@
 				96329DE32D952F1500BFD641 /* MockURLProtocol.swift */,
 				96329DE12D94299D00BFD641 /* ServerConfigBuilder.swift */,
 				96329DDF2D9426F300BFD641 /* CountlyServerConfigTests.swift */,
+				96329DE12D9426F300BFD6A1 /* CountlySDKLogsTests.swift */,
 				ABCDE002000000000000ABCD /* CountlyServerConfigValidationTests.swift */,
 				1A5C4C962B35B0850032EE1F /* CountlyTests.swift */,
 				1A50D7042B3C5AA3009C6938 /* CountlyBaseTestCase.swift */,
@@ -568,6 +571,7 @@
 				AB10000011112222333344B1 /* CountlyThemeTests.swift in Sources */,
 				96329DE42D952F1500BFD641 /* MockURLProtocol.swift in Sources */,
 				96329DE02D9426F300BFD641 /* CountlyServerConfigTests.swift in Sources */,
+				96329DE22D9426F300BFD6A2 /* CountlySDKLogsTests.swift in Sources */,
 				ABCDE001000000000000ABCD /* CountlyServerConfigValidationTests.swift in Sources */,
 				3966DBCF2C11EE270002ED97 /* CountlyDeviceIDTests.swift in Sources */,
 				3964A3E72C2AF8E90091E677 /* CountlySegmentationTests.swift in Sources */,

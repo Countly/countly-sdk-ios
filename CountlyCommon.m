@@ -121,12 +121,16 @@ static dispatch_once_t onceToken;
     _maxValueLength = kCountlyMaxValueSize;
     _maxValueLengthPicture = kCountlyMaxValueSizePicture;
     _maxSegmentationValues = kCountlyMaxSegmentationValues;
-    [_sdkLogs removeAllObjects];
-    _sdkLogsState = CLYSDKLogsStateUndecided;
-    _sdkLogsBatchSize = kCountlySDKLogsDefaultBatchSize;
-    _sdkLogsLevels = kCountlySDKLogsAllLevels;
-    _sdkLogsGatheringId = @"";
-    _sdkLogsDropCount = 0;
+    //under the lock like every other write to it: a reset races the log lines that other threads are
+    //still capturing, and mutating the array from two threads at once crashes
+    @synchronized (_sdkLogsLock) {
+        [_sdkLogs removeAllObjects];
+        _sdkLogsState = CLYSDKLogsStateUndecided;
+        _sdkLogsBatchSize = kCountlySDKLogsDefaultBatchSize;
+        _sdkLogsLevels = kCountlySDKLogsAllLevels;
+        _sdkLogsGatheringId = @"";
+        _sdkLogsDropCount = 0;
+    }
     onceToken = 0;
     s_sharedInstance = nil;
  }
@@ -275,7 +279,7 @@ void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...)
     [NSThread.currentThread.threadDictionary removeObjectForKey:kCountlySDKLogsDeliveringKey];
 }
 
-- (void)updateLogGatheringState:(BOOL)enabled levels:(NSString *)levels batch:(NSInteger)batch lgid:(NSString *)lgid {
+- (void)updateLogGatheringState:(BOOL)enabled levels:(nullable NSString *)levels batch:(NSInteger)batch lgid:(nullable NSString *)lgid {
     // batches without a gather id can not be attributed to a capture and the server rejects them all
     if (enabled && lgid.length == 0) {
         CLY_LOG_W(@"%s, log gathering was enabled without a gather id, not gathering", __FUNCTION__);

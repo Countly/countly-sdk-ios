@@ -1,3 +1,6 @@
+## X.X.X
+* Added support for server requested SDK log gathering.
+
 ## 26.1.4
 * Added support for reporting the app's current theme (light or dark) when presenting feedback widgets, rating widgets, and content, so they are displayed in matching conditions.
 * Added visionOS support for feedback widgets (NPS, Survey, and Rating) and content.
