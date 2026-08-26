@@ -310,7 +310,12 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         sc.consentRequired(true)
         
         let tracker = setupTestAllFeatures(sc.buildJson())
-        
+
+        // The consent and location requests are emitted by notifySdkConfigChange: only once
+        // `hasFinishedInit` is set, so they land shortly after start rather than synchronously.
+        TestUtils.waitUntil("the consent and location requests to be queued") {
+            TestUtils.getCurrentRQ()?.count == 2
+        }
         XCTAssertEqual(2, TestUtils.getCurrentRQ()?.count)
         XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
         
@@ -1028,10 +1033,13 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     private func validateCounts(_ tracker: CountTracker, hc: Int, fc: Int, rc: Int, cc: Int, sc: Int) {
         let expected = [hc, fc, rc, cc, sc]
         TestUtils.waitUntil("request counts \(expected)") { tracker.counts == expected }
-        validateCounts(tracker, hc: hc, fc: fc, rc: rc, cc: cc, sc: sc)
+        // Deliberately named differently from this overload: an earlier version called
+        // `validateCounts(tracker, ...)` here and recursed until the stack overflowed, which
+        // took the whole test bundle down with a SIGSEGV.
+        assertCounts(tracker.counts, hc: hc, fc: fc, rc: rc, cc: cc, sc: sc)
     }
 
-    private func validateCounts(_ counts: [Int], hc: Int, fc: Int, rc: Int, cc: Int, sc: Int) {
+    private func assertCounts(_ counts: [Int], hc: Int, fc: Int, rc: Int, cc: Int, sc: Int) {
         XCTAssertEqual(hc, counts[0], "Health check count mismatch. Expected: \(hc), Got: \(counts[0])")
         XCTAssertEqual(fc, counts[1], "Feedback request count mismatch. Expected: \(fc), Got: \(counts[1])")
         XCTAssertEqual(rc, counts[2], "Remote config count mismatch. Expected: \(rc), Got: \(counts[2])")
