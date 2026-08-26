@@ -420,7 +420,8 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
     /// This test counts outbound hits for a uniquely-marked request and
     /// asserts at most one is sent even when proceedOnQueue is invoked
     /// concurrently from many threads.
-    func test_proceedOnQueue_doesNotDoubleSendHeadRequest() {
+    func test_proceedOnQueue_doesNotDoubleSendHeadRequest() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
         let lock = NSLock()
         var markerHits = 0
         MockURLProtocol.requestHandler = { request in

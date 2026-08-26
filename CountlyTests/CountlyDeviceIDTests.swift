@@ -97,7 +97,7 @@ class CountlyDeviceIDTests: CountlyBaseTestCase {
     
     func validateSdkGeneratedID() {
         let sdkDeviceID = Countly.sharedInstance().deviceID()
-        XCTAssertTrue(Countly.sharedInstance().deviceIDType() == CLYDeviceIDType.IDFV, "Countly deviced id type should be IDFV when no device id is provided during init.")
+        XCTAssertTrue(Countly.sharedInstance().deviceIDType() == TestPlatform.defaultDeviceIDType, "Countly deviced id type should be the platform default (IDFV on iOS/tvOS/visionOS, NSUUID on watchOS/macOS) when no device id is provided during init.")
         XCTAssertTrue(sdkDeviceID == getIDFV(), "Countly device id not match with provided device id.")
     }
     

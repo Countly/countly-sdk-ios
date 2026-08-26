@@ -25,15 +25,7 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         super.setUp()
         // Initialize or reset necessary objects here
         Countly.sharedInstance().halt(true)
-
-        // sdkInternalLimits() returns a file-scope static singleton, not a
-        // per-config instance — so a test setting setMaxValueSize/setMaxKeyLength
-        // mutates state visible to every later test. Reset to defaults here.
-        let limits = CountlyConfig().sdkInternalLimits()
-        limits.setMaxKeyLength(128)
-        limits.setMaxValueSize(256)
-        limits.setMaxValueSizePicture(4096)
-        limits.setMaxSegmentationValues(100)
+        // The shared SDK limits are restored by CountlyBaseTestCase.setUpWithError.
     }
 
     override func tearDown() {
@@ -87,7 +79,12 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         Countly.sharedInstance().start(with: config);
         sendUserProperty()
         setUserData()
-        XCTAssertEqual(2, CountlyPersistency.sharedInstance().remainingRequestCount()) // consents, location
+        // consents, location. Both are enqueued asynchronously, so poll rather than assuming
+        // they have landed by the time this line runs.
+        TestUtils.waitUntil("the consent and location requests to be queued") {
+            CountlyPersistency.sharedInstance().remainingRequestCount() == 2
+        }
+        XCTAssertEqual(2, CountlyPersistency.sharedInstance().remainingRequestCount())
     }
     
     func test_203_CNR_A() {
@@ -362,8 +359,10 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         let events = parsedRequest["events"];
         XCTAssertNotNil(events, "events are nil");
         if((events) != nil) {
-            guard let jsonData = (events as! String).data(using: .utf8) else {
-                fatalError("Failed to convert JSON string to Data")
+            guard let eventsString = events as? String,
+                  let jsonData = eventsString.data(using: .utf8) else {
+                XCTFail("Failed to convert events JSON string to Data")
+                return
             }
             do {
                 // Decode JSON data into an array of CountlyEventStruct
@@ -403,8 +402,9 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         let userDetails = parsedRequest["user_details"];
         XCTAssertNotNil(userDetails, "user details are nil");
         if((userDetails) != nil) {
-            guard let customUserDetails = (userDetails as! [String: Any])["custom"] else {
-                fatalError("Failed to get custom user details")
+            guard let customUserDetails = (userDetails as? [String: Any])?["custom"] else {
+                XCTFail("Failed to get custom user details")
+                return
             }
             do {
                 // Decode JSON data into an array of CountlyEventStruct
@@ -449,10 +449,11 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
     
     func validateUserDetails(request: String) {
         let parsedRequest = TestUtils.parseQueryString(request)
-        let userDetails = parsedRequest["user_details"];
-        XCTAssertNotNil(userDetails, "user details is nil");
-        let userDetailsMap =  userDetails as! [String: Any]
-        if((userDetails) != nil) {
+        guard let userDetailsMap = parsedRequest["user_details"] as? [String: Any] else {
+            XCTFail("user details is nil or not a dictionary, request: \(request)")
+            return
+        }
+        if true {
             XCTAssertNotNil(userDetailsMap["byear"], "byear should not be nil")
             XCTAssertNotNil(userDetailsMap["email"], "email should not be nil")
             XCTAssertNotNil(userDetailsMap["gender"], "gender should not be nil")

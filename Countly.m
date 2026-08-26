@@ -52,6 +52,16 @@ static dispatch_once_t onceToken;
     }
     // Remove all notification observers to avoid duplicate registrations after re-init in tests.
     [NSNotificationCenter.defaultCenter removeObserver:self];
+    // Break the previous-event chain, otherwise the first event recorded after a restart
+    // carries the `peid` / `pen` of an event from the previous SDK lifetime.
+#if __has_include(<os/lock.h>)
+    os_unfair_lock_lock(&previousEventLock);
+#endif
+    previousEventID = nil;
+    previousEventName = nil;
+#if __has_include(<os/lock.h>)
+    os_unfair_lock_unlock(&previousEventLock);
+#endif
     isSuspended = NO;
     onceToken = 0;
     s_sharedCountly = nil;
@@ -85,6 +95,19 @@ static dispatch_once_t onceToken;
         [NSNotificationCenter.defaultCenter addObserver:self
                                                selector:@selector(applicationWillTerminate:)
                                                    name:NSApplicationWillTerminateNotification
+                                                 object:nil];
+
+        //NOTE: macOS has no background state, so there is no `suspend` counterpart here.
+        //      `applicationDidBecomeActive:` is observed so that a `begin_session` dropped by
+        //      the "app is not active" guard in `beginSession` (app launched hidden, as a login
+        //      item, or opened by another app) is recovered on the first activation.
+        //NOTE: Resign-active is deliberately NOT observed. Its handler saves health tracker
+        //      state, which forces an NSUserDefaults synchronize, and on macOS the user
+        //      switches away from the app constantly. `applicationWillTerminate:` already
+        //      saves that state.
+        [NSNotificationCenter.defaultCenter addObserver:self
+                                               selector:@selector(applicationDidBecomeActive:)
+                                                   name:NSApplicationDidBecomeActiveNotification
                                                  object:nil];
 #endif
     }
@@ -1118,7 +1141,7 @@ static dispatch_once_t onceToken;
 }
 
 - (BOOL)isAppInForeground {
-#if TARGET_OS_IOS || TARGET_OS_TV
+#if TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION
     UIApplicationState state = [UIApplication sharedApplication].applicationState;
     return state == UIApplicationStateActive;
 #elif TARGET_OS_OSX
@@ -1612,24 +1635,10 @@ static dispatch_once_t onceToken;
 {
     CLY_LOG_I(@"%s halting the SDK, clearStorage: [%@]", __FUNCTION__, clearStorage ? @"YES" : @"NO");
 
-    // Reset view tracking state BEFORE halt — sharedInstance() returns nil after halt.
-    // Use KVC to clear internal state directly since stopAllViews checks consent
-    // and may be a no-op if previous test required consent.
-    if (CountlyViewTrackingInternal.sharedInstance)
-    {
-        CountlyViewTrackingInternal* viewTracking = CountlyViewTrackingInternal.sharedInstance;
-        [viewTracking setValue:NSMutableDictionary.new forKey:@"viewDataDictionary"];
-        [viewTracking setValue:nil forKey:@"currentViewID"];
-        [viewTracking setValue:nil forKey:@"currentViewName"];
-        [viewTracking setValue:nil forKey:@"previousViewID"];
-        [viewTracking setValue:nil forKey:@"previousViewName"];
-#if (TARGET_OS_IOS || TARGET_OS_TV)
-        // Only declared on the platforms that implement automatic view tracking; setting it elsewhere
-        // would raise NSUnknownKeyException, which the compiler cannot catch for a string key
-        [viewTracking setValue:@NO forKey:@"isAutoViewTrackingActive"];
-#endif
-        [viewTracking resetFirstView];
-    }
+    // Reset view tracking BEFORE halt: sharedInstance returns nil once hasStarted is false.
+    // Dropping its singleton clears the recorded views and the one-way configuration flags,
+    // which stopAllViews cannot do because it is gated on view tracking consent.
+    [CountlyViewTrackingInternal.sharedInstance resetInstance];
 
     // Reset health tracker state
     [CountlyHealthTracker.sharedInstance resetInstance];

@@ -1,6 +1,13 @@
 ## XX.XX.XX
 * Added support for SDK behavior settings that control the SDK's automatic session tracking, automatic view tracking, automatic crash reporting, and Journey Trigger Views.
+* Added "userProfile" access on watchOS, tvOS and macOS.
 * Improved internal logging and changed the default log level from verbose to debug.
+* Improved state cleanup for events and view tracking when "halt" is called.
+
+* Fixed a crash on visionOS when view tracking consent was given or cancelled.
+* Fixed a crash on watchOS and macOS when calling "halt".
+* Fixed macOS not starting a session when the app was not active at launch.
+* Fixed visibility reporting and background session suppression on visionOS.
 
 ## 26.1.4
 * Added support for reporting the app's current theme (light or dark) when presenting feedback widgets, rating widgets, and content, so they are displayed in matching conditions.

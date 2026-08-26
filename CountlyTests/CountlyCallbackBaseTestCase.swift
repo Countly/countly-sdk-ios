@@ -42,6 +42,19 @@ class CountlyCallbackBaseTestCase: XCTestCase {
 
     // MARK: - Instance Setup/Teardown
 
+    override func setUpWithError() throws {
+        try super.setUpWithError()
+        // These tests all fake HTTP responses through MockURLProtocol, which watchOS ignores.
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        #if os(macOS)
+            // This class deliberately derives from XCTestCase rather than CountlyBaseTestCase
+            // (it starts the SDK once per class), so it has to install the macOS activation
+            // shim itself. Without it xctest looks inactive and the SDK refuses to open a
+            // session, which starves the request callbacks these tests wait on.
+            TestAppActivation.isActive = true
+        #endif
+    }
+
     override func setUp() {
         super.setUp()
         // Reset MockURLProtocol to success handler for each test

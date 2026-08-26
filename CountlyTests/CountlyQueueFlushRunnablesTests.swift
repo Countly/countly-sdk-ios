@@ -249,7 +249,7 @@ class CountlyQueueFlushRunnablesTests: CountlyCallbackBaseTestCase {
             expectation.fulfill()
         }
 
-        wait(for: [expectation], timeout: 5.0)
+        wait(for: [expectation], timeout: TestUtils.asyncTimeout)
 
         // Trigger queue flush
         Countly.sharedInstance().addDirectRequest(["test": "request"])
