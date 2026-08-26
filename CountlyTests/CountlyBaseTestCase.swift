@@ -68,6 +68,11 @@ class CountlyBaseTestCase: XCTestCase {
         config.manualSessionHandling = true
         Countly.sharedInstance().start(with: config)
         Countly.sharedInstance().halt(true)
+        // Many tests assert absolute request-queue indices ("RQ[0] is begin_session"), so the
+        // queue has to start empty. halt(true) clears persisted storage, but a request enqueued
+        // by an earlier test can still be sitting in memory, and on watchOS nothing ever drains
+        // because URLProtocol interception is unavailable there, so leftovers accumulate.
+        CountlyPersistency.sharedInstance().flushQueue()
     }
 }
 
