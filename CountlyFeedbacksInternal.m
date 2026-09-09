@@ -89,8 +89,13 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 - (void)showDialog:(void(^)(NSInteger rating))completion
 {
+    CLY_LOG_I(@"%s star rating dialog requested, completionProvided: [%@]", __FUNCTION__, (completion != nil) ? @"YES" : @"NO");
+
     if (!CountlyConsentManager.sharedInstance.consentForFeedback)
+    {
+        CLY_LOG_V(@"%s no feedback consent given, star rating dialog will not be shown", __FUNCTION__);
         return;
+    }
 
     self.ratingCompletion = completion;
 
@@ -117,7 +122,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     }
     @catch (NSException* exception)
     {
-        CLY_LOG_W(@"%s, UIAlertController's contentViewController can not be set, got exception %@", __FUNCTION__, exception);
+        CLY_LOG_E(@"%s contentViewController of the star rating alert can not be set, exception: [%@]", __FUNCTION__, exception.reason);
     }
 
     [CountlyCommon.sharedInstance tryPresentingViewController:self.alertController];
@@ -129,7 +134,10 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         return;
 
     if (!CountlyConsentManager.sharedInstance.consentForFeedback)
+    {
+        CLY_LOG_V(@"%s no feedback consent given, star rating auto ask check is skipped", __FUNCTION__);
         return;
+    }
 
     NSMutableDictionary* status = [CountlyPersistency.sharedInstance retrieveStarRatingStatus].mutableCopy;
 
@@ -142,7 +150,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
     if (self.sessionCount == sessionCountSoFar)
     {
-        CLY_LOG_D(@"Asking for star-rating as session count reached specified limit %d ...", (int)self.sessionCount);
+        CLY_LOG_D(@"%s asking for star rating as session count reached the limit, sessionCount: [%ld]", __FUNCTION__, (long)self.sessionCount);
 
         [self showDialog:self.ratingCompletionForAutoAsk];
 
@@ -205,6 +213,10 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 - (void)finishWithRating:(NSInteger)rating
 {
+    CLY_LOG_I(@"%s star rating dialog finished, widgetType: [%@], answerProvided: [%@]", __FUNCTION__, @"star-rating", (rating != 0) ? @"YES" : @"NO");
+
+    CLY_LOG_D(@"%s star rating dialog answer detail, widgetType: [%@], rating: [%ld]", __FUNCTION__, @"star-rating", (long)rating);
+
     if (self.ratingCompletion)
         self.ratingCompletion(rating);
 
@@ -236,20 +248,31 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 - (void)presentRatingWidgetWithID:(NSString *)widgetID closeButtonText:(NSString *)closeButtonText completionHandler:(void (^)(NSError * error))completionHandler
 {
+    CLY_LOG_I(@"%s rating widget presentation requested, widgetID: [%@], closeButtonTextProvided: [%@], completionHandlerProvided: [%@]", __FUNCTION__, widgetID, (closeButtonText != nil) ? @"YES" : @"NO", (completionHandler != nil) ? @"YES" : @"NO");
+
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
     {
-        CLY_LOG_D(@"'presentRatingWidgetWithID' is aborted: SDK Networking is disabled from server config!");
+        CLY_LOG_D(@"%s rating widget presentation is dropped, networking is disabled by server config", __FUNCTION__);
         return;
     }
     
     if (!CountlyConsentManager.sharedInstance.consentForFeedback)
+    {
+        CLY_LOG_V(@"%s no feedback consent given, rating widget presentation is skipped", __FUNCTION__);
         return;
+    }
 
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+    {
+        CLY_LOG_W(@"%s rating widget presentation is dropped, device ID is temporary", __FUNCTION__);
         return;
+    }
 
     if (!widgetID.length)
+    {
+        CLY_LOG_E(@"%s rating widget presentation is dropped, widget ID is empty or nil", __FUNCTION__);
         return;
+    }
 
     NSURLRequest* feedbackWidgetCheckRequest = [self widgetCheckURLRequest:widgetID];
     NSURLSessionTask* task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:feedbackWidgetCheckRequest completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
@@ -262,17 +285,21 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
             widgetInfo = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
         }
 
+        CLY_LOG_D(@"%s rating widget check response detail, widgetID: [%@], url: [%@], widgetInfo: [%@]", __FUNCTION__, widgetID, response.URL.absoluteString, widgetInfo);
+
         if (!error)
         {
             NSMutableDictionary* userInfo = widgetInfo.mutableCopy;
 
             if (![widgetInfo[kCountlyFBKeyID] isEqualToString:widgetID])
             {
+                CLY_LOG_W(@"%s no rating widget found on the server for the given widgetID: [%@]", __FUNCTION__, widgetID);
                 userInfo[NSLocalizedDescriptionKey] = [NSString stringWithFormat:@"Feedback widget with ID %@ is not available.", widgetID];
                 error = [NSError errorWithDomain:kCountlyErrorDomain code:CLYErrorFeedbackWidgetNotAvailable userInfo:userInfo];
             }
             else if (![self isDeviceTargetedByWidget:widgetInfo])
             {
+                CLY_LOG_D(@"%s this device is not in the target devices list of the widget, widgetID: [%@]", __FUNCTION__, widgetID);
                 userInfo[NSLocalizedDescriptionKey] = [NSString stringWithFormat:@"Feedback widget with ID %@ does not include this device in target devices list.", widgetID];
                 error = [NSError errorWithDomain:kCountlyErrorDomain code:CLYErrorFeedbackWidgetNotTargetedForDevice userInfo:userInfo];
             }
@@ -280,6 +307,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
         if (error)
         {
+            CLY_LOG_W(@"%s rating widget check request failed, widgetID: [%@], error: [%@]", __FUNCTION__, widgetID, error.localizedDescription);
             dispatch_async(dispatch_get_main_queue(), ^
             {
                 if (completionHandler)
@@ -316,6 +344,8 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     {
         [webVC dismissViewControllerAnimated:YES completion:^
         {
+            CLY_LOG_I(@"%s rating widget web view is dismissed, widgetID: [%@], widgetType: [%@]", __FUNCTION__, widgetID, CLYFeedbackWidgetTypeRating);
+
             if (completionHandler)
                 completionHandler(nil);
 
@@ -324,6 +354,8 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     };
     [webVC.view addSubview:dismissButton];
     [dismissButton positionToTopRightConsideringStatusBar];
+
+    CLY_LOG_I(@"%s rating widget web view is being presented, widgetID: [%@], widgetType: [%@]", __FUNCTION__, widgetID, CLYFeedbackWidgetTypeRating);
 
     [CountlyCommon.sharedInstance tryPresentingViewController:webVC];
 }
@@ -394,11 +426,19 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 - (void)recordRatingWidgetWithID:(NSString *)widgetID rating:(NSInteger)rating email:(NSString *)email comment:(NSString *)comment userCanBeContacted:(BOOL)userCanBeContacted
 {
+    CLY_LOG_I(@"%s rating widget result recording requested, widgetID: [%@], emailProvided: [%@], commentProvided: [%@], userCanBeContacted: [%@]", __FUNCTION__, widgetID, (email.length > 0) ? @"YES" : @"NO", (comment.length > 0) ? @"YES" : @"NO", userCanBeContacted ? @"YES" : @"NO");
+
     if (!CountlyConsentManager.sharedInstance.consentForFeedback)
+    {
+        CLY_LOG_V(@"%s no feedback consent given, rating widget result is not recorded", __FUNCTION__);
         return;
+    }
 
     if (!widgetID.length)
+    {
+        CLY_LOG_E(@"%s rating widget result is dropped, widget ID is empty or nil", __FUNCTION__);
         return;
+    }
 
     NSMutableDictionary* segmentation = NSMutableDictionary.new;
     segmentation[kCountlyFBKeyPlatform] = CountlyDeviceInfo.osName;
@@ -409,6 +449,10 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     segmentation[kCountlyFBKeyComment] = comment;
     segmentation[kCountlyFBKeyContactMe] = @(userCanBeContacted);
 
+    CLY_LOG_I(@"%s rating widget result submitted, widgetID: [%@], widgetType: [%@], answeredFieldCount: [%lu]", __FUNCTION__, widgetID, CLYFeedbackWidgetTypeRating, (unsigned long)segmentation.count);
+
+    CLY_LOG_D(@"%s rating widget result submission detail, widgetID: [%@], rating: [%ld], email: [%@], comment: [%@], userCanBeContacted: [%@], segmentation: [%@]", __FUNCTION__, widgetID, (long)rating, email, comment, userCanBeContacted ? @"YES" : @"NO", segmentation);
+
     [Countly.sharedInstance recordReservedEvent:kCountlyReservedEventStarRating segmentation:segmentation];
 }
 
@@ -417,9 +461,11 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
 - (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> *feedbackWidgets, NSError *error))completionHandler
 {
+    CLY_LOG_I(@"%s feedback widget list fetch requested, completionHandlerProvided: [%@]", __FUNCTION__, (completionHandler != nil) ? @"YES" : @"NO");
+
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
     {
-        CLY_LOG_D(@"'getFeedbackWidgets' is aborted: SDK Networking is disabled from server config!");
+        CLY_LOG_D(@"%s feedback widget list fetch is dropped, networking is disabled by server config", __FUNCTION__);
         if(completionHandler){
             completionHandler(nil, nil);
         }
@@ -427,6 +473,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     }
     
     if (!CountlyConsentManager.sharedInstance.consentForFeedback) {
+        CLY_LOG_V(@"%s no feedback consent given, feedback widget list is not fetched", __FUNCTION__);
         if(completionHandler){
             completionHandler(nil, nil);
         }
@@ -435,6 +482,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         
 
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary) {
+        CLY_LOG_W(@"%s feedback widget list fetch is dropped, device ID is temporary", __FUNCTION__);
         if(completionHandler){
             completionHandler(nil, nil);
         }
@@ -445,6 +493,8 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     {
         // IMMEDIATE REQUEST to find them better in search
         NSDictionary *feedbacksResponse = nil;
+
+        CLY_LOG_D(@"%s feedback widget list raw response received, url: [%@], responseBody: [%@]", __FUNCTION__, response.URL.absoluteString, [data cly_stringUTF8]);
 
         if (!error)
         {
@@ -463,7 +513,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
         if (error || !feedbacksResponse || ![feedbacksResponse isKindOfClass:[NSDictionary class]])
         {
-            CLY_LOG_D(@"%s, aborting call, feedbacksResponse: [%@], error: [%@]",__FUNCTION__, feedbacksResponse, error);
+            CLY_LOG_W(@"%s feedback widget list fetch failed, responseIsDictionary: [%@], error: [%@]", __FUNCTION__, [feedbacksResponse isKindOfClass:[NSDictionary class]] ? @"YES" : @"NO", error.localizedDescription);
             dispatch_async(dispatch_get_main_queue(), ^
             {
                 if (completionHandler)
@@ -477,7 +527,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         NSMutableArray* feedbacks = NSMutableArray.new;
         NSArray* rawFeedbackObjects = feedbacksResponse[@"result"];
         if(!rawFeedbackObjects){
-            CLY_LOG_D(@"%s, aborting call, response is not valid, error: [%@]", __FUNCTION__, error);
+            CLY_LOG_E(@"%s feedback widget list response has no result field, ignoring the response", __FUNCTION__);
             dispatch_async(dispatch_get_main_queue(), ^
             {
                 if (completionHandler)
@@ -492,6 +542,10 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
             if (feedback)
                 [feedbacks addObject:feedback];
         }
+
+        CLY_LOG_I(@"%s feedback widget list fetched, widgetCount: [%lu]", __FUNCTION__, (unsigned long)feedbacks.count);
+
+        CLY_LOG_D(@"%s feedback widget list parsed response detail, widgetCount: [%lu], parsedResponse: [%@]", __FUNCTION__, (unsigned long)feedbacks.count, feedbacksResponse);
 
         dispatch_async(dispatch_get_main_queue(), ^
         {
@@ -537,34 +591,31 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 }
 
 - (void) presentNPS:(NSString *)nameIDorTag widgetCallback:(WidgetCallback) widgetCallback {
-    CLY_LOG_D(@"Presenting NPS widget with nameIDorTag: %@ and WidgetCallback: %@", nameIDorTag, widgetCallback);
     [self presentFeedbackWidget:CLYFeedbackWidgetTypeNPS nameIDorTag:nameIDorTag widgetCallback:widgetCallback];
 }
 
 - (void) presentSurvey:(NSString *)nameIDorTag widgetCallback:(WidgetCallback) widgetCallback {
-    CLY_LOG_D(@"Presenting Survey widget with nameIDorTag: %@ and WidgetCallback: %@", nameIDorTag, widgetCallback);
     [self presentFeedbackWidget:CLYFeedbackWidgetTypeSurvey nameIDorTag:nameIDorTag widgetCallback:widgetCallback];
 }
 
 - (void) presentRating:(NSString *)nameIDorTag widgetCallback:(WidgetCallback) widgetCallback {
-    CLY_LOG_D(@"Presenting Rating widget with nameIDorTag: %@ and WidgetCallback: %@", nameIDorTag, widgetCallback);
     [self presentFeedbackWidget:CLYFeedbackWidgetTypeRating nameIDorTag:nameIDorTag widgetCallback:widgetCallback];
 }
 
 
 -(void)presentFeedbackWidget:(CLYFeedbackWidgetType)widgetType nameIDorTag:(NSString *)nameIDorTag  widgetCallback:(WidgetCallback) widgetCallback {
-    [Countly.sharedInstance getFeedbackWidgets:^(NSArray *feedbackWidgets, NSError *error) {
+    [self getFeedbackWidgets:^(NSArray *feedbackWidgets, NSError *error) {
         if (error) {
-            CLY_LOG_D(@"Getting widgets list failed. Error: %@", error);
+            CLY_LOG_D(@"%s widget list could not be retrieved while resolving a widget to present, widgetType: [%@], error: [%@]", __FUNCTION__, widgetType, error.localizedDescription);
             return;
         }
         
-        CLY_LOG_D(@"Successfully retrieved feedback widgets. Total widgets count: %lu", (unsigned long)feedbackWidgets.count);
+        CLY_LOG_D(@"%s widget list available for resolving, totalWidgetCount: [%lu]", __FUNCTION__, (unsigned long)feedbackWidgets.count);
         
         NSPredicate *typePredicate = [NSPredicate predicateWithFormat:@"type == %@", widgetType];
         NSArray *filteredWidgets = [feedbackWidgets filteredArrayUsingPredicate:typePredicate];
         
-        CLY_LOG_D(@"Filtered widgets count for type '%@': %lu", widgetType, (unsigned long)filteredWidgets.count);
+        CLY_LOG_D(@"%s widget list filtered by type, widgetType: [%@], matchingWidgetCount: [%lu]", __FUNCTION__, widgetType, (unsigned long)filteredWidgets.count);
         
         CountlyFeedbackWidget *widgetToPresent = nil;
         
@@ -574,7 +625,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
                     [nameIDorTag isEqualToString:feedbackWidget.ID] ||
                     [feedbackWidget.tags containsObject:nameIDorTag]) {
                     widgetToPresent = feedbackWidget;
-                    CLY_LOG_D(@"Exact match found for nameIDorTag '%@'. Widget ID: %@, Name: %@", nameIDorTag, feedbackWidget.ID, feedbackWidget.name);
+                    CLY_LOG_D(@"%s exact widget match found, nameIDorTag: [%@], widgetID: [%@], widgetType: [%@]", __FUNCTION__, nameIDorTag, feedbackWidget.ID, widgetType);
                     break;
                 }
             }
@@ -582,13 +633,13 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         
         if (!widgetToPresent && filteredWidgets.count > 0) {
             widgetToPresent = filteredWidgets.firstObject;
-            CLY_LOG_D(@"No exact match found for nameIDorTag '%@'. Falling back to the first widget of type '%@'. Widget ID: %@, Name: %@", nameIDorTag, widgetType, widgetToPresent.ID, widgetToPresent.name);
+            CLY_LOG_D(@"%s no exact widget match, falling back to the first widget of the type, nameIDorTag: [%@], widgetType: [%@], widgetID: [%@]", __FUNCTION__, nameIDorTag, widgetType, widgetToPresent.ID);
         }
         
         if (widgetToPresent) {
             [widgetToPresent presentWithCallback:widgetCallback];
         } else {
-            CLY_LOG_D(@"No feedback widget found for the specified type: %@", widgetType);
+            CLY_LOG_W(@"%s no feedback widget found to present, widgetType: [%@], nameIDorTag: [%@]", __FUNCTION__, widgetType, nameIDorTag);
         }
     }];
 }

@@ -111,6 +111,9 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
     if (customAll.count > 0)
         userDictionary[kCountlyUDKeyCustom] = customAll;
 
+    CLY_LOG_D(@"%s user details serialized, fields: [%@], customPropertyCount: [%lu]", __FUNCTION__, userDictionary.allKeys, (unsigned long)customAll.count);
+    CLY_LOG_D(@"%s serialized user details dictionary value detail, dictionary: [%@]", __FUNCTION__, userDictionary);
+
     if (userDictionary.count > 0)
         return [userDictionary cly_JSONify];
 
@@ -119,6 +122,8 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
 
 - (void)clearUserDetails
 {
+    CLY_LOG_D(@"%s user details will be cleared, customPropertyCount: [%lu], modificationCount: [%lu]", __FUNCTION__, (unsigned long)self.customProperties.count, (unsigned long)self.customMods.count);
+
     self.name = nil;
     self.username = nil;
     self.email = nil;
@@ -169,32 +174,40 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
 // pre-`setProperty:` wire format. Use `-setProperty:value:` for the named-aware path.
 - (void)set:(NSString *)key value:(NSString *)value
 {
-    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+    CLY_LOG_I(@"%s custom user property will be set with a string value, key: [%@], valueLength: [%lu]", __FUNCTION__, key, (unsigned long)value.length);
+    CLY_LOG_D(@"%s custom user property string value detail, key: [%@], value: [%@]", __FUNCTION__, key, value);
     [self setCustomProperty:key value:value];
 }
 
 - (void)set:(NSString *)key numberValue:(NSNumber *)value
 {
-    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+    CLY_LOG_I(@"%s custom user property will be set with a number value, key: [%@]", __FUNCTION__, key);
+    CLY_LOG_D(@"%s custom user property number value detail, key: [%@], value: [%@]", __FUNCTION__, key, value);
     [self setCustomProperty:key value:value];
 }
 
 - (void)set:(NSString *)key boolValue:(BOOL)value
 {
-    CLY_LOG_I(@"%s %@ %d", __FUNCTION__, key, value);
+    CLY_LOG_I(@"%s custom user property will be set with a bool value, key: [%@]", __FUNCTION__, key);
+    CLY_LOG_D(@"%s custom user property bool value detail, key: [%@], value: [%@]", __FUNCTION__, key, @(value));
     [self setCustomProperty:key value:@(value)];
 }
 
 - (void)setCustomProperty:(NSString *)key value:(id)value
 {
-    if (key == nil || value == nil) return;
+    if (key == nil || value == nil)
+    {
+        CLY_LOG_E(@"%s call will be ignored as key or value is nil, keyProvided: [%@]", __FUNCTION__, (key != nil) ? @"YES" : @"NO");
+        return;
+    }
     if (![CountlyServerConfig.sharedInstance shouldRecordUserProperty:key]) {
-        CLY_LOG_D(@"%s key [%@] is filtered out by user property filter, omitting call", __FUNCTION__, key);
+        CLY_LOG_D(@"%s custom property key is filtered out by server config user property filter, key: [%@], omitting call", __FUNCTION__, key);
         return;
     }
     if (![self isValidDataType:value]) {
-        CLY_LOG_D(@"%s unsupported type for key [%@], type [%@], omitting call",
+        CLY_LOG_W(@"%s custom property value type is not supported, key: [%@], type: [%@], omitting call",
                   __FUNCTION__, key, NSStringFromClass([value class]));
+        CLY_LOG_D(@"%s rejected custom property value detail, key: [%@], value: [%@]", __FUNCTION__, key, value);
         return;
     }
     NSString* truncatedLog = [NSString stringWithFormat:@"%s",__FUNCTION__];
@@ -205,24 +218,29 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
     }
     NSString *truncatedKey = [key cly_truncatedKey:truncatedLog];
     self.customProperties[truncatedKey] = value;
+    CLY_LOG_D(@"%s custom user property stored, key: [%@], totalCustomProperties: [%lu]", __FUNCTION__, truncatedKey, (unsigned long)self.customProperties.count);
+    CLY_LOG_D(@"%s stored custom user property value detail, key: [%@], value: [%@]", __FUNCTION__, truncatedKey, value);
     // No auto-flush — legacy `set:` preserves pre-existing event-flush timing.
 }
 
 - (void)setOnce:(NSString *)key value:(NSString *)value
 {
-    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+    CLY_LOG_I(@"%s setOnce will be applied with a string value, key: [%@], valueLength: [%lu]", __FUNCTION__, key, (unsigned long)value.length);
+    CLY_LOG_D(@"%s setOnce string value detail, key: [%@], value: [%@]", __FUNCTION__, key, value);
     [self doModification:kCountlyUDKeyModifierSetOnce key:key value:value];
 }
 
 - (void)setOnce:(NSString *)key numberValue:(NSNumber *)value
 {
-    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+    CLY_LOG_I(@"%s setOnce will be applied with a number value, key: [%@]", __FUNCTION__, key);
+    CLY_LOG_D(@"%s setOnce number value detail, key: [%@], value: [%@]", __FUNCTION__, key, value);
     [self doModification:kCountlyUDKeyModifierSetOnce key:key value:value];
 }
 
 - (void)setOnce:(NSString *)key boolValue:(BOOL)value;
 {
-    CLY_LOG_I(@"%s %@ %d", __FUNCTION__, key, value);
+    CLY_LOG_I(@"%s setOnce will be applied with a bool value, key: [%@]", __FUNCTION__, key);
+    CLY_LOG_D(@"%s setOnce bool value detail, key: [%@], value: [%@]", __FUNCTION__, key, @(value));
     [self doModification:kCountlyUDKeyModifierSetOnce key:key value:@(value)];
 }
 
@@ -231,8 +249,13 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
 // wire format. Clear named fields via direct property assignment to NSNull.null.
 - (void)unSet:(NSString *)key
 {
-    CLY_LOG_I(@"%s %@", __FUNCTION__, key);
-    if (key == nil) return;
+    CLY_LOG_I(@"%s custom user property will be unset, key: [%@]", __FUNCTION__, key);
+
+    if (key == nil)
+    {
+        CLY_LOG_E(@"%s unset call will be ignored as key is nil", __FUNCTION__);
+        return;
+    }
 
     NSString *truncatedKey = [key cly_truncatedKey:@"unSet"];
     self.customProperties[truncatedKey] = NSNull.null;
@@ -241,128 +264,161 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
 
 - (void)increment:(NSString *)key
 {
-    CLY_LOG_I(@"%s %@", __FUNCTION__, key);
+    CLY_LOG_I(@"%s user property will be incremented by [1], key: [%@]", __FUNCTION__, key);
 
     [self incrementBy:key value:@1];
 }
 
 - (void)incrementBy:(NSString *)key value:(NSNumber *)value
 {
-    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+    CLY_LOG_I(@"%s user property will be incremented, key: [%@]", __FUNCTION__, key);
+    CLY_LOG_D(@"%s increment operand value detail, key: [%@], value: [%@]", __FUNCTION__, key, value);
     [self doModification:kCountlyUDKeyModifierIncrement key:key value:value];
 }
 
 - (void)multiply:(NSString *)key value:(NSNumber *)value
 {
-    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+    CLY_LOG_I(@"%s user property will be multiplied, key: [%@]", __FUNCTION__, key);
+    CLY_LOG_D(@"%s multiply operand value detail, key: [%@], value: [%@]", __FUNCTION__, key, value);
     [self doModification:kCountlyUDKeyModifierMultiply key:key value:value];
 }
 
 - (void)max:(NSString *)key value:(NSNumber *)value
 {
-    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+    CLY_LOG_I(@"%s max modifier will be applied to user property, key: [%@]", __FUNCTION__, key);
+    CLY_LOG_D(@"%s max operand value detail, key: [%@], value: [%@]", __FUNCTION__, key, value);
     [self doModification:kCountlyUDKeyModifierMax key:key value:value];
 }
 
 - (void)min:(NSString *)key value:(NSNumber *)value
 {
-    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+    CLY_LOG_I(@"%s min modifier will be applied to user property, key: [%@]", __FUNCTION__, key);
+    CLY_LOG_D(@"%s min operand value detail, key: [%@], value: [%@]", __FUNCTION__, key, value);
     [self doModification:kCountlyUDKeyModifierMin key:key value:value];}
 
 - (void)push:(NSString *)key value:(NSString *)value
 {
-    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+    CLY_LOG_I(@"%s push will be applied with a string value, key: [%@], valueLength: [%lu]", __FUNCTION__, key, (unsigned long)value.length);
+    CLY_LOG_D(@"%s push string value detail, key: [%@], value: [%@]", __FUNCTION__, key, value);
     [self doModification:kCountlyUDKeyModifierPush key:key value:value];
 }
 
 - (void)push:(NSString *)key numberValue:(NSNumber *)value;
 {
-    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+    CLY_LOG_I(@"%s push will be applied with a number value, key: [%@]", __FUNCTION__, key);
+    CLY_LOG_D(@"%s push number value detail, key: [%@], value: [%@]", __FUNCTION__, key, value);
     [self doModification:kCountlyUDKeyModifierPush key:key value:value];
 }
 
 - (void)push:(NSString *)key boolValue:(BOOL)value
 {
-    CLY_LOG_I(@"%s %@ %d", __FUNCTION__, key, value);
+    CLY_LOG_I(@"%s push will be applied with a bool value, key: [%@]", __FUNCTION__, key);
+    CLY_LOG_D(@"%s push bool value detail, key: [%@], value: [%@]", __FUNCTION__, key, @(value));
     [self doModification:kCountlyUDKeyModifierPush key:key value:@(value)];
 }
 
 - (void)push:(NSString *)key values:(NSArray *)value
 {
-    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+    CLY_LOG_I(@"%s push will be applied with multiple values, key: [%@], elementCount: [%lu]", __FUNCTION__, key, (unsigned long)value.count);
+    CLY_LOG_D(@"%s push array elements detail, key: [%@], values: [%@]", __FUNCTION__, key, value);
     [self doModification:kCountlyUDKeyModifierPush key:key value:value];
 }
 
 - (void)pushUnique:(NSString *)key value:(NSString *)value
 {
-    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+    CLY_LOG_I(@"%s pushUnique will be applied with a string value, key: [%@], valueLength: [%lu]", __FUNCTION__, key, (unsigned long)value.length);
+    CLY_LOG_D(@"%s pushUnique string value detail, key: [%@], value: [%@]", __FUNCTION__, key, value);
     [self doModification:kCountlyUDKeyModifierAddToSet key:key value:value];
 }
 
 - (void)pushUnique:(NSString *)key numberValue:(NSNumber *)value
 {
-    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+    CLY_LOG_I(@"%s pushUnique will be applied with a number value, key: [%@]", __FUNCTION__, key);
+    CLY_LOG_D(@"%s pushUnique number value detail, key: [%@], value: [%@]", __FUNCTION__, key, value);
     [self doModification:kCountlyUDKeyModifierAddToSet key:key value:value];
 }
 
 - (void)pushUnique:(NSString *)key boolValue:(BOOL)value
 {
-    CLY_LOG_I(@"%s %@ %d", __FUNCTION__, key, value);
+    CLY_LOG_I(@"%s pushUnique will be applied with a bool value, key: [%@]", __FUNCTION__, key);
+    CLY_LOG_D(@"%s pushUnique bool value detail, key: [%@], value: [%@]", __FUNCTION__, key, @(value));
     [self doModification:kCountlyUDKeyModifierAddToSet key:key value:@(value)];
 }
 
 - (void)pushUnique:(NSString *)key values:(NSArray *)value
 {
-    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+    CLY_LOG_I(@"%s pushUnique will be applied with multiple values, key: [%@], elementCount: [%lu]", __FUNCTION__, key, (unsigned long)value.count);
+    CLY_LOG_D(@"%s pushUnique array elements detail, key: [%@], values: [%@]", __FUNCTION__, key, value);
     [self doModification:kCountlyUDKeyModifierAddToSet key:key value:value];
 }
 
 - (void)pull:(NSString *)key value:(NSString *)value
 {
-    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+    CLY_LOG_I(@"%s pull will be applied with a string value, key: [%@], valueLength: [%lu]", __FUNCTION__, key, (unsigned long)value.length);
+    CLY_LOG_D(@"%s pull string value detail, key: [%@], value: [%@]", __FUNCTION__, key, value);
     [self doModification:kCountlyUDKeyModifierPull key:key value:value];
 }
 
 - (void)pull:(NSString *)key numberValue:(NSNumber *)value
 {
-    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+    CLY_LOG_I(@"%s pull will be applied with a number value, key: [%@]", __FUNCTION__, key);
+    CLY_LOG_D(@"%s pull number value detail, key: [%@], value: [%@]", __FUNCTION__, key, value);
     [self doModification:kCountlyUDKeyModifierPull key:key value:value];
 }
 
 - (void)pull:(NSString *)key boolValue:(BOOL)value
 {
-    CLY_LOG_I(@"%s %@ %d", __FUNCTION__, key, value);
+    CLY_LOG_I(@"%s pull will be applied with a bool value, key: [%@]", __FUNCTION__, key);
+    CLY_LOG_D(@"%s pull bool value detail, key: [%@], value: [%@]", __FUNCTION__, key, @(value));
     [self doModification:kCountlyUDKeyModifierPull key:key value:@(value)];
 }
 
 - (void)pull:(NSString *)key values:(NSArray *)value
 {
-    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+    CLY_LOG_I(@"%s pull will be applied with multiple values, key: [%@], elementCount: [%lu]", __FUNCTION__, key, (unsigned long)value.count);
+    CLY_LOG_D(@"%s pull array elements detail, key: [%@], values: [%@]", __FUNCTION__, key, value);
     [self doModification:kCountlyUDKeyModifierPull key:key value:value];
 }
 
 - (void)save
 {
-    CLY_LOG_I(@"%s", __FUNCTION__);
+    CLY_LOG_I(@"%s user details will be saved", __FUNCTION__);
 
     if (!CountlyCommon.sharedInstance.hasStarted)
+    {
+        CLY_LOG_W(@"%s user details save will be ignored as SDK is not initialized yet", __FUNCTION__);
         return;
+    }
 
     if (!CountlyConsentManager.sharedInstance.consentForUserDetails)
+    {
+        CLY_LOG_D(@"%s no consent for user details, save will be skipped", __FUNCTION__);
         return;
+    }
 
     // Returns early if user properties values are not changed
     if (![self hasUnsyncedChanges])
+    {
+        CLY_LOG_D(@"%s no unsynced user details changes, save will be skipped", __FUNCTION__);
         return;
+    }
     
     [CountlyConnectionManager.sharedInstance sendEvents];
 
     NSString* userDetails = [self serializedUserDetails];
     if (userDetails)
+    {
+        CLY_LOG_D(@"%s serialized user details request will be sent, payloadLength: [%lu]", __FUNCTION__, (unsigned long)userDetails.length);
+        CLY_LOG_D(@"%s serialized user details payload detail, payload: [%@]", __FUNCTION__, userDetails);
         [CountlyConnectionManager.sharedInstance sendUserDetails:userDetails];
+    }
 
     if (self.pictureLocalPath && !self.pictureURL)
+    {
+        CLY_LOG_D(@"%s local picture path will be sent in a separate request, valueType: [%@]", __FUNCTION__, NSStringFromClass([self.pictureLocalPath class]));
+        CLY_LOG_D(@"%s local picture path value detail, value: [%@]", __FUNCTION__, self.pictureLocalPath);
         [CountlyConnectionManager.sharedInstance sendUserDetails:[@{kCountlyLocalPicturePath: self.pictureLocalPath} cly_JSONify]];
+    }
 
     [self clearUserDetails];
 }
@@ -370,16 +426,17 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
 - (void)doModification:(NSString *)mod key:(NSString *)key  value:(id)value {
     if (value == nil)
     {
-        CLY_LOG_W(@"%s call will be ignored as value is nil!", __FUNCTION__);
+        CLY_LOG_W(@"%s modification will be ignored as value is nil, modifier: [%@], key: [%@]", __FUNCTION__, mod, key);
         return;
     }
     if (![self isValidDataType:value]) {
-        CLY_LOG_W(@"%s unsupported value type for key [%@] mod [%@], type [%@], omitting call",
-                  __FUNCTION__, key, mod, NSStringFromClass([value class]));
+        CLY_LOG_W(@"%s modifier value type is not supported, modifier: [%@], key: [%@], type: [%@], omitting call",
+                  __FUNCTION__, mod, key, NSStringFromClass([value class]));
+        CLY_LOG_D(@"%s rejected modifier value detail, modifier: [%@], key: [%@], value: [%@]", __FUNCTION__, mod, key, value);
         return;
     }
     if (![CountlyServerConfig.sharedInstance shouldRecordUserProperty:key]) {
-        CLY_LOG_D(@"%s key [%@] is filtered out by user property filter, omitting call", __FUNCTION__, key);
+        CLY_LOG_D(@"%s modifier key is filtered out by server config user property filter, key: [%@], omitting call", __FUNCTION__, key);
         return;
     }
     NSString* truncatedLog = [NSString stringWithFormat:@"%s",__FUNCTION__];
@@ -406,6 +463,8 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
     } else {
         self.customMods[truncatedKey] = @{mod: value};
     }
+    CLY_LOG_D(@"%s modification stored, modifier: [%@], key: [%@], totalModifications: [%lu]", __FUNCTION__, mod, truncatedKey, (unsigned long)self.customMods.count);
+    CLY_LOG_D(@"%s stored modification value detail, modifier: [%@], key: [%@], value: [%@]", __FUNCTION__, mod, truncatedKey, value);
     // Note: legacy modifier methods (setOnce/push/pull/etc.) deliberately do
     // NOT auto-flush events — preserves pre-existing request-timing behavior
     // for callers still on the legacy API. Auto-flush is opt-in via the new
@@ -420,9 +479,12 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
  */
 - (void)setPropertiesInternal:(NSDictionary<NSString *, id> *)data {
     if (data.count == 0) {
-        CLY_LOG_I(@"%s no data was provided", __FUNCTION__);
+        CLY_LOG_W(@"%s call will be ignored as no data was provided", __FUNCTION__);
         return;
     }
+
+    CLY_LOG_I(@"%s user properties will be applied, keys: [%@], count: [%lu]", __FUNCTION__, data.allKeys, (unsigned long)data.count);
+    CLY_LOG_D(@"%s user properties value detail, data: [%@]", __FUNCTION__, data);
 
     NSString* truncatedLog = [NSString stringWithFormat:@"%s",__FUNCTION__];
     BOOL anyChange = NO;
@@ -431,7 +493,7 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
         id value = data[key];
 
         if (value == nil || value == [NSNull null]) {
-            CLY_LOG_W(@"%s provided value for key [%@] is 'null'", __FUNCTION__, key);
+            CLY_LOG_D(@"%s provided value is null, key: [%@], skipping this entry", __FUNCTION__, key);
             continue;
         }
 
@@ -453,7 +515,7 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
 
         if (!isNamed) {
             if (![CountlyServerConfig.sharedInstance shouldRecordUserProperty:key]) {
-                CLY_LOG_D(@"%s key [%@] is filtered out by user property filter, omitting call", __FUNCTION__, key);
+                CLY_LOG_D(@"%s key is filtered out by server config user property filter while setting properties, key: [%@], omitting entry", __FUNCTION__, key);
                 continue;
             }
             NSString* truncatedKey = [[key description] cly_truncatedKey:truncatedLog];
@@ -461,12 +523,14 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
                 self.customProperties[truncatedKey] = value;
                 anyChange = YES;
             } else {
-                CLY_LOG_D(@"%s provided an unsupported type for key: [%@], value: [%@], type: [%@], omitting call",__FUNCTION__,
-                      key, value, NSStringFromClass([value class]));
+                CLY_LOG_D(@"%s provided value type is not supported, key: [%@], type: [%@], omitting entry", __FUNCTION__,
+                      key, NSStringFromClass([value class]));
+                CLY_LOG_D(@"%s rejected user property entry value detail, key: [%@], value: [%@]", __FUNCTION__, key, value);
             }
         }
     }
 
+    CLY_LOG_D(@"%s user properties processing finished, anyChange: [%@]", __FUNCTION__, anyChange ? @"YES" : @"NO");
     if (anyChange) [self userPropertiesChanged];
 }
 
@@ -477,6 +541,8 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
                      picture:(BOOL)isPicture
 {
     if (!field) return;
+
+    CLY_LOG_D(@"%s user details string field value detail, explanation: [%@], key: [%@], value: [%@]", __FUNCTION__, explanation, key, field);
 
     if (![field isKindOfClass:NSString.class]) {
         // NSNull — explicit clear.
@@ -499,6 +565,9 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
     BOOL isNull = (value == [NSNull null]);
     id stringOrNull = isNull ? NSNull.null : [value description];
 
+    CLY_LOG_D(@"%s predefined user property will be assigned, key: [%@], isNull: [%@]", __FUNCTION__, key, isNull ? @"YES" : @"NO");
+    CLY_LOG_D(@"%s predefined user property value detail, key: [%@], value: [%@]", __FUNCTION__, key, value);
+
     if ([key isEqualToString:kCountlyUDKeyName]) {
         self.name = stringOrNull;
     } else if ([key isEqualToString:kCountlyUDKeyUsername]) {
@@ -520,7 +589,8 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
             NSString *path = [value description];
             // drop the path with a warning if the file isn't readable.
             if (path.length > 0 && ![[NSFileManager defaultManager] isReadableFileAtPath:path]) {
-                CLY_LOG_W(@"%s provided picture path file [%@] can not be opened", __FUNCTION__, path);
+                CLY_LOG_W(@"%s provided picture path file can not be opened, pathLength: [%lu], value will be dropped", __FUNCTION__, (unsigned long)path.length);
+                CLY_LOG_D(@"%s unreadable picture path value detail, path: [%@]", __FUNCTION__, path);
                 self.pictureLocalPath = nil;
             } else {
                 self.pictureLocalPath = path;
@@ -537,7 +607,8 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
                 NSNumberFormatter *formatter = [NSNumberFormatter new];
                 parsed = [formatter numberFromString:(NSString *)value];
                 if (!parsed) {
-                    CLY_LOG_W(@"%s incorrect byear number format: %@", __FUNCTION__, value);
+                    CLY_LOG_W(@"%s provided byear value can not be parsed as a number, valueLength: [%lu]", __FUNCTION__, (unsigned long)((NSString *)value).length);
+                    CLY_LOG_D(@"%s unparsable byear value detail, value: [%@]", __FUNCTION__, value);
                     return NO;
                 }
             } else {
@@ -561,11 +632,11 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
 
     for (NSString *key in properties.allKeys) {
         if (![CountlyServerConfig.sharedInstance shouldRecordUserProperty:key]) {
-            CLY_LOG_D(@"Filtering out user property '%@' by server config user property filter", key);
+            CLY_LOG_D(@"%s user property is filtered out by server config user property filter, key: [%@], removing", __FUNCTION__, key);
             [properties removeObjectForKey:key];
         }
         else if (shouldApplyLimit && ++kept > limit) {
-            CLY_LOG_D(@"Removing user property '%@' due to cache limit (%ld)", key, (long)limit);
+            CLY_LOG_D(@"%s user property will be removed due to cache limit [%ld], key: [%@]", __FUNCTION__, (long)limit, key);
             [properties removeObjectForKey:key];
         }
     }
@@ -576,7 +647,10 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
 - (void)userPropertiesChanged
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
+    {
+        CLY_LOG_D(@"%s SDK is not started yet, pending events will not be flushed", __FUNCTION__);
         return;
+    }
     [CountlyConnectionManager.sharedInstance sendEvents];
 }
 
@@ -591,7 +665,8 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
 
 // Set a single user property. It can be either a custom one or one of the predefined ones.
 - (void)setProperty:(NSString *)key value:(id)value {
-    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, key, value);
+    CLY_LOG_I(@"%s user property will be set, key: [%@], valueType: [%@]", __FUNCTION__, key, (value != nil) ? NSStringFromClass([value class]) : @"nil");
+    CLY_LOG_D(@"%s single user property value detail, key: [%@], value: [%@]", __FUNCTION__, key, value);
 
     NSMutableDictionary *data = [NSMutableDictionary dictionary];
     if (key != nil && value != nil) {
@@ -604,10 +679,8 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
 // Provide a map of user properties to set.
 // Those can be either custom user properties or predefined user properties
 - (void)setProperties:(NSDictionary<NSString *,  NSObject *> *)data {
-    CLY_LOG_I(@"%s", __FUNCTION__);
-
     if (data == nil) {
-        CLY_LOG_W(@"%s provided data can not be 'null'", __FUNCTION__);
+        CLY_LOG_E(@"%s call will be ignored as provided data is nil", __FUNCTION__);
         return;
     }
 
@@ -615,7 +688,7 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
 }
 
 - (void)clear {
-    CLY_LOG_I(@"%s", __FUNCTION__);
+    CLY_LOG_I(@"%s all user details and modifications will be cleared", __FUNCTION__);
     [self clearUserDetails];
 }
 @end

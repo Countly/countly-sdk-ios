@@ -34,9 +34,13 @@
 #import "CountlyHealthTracker.h"
 #import "CountlyConnectionTest.h"
 
+//NOTE: Error and Warning call through unconditionally, because CountlyInternalLog also increments the
+//health tracker's error and warning counters, which must keep counting even when logging is disabled.
 #define CLY_LOG_E(fmt, ...) CountlyInternalLog(CLYInternalLogLevelError, fmt, ##__VA_ARGS__)
 #define CLY_LOG_W(fmt, ...) CountlyInternalLog(CLYInternalLogLevelWarning, fmt, ##__VA_ARGS__)
-// gated on 'wanted', not 'enabled': log gathering has to receive these lines while console logging is off
+
+//NOTE: Info, Debug and Verbose are guarded so their arguments are not evaluated when nobody wants the line.
+//Gated on 'wanted', not 'enabled': log gathering has to receive these lines while console logging is off.
 #define CLY_LOG_I(fmt, ...) do { if (CountlyInternalLogIsWanted(CLYInternalLogLevelInfo)) CountlyInternalLog(CLYInternalLogLevelInfo, fmt, ##__VA_ARGS__); } while (0)
 #define CLY_LOG_D(fmt, ...) do { if (CountlyInternalLogIsWanted(CLYInternalLogLevelDebug)) CountlyInternalLog(CLYInternalLogLevelDebug, fmt, ##__VA_ARGS__); } while (0)
 #define CLY_LOG_V(fmt, ...) do { if (CountlyInternalLogIsWanted(CLYInternalLogLevelVerbose)) CountlyInternalLog(CLYInternalLogLevelVerbose, fmt, ##__VA_ARGS__); } while (0)

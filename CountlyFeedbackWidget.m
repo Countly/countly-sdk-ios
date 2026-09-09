@@ -50,19 +50,20 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     feedback.name = dictionary[@"name"];
     feedback.tags = dictionary[@"tg"];
     feedback.widgetVersion = dictionary[@"wv"];
+    CLY_LOG_V(@"%s feedback widget parsed from the list response, widgetID: [%@], widgetType: [%@]", __FUNCTION__, feedback.ID, feedback.type);
     return feedback;
 }
 
 - (void)present
 {
-    CLY_LOG_I(@"%s", __FUNCTION__);
+    CLY_LOG_I(@"%s widget presentation requested without any block, widgetID: [%@], widgetType: [%@]", __FUNCTION__, self.ID, self.type);
     
     [self presentWithAppearBlock:nil andDismissBlock:nil];
 }
 
 - (void)presentWithAppearBlock:(void(^ __nullable)(void))appearBlock andDismissBlock:(void(^ __nullable)(void))dismissBlock
 {
-    CLY_LOG_I(@"%s %@ %@", __FUNCTION__, appearBlock, dismissBlock);
+    CLY_LOG_I(@"%s widget presentation requested, widgetID: [%@], widgetType: [%@], appearBlockProvided: [%@], dismissBlockProvided: [%@]", __FUNCTION__, self.ID, self.type, (appearBlock != nil) ? @"YES" : @"NO", (dismissBlock != nil) ? @"YES" : @"NO");
     id widgetCallback = ^(WidgetState widgetState) {
         if(appearBlock && widgetState == WIDGET_APPEARED) {
             appearBlock();
@@ -78,27 +79,30 @@ NSString* const kCountlyFBKeyShown          = @"shown";
 
 - (void)presentWidget_new:(WidgetCallback) widgetCallback;
 {
-    CLY_LOG_I(@"%s %@", __FUNCTION__, widgetCallback);
+    CLY_LOG_I(@"%s new style widget presentation requested, widgetID: [%@], widgetType: [%@], callbackProvided: [%@]", __FUNCTION__, self.ID, self.type, (widgetCallback != nil) ? @"YES" : @"NO");
     if (!CountlyConsentManager.sharedInstance.consentForFeedback)
+    {
+        CLY_LOG_V(@"%s no feedback consent given, new style widget will not be presented", __FUNCTION__);
         return;
+    }
     
     CGSize size = [CountlyCommon.sharedInstance getWindowSize];
     
     dispatch_async(dispatch_get_main_queue(), ^ {
         CGRect frame = CGRectMake(0.0, 0.0, size.width, size.height);
         
-        // Log the URL and the frame
-        CLY_LOG_I(@"%s, Placement frame: %@", __FUNCTION__, NSStringFromCGRect(frame));
+        // Log the frame the widget web view will be placed in
+        CLY_LOG_D(@"%s widget web view placement computed, widgetID: [%@], width: [%.2f], height: [%.2f]", __FUNCTION__, self.ID, frame.size.width, frame.size.height);
         
         CountlyWebViewManager* webViewManager =  CountlyWebViewManager.new;
             [webViewManager createWebViewWithURL:[self generateWidgetURL] frame:frame appearBlock:^
              {
-                CLY_LOG_I(@"%s, Webview appeared", __FUNCTION__);
+                CLY_LOG_I(@"%s new style widget shown, widgetID: [%@], widgetType: [%@]", __FUNCTION__, self.ID, self.type);
                 if(widgetCallback)
                     widgetCallback(WIDGET_APPEARED);
             } dismissBlock:^
              {
-                CLY_LOG_I(@"%s, Webview dismissed", __FUNCTION__);
+                CLY_LOG_I(@"%s new style widget dismissed, widgetID: [%@], widgetType: [%@]", __FUNCTION__, self.ID, self.type);
                 if (widgetCallback)
                     widgetCallback(WIDGET_CLOSED);
                 [self recordReservedEventForDismissing];
@@ -108,9 +112,12 @@ NSString* const kCountlyFBKeyShown          = @"shown";
 
 - (void)presentWithCallback:(WidgetCallback) widgetCallback;
 {
-    CLY_LOG_I(@"%s %@", __FUNCTION__, widgetCallback);
+    CLY_LOG_I(@"%s widget presentation with a callback requested, widgetID: [%@], widgetType: [%@], callbackProvided: [%@]", __FUNCTION__, self.ID, self.type, (widgetCallback != nil) ? @"YES" : @"NO");
     if (!CountlyConsentManager.sharedInstance.consentForFeedback)
+    {
+        CLY_LOG_V(@"%s no feedback consent given, widget will not be presented", __FUNCTION__);
         return;
+    }
         
     if (self.widgetVersion && ![self.widgetVersion isKindOfClass:[NSNull class]]) {
         [self presentWidget_new:widgetCallback];
@@ -144,7 +151,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     {
         [webVC dismissViewControllerAnimated:YES completion:^
         {
-            CLY_LOG_D(@"Feedback widget dismissed. Widget ID: %@, Name: %@", self.ID, self.name);
+            CLY_LOG_I(@"%s legacy style widget dismissed by the close button, widgetID: [%@], widgetType: [%@]", __FUNCTION__, self.ID, self.type);
             if (widgetCallback)
                 widgetCallback(WIDGET_CLOSED);
             webVC = nil;
@@ -154,7 +161,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     [webView addSubview:dismissButton];
     [dismissButton positionToTopRight];
     [CountlyCommon.sharedInstance tryPresentingViewController:webVC withCompletion:^{
-        CLY_LOG_D(@"Feedback widget presented. Widget ID: %@, Name: %@", self.ID, self.name);
+        CLY_LOG_I(@"%s legacy style widget shown, widgetID: [%@], widgetType: [%@]", __FUNCTION__, self.ID, self.type);
         if(widgetCallback)
             widgetCallback(WIDGET_APPEARED);
     }];
@@ -172,11 +179,13 @@ NSString* const kCountlyFBKeyShown          = @"shown";
         headers = http.allHeaderFields;
     }
 
-    CLY_LOG_I(@"%s Navigation response received: URL=%@, MIME=%@, status=%ld, headers=%@",
-              __FUNCTION__, response.URL.absoluteString, mimeType, statusCode, headers);
+    CLY_LOG_D(@"%s widget navigation response received, widgetID: [%@], path: [%@], mimeType: [%@], statusCode: [%ld], headerCount: [%lu]",
+              __FUNCTION__, self.ID, response.URL.path, mimeType, statusCode, (unsigned long)headers.count);
+
+    CLY_LOG_D(@"%s widget navigation response detail, widgetID: [%@], url: [%@], headers: [%@]", __FUNCTION__, self.ID, response.URL.absoluteString, headers);
 
     if (statusCode >= 400) {
-        CLY_LOG_I(@"%s Cancelling navigation due to HTTP status code: %ld", __FUNCTION__, statusCode);
+        CLY_LOG_E(@"%s widget navigation cancelled and widget dismissed, widgetID: [%@], statusCode: [%ld]", __FUNCTION__, self.ID, statusCode);
         decisionHandler(WKNavigationResponsePolicyCancel);
         dispatch_async(dispatch_get_main_queue(), ^{
             if (self.webVC) {
@@ -197,11 +206,11 @@ NSString* const kCountlyFBKeyShown          = @"shown";
 
 - (void)getWidgetData:(void (^)(NSDictionary * __nullable widgetData, NSError * __nullable error))completionHandler
 {
-    CLY_LOG_I(@"%s %@", __FUNCTION__, completionHandler);
+    CLY_LOG_I(@"%s widget data fetch requested, widgetID: [%@], widgetType: [%@], completionHandlerProvided: [%@]", __FUNCTION__, self.ID, self.type, (completionHandler != nil) ? @"YES" : @"NO");
     
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
     {
-        CLY_LOG_D(@"'getWidgetData' is aborted: SDK Networking is disabled from server config!");
+        CLY_LOG_D(@"%s widget data fetch is dropped, networking is disabled by server config", __FUNCTION__);
         return;
     }
     
@@ -225,6 +234,13 @@ NSString* const kCountlyFBKeyShown          = @"shown";
             }
         }
         
+        if (error)
+            CLY_LOG_W(@"%s widget data fetch failed, widgetID: [%@], error: [%@]", __FUNCTION__, self.ID, error.localizedDescription);
+        else
+            CLY_LOG_D(@"%s widget data fetched, widgetID: [%@], fieldCount: [%lu]", __FUNCTION__, self.ID, (unsigned long)widgetData.count);
+
+        CLY_LOG_D(@"%s widget data fetch response detail, widgetID: [%@], url: [%@], widgetData: [%@]", __FUNCTION__, self.ID, response.URL.absoluteString, widgetData);
+
         self.data = widgetData;
         
         dispatch_async(dispatch_get_main_queue(), ^
@@ -239,8 +255,9 @@ NSString* const kCountlyFBKeyShown          = @"shown";
 
 - (void)recordResult:(NSDictionary * __nullable)result
 {
-    CLY_LOG_I(@"%s %@", __FUNCTION__, result);
-    
+    CLY_LOG_I(@"%s widget result recording requested, widgetID: [%@], widgetType: [%@], answeredFieldCount: [%lu]", __FUNCTION__, self.ID, self.type, (unsigned long)result.count);
+    CLY_LOG_D(@"%s widget result recording detail, widgetID: [%@], widgetType: [%@], result: [%@]", __FUNCTION__, self.ID, self.type, result);
+
     if (!result)
         [self recordReservedEventForDismissing];
     else
@@ -274,12 +291,14 @@ NSString* const kCountlyFBKeyShown          = @"shown";
         NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:URL]];
         request.HTTPMethod = @"POST";
         request.HTTPBody = [queryString cly_dataUTF8];
+        CLY_LOG_D(@"%s widget data request built as POST, widgetID: [%@], url: [%@], body: [%@]", __FUNCTION__, self.ID, URL, queryString);
         return request.copy;
     }
     else
     {
         [URL appendFormat:@"?%@", queryString];
         NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:URL]];
+        CLY_LOG_D(@"%s widget data request built as GET, widgetID: [%@], url: [%@]", __FUNCTION__, self.ID, URL);
         return request;
     }
 }
@@ -330,7 +349,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:customParams options:0 error:&error];
     
     if (!jsonData) {
-        NSLog(@"Failed to serialize JSON: %@", error);
+        CLY_LOG_E(@"%s custom widget URL parameters could not be serialized, widgetID: [%@], error: [%@]", __FUNCTION__, self.ID, error.localizedDescription);
     } else {
         NSString *customString = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
         // Append the custom parameter to the URL
@@ -338,6 +357,9 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     }
 
     NSString *finalURL = [CountlyDeviceInfo URLStringByAppendingThemeMode:URL];
+
+    CLY_LOG_D(@"%s widget URL generated, widgetID: [%@], widgetType: [%@], url: [%@]", __FUNCTION__, self.ID, self.type, finalURL);
+
     return [NSURL URLWithString:finalURL];
 }
 
@@ -350,7 +372,10 @@ NSString* const kCountlyFBKeyShown          = @"shown";
 - (void)recordReservedEventWithSegmentation:(NSDictionary *)segm
 {
     if (!CountlyConsentManager.sharedInstance.consentForFeedback)
+    {
+        CLY_LOG_V(@"%s no feedback consent given, widget result event is not recorded", __FUNCTION__);
         return;
+    }
     
     NSString* eventName = nil;
     if ([self.type isEqualToString:CLYFeedbackWidgetTypeSurvey])
@@ -362,7 +387,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     
     if (!eventName)
     {
-        CLY_LOG_W(@"Unsupported feedback widget type! Event will not be recorded!");
+        CLY_LOG_W(@"%s widget result event is dropped, unsupported widget type, widgetID: [%@], widgetType: [%@]", __FUNCTION__, self.ID, self.type);
         return;
     }
     
@@ -370,6 +395,11 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     segmentation[kCountlyFBKeyPlatform] = CountlyDeviceInfo.osName;
     segmentation[kCountlyFBKeyAppVersion] = CountlyDeviceInfo.appVersion;
     segmentation[kCountlyFBKeyWidgetID] = self.ID;
+
+    CLY_LOG_I(@"%s widget result submitted, widgetID: [%@], widgetType: [%@], submittedFieldCount: [%lu]", __FUNCTION__, self.ID, self.type, (unsigned long)segm.count);
+
+    CLY_LOG_D(@"%s widget result submission detail, widgetID: [%@], eventName: [%@], answers: [%@], segmentation: [%@]", __FUNCTION__, self.ID, eventName, segm, segmentation);
+
     [Countly.sharedInstance recordReservedEvent:eventName segmentation:segmentation];
     
     [CountlyConnectionManager.sharedInstance sendEvents];

@@ -705,9 +705,15 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Feedback widget  interface for developer to interact with SDK.
  */
 - (CountlyFeedbacks *) feedback;
-
-- (CountlyUserDetails *) userProfile;
 #endif
+
+#pragma mark - User Profiles
+
+/**
+ * Interface variable to access user profile functionalities.
+ * @discussion User profile interface for developer to interact with SDK.
+ */
+- (CountlyUserDetails *) userProfile;
 
 
 

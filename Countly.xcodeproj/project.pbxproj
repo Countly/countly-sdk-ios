@@ -18,7 +18,7 @@
 		1A478D032AB314750056A5E7 /* CountlyExperimentInformation.h in Headers */ = {isa = PBXBuildFile; fileRef = 1A9027FF2AB197C00044EBCF /* CountlyExperimentInformation.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		1A50D7052B3C5AA3009C6938 /* CountlyBaseTestCase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A50D7042B3C5AA3009C6938 /* CountlyBaseTestCase.swift */; };
 		1A5C4C972B35B0850032EE1F /* CountlyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5C4C962B35B0850032EE1F /* CountlyTests.swift */; };
-		1A5C4C982B35B0850032EE1F /* Countly.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B20A9822245225A00E3D7AE /* Countly.framework */; platformFilters = (ios, macos, ); };
+		1A5C4C982B35B0850032EE1F /* Countly.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3B20A9822245225A00E3D7AE /* Countly.framework */; platformFilters = (ios, macos, tvos, watchos, xros, ); };
 		1A9027FE2AB197B50044EBCF /* CountlyExperimentInformation.m in Sources */ = {isa = PBXBuildFile; fileRef = 1A9027FD2AB197B50044EBCF /* CountlyExperimentInformation.m */; };
 		1ACA5DC12A309E7F001F770B /* CountlyRemoteConfigInternal.h in Headers */ = {isa = PBXBuildFile; fileRef = 1ACA5DBF2A309E7F001F770B /* CountlyRemoteConfigInternal.h */; };
 		1ACA5DC22A309E7F001F770B /* CountlyRemoteConfigInternal.m in Sources */ = {isa = PBXBuildFile; fileRef = 1ACA5DC02A309E7F001F770B /* CountlyRemoteConfigInternal.m */; };
@@ -100,6 +100,9 @@
 		96CB10A12F04B3A100D1E2F0 /* CountlyContentBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96CB10A02F04B3A100D1E2F0 /* CountlyContentBuilderTests.swift */; };
 		AB10000011112222333344A1 /* CountlyScreenMetricsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB10000011112222333344A0 /* CountlyScreenMetricsTests.swift */; };
 		AB10000011112222333344B1 /* CountlyThemeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB10000011112222333344B0 /* CountlyThemeTests.swift */; };
+		AB10000011112222333355C1 /* CountlyPlatformTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB10000011112222333355C0 /* CountlyPlatformTests.swift */; };
+		AB10000011112222333356C1 /* TestAppActivation.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB10000011112222333356C0 /* TestAppActivation.swift */; };
+		AB10000011112222333357C1 /* TestPlatform.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB10000011112222333357C0 /* TestPlatform.swift */; };
 		9691B7652F1FA35500A6ADCB /* CountlyOverlayWindow.h in Headers */ = {isa = PBXBuildFile; fileRef = 9691B7642F1FA35500A6ADCB /* CountlyOverlayWindow.h */; };
 		9691B7672F1FA35C00A6ADCB /* CountlyOverlayWindow.m in Sources */ = {isa = PBXBuildFile; fileRef = 9691B7662F1FA35C00A6ADCB /* CountlyOverlayWindow.m */; };
 		969E5BCE2ECC4D3200AB406A /* CountlyConsentManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 969E5BCD2ECC4D2C00AB406A /* CountlyConsentManagerTests.swift */; };
@@ -232,6 +235,9 @@
 		96CB10A02F04B3A100D1E2F0 /* CountlyContentBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyContentBuilderTests.swift; sourceTree = "<group>"; };
 		AB10000011112222333344A0 /* CountlyScreenMetricsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyScreenMetricsTests.swift; sourceTree = "<group>"; };
 		AB10000011112222333344B0 /* CountlyThemeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyThemeTests.swift; sourceTree = "<group>"; };
+		AB10000011112222333355C0 /* CountlyPlatformTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyPlatformTests.swift; sourceTree = "<group>"; };
+		AB10000011112222333356C0 /* TestAppActivation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestAppActivation.swift; sourceTree = "<group>"; };
+		AB10000011112222333357C0 /* TestPlatform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestPlatform.swift; sourceTree = "<group>"; };
 		9691B7642F1FA35500A6ADCB /* CountlyOverlayWindow.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyOverlayWindow.h; sourceTree = "<group>"; };
 		9691B7662F1FA35C00A6ADCB /* CountlyOverlayWindow.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyOverlayWindow.m; sourceTree = "<group>"; };
 		969E5BCD2ECC4D2C00AB406A /* CountlyConsentManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyConsentManagerTests.swift; sourceTree = "<group>"; };
@@ -292,6 +298,9 @@
 				96CB10A02F04B3A100D1E2F0 /* CountlyContentBuilderTests.swift */,
 				AB10000011112222333344A0 /* CountlyScreenMetricsTests.swift */,
 				AB10000011112222333344B0 /* CountlyThemeTests.swift */,
+				AB10000011112222333355C0 /* CountlyPlatformTests.swift */,
+				AB10000011112222333356C0 /* TestAppActivation.swift */,
+				AB10000011112222333357C0 /* TestPlatform.swift */,
 				96E680412BFF89AC0091E105 /* CountlyCrashReporterTests.swift */,
 				EBD1642D826B471A80175BE3 /* CountlyWebViewManagerTests.swift */,
 				265156CB5F59417EA14BAC2F /* CountlyWebViewManager+Tests.h */,
@@ -579,6 +588,9 @@
 				96CB10A12F04B3A100D1E2F0 /* CountlyContentBuilderTests.swift in Sources */,
 				AB10000011112222333344A1 /* CountlyScreenMetricsTests.swift in Sources */,
 				AB10000011112222333344B1 /* CountlyThemeTests.swift in Sources */,
+				AB10000011112222333355C1 /* CountlyPlatformTests.swift in Sources */,
+				AB10000011112222333356C1 /* TestAppActivation.swift in Sources */,
+				AB10000011112222333357C1 /* TestPlatform.swift in Sources */,
 				96329DE42D952F1500BFD641 /* MockURLProtocol.swift in Sources */,
 				96329DE02D9426F300BFD641 /* CountlyServerConfigTests.swift in Sources */,
 				96329DE22D9426F300BFD6A2 /* CountlySDKLogsTests.swift in Sources */,
@@ -655,6 +667,9 @@
 			platformFilters = (
 				ios,
 				macos,
+				tvos,
+				watchos,
+				xros,
 			);
 			target = 3B20A9812245225A00E3D7AE /* Countly */;
 			targetProxy = 1A5C4C992B35B0850032EE1F /* PBXContainerItemProxy */;
@@ -673,16 +688,19 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.0;
+				TVOS_DEPLOYMENT_TARGET = 16.1;
+				WATCHOS_DEPLOYMENT_TARGET = 9.1;
+				XROS_DEPLOYMENT_TARGET = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.countly.CountlyTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx appletvos appletvsimulator watchos watchsimulator xros xrsimulator";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "CountlyTests/CountlyTests-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = "1,2,3,4,7";
 			};
 			name = Debug;
 		};
@@ -697,16 +715,19 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.0;
+				TVOS_DEPLOYMENT_TARGET = 16.1;
+				WATCHOS_DEPLOYMENT_TARGET = 9.1;
+				XROS_DEPLOYMENT_TARGET = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.countly.CountlyTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx appletvos appletvsimulator watchos watchsimulator xros xrsimulator";
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_OBJC_BRIDGING_HEADER = "CountlyTests/CountlyTests-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = "1,2,3,4,7";
 			};
 			name = Release;
 		};

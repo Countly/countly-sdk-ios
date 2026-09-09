@@ -30,29 +30,35 @@
 
 - (void)enterContentZone
 {
+    CLY_LOG_I(@"%s entering the content zone without tags", __FUNCTION__);
     [self enterContentZone:@[]];
 }
 
 - (void)enterContentZone:(NSArray<NSString *> *)tags
 {
+    CLY_LOG_I(@"%s entering the content zone, tags: [%@], tagCount: [%lu]", __FUNCTION__, tags, (unsigned long)tags.count);
     [CountlyContentBuilderInternal.sharedInstance enterContentZone:tags];
 }
 - (void)exitContentZone
 {
+    CLY_LOG_I(@"%s exiting the content zone", __FUNCTION__);
     [CountlyContentBuilderInternal.sharedInstance exitContentZone];
 }
 - (void)refreshContentZone
 {
+    CLY_LOG_I(@"%s refreshing the content zone", __FUNCTION__);
     [CountlyContentBuilderInternal.sharedInstance refreshContentZone];
 
 }
 - (void)changeContent:(NSArray<NSString *> *)tags
 {
+    CLY_LOG_I(@"%s changing the content zone tags, tags: [%@], tagCount: [%lu]", __FUNCTION__, tags, (unsigned long)tags.count);
     [CountlyContentBuilder.sharedInstance changeContent:tags];
 }
 
 - (void)previewContent:(NSString *)contentId
 {
+    CLY_LOG_I(@"%s previewing a content, contentId: [%@]", __FUNCTION__, contentId);
     if (!contentId || contentId.length == 0)
     {
         CLY_LOG_W(@"%s contentId is null or empty, skipping", __FUNCTION__);

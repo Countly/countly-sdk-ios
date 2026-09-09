@@ -36,6 +36,31 @@ class TestUtils {
         return CountlyPersistency.sharedInstance().value(forKey: "recordedEvents") as? [CountlyEvent]
     }
 
+    /// Generous ceiling for waits on asynchronous work. XCTestExpectation waits return as soon
+    /// as they are fulfilled, so a large timeout costs nothing when things work and stops the
+    /// CI runners, which are slower and resolve DNS differently, from tripping over a value
+    /// tuned on a developer machine.
+    static let asyncTimeout: TimeInterval = 20.0
+
+    /// Polls `condition` until it holds or `timeout` elapses, pumping the run loop meanwhile,
+    /// and reports whether it held. Returns as soon as it holds, so a satisfied wait costs no
+    /// wall clock and a slower or loaded machine gets the time it actually needs. Prefer this
+    /// over `sleep` whenever the thing being waited for is observable: a fixed sleep either
+    /// wastes time or, on CI, expires before the work has landed.
+    @discardableResult
+    static func waitUntil(
+        _ description: String, timeout: TimeInterval = 10.0, _ condition: () -> Bool
+    ) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while !condition() && Date() < deadline {
+            RunLoop.current.run(mode: .default, before: Date().addingTimeInterval(0.02))
+        }
+        // Deliberately does not assert: this is a best-effort wait, and callers that need the
+        // condition to hold assert on it themselves. Failing here instead would abort flows
+        // mid-way and leave SDK state behind for the next test.
+        return condition()
+    }
+
     static func sleep(_ seconds: TimeInterval, _ job: () -> Void) {
         let exp = XCTestExpectation(description: "Run after \(seconds) seconds")
         let result = XCTWaiter.wait(for: [exp], timeout: seconds)

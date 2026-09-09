@@ -7,7 +7,6 @@
 #import <Foundation/Foundation.h>
 
 @interface CountlyCrashReporter : NSObject
-@property (nonatomic) BOOL isEnabledOnInitialConfig;
 @property (nonatomic) NSDictionary<NSString *, NSString *>* crashSegmentation;
 @property (nonatomic) NSUInteger crashLogLimit;
 @property (nonatomic) NSRegularExpression* crashFilter;
