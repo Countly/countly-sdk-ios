@@ -345,6 +345,9 @@ static dispatch_once_t onceToken;
 
     CountlyCommon.sharedInstance.hasFinishedInit = YES;
 
+    // the request queue is usable from here on, so this is the first chance for the lines gathered during init to go out
+    [CountlyCommon.sharedInstance flushSdkLogs];
+
     // The behavior settings response for the fetch started above can arrive before init finishes, in
     // which case it deliberately did not touch automatic tracking. Apply the resolved values now that
     // the configuration is complete, so a server side 'avt' or 'acr' is never silently dropped.
@@ -418,7 +421,7 @@ static dispatch_once_t onceToken;
     [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
 
     // a buffer that never reaches the batch size would otherwise sit in memory for the whole run
-    [CountlyCommon.sharedInstance flushSdkLogs];
+    [CountlyCommon.sharedInstance scheduleSdkLogsFlush];
 }
 
 - (void)suspend
@@ -440,6 +443,9 @@ static dispatch_once_t onceToken;
     [CountlyViewTrackingInternal.sharedInstance applicationDidEnterBackground];
     
     [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
+
+    // nothing about the gathered lines is persisted, so the only way the tail survives the app going away is getting it out now
+    [CountlyCommon.sharedInstance flushSdkLogs];
     
     if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
         [CountlyConnectionManager.sharedInstance endSession];
@@ -513,6 +519,9 @@ static dispatch_once_t onceToken;
     [CountlyViewTrackingInternal.sharedInstance applicationWillTerminate];
     
     [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
+
+    // the queue is not drained while terminating, but a queued tail survives to the next launch through the sync save below
+    [CountlyCommon.sharedInstance flushSdkLogs];
     
     [CountlyPerformanceMonitoring.sharedInstance endBackgroundTrace];
     
@@ -1575,6 +1584,11 @@ static dispatch_once_t onceToken;
 - (void)halt:(BOOL) clearStorage
 {
     CLY_LOG_I(@"%s clearStorage: [%d]", __FUNCTION__, clearStorage);
+
+    // before any singleton goes: a log batch delivery or a connection test report landing in the middle of the
+    // resets below would queue a request through a recreated connection manager that has no app key yet
+    CountlyCommon.sharedInstance.hasFinishedInit = NO;
+    [CountlyConnectionTest.sharedInstance resetInstance];
 
     // Reset view tracking state BEFORE halt — sharedInstance() returns nil after halt.
     // Use KVC to clear internal state directly since stopAllViews checks consent

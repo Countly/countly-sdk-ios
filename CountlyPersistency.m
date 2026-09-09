@@ -72,16 +72,16 @@ static dispatch_once_t onceToken;
 
 #pragma mark ---
 
-- (void)addToQueue:(NSString *)queryString
+- (BOOL)addToQueue:(NSString *)queryString
 {
     if (!CountlyServerConfig.sharedInstance.trackingEnabled)
     {
         CLY_LOG_D(@"'addToQueue' is aborted: SDK Tracking is disabled from server config!");
-        return;
+        return NO;
     }
     
     if (!queryString.length || [queryString isEqual:NSNull.null])
-        return;
+        return NO;
     
     queryString = [queryString stringByAppendingFormat:@"&%@=%@",
                    kCountlyAppVersionKey, CountlyDeviceInfo.appVersion];
@@ -105,6 +105,7 @@ static dispatch_once_t onceToken;
         }
         [self.queuedRequests addObject:queryString];
     }
+    return YES;
 }
 
 - (void)removeFromQueue:(NSString *)queryString

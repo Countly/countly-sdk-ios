@@ -506,6 +506,20 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         }
     }
     
+    /// An empty "c" and sibling top level keys are valid: "t" and "v" are stored, the siblings never reach storage.
+    func test_serverConfig_emptyInnerConfigAndTopLevelSiblingsAreAccepted() {
+        let countly = initAndValidateConfigParsingResult("{\"v\":7,\"t\":1234,\"c\":{},\"lg\":{\"e\":false},\"ct\":0,\"unknown\":1}", true)
+
+        let stored = retrieveServerConfig()
+        XCTAssertEqual(7, stored["v"] as? Int)
+        XCTAssertEqual(1234, stored["t"] as? Int)
+        XCTAssertEqual(0, (stored["c"] as? [String: Any])?.count)
+        XCTAssertNil(stored["lg"])
+        XCTAssertNil(stored["ct"])
+        XCTAssertNil(stored["unknown"])
+        assertDefaultConfigValues(countly)
+    }
+
     func test_serverConfig_emptyConfig() {
         setServerConfig([:])
         let config = TestUtils.createBaseConfig()

@@ -1,5 +1,6 @@
-## X.X.X
+## XX.XX.XX
 * Added support for server requested SDK log gathering.
+* Added support for server requested connection tests that probe the endpoints the SDK depends on and report the results.
 * Added support for SDK behavior settings that control the SDK's automatic session tracking, automatic view tracking, automatic crash reporting, and Journey Trigger Views.
 
 ## 26.1.4

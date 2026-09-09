@@ -49,7 +49,10 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 
 - (void)sendEventsWithSaveIfNeeded;
 - (void)sendEvents;
-- (void)sendSdkLogs:(NSDictionary *)sdkLogs;
+/// Queues one serialised 'sdk_logs' batch. Returns NO when the queue refuses it and the caller still owns the lines.
+- (BOOL)sendSdkLogs:(NSString *)sdkLogsJSON;
+/// Queues the connection test report as its own 'ct_results' request. No consent gate, the report carries no user data.
+- (void)sendConnectionTestResults:(NSString *)resultsJSON;
 - (void)attemptToSendStoredRequests;
 - (void)sendPushToken:(NSString *)token;
 - (void)sendLocationInfo;
