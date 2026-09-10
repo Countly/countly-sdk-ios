@@ -116,6 +116,15 @@ NSString *const kREventSegmentationWhitelist = @"esw";
 NSString *const kRJourneyTriggerEvents = @"jte";
 NSString *const kRJourneyTriggerViews = @"jtv";
 
+// sdk log keys
+NSString *const kRLogGathering = @"lg"; // a top level key, siblings of c, v and t
+NSString *const kRLGEnabled = @"e";
+NSString *const kRLGId = @"i";
+NSString *const kRLGLevels = @"l";
+NSString *const kRLGBatchSize = @"b";
+// connection test key, a top level sibling of c, read from a live response and never stored
+NSString *const kRConnectionTest = @"ct";
+
 static CountlyServerConfig *s_sharedInstance = nil;
 static dispatch_once_t onceToken;
 
@@ -207,9 +216,9 @@ static dispatch_once_t onceToken;
 - (void)mergeBehaviorSettings:(NSMutableDictionary *)baseConfig
                           withConfig:(NSDictionary *)newConfig
 {
-    // c, t and v paramters must exist
-    if(newConfig.count != 3 || !newConfig[kRConfig]) {
-        CLY_LOG_W(@"%s incoming behavior settings will be ignored, expected 3 entries including a config section, entryCount: [%lu]", __FUNCTION__, (unsigned long)newConfig.count);
+    // c must exist, other top level keys, like lg, are independent of it and handled on their own
+    if(!newConfig[kRConfig]) {
+        CLY_LOG_W(@"%s incoming behavior settings will be ignored, config section is missing, entryCount: [%lu]", __FUNCTION__, (unsigned long)newConfig.count);
         return;
     }
 
@@ -219,8 +228,9 @@ static dispatch_once_t onceToken;
         return;
     }
 
-    if(!([newConfig[kRConfig] isKindOfClass:[NSDictionary class]]) || ((NSDictionary *)newConfig[kRConfig]).count == 0){
-        CLY_LOG_W(@"%s incoming behavior settings will be ignored, config section is empty or not a dictionary", __FUNCTION__);
+    // an empty c is a valid answer, the server sends one when nothing is configured
+    if(!([newConfig[kRConfig] isKindOfClass:[NSDictionary class]])){
+        CLY_LOG_W(@"%s incoming behavior settings will be ignored, config section is not a dictionary", __FUNCTION__);
         return;
     }
             
@@ -268,6 +278,42 @@ static dispatch_once_t onceToken;
         CLY_LOG_W(@"%s dropping behavior setting, a boolean was expected, key: [%@], receivedType: [%@]", __FUNCTION__, key, [value class]);
         [dictionary removeObjectForKey:key];
     }
+}
+
+/// Reads and removes the top level 'ct' flag from a live response, so it can never be cached and re-arm from storage.
+/// Truthy numbers, YES, and non-empty strings other than "0" and "false" arm the test.
+- (BOOL)extractConnectionTestFlag:(NSMutableDictionary *)serverConfigResponse
+{
+    id value = serverConfigResponse[kRConnectionTest];
+    if (!value)
+        return NO;
+
+    [serverConfigResponse removeObjectForKey:kRConnectionTest];
+
+    if ([value isKindOfClass:NSNumber.class])
+        return ((NSNumber *)value).doubleValue != 0;
+
+    if ([value isKindOfClass:NSString.class])
+    {
+        NSString *trimmed = [(NSString *)value stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
+        return trimmed.length > 0 && ![trimmed isEqualToString:@"0"] && [trimmed caseInsensitiveCompare:@"false"] != NSOrderedSame;
+    }
+
+    return value != NSNull.null;
+}
+
+// lg is a top level key, a sibling of c, so a directive still applies when c is missing or unusable.
+// A nil or malformed directive means the server is not asking for logs
+- (void)applyLogGatheringDirective:(id)directive
+{
+    NSDictionary* lg = [directive isKindOfClass:NSDictionary.class] ? directive : nil;
+
+    NSNumber* enabled = [lg[kRLGEnabled] isKindOfClass:NSNumber.class] ? lg[kRLGEnabled] : nil;
+    NSNumber* batchSize = [lg[kRLGBatchSize] isKindOfClass:NSNumber.class] ? lg[kRLGBatchSize] : nil;
+    NSString* levels = [lg[kRLGLevels] isKindOfClass:NSString.class] ? lg[kRLGLevels] : nil;
+    NSString* gatherId = [lg[kRLGId] isKindOfClass:NSString.class] ? lg[kRLGId] : nil;
+
+    [CountlyCommon.sharedInstance updateLogGatheringState:enabled.boolValue levels:levels batch:batchSize.integerValue lgid:gatherId];
 }
 
 - (void)setIntegerProperty:(NSInteger *)property fromDictionary:(NSMutableDictionary *)dictionary key:(NSString *)key logString:(NSMutableString *)logString
@@ -665,12 +711,14 @@ static dispatch_once_t onceToken;
 
     if (_serverConfigUpdatesDisabled) {
         CLY_LOG_D(@"%s fetch aborted, behavior settings updates are disabled", __FUNCTION__);
+        [CountlyCommon.sharedInstance decideLogGatheringOffIfUndecided:@"behavior settings updates are disabled, no directive can ever arrive"];
         return;
     }
 
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
     {
         CLY_LOG_D(@"%s fetch aborted, sdk is in temporary device ID mode", __FUNCTION__);
+        [CountlyCommon.sharedInstance decideLogGatheringOffIfUndecided:@"temporary device ID mode, no server response this run"];
         return;
     }
 
@@ -682,13 +730,28 @@ static dispatch_once_t onceToken;
         [NSRunLoop.mainRunLoop addTimer:_requestTimer forMode:NSRunLoopCommonModes];
     }
 
+    NSDate *fetchStart = NSDate.date;
     id handler = ^(NSData *data, NSURLResponse *response, NSError *error) {
-        NSDictionary *serverConfigResponse = nil;
+        if (self != s_sharedInstance)
+        {
+            // the SDK was halted while this fetch was in flight, its answer must not decide anything for the next run
+            CLY_LOG_D(@"%s, response arrived after halt, ignoring", __FUNCTION__);
+            return;
+        }
+
+        // wall clock of the whole fetch, the connection test reports it as its 'sc' row
+        long long fetchLatencyMs = (long long)([NSDate.date timeIntervalSinceDate:fetchStart] * 1000);
+        NSMutableDictionary *serverConfigResponse = nil;
         if (!error)
         {
-            serverConfigResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+            id parsed = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+            if ([parsed isKindOfClass:NSDictionary.class])
+                serverConfigResponse = [parsed mutableCopy];
             CLY_LOG_D(@"[CountlyServerConfig] fetchServerConfig response, behavior settings received from network, statusCode: [%ld], responseKeyCount: [%lu], parsed: [%@]", (long)((NSHTTPURLResponse *)response).statusCode, (unsigned long)serverConfigResponse.count, error ? @"NO" : @"YES");
         }
+
+        // read only here, from a live response, and removed before anything below sees the response so it is never cached
+        BOOL connectionTestArmed = [self extractConnectionTestFlag:serverConfigResponse];
 
         if (!error)
         {
@@ -717,6 +780,21 @@ static dispatch_once_t onceToken;
         {
             CLY_LOG_D(@"[CountlyServerConfig] fetchServerConfig response, no config section in the response, previously stored behavior settings will be kept");
         }
+
+        if (error)
+        {
+            // a failed fetch decides against gathering only while nothing has been decided yet, a
+            // running gather survives a transient failure of the periodic refetch
+            [CountlyCommon.sharedInstance decideLogGatheringOffIfUndecided:@"server config fetch failed"];
+            return;
+        }
+
+        // only a fresh response decides log gathering, never a stored config. A live response without a
+        // usable directive decides against it
+        [self applyLogGatheringDirective:serverConfigResponse[kRLogGathering]];
+
+        if (connectionTestArmed)
+            [CountlyConnectionTest.sharedInstance startBatteryWithServerConfigLatency:fetchLatencyMs];
     };
     // Set default values
     NSURLSessionTask *task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:[self serverConfigRequest] completionHandler:handler];

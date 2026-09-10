@@ -12,6 +12,38 @@ NSString* const kCountlyOrientationKeyMode = @"mode";
 
 NSString* const kCountlyVisibility = @"cly_v";
 
+NSString* const kCountlyQSSdkLogsMessage = @"m";
+NSString* const kCountlyQSSdkLogsLevel = @"l";
+NSString* const kCountlyQSSDKLogsTimestamp = @"t";
+NSString* const kCountlyQSSDKLogsGatherId = @"i";
+NSString* const kCountlyQSSDKLogsDropCount = @"d";
+NSString* const kCountlyQSSDKLogsBatchLines = @"l";
+
+// undecided is the state the SDK starts in: it gathers on the chance that a directive will adopt the
+// lines, which is the only way the init logs can ever be delivered
+typedef NS_ENUM(NSInteger, CLYSDKLogsState)
+{
+    CLYSDKLogsStateUndecided = 0,
+    CLYSDKLogsStateGathering,
+    CLYSDKLogsStateOff,
+};
+
+static const NSInteger kCountlySDKLogsMaxMessageLength = 4096;
+// How many lines are held at most, and so also the largest batch the server may ask for: a batch
+// bigger than the buffer would never fill, and the SDK would drop lines forever without flushing.
+// The buffer only reaches this while nothing is decided yet, since every captured line drains a
+// whole batch once gathering is on. It is also what the ingestor takes in one upload
+static const NSInteger kCountlySDKLogsMaxBufferedLines = 500;
+static const NSInteger kCountlySDKLogsDefaultBatchSize = 100;
+// a batch of one or two would upload a request per log line, and the lines the upload itself logs
+// would keep it going. The server clamps to this too, nothing else stops a malformed directive
+static const NSInteger kCountlySDKLogsMinBatchSize = 10;
+// second ceiling, on the characters held: a line may be 4096 long, so a line count alone does not bound memory
+static const NSInteger kCountlySDKLogsCharCeiling = 128 * 1024;
+static NSString* const kCountlySDKLogsAllLevels = @"ewidv";
+// gathering the log line that carries a batch would nest each batch inside the next one
+static NSString* const kCountlySDKLogsTransportMarker = @"sdk_logs";
+static NSString* const kCountlySDKLogsDeliveringKey = @"CountlySDKLogsDelivering";
 
 @interface CountlyCommon ()
 {
@@ -27,6 +59,19 @@ NSString* const kCountlyVisibility = @"cly_v";
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV )
 @property (nonatomic) UIBackgroundTaskIdentifier bgTask;
 #endif
+
+@property (nonatomic) NSMutableArray* sdkLogs;
+// atomic: read on every log call without the lock, written under it
+@property (atomic) CLYSDKLogsState sdkLogsState;
+@property (nonatomic) NSInteger sdkLogsBatchSize;
+@property (nonatomic) NSString *sdkLogsLevels;
+@property (nonatomic) NSString *sdkLogsGatheringId;
+@property (nonatomic) NSInteger sdkLogsDropCount;
+@property (nonatomic) NSInteger sdkLogsChars;
+// a lock of its own rather than the array, so every piece of gathering state shares one monitor
+@property (nonatomic) NSObject* sdkLogsLock;
+// batch-full deliveries run here and never on the capturing thread, which may be inside a persistency lock
+@property (nonatomic) dispatch_queue_t sdkLogsDeliveryQueue;
 @end
 
 NSString* const kCountlySDKVersion = @"26.1.4";
@@ -59,6 +104,14 @@ static dispatch_once_t onceToken;
         self.lastTimestamp = 0;
         self.SDKVersion = kCountlySDKVersion;
         self.SDKName = kCountlySDKName;
+        
+        self.sdkLogs = NSMutableArray.new;
+        self.sdkLogsState = CLYSDKLogsStateUndecided;
+        self.sdkLogsBatchSize = kCountlySDKLogsDefaultBatchSize;
+        self.sdkLogsLevels = kCountlySDKLogsAllLevels;
+        self.sdkLogsGatheringId = @"";
+        self.sdkLogsLock = NSObject.new;
+        self.sdkLogsDeliveryQueue = dispatch_queue_create("ly.count.sdklogs.delivery", DISPATCH_QUEUE_SERIAL);
     }
 
     return self;
@@ -78,6 +131,12 @@ static dispatch_once_t onceToken;
     _maxValueLength = kCountlyMaxValueSize;
     _maxValueLengthPicture = kCountlyMaxValueSizePicture;
     _maxSegmentationValues = kCountlyMaxSegmentationValues;
+    //under the lock like every other write to it: a reset races the log lines that other threads are
+    //still capturing, and mutating the array from two threads at once crashes
+    @synchronized (_sdkLogsLock) {
+        [self setLogGatheringOffLocked];
+        _sdkLogsState = CLYSDKLogsStateUndecided;
+    }
     onceToken = 0;
     s_sharedInstance = nil;
  }
@@ -99,10 +158,16 @@ static dispatch_once_t onceToken;
 
 BOOL CountlyInternalLogIsEnabled(CLYInternalLogLevel level)
 {
-    if (!CountlyCommon.sharedInstance.enableDebug && !CountlyCommon.sharedInstance.loggerDelegate)
+    CountlyCommon* common = CountlyCommon.sharedInstance;
+    if (!common.enableDebug && !common.loggerDelegate)
         return NO;
 
-    return level <= CountlyCommon.sharedInstance.internalLogLevel;
+    return level <= common.internalLogLevel;
+}
+
+BOOL CountlyInternalLogIsWanted(CLYInternalLogLevel level)
+{
+    return CountlyInternalLogIsEnabled(level) || CountlyCommon.sharedInstance.isCapturingSdkLogs;
 }
 
 void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...)
@@ -112,17 +177,28 @@ void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...)
     } else if(level == CLYInternalLogLevelWarning) {
         [CountlyHealthTracker.sharedInstance logWarning];
     }
-    
-    if (!CountlyCommon.sharedInstance.enableDebug && !CountlyCommon.sharedInstance.loggerDelegate)
-        return;
 
-    if (level > CountlyCommon.sharedInstance.internalLogLevel)
+    CountlyCommon* common = CountlyCommon.sharedInstance;
+    // gathering has to work while console logging is off, but when nothing wants the line it must not be formatted at all
+    BOOL wantsConsole = CountlyInternalLogIsEnabled(level);
+    BOOL wantsCapture = common.isCapturingSdkLogs;
+    if (!wantsConsole && !wantsCapture)
         return;
 
     va_list args;
     va_start(args, format);
-
     NSString* logString = [NSString.alloc initWithFormat:format arguments:args];
+    va_end(args);
+
+    static const char logLevelPrefixesShort[] = {'n', 'e', 'w', 'i', 'd', 'v'};
+
+    // before the level prefix is added: a gathered line carries its level in its own field, and the
+    // dashboard renders that, so a prefix here would only be the same level a second time
+    if (wantsCapture)
+        [common captureSdkLogLine:logString level:logLevelPrefixesShort[level]];
+
+    if (!wantsConsole)
+        return;
 
     NSArray<NSString *> *logLevelPrefixes =
     @[
@@ -137,17 +213,327 @@ void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...)
     logString = [NSString stringWithFormat:@"[%@] %@", logLevelPrefixes[level], logString];
 
 #if DEBUG
-    if (CountlyCommon.sharedInstance.enableDebug)
+    if (common.enableDebug)
         CountlyPrint(logString);
 #endif
 
-    if ([CountlyCommon.sharedInstance.loggerDelegate respondsToSelector:@selector(internalLog:withLevel:)])
+    if ([common.loggerDelegate respondsToSelector:@selector(internalLog:withLevel:)])
     {
         NSString* logStringWithPrefix = [NSString stringWithFormat:@"%@%@", kCountlyInternalLogPrefix, logString];
-        [CountlyCommon.sharedInstance.loggerDelegate internalLog:logStringWithPrefix withLevel:level];
+        [common.loggerDelegate internalLog:logStringWithPrefix withLevel:level];
+    }
+}
+
+- (BOOL)isCapturingSdkLogs
+{
+    return self.sdkLogsState != CLYSDKLogsStateOff;
+}
+
+- (void)captureSdkLogLine:(NSString *)logString level:(char)levelChar {
+    if (!self.isCapturingSdkLogs)
+        return;
+
+    // this thread is delivering or sending a batch, so anything it logs is this feature's own transport commentary
+    if (NSThread.currentThread.threadDictionary[kCountlySDKLogsDeliveringKey])
+        return;
+
+    // checked on every thread, because a queued batch is sent, and logged in full, by whichever
+    // thread happens to drain the request queue later on
+    if ([logString rangeOfString:kCountlySDKLogsTransportMarker].location != NSNotFound)
+        return;
+
+    BOOL batchIsFull = NO;
+
+    @synchronized (_sdkLogsLock) {
+        if (_sdkLogsState == CLYSDKLogsStateOff)
+            return;
+
+        // while nothing is decided the wanted levels are unknown, so every level is gathered and the
+        // buffer is filtered again once a directive names them
+        if (strchr(_sdkLogsLevels.UTF8String, levelChar) == NULL)
+            return;
+
+        NSString* message = logString;
+        if (message.length > kCountlySDKLogsMaxMessageLength)
+        {
+            // never split a surrogate pair, a lone surrogate would make the whole batch unserialisable
+            NSRange boundary = [message rangeOfComposedCharacterSequenceAtIndex:kCountlySDKLogsMaxMessageLength];
+            message = [message substringToIndex:boundary.location];
+        }
+
+        [_sdkLogs addObject:@{
+            kCountlyQSSDKLogsTimestamp: @((long long)floor(NSDate.date.timeIntervalSince1970 * 1000)),
+            kCountlyQSSdkLogsMessage: message,
+            // a one character string, not a boxed char: @('e') would go on the wire as 101
+            kCountlyQSSdkLogsLevel: [NSString stringWithFormat:@"%c", levelChar]
+        }];
+        _sdkLogsChars += message.length;
+        [self trimSdkLogsBufferLocked];
+
+        batchIsFull = _sdkLogsState == CLYSDKLogsStateGathering && (NSInteger)_sdkLogs.count >= _sdkLogsBatchSize;
     }
 
-    va_end(args);
+    // never on this thread: delivering touches the request queue and logs, which comes straight back
+    // into this method, and the caller may be inside a persistency lock
+    if (batchIsFull)
+        [self scheduleSdkLogsDelivery:NO];
+}
+
+/// Characters of one gathered line's message, the unit the character ceiling counts.
+static NSInteger CountlySDKLogsLineLength(NSDictionary* line)
+{
+    return (NSInteger)((NSString *)line[kCountlyQSSdkLogsMessage]).length;
+}
+
+/// Drops the oldest lines until both the line and the character ceiling hold, counting them into the drop count. Call under the lock.
+- (void)trimSdkLogsBufferLocked
+{
+    while ((NSInteger)_sdkLogs.count > kCountlySDKLogsMaxBufferedLines || (_sdkLogsChars > kCountlySDKLogsCharCeiling && _sdkLogs.count > 1))
+    {
+        _sdkLogsChars -= CountlySDKLogsLineLength(_sdkLogs.firstObject);
+        [_sdkLogs removeObjectAtIndex:0];
+        _sdkLogsDropCount++;
+    }
+}
+
+/// Queues a delivery run on the delivery queue. Nothing is uploaded before init finishes, the init lines go out from there.
+- (void)scheduleSdkLogsDelivery:(BOOL)includePartialBatch
+{
+    if (!self.hasFinishedInit)
+        return;
+
+    dispatch_async(self.sdkLogsDeliveryQueue, ^{
+        [self deliverSdkLogBatches:includePartialBatch];
+    });
+}
+
+- (void)flushSdkLogs {
+    [self deliverSdkLogBatches:YES];
+}
+
+- (void)scheduleSdkLogsFlush
+{
+    [self scheduleSdkLogsDelivery:YES];
+}
+
+/// Uploads one batch, then keeps going while full batches remain. Lines stay held while the request
+/// queue would drop them: tracking off, or no consent given yet.
+- (void)deliverSdkLogBatches:(BOOL)includePartialBatch
+{
+    if (!self.hasFinishedInit)
+        return;
+
+    // marks everything logged until the sends return as this feature's own transport work
+    [self setSdkLogsTransportWork:YES];
+    [self deliverSdkLogBatchesMarked:includePartialBatch];
+    [self setSdkLogsTransportWork:NO];
+}
+
+/// The delivery loop proper, run with the transport marker already set on this thread so its own lines are not gathered.
+- (void)deliverSdkLogBatchesMarked:(BOOL)includePartialBatch
+{
+    if (!CountlyServerConfig.sharedInstance.trackingEnabled)
+    {
+        // the request queue refuses everything while tracking is off, taking the lines out now would only lose them
+        CLY_LOG_D(@"%s, tracking is disabled, keeping the gathered lines buffered", __FUNCTION__);
+        return;
+    }
+
+    if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
+    {
+        // gathered lines quote event keys, segmentation and whole queued requests, so they are user
+        // data. Without any consent nothing else leaves the device either
+        CLY_LOG_D(@"%s, no consent given, keeping the gathered lines buffered", __FUNCTION__);
+        return;
+    }
+
+    BOOL takePartial = includePartialBatch;
+    NSDictionary* batch;
+    while ((batch = [self takeSdkLogBatch:takePartial]))
+    {
+        takePartial = NO;
+        CLY_LOG_D(@"%s, delivering [ %lu ] gathered log lines, [ %@ ] dropped", __FUNCTION__, (unsigned long)((NSArray *)batch[kCountlyQSSDKLogsBatchLines]).count, batch[kCountlyQSSDKLogsDropCount]);
+
+        NSString* payload = CountlyJSONFromObject(batch);
+        if (!payload)
+        {
+            // putting an unserialisable batch back would make it the head of every later delivery, so it is lost and counted
+            CLY_LOG_W(@"%s, a gathered log batch could not be serialised, dropping it", __FUNCTION__);
+            [self countSdkLogBatchAsDropped:batch];
+            continue;
+        }
+
+        if (![CountlyConnectionManager.sharedInstance sendSdkLogs:payload])
+        {
+            // the queue refused it, so the lines are still ours
+            [self restoreSdkLogBatch:batch];
+            return;
+        }
+    }
+}
+
+/// Accounts a batch that can never be sent as dropped lines, so the loss still reaches the operator with the next batch.
+- (void)countSdkLogBatchAsDropped:(NSDictionary *)batch
+{
+    @synchronized (_sdkLogsLock) {
+        if (_sdkLogsState != CLYSDKLogsStateGathering || ![_sdkLogsGatheringId isEqualToString:batch[kCountlyQSSDKLogsGatherId]])
+            return;
+
+        _sdkLogsDropCount += ((NSArray *)batch[kCountlyQSSDKLogsBatchLines]).count + ((NSNumber *)batch[kCountlyQSSDKLogsDropCount]).integerValue;
+    }
+}
+
+/// Takes up to one batch of the oldest lines out of the buffer as the 'sdk_logs' payload, or nil when there is nothing to upload.
+- (NSDictionary *)takeSdkLogBatch:(BOOL)includePartialBatch
+{
+    @synchronized (_sdkLogsLock) {
+        if (_sdkLogsState != CLYSDKLogsStateGathering || _sdkLogs.count == 0)
+            return nil;
+        if (!includePartialBatch && (NSInteger)_sdkLogs.count < _sdkLogsBatchSize)
+            return nil;
+
+        NSInteger count = MIN((NSInteger)_sdkLogs.count, _sdkLogsBatchSize);
+        NSArray* lines = [_sdkLogs subarrayWithRange:NSMakeRange(0, count)];
+        [_sdkLogs removeObjectsInRange:NSMakeRange(0, count)];
+        for (NSDictionary* line in lines)
+            _sdkLogsChars -= CountlySDKLogsLineLength(line);
+
+        NSDictionary* batch = @{
+            kCountlyQSSDKLogsGatherId: _sdkLogsGatheringId,
+            kCountlyQSSDKLogsDropCount: @(_sdkLogsDropCount),
+            kCountlyQSSDKLogsBatchLines: lines
+        };
+        // the loss is reported once, with the batch that follows it
+        _sdkLogsDropCount = 0;
+        return batch;
+    }
+}
+
+/// Puts a batch the queue refused back at the front of the buffer, oldest first, drop count included.
+- (void)restoreSdkLogBatch:(NSDictionary *)batch
+{
+    @synchronized (_sdkLogsLock) {
+        if (_sdkLogsState != CLYSDKLogsStateGathering || ![_sdkLogsGatheringId isEqualToString:batch[kCountlyQSSDKLogsGatherId]])
+            return;
+
+        NSArray* lines = batch[kCountlyQSSDKLogsBatchLines];
+        [_sdkLogs insertObjects:lines atIndexes:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, lines.count)]];
+        for (NSDictionary* line in lines)
+            _sdkLogsChars += CountlySDKLogsLineLength(line);
+        _sdkLogsDropCount += ((NSNumber *)batch[kCountlyQSSDKLogsDropCount]).integerValue;
+        [self trimSdkLogsBufferLocked];
+    }
+}
+
+- (void)setSdkLogsTransportWork:(BOOL)transporting
+{
+    if (transporting)
+        NSThread.currentThread.threadDictionary[kCountlySDKLogsDeliveringKey] = @YES;
+    else
+        [NSThread.currentThread.threadDictionary removeObjectForKey:kCountlySDKLogsDeliveringKey];
+}
+
+- (BOOL)isSdkLogsTransportWork
+{
+    return NSThread.currentThread.threadDictionary[kCountlySDKLogsDeliveringKey] != nil;
+}
+
+- (void)decideLogGatheringOffIfUndecided:(NSString *)reason
+{
+    // one critical section: a directive landing between a check and a separate write would be wiped out
+    @synchronized (_sdkLogsLock) {
+        if (_sdkLogsState != CLYSDKLogsStateUndecided)
+            return;
+        [self setLogGatheringOffLocked];
+    }
+
+    CLY_LOG_D(@"%s, %@, log gathering is off, anything gathered so far has been discarded", __FUNCTION__, reason);
+}
+
+/// Arms a gather with the given directive, leaving the buffer as it is. Call under the lock.
+- (void)setLogGatheringOnLocked:(NSString *)levels batch:(NSInteger)batch gatheringId:(NSString *)gatheringId
+{
+    _sdkLogsState = CLYSDKLogsStateGathering;
+    _sdkLogsLevels = levels;
+    _sdkLogsBatchSize = batch;
+    _sdkLogsGatheringId = gatheringId;
+}
+
+/// Off with an empty buffer and default directive values. Call under the lock.
+- (void)setLogGatheringOffLocked
+{
+    _sdkLogsState = CLYSDKLogsStateOff;
+    _sdkLogsBatchSize = kCountlySDKLogsDefaultBatchSize;
+    _sdkLogsLevels = kCountlySDKLogsAllLevels;
+    _sdkLogsGatheringId = @"";
+    [_sdkLogs removeAllObjects];
+    _sdkLogsDropCount = 0;
+    _sdkLogsChars = 0;
+}
+
+- (void)updateLogGatheringState:(BOOL)enabled levels:(nullable NSString *)levels batch:(NSInteger)batch lgid:(nullable NSString *)lgid {
+    // batches without a gather id can not be attributed to a capture and the server rejects them all
+    if (enabled && lgid.length == 0) {
+        CLY_LOG_W(@"%s, log gathering was enabled without a gather id, not gathering", __FUNCTION__);
+        enabled = NO;
+    }
+
+    NSString* sanitizedLevels = [self sanitizeLogGatheringLevels:levels];
+    NSInteger sanitizedBatch = MIN(MAX(batch > 0 ? batch : kCountlySDKLogsDefaultBatchSize, kCountlySDKLogsMinBatchSize), kCountlySDKLogsMaxBufferedLines);
+    NSUInteger held = 0;
+    BOOL wasGathering = NO;
+
+    @synchronized (_sdkLogsLock) {
+        // held lines belong to the previous gather and the server rejects them. This can not fire while
+        // undecided, where the provisional lines belong to whichever gather adopts them
+        BOOL belongToAnotherGather = _sdkLogsState != CLYSDKLogsStateUndecided && ![_sdkLogsGatheringId isEqualToString:lgid];
+        wasGathering = _sdkLogsState == CLYSDKLogsStateGathering;
+
+        if (!enabled) {
+            [self setLogGatheringOffLocked];
+        } else if (belongToAnotherGather) {
+            [self setLogGatheringOffLocked];
+            [self setLogGatheringOnLocked:sanitizedLevels batch:sanitizedBatch gatheringId:lgid];
+        } else {
+            [self setLogGatheringOnLocked:sanitizedLevels batch:sanitizedBatch gatheringId:lgid];
+            // adoption: the provisional lines were gathered at every level, so apply the filter now
+            NSMutableArray* kept = NSMutableArray.new;
+            _sdkLogsChars = 0;
+            for (NSDictionary* line in _sdkLogs) {
+                if ([sanitizedLevels containsString:line[kCountlyQSSdkLogsLevel]]) {
+                    [kept addObject:line];
+                    _sdkLogsChars += CountlySDKLogsLineLength(line);
+                }
+            }
+            [_sdkLogs setArray:kept];
+            [self trimSdkLogsBufferLocked];
+            held = _sdkLogs.count;
+        }
+    }
+
+    if (enabled) {
+        CLY_LOG_D(@"%s, log gathering on, id:[ %@ ] levels:[ %@ ] batch:[ %ld ], holding [ %lu ] lines", __FUNCTION__, lgid, sanitizedLevels, (long)sanitizedBatch, (unsigned long)held);
+        // adoption may hand over a buffer that is already past the batch size, partial batches wait for the timer
+        if (!wasGathering)
+            [self scheduleSdkLogsDelivery:NO];
+    } else {
+        CLY_LOG_D(@"%s, log gathering is off, anything gathered so far has been discarded", __FUNCTION__);
+    }
+}
+
+/// Keeps only the level characters this SDK knows, lowercased, in the order sent, without duplicates.
+/// Falls back to every level when nothing usable is left, an armed gather that captures nothing would look like a broken feature.
+- (NSString *)sanitizeLogGatheringLevels:(nullable NSString *)levels
+{
+    NSMutableString* filtered = NSMutableString.new;
+    for (NSUInteger i = 0; i < levels.length; i++)
+    {
+        NSString* level = [[levels substringWithRange:NSMakeRange(i, 1)] lowercaseString];
+        if ([kCountlySDKLogsAllLevels containsString:level] && ![filtered containsString:level])
+            [filtered appendString:level];
+    }
+
+    return filtered.length > 0 ? filtered.copy : kCountlySDKLogsAllLevels;
 }
 
 void CountlyPrint(NSString *stringToPrint)

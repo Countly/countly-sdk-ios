@@ -68,6 +68,8 @@ NSString* const kCountlyQSKeyChecksum256      = @"checksum256";
 NSString* const kCountlyQSKeyConsent          = @"consent";
 NSString* const kCountlyQSKeyAPM              = @"apm";
 NSString* const kCountlyQSKeyRemainingRequest = @"rr";
+NSString* const kCountlyQSSdkLogs              = @"sdk_logs";
+NSString* const kCountlyQSConnectionTestResults = @"ct_results";
 
 NSString* const kCountlyQSKeyMethod           = @"method";
 NSString* const kCountlyQSKeyTheme            = @"th";
@@ -285,6 +287,12 @@ static dispatch_once_t onceToken;
         return;
     }
     
+    // lines logged while sending a gathered log batch are not gathered, or every tick would upload a batch about the
+    // last one. The caller may already be marked (the delivery loop lands here), so its mark is restored on the way out
+    BOOL isSdkLogsTransport = [firstItemInQueue cly_valueForQueryStringKey:kCountlyQSSdkLogs] != nil;
+    BOOL callerTransportWork = CountlyCommon.sharedInstance.isSdkLogsTransportWork;
+    [CountlyCommon.sharedInstance setSdkLogsTransportWork:callerTransportWork || isSdkLogsTransport];
+
     BOOL isOldRequest = [CountlyPersistency.sharedInstance isOldRequest:firstItemInQueue];
     if(isOldRequest)
     {
@@ -294,6 +302,7 @@ static dispatch_once_t onceToken;
         [CountlyPersistency.sharedInstance saveToFile];
 
         atomic_store(&_isProcessingQueue, NO);
+        [CountlyCommon.sharedInstance setSdkLogsTransportWork:callerTransportWork];
         [self proceedOnQueue];
 
         return;
@@ -305,6 +314,7 @@ static dispatch_once_t onceToken;
     {
         CLY_LOG_D(@"%s aborting queue processing, reason: device ID of the request at the head of the queue is the temporary device ID", __FUNCTION__);
         atomic_store(&_isProcessingQueue, NO);
+        [CountlyCommon.sharedInstance setSdkLogsTransportWork:callerTransportWork];
         return;
     }
 
@@ -382,6 +392,7 @@ static dispatch_once_t onceToken;
     NSDate *startTimeRequest = [NSDate date];
     self.connection = [self.URLSession dataTaskWithRequest:request completionHandler:^(NSData * data, NSURLResponse * response, NSError * error)
     {
+        [CountlyCommon.sharedInstance setSdkLogsTransportWork:isSdkLogsTransport];
         self.connection = nil;
         NSDate *endTimeRequest = [NSDate date];
         long duration = (long)[endTimeRequest timeIntervalSinceDate:startTimeRequest];
@@ -477,11 +488,13 @@ static dispatch_once_t onceToken;
             self.startTime = nil;
             atomic_store(&self->_isProcessingQueue, NO);
         }
+        [CountlyCommon.sharedInstance setSdkLogsTransportWork:NO];
     }];
 
     [self.connection resume];
 
     [self logRequest:request];
+    [CountlyCommon.sharedInstance setSdkLogsTransportWork:callerTransportWork];
 }
 
 - (void)recordMetrics:(nullable NSDictionary *)metricsOverride
@@ -906,6 +919,26 @@ static dispatch_once_t onceToken;
 {
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@",
                              kCountlyQSKeyDeviceIDOld, oldDeviceID.cly_URLEscaped];
+
+    [CountlyPersistency.sharedInstance addToQueue:queryString];
+
+    [self proceedOnQueue];
+}
+
+- (BOOL)sendSdkLogs:(NSString *)sdkLogsJSON
+{
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@", kCountlyQSSdkLogs, sdkLogsJSON.cly_URLEscaped];
+
+    if (![CountlyPersistency.sharedInstance addToQueue:queryString])
+        return NO;
+
+    [self proceedOnQueue];
+    return YES;
+}
+
+- (void)sendConnectionTestResults:(NSString *)resultsJSON
+{
+    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@", kCountlyQSConnectionTestResults, resultsJSON.cly_URLEscaped];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 

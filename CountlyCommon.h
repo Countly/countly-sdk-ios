@@ -32,17 +32,18 @@
 #import "CountlyContentBuilderInternal.h"
 #import "CountlyExperimentalConfig.h"
 #import "CountlyHealthTracker.h"
+#import "CountlyConnectionTest.h"
 
 //NOTE: Error and Warning call through unconditionally, because CountlyInternalLog also increments the
 //health tracker's error and warning counters, which must keep counting even when logging is disabled.
 #define CLY_LOG_E(fmt, ...) CountlyInternalLog(CLYInternalLogLevelError, fmt, ##__VA_ARGS__)
 #define CLY_LOG_W(fmt, ...) CountlyInternalLog(CLYInternalLogLevelWarning, fmt, ##__VA_ARGS__)
 
-//NOTE: Info, Debug and Verbose are guarded so their arguments are not evaluated when the level is not
-//active. Without the guard, every argument expression runs on every call even with logging disabled.
-#define CLY_LOG_I(fmt, ...) do { if (CountlyInternalLogIsEnabled(CLYInternalLogLevelInfo)) CountlyInternalLog(CLYInternalLogLevelInfo, fmt, ##__VA_ARGS__); } while (0)
-#define CLY_LOG_D(fmt, ...) do { if (CountlyInternalLogIsEnabled(CLYInternalLogLevelDebug)) CountlyInternalLog(CLYInternalLogLevelDebug, fmt, ##__VA_ARGS__); } while (0)
-#define CLY_LOG_V(fmt, ...) do { if (CountlyInternalLogIsEnabled(CLYInternalLogLevelVerbose)) CountlyInternalLog(CLYInternalLogLevelVerbose, fmt, ##__VA_ARGS__); } while (0)
+//NOTE: Info, Debug and Verbose are guarded so their arguments are not evaluated when nobody wants the line.
+//Gated on 'wanted', not 'enabled': log gathering has to receive these lines while console logging is off.
+#define CLY_LOG_I(fmt, ...) do { if (CountlyInternalLogIsWanted(CLYInternalLogLevelInfo)) CountlyInternalLog(CLYInternalLogLevelInfo, fmt, ##__VA_ARGS__); } while (0)
+#define CLY_LOG_D(fmt, ...) do { if (CountlyInternalLogIsWanted(CLYInternalLogLevelDebug)) CountlyInternalLog(CLYInternalLogLevelDebug, fmt, ##__VA_ARGS__); } while (0)
+#define CLY_LOG_V(fmt, ...) do { if (CountlyInternalLogIsWanted(CLYInternalLogLevelVerbose)) CountlyInternalLog(CLYInternalLogLevelVerbose, fmt, ##__VA_ARGS__); } while (0)
 
 #if (TARGET_OS_IOS || TARGET_OS_VISION)
 #import <UIKit/UIKit.h>
@@ -105,8 +106,12 @@ extern NSString* const kCountlySDKName;
 @property (nonatomic) NSUInteger maxSegmentationValues;
 
 void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...) NS_FORMAT_FUNCTION(2, 3);
+/// YES when console output or the logger delegate would show a line of this level. Gate expensive dumps with this, it says nothing about log gathering.
 BOOL CountlyInternalLogIsEnabled(CLYInternalLogLevel level);
+/// YES when anything at all wants a line of this level: a developer facing sink, or the log gathering capture.
+BOOL CountlyInternalLogIsWanted(CLYInternalLogLevel level);
 void CountlyPrint(NSString *stringToPrint);
+NSString* CountlyJSONFromObject(id object);
 
 + (instancetype)sharedInstance;
 - (NSInteger)hourOfDay;
@@ -142,6 +147,31 @@ void CountlyPrint(NSString *stringToPrint);
 - (NSURLSession *)ImmediateURLSession;
 
 - (CGSize)getWindowSize;
+
+/// Applies a live 'lg' directive. Enabling adopts the held lines, disabling or a different gather id drops them.
+- (void)updateLogGatheringState:(BOOL)enabled levels:(nullable NSString *)levels batch:(NSInteger)batch lgid:(nullable NSString *)lgid;
+
+/// Decides against gathering when no directive has been seen yet and none can arrive this run (failed fetch, temporary device id, updates disabled). A running gather is left alone.
+- (void)decideLogGatheringOffIfUndecided:(NSString *)reason;
+
+/// Uploads the held lines now, partial batch included, on the calling thread. Background and init end call this.
+- (void)flushSdkLogs;
+
+/// Same as flushSdkLogs, on the delivery queue. The timer tick calls this so the main thread never serialises a batch.
+- (void)scheduleSdkLogsFlush;
+
+/// YES while lines are still being held or gathered, so log calls can skip formatting when nothing wants them.
+- (BOOL)isCapturingSdkLogs;
+
+/// Marks the calling thread as sending a gathered batch, so what it logs meanwhile is not gathered again.
+- (void)setSdkLogsTransportWork:(BOOL)transporting;
+
+/// Whether the calling thread is currently marked as transport work.
+- (BOOL)isSdkLogsTransportWork;
+
+// the capture funnel, called from CountlyInternalLog above the console logging gates. Declared here
+// so tests can feed it exact lines instead of going through a variadic C function
+- (void)captureSdkLogLine:(NSString *)logString level:(char)levelChar;
 @end
 
 

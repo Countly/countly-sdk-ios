@@ -74,7 +74,7 @@ static dispatch_once_t onceToken;
 
 #pragma mark ---
 
-- (void)addToQueue:(NSString *)queryString
+- (BOOL)addToQueue:(NSString *)queryString
 {
     // NOTE: reachable from CountlySignalHandler through CountlyConnectionManager sendCrashReport,
     // so every log here and in removeOldAgeRequestsFromQueue stays at Debug or lower, even the
@@ -83,13 +83,13 @@ static dispatch_once_t onceToken;
     if (!CountlyServerConfig.sharedInstance.trackingEnabled)
     {
         CLY_LOG_D(@"%s request is not queued, reason: SDK tracking is disabled from server config, query string length: [%lu]", __FUNCTION__, (unsigned long)queryString.length);
-        return;
+        return NO;
     }
     
     if (!queryString.length || [queryString isEqual:NSNull.null])
     {
         CLY_LOG_D(@"%s request is not queued, reason: query string is nil or empty", __FUNCTION__);
-        return;
+        return NO;
     }
     
     queryString = [queryString stringByAppendingFormat:@"&%@=%@",
@@ -115,6 +115,7 @@ static dispatch_once_t onceToken;
         [self.queuedRequests addObject:queryString];
         CLY_LOG_V(@"%s request is queued, query string length: [%lu], queue size: [%lu]", __FUNCTION__, (unsigned long)queryString.length, (unsigned long)self.queuedRequests.count);
     }
+    return YES;
 }
 
 - (void)removeFromQueue:(NSString *)queryString

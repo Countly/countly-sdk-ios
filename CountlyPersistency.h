@@ -13,7 +13,8 @@
 
 + (instancetype)sharedInstance;
 
-- (void)addToQueue:(NSString *)queryString;
+/// Appends a request to the queue. Returns NO when it was refused: tracking is disabled by server config, or the request is empty.
+- (BOOL)addToQueue:(NSString *)queryString;
 - (void)removeFromQueue:(NSString *)queryString;
 - (NSString *)firstItemInQueue;
 - (void)flushQueue;
