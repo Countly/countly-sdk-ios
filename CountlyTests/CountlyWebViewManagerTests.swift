@@ -784,7 +784,7 @@ class CountlyWebViewManagerTests: XCTestCase {
     func testIsFeedbackWidgetURL_rejectsContentURLs() {
         // Content URLs (host/_external/content?...) must NOT be treated as feedback widgets, so
         // the content-shown deadline stays armed for real content.
-        XCTAssertFalse(manager.isFeedbackWidgetURL(URL(string: "https://countly.teb.com.tr/_external/content?app_id=1&id=2&journeyId=3")!))
+        XCTAssertFalse(manager.isFeedbackWidgetURL(URL(string: "https://example.count.ly/_external/content?app_id=1&id=2&journeyId=3")!))
         XCTAssertFalse(manager.isFeedbackWidgetURL(URL(string: "https://example.count.ly/o/sdk/content?method=queue")!))
         XCTAssertFalse(manager.isFeedbackWidgetURL(URL(string: "about:blank")!))
     }
