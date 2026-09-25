@@ -11,6 +11,10 @@
 @property (nonatomic) NSMutableSet* automaticViewTrackingExclusionList;
 #endif
 @property (nonatomic, strong) NSMutableDictionary<NSString*, CountlyViewData *> * viewDataDictionary;
+//NOTE: Maps every view ID ever handed out to the host onto the ID its view is open under now.
+//      A view stopped on background is started again on foreground under a fresh ID, but the host
+//      still holds the ID it got from `startView`, so the ID based calls resolve through this.
+@property (nonatomic, strong) NSMutableDictionary<NSString*, NSString*> * restartedViewIDs;
 @property (nonatomic) NSMutableDictionary* viewSegmentation;
 @property (nonatomic) BOOL isFirstView;
 @end
@@ -115,6 +119,7 @@ static dispatch_once_t onceToken;
 #endif
         
         self.viewDataDictionary = NSMutableDictionary.new;
+        self.restartedViewIDs = NSMutableDictionary.new;
         self.viewSegmentation = nil;
         self.isFirstView = YES;
         self.isManualViewRestartActive = YES;
@@ -367,6 +372,58 @@ static dispatch_once_t onceToken;
 #endif
 
 #pragma mark - Internal methods old
+
+/**
+ * Resolves a view ID the host holds onto the ID its view is open under now.
+ * @param viewID a view ID handed out by a start view call, at any point in the view's life
+ * @return the ID the view is currently open under, or @c viewID itself when it still resolves to a view
+ */
+- (NSString *)currentIDForViewID:(NSString *)viewID
+{
+    NSString* currentID = self.restartedViewIDs[viewID];
+    if (!currentID)
+        return viewID;
+
+    CLY_LOG_V(@"%s view ID belongs to a view that was started again, it will be resolved, given view ID: [%@], current view ID: [%@]", __FUNCTION__, viewID, currentID);
+    return currentID;
+}
+
+/**
+ * Records that a view which was open under @c previousID is now open under @c currentID.
+ * Every ID already resolving to @c previousID is repointed, so an ID survives any number of restarts.
+ * @param previousID the ID the view was open under before it was started again
+ * @param currentID the ID the view is open under now
+ */
+- (void)repointViewID:(NSString *)previousID toCurrentID:(NSString *)currentID
+{
+    if (!previousID.length || !currentID.length)
+        return;
+
+    for (NSString* handedOutID in self.restartedViewIDs.allKeys)
+    {
+        if ([self.restartedViewIDs[handedOutID] isEqualToString:previousID])
+            self.restartedViewIDs[handedOutID] = currentID;
+    }
+
+    self.restartedViewIDs[previousID] = currentID;
+}
+
+/**
+ * Drops every handed out view ID that resolves to @c viewID, called when its view is really stopped.
+ * @param viewID the ID the stopped view was open under
+ */
+- (void)forgetViewID:(NSString *)viewID
+{
+    NSMutableArray<NSString *>* staleIDs = NSMutableArray.new;
+    [self.restartedViewIDs enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull handedOutID, NSString * _Nonnull currentID, BOOL * _Nonnull stop) {
+        if ([currentID isEqualToString:viewID])
+            [staleIDs addObject:handedOutID];
+    }];
+
+    [self.restartedViewIDs removeObjectsForKeys:staleIDs];
+    [self.restartedViewIDs removeObjectForKey:viewID];
+}
+
 - (void)stopViewWithNameInternal:(NSString *) viewName customSegmentation:(NSDictionary *)customSegmentation
 {
     if (!viewName || !viewName.length)
@@ -411,6 +468,8 @@ static dispatch_once_t onceToken;
         CLY_LOG_E(@"%s view ID is null or empty, stop view by ID will be ignored", __FUNCTION__);
         return;
     }
+
+    viewKey = [self currentIDForViewID:viewKey];
 
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
     {
@@ -464,6 +523,7 @@ static dispatch_once_t onceToken;
         CLY_LOG_D(@"%s stopped view segmentation value detail, view ID: [%@], segmentation: [%@]", __FUNCTION__, viewData.viewID, segmentation);
         if (!autoPaused) {
             [self.viewDataDictionary removeObjectForKey:viewKey];
+            [self forgetViewID:viewKey];
         }
     }
     else {
@@ -561,6 +621,8 @@ static dispatch_once_t onceToken;
         return;
     }
 
+    viewID = [self currentIDForViewID:viewID];
+
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
     {
         CLY_LOG_V(@"%s no consent for views, pause view will be ignored, view ID: [%@]", __FUNCTION__, viewID);
@@ -591,6 +653,8 @@ static dispatch_once_t onceToken;
         CLY_LOG_E(@"%s view ID is null or empty, resume view will be ignored", __FUNCTION__);
         return;
     }
+
+    viewID = [self currentIDForViewID:viewID];
 
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
     {
@@ -682,6 +746,8 @@ static dispatch_once_t onceToken;
 
         CLY_LOG_V(@"%s view started automatically after restart, name: [%@], new view ID: [%@], previous view ID: [%@]", __FUNCTION__, viewData.viewName, viewID, key);
 
+        [self repointViewID:key toCurrentID:viewID];
+
         // Retrieve and update the newly created viewData
         CountlyViewData *viewDataNew = self.viewDataDictionary[viewID];
         viewDataNew.segmentation = viewData.segmentation.mutableCopy;
@@ -741,6 +807,8 @@ static dispatch_once_t onceToken;
         CLY_LOG_E(@"%s view ID is null or empty, adding segmentation by view ID will be ignored", __FUNCTION__);
         return;
     }
+
+    viewID = [self currentIDForViewID:viewID];
 
     if (!CountlyConsentManager.sharedInstance.consentForViewTracking)
     {
