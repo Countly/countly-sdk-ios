@@ -523,5 +523,171 @@ class CountlyContentBuilderTests: CountlyBaseTestCase {
 
         cb.endContentPresentation()
     }
+
+    // MARK: - Global content segmentation
+
+    /// Starts the SDK with a mock that fails every request, so the request queue keeps what the SDK
+    /// records instead of draining it as it goes. A given segmentation value limit replaces the default.
+    private func startSDKWithFailingNetwork(maxSegmentationValues: UInt? = nil) {
+        MockURLProtocol.requestHandler = { _ in
+            (nil, nil, NSError(domain: "CountlyTests", code: -1))
+        }
+        let config = createContentTestConfig()
+        if let maxSegmentationValues = maxSegmentationValues {
+            config.sdkInternalLimits().setMaxSegmentationValues(maxSegmentationValues)
+        }
+        Countly.sharedInstance().start(with: config)
+    }
+
+    /// Segmentation of the last event recorded with the given key. Both queues are searched because
+    /// recording a feedback widget event flushes the event queue into the request queue right after,
+    /// while a content web view event is left in the event queue.
+    private func lastEventSegmentation(_ key: String) -> [String: Any] {
+        if let event = (TestUtils.getCurrentEQ() ?? []).last(where: { $0.key == key }) {
+            return (event.segmentation as? [String: Any]) ?? [:]
+        }
+
+        for requestStr in (TestUtils.getCurrentRQ() ?? []).reversed() {
+            let request = TestUtils.parseQueryString(requestStr)
+            guard let eventsStr = request["events"] as? String,
+                let data = eventsStr.data(using: .utf8),
+                let events = (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]]
+            else { continue }
+
+            for event in events.reversed() where event["key"] as? String == key {
+                return event["segmentation"] as? [String: Any] ?? [:]
+            }
+        }
+        XCTFail("No '\(key)' event found in either queue")
+        return [:]
+    }
+
+    /**
+     * <pre>
+     * Test that the global content segmentation reaches a feedback widget event, that the keys the
+     * widget builds for itself win over a global value of the same name, and that 'nil' clears it.
+     *
+     * 1- Init SDK with a mock that fails every request, so the request queue keeps what is recorded
+     * 2- Set a global content segmentation that also carries a key the widget answers itself
+     * 3- Record an NPS widget result
+     * 4- Verify the event carries the global keys and that the answer won over the global value
+     * 5- Clear the global content segmentation with 'nil' and record the same result again
+     * 6- Verify the second event carries only what the widget builds for itself
+     * </pre>
+     */
+    func test_globalContentSegmentation_stampsFeedbackWidgetEvents_withoutOverridingTheirKeys() {
+        startSDKWithFailingNetwork()
+
+        let widget = MockFeedbackWidget(id: "1234", type: CLYFeedbackWidgetType.NPS)
+
+        Countly.sharedInstance().content().setGlobalContentSegmentation([
+            "screen": "checkout",
+            "step": 3,
+            "rating": "should lose to the answer",
+        ])
+        widget.recordResult(["rating": 4])
+
+        let stamped = lastEventSegmentation("[CLY]_nps")
+        XCTAssertEqual("checkout", stamped["screen"] as? String)
+        XCTAssertEqual("3", "\(stamped["step"] ?? "")")
+        XCTAssertEqual("4", "\(stamped["rating"] ?? "")", "the widget answer must win over the global value")
+        XCTAssertEqual("1234", stamped["widget_id"] as? String)
+        XCTAssertEqual(CountlyDeviceInfo.osName(), stamped["platform"] as? String)
+
+        Countly.sharedInstance().content().setGlobalContentSegmentation(nil)
+        widget.recordResult(["rating": 4])
+
+        let cleared = lastEventSegmentation("[CLY]_nps")
+        XCTAssertNil(cleared["screen"], "a cleared global segmentation must not reach the next event")
+        XCTAssertNil(cleared["step"], "a cleared global segmentation must not reach the next event")
+        XCTAssertEqual("4", "\(cleared["rating"] ?? "")")
+    }
+
+    /**
+     * <pre>
+     * Test that a global value for a key the events build themselves is dropped when it is set,
+     * that a later call replaces the whole segmentation instead of merging into it, that a session
+     * ending and a new one starting do not forget it, and that content web view events carry it.
+     *
+     * 1- Init SDK with a mock that fails every request
+     * 2- Set a global content segmentation carrying every reserved key plus one custom key
+     * 3- Set a second segmentation, then end the session and begin a new one
+     * 4- Record a content web view event and verify it carries the replacement and not the first set
+     * 5- Dismiss an NPS widget and verify the replacement survived the session restart
+     * 6- Verify the reserved keys of that event still come from the widget itself
+     * </pre>
+     */
+    func test_globalContentSegmentation_dropsReservedKeys_andSurvivesASessionRestart() {
+        startSDKWithFailingNetwork()
+
+        Countly.sharedInstance().content().setGlobalContentSegmentation([
+            "widget_id": "hijacked",
+            "platform": "hijacked",
+            "app_version": "hijacked",
+            "closed": "hijacked",
+            "screen": "settings",
+        ])
+        Countly.sharedInstance().content().setGlobalContentSegmentation(["state": "logged_in"])
+
+        Countly.sharedInstance().endSession()
+        Countly.sharedInstance().beginSession()
+
+        let webViewManager = CountlyWebViewManager()
+        webViewManager.recordEvents(withJSONString: #"[{"key":"[CLY]_action","sg":{"type":"cta"}}]"#)
+
+        let contentSegmentation = lastEventSegmentation("[CLY]_action")
+        XCTAssertEqual("cta", contentSegmentation["type"] as? String)
+        XCTAssertEqual("logged_in", contentSegmentation["state"] as? String)
+        XCTAssertNil(contentSegmentation["screen"], "setting a segmentation replaces the previous one")
+
+        let widget = MockFeedbackWidget(id: "1234", type: CLYFeedbackWidgetType.NPS)
+        widget.recordResult(nil)
+
+        let widgetSegmentation = lastEventSegmentation("[CLY]_nps")
+        XCTAssertEqual("logged_in", widgetSegmentation["state"] as? String)
+        XCTAssertNil(widgetSegmentation["screen"], "setting a segmentation replaces the previous one")
+        XCTAssertEqual("1234", widgetSegmentation["widget_id"] as? String)
+        XCTAssertEqual(CountlyDeviceInfo.osName(), widgetSegmentation["platform"] as? String)
+        XCTAssertEqual("1", "\(widgetSegmentation["closed"] ?? "")")
+    }
+
+    /**
+     * <pre>
+     * Test that when the global content segmentation and an event's own segmentation together
+     * exceed the segmentation value limit, global keys are dropped first and the event keeps
+     * every key of its own, including one it shares with the global segmentation.
+     *
+     * 1- Init SDK with a segmentation value limit of 4 and a mock that fails every request
+     * 2- Set a global content segmentation of 4 keys, one of them named like a content event key
+     * 3- Record a content web view event with 2 keys of its own, one of them the shared name
+     * 4- Verify the event keeps both of its values and only 2 of the global-only keys
+     * 5- Record an NPS widget result that builds at least 4 keys for itself
+     * 6- Verify the widget keeps all of its keys and none of the global keys is left
+     * </pre>
+     */
+    func test_globalContentSegmentation_isTrimmedBeforeTheEventsOwnKeys_overTheLimit() {
+        startSDKWithFailingNetwork(maxSegmentationValues: 4)
+
+        let globalSegmentation = ["type": "global", "g1": "a", "g2": "b", "g3": "c"]
+        Countly.sharedInstance().content().setGlobalContentSegmentation(globalSegmentation)
+
+        let webViewManager = CountlyWebViewManager()
+        webViewManager.recordEvents(withJSONString: #"[{"key":"[CLY]_action","sg":{"type":"cta","id":"c1"}}]"#)
+
+        let contentSegmentation = lastEventSegmentation("[CLY]_action")
+        XCTAssertEqual("cta", contentSegmentation["type"] as? String, "the event value must win and survive the limit")
+        XCTAssertEqual("c1", contentSegmentation["id"] as? String, "the limit must not trim the event's own keys")
+        XCTAssertEqual(2, ["g1", "g2", "g3"].filter { contentSegmentation[$0] != nil }.count, "only global-only keys make room for the event")
+
+        let widget = MockFeedbackWidget(id: "1234", type: CLYFeedbackWidgetType.NPS)
+        widget.recordResult(["rating": 4, "comment": "fine"])
+
+        let widgetSegmentation = lastEventSegmentation("[CLY]_nps")
+        XCTAssertEqual("4", "\(widgetSegmentation["rating"] ?? "")")
+        XCTAssertEqual("fine", widgetSegmentation["comment"] as? String)
+        XCTAssertEqual("1234", widgetSegmentation["widget_id"] as? String)
+        XCTAssertEqual(CountlyDeviceInfo.osName(), widgetSegmentation["platform"] as? String)
+        XCTAssertTrue(globalSegmentation.keys.allSatisfy { widgetSegmentation[$0] == nil }, "no global key fits once the widget fills the limit")
+    }
 }
 #endif

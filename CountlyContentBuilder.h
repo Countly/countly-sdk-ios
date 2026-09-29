@@ -45,6 +45,17 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)previewContent:(NSString *)contentId;
 
+/**
+ * This is an experimental feature and it can have breaking changes
+ * Sets a segmentation recorded with every content and feedback widget event,
+ * on top of the keys those events already report and without replacing them.
+ * It is kept for as long as the app runs, including when a session ends and a
+ * new one starts, and it is not restored after an app restart.
+ *
+ * @param segmentation the key/value pairs to add, 'nil' or empty clears them
+ */
+- (void)setGlobalContentSegmentation:(NSDictionary<NSString *, id> * _Nullable)segmentation;
+
 #endif
 NS_ASSUME_NONNULL_END
 @end

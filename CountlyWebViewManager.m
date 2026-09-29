@@ -917,7 +917,7 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
 
             CLY_LOG_D(@"%s recording a content event, key: [%@], segmentation: [%@]", __FUNCTION__, key, segmentation);
 
-            [Countly.sharedInstance recordEvent:key segmentation:segmentation];
+            [Countly.sharedInstance recordEvent:key segmentation:[CountlyContentBuilderInternal.sharedInstance mergeGlobalContentSegmentationInto:segmentation]];
     }
 
     if (skippedCount) {

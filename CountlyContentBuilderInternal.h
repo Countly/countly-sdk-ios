@@ -35,6 +35,26 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)refreshContentZoneJTE;
 - (void)previewContent:(NSString *)contentId;
 
+/**
+ * Sanitizes the given segmentation and makes it the segmentation added to every content and
+ * feedback widget event. It is held in memory only, so it survives a session ending and a new one
+ * starting and is gone after an app restart.
+ *
+ * @param segmentation the dictionary given by the developer, 'nil' or empty clears the stored one
+ */
+- (void)setGlobalContentSegmentation:(NSDictionary<NSString *, id> * _Nullable)segmentation;
+
+/**
+ * Puts the global content segmentation underneath the segmentation a content or feedback widget
+ * event built for itself. The event's own entries win, so a global value can never replace a key
+ * like "widget_id" or an answer reported by a feedback widget. When both together exceed the SDK
+ * segmentation value limit, global entries are dropped first, so the limit never trims the event's own.
+ *
+ * @param eventSegmentation the segmentation the event built for itself
+ * @return the merged segmentation, or eventSegmentation itself when there is nothing to add
+ */
+- (NSDictionary *)mergeGlobalContentSegmentationInto:(NSDictionary *)eventSegmentation;
+
 #endif
 NS_ASSUME_NONNULL_END
 @end

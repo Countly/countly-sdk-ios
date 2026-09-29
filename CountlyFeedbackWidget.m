@@ -400,7 +400,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
 
     CLY_LOG_D(@"%s widget result submission detail, widgetID: [%@], eventName: [%@], answers: [%@], segmentation: [%@]", __FUNCTION__, self.ID, eventName, segm, segmentation);
 
-    [Countly.sharedInstance recordReservedEvent:eventName segmentation:segmentation];
+    [Countly.sharedInstance recordReservedEvent:eventName segmentation:[CountlyContentBuilderInternal.sharedInstance mergeGlobalContentSegmentationInto:segmentation]];
     
     [CountlyConnectionManager.sharedInstance sendEvents];
 }
