@@ -653,6 +653,42 @@ class CountlyContentBuilderTests: CountlyBaseTestCase {
 
     /**
      * <pre>
+     * Test that a global value for a key the server reads as a widget answer or uses to route a
+     * widget event is dropped when it is set, so a dismissed widget never reports it as an answer.
+     *
+     * 1- Init SDK with a mock that fails every request
+     * 2- Set a global content segmentation carrying every answer and routing key plus one custom key
+     * 3- Dismiss an NPS widget, whose event carries none of those keys itself
+     * 4- Verify the event has none of the answer or routing keys and keeps the custom key
+     * </pre>
+     */
+    func test_globalContentSegmentation_dropsAnswerAndRoutingKeys() {
+        startSDKWithFailingNetwork()
+
+        Countly.sharedInstance().content().setGlobalContentSegmentation([
+            "rating": 5,
+            "comment": "hijacked",
+            "email": "someone@else.com",
+            "contactMe": true,
+            "shown": 1,
+            "campaign_id": "hijacked",
+            "answ-q1": "hijacked",
+            "screen": "settings",
+        ])
+
+        let widget = MockFeedbackWidget(id: "1234", type: CLYFeedbackWidgetType.NPS)
+        widget.recordResult(nil)
+
+        let widgetSegmentation = lastEventSegmentation("[CLY]_nps")
+        for key in ["rating", "comment", "email", "contactMe", "shown", "campaign_id", "answ-q1"] {
+            XCTAssertNil(widgetSegmentation[key], "\(key) must not come from the global segmentation")
+        }
+        XCTAssertEqual("settings", widgetSegmentation["screen"] as? String)
+        XCTAssertEqual("1", "\(widgetSegmentation["closed"] ?? "")")
+    }
+
+    /**
+     * <pre>
      * Test that when the global content segmentation and an event's own segmentation together
      * exceed the segmentation value limit, global keys are dropped first and the event keeps
      * every key of its own, including one it shares with the global segmentation.

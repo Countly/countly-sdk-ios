@@ -9,6 +9,8 @@
 //TODO: improve logging, check edge cases
 NSString* const kCountlyEndpointContent = @"/o/sdk/content";
 NSString* const kCountlyCBFetchContent  = @"queue";
+NSString* const kCountlyCBKeyCampaignID = @"campaign_id";
+NSString* const kCountlyCBSurveyAnswerKeyPrefix = @"answ-";
 
 @interface CountlyContentBuilderInternal ()
 // 'atomic' rather than the 'nonatomic' used elsewhere here: an event can be recorded on one thread
@@ -361,11 +363,14 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 
 #pragma mark - Global content segmentation
 
-/// The keys the content and feedback widget events build for themselves, which a global value must
-/// not replace.
+/// The keys the content and feedback widget events build for themselves, or that the server reads as a
+/// widget answer or uses to route a widget event, which a global value must not replace or fill in.
+/// Survey answer keys, which start with kCountlyCBSurveyAnswerKeyPrefix, are dropped as well.
 - (NSArray<NSString *> *)reservedContentSegmentationKeys
 {
-    return @[kCountlyFBKeyPlatform, kCountlyFBKeyAppVersion, kCountlyFBKeyWidgetID, kCountlyFBKeyClosed];
+    return @[kCountlyFBKeyPlatform, kCountlyFBKeyAppVersion, kCountlyFBKeyWidgetID, kCountlyFBKeyClosed,
+             kCountlyFBKeyRating, kCountlyFBKeyComment, kCountlyFBKeyEmail, kCountlyFBKeyContactMe,
+             kCountlyFBKeyShown, kCountlyCBKeyCampaignID];
 }
 
 - (void)setGlobalContentSegmentation:(NSDictionary<NSString *, id> *)segmentation
@@ -381,6 +386,11 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 
     NSMutableDictionary* mutableSegmentation = segmentation.mutableCopy;
     [mutableSegmentation removeObjectsForKeys:self.reservedContentSegmentationKeys];
+    for (id key in segmentation.allKeys)
+    {
+        if ([key isKindOfClass:NSString.class] && [key hasPrefix:kCountlyCBSurveyAnswerKeyPrefix])
+            [mutableSegmentation removeObjectForKey:key];
+    }
     if (mutableSegmentation.count != segmentation.count)
     {
         CLY_LOG_W(@"%s reserved keys will be dropped while setting global content segmentation, droppedKeyCount: [%lu], keptKeyCount: [%lu]", __FUNCTION__, (unsigned long)(segmentation.count - mutableSegmentation.count), (unsigned long)mutableSegmentation.count);
