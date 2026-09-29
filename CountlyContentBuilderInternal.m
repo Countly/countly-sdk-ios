@@ -9,8 +9,6 @@
 //TODO: improve logging, check edge cases
 NSString* const kCountlyEndpointContent = @"/o/sdk/content";
 NSString* const kCountlyCBFetchContent  = @"queue";
-NSString* const kCountlyCBKeyCampaignID = @"campaign_id";
-NSString* const kCountlyCBSurveyAnswerKeyPrefix = @"answ-";
 
 @interface CountlyContentBuilderInternal ()
 // 'atomic' rather than the 'nonatomic' used elsewhere here: an event can be recorded on one thread
@@ -363,16 +361,6 @@ NSString* const kCountlyCBSurveyAnswerKeyPrefix = @"answ-";
 
 #pragma mark - Global content segmentation
 
-/// The keys the content and feedback widget events build for themselves, or that the server reads as a
-/// widget answer or uses to route a widget event, which a global value must not replace or fill in.
-/// Survey answer keys, which start with kCountlyCBSurveyAnswerKeyPrefix, are dropped as well.
-- (NSArray<NSString *> *)reservedContentSegmentationKeys
-{
-    return @[kCountlyFBKeyPlatform, kCountlyFBKeyAppVersion, kCountlyFBKeyWidgetID, kCountlyFBKeyClosed,
-             kCountlyFBKeyRating, kCountlyFBKeyComment, kCountlyFBKeyEmail, kCountlyFBKeyContactMe,
-             kCountlyFBKeyShown, kCountlyCBKeyCampaignID];
-}
-
 - (void)setGlobalContentSegmentation:(NSDictionary<NSString *, id> *)segmentation
 {
     CLY_LOG_I(@"%s global content segmentation will be set, key count: [%lu], keys: [%@]", __FUNCTION__, (unsigned long)segmentation.count, segmentation.allKeys);
@@ -384,19 +372,7 @@ NSString* const kCountlyCBSurveyAnswerKeyPrefix = @"answ-";
         return;
     }
 
-    NSMutableDictionary* mutableSegmentation = segmentation.mutableCopy;
-    [mutableSegmentation removeObjectsForKeys:self.reservedContentSegmentationKeys];
-    for (id key in segmentation.allKeys)
-    {
-        if ([key isKindOfClass:NSString.class] && [key hasPrefix:kCountlyCBSurveyAnswerKeyPrefix])
-            [mutableSegmentation removeObjectForKey:key];
-    }
-    if (mutableSegmentation.count != segmentation.count)
-    {
-        CLY_LOG_W(@"%s reserved keys will be dropped while setting global content segmentation, droppedKeyCount: [%lu], keptKeyCount: [%lu]", __FUNCTION__, (unsigned long)(segmentation.count - mutableSegmentation.count), (unsigned long)mutableSegmentation.count);
-    }
-
-    NSDictionary* filteredSegmentation = mutableSegmentation.cly_filterSupportedDataTypes;
+    NSDictionary* filteredSegmentation = segmentation.cly_filterSupportedDataTypes;
     NSDictionary* truncatedSegmentation = [filteredSegmentation cly_truncated:@"Global content segmentation"];
     self.contentSegmentation = [truncatedSegmentation cly_limited:@"Global content segmentation"];
 }
@@ -411,18 +387,6 @@ NSString* const kCountlyCBSurveyAnswerKeyPrefix = @"answ-";
 
     NSMutableDictionary* merged = globalSegmentation.mutableCopy;
     [merged addEntriesFromDictionary:eventSegmentation];
-
-    NSUInteger maxSegmentationValues = CountlyCommon.sharedInstance.maxSegmentationValues;
-    if (merged.count > maxSegmentationValues)
-    {
-        NSMutableArray* globalOnlyKeys = globalSegmentation.allKeys.mutableCopy;
-        [globalOnlyKeys removeObjectsInArray:eventSegmentation.allKeys];
-        NSUInteger droppedKeyCount = MIN(merged.count - maxSegmentationValues, globalOnlyKeys.count);
-        NSArray* droppedKeys = [globalOnlyKeys subarrayWithRange:(NSRange){0, droppedKeyCount}];
-        [merged removeObjectsForKeys:droppedKeys];
-
-        CLY_LOG_D(@"%s global content segmentation exceeds the room the event leaves under the SDK segmentation value limit and will be trimmed, eventKeyCount: [%lu], limit: [%lu], droppedKeyCount: [%lu], droppedKeys: [%@]", __FUNCTION__, (unsigned long)eventSegmentation.count, (unsigned long)maxSegmentationValues, (unsigned long)droppedKeyCount, droppedKeys);
-    }
 
     return merged;
 }
