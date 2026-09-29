@@ -10,6 +10,13 @@
 NSString* const kCountlyEndpointContent = @"/o/sdk/content";
 NSString* const kCountlyCBFetchContent  = @"queue";
 
+@interface CountlyContentBuilderInternal ()
+// 'atomic' rather than the 'nonatomic' used elsewhere here: an event can be recorded on one thread
+// while the setter runs on another, and the dictionary is always replaced whole rather than
+// mutated, so a reader either sees the old segmentation or the complete new one.
+@property (atomic, copy) NSDictionary<NSString *, id> *contentSegmentation;
+@end
+
 @implementation CountlyContentBuilderInternal {
     BOOL _isRequestQueueLocked;
     BOOL _isCurrentlyContentShown;
@@ -349,6 +356,52 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     // overlay with nothing left holding a reference to it.
     [self closeShownContent];
     [self writeFlag:&_refreshRunnablePending value:NO];
+    self.contentSegmentation = nil;
+}
+
+#pragma mark - Global content segmentation
+
+/// The keys the content and feedback widget events build for themselves, which a global value must
+/// not replace.
+- (NSArray<NSString *> *)reservedContentSegmentationKeys
+{
+    return @[kCountlyFBKeyPlatform, kCountlyFBKeyAppVersion, kCountlyFBKeyWidgetID, kCountlyFBKeyClosed];
+}
+
+- (void)setGlobalContentSegmentation:(NSDictionary<NSString *, id> *)segmentation
+{
+    CLY_LOG_I(@"%s global content segmentation will be set, key count: [%lu], keys: [%@]", __FUNCTION__, (unsigned long)segmentation.count, segmentation.allKeys);
+    CLY_LOG_D(@"%s global content segmentation value detail, segmentation: [%@]", __FUNCTION__, segmentation);
+
+    if (!segmentation.count)
+    {
+        self.contentSegmentation = nil;
+        return;
+    }
+
+    NSMutableDictionary* mutableSegmentation = segmentation.mutableCopy;
+    [mutableSegmentation removeObjectsForKeys:self.reservedContentSegmentationKeys];
+    if (mutableSegmentation.count != segmentation.count)
+    {
+        CLY_LOG_W(@"%s reserved keys will be dropped while setting global content segmentation, droppedKeyCount: [%lu], keptKeyCount: [%lu]", __FUNCTION__, (unsigned long)(segmentation.count - mutableSegmentation.count), (unsigned long)mutableSegmentation.count);
+    }
+
+    NSDictionary* filteredSegmentation = mutableSegmentation.cly_filterSupportedDataTypes;
+    NSDictionary* truncatedSegmentation = [filteredSegmentation cly_truncated:@"Global content segmentation"];
+    self.contentSegmentation = [truncatedSegmentation cly_limited:@"Global content segmentation"];
+}
+
+- (NSDictionary *)mergeGlobalContentSegmentationInto:(NSDictionary *)eventSegmentation
+{
+    NSDictionary* globalSegmentation = self.contentSegmentation;
+    if (!globalSegmentation.count)
+    {
+        return eventSegmentation;
+    }
+
+    NSMutableDictionary* merged = globalSegmentation.mutableCopy;
+    [merged addEntriesFromDictionary:eventSegmentation];
+    return merged;
 }
 
 - (void)fetchContents {

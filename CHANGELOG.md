@@ -3,6 +3,7 @@
 * Added support for server requested connection tests that probe the endpoints the SDK depends on and report the results.
 * Added support for SDK behavior settings that control the SDK's automatic session tracking, automatic view tracking, automatic crash reporting, and Journey Trigger Views.
 * Added "userProfile" access on watchOS, tvOS and macOS.
+* Added a new method "setGlobalContentSegmentation" on "CountlyContentBuilder" that sets a segmentation recorded with every content and feedback widget event. It is kept for as long as the app runs, including across sessions, and is not restored after an app restart. The keys those events already report are not overridden.
 * Improved internal logging and changed the default log level from verbose to debug.
 * Improved state cleanup for events and view tracking when "halt" is called.
 

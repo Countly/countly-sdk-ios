@@ -12,6 +12,7 @@ extern NSString* const kCountlyFBKeyPlatform;
 extern NSString* const kCountlyFBKeyAppVersion;
 extern NSString* const kCountlyFBKeyWidgetID;
 extern NSString* const kCountlyFBKeyID;
+extern NSString* const kCountlyFBKeyClosed;
 
 extern NSString* const kCountlyReservedEventStarRating;
 
