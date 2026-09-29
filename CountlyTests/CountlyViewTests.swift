@@ -751,6 +751,28 @@ class CountlyViewForegroundBackgroundTests: CountlyViewBaseTest {
         validateRecordedViews(startedEventsCount: [:], endedEventsDurations: [:])
     }
     
+    /// A view ID handed out before a background and foreground cycle still stops its view afterwards.
+    /// Without it the stop call is ignored, the reopened view stays open and reports another visit
+    /// and another duration on every later cycle.
+    func testStopViewWithIDHandedOutBeforeBackgroundForegroundCycle() throws {
+        let config = createBaseConfig()
+        Countly.sharedInstance().start(with: config)
+
+        let viewID = Countly.sharedInstance().views().startView("View1")
+
+        goBackgroundForeground()
+
+        Countly.sharedInstance().views().stopView(withID: viewID)
+
+        validateQueuedViews(startedEventsCount: ["View1": 1], endedEventsDurations: ["View1": [3]])
+
+        validateRecordedViews(startedEventsCount: ["View1": 1], endedEventsDurations: ["View1": [3]])
+
+        let eventCountAfterStop = getRecordedViews().count
+        Countly.sharedInstance().views().stopView(withID: viewID)
+        XCTAssertEqual(getRecordedViews().count, eventCountAfterStop, "Stopping an already stopped view ID should not record another event.")
+    }
+
     private func goBackgroundForeground() {
         // Create expectations for various events
         let waitForStart = XCTestExpectation(description: "Wait for 3 seconds before backgrounding app.")
