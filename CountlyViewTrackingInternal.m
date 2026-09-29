@@ -399,13 +399,15 @@ static dispatch_once_t onceToken;
     if (!previousID.length || !currentID.length)
         return;
 
-    for (NSString* handedOutID in self.restartedViewIDs.allKeys)
+    NSArray<NSString *>* handedOutIDs = [self.restartedViewIDs allKeysForObject:previousID];
+    for (NSString* handedOutID in handedOutIDs)
     {
-        if ([self.restartedViewIDs[handedOutID] isEqualToString:previousID])
-            self.restartedViewIDs[handedOutID] = currentID;
+        self.restartedViewIDs[handedOutID] = currentID;
     }
 
-    self.restartedViewIDs[previousID] = currentID;
+    //NOTE: An ID something already resolves to was created by an earlier restart and never reached the host, so it needs no entry of its own.
+    if (!handedOutIDs.count)
+        self.restartedViewIDs[previousID] = currentID;
 }
 
 /**
@@ -414,13 +416,7 @@ static dispatch_once_t onceToken;
  */
 - (void)forgetViewID:(NSString *)viewID
 {
-    NSMutableArray<NSString *>* staleIDs = NSMutableArray.new;
-    [self.restartedViewIDs enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull handedOutID, NSString * _Nonnull currentID, BOOL * _Nonnull stop) {
-        if ([currentID isEqualToString:viewID])
-            [staleIDs addObject:handedOutID];
-    }];
-
-    [self.restartedViewIDs removeObjectsForKeys:staleIDs];
+    [self.restartedViewIDs removeObjectsForKeys:[self.restartedViewIDs allKeysForObject:viewID]];
     [self.restartedViewIDs removeObjectForKey:viewID];
 }
 
