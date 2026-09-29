@@ -47,7 +47,8 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Puts the global content segmentation underneath the segmentation a content or feedback widget
  * event built for itself. The event's own entries win, so a global value can never replace a key
- * like "widget_id" or an answer reported by a feedback widget.
+ * like "widget_id" or an answer reported by a feedback widget. When both together exceed the SDK
+ * segmentation value limit, global entries are dropped first, so the limit never trims the event's own.
  *
  * @param eventSegmentation the segmentation the event built for itself
  * @return the merged segmentation, or eventSegmentation itself when there is nothing to add

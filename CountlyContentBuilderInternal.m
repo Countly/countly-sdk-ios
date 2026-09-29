@@ -401,6 +401,19 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 
     NSMutableDictionary* merged = globalSegmentation.mutableCopy;
     [merged addEntriesFromDictionary:eventSegmentation];
+
+    NSUInteger maxSegmentationValues = CountlyCommon.sharedInstance.maxSegmentationValues;
+    if (merged.count > maxSegmentationValues)
+    {
+        NSMutableArray* globalOnlyKeys = globalSegmentation.allKeys.mutableCopy;
+        [globalOnlyKeys removeObjectsInArray:eventSegmentation.allKeys];
+        NSUInteger droppedKeyCount = MIN(merged.count - maxSegmentationValues, globalOnlyKeys.count);
+        NSArray* droppedKeys = [globalOnlyKeys subarrayWithRange:(NSRange){0, droppedKeyCount}];
+        [merged removeObjectsForKeys:droppedKeys];
+
+        CLY_LOG_D(@"%s global content segmentation exceeds the room the event leaves under the SDK segmentation value limit and will be trimmed, eventKeyCount: [%lu], limit: [%lu], droppedKeyCount: [%lu], droppedKeys: [%@]", __FUNCTION__, (unsigned long)eventSegmentation.count, (unsigned long)maxSegmentationValues, (unsigned long)droppedKeyCount, droppedKeys);
+    }
+
     return merged;
 }
 
