@@ -10,6 +10,7 @@
 * Fixed a crash on watchOS and macOS when calling "halt".
 * Fixed macOS not starting a session when the app was not active at launch.
 * Fixed visibility reporting and background session suppression on visionOS.
+* Fixed view IDs returned by "startView" no longer resolving after the app was backgrounded and foregrounded, which made "stopViewWithID" fail and left the view reporting a new visit and a duration on every later foreground.
 
 ## 26.1.4
 * Added support for reporting the app's current theme (light or dark) when presenting feedback widgets, rating widgets, and content, so they are displayed in matching conditions.
