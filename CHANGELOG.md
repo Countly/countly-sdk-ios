@@ -6,6 +6,7 @@
 * Added a new method "setGlobalContentSegmentation" on "CountlyContentBuilder" that sets a segmentation recorded with every content and feedback widget event.
 * Improved internal logging and changed the default log level from verbose to debug.
 * Improved state cleanup for events and view tracking when "halt" is called.
+* Documented that the PLCrashReporter Mach type signal handler selected by "shouldUseMachSignalHandler" is not compatible with Apple's Enhanced Security capability, which terminates the app during SDK setup. Use the default BSD type signal handler on those apps.
 
 * Fixed a crash on visionOS when view tracking consent was given or cancelled.
 * Fixed a crash on watchOS and macOS when calling "halt".
