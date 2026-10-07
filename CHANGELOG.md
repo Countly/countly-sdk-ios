@@ -1,5 +1,5 @@
 ## XX.XX.XX
-* Added support for server requested SDK log gathering. Gathered log lines are uploaded only when consent for events and user profiles is given, because a line can quote any user data passed to the SDK.
+* Added support for server requested SDK log gathering. When consent is required, gathered log lines are uploaded only while both the "CLYConsentEvents" and "CLYConsentUserDetails" consents are given.
 * Added support for server requested connection tests that probe the endpoints the SDK depends on and report the results.
 * Added support for SDK behavior settings that control the SDK's automatic session tracking, automatic view tracking, automatic crash reporting, and Journey Trigger Views.
 * Added "userProfile" access on watchOS, tvOS and macOS.

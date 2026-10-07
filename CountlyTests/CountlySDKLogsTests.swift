@@ -70,18 +70,11 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
     /// CountlyPersistency has no instance after halt(), so reading the queue without this traps.
     /// The fetch fails against the test host, and that failure decides against gathering, so it has
     /// to land before the test arms anything or it turns gathering off underneath it.
-    private func startSDK() {
+    ///
+    /// - Parameter requiresConsent: start with consent required and nothing granted, so the consent gates are under test
+    private func startSDK(requiresConsent: Bool = false) {
         let config = createBaseConfig()
-        config.requiresConsent = false
-        config.manualSessionHandling = true
-        Countly.sharedInstance().start(with: config)
-        TestUtils.sleep(1) {}
-    }
-
-    /// Same, with consent required and nothing granted, so the consent gates are the ones under test.
-    private func startSDKRequiringConsent() {
-        let config = createBaseConfig()
-        config.requiresConsent = true
+        config.requiresConsent = requiresConsent
         config.manualSessionHandling = true
         Countly.sharedInstance().start(with: config)
         TestUtils.sleep(1) {}
@@ -392,7 +385,7 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
     }
 
     func testLogGathering_linesAreHeldUntilEventsAndUserDetailsConsentAreGiven() throws {
-        startSDKRequiringConsent()
+        startSDK(requiresConsent: true)
 
         common.updateLogGatheringState(true, levels: "e", batch: minBatchSize, lgid: "gather_consent")
         clearBuffer()
@@ -424,7 +417,7 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
     }
 
     func testLogGathering_withoutConsentNoUserDataIsUploadedAndLocalLoggingIsUnchanged() throws {
-        startSDKRequiringConsent()
+        startSDK(requiresConsent: true)
         Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.sessions])
 
         let logger = RecordingLogger()

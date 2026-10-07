@@ -316,8 +316,8 @@ static NSInteger CountlySDKLogsLineLength(NSDictionary* line)
     [self scheduleSdkLogsDelivery:YES];
 }
 
-/// Uploads one batch, then keeps going while full batches remain. Lines stay held while the request
-/// queue would drop them: tracking off, or no consent given yet.
+/// Uploads one batch, then keeps going while full batches remain. Lines stay held while tracking is
+/// off or the events and user details consent are not both given.
 - (void)deliverSdkLogBatches:(BOOL)includePartialBatch
 {
     if (!self.hasFinishedInit)
@@ -329,13 +329,9 @@ static NSInteger CountlySDKLogsLineLength(NSDictionary* line)
     [self setSdkLogsTransportWork:NO];
 }
 
-/// Whether the gathered lines may leave the device.
-///
-/// They quote event keys, segmentation, user properties, view names and whole queued requests, so
-/// uploading them is tracking and needs the user's consent for the features that data belongs to.
-/// A line is captured in one central place with no feature of its own, and the lines that quote a
-/// whole request are written by the networking code whatever feature produced the request, so the
-/// broadest pair gates all of them: with both given, anything a line can carry is already consented.
+/// Whether the gathered lines may leave the device. They can quote any feature's user data and carry no
+/// feature of their own, so both the events and the user details consent are needed. Always YES when
+/// consent is not required.
 - (BOOL)hasConsentToUploadGatheredLogs
 {
     CountlyConsentManager* consentManager = CountlyConsentManager.sharedInstance;
