@@ -28,6 +28,13 @@ const URL_BASE = (process.env.FARM_URL || '').replace(/\/+$/, '');
 const TOKEN = process.env.FARM_TOKEN || '';
 const AUDIENCE = process.env.FARM_OIDC_AUDIENCE || 'countly-device-farm';
 const AGENT_QUIET_MS = 3 * 60e3;
+const OUTAGE_MS = Number(process.env.FARM_OUTAGE_MINUTES || 10) * 60e3;
+const RETRY_MS = Number(process.env.FARM_RETRY_MS || 5000);
+
+/** Whether an HTTP status means the farm is briefly unavailable (a restart or a proxy blip). */
+function transient(status) {
+  return status === 502 || status === 503 || status === 504;
+}
 const ADB_PORT = Number(process.env.FARM_ADB_PORT || 5037);
 const WAIT_MINUTES = Number(process.env.FARM_WAIT_MINUTES || 120);
 const POLL_MS = 15000;
@@ -133,6 +140,11 @@ async function waitForPhone() {
       await sleep(POLL_MS);
       continue;
     }
+    if (transient(r.status)) {
+      log(`the farm answered ${r.status}; asking again`);
+      await sleep(RETRY_MS);
+      continue;
+    }
     if (r.status !== 200) fail(`the farm refused the run: ${(r.body && r.body.error) || r.status}`);
     if (r.body.ready) {
       log(`took ${r.body.phone} (${r.body.serial}) until ${r.body.expires_at}`);
@@ -208,23 +220,45 @@ function junit(events, suite) {
 async function ios(artifact, runner, junitFile) {
   if (!artifact || !runner) fail('usage: client.mjs ios <artifact> <runner-bundle-id> [junit.xml]');
   await waitForPhone();
-  const start = await post('ios/start', { artifact, runner });
-  if (start.status !== 200) fail(`the farm did not take the tests: ${(start.body && start.body.error) || start.status}`);
-  log(`handed the phone ${artifact} (${Math.round(start.body.size / 1024)} KB); following the results`);
+  const startEnd = Date.now() + OUTAGE_MS;
+  let start;
+  for (;;) {
+    try {
+      start = await post('ios/start', { artifact, runner });
+    } catch (e) {
+      start = { status: 0, body: { error: e.message } };
+    }
+    if ((start.status === 0 || transient(start.status)) && Date.now() < startEnd) {
+      log(`the farm answered ${start.status || start.body.error}; handing the tests over again`);
+      await sleep(RETRY_MS);
+      continue;
+    }
+    break;
+  }
+  const already = start.status === 409 && /already handed over/.test((start.body && start.body.error) || '');
+  if (start.status !== 200 && !already) fail(`the farm did not take the tests: ${(start.body && start.body.error) || start.status}`);
+  log(already ? `the farm already has ${artifact}; following the results` : `handed the phone ${artifact} (${Math.round(start.body.size / 1024)} KB); following the results`);
   const events = [];
   const end = Date.now() + WAIT_MINUTES * 60e3;
   let after = 0;
   let warned = 0;
   let result = null;
+  let outageSince = 0;
   while (Date.now() < end) {
     let r;
     try {
       r = await get(`ios/events?after=${after}&wait=25000`);
     } catch (e) {
-      log(`the farm did not answer (${e.message}); asking again`);
-      await sleep(5000);
+      r = { status: 0, body: { error: e.message } };
+    }
+    if (r.status === 0 || transient(r.status)) {
+      outageSince = outageSince || Date.now();
+      if (Date.now() - outageSince > OUTAGE_MS) fail(`the farm has not answered for ${Math.round(OUTAGE_MS / 60e3)} minutes (${r.status || r.body.error})`);
+      log(`the farm answered ${r.status || r.body.error}; following again from event ${after}`);
+      await sleep(RETRY_MS);
       continue;
     }
+    outageSince = 0;
     if (r.status !== 200) fail(`the farm stopped answering about the run: ${(r.body && r.body.error) || r.status}`);
     for (const e of r.body.events) {
       events.push(e);
