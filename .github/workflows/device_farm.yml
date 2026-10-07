@@ -4,7 +4,12 @@
 # host computer: the job joins the farm's queue with a GitHub OIDC token (no farm secret in the
 # repo), the phone's agent takes the job, runs the tests, and streams the results back here.
 #
-# Copy this to .github/workflows/ in the SDK repo. It needs three repo or org secrets, added by
+# Copy this to .github/workflows/ in the SDK repo, and copy two standalone files from
+# countly-sdk-tools into the SDK repo at .github/farm/: CommandCenter/farm/client.mjs and
+# DeviceFarmRunner/scripts/package-xctest.sh (neither holds a secret). They are vendored because
+# countly-sdk-tools is private and a public SDK repo's token cannot check it out.
+#
+# It needs three repo or org secrets, added by
 # an Apple Developer team admin, used only on push/dispatch (never on fork pull requests):
 #   APPLE_CERT_P12        the signing certificate and key, as base64 of a .p12
 #   APPLE_CERT_PASSWORD   the .p12 password
@@ -42,15 +47,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: sdk-src
-
-      - name: Check out the farm tools
-        uses: actions/checkout@v4
-        with:
-          repository: Countly/countly-sdk-tools
-          path: farm-tools
-          sparse-checkout: |
-            CommandCenter/farm
-            DeviceFarmRunner/scripts
 
       - name: Import the signing certificate
         env:
@@ -97,7 +93,7 @@ jobs:
           set -eu
           xctest="$(find "$RUNNER_TEMP/dd/Build/Products" -name CountlyTests.xctest -maxdepth 3 | head -1)"
           profile="$HOME/Library/MobileDevice/Provisioning Profiles/farm.mobileprovision"
-          farm-tools/DeviceFarmRunner/scripts/package-xctest.sh "$xctest" "$RUNNER_TEMP/pkg" "$SIGN_IDENTITY" "$profile"
+          sdk-src/.github/farm/package-xctest.sh "$xctest" "$RUNNER_TEMP/pkg" "$SIGN_IDENTITY" "$profile"
 
       - name: Upload the test package
         uses: actions/upload-artifact@v4
@@ -107,10 +103,10 @@ jobs:
           if-no-files-found: error
 
       - name: Join the device farm queue
-        run: node farm-tools/CommandCenter/farm/client.mjs oidc countly-sdk-ios
+        run: node sdk-src/.github/farm/client.mjs oidc countly-sdk-ios
 
       - name: Run the tests on the iPhone
-        run: node farm-tools/CommandCenter/farm/client.mjs ios ios-tests "$RUNNER_BUNDLE_ID" "$RUNNER_TEMP/results/ios.xml"
+        run: node sdk-src/.github/farm/client.mjs ios ios-tests "$RUNNER_BUNDLE_ID" "$RUNNER_TEMP/results/ios.xml"
 
       - name: Upload the results
         if: always()
@@ -122,8 +118,8 @@ jobs:
 
       - name: Summarise the results
         if: always()
-        run: node farm-tools/CommandCenter/farm/client.mjs summary "$RUNNER_TEMP/results" >> "$GITHUB_STEP_SUMMARY"
+        run: node sdk-src/.github/farm/client.mjs summary "$RUNNER_TEMP/results" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Give the phone back
         if: always()
-        run: node farm-tools/CommandCenter/farm/client.mjs release "${{ job.status }}"
+        run: node sdk-src/.github/farm/client.mjs release "${{ job.status }}"
