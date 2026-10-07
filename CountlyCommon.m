@@ -329,6 +329,19 @@ static NSInteger CountlySDKLogsLineLength(NSDictionary* line)
     [self setSdkLogsTransportWork:NO];
 }
 
+/// Whether the gathered lines may leave the device.
+///
+/// They quote event keys, segmentation, user properties, view names and whole queued requests, so
+/// uploading them is tracking and needs the user's consent for the features that data belongs to.
+/// A line is captured in one central place with no feature of its own, and the lines that quote a
+/// whole request are written by the networking code whatever feature produced the request, so the
+/// broadest pair gates all of them: with both given, anything a line can carry is already consented.
+- (BOOL)hasConsentToUploadGatheredLogs
+{
+    CountlyConsentManager* consentManager = CountlyConsentManager.sharedInstance;
+    return consentManager.consentForEvents && consentManager.consentForUserDetails;
+}
+
 /// The delivery loop proper, run with the transport marker already set on this thread so its own lines are not gathered.
 - (void)deliverSdkLogBatchesMarked:(BOOL)includePartialBatch
 {
@@ -339,11 +352,9 @@ static NSInteger CountlySDKLogsLineLength(NSDictionary* line)
         return;
     }
 
-    if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
+    if (!self.hasConsentToUploadGatheredLogs)
     {
-        // gathered lines quote event keys, segmentation and whole queued requests, so they are user
-        // data. Without any consent nothing else leaves the device either
-        CLY_LOG_D(@"%s, no consent given, keeping the gathered lines buffered", __FUNCTION__);
+        CLY_LOG_D(@"%s, consent for events and user details is needed to upload gathered lines, keeping them buffered", __FUNCTION__);
         return;
     }
 
