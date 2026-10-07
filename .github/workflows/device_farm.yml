@@ -13,9 +13,15 @@
 name: Device tests (iOS)
 
 on:
-  push:
-    branches: [master, staging]
-  workflow_dispatch:
+    push:
+      branches:
+        - master
+        - staging
+    pull_request:
+      branches:
+        - master
+        - staging
+    workflow_dispatch:
 
 permissions:
   contents: read
