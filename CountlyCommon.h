@@ -160,6 +160,12 @@ NSString* CountlyJSONFromObject(id object);
 /// Same as flushSdkLogs, on the delivery queue. The timer tick calls this so the main thread never serialises a batch.
 - (void)scheduleSdkLogsFlush;
 
+/// Moves the captured lines whose feature has consent by now into the buffer, in time order. Called whenever consent is given or stops being required.
+- (void)releaseSdkLogLinesAwaitingConsent;
+
+/// Called before the device ID changes without merge. Uploads what consent allows under the current device ID, then stops gathering and drops the rest, since the gather belongs to the current user.
+- (void)stopSdkLogGatheringForDeviceIDChange;
+
 /// YES while lines are still being held or gathered, so log calls can skip formatting when nothing wants them.
 - (BOOL)isCapturingSdkLogs;
 

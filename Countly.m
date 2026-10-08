@@ -844,6 +844,8 @@ static dispatch_once_t onceToken;
     {
         [self suspend];
 
+        [CountlyCommon.sharedInstance stopSdkLogGatheringForDeviceIDChange];
+
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
 
         [CountlyConsentManager.sharedInstance cancelConsentForAllFeaturesWithoutSendingConsentsRequest];
