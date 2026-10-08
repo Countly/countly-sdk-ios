@@ -517,6 +517,35 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
         XCTAssertEqual(uploadedBeforeNewUser, uploadedBatches().count, "the new user is not part of the old user's gather")
     }
 
+    /// A config response requested for the previous device ID can not arm gathering again once the device ID changed without merge.
+    func testLogGathering_deviceIDChangeWithoutMerge_ignoresTheDirectiveRequestedForTheOldID() throws {
+        let answerAfterTheChange = DispatchSemaphore(value: 0)
+        MockURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            guard request.url?.absoluteString.contains("method=sc") == true else {
+                return ("{}".data(using: .utf8), response, nil)
+            }
+            _ = answerAfterTheChange.wait(timeout: .now() + 5)
+            let armed = "{\"v\":1,\"t\":1234,\"c\":{\"rqs\":1500},\"lg\":{\"e\":true,\"i\":\"gather_old_user\",\"l\":\"ewidv\",\"b\":100}}"
+            return (armed.data(using: .utf8), response, nil)
+        }
+        defer { MockURLProtocol.requestHandler = nil }
+
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [MockURLProtocol.self]
+        config.urlSessionConfiguration = sessionConfig
+        Countly.sharedInstance().start(with: config)
+
+        Countly.sharedInstance().changeDeviceIDWithoutMerge("new_user")
+        answerAfterTheChange.signal()
+        TestUtils.sleep(1) {}
+
+        XCTAssertEqual(stateOff, state, "the directive belongs to the previous user")
+        XCTAssertEqual(1500, (serverConfig.value(forKey: "requestQueueSize") as? NSNumber)?.intValue, "the rest of the answer still applies")
+    }
+
     /// Lines held back by consent are dropped on a device ID change without merge, so the next user's consent never releases them.
     func testLogGathering_deviceIDChangeWithoutMerge_dropsLinesHeldByConsent() throws {
         startSDK(requiresConsent: true)

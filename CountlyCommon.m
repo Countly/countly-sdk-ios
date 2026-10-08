@@ -595,6 +595,13 @@ static NSInteger CountlySDKLogsKeepLevels(NSMutableArray* lines, NSString* level
     if (!self.isCapturingSdkLogs)
         return;
 
+    // a delivery already running on the delivery queue would otherwise send the old user's lines under the new device ID
+    dispatch_semaphore_t delivered = dispatch_semaphore_create(0);
+    dispatch_async(self.sdkLogsDeliveryQueue, ^{
+        dispatch_semaphore_signal(delivered);
+    });
+    dispatch_semaphore_wait(delivered, dispatch_time(DISPATCH_TIME_NOW, (int64_t)NSEC_PER_SEC));
+
     [self flushSdkLogs];
     [self updateLogGatheringState:NO levels:nil batch:0 lgid:nil];
 }
