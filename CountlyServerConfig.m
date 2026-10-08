@@ -731,6 +731,7 @@ static dispatch_once_t onceToken;
     }
 
     NSDate *fetchStart = NSDate.date;
+    NSString *requestedDeviceID = CountlyDeviceInfo.sharedInstance.deviceID;
     id handler = ^(NSData *data, NSURLResponse *response, NSError *error) {
         if (self != s_sharedInstance)
         {
@@ -791,7 +792,10 @@ static dispatch_once_t onceToken;
 
         // only a fresh response decides log gathering, never a stored config. A live response without a
         // usable directive decides against it
-        [self applyLogGatheringDirective:serverConfigResponse[kRLogGathering]];
+        if ([requestedDeviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
+            [self applyLogGatheringDirective:serverConfigResponse[kRLogGathering]];
+        else
+            CLY_LOG_D(@"%s, the device ID changed while the fetch was in flight, its log gathering directive belongs to the previous user and is ignored", __FUNCTION__);
 
         if (connectionTestArmed)
             [CountlyConnectionTest.sharedInstance startBatteryWithServerConfigLatency:fetchLatencyMs];
