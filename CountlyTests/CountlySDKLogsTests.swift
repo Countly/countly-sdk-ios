@@ -38,6 +38,7 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
 
     private func clearBuffer() {
         (common.value(forKey: "sdkLogs") as? NSMutableArray)?.removeAllObjects()
+        (common.value(forKey: "sdkLogsAwaitingConsent") as? NSMutableArray)?.removeAllObjects()
         common.setValue(NSNumber(value: 0), forKey: "sdkLogsDropCount")
     }
 
@@ -57,7 +58,17 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
     /// Only the lines this test injected. Arming gathering logs a line of its own, which is then
     /// gathered like any other, so a raw buffer count is not a count of the test's own lines.
     private var harnessLines: [[String: Any]] {
-        bufferedLines.filter { ($0["m"] as? String)?.hasPrefix(harnessPrefix) == true }
+        bufferedLines.filter(isHarnessLine)
+    }
+
+    /// The captured lines that wait for the consent of their feature, kept apart from the buffer.
+    private var awaitingConsentLines: [[String: Any]] {
+        (common.value(forKey: "sdkLogsAwaitingConsent") as? [[String: Any]]) ?? []
+    }
+
+    /// Whether a captured line is one this test injected.
+    private func isHarnessLine(_ line: [String: Any]) -> Bool {
+        (line["m"] as? String)?.hasPrefix(harnessPrefix) == true
     }
 
     private var state: Int { (common.value(forKey: "sdkLogsState") as? NSNumber)?.intValue ?? -1 }
@@ -70,13 +81,18 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
     /// CountlyPersistency has no instance after halt(), so reading the queue without this traps.
     /// The fetch fails against the test host, and that failure decides against gathering, so it has
     /// to land before the test arms anything or it turns gathering off underneath it.
-    private func startSDK() {
+    ///
+    /// - Parameter requiresConsent: start with consent required and nothing granted, so the consent gates are under test
+    private func startSDK(requiresConsent: Bool = false) {
         let config = createBaseConfig()
-        config.requiresConsent = false
+        config.requiresConsent = requiresConsent
         config.manualSessionHandling = true
         Countly.sharedInstance().start(with: config)
         TestUtils.sleep(1) {}
     }
+
+    /// The user data the consent tests record, every piece of which a log line quotes verbatim.
+    private let userData = ["purchase", "secret-sku", "checkout screen", "someone@example.com"]
 
     /// Puts gathering back into the state the SDK boots in, after something decided against it.
     private func forceUndecided() {
@@ -104,6 +120,11 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
     /// The most recent queued request carrying an sdk_logs batch, decoded.
     private func lastUploadedBatch() -> [String: Any]? {
         uploadedBatches().last
+    }
+
+    /// The messages of every uploaded line, across all batches.
+    private func uploadedMessages() -> [String] {
+        uploadedBatches().flatMap { ($0["l"] as? [[String: Any]]) ?? [] }.compactMap { $0["m"] as? String }
     }
 
     /// Lets the delivery queue, which a full batch or an adoption schedules onto, drain.
@@ -379,12 +400,8 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
         XCTAssertEqual(minBatchSize, (lastUploadedBatch()?["l"] as? [Any])?.count)
     }
 
-    func testLogGathering_linesAreHeldUntilAnyConsentIsGiven() throws {
-        let config = createBaseConfig()
-        config.requiresConsent = true
-        config.manualSessionHandling = true
-        Countly.sharedInstance().start(with: config)
-        TestUtils.sleep(1) {}
+    func testLogGathering_linesAreHeldUntilEventsAndUserDetailsConsentAreGiven() throws {
+        startSDK(requiresConsent: true)
 
         common.updateLogGatheringState(true, levels: "e", batch: minBatchSize, lgid: "gather_consent")
         clearBuffer()
@@ -392,14 +409,162 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
         common.flushSdkLogs()
         settleDelivery()
 
-        XCTAssertEqual(0, uploadedBatches().count, "gathered lines quote event keys and whole requests, they are user data")
-        XCTAssertEqual(minBatchSize, harnessLines.count)
+        XCTAssertEqual(0, uploadedBatches().count, "a line of no single feature needs the events and the user details consent")
+        XCTAssertEqual(minBatchSize, awaitingConsentLines.filter(isHarnessLine).count)
+
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.sessions])
+        common.flushSdkLogs()
+        settleDelivery()
+
+        XCTAssertEqual(0, uploadedBatches().count, "sessions consent says nothing about the event and profile data a line can carry")
 
         Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.events])
         common.flushSdkLogs()
+        settleDelivery()
 
-        XCTAssertEqual(1, uploadedBatches().count, "any consent at all releases them")
+        XCTAssertEqual(0, uploadedBatches().count, "a line may still quote a user property, which events consent does not cover")
+
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.userDetails])
+        common.flushSdkLogs()
+        settleDelivery()
+
+        XCTAssertEqual(1, uploadedBatches().count, "with both given, anything a line can carry is consented")
         XCTAssertEqual("gather_consent", lastUploadedBatch()?["i"] as? String)
+        XCTAssertEqual(minBatchSize, (lastUploadedBatch()?["l"] as? [Any])?.count)
+    }
+
+    /// The user details consent alone is not enough either: a full batch stays held without the events consent.
+    func testLogGathering_userDetailsConsentWithoutEventsKeepsTheLinesHeld() throws {
+        startSDK(requiresConsent: true)
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.userDetails])
+
+        common.updateLogGatheringState(true, levels: "e", batch: minBatchSize, lgid: "gather_user_details_only")
+        clearBuffer()
+        capture(minBatchSize, level: "e")
+        common.flushSdkLogs()
+        settleDelivery()
+
+        XCTAssertEqual(0, uploadedBatches().count, "a line may still quote an event key, which user details consent does not cover")
+        XCTAssertEqual(minBatchSize, awaitingConsentLines.filter(isHarnessLine).count)
+    }
+
+    /// Each line waits for the consent of the feature that wrote it: an event line goes out with the events consent
+    /// alone, and a user property line only once the user details consent is given too.
+    func testLogGathering_eachLineWaitsForTheConsentOfItsOwnFeature() throws {
+        startSDK(requiresConsent: true)
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.events])
+
+        common.updateLogGatheringState(true, levels: allLevels, batch: defaultBatchSize, lgid: "gather_per_feature")
+        clearBuffer()
+
+        Countly.sharedInstance().recordEvent("purchase")
+        Countly.user().set("email", value: "someone@example.com")
+        common.flushSdkLogs()
+        settleDelivery()
+
+        XCTAssertTrue(uploadedMessages().contains { $0.contains("purchase") }, "the events consent covers the event line")
+        XCTAssertFalse(uploadedMessages().contains { $0.contains("someone@example.com") }, "a user property line waits for the user details consent")
+
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.userDetails])
+        common.flushSdkLogs()
+        settleDelivery()
+
+        XCTAssertTrue(uploadedMessages().contains { $0.contains("someone@example.com") }, "the consent releases the line that waited for it")
+    }
+
+    /// A line captured while init runs is decided when init finishes, and goes out without the consent it was checked against.
+    func testLogGathering_initLinesAreDecidedWhenInitFinishesAndUploadAsPlainLines() throws {
+        common.updateLogGatheringState(true, levels: allLevels, batch: maxBufferedLines, lgid: "gather_init")
+        startSDK()
+
+        let uploadedLines = uploadedBatches().flatMap { ($0["l"] as? [[String: Any]]) ?? [] }
+        XCTAssertFalse(uploadedLines.isEmpty, "init finishing flushes the init lines")
+        XCTAssertTrue(uploadedLines.allSatisfy { Set($0.keys) == ["t", "l", "m"] }, "the consent a line was checked against never reaches a batch")
+    }
+
+    /// With consent required and nothing given, the lines captured while init runs wait for their consent instead of uploading.
+    func testLogGathering_initLinesWaitForTheirConsentWhenInitFinishes() throws {
+        common.updateLogGatheringState(true, levels: allLevels, batch: maxBufferedLines, lgid: "gather_init")
+        startSDK(requiresConsent: true)
+
+        XCTAssertEqual(0, uploadedBatches().count)
+        XCTAssertFalse(awaitingConsentLines.isEmpty)
+    }
+
+    /// A device ID change without merge uploads the held lines under the old device ID, then stops gathering for the new user.
+    func testLogGathering_deviceIDChangeWithoutMerge_uploadsUnderTheOldIDAndStops() throws {
+        startSDK()
+        let oldDeviceID = Countly.sharedInstance().deviceID()
+
+        common.updateLogGatheringState(true, levels: "e", batch: minBatchSize, lgid: "gather_old_user")
+        clearBuffer()
+        capture(3, level: "e")
+
+        Countly.sharedInstance().changeDeviceIDWithoutMerge("new_user")
+        settleDelivery()
+
+        let logRequests = (TestUtils.getCurrentRQ() ?? []).map { TestUtils.parseQueryString($0) }.filter { $0["sdk_logs"] != nil }
+        XCTAssertFalse(logRequests.isEmpty, "the held partial batch goes out before the switch")
+        XCTAssertTrue(logRequests.allSatisfy { ($0["device_id"] as? String) == oldDeviceID }, "every gathered line belongs to the old user")
+        XCTAssertEqual(stateOff, state)
+        XCTAssertEqual(0, bufferedLines.count)
+
+        let uploadedBeforeNewUser = uploadedBatches().count
+        capture(minBatchSize, level: "e")
+        common.flushSdkLogs()
+        settleDelivery()
+
+        XCTAssertEqual(uploadedBeforeNewUser, uploadedBatches().count, "the new user is not part of the old user's gather")
+    }
+
+    /// Lines held back by consent are dropped on a device ID change without merge, so the next user's consent never releases them.
+    func testLogGathering_deviceIDChangeWithoutMerge_dropsLinesHeldByConsent() throws {
+        startSDK(requiresConsent: true)
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.sessions])
+
+        common.updateLogGatheringState(true, levels: "e", batch: minBatchSize, lgid: "gather_old_user")
+        clearBuffer()
+        capture(minBatchSize, level: "e")
+        settleDelivery()
+        XCTAssertEqual(0, uploadedBatches().count)
+
+        Countly.sharedInstance().changeDeviceIDWithoutMerge("new_user")
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.events, CLYConsent.userDetails])
+        common.flushSdkLogs()
+        settleDelivery()
+
+        XCTAssertEqual(0, uploadedBatches().count, "the old user's lines never go out under the new user's consent")
+        XCTAssertEqual(stateOff, state)
+    }
+
+    func testLogGathering_withoutConsentNoUserDataIsUploadedAndLocalLoggingIsUnchanged() throws {
+        startSDK(requiresConsent: true)
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.sessions])
+
+        let logger = RecordingLogger()
+        common.loggerDelegate = logger
+        defer { common.loggerDelegate = nil }
+
+        common.updateLogGatheringState(true, levels: allLevels, batch: minBatchSize, lgid: "gather_no_data")
+        clearBuffer()
+
+        Countly.sharedInstance().recordEvent("purchase", segmentation: ["sku": "secret-sku"])
+        _ = Countly.sharedInstance().views().startView("checkout screen")
+        Countly.user().set("email", value: "someone@example.com")
+        common.flushSdkLogs()
+        settleDelivery()
+
+        let uploaded = uploadedMessages()
+        let awaiting = awaitingConsentLines.compactMap { $0["m"] as? String }
+        for secret in userData {
+            XCTAssertFalse(uploaded.contains { $0.contains(secret) }, "[\(secret)] reached the server without the consent it belongs to")
+            XCTAssertTrue(awaiting.contains { $0.contains(secret) }, "[\(secret)] waits for its consent instead of being dropped")
+        }
+
+        // the gated copy is the uploaded one: a developer watching the console still sees every call
+        for secret in userData {
+            XCTAssertTrue(logger.lines.contains { $0.contains(secret) }, "local logging lost [\(secret)]")
+        }
     }
 
     // MARK: - deciding without a response
@@ -520,5 +685,14 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
         common.captureSdkLogLine("request started &sdk_logs={\"i\":\"x\"}", level: CChar(Character("d").asciiValue!))
 
         XCTAssertEqual(0, bufferedLines.count)
+    }
+}
+
+/// Collects everything the SDK hands to a host app's logger, so a test can tell the local log apart from the uploaded one.
+private class RecordingLogger: NSObject, CountlyLoggerDelegate {
+    private(set) var lines: [String] = []
+
+    func internalLog(_ log: String, with level: CLYInternalLogLevel) {
+        lines.append(log)
     }
 }

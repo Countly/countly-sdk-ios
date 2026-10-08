@@ -61,6 +61,14 @@ static dispatch_once_t onceToken;
     return self;
 }
 
+/// Sets whether consent is required, and releases the gathered lines that no longer wait for a consent.
+- (void)setRequiresConsent:(BOOL)requiresConsent
+{
+    _requiresConsent = requiresConsent;
+
+    [CountlyCommon.sharedInstance releaseSdkLogLinesAwaitingConsent];
+}
+
 - (void)resetInstance {
     CLY_LOG_I(@"%s resetting consent manager instance, consent for all features will be cancelled", __FUNCTION__);
     [self cancelConsentForAllFeatures];
@@ -135,6 +143,8 @@ static dispatch_once_t onceToken;
         self.consentForMetrics = YES;
 
     [self sendConsents];
+
+    [CountlyCommon.sharedInstance releaseSdkLogLinesAwaitingConsent];
 }
 
 
