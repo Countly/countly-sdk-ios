@@ -1,0 +1,125 @@
+# iOS device tests through the Countly Device Farm, example for an SDK repo (countly-sdk-ios).
+#
+# A GitHub macOS runner builds and signs the test bundle, then the office iPhone runs it with no
+# host computer: the job joins the farm's queue with a GitHub OIDC token (no farm secret in the
+# repo), the phone's agent takes the job, runs the tests, and streams the results back here.
+#
+# Copy this to .github/workflows/ in the SDK repo, and copy two standalone files from
+# countly-sdk-tools into the SDK repo at .github/farm/: CommandCenter/farm/client.mjs and
+# DeviceFarmRunner/scripts/package-xctest.sh (neither holds a secret). They are vendored because
+# countly-sdk-tools is private and a public SDK repo's token cannot check it out.
+#
+# It needs three repo or org secrets, added by
+# an Apple Developer team admin, used only on push/dispatch (never on fork pull requests):
+#   APPLE_CERT_P12        the signing certificate and key, as base64 of a .p12
+#   APPLE_CERT_PASSWORD   the .p12 password
+#   APPLE_PROFILE         a development provisioning profile for the farm iPhone, base64 of a .mobileprovision
+# The farm's Command Center must have CC_FARM_OIDC_REPOS include this repo and CC_FARM_SDKS include countly-sdk-ios.
+name: Device tests (iOS)
+
+on:
+    push:
+      branches:
+        - master
+        - staging
+    pull_request:
+      branches:
+        - master
+        - staging
+    workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  ios:
+    name: iOS tests on the office iPhone
+    runs-on: macos-15
+    timeout-minutes: 90
+    env:
+      FARM_URL: https://test-deniz.count.ly/command-center/farm
+      DEVELOPMENT_TEAM: 3S32KFMHB8
+      RUNNER_BUNDLE_ID: com.countly.CountlyTests.xctrunner
+      DEPLOYMENT_TARGET: "16.1"
+    steps:
+      - name: Check out the SDK
+        uses: actions/checkout@v4
+        with:
+          path: sdk-src
+
+      - name: Import the signing certificate
+        env:
+          APPLE_CERT_P12: ${{ secrets.APPLE_CERT_P12 }}
+          APPLE_CERT_PASSWORD: ${{ secrets.APPLE_CERT_PASSWORD }}
+        run: |
+          set -eu
+          keychain="$RUNNER_TEMP/farm.keychain-db"
+          password="$(openssl rand -base64 16)"
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 3600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          echo "$APPLE_CERT_P12" | base64 -d > "$RUNNER_TEMP/cert.p12"
+          security import "$RUNNER_TEMP/cert.p12" -k "$keychain" -P "$APPLE_CERT_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$keychain" >/dev/null
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+          identity="$(security find-identity -v -p codesigning "$keychain" | awk '/1\)/{print $2; exit}')"
+          echo "SIGN_IDENTITY=$identity" >> "$GITHUB_ENV"
+          echo "SIGN_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
+          rm -f "$RUNNER_TEMP/cert.p12"
+
+      - name: Install the provisioning profile
+        env:
+          APPLE_PROFILE: ${{ secrets.APPLE_PROFILE }}
+        run: |
+          set -eu
+          dir="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$dir"
+          echo "$APPLE_PROFILE" | base64 -d > "$dir/farm.mobileprovision"
+
+      - name: Build the tests for a device
+        working-directory: sdk-src
+        run: |
+          set -eu
+          xcodebuild build-for-testing \
+            -project Countly.xcodeproj -scheme CountlyTests \
+            -destination 'generic/platform=iOS' -derivedDataPath "$RUNNER_TEMP/dd" \
+            IPHONEOS_DEPLOYMENT_TARGET="$DEPLOYMENT_TARGET" \
+            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
+            OTHER_CODE_SIGN_FLAGS="--keychain $SIGN_KEYCHAIN"
+
+      - name: Package the signed runner
+        run: |
+          set -eu
+          xctest="$(find "$RUNNER_TEMP/dd/Build/Products" -name CountlyTests.xctest -maxdepth 3 | head -1)"
+          profile="$HOME/Library/MobileDevice/Provisioning Profiles/farm.mobileprovision"
+          sdk-src/.github/farm/package-xctest.sh "$xctest" "$RUNNER_TEMP/pkg" "$SIGN_IDENTITY" "$profile"
+
+      - name: Upload the test package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-tests
+          path: ${{ runner.temp }}/pkg/CountlyTests-Runner.ipa
+          if-no-files-found: error
+
+      - name: Join the device farm queue
+        run: node sdk-src/.github/farm/client.mjs oidc countly-sdk-ios
+
+      - name: Run the tests on the iPhone
+        run: node sdk-src/.github/farm/client.mjs ios ios-tests "$RUNNER_BUNDLE_ID" "$RUNNER_TEMP/results/ios.xml"
+
+      - name: Upload the results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-results
+          path: ${{ runner.temp }}/results/
+          if-no-files-found: ignore
+
+      - name: Summarise the results
+        if: always()
+        run: node sdk-src/.github/farm/client.mjs summary "$RUNNER_TEMP/results" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Give the phone back
+        if: always()
+        run: node sdk-src/.github/farm/client.mjs release "${{ job.status }}"

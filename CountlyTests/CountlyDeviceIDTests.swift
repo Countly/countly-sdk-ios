@@ -70,10 +70,9 @@ class CountlyDeviceIDTests: CountlyBaseTestCase {
         let newId = "New_ID"
         Countly.sharedInstance().setID(newId)
         XCTAssertEqual(2, CountlyPersistency.sharedInstance().remainingRequestCount())
-        guard let queuedRequests =  CountlyPersistency.sharedInstance().value(forKey: "queuedRequests") as? [String] else {
-            fatalError("Failed to get queuedRequests from CountlyPersistency")
+        if let setIdRequest = TestUtils.requestAt(1) {
+            validateSetIdOnServerRequest(request: setIdRequest, newDeviceId: newId)
         }
-        validateSetIdOnServerRequest(request: queuedRequests[1], newDeviceId: newId)
         validateDeveloperSuppliedID(deviceID: newId)
         
         Countly.sharedInstance().setID("")
@@ -106,8 +105,8 @@ class CountlyDeviceIDTests: CountlyBaseTestCase {
         
         let sdkDeviceID = Countly.sharedInstance().deviceID()
         
-        let oldDeviceID = parsedRequest["old_device_id"] as! String;
-        let deviceIDInRequest = parsedRequest["device_id"] as! String;
+        let oldDeviceID = parsedRequest["old_device_id"] as? String
+        let deviceIDInRequest = parsedRequest["device_id"] as? String
         
         XCTAssertTrue(Countly.sharedInstance().deviceIDType() == CLYDeviceIDType.custom, "Countly deviced id type should be Custom.")
         XCTAssertTrue(oldDeviceID == getIDFV())

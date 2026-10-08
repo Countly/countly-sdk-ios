@@ -17,9 +17,10 @@ class CountlyBaseTestCase: XCTestCase {
     
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.
-        #if os(macOS)
-            // xctest is never a frontmost NSApplication; report active so macOS exercises the
-            // same automatic-session paths as the other platforms. See TestAppActivation.
+        #if os(macOS) || os(iOS) || os(tvOS) || os(visionOS)
+            // The test host is not necessarily a foreground app (xctest on macOS, the device
+            // farm's XCTRunner on iOS); report active so every host exercises the same
+            // automatic-session paths. See TestAppActivation.
             TestAppActivation.installIfNeeded()
             TestAppActivation.isActive = true
         #endif
@@ -46,6 +47,8 @@ class CountlyBaseTestCase: XCTestCase {
         config.host = host
         config.enableDebug = true
         config.features = [CLYFeature.crashReporting];
+        // Hostless simulator runs can never report an orientation; off keeps hosted runs (device farm) identical.
+        config.enableOrientationTracking = false
         return config
     }
     
