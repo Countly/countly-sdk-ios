@@ -416,6 +416,21 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
         XCTAssertEqual(minBatchSize, (lastUploadedBatch()?["l"] as? [Any])?.count)
     }
 
+    /// The user details consent alone is not enough either: a full batch stays held without the events consent.
+    func testLogGathering_userDetailsConsentWithoutEventsKeepsTheLinesHeld() throws {
+        startSDK(requiresConsent: true)
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.userDetails])
+
+        common.updateLogGatheringState(true, levels: "e", batch: minBatchSize, lgid: "gather_user_details_only")
+        clearBuffer()
+        capture(minBatchSize, level: "e")
+        common.flushSdkLogs()
+        settleDelivery()
+
+        XCTAssertEqual(0, uploadedBatches().count, "a line may still quote an event key, which user details consent does not cover")
+        XCTAssertEqual(minBatchSize, harnessLines.count)
+    }
+
     func testLogGathering_withoutConsentNoUserDataIsUploadedAndLocalLoggingIsUnchanged() throws {
         startSDK(requiresConsent: true)
         Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.sessions])

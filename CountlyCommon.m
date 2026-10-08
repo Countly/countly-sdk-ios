@@ -242,7 +242,7 @@ void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...)
     if ([logString rangeOfString:kCountlySDKLogsTransportMarker].location != NSNotFound)
         return;
 
-    BOOL batchIsFull = NO;
+    BOOL completesBatch = NO;
 
     @synchronized (_sdkLogsLock) {
         if (_sdkLogsState == CLYSDKLogsStateOff)
@@ -261,6 +261,7 @@ void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...)
             message = [message substringToIndex:boundary.location];
         }
 
+        NSInteger heldBefore = (NSInteger)_sdkLogs.count;
         [_sdkLogs addObject:@{
             kCountlyQSSDKLogsTimestamp: @((long long)floor(NSDate.date.timeIntervalSince1970 * 1000)),
             kCountlyQSSdkLogsMessage: message,
@@ -270,12 +271,13 @@ void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...)
         _sdkLogsChars += message.length;
         [self trimSdkLogsBufferLocked];
 
-        batchIsFull = _sdkLogsState == CLYSDKLogsStateGathering && (NSInteger)_sdkLogs.count >= _sdkLogsBatchSize;
+        // only the line that completes a batch schedules a delivery, so a full buffer held back by consent or tracking does not queue one per line
+        completesBatch = _sdkLogsState == CLYSDKLogsStateGathering && heldBefore < _sdkLogsBatchSize && (NSInteger)_sdkLogs.count >= _sdkLogsBatchSize;
     }
 
     // never on this thread: delivering touches the request queue and logs, which comes straight back
     // into this method, and the caller may be inside a persistency lock
-    if (batchIsFull)
+    if (completesBatch)
         [self scheduleSdkLogsDelivery:NO];
 }
 
