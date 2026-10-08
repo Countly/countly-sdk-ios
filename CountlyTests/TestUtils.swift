@@ -371,6 +371,8 @@ class TestUtils {
         config.host = host
         config.enableDebug = true
         config.features = [CLYFeature.crashReporting]
+        // Hostless simulator runs can never report an orientation; off keeps hosted runs (device farm) identical.
+        config.enableOrientationTracking = false
         return config
     }
 
