@@ -535,6 +535,9 @@ typedef enum : NSUInteger
  * @discussion 2) Mach: PLCrashReporterSignalHandlerTypeMach
  * @discussion For more information about PLCrashReporter please see: https://github.com/microsoft/plcrashreporter
  * @discussion By default, BSD type will be used.
+ * @discussion The Mach type signal handler is not compatible with Apple's Enhanced Security capability.
+ * @discussion Enhanced Security applies Mach IPC platform restrictions, under which a process may register exception ports only with @c EXCEPTION_IDENTITY_PROTECTED, @c EXCEPTION_STATE or @c EXCEPTION_STATE_IDENTITY_PROTECTED. PLCrashReporter registers @c EXCEPTION_DEFAULT, which traps as @c EXC_GUARD and terminates the app during SDK setup, before any application code runs.
+ * @discussion On apps that adopt Enhanced Security, leave this flag unset and use the default BSD type signal handler.
  */
 @property (nonatomic) BOOL shouldUseMachSignalHandler;
 
