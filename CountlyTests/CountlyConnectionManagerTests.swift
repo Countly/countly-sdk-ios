@@ -220,7 +220,9 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         config.alwaysUsePOST = false
         config.manualSessionHandling = true
         config.disableSDKBehaviorSettingsUpdates = true
-        config.enablePerformanceMonitoring = true
+        config.apm().enableForegroundBackgroundTracking = true
+        config.apm().enableAppStartTimeTracking = true
+        config.apm().enableManualAppLoadedTrigger = true
         let sessionConfig = URLSessionConfiguration.default
         sessionConfig.protocolClasses = [MockURLProtocol.self]
         config.urlSessionConfiguration = sessionConfig
@@ -343,7 +345,9 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         config.alwaysUsePOST = true
         config.manualSessionHandling = true
         config.disableSDKBehaviorSettingsUpdates = true
-        config.enablePerformanceMonitoring = true
+        config.apm().enableForegroundBackgroundTracking = true
+        config.apm().enableAppStartTimeTracking = true
+        config.apm().enableManualAppLoadedTrigger = true
         let sessionConfig = URLSessionConfiguration.default
         sessionConfig.protocolClasses = [MockURLProtocol.self]
         config.urlSessionConfiguration = sessionConfig

@@ -342,28 +342,6 @@ static dispatch_once_t onceToken;
     _isAutoViewTrackingActive = isAutoViewTrackingActive;
 }
 
-
-#pragma mark - Public methods Deprecated
-
-- (void)addExceptionForAutoViewTracking:(NSString *)exception
-{
-    CLY_LOG_W_DEPRECATED(@"%s deprecated API used, addAutoViewTrackingExclutionList should be used instead, exception: [%@]", __FUNCTION__, exception);
-
-    if (!exception.length)
-    {
-        CLY_LOG_W(@"%s exception name is null or empty, it will not be added to the auto view tracking exclusion list", __FUNCTION__);
-        return;
-    }
-
-    [self.automaticViewTrackingExclusionList addObject:exception];
-}
-
-- (void)removeExceptionForAutoViewTracking:(NSString *)exception
-{
-    CLY_LOG_W_DEPRECATED(@"%s deprecated API used, exception will be removed from the auto view tracking exclusion list, exception: [%@]", __FUNCTION__, exception);
-    [self.automaticViewTrackingExclusionList removeObject:exception];
-}
-
 #endif
 
 #pragma mark - Internal methods old

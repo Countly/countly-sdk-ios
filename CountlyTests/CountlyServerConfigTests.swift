@@ -71,7 +71,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      */
     func test_defaultConfig_whenServerConfigEnabledAndStorageEmpty() {
         let config = TestUtils.createBaseConfig()
-        config.enableServerConfiguration = true
         let countly = createLocalCountly()
         countly.start(with: config)
         
@@ -87,7 +86,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     func test_serverConfig_whenEnabledAndAllPropertiesAllowing() throws {
         setServerConfig(createStorageConfig(tracking: true, networking: true, crashes: true))
         let config = TestUtils.createBaseConfig()
-        config.enableServerConfiguration = true;
         let countly = createLocalCountly()
         countly.start(with: config)
         
@@ -101,7 +99,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     func test_serverConfig_whenEnabledAndAllPropertiesForbidding() {
         setServerConfig(createStorageConfig(tracking: false, networking: false, crashes: false))
         let config = TestUtils.createBaseConfig()
-        config.enableServerConfiguration = true
         config.enableDebug = false
         
         Countly.sharedInstance().start(with: config)
@@ -545,7 +542,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     func test_serverConfig_emptyConfig() {
         setServerConfig([:])
         let config = TestUtils.createBaseConfig()
-        config.enableServerConfiguration = true
         let countly = createLocalCountly()
         countly.start(with: config)
         
@@ -558,7 +554,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         setServerConfig(customConfig)
         
         let config = TestUtils.createBaseConfig()
-        config.enableServerConfiguration = true
         let countly = createLocalCountly()
         countly.start(with: config)
         
@@ -574,7 +569,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         setServerConfig(customConfig)
         
         let config = TestUtils.createBaseConfig()
-        config.enableServerConfiguration = true
         let countly = createLocalCountly()
         countly.start(with: config)
         
@@ -588,7 +582,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         setServerConfig(customConfig)
         
         let config = TestUtils.createBaseConfig()
-        config.enableServerConfiguration = true
         let countly = createLocalCountly()
         countly.start(with: config)
         
@@ -603,7 +596,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         setServerConfig(customConfig)
         
         let config = TestUtils.createBaseConfig()
-        config.enableServerConfiguration = true
         let countly = createLocalCountly()
         countly.start(with: config)
         
@@ -846,7 +838,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     
     private func initAndValidateConfigParsingResult(_ targetResponse: String, _ responseAccepted: Bool) -> Countly {
         let config = TestUtils.createBaseConfig()
-        config.enableServerConfiguration = true
         config.urlSessionConfiguration = createUrlSessionConfigForResponse(targetResponse)
         
         let countly = createLocalCountly()
@@ -1989,11 +1980,10 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         XCTAssertNotNil(viewEvent, "manual startView should still record when avt is false")
         XCTAssertEqual("manual_view", viewEvent?.segmentation["name"] as? String)
 
-        // The deprecated developer setter must not undo a server disable: automatic views would not be
-        // recorded anyway, so leaving the flag on would only misreport the state
-        Countly.sharedInstance().isAutoViewTrackingActive = true
+        // automatic views would not be recorded anyway, so turning the flag on would only misreport the state
+        CountlyViewTrackingInternal.sharedInstance().isAutoViewTrackingActive = true
         XCTAssertFalse(CountlyViewTrackingInternal.sharedInstance().isAutoViewTrackingActive,
-                       "the developer setter should not re-enable automatic view tracking while the server keeps avt false")
+                       "turning the active state on should not re-enable automatic view tracking while the server keeps avt false")
     }
 
     /**

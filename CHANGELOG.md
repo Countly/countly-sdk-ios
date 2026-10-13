@@ -1,11 +1,12 @@
 ## XX.XX.XX
 * ! Minor breaking change ! Raised the minimum supported deployment targets to iOS 15, tvOS 15, watchOS 9 and macOS 12 (previously iOS 12, tvOS 12, watchOS 4 and macOS 10.14) for compatibility with Xcode 27. Apps targeting older versions are no longer supported.
+* ! Minor breaking change ! "changeDeviceIDWithMerge:" and "changeDeviceIDWithoutMerge:" now ignore nil, an empty string and "CLYDefaultDeviceID" instead of switching back to the default device ID.
 
 * Added support for server requested SDK log gathering and connection tests. A gathered log line is uploaded only after the consent of the feature that wrote it is given.
 * Added support for SDK behavior settings that control automatic session tracking, automatic view tracking, automatic crash reporting and Journey Trigger Views, also for the running session.
 * Added "userProfile" access on watchOS, tvOS and macOS.
 * Added a new method "setGlobalContentSegmentation" on "CountlyContentBuilder" that sets a segmentation recorded with every content event and with the events and answers of NPS, survey and rating feedback widgets, leaving out the keys widgets record as answers.
-* Improved internal logging and changed the default log level from verbose to debug. Deprecation warnings are now logged once per app run.
+* Improved internal logging and changed the default log level from verbose to debug.
 * Improved crash handling. The SDK's handlers now pass crashes on to the handlers they replaced, leave crash tools installed later and signals the app ignores, such as SIGPIPE, alone, and are removed by "halt".
 * Improved state cleanup on "halt", which now also resets events, view tracking, remote config and the content state on visionOS.
 
@@ -24,6 +25,20 @@
 * Fixed a crash on watchOS and macOS when calling "halt".
 * Fixed macOS not starting a session when the app was not active at launch.
 * Fixed visibility reporting and background session suppression on visionOS.
+
+* Removed the following deprecated calls from "Countly":
+  * "setNewDeviceID:onServer:" and "giveConsentForAllFeatures"
+  * "recordHandledException:", "recordHandledException:withStackTrace:" and "recordUnhandledException:withStackTrace:"
+  * "recordView:", "recordView:segmentation:", "addExceptionForAutoViewTracking:", "removeExceptionForAutoViewTracking:" and "isAutoViewTrackingActive"
+  * "presentFeedbackWidgetWithID:completionHandler:" and "getFeedbackWidgets:"
+  * "recordAttributionID:"
+  * "remoteConfigValueForKey:", "updateRemoteConfigWithCompletionHandler:", "updateRemoteConfigOnlyForKeys:completionHandler:" and "updateRemoteConfigExceptForKeys:completionHandler:"
+* Removed the following deprecated config options from "CountlyConfig":
+  * "maxKeyLength", "maxValueLength", "maxSegmentationValues" and "crashLogLimit"
+  * "attributionID"
+  * "enableRemoteConfig" and "remoteConfigCompletionHandler"
+  * "enablePerformanceMonitoring" and "enableServerConfiguration"
+* Removed the deprecated feature constant "CLYAutoViewTracking"
 
 ## 26.1.4
 * Added support for reporting the app's current theme (light or dark) when presenting feedback widgets, rating widgets, and content, so they are displayed in matching conditions.

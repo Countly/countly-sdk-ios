@@ -192,11 +192,7 @@ static dispatch_once_t onceToken;
     // silent, the resolved value equals the developer config, so behavior stays drop-in.
     _automaticSessionTrackingEnabled = !config.manualSessionHandling;
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-    // CLYAutoViewTracking is deprecated but still supported, so the seed has to keep honouring it
-    _automaticViewTrackingEnabled = config.enableAutomaticViewTracking || [config.features containsObject:CLYAutoViewTracking];
-#pragma clang diagnostic pop
+    _automaticViewTrackingEnabled = config.enableAutomaticViewTracking;
 #endif
     _automaticCrashReportingEnabled = [config.features containsObject:CLYCrashReporting];
 
@@ -534,26 +530,6 @@ static dispatch_once_t onceToken;
     CountlyCommon.sharedInstance.enableDebug = config.enableDebug;
 
     // Limits could be moved to another function, but letting them stay here serves us a monopolized view of notify
-    if (config.maxKeyLength != kCountlyMaxKeyLength)
-    {
-        [config.sdkInternalLimits setMaxKeyLength:config.maxKeyLength];
-    }
-
-    if (config.maxValueLength != kCountlyMaxValueSize)
-    {
-        [config.sdkInternalLimits setMaxValueSize:config.maxValueLength];
-    }
-
-    if (config.maxSegmentationValues != kCountlyMaxSegmentationValues)
-    {
-        [config.sdkInternalLimits setMaxSegmentationValues:config.maxSegmentationValues];
-    }
-
-    if (config.crashLogLimit != kCountlyMaxBreadcrumbCount)
-    {
-        [config.sdkInternalLimits setMaxBreadcrumbCount:config.crashLogLimit];
-    }
-
     [config.sdkInternalLimits setMaxKeyLength:_limitKeyLength ?: config.sdkInternalLimits.getMaxKeyLength];
     [config.sdkInternalLimits setMaxValueSize:_limitValueSize ?: config.sdkInternalLimits.getMaxValueSize];
     [config.sdkInternalLimits setMaxSegmentationValues:_limitSegValues ?: config.sdkInternalLimits.getMaxSegmentationValues];

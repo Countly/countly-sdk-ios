@@ -69,7 +69,6 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         ]))
 
         let cfg = TestUtils.createBaseConfig()
-        cfg.enableServerConfiguration = true
         cfg.manualSessionHandling = true
         let countly = createLocalCountly()
         countly.start(with: cfg)
@@ -93,7 +92,6 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         ]))
 
         let cfg = TestUtils.createBaseConfig()
-        cfg.enableServerConfiguration = true
         cfg.manualSessionHandling = true
         let countly = createLocalCountly()
         countly.start(with: cfg)
@@ -113,7 +111,6 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         ]))
 
         let cfg = TestUtils.createBaseConfig()
-        cfg.enableServerConfiguration = true
         cfg.manualSessionHandling = true
         let countly = createLocalCountly()
         countly.start(with: cfg)
@@ -129,7 +126,6 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         ]))
 
         let cfg = TestUtils.createBaseConfig()
-        cfg.enableServerConfiguration = true
         cfg.manualSessionHandling = true
         let countly = createLocalCountly()
         countly.start(with: cfg)
@@ -145,7 +141,6 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         ]))
 
         let cfg = TestUtils.createBaseConfig()
-        cfg.enableServerConfiguration = true
         cfg.manualSessionHandling = true
         let countly = createLocalCountly()
         countly.start(with: cfg)
@@ -163,7 +158,6 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         ]))
 
         let cfg = TestUtils.createBaseConfig()
-        cfg.enableServerConfiguration = true
         cfg.manualSessionHandling = true
         let countly = createLocalCountly()
         countly.start(with: cfg)
@@ -187,7 +181,6 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         ]))
 
         let cfg = TestUtils.createBaseConfig()
-        cfg.enableServerConfiguration = true
         cfg.manualSessionHandling = true
         cfg.eventSendThreshold = 7      // user-provided
         cfg.storedRequestsLimit = 555    // user-provided
@@ -288,7 +281,6 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         ]))
 
         let cfg = TestUtils.createBaseConfig()
-        cfg.enableServerConfiguration = true
         cfg.manualSessionHandling = true
         // Do NOT set requiresConsent on the user config — only the server config requires it.
         let countly = createLocalCountly()
@@ -407,7 +399,6 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         ]))
 
         let cfg = TestUtils.createBaseConfig()
-        cfg.enableServerConfiguration = true
         cfg.manualSessionHandling = true
         let countly = createLocalCountly()
         countly.start(with: cfg)
