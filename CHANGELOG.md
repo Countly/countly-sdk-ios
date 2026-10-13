@@ -1,4 +1,6 @@
 ## XX.XX.XX
+* ! Minor breaking change ! Raised the minimum supported deployment targets to iOS 15, tvOS 15, watchOS 9 and macOS 12 (previously iOS 12, tvOS 12, watchOS 4 and macOS 10.14) for compatibility with Xcode 27. Apps targeting older versions are no longer supported.
+
 * Added support for server requested SDK log gathering and connection tests. A gathered log line is uploaded only after the consent of the feature that wrote it is given.
 * Added support for SDK behavior settings that control automatic session tracking, automatic view tracking, automatic crash reporting and Journey Trigger Views, also for the running session.
 * Added "userProfile" access on watchOS, tvOS and macOS.
@@ -22,7 +24,6 @@
 * Fixed a crash on watchOS and macOS when calling "halt".
 * Fixed macOS not starting a session when the app was not active at launch.
 * Fixed visibility reporting and background session suppression on visionOS.
-* Fixed the "Countly-PL" podspec declaring iOS 10 and tvOS 10 as its minimum deployment targets instead of iOS 12 and tvOS 12.
 
 ## 26.1.4
 * Added support for reporting the app's current theme (light or dark) when presenting feedback widgets, rating widgets, and content, so they are displayed in matching conditions.
