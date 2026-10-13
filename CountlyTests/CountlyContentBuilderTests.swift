@@ -678,5 +678,65 @@ class CountlyContentBuilderTests: CountlyBaseTestCase {
         XCTAssertNotNil(widgetSegmentation["app_version"])
         XCTAssertEqual(4, globalSegmentation.keys.filter { widgetSegmentation[$0] != nil }.count, "the global segmentation is limited once, when it is set")
     }
+
+    /**
+     * <pre>
+     * Test that a presented widget page receives the global content segmentation without the keys the server
+     * reads as answers, that a dismissal never carries a global answer, and that a content event keeps its own
+     * keys when the merged segmentation is over the limit.
+     *
+     * 1- Init SDK with a segmentation value limit of 3 and a mock that fails every request
+     * 2- Set a global content segmentation with one plain key and two reserved ones
+     * 3- Verify the widget URL's custom object carries only the plain key as 'sg'
+     * 4- Dismiss an NPS widget and verify the event carries the plain key and no global rating
+     * 5- Record a content event with two keys of its own and verify both survive the limit
+     * </pre>
+     */
+    func test_globalContentSegmentation_reachesWidgetPagesWithoutReservedKeys_andContentEventsKeepTheirOwnKeys() throws {
+        startSDKWithFailingNetwork(maxSegmentationValues: 3)
+        Countly.sharedInstance().content().setGlobalContentSegmentation(["plan": "pro", "closed": 1, "rating": 5])
+
+        let widget = MockFeedbackWidget(id: "1234", type: CLYFeedbackWidgetType.NPS)
+        let url = try XCTUnwrap(widget.perform(NSSelectorFromString("generateWidgetURL"))?.takeUnretainedValue() as? URL)
+        let customValue = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "custom" }?.value)
+        let custom = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(customValue.utf8)) as? [String: Any])
+        XCTAssertEqual(["plan": "pro"] as NSDictionary, custom["sg"] as? NSDictionary, "the widget page gets the global segmentation without the keys the server reads as answers")
+        XCTAssertEqual("1", custom["tc"] as? String)
+
+        widget.recordResult(nil)
+        let dismissal = lastEventSegmentation("[CLY]_nps")
+        XCTAssertEqual("pro", dismissal["plan"] as? String)
+        XCTAssertNil(dismissal["rating"], "a global rating never turns a dismissal into an answer")
+        XCTAssertEqual("1", "\(dismissal["closed"] ?? "")")
+
+        let webViewManager = CountlyWebViewManager()
+        webViewManager.recordEvents(withJSONString: #"[{"key":"[CLY]_action","sg":{"type":"cta","content_id":"c1"}}]"#)
+        let content = lastEventSegmentation("[CLY]_action")
+        XCTAssertEqual("cta", content["type"] as? String)
+        XCTAssertEqual("c1", content["content_id"] as? String, "the event's own keys survive the segmentation limit")
+        XCTAssertEqual(1, ["plan", "closed", "rating"].filter { content[$0] != nil }.count, "global keys fill only the room the event leaves")
+    }
+
+    /// The rating feedback widget gets the global segmentation on its page and its events, without the keys it records as answers.
+    func test_globalContentSegmentation_reachesTheRatingFeedbackWidget_withoutItsAnswerKeys() throws {
+        startSDKWithFailingNetwork()
+        Countly.sharedInstance().content().setGlobalContentSegmentation(["plan": "pro", "rating": 5, "comment": "global", "email": "global@example.com", "contactMe": true])
+
+        let widget = MockFeedbackWidget(id: "5678", type: CLYFeedbackWidgetType.rating)
+        let url = try XCTUnwrap(widget.perform(NSSelectorFromString("generateWidgetURL"))?.takeUnretainedValue() as? URL)
+        XCTAssertTrue(url.path.hasSuffix("/feedback/rating"), "the rating feedback widget page, got: \(url.path)")
+        let customValue = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "custom" }?.value)
+        let custom = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(customValue.utf8)) as? [String: Any])
+        XCTAssertEqual(["plan": "pro"] as NSDictionary, custom["sg"] as? NSDictionary, "the rating page gets the global segmentation without its answer keys")
+
+        widget.recordResult(["rating": 3, "comment": "user comment"])
+        let answer = lastEventSegmentation("[CLY]_star_rating")
+        XCTAssertEqual(3, answer["rating"] as? Int, "the user's rating is kept")
+        XCTAssertEqual("user comment", answer["comment"] as? String, "the user's comment is kept")
+        XCTAssertNil(answer["email"], "a global email never appears as the user's answer")
+        XCTAssertNil(answer["contactMe"])
+        XCTAssertEqual("pro", answer["plan"] as? String, "the global segmentation is recorded with the rating")
+        XCTAssertEqual("5678", answer["widget_id"] as? String)
+    }
 }
 #endif

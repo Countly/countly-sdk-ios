@@ -204,4 +204,153 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
         return exception.callStackSymbols.joined(separator: "\n")
     }
 
+    // MARK: - handing crashes on to the handlers the SDK replaced
+
+    #if !os(watchOS)
+    /// Address of the handler a signal currently runs, so a test can tell whose handler is live.
+    private func liveSignalHandler(_ signalCode: Int32) -> UnsafeRawPointer? {
+        var action = sigaction()
+        sigaction(signalCode, nil, &action)
+        return unsafeBitCast(action.__sigaction_u.__sa_handler, to: UnsafeRawPointer?.self)
+    }
+
+    /// Address of the live uncaught exception handler.
+    private func liveExceptionHandler() -> UnsafeRawPointer? {
+        unsafeBitCast(NSGetUncaughtExceptionHandler(), to: UnsafeRawPointer?.self)
+    }
+
+    /**
+     * <pre>
+     * The SDK installs over the handlers the app had, chains to them, leaves a signal the app ignores
+     * alone, never takes the hook back from a crash tool installed after it, and puts its replaced
+     * handlers back on halt.
+     *
+     * 1- Install an app exception handler and an app SIGFPE handler, and ignore SIGPIPE
+     * 2- Start with crash consent and verify the SDK's handlers are live, SIGPIPE stays ignored
+     * 3- Install a later crash tool's exception handler and apply the behavior settings again
+     * 4- Verify the later tool keeps the hook
+     * 5- Withdraw crash consent, verify the app's SIGFPE handler is back and the later tool still holds the exception hook
+     * 6- Call the SDK's handler the way the later tool chains to it, verify the app's handler runs and no crash is recorded
+     * 7- Give consent again, halt, and verify the app's SIGFPE handler is back once more
+     * </pre>
+     */
+    func test_crashHandlers_chainToTheReplacedHandlers_andLeaveIgnoredSignalsAndLaterHandlers() throws {
+        appExceptionHandlerCalls = 0
+        let appExceptionHandler: @convention(c) (NSException) -> Void = { _ in appExceptionHandlerCalls += 1 }
+        let laterExceptionHandler: @convention(c) (NSException) -> Void = { _ in }
+        let appSignalHandler: @convention(c) (Int32) -> Void = { _ in }
+        NSSetUncaughtExceptionHandler(appExceptionHandler)
+        signal(SIGFPE, appSignalHandler)
+        signal(SIGPIPE, SIG_IGN)
+        defer {
+            NSSetUncaughtExceptionHandler(nil)
+            signal(SIGFPE, SIG_DFL)
+            signal(SIGPIPE, SIG_DFL)
+        }
+        let appExceptionAddress = unsafeBitCast(appExceptionHandler, to: UnsafeRawPointer.self)
+        let laterExceptionAddress = unsafeBitCast(laterExceptionHandler, to: UnsafeRawPointer.self)
+        let appSignalAddress = unsafeBitCast(appSignalHandler, to: UnsafeRawPointer.self)
+
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        config.requiresConsent = true
+        config.consents = [CLYConsent.crashReporting]
+        Countly.sharedInstance().start(with: config)
+
+        let sdkExceptionHandler = try XCTUnwrap(NSGetUncaughtExceptionHandler())
+        XCTAssertNotEqual(appExceptionAddress, liveExceptionHandler(), "the SDK installs its exception handler over the app's")
+        XCTAssertNotEqual(appSignalAddress, liveSignalHandler(SIGFPE), "the SDK installs its signal handler over the app's")
+        XCTAssertEqual(unsafeBitCast(SIG_IGN, to: UnsafeRawPointer?.self), liveSignalHandler(SIGPIPE), "a signal the app ignores is not a crash")
+
+        NSSetUncaughtExceptionHandler(laterExceptionHandler)
+        CountlyServerConfig.sharedInstance()?.applyAutomaticTrackingState()
+        XCTAssertEqual(laterExceptionAddress, liveExceptionHandler(), "applying behavior settings never takes the hook back from a crash tool installed later")
+
+        Countly.sharedInstance().cancelConsent(forFeature: CLYConsent.crashReporting)
+        XCTAssertEqual(appSignalAddress, liveSignalHandler(SIGFPE), "withdrawing consent puts the app's signal handler back")
+        XCTAssertEqual(laterExceptionAddress, liveExceptionHandler(), "a handler installed over the SDK's is not removed")
+
+        sdkExceptionHandler(NSException(name: NSExceptionName("ChainedException"), reason: "chained by a later crash tool", userInfo: nil))
+        XCTAssertEqual(1, appExceptionHandlerCalls, "the SDK's handler passes the crash on to the handler it replaced")
+        XCTAssertFalse(TestUtils.getCurrentRQ()?.contains { $0.contains("crash=") } ?? true, "without crash consent a chained crash is not recorded")
+
+        Countly.sharedInstance().giveConsent(forFeature: CLYConsent.crashReporting)
+        XCTAssertNotEqual(appSignalAddress, liveSignalHandler(SIGFPE), "giving consent again reinstalls over the handler the SDK put back")
+        Countly.sharedInstance().halt(true)
+        XCTAssertEqual(appSignalAddress, liveSignalHandler(SIGFPE), "halt puts back the handler the SDK replaced")
+        XCTAssertEqual(laterExceptionAddress, liveExceptionHandler(), "halt leaves a later crash tool's handler alone")
+    }
+
+    /**
+     * <pre>
+     * A signal that reaches the SDK's handler after the server turned automatic crash reporting off goes
+     * back to the handler the app had instead of returning into the code that raised it, which for a
+     * hardware fault would run the faulting instruction again forever.
+     *
+     * 1- Install an app SIGPIPE handler, start the SDK with the settings reply held back
+     * 2- Release a reply that turns automatic crash reporting off, verify the SDK's handler stays live
+     * 3- Raise the signal and verify the app's handler ran once, is live again, and no crash is recorded
+     * 4- Install the SDK's handler again, raise again and verify the signal is handed back the same way
+     * </pre>
+     */
+    func test_signalHandler_handsTheSignalBack_whenAutomaticCrashReportingTurnsOffAtRuntime() throws {
+        appSignalHandlerCalls = 0
+        let appSignalHandler: @convention(c) (Int32) -> Void = { _ in appSignalHandlerCalls += 1 }
+        signal(SIGPIPE, appSignalHandler)
+        defer { signal(SIGPIPE, SIG_DFL) }
+        let appSignalAddress = unsafeBitCast(appSignalHandler, to: UnsafeRawPointer.self)
+
+        let releaseSettings = DispatchSemaphore(value: 0)
+        let settings = ServerConfigBuilder().automaticCrashReporting(false).build()
+        MockURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            if request.url?.absoluteString.contains("method=sc") == true {
+                _ = releaseSettings.wait(timeout: .now() + 5)
+                return (settings.data(using: .utf8), response, nil)
+            }
+            return ("{\"result\":\"fail\"}".data(using: .utf8), HTTPURLResponse(url: request.url!, statusCode: 400, httpVersion: nil, headerFields: nil), nil)
+        }
+        defer { MockURLProtocol.replyEmptyToEveryRequest() }
+
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [MockURLProtocol.self]
+        config.urlSessionConfiguration = sessionConfig
+        Countly.sharedInstance().start(with: config)
+        XCTAssertNotEqual(appSignalAddress, liveSignalHandler(SIGPIPE), "the SDK installs its signal handler over the app's")
+
+        releaseSettings.signal()
+        TestUtils.waitUntil("the reply to turn automatic crash reporting off") {
+            CountlyServerConfig.sharedInstance()?.automaticCrashReportingEnabled() == false
+        }
+        XCTAssertNotEqual(appSignalAddress, liveSignalHandler(SIGPIPE), "a runtime 'acr' = false leaves the SDK's handler installed")
+
+        raise(SIGPIPE)
+
+        XCTAssertEqual(1, appSignalHandlerCalls, "the signal is handed back to the app's handler")
+        XCTAssertEqual(appSignalAddress, liveSignalHandler(SIGPIPE), "the app's handler is live again")
+        XCTAssertFalse(TestUtils.getCurrentRQ()?.contains { $0.contains("crash=") } ?? true, "automatic crash reporting is off, so nothing is recorded")
+
+        let serverConfig = try XCTUnwrap(CountlyServerConfig.sharedInstance())
+        serverConfig.setValue(true, forKey: "automaticCrashReportingEnabled")
+        try XCTUnwrap(CountlyCrashReporter.sharedInstance()).startCrashReporting()
+        serverConfig.setValue(false, forKey: "automaticCrashReportingEnabled")
+        XCTAssertNotEqual(appSignalAddress, liveSignalHandler(SIGPIPE), "the SDK installs its handler over the app's again")
+
+        raise(SIGPIPE)
+
+        XCTAssertEqual(2, appSignalHandlerCalls, "a signal the app survived does not make the next one end the app")
+        XCTAssertEqual(appSignalAddress, liveSignalHandler(SIGPIPE), "the app's handler is live again")
+    }
+    #endif
+
 }
+
+#if !os(watchOS)
+/// Times the app's stand-in exception handler ran.
+private var appExceptionHandlerCalls = 0
+/// Times the app's stand-in signal handler ran.
+private var appSignalHandlerCalls = 0
+#endif
+

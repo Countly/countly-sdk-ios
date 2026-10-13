@@ -15,6 +15,8 @@
 @property (nonatomic) NSMutableArray<RCDownloadCallback> *remoteConfigGlobalCallbacks;
 
 + (instancetype)sharedInstance;
+/// Forgets this instance, so the next start reads the stored values again and responses to earlier requests are ignored.
+- (void)resetInstance;
 
 - (void)startRemoteConfig;
 - (void)clearAll;

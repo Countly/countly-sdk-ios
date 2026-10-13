@@ -61,12 +61,12 @@ static dispatch_once_t onceToken;
     return self;
 }
 
-/// Sets whether consent is required, and releases the gathered lines that no longer wait for a consent.
+/// Sets whether consent is required, and decides the gathered lines against it again.
 - (void)setRequiresConsent:(BOOL)requiresConsent
 {
     _requiresConsent = requiresConsent;
 
-    [CountlyCommon.sharedInstance releaseSdkLogLinesAwaitingConsent];
+    [CountlyCommon.sharedInstance redecideSdkLogLinesConsent];
 }
 
 - (void)resetInstance {
@@ -144,7 +144,7 @@ static dispatch_once_t onceToken;
 
     [self sendConsents];
 
-    [CountlyCommon.sharedInstance releaseSdkLogLinesAwaitingConsent];
+    [CountlyCommon.sharedInstance redecideSdkLogLinesConsent];
 }
 
 
@@ -222,6 +222,8 @@ static dispatch_once_t onceToken;
 
     if (!shouldSkipSendingConsentsRequest)
         [self sendConsents];
+
+    [CountlyCommon.sharedInstance redecideSdkLogLinesConsent];
 }
 
 

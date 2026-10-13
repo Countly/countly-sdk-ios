@@ -13,6 +13,7 @@
     NSTimeInterval lastSessionStartTime;
     BOOL isCrashing;
     BOOL isSessionStarted;
+    BOOL isSessionStartedAutomatically;
 }
 @property (nonatomic) NSURLSession* URLSession;
 
@@ -126,6 +127,10 @@ static dispatch_once_t onceToken;
 
 - (BOOL)isSessionStarted {
     return isSessionStarted;
+}
+
+- (BOOL)isSessionStartedAutomatically {
+    return isSessionStartedAutomatically;
 }
 
 - (void)resetInstance {
@@ -658,6 +663,8 @@ static dispatch_once_t onceToken;
     }
 
     isSessionStarted = YES;
+    // the manual session API refuses to begin while automatic session tracking is on, so a session begun now is the SDK's own
+    isSessionStartedAutomatically = CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled;
     lastSessionStartTime = NSDate.date.timeIntervalSince1970;
     unsentSessionLength = 0.0;
 
@@ -722,6 +729,7 @@ static dispatch_once_t onceToken;
     }
 
     isSessionStarted = NO;
+    isSessionStartedAutomatically = NO;
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%d",
                              kCountlyQSKeySessionEnd, @"1",
                              kCountlyQSKeySessionDuration, (int)[self sessionLengthInSeconds]];
@@ -938,7 +946,18 @@ static dispatch_once_t onceToken;
 
 - (void)sendConnectionTestResults:(NSString *)resultsJSON
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@", kCountlyQSConnectionTestResults, resultsJSON.cly_URLEscaped];
+    [self sendConnectionTestResults:resultsJSON deviceID:CountlyDeviceInfo.sharedInstance.deviceID deviceIDType:CountlyDeviceInfo.sharedInstance.deviceIDTypeValue];
+}
+
+- (void)sendConnectionTestResults:(NSString *)resultsJSON deviceID:(NSString *)deviceID deviceIDType:(NSUInteger)deviceIDType
+{
+    if (!self.appKey.length)
+    {
+        CLY_LOG_D(@"%s connection test report is dropped, reason: there is no app key, the SDK is not started or is halting", __FUNCTION__);
+        return;
+    }
+
+    NSString* queryString = [[self queryEssentialsForDeviceID:deviceID deviceIDType:deviceIDType] stringByAppendingFormat:@"&%@=%@", kCountlyQSConnectionTestResults, resultsJSON.cly_URLEscaped];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -1086,10 +1105,16 @@ static dispatch_once_t onceToken;
 
 - (NSString *)queryEssentials
 {
+    return [self queryEssentialsForDeviceID:CountlyDeviceInfo.sharedInstance.deviceID deviceIDType:CountlyDeviceInfo.sharedInstance.deviceIDTypeValue];
+}
+
+/// The parameters every request carries, built for the given device ID and its type value.
+- (NSString *)queryEssentialsForDeviceID:(NSString *)deviceID deviceIDType:(NSUInteger)deviceIDType
+{
     return [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%d&%@=%lld&%@=%d&%@=%d&%@=%d&%@=%@&%@=%@",
         kCountlyQSKeyAppKey, self.appKey.cly_URLEscaped,
-        kCountlyQSKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped,
-        kCountlyQSKeyDeviceIDType, (int)CountlyDeviceInfo.sharedInstance.deviceIDTypeValue,
+        kCountlyQSKeyDeviceID, deviceID.cly_URLEscaped,
+        kCountlyQSKeyDeviceIDType, (int)deviceIDType,
         kCountlyQSKeyTimestamp, (long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000),
         kCountlyQSKeyTimeHourOfDay, (int)CountlyCommon.sharedInstance.hourOfDay,
         kCountlyQSKeyTimeDayOfWeek, (int)CountlyCommon.sharedInstance.dayOfWeek,

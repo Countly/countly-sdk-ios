@@ -67,6 +67,11 @@
 - (NSDictionary *)retrieveHealthCheckTrackerState;
 - (void)storeHealthCheckTrackerState:(NSDictionary *)healthCheckTrackerState;
 
+/// When automatic crash capture stopped being wanted while PLCrashReporter stays installed, or nil while it is wanted.
+- (NSDate *)retrievePLCrashCaptureSuppressedSince;
+/// Stores when automatic crash capture stopped being wanted, nil clears it.
+- (void)storePLCrashCaptureSuppressedSince:(NSDate *)date;
+
 -(BOOL)isOldRequest:(NSString*) queryString;
 
 @property (nonatomic) NSUInteger eventSendThreshold;

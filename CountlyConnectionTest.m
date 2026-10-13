@@ -41,10 +41,20 @@ static const NSUInteger kCountlyCTMaxErrorLength = 256;
 @interface CountlyConnectionTest ()
 {
     atomic_bool batteryRunning;
+    atomic_uint suspendCount;
 }
 // atomic: set by the halting thread, read by the battery on the utility queue
 @property (atomic) BOOL halted;
+@property (atomic) BOOL appSuspended;
+// the battery to run again once the app is active, for the same user and 'sc' latency, or nil
+@property (atomic, copy) dispatch_block_t deferredBattery;
 @end
+
+/// Seconds on a clock the system time can not move and that stands still while the device sleeps.
+static NSTimeInterval CountlyCTUptime(void)
+{
+    return (NSTimeInterval)clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / NSEC_PER_SEC;
+}
 
 @implementation CountlyConnectionTest
 
@@ -66,6 +76,7 @@ static dispatch_once_t onceToken;
         _perRequestTimeout = kCountlyCTDefaultPerRequestTimeout;
         _batteryCapExtra = kCountlyCTDefaultBatteryCapExtra;
         atomic_store(&batteryRunning, false);
+        atomic_store(&suspendCount, 0);
     }
     return self;
 }
@@ -119,6 +130,15 @@ static NSMutableDictionary *CountlyCTResultRow(NSString *feature, BOOL ok, NSInt
 
 - (void)startBatteryWithServerConfigLatency:(long long)scLatencyMs
 {
+    [self startBatteryWithServerConfigLatency:scLatencyMs
+                                     deviceID:CountlyDeviceInfo.sharedInstance.deviceID
+                                 deviceIDType:CountlyDeviceInfo.sharedInstance.deviceIDTypeValue
+                          deviceIDChangeCount:CountlyCommon.sharedInstance.deviceIDChangeWithoutMergeCount
+                           deviceIDMergeCount:CountlyCommon.sharedInstance.deviceIDMergeCount];
+}
+
+- (void)startBatteryWithServerConfigLatency:(long long)scLatencyMs deviceID:(NSString *)deviceID deviceIDType:(NSUInteger)deviceIDType deviceIDChangeCount:(NSUInteger)deviceIDChangeCount deviceIDMergeCount:(NSUInteger)deviceIDMergeCount
+{
     if (self.halted)
     {
         CLY_LOG_D(@"%s, module halted, ignoring", __FUNCTION__);
@@ -132,6 +152,28 @@ static NSMutableDictionary *CountlyCTResultRow(NSString *feature, BOOL ok, NSInt
         return;
     }
 
+    if (!CountlyServerConfig.sharedInstance.trackingEnabled)
+    {
+        // the request queue refuses every request while tracking is off, so the report could never go out
+        CLY_LOG_D(@"%s, tracking is disabled by server config, ignoring", __FUNCTION__);
+        return;
+    }
+
+    if (deviceIDMergeCount != CountlyCommon.sharedInstance.deviceIDMergeCount)
+    {
+        CLY_LOG_D(@"%s, the user it was armed for was merged into another since, the server cancelled the run, ignoring", __FUNCTION__);
+        return;
+    }
+
+    // read before the background check, which noteAppSuspended sets before counting, so no suspension goes unseen
+    unsigned int suspendCountAtStart = atomic_load(&suspendCount);
+    if (self.appSuspended)
+    {
+        CLY_LOG_D(@"%s, the app is in the background where probes stall, the battery runs once it is active again", __FUNCTION__);
+        [self deferBatteryWithServerConfigLatency:scLatencyMs deviceID:deviceID deviceIDType:deviceIDType deviceIDChangeCount:deviceIDChangeCount deviceIDMergeCount:deviceIDMergeCount];
+        return;
+    }
+
     bool expected = false;
     if (!atomic_compare_exchange_strong(&batteryRunning, &expected, true))
     {
@@ -142,15 +184,49 @@ static NSMutableDictionary *CountlyCTResultRow(NSString *feature, BOOL ok, NSInt
     CLY_LOG_I(@"%s, connection test armed by the server, running the probe battery", __FUNCTION__);
 
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
-        [self runBatteryAndReport:scLatencyMs];
+        [self runBatteryAndReport:scLatencyMs deviceID:deviceID deviceIDType:deviceIDType deviceIDChangeCount:deviceIDChangeCount deviceIDMergeCount:deviceIDMergeCount suspendCountAtStart:suspendCountAtStart];
         atomic_store(&self->batteryRunning, false);
+        [self rerunInterruptedBattery];
     });
 }
 
-/// Runs every row in order and queues the report, unless the instance was halted meanwhile.
-- (void)runBatteryAndReport:(long long)scLatencyMs
+/// Keeps the battery to run again once the app is active, for the same user and with the same 'sc' latency.
+- (void)deferBatteryWithServerConfigLatency:(long long)scLatencyMs deviceID:(NSString *)deviceID deviceIDType:(NSUInteger)deviceIDType deviceIDChangeCount:(NSUInteger)deviceIDChangeCount deviceIDMergeCount:(NSUInteger)deviceIDMergeCount
 {
-    NSArray<NSDictionary *> *rows = [self runBattery:scLatencyMs];
+    __weak CountlyConnectionTest *weakSelf = self;
+    self.deferredBattery = ^{
+        [weakSelf startBatteryWithServerConfigLatency:scLatencyMs deviceID:deviceID deviceIDType:deviceIDType deviceIDChangeCount:deviceIDChangeCount deviceIDMergeCount:deviceIDMergeCount];
+    };
+}
+
+- (void)noteAppSuspended
+{
+    self.appSuspended = YES;
+    atomic_fetch_add(&suspendCount, 1);
+}
+
+- (void)noteAppResumed
+{
+    self.appSuspended = NO;
+    [self rerunInterruptedBattery];
+}
+
+/// Starts the battery the background interrupted or held back, once the app is back in the foreground and no battery runs.
+- (void)rerunInterruptedBattery
+{
+    dispatch_block_t deferredBattery = self.deferredBattery;
+    if (!deferredBattery || self.appSuspended || self.halted || self.isBatteryRunning)
+        return;
+
+    self.deferredBattery = nil;
+    CLY_LOG_D(@"%s, the battery the app going to the background interrupted runs again", __FUNCTION__);
+    deferredBattery();
+}
+
+/// Runs every row and queues the report under the armed user, unless halt, the background or a merge got in the way.
+- (void)runBatteryAndReport:(long long)scLatencyMs deviceID:(NSString *)deviceID deviceIDType:(NSUInteger)deviceIDType deviceIDChangeCount:(NSUInteger)deviceIDChangeCount deviceIDMergeCount:(NSUInteger)deviceIDMergeCount suspendCountAtStart:(unsigned int)suspendCountAtStart
+{
+    NSArray<NSDictionary *> *rows = [self runBattery:scLatencyMs suspendCountAtStart:suspendCountAtStart];
 
     if (self.halted)
     {
@@ -158,13 +234,31 @@ static NSMutableDictionary *CountlyCTResultRow(NSString *feature, BOOL ok, NSInt
         return;
     }
 
+    if (atomic_load(&suspendCount) != suspendCountAtStart)
+    {
+        CLY_LOG_D(@"%s, the app went to the background during the battery, its probes stalled, dropping the report and running it again in the foreground", __FUNCTION__);
+        [self deferBatteryWithServerConfigLatency:scLatencyMs deviceID:deviceID deviceIDType:deviceIDType deviceIDChangeCount:deviceIDChangeCount deviceIDMergeCount:deviceIDMergeCount];
+        return;
+    }
+
+    if (deviceIDMergeCount != CountlyCommon.sharedInstance.deviceIDMergeCount)
+    {
+        // under the merged ID the server rejects it, and under the old ID it would create that user again
+        CLY_LOG_D(@"%s, the user the battery was armed for was merged during the battery, the server cancelled the run, dropping the report", __FUNCTION__);
+        return;
+    }
+
     NSString *report = [self buildReport:rows];
     CLY_LOG_D(@"%s, queueing report [ %@ ]", __FUNCTION__, report);
-    [CountlyConnectionManager.sharedInstance sendConnectionTestResults:report];
+    if (deviceIDChangeCount == CountlyCommon.sharedInstance.deviceIDChangeWithoutMergeCount)
+        [CountlyConnectionManager.sharedInstance sendConnectionTestResults:report];
+    else
+        [CountlyConnectionManager.sharedInstance sendConnectionTestResults:report deviceID:deviceID deviceIDType:deviceIDType];
 }
 
 /// Probes every row sequentially against the configured host. Rows not reached before the battery cap report 'not run'.
-- (NSArray<NSDictionary *> *)runBattery:(long long)scLatencyMs
+/// Stops early when the app goes to the background, the report is dropped then anyway.
+- (NSArray<NSDictionary *> *)runBattery:(long long)scLatencyMs suspendCountAtStart:(unsigned int)suspendCountAtStart
 {
     NSString *serverURL = CountlyConnectionManager.sharedInstance.host;
     NSURLSession *session = [self probeSession];
@@ -173,12 +267,12 @@ static NSMutableDictionary *CountlyCTResultRow(NSString *feature, BOOL ok, NSInt
     for (NSDictionary *row in CountlyConnectionTest.rows)
         requestCount += ((NSArray *)row[kRowPaths]).count;
     NSTimeInterval cap = requestCount * self.perRequestTimeout + self.batteryCapExtra;
-    NSDate *batteryStart = NSDate.date;
+    NSTimeInterval batteryStart = CountlyCTUptime();
 
     NSMutableArray<NSDictionary *> *results = NSMutableArray.new;
     for (NSDictionary *row in CountlyConnectionTest.rows)
     {
-        if (self.halted)
+        if (self.halted || atomic_load(&suspendCount) != suspendCountAtStart)
             break;
 
         NSArray<NSString *> *paths = row[kRowPaths];
@@ -189,7 +283,7 @@ static NSMutableDictionary *CountlyCTResultRow(NSString *feature, BOOL ok, NSInt
             continue;
         }
 
-        if (-[batteryStart timeIntervalSinceNow] > cap)
+        if (CountlyCTUptime() - batteryStart > cap)
         {
             NSMutableDictionary *notRun = CountlyCTResultRow(row[kRowFeature], NO, 0, 0);
             notRun[kCountlyCTKeyError] = kCountlyCTErrorNotRun;
@@ -258,7 +352,7 @@ static NSMutableDictionary *CountlyCTResultRow(NSString *feature, BOOL ok, NSInt
     __block NSInteger status = 0;
     __block NSString *failure = nil;
     dispatch_semaphore_t done = dispatch_semaphore_create(0);
-    NSDate *start = NSDate.date;
+    NSTimeInterval start = CountlyCTUptime();
 
     NSURLSessionDataTask *task = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error)
     {
@@ -282,7 +376,7 @@ static NSMutableDictionary *CountlyCTResultRow(NSString *feature, BOOL ok, NSInt
         failure = kCountlyCTErrorTimeout;
     }
 
-    long long latency = (long long)(-[start timeIntervalSinceNow] * 1000);
+    long long latency = (long long)((CountlyCTUptime() - start) * 1000);
     NSMutableDictionary *outcome = [@{kCountlyCTKeyStatus: @(status), kCountlyCTKeyLatency: @(latency)} mutableCopy];
     if (failure)
         outcome[kCountlyCTKeyError] = failure;
