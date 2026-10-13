@@ -817,7 +817,7 @@ static dispatch_once_t onceToken;
             CLY_LOG_D(@"%s, the device ID changed without merge while the fetch was in flight, its log gathering directive belongs to the previous user and is ignored", __FUNCTION__);
 
         if (connectionTestArmed)
-            [CountlyConnectionTest.sharedInstance startBatteryWithServerConfigLatency:fetchLatencyMs deviceID:requestedDeviceID deviceIDType:requestedDeviceIDType deviceIDChangeCount:requestedDeviceIDChangeCount deviceIDMergeCount:requestedDeviceIDMergeCount];
+            [CountlyConnectionTest.sharedInstance startBatteryWithServerConfigLatency:fetchLatencyMs deviceID:requestedDeviceID deviceIDType:requestedDeviceIDType deviceIDMergeCount:requestedDeviceIDMergeCount];
     };
     // Set default values
     NSURLSessionTask *task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:[self serverConfigRequest] completionHandler:handler];

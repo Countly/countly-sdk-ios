@@ -102,7 +102,7 @@ static dispatch_once_t onceToken;
         {
             [self removeOldAgeRequestsFromQueue];
             [self removeSdkLogRequestsToMakeRoom];
-            if (self.queuedRequests.count >= self.storedRequestsLimit && [self isSdkLogRequest:queryString])
+            if (self.queuedRequests.count >= self.storedRequestsLimit && [CountlyPersistency isSdkLogRequest:queryString])
             {
                 // refused rather than making room, a log upload never pushes other data out, its lines go back to the gathering buffer
                 CLY_LOG_D(@"%s request is not queued, reason: the queue is full and a gathered log upload never pushes other requests out, queue size: [%lu]", __FUNCTION__, (unsigned long)self.queuedRequests.count);
@@ -261,7 +261,7 @@ static dispatch_once_t onceToken;
     NSMutableIndexSet* sdkLogRequestIndexes = NSMutableIndexSet.new;
     [self.queuedRequests enumerateObjectsUsingBlock:^(NSString* queryString, NSUInteger idx, BOOL* stop)
     {
-        if ([self isSdkLogRequest:queryString])
+        if ([CountlyPersistency isSdkLogRequest:queryString])
             [sdkLogRequestIndexes addIndex:idx];
 
         *stop = (NSInteger)sdkLogRequestIndexes.count >= excessCount;
@@ -280,10 +280,15 @@ static dispatch_once_t onceToken;
     CLY_LOG_D(@"%s request queue is full, gathered log uploads are dropped before any other request, droppedCount: [%lu], queue size: [%lu]", __FUNCTION__, (unsigned long)droppedRequests.count, (unsigned long)self.queuedRequests.count);
 }
 
-/// Whether the request is a gathered log upload.
-- (BOOL)isSdkLogRequest:(NSString *)queryString
++ (BOOL)isSdkLogRequest:(NSString *)queryString
 {
-    return [queryString rangeOfString:[NSString stringWithFormat:@"&%@=", kCountlyQSSdkLogs]].location != NSNotFound;
+    static NSString* sdkLogsParameter;
+    static dispatch_once_t sdkLogsParameterOnce;
+    dispatch_once(&sdkLogsParameterOnce, ^{
+        sdkLogsParameter = [NSString stringWithFormat:@"&%@=", kCountlyQSSdkLogs];
+    });
+
+    return [queryString rangeOfString:sdkLogsParameter].location != NSNotFound;
 }
 
 - (void)removeOldAgeRequestsFromQueue

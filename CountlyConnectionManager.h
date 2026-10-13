@@ -52,9 +52,7 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 - (void)sendEvents;
 /// Queues one serialised 'sdk_logs' batch. Returns NO when the queue refuses it and the caller still owns the lines.
 - (BOOL)sendSdkLogs:(NSString * _Nonnull)sdkLogsJSON;
-/// Queues the connection test report as its own 'ct_results' request under the current device ID, with no consent gate.
-- (void)sendConnectionTestResults:(NSString * _Nonnull)resultsJSON;
-/// Queues the connection test report under the given device ID, and drops it when there is no app key.
+/// Queues the connection test report as its own 'ct_results' request under the given device ID, and drops it when there is no app key.
 - (void)sendConnectionTestResults:(NSString * _Nonnull)resultsJSON deviceID:(NSString * _Nonnull)deviceID deviceIDType:(NSUInteger)deviceIDType;
 - (void)attemptToSendStoredRequests;
 - (void)sendPushToken:(NSString *)token;

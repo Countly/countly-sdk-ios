@@ -463,16 +463,15 @@ static NSDictionary* CountlySDKLogsUploadableBatch(NSDictionary* batch)
             message = [message substringToIndex:boundary.location];
         }
 
+        // every line keeps its consent so a later withdrawal can send it back to wait, init lines are decided when init finishes
+        id consent = CountlySDKLogsConsentForLine(message) ?: NSNull.null;
         NSDictionary* line = @{
             kCountlyQSSDKLogsTimestamp: @((long long)floor(NSDate.date.timeIntervalSince1970 * 1000)),
             kCountlyQSSdkLogsMessage: message,
             // a one character string, not a boxed char: @('e') would go on the wire as 101
-            kCountlyQSSdkLogsLevel: [NSString stringWithFormat:@"%c", levelChar]
+            kCountlyQSSdkLogsLevel: [NSString stringWithFormat:@"%c", levelChar],
+            kCountlySDKLogsAwaitedConsent: consent
         };
-
-        // every line keeps its consent so a later withdrawal can send it back to wait, init lines are decided when init finishes
-        id consent = CountlySDKLogsConsentForLine(message) ?: NSNull.null;
-        line = CountlySDKLogsLineWithConsent(line, consent);
         if (_hasFinishedInit && !CountlySDKLogsConsentGiven(consent))
         {
             [_sdkLogsAwaitingConsent addObject:line];
@@ -620,7 +619,7 @@ static void CountlySDKLogsSplitByConsent(NSArray* lines, NSMutableArray* buffere
 
 - (void)countEvictedSdkLogRequest:(NSString *)queryString
 {
-    NSString* payload = [queryString cly_valueForQueryStringKey:kCountlySDKLogsTransportMarker];
+    NSString* payload = [queryString cly_valueForQueryStringKey:kCountlyQSSdkLogs];
     id batch = payload ? [NSJSONSerialization JSONObjectWithData:[payload cly_dataUTF8] options:0 error:nil] : nil;
     if (![batch isKindOfClass:NSDictionary.class] || ![batch[kCountlyQSSDKLogsBatchLines] isKindOfClass:NSArray.class] || ![batch[kCountlyQSSDKLogsDropCount] isKindOfClass:NSNumber.class])
         return;
@@ -1152,6 +1151,16 @@ void CountlyRunOnMainThread(dispatch_block_t block)
 
 - (NSURLSession *)ImmediateURLSession
 {
+    CountlyConnectionManager* connectionManager = CountlyConnectionManager.sharedInstance;
+    BOOL usesPinnedCertificates = connectionManager.pinnedCertificates.count > 0;
+    if (usesPinnedCertificates)
+    {
+        @synchronized (self) {
+            if (self.pinnedImmediateURLSession)
+                return self.pinnedImmediateURLSession;
+        }
+    }
+
     // Base on the user-provided URLSessionConfiguration so that things like
     // protocolClasses (test mocks), cookie policy, etc. are preserved.
     // If none was provided, fall back to default session configuration.
@@ -1163,8 +1172,7 @@ void CountlyRunOnMainThread(dispatch_block_t block)
     immediateConfig.timeoutIntervalForRequest = 60;
     immediateConfig.timeoutIntervalForResource = 7 * 24 * 60 * 60;
 
-    CountlyConnectionManager* connectionManager = CountlyConnectionManager.sharedInstance;
-    if (connectionManager.pinnedCertificates.count == 0)
+    if (!usesPinnedCertificates)
         return [NSURLSession sessionWithConfiguration:immediateConfig];
 
     // the connection manager checks the pinned certificates, and one session is kept since a delegate session lives until invalidated

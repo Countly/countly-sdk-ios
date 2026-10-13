@@ -34,7 +34,7 @@ extern NSString* const kCountlyCTErrorOpaque;
 - (void)startBatteryWithServerConfigLatency:(long long)scLatencyMs;
 
 /// Runs the battery for the user whose settings fetch armed it: reports under that user, waits for the foreground, skips after a merge.
-- (void)startBatteryWithServerConfigLatency:(long long)scLatencyMs deviceID:(NSString *)deviceID deviceIDType:(NSUInteger)deviceIDType deviceIDChangeCount:(NSUInteger)deviceIDChangeCount deviceIDMergeCount:(NSUInteger)deviceIDMergeCount;
+- (void)startBatteryWithServerConfigLatency:(long long)scLatencyMs deviceID:(NSString *)deviceID deviceIDType:(NSUInteger)deviceIDType deviceIDMergeCount:(NSUInteger)deviceIDMergeCount;
 
 /// Called when the app goes to the background. A battery running across it is discarded, since its probes stalled.
 - (void)noteAppSuspended;

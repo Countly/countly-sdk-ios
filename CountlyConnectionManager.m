@@ -294,7 +294,7 @@ static dispatch_once_t onceToken;
     
     // lines logged while sending a gathered log batch are not gathered, or every tick would upload a batch about the
     // last one. The caller may already be marked (the delivery loop lands here), so its mark is restored on the way out
-    BOOL isSdkLogsTransport = [firstItemInQueue cly_valueForQueryStringKey:kCountlyQSSdkLogs] != nil;
+    BOOL isSdkLogsTransport = [CountlyPersistency isSdkLogRequest:firstItemInQueue];
     BOOL callerTransportWork = CountlyCommon.sharedInstance.isSdkLogsTransportWork;
     [CountlyCommon.sharedInstance setSdkLogsTransportWork:callerTransportWork || isSdkLogsTransport];
 
@@ -942,11 +942,6 @@ static dispatch_once_t onceToken;
 
     [self proceedOnQueue];
     return YES;
-}
-
-- (void)sendConnectionTestResults:(NSString *)resultsJSON
-{
-    [self sendConnectionTestResults:resultsJSON deviceID:CountlyDeviceInfo.sharedInstance.deviceID deviceIDType:CountlyDeviceInfo.sharedInstance.deviceIDTypeValue];
 }
 
 - (void)sendConnectionTestResults:(NSString *)resultsJSON deviceID:(NSString *)deviceID deviceIDType:(NSUInteger)deviceIDType
