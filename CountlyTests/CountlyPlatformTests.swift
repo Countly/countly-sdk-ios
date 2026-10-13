@@ -229,6 +229,34 @@ class CountlyPlatformIntegrationTests: CountlyBaseTestCase {
             XCTAssertEqual(TestUtils.SDK_NAME, parsed["sdk_name"] as? String)
         }
     }
+
+    /// A deprecated call warns only the first time it is used in a run.
+    func test_deprecatedAPI_warnsOnlyOnItsFirstUse() throws {
+        let config = TestUtils.createBaseConfig()
+        config.requiresConsent = false
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+
+        let logger = WarningRecordingLogger()
+        CountlyCommon.sharedInstance().loggerDelegate = logger
+        defer { CountlyCommon.sharedInstance().loggerDelegate = nil }
+
+        // called by selector, so the test target does not compile a deprecation warning
+        let deprecatedCall = NSSelectorFromString("remoteConfigValueForKey:")
+        let deprecationWarning = "use '[remoteConfig getValue:]' instead"
+        _ = Countly.sharedInstance().perform(deprecatedCall, with: "first")
+        let warningsAfterFirstUse = logger.count(containing: deprecationWarning)
+        _ = Countly.sharedInstance().perform(deprecatedCall, with: "second")
+        _ = Countly.sharedInstance().perform(deprecatedCall, with: "third")
+        XCTAssertLessThanOrEqual(warningsAfterFirstUse, 1, "the first use warns once at most")
+        XCTAssertEqual(
+            warningsAfterFirstUse, logger.count(containing: deprecationWarning),
+            "later uses in the same run must not warn again")
+
+        let function = "deprecatedCallOfThisTest_\(UUID().uuidString)"
+        XCTAssertTrue(CountlyInternalLogIsFirstDeprecatedUse(function), "the first use of a deprecated call warns")
+        XCTAssertFalse(CountlyInternalLogIsFirstDeprecatedUse(function), "a later use of the same call does not")
+    }
 }
 
 // MARK: - Application lifecycle
@@ -406,8 +434,7 @@ class CountlyPlatformLifecycleTests: CountlyBaseTestCase {
     #endif
 
     /// Visibility segmentation depends on a per-platform foreground check
-    /// (`UIApplication` / `NSApplication` / `WKExtension`). It must be resolvable —
-    /// and therefore emitted as 0 or 1 — on every platform.
+    /// (`UIApplication` / `NSApplication` / `WKExtension`); the test process is in the foreground everywhere, so it reports 1.
     func test_visibilityTracking_resolvesForegroundStateOnEveryPlatform() throws {
         let config = TestUtils.createBaseConfig()
         config.requiresConsent = false
@@ -437,8 +464,8 @@ class CountlyPlatformLifecycleTests: CountlyBaseTestCase {
         let visibility = try XCTUnwrap(
             segmentation["cly_v"] as? Int,
             "cly_v must be reported on \(TestPlatform.osName), got: \(segmentation)")
-        XCTAssertTrue(
-            visibility == 0 || visibility == 1, "cly_v must be 0 or 1, got \(visibility)")
+        XCTAssertEqual(
+            1, visibility, "the test process is in the foreground, cly_v must be 1 on \(TestPlatform.osName)")
     }
 
     #if os(macOS)
@@ -467,4 +494,50 @@ class CountlyPlatformLifecycleTests: CountlyBaseTestCase {
             XCTAssertEqual(1, count(of: "begin_session=1"), "and only one session")
     }
     #endif
+
+    #if !os(watchOS)
+    /// Activation while a session runs, as on macOS or after an iOS alert, keeps the session without a warning.
+    func test_activationWithARunningSession_keepsItWithoutAWarning() throws {
+        startWithAutomaticSession()
+        let sessionsAtStart = count(of: "begin_session=1")
+        XCTAssertGreaterThanOrEqual(sessionsAtStart, 1, "Expected a session at start")
+
+        let logger = WarningRecordingLogger()
+        CountlyCommon.sharedInstance().loggerDelegate = logger
+        defer { CountlyCommon.sharedInstance().loggerDelegate = nil }
+
+        #if os(macOS)
+            post(NSApplication.willResignActiveNotification)
+            post(NSApplication.didBecomeActiveNotification)
+        #else
+            post(UIApplication.willResignActiveNotification)
+            post(UIApplication.didBecomeActiveNotification)
+        #endif
+
+        XCTAssertEqual(sessionsAtStart, count(of: "begin_session=1"), "activation must keep the running session")
+        XCTAssertEqual(
+            0, logger.count(containing: "A session is already running"),
+            "activation must not warn about the session it keeps")
+    }
+    #endif
+}
+
+/// Collects the lines the SDK hands to a host app's logger. Lines can arrive from any queue.
+private final class WarningRecordingLogger: NSObject, CountlyLoggerDelegate {
+    private let lock = NSLock()
+    private var lines: [String] = []
+
+    /// Keeps every line the SDK logs.
+    func internalLog(_ log: String, with level: CLYInternalLogLevel) {
+        lock.lock()
+        lines.append(log)
+        lock.unlock()
+    }
+
+    /// Number of collected lines that contain the given text.
+    func count(containing text: String) -> Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return lines.filter { $0.contains(text) }.count
+    }
 }

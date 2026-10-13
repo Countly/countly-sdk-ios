@@ -7,6 +7,9 @@
 #import "CountlyCommon.h"
 #import <mach-o/dyld.h>
 #include <execinfo.h>
+#include <pthread.h>
+#include <signal.h>
+#include <stdatomic.h>
 
 #if __has_include(<CrashReporter/CrashReporter.h>)
     #define COUNTLY_PLCRASHREPORTER_EXISTS true
@@ -62,6 +65,128 @@ typedef NS_ENUM(NSInteger, CLYCrashHandlerInstallation)
     CLYCrashHandlerInstallationPLCrashReporter
 };
 
+void CountlyUncaughtExceptionHandler(NSException *exception);
+void CountlySignalHandler(int signalCode);
+
+static NSUncaughtExceptionHandler* s_previousExceptionHandler = NULL;
+static BOOL s_hasInstalledExceptionHandler = NO;
+static atomic_bool s_isHandlingUncaughtException = false;
+
+/// Installs Countly's uncaught exception handler, chaining to the one it replaces, and leaves a handler installed over it in place.
+static void CountlyInstallUncaughtExceptionHandler(void)
+{
+    NSUncaughtExceptionHandler* current = NSGetUncaughtExceptionHandler();
+    if (current == &CountlyUncaughtExceptionHandler)
+        return;
+
+    if (current && s_hasInstalledExceptionHandler && current != s_previousExceptionHandler)
+        return;
+
+    s_previousExceptionHandler = current;
+    s_hasInstalledExceptionHandler = YES;
+    NSSetUncaughtExceptionHandler(&CountlyUncaughtExceptionHandler);
+}
+
+/// Puts back the uncaught exception handler Countly replaced, unless another handler has replaced Countly's since.
+static void CountlyUninstallUncaughtExceptionHandler(void)
+{
+    if (NSGetUncaughtExceptionHandler() == &CountlyUncaughtExceptionHandler)
+        NSSetUncaughtExceptionHandler(s_previousExceptionHandler);
+}
+
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV || TARGET_OS_OSX)
+static const int kCountlyCrashSignals[] = {SIGABRT, SIGILL, SIGSEGV, SIGFPE, SIGBUS, SIGPIPE, SIGTRAP};
+static const size_t kCountlyCrashSignalsCount = sizeof(kCountlyCrashSignals) / sizeof(kCountlyCrashSignals[0]);
+static struct sigaction s_previousSignalActions[NSIG];
+static BOOL s_hasPreviousSignalAction[NSIG];
+// the thread reporting each signal, or the handed over mark once that is done, until Countly's handler is installed again
+static _Atomic(pthread_t) s_signalHandlingThread[NSIG];
+#define kCountlySignalHandedOver ((pthread_t)(uintptr_t)1)
+
+/// Whether the given action runs CountlySignalHandler.
+static BOOL CountlyIsCountlySignalAction(const struct sigaction *action)
+{
+    return !(action->sa_flags & SA_SIGINFO) && action->sa_handler == CountlySignalHandler;
+}
+
+/// Whether two actions run the same handler.
+static BOOL CountlyIsSameSignalAction(const struct sigaction *action, const struct sigaction *other)
+{
+    return (action->sa_flags & SA_SIGINFO) == (other->sa_flags & SA_SIGINFO) && action->sa_handler == other->sa_handler;
+}
+
+/// Installs CountlySignalHandler for every crash signal the app does not ignore, keeping the replaced action and leaving later handlers in place.
+static void CountlyInstallSignalHandlers(void)
+{
+    for (size_t i = 0; i < kCountlyCrashSignalsCount; i++)
+    {
+        int signalCode = kCountlyCrashSignals[i];
+        struct sigaction current;
+        if (sigaction(signalCode, NULL, &current) != 0 || CountlyIsCountlySignalAction(&current))
+            continue;
+
+        BOOL isPlainDisposition = !(current.sa_flags & SA_SIGINFO);
+        if (isPlainDisposition && current.sa_handler == SIG_IGN)
+            continue;
+
+        BOOL isDefault = isPlainDisposition && current.sa_handler == SIG_DFL;
+        BOOL isReplacedAction = s_hasPreviousSignalAction[signalCode] && CountlyIsSameSignalAction(&current, &s_previousSignalActions[signalCode]);
+        if (s_hasPreviousSignalAction[signalCode] && !isDefault && !isReplacedAction)
+            continue;
+
+        struct sigaction action;
+        memset(&action, 0, sizeof(action));
+        action.sa_handler = CountlySignalHandler;
+        sigemptyset(&action.sa_mask);
+
+        struct sigaction previous;
+        if (sigaction(signalCode, &action, &previous) == 0)
+        {
+            s_previousSignalActions[signalCode] = previous;
+            s_hasPreviousSignalAction[signalCode] = YES;
+            atomic_store(&s_signalHandlingThread[signalCode], NULL);
+        }
+    }
+}
+
+/// Puts back the actions Countly replaced, for the signals where Countly's handler is still the live one.
+static void CountlyUninstallSignalHandlers(void)
+{
+    for (size_t i = 0; i < kCountlyCrashSignalsCount; i++)
+    {
+        int signalCode = kCountlyCrashSignals[i];
+        struct sigaction current;
+        if (s_hasPreviousSignalAction[signalCode] && sigaction(signalCode, NULL, &current) == 0 && CountlyIsCountlySignalAction(&current))
+            sigaction(signalCode, &s_previousSignalActions[signalCode], NULL);
+    }
+}
+
+/// Restores the action Countly replaced, or the default one, and raises the signal again so it lands there once the handler returns.
+static void CountlyHandOverSignal(int signalCode)
+{
+    if (s_hasPreviousSignalAction[signalCode] && !CountlyIsCountlySignalAction(&s_previousSignalActions[signalCode]))
+        sigaction(signalCode, &s_previousSignalActions[signalCode], NULL);
+    else
+        signal(signalCode, SIG_DFL);
+
+    raise(signalCode);
+}
+#endif
+
+/// Forgets the handlers Countly replaced and the marks of a crash being handled, so the next install chains to whatever is live then.
+static void CountlyForgetReplacedCrashHandlers(void)
+{
+    s_previousExceptionHandler = NULL;
+    s_hasInstalledExceptionHandler = NO;
+    atomic_store(&s_isHandlingUncaughtException, false);
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV || TARGET_OS_OSX)
+    memset(s_previousSignalActions, 0, sizeof(s_previousSignalActions));
+    memset(s_hasPreviousSignalAction, 0, sizeof(s_hasPreviousSignalAction));
+    for (int signalCode = 0; signalCode < NSIG; signalCode++)
+        atomic_store(&s_signalHandlingThread[signalCode], NULL);
+#endif
+}
+
 @interface CountlyCrashReporter ()
 @property (nonatomic) CLYCrashHandlerInstallation crashHandlerInstallation;
 @property (nonatomic) NSMutableArray* customCrashLogs;
@@ -103,28 +228,15 @@ typedef NS_ENUM(NSInteger, CLYCrashHandlerInstallation)
 
 - (void)startCrashReporting
 {
+#ifdef COUNTLY_PLCRASHREPORTER_EXISTS
+    NSDictionary* pendingCrashReport = nil;
+#endif
+
     // Serialized because the behavior settings response handler calls this from a background thread while
     // init and consent changes call it from another. 'stopCrashReporting' is deliberately left unlocked,
     // since it is also reached from the crash handler itself, where blocking on a lock is not acceptable.
     @synchronized (self)
     {
-        // Already installed through the mechanism that is currently configured. For the default handler path
-        // the live handler is checked as well, since the global handler can be replaced externally while the
-        // singleton (and its state) lives on, and it should then be reinstalled. PLCrashReporter installs its
-        // own handlers, so for that path the recorded state is all there is to go on.
-        if (self.crashHandlerInstallation == CLYCrashHandlerInstallationPLCrashReporter && self.shouldUsePLCrashReporter)
-        {
-            CLY_LOG_D(@"%s PLCrashReporter based crash handlers are already installed, nothing to do", __FUNCTION__);
-            return;
-        }
-
-        if (self.crashHandlerInstallation == CLYCrashHandlerInstallationDefault && !self.shouldUsePLCrashReporter
-            && NSGetUncaughtExceptionHandler() == &CountlyUncaughtExceptionHandler)
-        {
-            CLY_LOG_D(@"%s built in crash handlers are already installed, nothing to do", __FUNCTION__);
-            return;
-        }
-
         // Gated on the resolved 'acr' value (seeded from the developer config, overridable by the server),
         // so the server can enable automatic crash reporting even when the developer did not opt in
         if (!CountlyServerConfig.sharedInstance.automaticCrashReportingEnabled)
@@ -141,6 +253,13 @@ typedef NS_ENUM(NSInteger, CLYCrashHandlerInstallation)
 
         if (self.shouldUsePLCrashReporter)
         {
+            if (self.crashHandlerInstallation == CLYCrashHandlerInstallationPLCrashReporter)
+            {
+                CLY_LOG_D(@"%s PLCrashReporter based crash handlers are already installed, capture is wanted again", __FUNCTION__);
+                [CountlyPersistency.sharedInstance storePLCrashCaptureSuppressedSince:nil];
+                return;
+            }
+
             if (self.crashHandlerInstallation == CLYCrashHandlerInstallationDefault)
             {
                 // 'shouldUsePLCrashReporter' changed since the last install, so remove the default handlers
@@ -152,34 +271,41 @@ typedef NS_ENUM(NSInteger, CLYCrashHandlerInstallation)
 
             CLY_LOG_D(@"%s installing PLCrashReporter based crash handlers, useMachSignalHandler: [%@]", __FUNCTION__, self.shouldUseMachSignalHandler ? @"YES" : @"NO");
 #ifdef COUNTLY_PLCRASHREPORTER_EXISTS
-            [self startPLCrashReporter];
+            pendingCrashReport = [self startPLCrashReporter];
             // 'startPLCrashReporter' does not report whether PLCrashReporter accepted the install
             self.crashHandlerInstallation = CLYCrashHandlerInstallationPLCrashReporter;
+            [CountlyPersistency.sharedInstance storePLCrashCaptureSuppressedSince:nil];
 #else
             // Logged rather than raised: this is a build configuration mistake, and this method is also reached
             // from the behavior settings response handler on a background thread, where raising would crash the
             // app, and from init, where it would abort the rest of 'startWithConfig'
             CLY_LOG_E(@"%s PLCrashReporter dependency can not be found in Project, automatic crash reporting will not start", __FUNCTION__);
 #endif
-            return;
         }
+        else
+        {
+            if (self.crashHandlerInstallation == CLYCrashHandlerInstallationDefault)
+                CLY_LOG_V(@"%s built in crash handlers are already installed, any of them that was removed is put back", __FUNCTION__);
+            else
+                CLY_LOG_D(@"%s installing the built in uncaught exception handler and signal handlers", __FUNCTION__);
 
-        CLY_LOG_D(@"%s installing the built in uncaught exception handler and signal handlers", __FUNCTION__);
-
-        NSSetUncaughtExceptionHandler(&CountlyUncaughtExceptionHandler);
-
+            CountlyInstallUncaughtExceptionHandler();
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV || TARGET_OS_OSX)
-        signal(SIGABRT, CountlySignalHandler);
-        signal(SIGILL, CountlySignalHandler);
-        signal(SIGSEGV, CountlySignalHandler);
-        signal(SIGFPE, CountlySignalHandler);
-        signal(SIGBUS, CountlySignalHandler);
-        signal(SIGPIPE, CountlySignalHandler);
-        signal(SIGTRAP, CountlySignalHandler);
+            CountlyInstallSignalHandlers();
 #endif
-
-        self.crashHandlerInstallation = CLYCrashHandlerInstallationDefault;
+            self.crashHandlerInstallation = CLYCrashHandlerInstallationDefault;
+        }
     }
+
+#ifdef COUNTLY_PLCRASHREPORTER_EXISTS
+    // outside the lock: the developer's callbacks run here and may call back into the SDK
+    if (pendingCrashReport)
+    {
+        CountlyRunOnMainThread(^{
+            [self processPendingCrashReport:pendingCrashReport];
+        });
+    }
+#endif
 }
 
 
@@ -200,39 +326,68 @@ typedef NS_ENUM(NSInteger, CLYCrashHandlerInstallation)
     {
         // PLCrashReporter can not be uninstalled once enabled, and Countly never installed the default
         // handlers on that path, so they are left alone rather than clobbering handlers that belong to the
-        // host app or another SDK. Reporting is suppressed by the consent and 'acr' checks in
-        // 'CountlyExceptionHandler' instead.
+        // host app or another SDK. What it captures from now on is purged instead of sent.
         // NOTE: kept at Debug on purpose, this method is reachable from the signal handler and the Error and
         // Warning macros are not async signal safe
-        CLY_LOG_D(@"%s PLCrashReporter can not be uninstalled, automatically detected crashes stay captured until the next launch", __FUNCTION__);
+        CLY_LOG_D(@"%s PLCrashReporter can not be uninstalled, crashes it captures from now on will be discarded", __FUNCTION__);
+        [self markPLCrashCaptureSuppressed];
     }
     else
     {
-        CLY_LOG_D(@"%s uninstalling the uncaught exception handler and restoring default signal handlers", __FUNCTION__);
+        CLY_LOG_D(@"%s uninstalling the uncaught exception handler and restoring the replaced signal handlers", __FUNCTION__);
         [self uninstallDefaultCrashHandlers];
     }
 
     self.crashHandlerInstallation = CLYCrashHandlerInstallationNone;
 }
 
+- (void)resetInstance
+{
+    if (self.crashHandlerInstallation == CLYCrashHandlerInstallationDefault)
+    {
+        CLY_LOG_D(@"%s putting back the crash handlers Countly replaced", __FUNCTION__);
+        [self uninstallDefaultCrashHandlers];
+        self.crashHandlerInstallation = CLYCrashHandlerInstallationNone;
+    }
+    else if (self.crashHandlerInstallation == CLYCrashHandlerInstallationPLCrashReporter)
+    {
+        CLY_LOG_D(@"%s PLCrashReporter stays installed, crashes it captures until the SDK starts again will be discarded", __FUNCTION__);
+        [self markPLCrashCaptureSuppressed];
+    }
+
+    CountlyForgetReplacedCrashHandlers();
+}
+
+- (void)suppressAutomaticCrashCapture
+{
+    if (self.crashHandlerInstallation != CLYCrashHandlerInstallationPLCrashReporter)
+        return;
+
+    CLY_LOG_D(@"%s automatic crash reporting is off while PLCrashReporter stays installed, crashes it captures from now on will be discarded", __FUNCTION__);
+    [self markPLCrashCaptureSuppressed];
+}
+
+/// Records when automatic capture stopped being wanted while PLCrashReporter stays installed. An earlier record is kept.
+- (void)markPLCrashCaptureSuppressed
+{
+    if (![CountlyPersistency.sharedInstance retrievePLCrashCaptureSuppressedSince])
+        [CountlyPersistency.sharedInstance storePLCrashCaptureSuppressedSince:NSDate.date];
+}
+
+/// Puts back the uncaught exception handler and the signal actions Countly replaced, where Countly's are still the live ones.
 - (void)uninstallDefaultCrashHandlers
 {
-    NSSetUncaughtExceptionHandler(NULL);
+    CountlyUninstallUncaughtExceptionHandler();
 
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV || TARGET_OS_OSX)
-    signal(SIGABRT, SIG_DFL);
-    signal(SIGILL, SIG_DFL);
-    signal(SIGSEGV, SIG_DFL);
-    signal(SIGFPE, SIG_DFL);
-    signal(SIGBUS, SIG_DFL);
-    signal(SIGPIPE, SIG_DFL);
-    signal(SIGTRAP, SIG_DFL);
+    CountlyUninstallSignalHandlers();
 #endif
 }
 
 #ifdef COUNTLY_PLCRASHREPORTER_EXISTS
 
-- (void)startPLCrashReporter
+/// Enables PLCrashReporter and returns the report it left from the previous run, to be processed outside the lock, or nil when there is none to send.
+- (NSDictionary *)startPLCrashReporter
 {
     PLCrashReporterSignalHandlerType type = self.shouldUseMachSignalHandler ? PLCrashReporterSignalHandlerTypeMach : PLCrashReporterSignalHandlerTypeBSD;
     PLCrashReporterConfig* config = [PLCrashReporterConfig.alloc initWithSignalHandlerType:type symbolicationStrategy:PLCrashReporterSymbolicationStrategyNone];
@@ -241,15 +396,19 @@ typedef NS_ENUM(NSInteger, CLYCrashHandlerInstallation)
 
     CLY_LOG_D(@"%s PLCrashReporter is configured, hasPendingCrashReport: [%@]", __FUNCTION__, self.crashReporter.hasPendingCrashReport ? @"YES" : @"NO");
 
+    NSDictionary* pendingCrashReport = nil;
     if (self.crashReporter.hasPendingCrashReport)
-        [self handlePendingCrashReport];
+        pendingCrashReport = [self loadPendingCrashReport];
     else
         [CountlyPersistency.sharedInstance deleteCustomCrashLogFile];
 
     [self.crashReporter enableCrashReporter];
+
+    return pendingCrashReport;
 }
 
-- (void)handlePendingCrashReport
+/// Builds the pending PLCrashReporter crash report with its breadcrumbs and clears them, or purges it and returns nil when capture was not wanted.
+- (NSDictionary *)loadPendingCrashReport
 {
     NSError *error;
 
@@ -257,14 +416,25 @@ typedef NS_ENUM(NSInteger, CLYCrashHandlerInstallation)
     if (!crashData)
     {
         CLY_LOG_E(@"%s pending crash report data could not be loaded from disk, error: [%@]", __FUNCTION__, error.localizedDescription);
-        return;
+        return nil;
     }
 
     PLCrashReport *report = [PLCrashReport.alloc initWithData:crashData error:&error];
     if (!report)
     {
         CLY_LOG_E(@"%s pending crash report could not be parsed from the loaded data, error: [%@]", __FUNCTION__, error.localizedDescription);
-        return;
+        return nil;
+    }
+
+    NSDate* suppressedSince = [CountlyPersistency.sharedInstance retrievePLCrashCaptureSuppressedSince];
+    NSDate* crashedAt = report.systemInfo.timestamp;
+    // a report without a time can not be shown to predate the window, so it is treated as captured inside it
+    if (suppressedSince && (!crashedAt || [crashedAt compare:suppressedSince] != NSOrderedAscending))
+    {
+        CLY_LOG_D(@"%s pending crash report was captured while automatic crash reporting was not wanted, it will be discarded", __FUNCTION__);
+        [CountlyPersistency.sharedInstance deleteCustomCrashLogFile];
+        [self.crashReporter purgePendingCrashReport];
+        return nil;
     }
 
     NSString* reportText = [PLCrashReportTextFormatter stringValueForCrashReport:report withTextFormat:PLCrashReportTextFormatiOS];
@@ -276,6 +446,14 @@ typedef NS_ENUM(NSInteger, CLYCrashHandlerInstallation)
     crashReport[kCountlyCRKeyPLCrash] = @YES;
     crashReport[kCountlyCRKeyCustom] = [CountlyPersistency.sharedInstance customCrashLogsFromFile];
 
+    [CountlyPersistency.sharedInstance deleteCustomCrashLogFile];
+
+    return crashReport;
+}
+
+/// Hands the pending report to the developer's callbacks, queues it unless they decline it, then purges it. Main thread only.
+- (void)processPendingCrashReport:(NSDictionary *)crashReport
+{
     if (self.crashOccuredOnPreviousSessionCallback)
         self.crashOccuredOnPreviousSessionCallback(crashReport);
 
@@ -296,7 +474,6 @@ typedef NS_ENUM(NSInteger, CLYCrashHandlerInstallation)
         [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:NO];
     }
 
-    [CountlyPersistency.sharedInstance deleteCustomCrashLogFile];
     [self.crashReporter purgePendingCrashReport];
 }
 
@@ -337,9 +514,19 @@ typedef NS_ENUM(NSInteger, CLYCrashHandlerInstallation)
     [self recordException:exception isFatal:isFatal stackTrace:stackTrace segmentation:segmentation];
 }
 
+/// The uncaught exception handler Countly installs: reports the crash, then passes it on to the handler Countly replaced.
 void CountlyUncaughtExceptionHandler(NSException *exception)
 {
+    // a handler that chains back into Countly's would otherwise call the two in turn forever
+    bool expected = false;
+    if (!atomic_compare_exchange_strong(&s_isHandlingUncaughtException, &expected, true))
+        return;
+
     CountlyExceptionHandler(exception, true, true);
+
+    NSUncaughtExceptionHandler* previousHandler = s_previousExceptionHandler;
+    if (previousHandler && previousHandler != &CountlyUncaughtExceptionHandler)
+        previousHandler(exception);
 }
 
 void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDetect)
@@ -351,6 +538,10 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     // 'acr' = false from the server disables them without uninstalling the handler. Manually recorded
     // exceptions stay governed by 'crt' only.
     if (isAutoDetect && !CountlyServerConfig.sharedInstance.automaticCrashReportingEnabled)
+        return;
+
+    // a handler installed over Countly's can still chain into it after crash consent is withdrawn
+    if (isAutoDetect && !CountlyConsentManager.sharedInstance.consentForCrashReporting)
         return;
 
     NSArray* stackTrace = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
@@ -433,6 +624,28 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
 
 void CountlySignalHandler(int signalCode)
 {
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV || TARGET_OS_OSX)
+    pthread_t handlingThread = NULL;
+    if (!atomic_compare_exchange_strong(&s_signalHandlingThread[signalCode], &handlingThread, pthread_self()))
+    {
+        if (handlingThread != pthread_self() && handlingThread != kCountlySignalHandedOver)
+        {
+            // another thread crashed with this signal first, its report goes out before its hand over ends the process
+            struct timespec pollInterval = {0, 10 * NSEC_PER_MSEC};
+            while (atomic_load(&s_signalHandlingThread[signalCode]) == handlingThread)
+                nanosleep(&pollInterval, NULL);
+
+            raise(signalCode);
+            return;
+        }
+
+        // re-entered on the reporting thread or after the hand over, so a handler chains back into Countly's and the default action ends the loop
+        signal(signalCode, SIG_DFL);
+        raise(signalCode);
+        return;
+    }
+#endif
+
     const unsigned int kCountlyStackFramesMax = 128;
     void *stack[kCountlyStackFramesMax];
     NSInteger frameCount = backtrace(stack, kCountlyStackFramesMax);
@@ -455,7 +668,12 @@ void CountlySignalHandler(int signalCode)
     NSString *reason = [NSString stringWithFormat:@"App terminated by SIG%@", [NSString stringWithUTF8String:sys_signame[signalCode]].uppercaseString];
     NSException *e = [NSException exceptionWithName:@"Fatal Signal" reason:reason userInfo:userInfo];
 
-    CountlyUncaughtExceptionHandler(e);
+    CountlyExceptionHandler(e, true, true);
+
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV || TARGET_OS_OSX)
+    CountlyHandOverSignal(signalCode);
+    atomic_store(&s_signalHandlingThread[signalCode], kCountlySignalHandedOver);
+#endif
 }
 
 - (void)log:(NSString *)log

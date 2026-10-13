@@ -347,7 +347,7 @@ static dispatch_once_t onceToken;
 
 - (void)addExceptionForAutoViewTracking:(NSString *)exception
 {
-    CLY_LOG_W(@"%s deprecated API used, addAutoViewTrackingExclutionList should be used instead, exception: [%@]", __FUNCTION__, exception);
+    CLY_LOG_W_DEPRECATED(@"%s deprecated API used, addAutoViewTrackingExclutionList should be used instead, exception: [%@]", __FUNCTION__, exception);
 
     if (!exception.length)
     {
@@ -360,7 +360,7 @@ static dispatch_once_t onceToken;
 
 - (void)removeExceptionForAutoViewTracking:(NSString *)exception
 {
-    CLY_LOG_W(@"%s deprecated API used, exception will be removed from the auto view tracking exclusion list, exception: [%@]", __FUNCTION__, exception);
+    CLY_LOG_W_DEPRECATED(@"%s deprecated API used, exception will be removed from the auto view tracking exclusion list, exception: [%@]", __FUNCTION__, exception);
     [self.automaticViewTrackingExclusionList removeObject:exception];
 }
 
@@ -662,16 +662,23 @@ static dispatch_once_t onceToken;
     // Create an array to store keys for views that need to be removed
     NSMutableArray<NSString *> *keysToRemove = [NSMutableArray array];
     NSMutableArray<NSString *> *keysToStart = [NSMutableArray array];
-    
+    NSMutableArray<NSString *> *autoStoppedKeysToStart = [NSMutableArray array];
+
     // Collect keys without modifying the dictionary
     [self.viewDataDictionary enumerateKeysAndObjectsUsingBlock:^(NSString * _Nonnull key, CountlyViewData * _Nonnull viewData, BOOL * _Nonnull stop) {
         if (viewData.willStartAgain)
         {
-            [keysToStart addObject:key];
+            if (viewData.isAutoStoppedView)
+                [autoStoppedKeysToStart addObject:key];
+            else
+                [keysToStart addObject:key];
             [keysToRemove addObject:viewData.viewID];
         }
     }];
-    
+
+    // starting any view stops a running auto stopped view, so the auto stopped one is started last to keep running
+    [keysToStart addObjectsFromArray:autoStoppedKeysToStart];
+
     CLY_LOG_D(@"%s previously stopped views will be started automatically, view count: [%lu]", __FUNCTION__, (unsigned long)keysToStart.count);
 
     // Start the collected views after enumeration

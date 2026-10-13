@@ -8,6 +8,9 @@
 
 @interface CountlyServerConfig () {
     NSTimer *_requestTimer;
+    // the developer's config from start, every later fetch applies the settings on top of it
+    CountlyConfig *_startConfig;
+    NSNumber *_lastAppliedAutomaticViewTracking;
 }
 @property (nonatomic) BOOL trackingEnabled;
 @property (nonatomic) BOOL networkingEnabled;
@@ -46,17 +49,18 @@
 
 @property (nonatomic) NSInteger requestTimeoutDuration;
 
-@property (nonatomic) NSSet<NSString *> *eventFilterSet;
+@property (atomic) NSSet<NSString *> *eventFilterSet;
 @property (nonatomic) BOOL eventFilterIsWhitelist;
-@property (nonatomic) NSSet<NSString *> *userPropertyFilterSet;
+@property (atomic) NSSet<NSString *> *userPropertyFilterSet;
 @property (nonatomic) BOOL userPropertyFilterIsWhitelist;
 @property (nonatomic) NSInteger userPropertyCacheLimit;
-@property (nonatomic) NSSet<NSString *> *segmentationFilterSet;
+@property (atomic) NSSet<NSString *> *segmentationFilterSet;
 @property (nonatomic) BOOL segmentationFilterIsWhitelist;
-@property (nonatomic) NSDictionary<NSString *, NSSet<NSString *> *> *eventSegmentationFilterMap;
+@property (atomic) NSDictionary<NSString *, NSSet<NSString *> *> *eventSegmentationFilterMap;
 @property (nonatomic) BOOL eventSegmentationFilterIsWhitelist;
-@property (nonatomic) NSSet<NSString *> *journeyTriggerEvents;
-@property (nonatomic) NSSet<NSString *> *journeyTriggerViews;
+// atomic: replaced by a settings response on its own thread while events and views read them on theirs
+@property (atomic) NSSet<NSString *> *journeyTriggerEvents;
+@property (atomic) NSSet<NSString *> *journeyTriggerViews;
 
 @property (nonatomic) NSInteger version;
 @property (nonatomic) long long timestamp;
@@ -166,6 +170,8 @@ static dispatch_once_t onceToken;
     _serverConfigUpdatesDisabled = NO;
     _requestTimeoutDuration = 30;
     _lastFetchTimestamp = 0;
+    _startConfig = nil;
+    _lastAppliedAutomaticViewTracking = nil;
     if (_requestTimer)
     {
         [_requestTimer invalidate];
@@ -178,6 +184,8 @@ static dispatch_once_t onceToken;
 
 - (void)retrieveServerConfigFromStorage:(CountlyConfig *)config
 {
+    _startConfig = config;
+
     // Seed the automatic tracking flags from the developer config: it is the lowest-precedence layer.
     // The SBS layers override them below (provided -> stored here, server in fetchServerConfig), giving
     // the precedence: server SBS > stored SBS > provided SBS > developer config. When the server is
@@ -639,29 +647,36 @@ static dispatch_once_t onceToken;
     }
 }
 
-// Brings automatic view tracking and automatic crash reporting in line with the resolved 'avt' and 'acr'
-// values. Safe to call repeatedly: the view tracking calls act only on an actual state change, and
-// 'startCrashReporting' is idempotent and re-checks 'acr' and consent itself.
+// Applies the resolved 'ast', 'avt' and 'acr' values, acting only on what changed, so it is safe after every settings response.
 - (void)applyAutomaticTrackingState
 {
 // The platform guard matches where automatic view tracking is actually implemented, which is narrower
 // than what the header declares
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     BOOL shouldAutoTrackViews = _viewTrackingEnabled && _automaticViewTrackingEnabled;
-    dispatch_async(dispatch_get_main_queue(), ^{
-        BOOL isActive = CountlyViewTrackingInternal.sharedInstance.isAutoViewTrackingActive;
-        if (shouldAutoTrackViews && !isActive)
-        {
-            CLY_LOG_D(@"[CountlyServerConfig] applyAutomaticTrackingState, behavior settings enable automatic view tracking, it will be started");
-            [CountlyViewTrackingInternal.sharedInstance startAutoViewTracking];
-        }
-        else if (!shouldAutoTrackViews && isActive)
-        {
-            CLY_LOG_D(@"[CountlyServerConfig] applyAutomaticTrackingState, behavior settings disable automatic view tracking, it will be stopped");
-            [CountlyViewTrackingInternal.sharedInstance stopAutoViewTracking];
-        }
-    });
+    BOOL hasChanged = _lastAppliedAutomaticViewTracking == nil || _lastAppliedAutomaticViewTracking.boolValue != shouldAutoTrackViews;
+    _lastAppliedAutomaticViewTracking = @(shouldAutoTrackViews);
+    if (hasChanged)
+    {
+        CountlyRunOnMainThread(^{
+            BOOL isActive = CountlyViewTrackingInternal.sharedInstance.isAutoViewTrackingActive;
+            if (shouldAutoTrackViews && !isActive)
+            {
+                CLY_LOG_D(@"[CountlyServerConfig] applyAutomaticTrackingState, behavior settings enable automatic view tracking, it will be started");
+                [CountlyViewTrackingInternal.sharedInstance startAutoViewTracking];
+            }
+            else if (!shouldAutoTrackViews && isActive)
+            {
+                CLY_LOG_D(@"[CountlyServerConfig] applyAutomaticTrackingState, behavior settings disable automatic view tracking, it will be stopped");
+                [CountlyViewTrackingInternal.sharedInstance stopAutoViewTracking];
+            }
+        });
+    }
 #endif
+
+    CountlyRunOnMainThread(^{
+        [Countly.sharedInstance applyAutomaticSessionTracking];
+    });
 
     // A runtime 'acr' = false does not uninstall the handler; it no-ops through its own runtime check
     // instead, so a later 'acr' = true does not have to reinstall it.
@@ -672,6 +687,7 @@ static dispatch_once_t onceToken;
     else
     {
         CLY_LOG_D(@"%s automatic crash reporting is disabled by behavior settings, the crash handler will not be started, crashReporting: [%@], automaticCrashReporting: [%@]", __FUNCTION__, _crashReportingEnabled ? @"YES" : @"NO", _automaticCrashReportingEnabled ? @"YES" : @"NO");
+        [CountlyCrashReporter.sharedInstance suppressAutomaticCrashCapture];
     }
 }
 
@@ -700,7 +716,7 @@ static dispatch_once_t onceToken;
         if (timePassed > _currentServerConfigUpdateInterval * 60 * 60 * 1000)
         {
             CLY_LOG_D(@"%s behavior settings refresh interval elapsed, a fetch will be triggered, timePassedMs: [%lld], intervalHours: [%ld]", __FUNCTION__, timePassed, (long)_currentServerConfigUpdateInterval);
-            [self fetchServerConfig:CountlyConfig.new];
+            [self fetchServerConfig:_startConfig ?: CountlyConfig.new];
         }
     }
 }
@@ -732,6 +748,9 @@ static dispatch_once_t onceToken;
 
     NSDate *fetchStart = NSDate.date;
     NSString *requestedDeviceID = CountlyDeviceInfo.sharedInstance.deviceID;
+    NSUInteger requestedDeviceIDType = CountlyDeviceInfo.sharedInstance.deviceIDTypeValue;
+    NSUInteger requestedDeviceIDChangeCount = CountlyCommon.sharedInstance.deviceIDChangeWithoutMergeCount;
+    NSUInteger requestedDeviceIDMergeCount = CountlyCommon.sharedInstance.deviceIDMergeCount;
     id handler = ^(NSData *data, NSURLResponse *response, NSError *error) {
         if (self != s_sharedInstance)
         {
@@ -791,14 +810,14 @@ static dispatch_once_t onceToken;
         }
 
         // only a fresh response decides log gathering, never a stored config. A live response without a
-        // usable directive decides against it
-        if ([requestedDeviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
+        // usable directive decides against it. A merge keeps the user, and the server moves the gather with it
+        if (requestedDeviceIDChangeCount == CountlyCommon.sharedInstance.deviceIDChangeWithoutMergeCount)
             [self applyLogGatheringDirective:serverConfigResponse[kRLogGathering]];
         else
-            CLY_LOG_D(@"%s, the device ID changed while the fetch was in flight, its log gathering directive belongs to the previous user and is ignored", __FUNCTION__);
+            CLY_LOG_D(@"%s, the device ID changed without merge while the fetch was in flight, its log gathering directive belongs to the previous user and is ignored", __FUNCTION__);
 
         if (connectionTestArmed)
-            [CountlyConnectionTest.sharedInstance startBatteryWithServerConfigLatency:fetchLatencyMs];
+            [CountlyConnectionTest.sharedInstance startBatteryWithServerConfigLatency:fetchLatencyMs deviceID:requestedDeviceID deviceIDType:requestedDeviceIDType deviceIDMergeCount:requestedDeviceIDMergeCount];
     };
     // Set default values
     NSURLSessionTask *task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:[self serverConfigRequest] completionHandler:handler];
@@ -870,17 +889,17 @@ static dispatch_once_t onceToken;
     _dropOldRequestTime = 0;
     _contentZoneInterval = 0;
 
-    _eventFilterSet = [NSSet set];
+    self.eventFilterSet = [NSSet set];
     _eventFilterIsWhitelist = NO;
-    _userPropertyFilterSet = [NSSet set];
+    self.userPropertyFilterSet = [NSSet set];
     _userPropertyFilterIsWhitelist = NO;
     _userPropertyCacheLimit = 100;
-    _segmentationFilterSet = [NSSet set];
+    self.segmentationFilterSet = [NSSet set];
     _segmentationFilterIsWhitelist = NO;
-    _eventSegmentationFilterMap = @{};
+    self.eventSegmentationFilterMap = @{};
     _eventSegmentationFilterIsWhitelist = NO;
-    _journeyTriggerEvents = [NSSet set];
-    _journeyTriggerViews = [NSSet set];
+    self.journeyTriggerEvents = [NSSet set];
+    self.journeyTriggerViews = [NSSet set];
 
     CLY_LOG_D(@"%s behavior settings reset to built in SDK defaults", __FUNCTION__);
 }
@@ -1090,13 +1109,13 @@ static dispatch_once_t onceToken;
     NSArray *eb = dictionary[kREventBlacklist];
     NSArray *ew = dictionary[kREventWhitelist];
     if ([eb isKindOfClass:NSArray.class]) {
-        _eventFilterSet = [NSSet setWithArray:eb];
+        self.eventFilterSet = [NSSet setWithArray:eb];
         _eventFilterIsWhitelist = NO;
         [logString appendFormat:@"%@: %@, ", kREventBlacklist, eb];
         if (ew)
             [dictionary removeObjectForKey:kREventWhitelist]; // blacklist takes precedence
     } else if ([ew isKindOfClass:NSArray.class]) {
-        _eventFilterSet = [NSSet setWithArray:ew];
+        self.eventFilterSet = [NSSet setWithArray:ew];
         _eventFilterIsWhitelist = YES;
         [logString appendFormat:@"%@: %@, ", kREventWhitelist, ew];
     } else {
@@ -1110,13 +1129,13 @@ static dispatch_once_t onceToken;
     NSArray *upb = dictionary[kRUserPropertyBlacklist];
     NSArray *upw = dictionary[kRUserPropertyWhitelist];
     if ([upb isKindOfClass:NSArray.class]) {
-        _userPropertyFilterSet = [NSSet setWithArray:upb];
+        self.userPropertyFilterSet = [NSSet setWithArray:upb];
         _userPropertyFilterIsWhitelist = NO;
         [logString appendFormat:@"%@: %@, ", kRUserPropertyBlacklist, upb];
         if (upw)
             [dictionary removeObjectForKey:kRUserPropertyWhitelist];
     } else if ([upw isKindOfClass:NSArray.class]) {
-        _userPropertyFilterSet = [NSSet setWithArray:upw];
+        self.userPropertyFilterSet = [NSSet setWithArray:upw];
         _userPropertyFilterIsWhitelist = YES;
         [logString appendFormat:@"%@: %@, ", kRUserPropertyWhitelist, upw];
     } else {
@@ -1130,13 +1149,13 @@ static dispatch_once_t onceToken;
     NSArray *sb = dictionary[kRSegmentationBlacklist];
     NSArray *sw = dictionary[kRSegmentationWhitelist];
     if ([sb isKindOfClass:NSArray.class]) {
-        _segmentationFilterSet = [NSSet setWithArray:sb];
+        self.segmentationFilterSet = [NSSet setWithArray:sb];
         _segmentationFilterIsWhitelist = NO;
         [logString appendFormat:@"%@: %@, ", kRSegmentationBlacklist, sb];
         if (sw)
             [dictionary removeObjectForKey:kRSegmentationWhitelist];
     } else if ([sw isKindOfClass:NSArray.class]) {
-        _segmentationFilterSet = [NSSet setWithArray:sw];
+        self.segmentationFilterSet = [NSSet setWithArray:sw];
         _segmentationFilterIsWhitelist = YES;
         [logString appendFormat:@"%@: %@, ", kRSegmentationWhitelist, sw];
     } else {
@@ -1156,7 +1175,7 @@ static dispatch_once_t onceToken;
                 map[key] = [NSSet setWithArray:obj];
             }
         }];
-        _eventSegmentationFilterMap = map.copy;
+        self.eventSegmentationFilterMap = map.copy;
         _eventSegmentationFilterIsWhitelist = NO;
         [logString appendFormat:@"%@: %@, ", kREventSegmentationBlacklist, esb];
         if (esw)
@@ -1168,7 +1187,7 @@ static dispatch_once_t onceToken;
                 map[key] = [NSSet setWithArray:obj];
             }
         }];
-        _eventSegmentationFilterMap = map.copy;
+        self.eventSegmentationFilterMap = map.copy;
         _eventSegmentationFilterIsWhitelist = YES;
         [logString appendFormat:@"%@: %@, ", kREventSegmentationWhitelist, esw];
     } else {
@@ -1181,7 +1200,7 @@ static dispatch_once_t onceToken;
     // Journey trigger events (jte)
     NSArray *jte = dictionary[kRJourneyTriggerEvents];
     if ([jte isKindOfClass:NSArray.class]) {
-        _journeyTriggerEvents = [NSSet setWithArray:jte];
+        self.journeyTriggerEvents = [NSSet setWithArray:jte];
         [logString appendFormat:@"%@: %@, ", kRJourneyTriggerEvents, jte];
     } else {
         if (jte)
@@ -1191,26 +1210,28 @@ static dispatch_once_t onceToken;
     // Journey trigger views (jtv)
     NSArray *jtv = dictionary[kRJourneyTriggerViews];
     if ([jtv isKindOfClass:NSArray.class]) {
-        _journeyTriggerViews = [NSSet setWithArray:jtv];
+        self.journeyTriggerViews = [NSSet setWithArray:jtv];
         [logString appendFormat:@"%@: %@, ", kRJourneyTriggerViews, jtv];
     } else {
         if (jtv)
             [dictionary removeObjectForKey:kRJourneyTriggerViews];
     }
 
-    CLY_LOG_D(@"%s resolved listing filters, eventFilterCount: [%lu], eventFilterIsWhitelist: [%@], userPropertyFilterCount: [%lu], userPropertyFilterIsWhitelist: [%@], segmentationFilterCount: [%lu], segmentationFilterIsWhitelist: [%@], eventSegmentationFilteredEventCount: [%lu], eventSegmentationFilterIsWhitelist: [%@], journeyTriggerEventCount: [%lu], journeyTriggerViewCount: [%lu]", __FUNCTION__, (unsigned long)_eventFilterSet.count, _eventFilterIsWhitelist ? @"YES" : @"NO", (unsigned long)_userPropertyFilterSet.count, _userPropertyFilterIsWhitelist ? @"YES" : @"NO", (unsigned long)_segmentationFilterSet.count, _segmentationFilterIsWhitelist ? @"YES" : @"NO", (unsigned long)_eventSegmentationFilterMap.count, _eventSegmentationFilterIsWhitelist ? @"YES" : @"NO", (unsigned long)_journeyTriggerEvents.count, (unsigned long)_journeyTriggerViews.count);
+    CLY_LOG_D(@"%s resolved listing filters, eventFilterCount: [%lu], eventFilterIsWhitelist: [%@], userPropertyFilterCount: [%lu], userPropertyFilterIsWhitelist: [%@], segmentationFilterCount: [%lu], segmentationFilterIsWhitelist: [%@], eventSegmentationFilteredEventCount: [%lu], eventSegmentationFilterIsWhitelist: [%@], journeyTriggerEventCount: [%lu], journeyTriggerViewCount: [%lu]", __FUNCTION__, (unsigned long)self.eventFilterSet.count, _eventFilterIsWhitelist ? @"YES" : @"NO", (unsigned long)self.userPropertyFilterSet.count, _userPropertyFilterIsWhitelist ? @"YES" : @"NO", (unsigned long)self.segmentationFilterSet.count, _segmentationFilterIsWhitelist ? @"YES" : @"NO", (unsigned long)self.eventSegmentationFilterMap.count, _eventSegmentationFilterIsWhitelist ? @"YES" : @"NO", (unsigned long)self.journeyTriggerEvents.count, (unsigned long)self.journeyTriggerViews.count);
 }
 
 - (BOOL)shouldRecordEvent:(NSString *)eventKey
 {
-    if (_eventFilterSet.count == 0) return YES;
-    return _eventFilterIsWhitelist == [_eventFilterSet containsObject:eventKey];
+    NSSet<NSString *> *eventFilterSet = self.eventFilterSet;
+    if (eventFilterSet.count == 0) return YES;
+    return _eventFilterIsWhitelist == [eventFilterSet containsObject:eventKey];
 }
 
 - (BOOL)shouldRecordUserProperty:(NSString *)propertyKey
 {
-    if (_userPropertyFilterSet.count == 0) return YES;
-    return _userPropertyFilterIsWhitelist == [_userPropertyFilterSet containsObject:propertyKey];
+    NSSet<NSString *> *userPropertyFilterSet = self.userPropertyFilterSet;
+    if (userPropertyFilterSet.count == 0) return YES;
+    return _userPropertyFilterIsWhitelist == [userPropertyFilterSet containsObject:propertyKey];
 }
 
 - (NSDictionary *)filterSegmentation:(NSDictionary *)segmentation eventKey:(NSString *)eventKey
@@ -1219,8 +1240,9 @@ static dispatch_once_t onceToken;
         return segmentation;
     }
 
-    BOOL hasGlobalFilter = _segmentationFilterSet.count > 0;
-    NSSet *eventFilter = _eventSegmentationFilterMap[eventKey];
+    NSSet<NSString *> *segmentationFilterSet = self.segmentationFilterSet;
+    BOOL hasGlobalFilter = segmentationFilterSet.count > 0;
+    NSSet *eventFilter = self.eventSegmentationFilterMap[eventKey];
     BOOL hasEventFilter = eventFilter.count > 0;
 
     if (!hasGlobalFilter && !hasEventFilter) {
@@ -1229,7 +1251,7 @@ static dispatch_once_t onceToken;
 
     NSMutableDictionary *result = [segmentation mutableCopy];
     for (NSString *key in segmentation.allKeys) {
-        if (hasGlobalFilter && _segmentationFilterIsWhitelist != [_segmentationFilterSet containsObject:key]) {
+        if (hasGlobalFilter && _segmentationFilterIsWhitelist != [segmentationFilterSet containsObject:key]) {
             CLY_LOG_V(@"%s dropping segmentation key by the global segmentation filter, key: [%@], filterIsWhitelist: [%@]", __FUNCTION__, key, _segmentationFilterIsWhitelist ? @"YES" : @"NO");
             [result removeObjectForKey:key];
         }
@@ -1244,12 +1266,12 @@ static dispatch_once_t onceToken;
 
 - (BOOL)isJourneyTriggerEvent:(NSString *)eventKey
 {
-    return [_journeyTriggerEvents containsObject:eventKey];
+    return [self.journeyTriggerEvents containsObject:eventKey];
 }
 
 - (BOOL)isJourneyTriggerView:(NSString *)viewName
 {
-    return [_journeyTriggerViews containsObject:viewName];
+    return [self.journeyTriggerViews containsObject:viewName];
 }
 
 @end

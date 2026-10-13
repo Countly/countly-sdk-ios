@@ -35,7 +35,9 @@
 - (void)recordLocation:(CLLocationCoordinate2D)location city:(NSString *)city ISOCountryCode:(NSString *)ISOCountryCode IP:(NSString *)IP
 {
     CLY_LOG_I(@"%s location recording requested, coordinateProvided: [%@], cityProvided: [%@], countryCodeProvided: [%@], IPProvided: [%@]", __FUNCTION__, CLLocationCoordinate2DIsValid(location) ? @"YES" : @"NO", (city.length > 0) ? @"YES" : @"NO", (ISOCountryCode.length > 0) ? @"YES" : @"NO", (IP.length > 0) ? @"YES" : @"NO");
-    CLY_LOG_D(@"%s location recording detail, latitude: [%f], longitude: [%f], city: [%@], countryCode: [%@], IP: [%@]", __FUNCTION__, location.latitude, location.longitude, city, ISOCountryCode, IP);
+    // log gathering can upload any line, so the values are not quoted once the server turned location tracking off
+    if (CountlyServerConfig.sharedInstance.locationTrackingEnabled)
+        CLY_LOG_D(@"%s location recording detail, latitude: [%f], longitude: [%f], city: [%@], countryCode: [%@], IP: [%@]", __FUNCTION__, location.latitude, location.longitude, city, ISOCountryCode, IP);
 
     if (!CountlyConsentManager.sharedInstance.consentForLocation)
     {
@@ -48,7 +50,7 @@
         CLY_LOG_D(@"%s location recording is dropped, location tracking is disabled by server config", __FUNCTION__);
         return;
     }
-    
+
     [self updateLocation:location city:city ISOCountryCode:ISOCountryCode IP:IP];
 
     [CountlyConnectionManager.sharedInstance sendLocationInfo];
@@ -66,7 +68,8 @@
     self.IP = IP.length ? IP : nil;
 
     CLY_LOG_D(@"%s stored location fields updated, providedFields: [%@%@%@%@]", __FUNCTION__, self.location ? @"coordinate " : @"", self.city ? @"city " : @"", self.ISOCountryCode ? @"countryCode " : @"", self.IP ? @"IP" : @"");
-    CLY_LOG_D(@"%s stored location field detail, location: [%@], city: [%@], countryCode: [%@], IP: [%@]", __FUNCTION__, self.location, self.city, self.ISOCountryCode, self.IP);
+    if (CountlyServerConfig.sharedInstance.locationTrackingEnabled)
+        CLY_LOG_D(@"%s stored location field detail, location: [%@], city: [%@], countryCode: [%@], IP: [%@]", __FUNCTION__, self.location, self.city, self.ISOCountryCode, self.IP);
 
     if (self.city && !self.ISOCountryCode)
     {

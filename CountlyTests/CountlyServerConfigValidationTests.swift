@@ -365,6 +365,34 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
                        "ImmediateURLSession should not adopt the SDK's request timeout — that's the bug being mitigated")
     }
 
+    /// With pinned certificates the immediate session checks them like the request queue, without pins it keeps the system trust.
+    func test_immediateURLSession_checksPinnedCertificatesLikeTheRequestQueue() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        // answered in process, so no TLS challenge ever looks up the pinned certificate file, which does not exist
+        MockURLProtocol.replyEmptyToEveryRequest()
+
+        let cfg = TestUtils.createBaseConfig()
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [MockURLProtocol.self]
+        cfg.urlSessionConfiguration = sessionConfig
+        cfg.manualSessionHandling = true
+        cfg.pinnedCertificates = ["pinned.cer"]
+        Countly.sharedInstance().start(with: cfg)
+
+        let connectionManager = try XCTUnwrap(CountlyConnectionManager.sharedInstance())
+        let pinnedSession = CountlyCommon.sharedInstance().immediateURLSession()
+        XCTAssertTrue(pinnedSession.delegate === connectionManager,
+                      "with pinned certificates the connection manager must answer the trust challenge")
+        XCTAssertEqual(60.0, pinnedSession.configuration.timeoutIntervalForRequest, accuracy: 0.001,
+                       "pinning must not change the immediate session timeout")
+        XCTAssertTrue(CountlyCommon.sharedInstance().immediateURLSession() === pinnedSession,
+                      "a session with a delegate lives until it is invalidated, so every immediate request shares one")
+
+        connectionManager.pinnedCertificates = nil
+        XCTAssertNil(CountlyCommon.sharedInstance().immediateURLSession().delegate,
+                     "without pinned certificates the system trust evaluation applies")
+    }
+
     // MARK: - Server config persistence is the cleaned dictionary
 
     /// After populate, the persisted config must reflect the cleaned version

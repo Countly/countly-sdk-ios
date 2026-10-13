@@ -1,3 +1,4 @@
+import CoreLocation
 import XCTest
 @testable import Countly
 
@@ -519,6 +520,7 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
 
     /// A config response requested for the previous device ID can not arm gathering again once the device ID changed without merge.
     func testLogGathering_deviceIDChangeWithoutMerge_ignoresTheDirectiveRequestedForTheOldID() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
         let answerAfterTheChange = DispatchSemaphore(value: 0)
         MockURLProtocol.requestHandler = { request in
             let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
@@ -594,6 +596,179 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
         for secret in userData {
             XCTAssertTrue(logger.lines.contains { $0.contains(secret) }, "local logging lost [\(secret)]")
         }
+    }
+
+    // MARK: - consent, merge, delivery and filters
+
+    /// A merge keeps the user, so the log gathering directive of a fetch made before it still applies.
+    func testLogGathering_deviceIDChangeWithMerge_keepsTheDirectiveRequestedBeforeIt() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        let answerAfterTheChange = DispatchSemaphore(value: 0)
+        MockURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            guard request.url?.absoluteString.contains("method=sc") == true else {
+                return ("{}".data(using: .utf8), response, nil)
+            }
+            _ = answerAfterTheChange.wait(timeout: .now() + 5)
+            let armed = "{\"v\":1,\"t\":1234,\"c\":{\"rqs\":1500},\"lg\":{\"e\":true,\"i\":\"gather_merged_user\",\"l\":\"ewidv\",\"b\":100}}"
+            return (armed.data(using: .utf8), response, nil)
+        }
+        defer { MockURLProtocol.replyEmptyToEveryRequest() }
+
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [MockURLProtocol.self]
+        config.urlSessionConfiguration = sessionConfig
+        Countly.sharedInstance().start(with: config)
+
+        Countly.sharedInstance().changeDeviceID(withMerge: "merged_user")
+        answerAfterTheChange.signal()
+        TestUtils.waitUntil("the directive to be applied") { self.state == self.stateGathering }
+
+        XCTAssertEqual(stateGathering, state, "a merge keeps the user, so the directive still applies")
+        XCTAssertEqual("gather_merged_user", common.value(forKey: "sdkLogsGatheringId") as? String)
+    }
+
+    /// A consent withdrawn after its lines were gathered sends them back to wait, they are not uploaded until it is given again.
+    func testLogGathering_withdrawnConsentSendsBufferedLinesBackToWait() throws {
+        startSDK(requiresConsent: true)
+        // no user details consent, so lines that quote whole requests stay held and only the two features are under test
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.events, CLYConsent.location])
+        common.updateLogGatheringState(true, levels: allLevels, batch: maxBufferedLines, lgid: "gather_withdrawal")
+        clearBuffer()
+
+        Countly.sharedInstance().recordLocation(CLLocationCoordinate2D(latitude: 41.0082, longitude: 28.9784), city: "Istanbul", isoCountryCode: "TR", ip: nil)
+        Countly.sharedInstance().recordEvent("purchase")
+        XCTAssertTrue(bufferedLines.contains { ($0["m"] as? String)?.contains("Istanbul") == true }, "with location consent the line is gathered")
+
+        Countly.sharedInstance().cancelConsent(forFeature: CLYConsent.location)
+        XCTAssertFalse(bufferedLines.contains { ($0["m"] as? String)?.contains("Istanbul") == true })
+        XCTAssertTrue(awaitingConsentLines.contains { ($0["m"] as? String)?.contains("Istanbul") == true }, "withdrawing location consent sends its line back to wait")
+
+        common.flushSdkLogs()
+        settleDelivery()
+        XCTAssertFalse(uploadedMessages().contains { $0.contains("Istanbul") }, "a withdrawn consent holds its lines back again")
+        XCTAssertTrue(uploadedMessages().contains { $0.contains("purchase") }, "lines of other features still go out")
+
+        Countly.sharedInstance().giveConsent(forFeature: CLYConsent.location)
+        common.flushSdkLogs()
+        settleDelivery()
+        XCTAssertTrue(uploadedMessages().contains { $0.contains("Istanbul") }, "giving the consent back releases the line")
+        XCTAssertFalse(uploadedBatches().contains { batch in
+            ((batch["l"] as? [[String: Any]]) ?? []).contains { $0["consent"] != nil }
+        }, "the consent a line needs never goes on the wire")
+    }
+
+    /// Long lines reach the character ceiling long before a large batch fills, so the buffer goes out as a partial batch instead of dropping lines.
+    func testLogGathering_longLinesAreDeliveredBeforeALargeBatchFills() throws {
+        startSDK()
+        common.updateLogGatheringState(true, levels: "d", batch: maxBufferedLines, lgid: "gather_long_lines")
+        clearBuffer()
+
+        capture(30, level: "d", message: harnessPrefix + " " + String(repeating: "x", count: 4000))
+        settleDelivery()
+
+        let batch = try XCTUnwrap(lastUploadedBatch(), "a buffer close to its character ceiling goes out without waiting for the batch size")
+        let lineCount = (batch["l"] as? [Any])?.count ?? 0
+        XCTAssertGreaterThan(lineCount, 0)
+        XCTAssertLessThan(lineCount, maxBufferedLines)
+        XCTAssertEqual(0, (batch["d"] as? NSNumber)?.intValue, "nothing was dropped on the way")
+    }
+
+    /// A full queue drops gathered log uploads before anything else, refuses new ones, and counts their lines as dropped.
+    func testLogGathering_fullRequestQueueDropsLogUploadsFirstAndCountsTheirLines() throws {
+        startSDK()
+        let persistency = try XCTUnwrap(CountlyPersistency.sharedInstance())
+        (persistency.value(forKey: "queuedRequests") as? NSMutableArray)?.removeAllObjects()
+        persistency.storedRequestsLimit = 4
+
+        common.updateLogGatheringState(true, levels: "d", batch: minBatchSize, lgid: "gather_full_queue")
+        clearBuffer()
+        capture(minBatchSize)
+        settleDelivery()
+        capture(minBatchSize)
+        settleDelivery()
+        let queuedLogUploads = uploadedBatches()
+        XCTAssertGreaterThanOrEqual(queuedLogUploads.count, 2)
+        let queuedLogLines = queuedLogUploads.reduce(0) { total, batch in
+            total + ((batch["l"] as? [Any])?.count ?? 0) + ((batch["d"] as? NSNumber)?.intValue ?? 0)
+        }
+
+        for index in 1...4 {
+            Countly.sharedInstance().addDirectRequest(["analytics": "request_\(index)"])
+        }
+        XCTAssertEqual(4, TestUtils.getCurrentRQ()?.filter { $0.contains("analytics=request_") }.count, "every other request is kept")
+        XCTAssertEqual(0, uploadedBatches().count, "log uploads are dropped before any other request")
+        // a delivery the SDK's own lines start holds the count in its batch until the full queue refuses the batch
+        TestUtils.waitUntil("the dropped lines to be counted") { self.dropCount >= queuedLogLines }
+        XCTAssertGreaterThanOrEqual(dropCount, queuedLogLines, "the dropped uploads' lines are reported as dropped")
+
+        capture(minBatchSize)
+        settleDelivery()
+        XCTAssertEqual(4, TestUtils.getCurrentRQ()?.filter { $0.contains("analytics=request_") }.count, "a new log upload does not push a request out of a full queue")
+        XCTAssertEqual(0, uploadedBatches().count)
+    }
+
+    /// Values the behavior settings filter out are never quoted in a gathered line, values they let through still are.
+    func testLogGathering_valuesFilteredOutByBehaviorSettingsAreNotQuoted() throws {
+        UserDefaults.standard.set(ServerConfigBuilder()
+            .segmentationBlacklist(["secret_key"])
+            .locationTracking(false)
+            .userPropertyBlacklist(["hidden_property"])
+            .buildJson(), forKey: "kCountlyServerConfigPersistencyKey")
+        startSDK()
+        common.updateLogGatheringState(true, levels: allLevels, batch: maxBufferedLines, lgid: "gather_filtered_values")
+        clearBuffer()
+
+        Countly.sharedInstance().recordEvent("purchase", segmentation: ["secret_key": "S3CR3T-VALUE", "visible_key": "VISIBLE-VALUE"])
+        Countly.sharedInstance().recordLocation(CLLocationCoordinate2D(latitude: 12.3456, longitude: 65.4321), city: "Hiddenville", isoCountryCode: "HV", ip: "10.1.2.3")
+        Countly.sharedInstance().userProfile().setProperty("hidden_property", value: "HIDDEN-VALUE")
+        Countly.sharedInstance().userProfile().setProperty("shown_property", value: "SHOWN-VALUE")
+        // by selector, so the property the server filters out gets a value of a type the SDK rejects
+        _ = Countly.sharedInstance().userProfile().perform(NSSelectorFromString("multiply:value:"), with: "hidden_property", with: NSDate(timeIntervalSince1970: 0))
+
+        let captured = (bufferedLines + awaitingConsentLines).compactMap { $0["m"] as? String }
+        for value in ["S3CR3T-VALUE", "12.3456", "Hiddenville", "10.1.2.3", "HIDDEN-VALUE", "1970-01-01"] {
+            XCTAssertFalse(captured.contains { $0.contains(value) }, "[\(value)] is filtered out by the server, so no gathered line may quote it")
+        }
+        for value in ["VISIBLE-VALUE", "SHOWN-VALUE"] {
+            XCTAssertTrue(captured.contains { $0.contains(value) }, "[\(value)] passes the filters, so it is still logged")
+        }
+    }
+
+    /// The values of an event the behavior settings drop, because custom event tracking is off, are never quoted in a gathered line.
+    func testLogGathering_eventsDroppedByBehaviorSettingsAreNotQuoted() throws {
+        UserDefaults.standard.set(ServerConfigBuilder().customEventTracking(false).buildJson(), forKey: "kCountlyServerConfigPersistencyKey")
+        startSDK()
+        common.updateLogGatheringState(true, levels: allLevels, batch: maxBufferedLines, lgid: "gather_dropped_events")
+        clearBuffer()
+
+        Countly.sharedInstance().recordEvent("purchase", segmentation: ["sku": "DROPPED-EVENT-VALUE"])
+
+        let captured = (bufferedLines + awaitingConsentLines).compactMap { $0["m"] as? String }
+        XCTAssertTrue(captured.contains { $0.contains("purchase") }, "the call itself is still logged")
+        XCTAssertFalse(captured.contains { $0.contains("DROPPED-EVENT-VALUE") }, "the values of a dropped event are never quoted")
+    }
+
+    /// A delivery checks the consent of every line it takes, so a line whose consent was just withdrawn stays waiting.
+    func testLogGathering_deliveryChecksTheConsentOfEveryLineItTakes() throws {
+        startSDK(requiresConsent: true)
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.events, CLYConsent.location])
+        common.updateLogGatheringState(true, levels: allLevels, batch: maxBufferedLines, lgid: "gather_consent_at_upload")
+        clearBuffer()
+
+        Countly.sharedInstance().recordLocation(CLLocationCoordinate2D(latitude: 41.0082, longitude: 28.9784), city: "Istanbul", isoCountryCode: "TR", ip: nil)
+        XCTAssertTrue(bufferedLines.contains { ($0["m"] as? String)?.contains("Istanbul") == true })
+
+        // flips the flag through its setter alone, the way a withdrawal does before it decides the held lines again
+        let consentManager = try XCTUnwrap((NSClassFromString("CountlyConsentManager") as AnyObject).value(forKey: "sharedInstance") as? NSObject)
+        consentManager.setValue(false, forKey: "consentForLocation")
+        common.flushSdkLogs()
+        settleDelivery()
+
+        XCTAssertFalse(uploadedMessages().contains { $0.contains("Istanbul") }, "a line whose consent is gone by the upload is not sent")
+        XCTAssertTrue(awaitingConsentLines.contains { ($0["m"] as? String)?.contains("Istanbul") == true }, "it waits for its consent again")
     }
 
     // MARK: - deciding without a response

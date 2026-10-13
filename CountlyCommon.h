@@ -38,6 +38,8 @@
 //health tracker's error and warning counters, which must keep counting even when logging is disabled.
 #define CLY_LOG_E(fmt, ...) CountlyInternalLog(CLYInternalLogLevelError, fmt, ##__VA_ARGS__)
 #define CLY_LOG_W(fmt, ...) CountlyInternalLog(CLYInternalLogLevelWarning, fmt, ##__VA_ARGS__)
+//NOTE: A deprecated API warns on its first call only, so an app that keeps calling it does not fill the log and the health counters.
+#define CLY_LOG_W_DEPRECATED(fmt, ...) do { if (CountlyInternalLogIsFirstDeprecatedUse(__FUNCTION__)) CountlyInternalLog(CLYInternalLogLevelWarning, fmt, ##__VA_ARGS__); } while (0)
 
 //NOTE: Info, Debug and Verbose are guarded so their arguments are not evaluated when nobody wants the line.
 //Gated on 'wanted', not 'enabled': log gathering has to receive these lines while console logging is off.
@@ -105,13 +107,22 @@ extern NSString* const kCountlySDKName;
 @property (nonatomic) NSUInteger maxValueLengthPicture;
 @property (nonatomic) NSUInteger maxSegmentationValues;
 
+/// Counts the device ID changes made without merge this run, so work started for one user can tell that it now belongs to another.
+@property (atomic) NSUInteger deviceIDChangeWithoutMergeCount;
+/// Counts the device ID changes made with merge this run. The server cancels the connection test it armed for a merged user.
+@property (atomic) NSUInteger deviceIDMergeCount;
+
 void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...) NS_FORMAT_FUNCTION(2, 3);
 /// YES when console output or the logger delegate would show a line of this level. Gate expensive dumps with this, it says nothing about log gathering.
 BOOL CountlyInternalLogIsEnabled(CLYInternalLogLevel level);
 /// YES when anything at all wants a line of this level: a developer facing sink, or the log gathering capture.
 BOOL CountlyInternalLogIsWanted(CLYInternalLogLevel level);
+/// YES the first time it is called for the given function in this process, NO on every later call.
+BOOL CountlyInternalLogIsFirstDeprecatedUse(const char *function);
 void CountlyPrint(NSString *stringToPrint);
 NSString* CountlyJSONFromObject(id object);
+/// Runs the block right away when called on the main thread, so the state it reads is the state at the call, and queues it there otherwise.
+void CountlyRunOnMainThread(dispatch_block_t block);
 
 + (instancetype)sharedInstance;
 - (NSInteger)hourOfDay;
@@ -160,8 +171,11 @@ NSString* CountlyJSONFromObject(id object);
 /// Same as flushSdkLogs, on the delivery queue. The timer tick calls this so the main thread never serialises a batch.
 - (void)scheduleSdkLogsFlush;
 
-/// Moves the captured lines whose feature has consent by now into the buffer, in time order. Called whenever consent is given or stops being required.
-- (void)releaseSdkLogLinesAwaitingConsent;
+/// Moves held lines between the buffer and the awaiting list to match the current consent, keeping capture order.
+- (void)redecideSdkLogLinesConsent;
+
+/// Counts the lines of a queued 'sdk_logs' request the queue had to drop into the next batch's drop count, when it belongs to the running gather.
+- (void)countEvictedSdkLogRequest:(NSString *)queryString;
 
 /// Called before the device ID changes without merge. Uploads what consent allows under the current device ID, then stops gathering and drops the rest, since the gather belongs to the current user.
 - (void)stopSdkLogGatheringForDeviceIDChange;
@@ -229,6 +243,11 @@ NSString* CountlyJSONFromObject(id object);
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation;
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation ID:(NSString *)ID;
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration ID:(NSString *)ID timestamp:(NSTimeInterval)timestamp;
+@end
+
+@interface Countly (AutomaticSessionTracking)
+/// Ends a session the SDK started once automatic session tracking is off, and starts one in the foreground once it is on. Main thread only.
+- (void)applyAutomaticSessionTracking;
 @end
 
 @interface CountlyUserDetails (ClearUserDetails)

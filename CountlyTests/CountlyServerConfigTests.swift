@@ -1718,6 +1718,151 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
 
     // MARK: - All Features with Listing Filters
 
+    // MARK: - Applying behavior settings at runtime
+
+    /**
+     * <pre>
+     * A refresh after the app comes back from the background applies the behavior settings on top of the
+     * configuration given at start, so it never turns the consent requirement, debug logging or the
+     * developer's queue settings back to their defaults.
+     *
+     * 1- Start requiring consent, with debug logging, a custom event threshold and request queue size
+     * 2- Let the refresh interval pass and trigger the foreground refresh with a reply that sets none of those
+     * 3- Verify consent is still required, logging is still on and the queue settings are unchanged
+     * 4- Verify an event without events consent is still not recorded
+     * </pre>
+     */
+    func test_foregroundRefresh_appliesTheSettingsOnTopOfTheConfigGivenAtStart() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        let fetches = FetchCounter()
+        replySettings(ServerConfigBuilder().tracking(true).build()) { fetches.increment() }
+        defer { MockURLProtocol.replyEmptyToEveryRequest() }
+
+        let config = mockedConfig(manualSessions: true)
+        config.requiresConsent = true
+        config.enableDebug = true
+        config.eventSendThreshold = 7
+        config.storedRequestsLimit = 321
+        Countly.sharedInstance().start(with: config)
+        TestUtils.waitUntil("the fetch at start to be answered") { fetches.count == 1 }
+        TestUtils.sleep(0.5) {}
+
+        let fiveHoursAgo = Int64(Date().timeIntervalSince1970 * 1000) - 5 * 60 * 60 * 1000
+        CountlyServerConfig.sharedInstance()?.setValue(NSNumber(value: fiveHoursAgo), forKey: "lastFetchTimestamp")
+        CountlyServerConfig.sharedInstance()?.fetchIfTimeIsUp()
+        TestUtils.waitUntil("the foreground refresh to be answered") { fetches.count == 2 }
+        TestUtils.sleep(0.5) {}
+
+        XCTAssertEqual(2, fetches.count)
+        XCTAssertTrue(CountlyConsentManager.sharedInstance().requiresConsent, "the refresh must not drop the consent requirement")
+        XCTAssertTrue(CountlyCommon.sharedInstance().enableDebug, "the refresh must not turn debug logging off")
+        XCTAssertEqual(7, CountlyPersistency.sharedInstance().eventSendThreshold)
+        XCTAssertEqual(321, CountlyPersistency.sharedInstance().storedRequestsLimit)
+
+        Countly.sharedInstance().recordEvent("after_the_refresh")
+        XCTAssertFalse(TestUtils.getCurrentEQ()?.contains { $0.key == "after_the_refresh" } ?? true, "without events consent the event is still dropped")
+    }
+
+    /**
+     * <pre>
+     * A runtime change of automatic session tracking applies to the running session: a session the SDK
+     * started automatically ends when it is turned off, a session starts when it is turned on, and a
+     * session the app began itself is left alone.
+     *
+     * 1- Start with automatic sessions and the settings reply held back, verify the session begins
+     * 2- Release a reply that turns automatic sessions off, verify the session ends
+     * 3- Start again with manual sessions and a reply that turns automatic sessions on, verify a session begins
+     * 4- Start again with manual sessions, begin a session by hand, release a reply that keeps automatic
+     *    sessions off, and verify the app's session is not ended
+     * </pre>
+     */
+    func test_runtimeAutomaticSessionTracking_reconcilesTheRunningSession() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+
+        var release = startHoldingSettings(ServerConfigBuilder().automaticSessionTracking(false).build(), manualSessions: false)
+        XCTAssertEqual(1, requestCount("begin_session=1"), "automatic sessions begin one at start")
+        release.signal()
+        TestUtils.waitUntil("the automatic session to end") { self.requestCount("end_session=1") == 1 }
+        XCTAssertEqual(1, requestCount("end_session=1"), "turning automatic sessions off ends the session the SDK started")
+        Countly.sharedInstance().halt(true)
+
+        release = startHoldingSettings(ServerConfigBuilder().automaticSessionTracking(true).build(), manualSessions: true)
+        XCTAssertEqual(0, requestCount("begin_session=1"), "manual sessions begin nothing at start")
+        release.signal()
+        TestUtils.waitUntil("a session to begin") { self.requestCount("begin_session=1") == 1 }
+        XCTAssertEqual(1, requestCount("begin_session=1"), "turning automatic sessions on begins a session in the foreground")
+        Countly.sharedInstance().halt(true)
+
+        release = startHoldingSettings(ServerConfigBuilder().automaticSessionTracking(false).build(), manualSessions: true)
+        Countly.sharedInstance().beginSession()
+        XCTAssertEqual(1, requestCount("begin_session=1"))
+        release.signal()
+        TestUtils.sleep(1) {}
+        XCTAssertEqual(0, requestCount("end_session=1"), "a settings reply never ends a session the app began")
+        MockURLProtocol.replyEmptyToEveryRequest()
+    }
+
+    /// Starts the SDK with a settings reply held until the returned semaphore is signalled, failing every other request.
+    private func startHoldingSettings(_ reply: String, manualSessions: Bool) -> DispatchSemaphore {
+        let release = DispatchSemaphore(value: 0)
+        replySettings(reply) { _ = release.wait(timeout: .now() + 5) }
+        Countly.sharedInstance().start(with: mockedConfig(manualSessions: manualSessions))
+        return release
+    }
+
+    /// Answers every behavior settings fetch with the given reply once `beforeReply` returns, and fails every other request so it stays in the queue.
+    private func replySettings(_ reply: String, beforeReply: @escaping () -> Void) {
+        MockURLProtocol.requestHandler = { request in
+            if request.url?.absoluteString.contains("method=sc") == true {
+                beforeReply()
+                return (reply.data(using: .utf8), HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil), nil)
+            }
+            return ("{\"result\":\"fail\"}".data(using: .utf8), HTTPURLResponse(url: request.url!, statusCode: 400, httpVersion: nil, headerFields: nil), nil)
+        }
+    }
+
+    /// The base config with the given session handling and every request routed through `MockURLProtocol`.
+    private func mockedConfig(manualSessions: Bool) -> CountlyConfig {
+        let config = TestUtils.createBaseConfig()
+        config.manualSessionHandling = manualSessions
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [MockURLProtocol.self]
+        config.urlSessionConfiguration = sessionConfig
+        return config
+    }
+
+    /// How many queued requests contain the given text.
+    private func requestCount(_ text: String) -> Int {
+        TestUtils.getCurrentRQ()?.filter { $0.contains(text) }.count ?? 0
+    }
+
+    #if os(iOS) || os(tvOS)
+    /**
+     * <pre>
+     * Automatic view tracking the app paused stays paused through settings responses that do not change it.
+     *
+     * 1- Start with automatic view tracking enabled by stored settings and wait for it to run
+     * 2- Pause it the way the app does, then apply the same settings twice
+     * 3- Verify it is still paused
+     * </pre>
+     */
+    func test_avt_aPauseByTheAppSurvivesSettingsResponsesThatDoNotChangeIt() {
+        setServerConfig(ServerConfigBuilder().automaticViewTracking(true).buildJson())
+        let config = TestUtils.createBaseConfig()
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+        TestUtils.waitUntil("automatic view tracking to start") { CountlyViewTrackingInternal.sharedInstance().isAutoViewTrackingActive }
+        XCTAssertTrue(CountlyViewTrackingInternal.sharedInstance().isAutoViewTrackingActive)
+
+        CountlyViewTrackingInternal.sharedInstance().isAutoViewTrackingActive = false
+        CountlyServerConfig.sharedInstance()?.applyAutomaticTrackingState()
+        CountlyServerConfig.sharedInstance()?.applyAutomaticTrackingState()
+        TestUtils.sleep(0.5) {}
+
+        XCTAssertFalse(CountlyViewTrackingInternal.sharedInstance().isAutoViewTrackingActive, "a settings response that leaves avt as it is keeps the app's pause")
+    }
+    #endif
+
     // MARK: - Automatic Tracking Flags (ast / avt / acr) and Journey Trigger Views (jtv)
 
     /**
@@ -2058,4 +2203,24 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         validateCounts(tracker, hc: 1, fc: 0, rc: 0, cc: 0, sc: 1)
     }
     #endif
+}
+
+/// Counts the behavior settings fetches a mocked session answered, from whichever thread answers them.
+private final class FetchCounter {
+    private let lock = NSLock()
+    private var value = 0
+
+    /// Records one more fetch.
+    func increment() {
+        lock.lock()
+        value += 1
+        lock.unlock()
+    }
+
+    /// The fetches recorded so far.
+    var count: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return value
+    }
 }

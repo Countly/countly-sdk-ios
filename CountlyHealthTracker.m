@@ -21,6 +21,8 @@
 @property (nonatomic, copy) NSString *errorMessage;
 @property (nonatomic, assign) BOOL healthCheckEnabled;
 @property (nonatomic, assign) BOOL healthCheckSent;
+// NO while the counters of the previous run are still to be read, the storage can not be read before the SDK starts
+@property (nonatomic, assign) BOOL persistedStateLoaded;
 
 @property (nonatomic, strong) dispatch_queue_t hcQueue;
 @end
@@ -61,23 +63,43 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
         // queue for health tracker state
         _hcQueue = dispatch_queue_create("ly.count.healthtracker.queue", DISPATCH_QUEUE_SERIAL);
 
-        NSDictionary *initialState = [CountlyPersistency.sharedInstance retrieveHealthCheckTrackerState];
-        [self setupInitialCounters:initialState];
+        _persistedStateLoaded = NO;
+        [self loadPersistedStateIfNeeded];
     }
     return self;
 }
 
+/// Adds the counters the previous run stored to the current ones, once the storage can be read. Call from init or on the health tracker queue.
+- (void)loadPersistedStateIfNeeded {
+    if (self.persistedStateLoaded) {
+        return;
+    }
+
+    CountlyPersistency *persistency = CountlyPersistency.sharedInstance;
+    if (!persistency) {
+        return;
+    }
+
+    self.persistedStateLoaded = YES;
+    [self setupInitialCounters:[persistency retrieveHealthCheckTrackerState]];
+}
+
+/// Adds the stored counters to the ones counted so far, which may include warnings logged before the SDK started.
 - (void)setupInitialCounters:(NSDictionary *)initialState {
     if (initialState == nil || [initialState count] == 0) {
         return;
     }
 
-    self.countLogWarning = [initialState[keyLogWarning] longValue];
-    self.countLogError = [initialState[keyLogError] longValue];
-    self.statusCode = [initialState[keyStatusCode] integerValue];
-    self.errorMessage = initialState[keyErrorMessage] ?: @"";
-    self.countBackoffRequest = [initialState[keyBackoffRequest] longValue];
-    self.consecutiveBackoffRequest = [initialState[keyConsecutiveBackoffRequest] longValue];
+    self.countLogWarning += [initialState[keyLogWarning] longValue];
+    self.countLogError += [initialState[keyLogError] longValue];
+    if (self.statusCode == -1 && initialState[keyStatusCode]) {
+        self.statusCode = [initialState[keyStatusCode] integerValue];
+    }
+    if (self.errorMessage.length == 0) {
+        self.errorMessage = initialState[keyErrorMessage] ?: @"";
+    }
+    self.countBackoffRequest += [initialState[keyBackoffRequest] longValue];
+    self.consecutiveBackoffRequest = MAX(self.consecutiveBackoffRequest, [initialState[keyConsecutiveBackoffRequest] longValue]);
 
     // NOTE: this runs from -init inside the sharedInstance dispatch_once, and CountlyInternalLog
     // calls back into this class for Error and Warning levels. Keep every log on this path at
@@ -142,6 +164,7 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
 
 - (void)saveState {
     dispatch_async(self.hcQueue, ^{
+        [self loadPersistedStateIfNeeded];
         [self logConsecutiveBackoffRequest];
 
         NSDictionary *healthCheckState = @{
@@ -163,6 +186,7 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
         [self clearValues];
         self->_healthCheckSent = NO;
         self->_healthCheckEnabled = YES;
+        self->_persistedStateLoaded = YES;
         [CountlyPersistency.sharedInstance storeHealthCheckTrackerState:@{}];
         CLY_LOG_D(@"%s health tracker reset, healthCheckSent and healthCheckEnabled restored to their initial values", __FUNCTION__);
     });
@@ -253,6 +277,7 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
     __block long snapshotConsecutiveBackoffRequest;
 
     dispatch_sync(self.hcQueue, ^{
+        [self loadPersistedStateIfNeeded];
         snapshotLogError = self.countLogError;
         snapshotLogWarning = self.countLogWarning;
         snapshotStatusCode = self.statusCode;

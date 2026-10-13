@@ -750,7 +750,30 @@ class CountlyViewForegroundBackgroundTests: CountlyViewBaseTest {
         // Call validateRecordedEvents to check if the events match expectations
         validateRecordedViews(startedEventsCount: [:], endedEventsDurations: [:])
     }
-    
+
+    /// An auto stopped view running when the app went to the background keeps running after the views restart in the foreground.
+    func testAutoStoppedViewKeepsRunningWhenViewsRestartAfterForeground() throws {
+        let config = createBaseConfig()
+        Countly.sharedInstance().start(with: config)
+
+        let regularViews = ["R1", "R2", "R3", "R4", "R5"]
+        regularViews.forEach { Countly.sharedInstance().views().startView($0) }
+        Countly.sharedInstance().views().startAutoStoppedView("A1")
+
+        NotificationCenter.default.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+        NotificationCenter.default.post(name: UIApplication.didBecomeActiveNotification, object: nil)
+
+        let restoredViews = getRecordedViews()
+        let restartedNames = restoredViews.filter { ($0.segmentation?["visit"] as? Int) == 1 }.compactMap { $0.segmentation?["name"] as? String }
+        XCTAssertEqual((regularViews + ["A1"]).sorted(), restartedNames.sorted(), "every view running before the background must start again")
+        let stoppedNames = restoredViews.filter { ($0.segmentation?["visit"] as? Int) != 1 }.compactMap { $0.segmentation?["name"] as? String }
+        XCTAssertEqual([], stoppedNames, "restoring the views must not stop any of them")
+
+        Countly.sharedInstance().views().stopAllViews(nil)
+        let autoStoppedEnds = getRecordedViews().filter { ($0.segmentation?["name"] as? String) == "A1" && ($0.segmentation?["visit"] as? Int) != 1 }
+        XCTAssertEqual(1, autoStoppedEnds.count, "the auto stopped view must run until it is stopped")
+    }
+
     private func goBackgroundForeground() {
         // Create expectations for various events
         let waitForStart = XCTestExpectation(description: "Wait for 3 seconds before backgrounding app.")
@@ -801,9 +824,8 @@ class CountlyViewBaseTest: CountlyBaseTestCase {
     /// loaded or slower machine (every CI runner) they drift by a fraction of a second. Matching
     /// exact integers made these tests fail on CI while passing locally, and truncating with
     /// `Int(event.duration)` made it worse: 3.98 s became 3, a whole second off an expected 4.
-    /// The scheduled segments are at least a second apart, so this tolerance still catches a
-    /// segment of the wrong length without asserting timer precision the test cannot control.
-    static let durationTolerance = 1.5
+    /// Half a second catches a segment a whole second off, while leaving room for the drift the test can not control.
+    static let durationTolerance = 0.5
 
     /// Matches each expected duration against the nearest unmatched recorded one, so the
     /// comparison is order-insensitive and tolerant of scheduler jitter.

@@ -467,7 +467,7 @@ static dispatch_once_t onceToken;
     CLY_LOG_D(@"%s flushing events and saving the state before suspend, automaticSessions: [%@]", __FUNCTION__, CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled ? @"YES" : @"NO");
 
     isSuspended = YES;
-    
+
     [CountlyViewTrackingInternal.sharedInstance applicationDidEnterBackground];
     
     [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
@@ -505,7 +505,8 @@ static dispatch_once_t onceToken;
     
     CLY_LOG_D(@"%s restarting session handling after resume, automaticSessions: [%@]", __FUNCTION__, CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled ? @"YES" : @"NO");
     
-    if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
+    // activation also resumes without a suspend before it (every macOS activation, an iOS alert), so a session may still be running
+    if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled && !CountlyConnectionManager.sharedInstance.isSessionStarted)
         [CountlyConnectionManager.sharedInstance beginSession];
 
     [CountlyViewTrackingInternal.sharedInstance applicationWillEnterForeground];
@@ -518,6 +519,7 @@ static dispatch_once_t onceToken;
     CLY_LOG_V(@"%s the app became active, checking the server config and resuming", __FUNCTION__);
   [CountlyServerConfig.sharedInstance fetchServerConfigIfTimeIsUp];
     [self resume];
+    [CountlyConnectionTest.sharedInstance noteAppResumed];
 }
 
 - (void)applicationWillResignActive:(NSNotification *)notification
@@ -530,6 +532,7 @@ static dispatch_once_t onceToken;
 {
     CLY_LOG_D(@"%s the app did enter background, saving the state and suspending", __FUNCTION__);
     [CountlyHealthTracker.sharedInstance saveState];
+    [CountlyConnectionTest.sharedInstance noteAppSuspended];
     [self suspend];
 }
 
@@ -709,6 +712,28 @@ static dispatch_once_t onceToken;
     [CountlyConnectionManager.sharedInstance endSession];
 }
 
+- (void)applyAutomaticSessionTracking
+{
+    if (!CountlyCommon.sharedInstance.hasStarted)
+        return;
+
+    CountlyConnectionManager* connectionManager = CountlyConnectionManager.sharedInstance;
+    if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
+    {
+        if (isSuspended || connectionManager.isSessionStarted)
+            return;
+
+        CLY_LOG_D(@"%s automatic session tracking is on and no session is running, a session will be started", __FUNCTION__);
+        [connectionManager beginSession];
+    }
+    else if (connectionManager.isSessionStarted && connectionManager.isSessionStartedAutomatically)
+    {
+        CLY_LOG_D(@"%s automatic session tracking is off, the session the SDK started automatically will be ended", __FUNCTION__);
+        [connectionManager sendEventsWithSaveIfNeeded];
+        [connectionManager endSession];
+    }
+}
+
 
 
 
@@ -778,7 +803,7 @@ static dispatch_once_t onceToken;
 - (void)setNewDeviceID:(NSString *)deviceID onServer:(BOOL)onServer
 {
     CLY_LOG_I(@"%s valueProvided: [%@], onServer: [%@]", __FUNCTION__, deviceID.length ? @"YES" : @"NO", onServer ? @"YES" : @"NO");
-    CLY_LOG_W(@"%s deprecated API used, use 'changeDeviceIDWithMerge:' or 'changeDeviceIDWithoutMerge:' instead", __FUNCTION__);
+    CLY_LOG_W_DEPRECATED(@"%s deprecated API used, use 'changeDeviceIDWithMerge:' or 'changeDeviceIDWithoutMerge:' instead", __FUNCTION__);
     [Countly.sharedInstance setIDInternal:deviceID onServer:onServer];
 }
 
@@ -794,7 +819,7 @@ static dispatch_once_t onceToken;
 
     if (!deviceID.length)
     {
-        CLY_LOG_W(@"%s passing 'CLYDefaultDeviceID', nil or an empty string as the device ID is deprecated and will not be allowed in the future", __FUNCTION__);
+        CLY_LOG_W_DEPRECATED(@"%s passing 'CLYDefaultDeviceID', nil or an empty string as the device ID is deprecated and will not be allowed in the future", __FUNCTION__);
     }
     
     [self storeCustomDeviceIDState:deviceID];
@@ -836,6 +861,7 @@ static dispatch_once_t onceToken;
     {
         NSString* oldDeviceID = CountlyDeviceInfo.sharedInstance.deviceID;
 
+        CountlyCommon.sharedInstance.deviceIDMergeCount++;
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
 
         [CountlyConnectionManager.sharedInstance sendOldDeviceID:oldDeviceID];
@@ -846,6 +872,7 @@ static dispatch_once_t onceToken;
 
         [CountlyCommon.sharedInstance stopSdkLogGatheringForDeviceIDChange];
 
+        CountlyCommon.sharedInstance.deviceIDChangeWithoutMergeCount++;
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
 
         [CountlyConsentManager.sharedInstance cancelConsentForAllFeaturesWithoutSendingConsentsRequest];
@@ -892,7 +919,7 @@ static dispatch_once_t onceToken;
 - (void)giveConsentForAllFeatures
 {
     CLY_LOG_I(@"%s giving consent for all features", __FUNCTION__);
-    CLY_LOG_W(@"%s deprecated API used, use 'giveAllConsents' instead", __FUNCTION__);
+    CLY_LOG_W_DEPRECATED(@"%s deprecated API used, use 'giveAllConsents' instead", __FUNCTION__);
     [CountlyConsentManager.sharedInstance giveAllConsents];
 }
 
@@ -972,7 +999,7 @@ static dispatch_once_t onceToken;
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration
 {
     CLY_LOG_I(@"%s recording an event, key: [%@], segmentation keys: [%@], segmentation key count: [%lu], count: [%lu], sum: [%f], duration: [%f]", __FUNCTION__, key, segmentation.allKeys, (unsigned long)segmentation.count, (unsigned long)count, sum, duration);
-    CLY_LOG_D(@"%s event segmentation detail, key: [%@], segmentation: [%@]", __FUNCTION__, key, segmentation);
+    CLY_LOG_D(@"%s event segmentation detail, key: [%@], segmentation: [%@]", __FUNCTION__, key, [self loggableSegmentation:segmentation eventKey:key]);
 
     NSNumber* isReservedEvent = [self isReservedEvent:key];
 
@@ -1007,6 +1034,15 @@ static dispatch_once_t onceToken;
     segmentation = [filtered cly_limited:@"Event segmentation"];
 
     [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration ID:nil timestamp:CountlyCommon.sharedInstance.uniqueTimestamp];
+}
+
+/// The segmentation the behavior settings let through, empty for an event they drop, for log lines that log gathering may upload.
+- (NSDictionary *)loggableSegmentation:(NSDictionary *)segmentation eventKey:(NSString *)key
+{
+    if (!CountlyServerConfig.sharedInstance.customEventTrackingEnabled || ![CountlyServerConfig.sharedInstance shouldRecordEvent:key])
+        return @{};
+
+    return [CountlyServerConfig.sharedInstance filterSegmentation:segmentation eventKey:key];
 }
 
 #pragma mark -
@@ -1052,7 +1088,7 @@ static dispatch_once_t onceToken;
     }
 
     // Check if the event is a reserved event
-    BOOL isReservedEvent = [self isReservedEvent:key];
+    BOOL isReservedEvent = [self isReservedEvent:key] != nil;
 
     NSMutableDictionary *filteredSegmentations = segmentation.cly_filterSupportedDataTypes;
     if(filteredSegmentations == nil)
@@ -1296,7 +1332,9 @@ static dispatch_once_t onceToken;
 
 - (void)recordLocation:(CLLocationCoordinate2D)location city:(NSString * _Nullable)city ISOCountryCode:(NSString * _Nullable)ISOCountryCode IP:(NSString * _Nullable)IP
 {
-    CLY_LOG_D(@"%s location detail, latitude: [%f], longitude: [%f], city: [%@], ISOCountryCode: [%@], IP: [%@]", __FUNCTION__, location.latitude, location.longitude, city, ISOCountryCode, IP);
+    // log gathering can upload any line, so the values are not quoted once the server turned location tracking off
+    if (CountlyServerConfig.sharedInstance.locationTrackingEnabled)
+        CLY_LOG_D(@"%s location detail, latitude: [%f], longitude: [%f], city: [%@], ISOCountryCode: [%@], IP: [%@]", __FUNCTION__, location.latitude, location.longitude, city, ISOCountryCode, IP);
     [CountlyLocationManager.sharedInstance recordLocation:location city:city ISOCountryCode:ISOCountryCode IP:IP];
 }
 
@@ -1341,21 +1379,21 @@ static dispatch_once_t onceToken;
 
 - (void)recordHandledException:(NSException *)exception
 {
-    CLY_LOG_W(@"%s deprecated API used, use 'recordException:' instead", __FUNCTION__);
+    CLY_LOG_W_DEPRECATED(@"%s deprecated API used, use 'recordException:' instead", __FUNCTION__);
     CLY_LOG_D(@"%s handled exception detail, exception: [%@]", __FUNCTION__, exception);
     [CountlyCrashReporter.sharedInstance recordException:exception isFatal:NO stackTrace:nil segmentation:nil];
 }
 
 - (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray *)stackTrace
 {
-    CLY_LOG_W(@"%s deprecated API used, use 'recordException:isFatal:stackTrace:segmentation:' instead", __FUNCTION__);
+    CLY_LOG_W_DEPRECATED(@"%s deprecated API used, use 'recordException:isFatal:stackTrace:segmentation:' instead", __FUNCTION__);
     CLY_LOG_D(@"%s handled exception detail with stack trace, exception: [%@], stackTrace: [%@]", __FUNCTION__, exception, stackTrace);
     [CountlyCrashReporter.sharedInstance recordException:exception isFatal:NO stackTrace:stackTrace segmentation:nil];
 }
 
 - (void)recordUnhandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace
 {
-    CLY_LOG_W(@"%s deprecated API used, use 'recordException:isFatal:stackTrace:segmentation:' with isFatal YES instead", __FUNCTION__);
+    CLY_LOG_W_DEPRECATED(@"%s deprecated API used, use 'recordException:isFatal:stackTrace:segmentation:' with isFatal YES instead", __FUNCTION__);
     CLY_LOG_D(@"%s unhandled exception detail with stack trace, exception: [%@], stackTrace: [%@]", __FUNCTION__, exception, stackTrace);
     [CountlyCrashReporter.sharedInstance recordException:exception isFatal:YES stackTrace:stackTrace segmentation:nil];
 }
@@ -1381,13 +1419,13 @@ static dispatch_once_t onceToken;
 
 - (void)recordView:(NSString *)viewName;
 {
-    CLY_LOG_W(@"%s deprecated API used, use '[views startAutoStoppedView:]' instead", __FUNCTION__);
+    CLY_LOG_W_DEPRECATED(@"%s deprecated API used, use '[views startAutoStoppedView:]' instead", __FUNCTION__);
     [CountlyViewTrackingInternal.sharedInstance startAutoStoppedView:viewName segmentation:nil];
 }
 
 - (void)recordView:(NSString *)viewName segmentation:(NSDictionary *)segmentation
 {
-    CLY_LOG_W(@"%s deprecated API used, use '[views startAutoStoppedView:segmentation:]' instead", __FUNCTION__);
+    CLY_LOG_W_DEPRECATED(@"%s deprecated API used, use '[views startAutoStoppedView:segmentation:]' instead", __FUNCTION__);
     CLY_LOG_D(@"%s recorded view segmentation detail, viewName: [%@], segmentation: [%@]", __FUNCTION__, viewName, segmentation);
 
     [CountlyViewTrackingInternal.sharedInstance startAutoStoppedView:viewName segmentation:segmentation];
@@ -1415,7 +1453,7 @@ static dispatch_once_t onceToken;
 - (void)setIsAutoViewTrackingActive:(BOOL)isAutoViewTrackingActive
 {
     CLY_LOG_I(@"%s isAutoViewTrackingActive: [%@]", __FUNCTION__, isAutoViewTrackingActive ? @"YES" : @"NO");
-    CLY_LOG_W(@"%s deprecated property used, 'isAutoViewTrackingActive' will be removed in a future release", __FUNCTION__);
+    CLY_LOG_W_DEPRECATED(@"%s deprecated property used, 'isAutoViewTrackingActive' will be removed in a future release", __FUNCTION__);
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     CountlyViewTrackingInternal.sharedInstance.isAutoViewTrackingActive = isAutoViewTrackingActive;
@@ -1445,7 +1483,7 @@ static dispatch_once_t onceToken;
 
 - (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * error))completionHandler
 {
-    CLY_LOG_W(@"%s deprecated API used, use 'presentRatingWidgetWithID:completionHandler:' instead", __FUNCTION__);
+    CLY_LOG_W_DEPRECATED(@"%s deprecated API used, use 'presentRatingWidgetWithID:completionHandler:' instead", __FUNCTION__);
     
     [self presentRatingWidgetWithID:widgetID closeButtonText:nil completionHandler:completionHandler];
 }
@@ -1468,7 +1506,7 @@ static dispatch_once_t onceToken;
 
 - (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> *feedbackWidgets, NSError * error))completionHandler
 {
-    CLY_LOG_W(@"%s deprecated API used, use '[feedback getAvailableFeedbackWidgets:]' instead", __FUNCTION__);
+    CLY_LOG_W_DEPRECATED(@"%s deprecated API used, use '[feedback getAvailableFeedbackWidgets:]' instead", __FUNCTION__);
     [CountlyFeedbacksInternal.sharedInstance getFeedbackWidgets:completionHandler];
 }
 #endif
@@ -1477,7 +1515,7 @@ static dispatch_once_t onceToken;
 - (void)recordAttributionID:(NSString *)attributionID
 {
     CLY_LOG_I(@"%s attributionID: [%@]", __FUNCTION__, attributionID);
-    CLY_LOG_W(@"%s deprecated API used, use 'recordDirectAttributionWithCampaignType:andCampaignData:' or 'recordIndirectAttribution:' instead", __FUNCTION__);
+    CLY_LOG_W_DEPRECATED(@"%s deprecated API used, use 'recordDirectAttributionWithCampaignType:andCampaignData:' or 'recordIndirectAttribution:' instead", __FUNCTION__);
 
     if (!CountlyConsentManager.sharedInstance.consentForAttribution)
     {
@@ -1578,28 +1616,28 @@ static dispatch_once_t onceToken;
 - (id)remoteConfigValueForKey:(NSString *)key
 {
     CLY_LOG_I(@"%s reading a remote config value, key: [%@]", __FUNCTION__, key);
-    CLY_LOG_W(@"%s deprecated API used, use '[remoteConfig getValue:]' instead", __FUNCTION__);
+    CLY_LOG_W_DEPRECATED(@"%s deprecated API used, use '[remoteConfig getValue:]' instead", __FUNCTION__);
     return [CountlyRemoteConfigInternal.sharedInstance remoteConfigValueForKey:key];
 }
 
 - (void)updateRemoteConfigWithCompletionHandler:(void (^)(NSError * error))completionHandler
 {
     CLY_LOG_I(@"%s updating all remote config values, callbackProvided: [%@]", __FUNCTION__, completionHandler ? @"YES" : @"NO");
-    CLY_LOG_W(@"%s deprecated API used, use '[remoteConfig downloadKeys:]' instead", __FUNCTION__);
+    CLY_LOG_W_DEPRECATED(@"%s deprecated API used, use '[remoteConfig downloadKeys:]' instead", __FUNCTION__);
     [CountlyRemoteConfigInternal.sharedInstance updateRemoteConfigForKeys:nil omitKeys:nil completionHandler:completionHandler];
 }
 
 - (void)updateRemoteConfigOnlyForKeys:(NSArray *)keys completionHandler:(void (^)(NSError * error))completionHandler
 {
     CLY_LOG_I(@"%s updating remote config for specific keys, keys: [%@], count: [%lu], callbackProvided: [%@]", __FUNCTION__, keys, (unsigned long)keys.count, completionHandler ? @"YES" : @"NO");
-    CLY_LOG_W(@"%s deprecated API used, use '[remoteConfig downloadSpecificKeys:]' instead", __FUNCTION__);
+    CLY_LOG_W_DEPRECATED(@"%s deprecated API used, use '[remoteConfig downloadSpecificKeys:]' instead", __FUNCTION__);
     [CountlyRemoteConfigInternal.sharedInstance updateRemoteConfigForKeys:keys omitKeys:nil completionHandler:completionHandler];
 }
 
 - (void)updateRemoteConfigExceptForKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler
 {
     CLY_LOG_I(@"%s updating remote config while omitting keys, omitKeys: [%@], count: [%lu], callbackProvided: [%@]", __FUNCTION__, omitKeys, (unsigned long)omitKeys.count, completionHandler ? @"YES" : @"NO");
-    CLY_LOG_W(@"%s deprecated API used, use '[remoteConfig downloadOmittingKeys:]' instead", __FUNCTION__);
+    CLY_LOG_W_DEPRECATED(@"%s deprecated API used, use '[remoteConfig downloadOmittingKeys:]' instead", __FUNCTION__);
     [CountlyRemoteConfigInternal.sharedInstance updateRemoteConfigForKeys:nil omitKeys:omitKeys completionHandler:completionHandler];
 }
 
@@ -1662,10 +1700,11 @@ static dispatch_once_t onceToken;
     // Reset health tracker state
     [CountlyHealthTracker.sharedInstance resetInstance];
 
-    // Clear crash logs (safe operation - just clears array or deletes file)
+    // Clear crash logs (safe, it only clears the array or deletes the file) and put back the crash handlers Countly replaced
     if (CountlyCrashReporter.sharedInstance)
     {
         [CountlyCrashReporter.sharedInstance clearCrashLogs];
+        [CountlyCrashReporter.sharedInstance resetInstance];
     }
 
     // Clear custom performance monitoring traces (safe operation - just clears dictionary)
@@ -1674,21 +1713,18 @@ static dispatch_once_t onceToken;
         [CountlyPerformanceMonitoring.sharedInstance clearAllCustomTraces];
     }
 
-    // Note: CountlyRemoteConfigInternal.clearAll is not called here because it triggers
-    // storeRemoteConfig which involves file I/O and can block during shutdown.
-    // Remote config state will persist across halt/start but is cleared via UserDefaults
-    // key removal below.
-
     [CountlyConsentManager.sharedInstance resetInstance];
     [CountlyPersistency.sharedInstance resetInstance:clearStorage];
     [CountlyDeviceInfo.sharedInstance resetInstance];
     [CountlyConnectionManager.sharedInstance resetInstance];
     [CountlyServerConfig.sharedInstance resetInstance];
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
     [CountlyContentBuilderInternal.sharedInstance resetInstance];
 #endif
     [CountlyUserDetails.sharedInstance clearUserDetails];
     [self resetInstance];
+    // last before CountlyCommon, so nothing recreates it from the storage that is about to be cleared
+    [CountlyRemoteConfigInternal.sharedInstance resetInstance];
     [CountlyCommon.sharedInstance resetInstance];
 
     if(clearStorage)

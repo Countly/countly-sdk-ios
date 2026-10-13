@@ -31,15 +31,38 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
 
 @implementation CountlyRemoteConfigInternal
 
+static CountlyRemoteConfigInternal* s_sharedInstance = nil;
+static dispatch_once_t onceToken;
+
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
         return nil;
     
-    static CountlyRemoteConfigInternal* s_sharedInstance = nil;
-    static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
     return s_sharedInstance;
+}
+
+- (void)resetInstance
+{
+    CLY_LOG_I(@"%s", __FUNCTION__);
+    onceToken = 0;
+    s_sharedInstance = nil;
+}
+
+/// Hands a response to its completion handler on the main thread, unless the SDK was halted after the request was made.
+- (void)deliverOnMainUnlessHalted:(dispatch_block_t)delivery
+{
+    dispatch_async(dispatch_get_main_queue(), ^
+    {
+        if (self != s_sharedInstance)
+        {
+            CLY_LOG_D(@"%s a response arrived after halt, it is ignored", __FUNCTION__);
+            return;
+        }
+
+        delivery();
+    });
 }
 
 - (instancetype)init
@@ -263,10 +286,9 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         {
             CLY_LOG_D(@"%s remote config request failed, requestKind: [%@], stage: [%@], statusCode: [%ld], error: [%@]", __FUNCTION__, isLegacy ? kCountlyRCKeyFetchRemoteConfig : kCountlyRCKeyRC, data ? (remoteConfig ? @"API response" : @"JSON parsing") : @"network", (long)((NSHTTPURLResponse*)response).statusCode, error.localizedDescription);
             
-            dispatch_async(dispatch_get_main_queue(), ^
-                           {
+            [self deliverOnMainUnlessHalted:^{
                 completionHandler(nil, error);
-            });
+            }];
             
             return;
         }
@@ -274,10 +296,9 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         CLY_LOG_D(@"%s remote config request successfully completed, requestKind: [%@], statusCode: [%ld], keys: [%@], valueCount: [%lu]", __FUNCTION__, isLegacy ? kCountlyRCKeyFetchRemoteConfig : kCountlyRCKeyRC, (long)((NSHTTPURLResponse*)response).statusCode, remoteConfig.allKeys, (unsigned long)remoteConfig.count);
         CLY_LOG_D(@"%s remote config response payload detail, remoteConfig: [%@]", __FUNCTION__, remoteConfig);
         
-        dispatch_async(dispatch_get_main_queue(), ^
-                       {
+        [self deliverOnMainUnlessHalted:^{
             completionHandler(remoteConfig, nil);
-        });
+        }];
     }];
     
     [task resume];
@@ -620,10 +641,9 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         {
             CLY_LOG_D(@"%s variants request failed, requestKind: [%@], stage: [%@], statusCode: [%ld], error: [%@]", __FUNCTION__, kCountlyRCKeyFetchVariant, data ? @"response handling" : @"network", (long)((NSHTTPURLResponse*)response).statusCode, error.localizedDescription);
             
-            dispatch_async(dispatch_get_main_queue(), ^
-                           {
+            [self deliverOnMainUnlessHalted:^{
                 completionHandler(CLYResponseError, nil, error);
-            });
+            }];
             
             return;
         }
@@ -631,10 +651,9 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         CLY_LOG_D(@"%s variants request successfully completed, requestKind: [%@], statusCode: [%ld], variantKeyCount: [%lu]", __FUNCTION__, kCountlyRCKeyFetchVariant, (long)((NSHTTPURLResponse*)response).statusCode, (unsigned long)variants.count);
         CLY_LOG_D(@"%s variants response payload detail, variants: [%@]", __FUNCTION__, variants);
         
-        dispatch_async(dispatch_get_main_queue(), ^
-                       {
+        [self deliverOnMainUnlessHalted:^{
             completionHandler(CLYResponseSuccess, variants, nil);
-        });
+        }];
     }];
     
     [task resume];
@@ -708,6 +727,12 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
     NSURLSessionTask* task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
         // IMMEDIATE REQUEST to find them better in search
+        if (self != s_sharedInstance)
+        {
+            CLY_LOG_D(@"%s variant enrollment response arrived after halt, it is ignored, key: [%@]", __FUNCTION__, key);
+            return;
+        }
+
         NSDictionary* variants = nil;
         [self clearCachedRemoteConfig];
         if (!error)
@@ -725,10 +750,9 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         {
             CLY_LOG_D(@"%s variant enrollment request failed, requestKind: [%@], key: [%@], stage: [%@], statusCode: [%ld], error: [%@]", __FUNCTION__, kCountlyRCKeyEnrollVariant, key, data ? (variants ? @"API response" : @"JSON parsing") : @"network", (long)((NSHTTPURLResponse*)response).statusCode, error.localizedDescription);
             
-            dispatch_async(dispatch_get_main_queue(), ^
-                           {
+            [self deliverOnMainUnlessHalted:^{
                 completionHandler(CLYResponseError, error);
-            });
+            }];
             
             return;
         }
@@ -860,10 +884,9 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         {
             CLY_LOG_D(@"%s experiments request failed, requestKind: [%@], stage: [%@], statusCode: [%ld], error: [%@]", __FUNCTION__, kCountlyRCKeyFetchExperiments, data ? @"response handling" : @"network", (long)((NSHTTPURLResponse*)response).statusCode, error.localizedDescription);
             
-            dispatch_async(dispatch_get_main_queue(), ^
-                           {
+            [self deliverOnMainUnlessHalted:^{
                 completionHandler(CLYResponseError, nil, error);
-            });
+            }];
             
             return;
         }
@@ -871,10 +894,9 @@ CLYRequestResult const CLYResponseError         = @"CLYResponseError";
         CLY_LOG_D(@"%s experiments request successfully completed, requestKind: [%@], statusCode: [%ld], experimentCount: [%lu]", __FUNCTION__, kCountlyRCKeyFetchExperiments, (long)((NSHTTPURLResponse*)response).statusCode, (unsigned long)experiments.count);
         CLY_LOG_D(@"%s experiments response payload detail, experiments: [%@]", __FUNCTION__, experiments);
         
-        dispatch_async(dispatch_get_main_queue(), ^
-                       {
+        [self deliverOnMainUnlessHalted:^{
             completionHandler(CLYResponseSuccess, experiments, nil);
-        });
+        }];
     }];
     
     [task resume];

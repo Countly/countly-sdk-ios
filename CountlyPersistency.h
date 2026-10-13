@@ -12,6 +12,8 @@
 @interface CountlyPersistency : NSObject <Resettable>
 
 + (instancetype)sharedInstance;
+/// Whether the queued request is a gathered log upload.
++ (BOOL)isSdkLogRequest:(NSString *)queryString;
 
 /// Appends a request to the queue. Returns NO when it was refused: tracking is disabled by server config, or the request is empty.
 - (BOOL)addToQueue:(NSString *)queryString;
@@ -66,6 +68,11 @@
 
 - (NSDictionary *)retrieveHealthCheckTrackerState;
 - (void)storeHealthCheckTrackerState:(NSDictionary *)healthCheckTrackerState;
+
+/// When automatic crash capture stopped being wanted while PLCrashReporter stays installed, or nil while it is wanted.
+- (NSDate *)retrievePLCrashCaptureSuppressedSince;
+/// Stores when automatic crash capture stopped being wanted, nil clears it.
+- (void)storePLCrashCaptureSuppressedSince:(NSDate *)date;
 
 -(BOOL)isOldRequest:(NSString*) queryString;
 
