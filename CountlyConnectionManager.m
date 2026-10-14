@@ -678,10 +678,6 @@ static dispatch_once_t onceToken;
             queryString = [queryString stringByAppendingString:locationRelatedInfoQueryString];
     }
 
-    NSString* attributionQueryString = [self attributionQueryString];
-    if (attributionQueryString)
-        queryString = [queryString stringByAppendingString:attributionQueryString];
-
     [CountlyPersistency.sharedInstance addToQueue:queryString];
     
     [CountlyCommon.sharedInstance recordOrientation];
@@ -959,19 +955,6 @@ static dispatch_once_t onceToken;
     [self proceedOnQueue];
 }
 
-- (void)sendAttribution
-{
-    NSString * attributionQueryString = [self attributionQueryString];
-    if (!attributionQueryString)
-        return;
-
-    NSString* queryString = [[self queryEssentials] stringByAppendingString:attributionQueryString];
-
-    [CountlyPersistency.sharedInstance addToQueue:queryString];
-
-    [self proceedOnQueue];
-}
-
 - (void)sendDirectAttributionWithCampaignID:(NSString *)campaignID andCampaignUserID:(NSString *)campaignUserID
 {
     NSMutableString* queryString = [self queryEssentials].mutableCopy;
@@ -1170,19 +1153,6 @@ static dispatch_once_t onceToken;
         return locationInfoQueryString.copy;
 
     return nil;
-}
-
-- (NSString *)attributionQueryString
-{
-    if (!CountlyConsentManager.sharedInstance.consentForAttribution)
-        return nil;
-
-    if (!CountlyCommon.sharedInstance.attributionID)
-        return nil;
-
-    NSDictionary* attribution = @{kCountlyQSKeyIDFA: CountlyCommon.sharedInstance.attributionID};
-
-    return [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyAttributionID, [attribution cly_JSONify]];
 }
 
 - (NSMutableData *)pictureUploadDataForQueryString:(NSString *)queryString

@@ -35,12 +35,10 @@ typedef NSString* CLYFeature NS_EXTENSIBLE_STRING_ENUM;
 extern CLYFeature const CLYPushNotifications;
 #endif
 extern CLYFeature const CLYCrashReporting;
-extern CLYFeature const CLYAutoViewTracking DEPRECATED_MSG_ATTRIBUTE("Use 'config.enableAutomaticViewTracking' instead");
 #elif (TARGET_OS_WATCH)
 extern CLYFeature const CLYCrashReporting;
 #elif (TARGET_OS_TV)
 extern CLYFeature const CLYCrashReporting;
-extern CLYFeature const CLYAutoViewTracking  DEPRECATED_MSG_ATTRIBUTE("Use 'config.enableAutomaticViewTracking' instead");
 #elif (TARGET_OS_OSX)
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
 extern CLYFeature const CLYPushNotifications;
@@ -51,8 +49,7 @@ extern CLYFeature const CLYCrashReporting;
 
 //NOTE: Device ID options
 /**
- * Can be used as device ID to switch back to default device ID, if a custom device ID is set before.
- * @discussion It can be used as @c deviceID on initial configuration, or passed as an argument for @c deviceID parameter on @c setNewDeviceID:onServer: method.
+ * Can be used as @c deviceID on initial configuration to use the default device ID.
  * @discussion On iOS and tvOS, default device ID is Identifier For Vendor (IDFV).
  * @discussion On watchOS and macOS, default device ID is a persistently stored random NSUUID string.
  */
@@ -60,9 +57,9 @@ extern NSString* const CLYDefaultDeviceID;
 
 /**
  * Use this as device ID for keeping all requests on hold until the real device ID is set later.
- * @discussion It can be used as @c deviceID on initial configuration, or passed as an argument for @c deviceID parameter on @c setNewDeviceID:onServer: method.
+ * @discussion It can be used as @c deviceID on initial configuration, or passed as an argument for @c deviceID parameter on @c changeDeviceIDWithoutMerge: method.
  * @discussion As long as device ID is @c CLYTemporaryDeviceID, all requests will be on hold, but they will be persistently stored.
- * @discussion Later when the real device ID is set using @c setNewDeviceID:onServer: method, all requests kept on hold so far will start with the real device ID.
+ * @discussion Later when the real device ID is set using @c changeDeviceIDWithMerge: or @c changeDeviceIDWithoutMerge: method, all requests kept on hold so far will start with the real device ID.
  * @discussion When in @c CLYTemporaryDeviceID mode, method calls for presenting feedback widgets and updating remote config will be ignored.
  */
 extern NSString* const CLYTemporaryDeviceID;
@@ -204,12 +201,10 @@ typedef enum : NSUInteger
  * @discussion @b iOS:
  * @discussion @c CLYPushNotifications for push notifications
  * @discussion @c CLYCrashReporting for crash reporting
- * @discussion @c CLYAutoViewTracking for auto view tracking
  * @discussion @b watchOS:
  * @discussion @c CLYCrashReporting for crash reporting
  * @discussion @b tvOS:
  * @discussion @c CLYCrashReporting for crash reporting
- * @discussion @c CLYAutoViewTracking for auto view tracking
  * @discussion @b macOS:
  * @discussion @c CLYPushNotifications for push notifications
  * @discussion @c CLYCrashReporting for crash reporting
@@ -398,43 +393,6 @@ typedef enum : NSUInteger
 @property (nonatomic) NSInteger requestTimeoutDuration;
 
 /**
- * Limit for the length of all string keys.
- * @discussion It affects:
- * @discussion - event names
- * @discussion - view names
- * @discussion - APM network trace names
- * @discussion - APM custom trace names
- * @discussion - APM custom trace metric keys
- * @discussion - segmentation keys
- * @discussion - custom metric keys
- * @discussion - custom user property keys
- * @discussion Keys longer than this limit will be truncated.
- * @discussion If not set, it will be 128 chars by default.
- */
-@property(nonatomic) NSUInteger maxKeyLength DEPRECATED_MSG_ATTRIBUTE("Use 'sdkInternalLimits' CountlySDKLimitsConfig object instead");
-
-/**
- * Limit for the length of values in all key-value pairs.
- * @discussion It affects:
- * @discussion - segmentation values
- * @discussion - APM custom trace metric values
- * @discussion - custom crash logs
- * @discussion - custom metric values
- * @discussion - custom user property values
- * @discussion Values longer than this limit will be truncated.
- * @discussion If not set, it will be 256 chars by default.
- */
-@property(nonatomic) NSUInteger maxValueLength DEPRECATED_MSG_ATTRIBUTE("Use 'sdkInternalLimits' CountlySDKLimitsConfig object instead");
-
-/**
- * Limit for the number of key-value pairs in segmentations.
- * @discussion If there are more key-value pairs than this limit, some of them will be removed.
- * @discussion As obviously there is no order among the keys of an NSDictionary, it is not defined which ones will be removed.
- * @discussion If not set, it will be 30 by default.
- */
-@property(nonatomic) NSUInteger maxSegmentationValues DEPRECATED_MSG_ATTRIBUTE("Use 'sdkInternalLimits' CountlySDKLimitsConfig object instead");
-
-/**
  * Variable to access sdkInternalLimits configurations.
  * @discussion SDK internal limits configurations for developer to interact with SDK.
  */
@@ -473,12 +431,6 @@ typedef enum : NSUInteger
 #pragma mark -
 
 /**
- * For specifying attribution ID (IDFA).
- * @discussion If set, this attribution ID will be sent with all @c begin_session requests.
- */
-@property (nonatomic, copy) NSString* attributionID DEPRECATED_MSG_ATTRIBUTE("Use 'campaignType' and 'campaignData' for direct attribution or  'indirectAttribution' for indirect attribution");
-
-/**
  * For specifying direct attribution campaign type.
  * @discussion Currently supported campaign types are "countly" and "_special_test".
  */
@@ -505,14 +457,6 @@ typedef enum : NSUInteger
  * @discussion Nested values in crash segmentation will be ignored by Countly Server.
  */
 @property (nonatomic, copy) NSDictionary<NSString *, NSString *>* crashSegmentation;
-
-/**
- * Crash log limit is used for limiting the number of crash logs to be stored on the device.
- * @discussion If number of stored crash logs reaches @c crashLogLimit, SDK will start to drop oldest crash log while appending the newest one.
- * @discussion If not set, it will be 100 by default.
- * @discussion If @c shouldUsePLCrashReporter flag is set on initial config, this limit will not be applied.
- */
-@property (nonatomic) NSUInteger crashLogLimit DEPRECATED_MSG_ATTRIBUTE("Use 'sdkInternalLimits' CountlySDKLimitsConfig object instead");
 
 /**
  * Regular expression used for filtering crash reports and preventing them from being sent to Countly Server.
@@ -609,22 +553,6 @@ typedef enum : NSUInteger
 
 /**
  * For enabling automatic fetching of remote config values.
- * @discussion If set, Remote Config values specified on Countly Server will be fetched on beginning of sessions.
- */
-@property (nonatomic) BOOL enableRemoteConfig DEPRECATED_MSG_ATTRIBUTE("Use 'enableRemoteConfigAutomaticTriggers' instead");
-
-/**
- * Completion block to be executed after remote config is fetched from Countly Server, on start or device ID change.
- * @discussion This completion block can be used to detect updating of remote config values is completed, either with success or failure.
- * @discussion It has an @c NSError parameter that will be either @ nil or an @c NSError object, depending of request result.
- * @discussion If there is no error, it will be executed with an @c nil, which means latest remote config values are ready to be used.
- * @discussion If Countly Server is not reachable or if there is another error, it will be executed with an @c NSError indicating the problem.
- * @discussion If @c enableRemoteConfig flag is not set on initial config, it will never be executed.
- */
-@property (nonatomic, copy) void (^remoteConfigCompletionHandler)(NSError * _Nullable error) DEPRECATED_MSG_ATTRIBUTE("Use 'remoteConfigRegisterGlobalCallback' instead");
-
-/**
- * For enabling automatic fetching of remote config values.
  * @discussion If set, Remote Config values specified on Countly Server will be fetched on beginning of sessions, exit temporary device id and changing device id onserver.
  */
 @property (nonatomic) BOOL enableRemoteConfigAutomaticTriggers;
@@ -656,12 +584,6 @@ typedef enum : NSUInteger
 #pragma mark -
 
 /**
- * For enabling automatic performance monitoring.
- * @discussion If set, Performance Monitoring feature will be started automatically on SDK start.
- */
-@property (nonatomic) BOOL enablePerformanceMonitoring DEPRECATED_MSG_ATTRIBUTE("Use 'apm' CountlyAPMConfig object instead");
-
-/**
  * Variable to access apm configurations.
  * @discussion APM configurations for developer to interact with SDK.
  */
@@ -679,14 +601,6 @@ typedef enum : NSUInteger
  * @discussion For disabling it, please set this flag to @c NO.
  */
 @property (nonatomic) BOOL enableOrientationTracking;
-
-/**
- * This is an experimental feature and it can have breaking changes
- * For enabling fetching and application of server config values.
- * @discussion If set, Server Config values from Countly Server will be fetched at the beginning of a session.
- */
-@property(nonatomic) BOOL enableServerConfiguration DEPRECATED_MSG_ATTRIBUTE("Will do nothing");
-;
 
 /**
  * Set the server configuration to be set while initializing the SDK

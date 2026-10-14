@@ -38,8 +38,6 @@
 //health tracker's error and warning counters, which must keep counting even when logging is disabled.
 #define CLY_LOG_E(fmt, ...) CountlyInternalLog(CLYInternalLogLevelError, fmt, ##__VA_ARGS__)
 #define CLY_LOG_W(fmt, ...) CountlyInternalLog(CLYInternalLogLevelWarning, fmt, ##__VA_ARGS__)
-//NOTE: A deprecated API warns on its first call only, so an app that keeps calling it does not fill the log and the health counters.
-#define CLY_LOG_W_DEPRECATED(fmt, ...) do { if (CountlyInternalLogIsFirstDeprecatedUse(__FUNCTION__)) CountlyInternalLog(CLYInternalLogLevelWarning, fmt, ##__VA_ARGS__); } while (0)
 
 //NOTE: Info, Debug and Verbose are guarded so their arguments are not evaluated when nobody wants the line.
 //Gated on 'wanted', not 'enabled': log gathering has to receive these lines while console logging is off.
@@ -94,7 +92,6 @@ extern NSString* const kCountlySDKName;
 @property (nonatomic) BOOL shouldIgnoreTrustCheck;
 @property (nonatomic, weak) id <CountlyLoggerDelegate> loggerDelegate;
 @property (nonatomic) CLYInternalLogLevel internalLogLevel;
-@property (nonatomic, copy) NSString* attributionID;
 @property (nonatomic) BOOL manualSessionHandling;
 @property (nonatomic) BOOL enableManualSessionControlHybridMode;
 @property (nonatomic) BOOL enableOrientationTracking;
@@ -117,8 +114,6 @@ void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...) NS_FOR
 BOOL CountlyInternalLogIsEnabled(CLYInternalLogLevel level);
 /// YES when anything at all wants a line of this level: a developer facing sink, or the log gathering capture.
 BOOL CountlyInternalLogIsWanted(CLYInternalLogLevel level);
-/// YES the first time it is called for the given function in this process, NO on every later call.
-BOOL CountlyInternalLogIsFirstDeprecatedUse(const char *function);
 void CountlyPrint(NSString *stringToPrint);
 NSString* CountlyJSONFromObject(id object);
 /// Runs the block right away when called on the main thread, so the state it reads is the state at the call, and queues it there otherwise.

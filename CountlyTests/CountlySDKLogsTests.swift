@@ -867,7 +867,7 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
 
         // real lines, through CountlyInternalLog, not the capture funnel directly
         Countly.sharedInstance().recordEvent("prefix_probe")
-        Countly.sharedInstance().recordView("prefix_probe_view")
+        Countly.sharedInstance().views().startAutoStoppedView("prefix_probe_view")
 
         let messages = bufferedLines.compactMap { $0["m"] as? String }
         XCTAssertFalse(messages.isEmpty, "the SDK logged nothing to check")

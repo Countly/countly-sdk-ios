@@ -151,22 +151,14 @@ class CountlyPlatformIntegrationTests: CountlyBaseTestCase {
             countly.responds(to: NSSelectorFromString("askForNotificationPermission")),
             "Push notification API availability does not match \(TestPlatform.osName)")
 
-        // Automatic view tracking. The public API, the `CountlyConfig` switch and the
-        // internal implementation must all agree: `CountlyConsentManager` calls
-        // `startAutoViewTracking` wherever the API is declared, so a narrower
-        // implementation guard is an unrecognized-selector crash on consent changes.
-        XCTAssertEqual(
-            TestPlatform.hasAutoViewTrackingAPI,
-            countly.responds(to: NSSelectorFromString("isAutoViewTrackingActive")),
-            "Auto view tracking API availability does not match \(TestPlatform.osName)")
+        // the config switch and the implementation must agree, or a consent change hits an unrecognized selector
         XCTAssertEqual(
             TestPlatform.hasAutoViewTrackingAPI,
             CountlyConfig().responds(to: NSSelectorFromString("enableAutomaticViewTracking")),
             "enableAutomaticViewTracking availability does not match \(TestPlatform.osName)")
         // Checked on the class, not the singleton: `CountlyViewTrackingInternal.sharedInstance`
         // returns nil until the SDK has started.
-        for selector in ["startAutoViewTracking", "stopAutoViewTracking",
-                         "addExceptionForAutoViewTracking:", "removeExceptionForAutoViewTracking:"] {
+        for selector in ["startAutoViewTracking", "stopAutoViewTracking"] {
             XCTAssertEqual(
                 TestPlatform.hasAutoViewTracking,
                 CountlyViewTrackingInternal.instancesRespond(to: NSSelectorFromString(selector)),
@@ -228,34 +220,6 @@ class CountlyPlatformIntegrationTests: CountlyBaseTestCase {
             XCTAssertEqual(TestUtils.commonDeviceId, parsed["device_id"] as? String)
             XCTAssertEqual(TestUtils.SDK_NAME, parsed["sdk_name"] as? String)
         }
-    }
-
-    /// A deprecated call warns only the first time it is used in a run.
-    func test_deprecatedAPI_warnsOnlyOnItsFirstUse() throws {
-        let config = TestUtils.createBaseConfig()
-        config.requiresConsent = false
-        config.manualSessionHandling = true
-        Countly.sharedInstance().start(with: config)
-
-        let logger = WarningRecordingLogger()
-        CountlyCommon.sharedInstance().loggerDelegate = logger
-        defer { CountlyCommon.sharedInstance().loggerDelegate = nil }
-
-        // called by selector, so the test target does not compile a deprecation warning
-        let deprecatedCall = NSSelectorFromString("remoteConfigValueForKey:")
-        let deprecationWarning = "use '[remoteConfig getValue:]' instead"
-        _ = Countly.sharedInstance().perform(deprecatedCall, with: "first")
-        let warningsAfterFirstUse = logger.count(containing: deprecationWarning)
-        _ = Countly.sharedInstance().perform(deprecatedCall, with: "second")
-        _ = Countly.sharedInstance().perform(deprecatedCall, with: "third")
-        XCTAssertLessThanOrEqual(warningsAfterFirstUse, 1, "the first use warns once at most")
-        XCTAssertEqual(
-            warningsAfterFirstUse, logger.count(containing: deprecationWarning),
-            "later uses in the same run must not warn again")
-
-        let function = "deprecatedCallOfThisTest_\(UUID().uuidString)"
-        XCTAssertTrue(CountlyInternalLogIsFirstDeprecatedUse(function), "the first use of a deprecated call warns")
-        XCTAssertFalse(CountlyInternalLogIsFirstDeprecatedUse(function), "a later use of the same call does not")
     }
 }
 

@@ -6,7 +6,6 @@
 
 #import "CountlyCommon.h"
 
-NSString* const kCountlyRCKeyFetchRemoteConfig  = @"fetch_remote_config";
 NSString* const kCountlyRCKeyFetchVariant       = @"ab_fetch_variants";
 NSString* const kCountlyRCKeyEnrollVariant      = @"ab_enroll_variant";
 NSString* const kCountlyRCKeyFetchExperiments   = @"ab_fetch_experiments";
@@ -86,48 +85,6 @@ static dispatch_once_t onceToken;
 
 #pragma mark ---
 
-- (void)startRemoteConfig
-{
-    if (!self.isRCAutomaticTriggersEnabled)
-    {
-        CLY_LOG_D(@"%s automatic triggers are disabled, start time remote config fetch will be skipped", __FUNCTION__);
-        return;
-    }
-
-    if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
-    {
-        CLY_LOG_V(@"%s no consent for remote config, start time fetch will be skipped", __FUNCTION__);
-        return;
-    }
-
-    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
-    {
-        CLY_LOG_D(@"%s device ID is in temporary mode, start time remote config fetch will be skipped", __FUNCTION__);
-        return;
-    }
-
-    CLY_LOG_D(@"%s start time remote config fetch is starting, requestKind: [%@], fetchType: [full]", __FUNCTION__, kCountlyRCKeyRC);
-
-    [self fetchRemoteConfigForKeys:nil omitKeys:nil isLegacy:NO completionHandler:^(NSDictionary *remoteConfig, NSError *error)
-     {
-        if (!error)
-        {
-            CLY_LOG_D(@"%s start time remote config fetch is successful, keys: [%@], valueCount: [%lu]", __FUNCTION__, remoteConfig.allKeys, (unsigned long)remoteConfig.count);
-            CLY_LOG_D(@"%s start time remote config fetch payload detail, remoteConfig: [%@]", __FUNCTION__, remoteConfig);
-            self.cachedRemoteConfig = [self createRCMeta:remoteConfig];
-            [CountlyPersistency.sharedInstance storeRemoteConfig:self.cachedRemoteConfig];
-            CLY_LOG_D(@"%s remote config cache is replaced on start time fetch, cachedKeyCount: [%lu]", __FUNCTION__, (unsigned long)self.cachedRemoteConfig.count);
-        }
-        else
-        {
-            CLY_LOG_D(@"%s start time remote config fetch failed, error: [%@]", __FUNCTION__, error.localizedDescription);
-        }
-        
-        if (self.remoteConfigCompletionHandler)
-            self.remoteConfigCompletionHandler(error);
-    }];
-}
-
 - (void)downloadRemoteConfigAutomatically
 {
     if (!self.isRCAutomaticTriggersEnabled)
@@ -154,71 +111,8 @@ static dispatch_once_t onceToken;
      {
         CLY_LOG_D(@"%s automatic remote config download finished, response: [%@], fullValueUpdate: [%@], downloadedValueCount: [%lu]", __FUNCTION__, response, fullValueUpdate ? @"YES" : @"NO", (unsigned long)downloadedValues.count);
         CLY_LOG_D(@"%s automatic remote config download payload detail, downloadedValues: [%@]", __FUNCTION__, downloadedValues);
-
-        if (self.remoteConfigCompletionHandler)
-            self.remoteConfigCompletionHandler(error);
     }];
     
-}
-
-- (void)updateRemoteConfigForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler
-{
-    if (!CountlyConsentManager.sharedInstance.consentForRemoteConfig)
-    {
-        CLY_LOG_V(@"%s no consent for remote config, legacy manual update will be skipped", __FUNCTION__);
-        return;
-    }
-
-    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
-    {
-        CLY_LOG_D(@"%s device ID is in temporary mode, legacy manual remote config update will be skipped", __FUNCTION__);
-        return;
-    }
-
-    CLY_LOG_D(@"%s legacy manual remote config update is starting, requestKind: [%@], fetchType: [%@], keys: [%@], keyCount: [%lu], omitKeys: [%@], omitKeyCount: [%lu]", __FUNCTION__, kCountlyRCKeyFetchRemoteConfig, (!keys && !omitKeys) ? @"full" : @"partial", keys, (unsigned long)keys.count, omitKeys, (unsigned long)omitKeys.count);
-
-    [self fetchRemoteConfigForKeys:keys omitKeys:omitKeys isLegacy:YES completionHandler:^(NSDictionary *remoteConfig, NSError *error)
-     {
-        if (!error)
-        {
-            CLY_LOG_D(@"%s legacy manual remote config update is successful, keys: [%@], valueCount: [%lu]", __FUNCTION__, remoteConfig.allKeys, (unsigned long)remoteConfig.count);
-            CLY_LOG_D(@"%s legacy manual remote config update payload detail, remoteConfig: [%@]", __FUNCTION__, remoteConfig);
-            NSDictionary* remoteConfigMeta = [self createRCMeta:remoteConfig];
-            if (!keys && !omitKeys)
-            {
-                self.cachedRemoteConfig = remoteConfigMeta;
-                CLY_LOG_D(@"%s remote config cache is replaced on legacy full update, cachedKeyCount: [%lu]", __FUNCTION__, (unsigned long)self.cachedRemoteConfig.count);
-            }
-            else
-            {
-                NSMutableDictionary* partiallyUpdatedRemoteConfigMeta = self.cachedRemoteConfig.mutableCopy;
-                [partiallyUpdatedRemoteConfigMeta addEntriesFromDictionary:remoteConfigMeta];
-                self.cachedRemoteConfig = [NSDictionary dictionaryWithDictionary:partiallyUpdatedRemoteConfigMeta];
-                CLY_LOG_D(@"%s remote config cache is merged on legacy partial update, mergedKeyCount: [%lu], cachedKeyCount: [%lu]", __FUNCTION__, (unsigned long)remoteConfigMeta.count, (unsigned long)self.cachedRemoteConfig.count);
-            }
-
-            [CountlyPersistency.sharedInstance storeRemoteConfig:self.cachedRemoteConfig];
-
-
-        }
-        else
-        {
-            CLY_LOG_D(@"%s legacy manual remote config update failed, error: [%@]", __FUNCTION__, error.localizedDescription);
-        }
-        
-        if (completionHandler)
-            completionHandler(error);
-    }];
-}
-
-- (id)remoteConfigValueForKey:(NSString *)key
-{
-    CountlyRCData* countlyRCValue = self.cachedRemoteConfig[key];
-    CLY_LOG_D(@"%s legacy remote config value is requested, key: [%@], valueExists: [%@]", __FUNCTION__, key, (countlyRCValue != nil) ? @"YES" : @"NO");
-    if (countlyRCValue) {
-        return countlyRCValue.value;
-    }
-    return nil;
 }
 
 - (void)clearCachedRemoteConfig
@@ -243,11 +137,11 @@ static dispatch_once_t onceToken;
 
 #pragma mark ---
 
-- (void)fetchRemoteConfigForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys  isLegacy:(BOOL)isLegacy completionHandler:(void (^)(NSDictionary* remoteConfig, NSError * error))completionHandler
+- (void)fetchRemoteConfigForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSDictionary* remoteConfig, NSError * error))completionHandler
 {
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
     {
-        CLY_LOG_D(@"%s remote config fetch is aborted, reason: [networking is disabled from server config], requestKind: [%@]", __FUNCTION__, isLegacy ? kCountlyRCKeyFetchRemoteConfig : kCountlyRCKeyRC);
+        CLY_LOG_D(@"%s remote config fetch is aborted, reason: [networking is disabled from server config]", __FUNCTION__);
         return;
     }
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
@@ -261,7 +155,7 @@ static dispatch_once_t onceToken;
         return;
     }
 
-    NSURLRequest* request = [self remoteConfigRequestForKeys:keys omitKeys:omitKeys isLegacy:isLegacy];
+    NSURLRequest* request = [self remoteConfigRequestForKeys:keys omitKeys:omitKeys];
     NSURLSessionTask* task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
                               {
         // IMMEDIATE REQUEST to find them better in search
@@ -284,7 +178,7 @@ static dispatch_once_t onceToken;
         
         if (error)
         {
-            CLY_LOG_D(@"%s remote config request failed, requestKind: [%@], stage: [%@], statusCode: [%ld], error: [%@]", __FUNCTION__, isLegacy ? kCountlyRCKeyFetchRemoteConfig : kCountlyRCKeyRC, data ? (remoteConfig ? @"API response" : @"JSON parsing") : @"network", (long)((NSHTTPURLResponse*)response).statusCode, error.localizedDescription);
+            CLY_LOG_D(@"%s remote config request failed, stage: [%@], statusCode: [%ld], error: [%@]", __FUNCTION__, data ? (remoteConfig ? @"API response" : @"JSON parsing") : @"network", (long)((NSHTTPURLResponse*)response).statusCode, error.localizedDescription);
             
             [self deliverOnMainUnlessHalted:^{
                 completionHandler(nil, error);
@@ -293,7 +187,7 @@ static dispatch_once_t onceToken;
             return;
         }
         
-        CLY_LOG_D(@"%s remote config request successfully completed, requestKind: [%@], statusCode: [%ld], keys: [%@], valueCount: [%lu]", __FUNCTION__, isLegacy ? kCountlyRCKeyFetchRemoteConfig : kCountlyRCKeyRC, (long)((NSHTTPURLResponse*)response).statusCode, remoteConfig.allKeys, (unsigned long)remoteConfig.count);
+        CLY_LOG_D(@"%s remote config request successfully completed, statusCode: [%ld], keys: [%@], valueCount: [%lu]", __FUNCTION__, (long)((NSHTTPURLResponse*)response).statusCode, remoteConfig.allKeys, (unsigned long)remoteConfig.count);
         CLY_LOG_D(@"%s remote config response payload detail, remoteConfig: [%@]", __FUNCTION__, remoteConfig);
         
         [self deliverOnMainUnlessHalted:^{
@@ -303,16 +197,15 @@ static dispatch_once_t onceToken;
     
     [task resume];
     
-    CLY_LOG_D(@"%s remote config request is started, requestKind: [%@], method: [%@], path: [%@], keyCount: [%lu], omitKeyCount: [%lu]", __FUNCTION__, isLegacy ? kCountlyRCKeyFetchRemoteConfig : kCountlyRCKeyRC, request.HTTPMethod, request.URL.path, (unsigned long)keys.count, (unsigned long)omitKeys.count);
+    CLY_LOG_D(@"%s remote config request is started, method: [%@], path: [%@], keyCount: [%lu], omitKeyCount: [%lu]", __FUNCTION__, request.HTTPMethod, request.URL.path, (unsigned long)keys.count, (unsigned long)omitKeys.count);
     CLY_LOG_D(@"%s remote config request URL detail, url: [%@]", __FUNCTION__, request.URL.absoluteString);
 }
 
-- (NSURLRequest *)remoteConfigRequestForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys isLegacy:(BOOL)isLegacy
+- (NSURLRequest *)remoteConfigRequestForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys
 {
     NSString* queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
     
-    queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMethod,
-                   isLegacy ? kCountlyRCKeyFetchRemoteConfig : kCountlyRCKeyRC];
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMethod, kCountlyRCKeyRC];
     
     if (keys)
     {
@@ -453,7 +346,7 @@ static dispatch_once_t onceToken;
 
     CLY_LOG_D(@"%s remote config value download is starting, requestKind: [%@], fetchType: [%@], keys: [%@], keyCount: [%lu], omitKeys: [%@], omitKeyCount: [%lu], completionHandlerProvided: [%@]", __FUNCTION__, kCountlyRCKeyRC, (!keys && !omitKeys) ? @"full" : @"partial", keys, (unsigned long)keys.count, omitKeys, (unsigned long)omitKeys.count, (completionHandler != nil) ? @"YES" : @"NO");
     
-    [self fetchRemoteConfigForKeys:keys omitKeys:omitKeys isLegacy:NO completionHandler:^(NSDictionary *remoteConfig, NSError *error)
+    [self fetchRemoteConfigForKeys:keys omitKeys:omitKeys completionHandler:^(NSDictionary *remoteConfig, NSError *error)
      {
         BOOL fullValueUpdate = false;
         NSDictionary* remoteConfigMeta = remoteConfig ? [self createRCMeta:remoteConfig] : @{};

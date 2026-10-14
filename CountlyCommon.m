@@ -183,24 +183,6 @@ BOOL CountlyInternalLogIsWanted(CLYInternalLogLevel level)
     return CountlyInternalLogIsEnabled(level) || CountlyCommon.sharedInstance.isCapturingSdkLogs;
 }
 
-BOOL CountlyInternalLogIsFirstDeprecatedUse(const char *function)
-{
-    static NSMutableSet<NSString *>* warnedFunctions;
-    static dispatch_once_t once;
-    dispatch_once(&once, ^{
-        warnedFunctions = NSMutableSet.new;
-    });
-
-    NSString* functionName = [NSString stringWithUTF8String:function] ?: @"";
-    @synchronized (warnedFunctions) {
-        if ([warnedFunctions containsObject:functionName])
-            return NO;
-
-        [warnedFunctions addObject:functionName];
-        return YES;
-    }
-}
-
 void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...)
 {
     if (level == CLYInternalLogLevelError) {
@@ -321,28 +303,14 @@ static NSDictionary<NSString *, NSString *>* CountlySDKLogsConsentByOwner(void)
             @"Countly disableLocationInfo": location,
             @"Countly recordException": crashes,
             @"Countly recordError": crashes,
-            @"Countly recordHandledException": crashes,
-            @"Countly recordUnhandledException": crashes,
             @"Countly recordCrashLog": crashes,
             @"Countly clearCrashLogs": crashes,
             @"Countly crashLog": crashes,
-            @"Countly recordView": views,
-            @"Countly addExceptionForAutoViewTracking": views,
-            @"Countly removeExceptionForAutoViewTracking": views,
-            @"Countly setIsAutoViewTrackingActive": views,
-            @"Countly isAutoViewTrackingActive": views,
             @"Countly askForStarRating": feedback,
-            @"Countly presentFeedbackWidgetWithID": feedback,
             @"Countly presentRatingWidgetWithID": feedback,
             @"Countly recordRatingWidgetWithID": feedback,
-            @"Countly getFeedbackWidgets": feedback,
-            @"Countly recordAttributionID": attribution,
             @"Countly recordDirectAttributionWithCampaignType": attribution,
             @"Countly recordIndirectAttribution": attribution,
-            @"Countly remoteConfigValueForKey": remoteConfig,
-            @"Countly updateRemoteConfigWithCompletionHandler": remoteConfig,
-            @"Countly updateRemoteConfigOnlyForKeys": remoteConfig,
-            @"Countly updateRemoteConfigExceptForKeys": remoteConfig,
             @"Countly recordNetworkTrace": apm,
             @"Countly startCustomTrace": apm,
             @"Countly endCustomTrace": apm,

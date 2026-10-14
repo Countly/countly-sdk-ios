@@ -441,9 +441,7 @@ static dispatch_once_t onceToken;
 
     if (consentForAttribution)
     {
-        CLY_LOG_D(@"%s consent granted, feature: [%@], attribution will be sent", __FUNCTION__, CLYConsentAttribution);
-
-        [CountlyConnectionManager.sharedInstance sendAttribution];
+        CLY_LOG_D(@"%s consent granted, feature: [%@], attribution can be recorded", __FUNCTION__, CLYConsentAttribution);
     }
     else
     {
