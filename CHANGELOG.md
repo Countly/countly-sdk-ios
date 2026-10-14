@@ -27,18 +27,28 @@
 * Fixed visibility reporting and background session suppression on visionOS.
 
 * Removed the following deprecated calls from "Countly":
-  * "setNewDeviceID:onServer:" and "giveConsentForAllFeatures"
-  * "recordHandledException:", "recordHandledException:withStackTrace:" and "recordUnhandledException:withStackTrace:"
-  * "recordView:", "recordView:segmentation:", "addExceptionForAutoViewTracking:", "removeExceptionForAutoViewTracking:" and "isAutoViewTrackingActive"
-  * "presentFeedbackWidgetWithID:completionHandler:" and "getFeedbackWidgets:"
-  * "recordAttributionID:"
-  * "remoteConfigValueForKey:", "updateRemoteConfigWithCompletionHandler:", "updateRemoteConfigOnlyForKeys:completionHandler:" and "updateRemoteConfigExceptForKeys:completionHandler:"
+  * "setNewDeviceID:onServer:", use "changeDeviceIDWithMerge:" or "changeDeviceIDWithoutMerge:" instead
+  * "giveConsentForAllFeatures", use "giveAllConsents" instead
+  * "recordHandledException:", use "recordException:" instead
+  * "recordHandledException:withStackTrace:" and "recordUnhandledException:withStackTrace:", use "recordException:isFatal:stackTrace:segmentation:" instead
+  * "recordView:" and "recordView:segmentation:", use "[views startAutoStoppedView:]" and "[views startAutoStoppedView:segmentation:]" instead
+  * "addExceptionForAutoViewTracking:", use the "automaticViewTrackingExclusionList" config option instead
+  * "removeExceptionForAutoViewTracking:" and "isAutoViewTrackingActive", which have no replacement
+  * "presentFeedbackWidgetWithID:completionHandler:", use "presentRatingWidgetWithID:completionHandler:" instead
+  * "getFeedbackWidgets:", use "[feedback getAvailableFeedbackWidgets:]" instead
+  * "recordAttributionID:", use "recordIndirectAttribution:" with the "CLYAttributionKeyIDFA" key, or "recordDirectAttributionWithCampaignType:andCampaignData:" instead
+  * "remoteConfigValueForKey:", use "[remoteConfig getValue:]" instead
+  * "updateRemoteConfigWithCompletionHandler:", use "[remoteConfig downloadKeys:]" instead
+  * "updateRemoteConfigOnlyForKeys:completionHandler:", use "[remoteConfig downloadSpecificKeys:completionHandler:]" instead
+  * "updateRemoteConfigExceptForKeys:completionHandler:", use "[remoteConfig downloadOmittingKeys:completionHandler:]" instead
 * Removed the following deprecated config options from "CountlyConfig":
-  * "maxKeyLength", "maxValueLength", "maxSegmentationValues" and "crashLogLimit"
-  * "attributionID"
-  * "enableRemoteConfig" and "remoteConfigCompletionHandler"
-  * "enablePerformanceMonitoring" and "enableServerConfiguration"
-* Removed the deprecated feature constant "CLYAutoViewTracking"
+  * "maxKeyLength", "maxValueLength", "maxSegmentationValues" and "crashLogLimit", use "setMaxKeyLength:", "setMaxValueSize:", "setMaxSegmentationValues:" and "setMaxBreadcrumbCount:" of "sdkInternalLimits" instead
+  * "attributionID", use "indirectAttribution" with the "CLYAttributionKeyIDFA" key, or "campaignType" and "campaignData" instead
+  * "enableRemoteConfig", use "enableRemoteConfigAutomaticTriggers" instead
+  * "remoteConfigCompletionHandler", use "remoteConfigRegisterGlobalCallback:" instead
+  * "enablePerformanceMonitoring", use "enableAppStartTimeTracking", "enableForegroundBackgroundTracking" and "enableManualAppLoadedTrigger" of "apm" instead
+  * "enableServerConfiguration", which had no effect
+* Removed the deprecated feature constant "CLYAutoViewTracking", use the "enableAutomaticViewTracking" config option instead
 
 ## 26.1.4
 * Added support for reporting the app's current theme (light or dark) when presenting feedback widgets, rating widgets, and content, so they are displayed in matching conditions.
