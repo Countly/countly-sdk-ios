@@ -75,17 +75,27 @@ class TestUtils {
         validateRequest(params, idx, { request in }, from: source)
     }
 
-    static func validateRequest(_ params: [String: Any], _ idx: Int, _ customValidator: ([String: Any]) -> Void, from source: [String]? = nil) {
+    /// Returns the request at `idx` in `source`, or in the persisted request queue when no
+    /// source is given. Records a failure and returns nil when the queue is missing or holds
+    /// fewer requests than that, so a test whose SDK queued fewer requests than expected fails
+    /// on its assertions instead of trapping on the subscript and killing the whole test runner.
+    static func requestAt(_ idx: Int, from source: [String]? = nil) -> String? {
         guard let rq = source ?? getCurrentRQ() else {
             XCTFail("Request queue is nil.")
-            return
+            return nil
         }
         guard rq.indices.contains(idx) else {
             XCTFail("Request index \(idx) out of bounds. RQ count: \(rq.count).")
+            return nil
+        }
+        return rq[idx]
+    }
+
+    static func validateRequest(_ params: [String: Any], _ idx: Int, _ customValidator: ([String: Any]) -> Void, from source: [String]? = nil) {
+        guard let requestStr = requestAt(idx, from: source) else {
             return
         }
 
-        let requestStr = rq[idx]
         let request = parseQueryString(requestStr)
         validateRequiredParams(request)
 
@@ -118,7 +128,10 @@ class TestUtils {
         _ eventName: String, _ segmentation: [String: Any], _ idx: Int, _ rqCount: Int, _ eventIdx: Int,
         _ eventCount: Int, from source: [String]? = nil
     ) throws {
-        let requestStr = (source ?? getCurrentRQ())![idx]
+        guard let requestStr = requestAt(idx, from: source) else {
+            return
+        }
+
         let request = parseQueryString(requestStr)
         validateRequiredParams(request)
 
@@ -129,6 +142,10 @@ class TestUtils {
                 // Optionally cast it
                 if let eventArray = json as? [[String: Any]] {
                     XCTAssertEqual(eventCount, eventArray.count)
+                    guard eventArray.indices.contains(eventIdx) else {
+                        XCTFail("Event index \(eventIdx) out of bounds. Event count: \(eventArray.count).")
+                        return
+                    }
                     let event = eventArray[eventIdx]
                     XCTAssertEqual(event["key"] as? String, eventName)
                     XCTAssertEqual(event["count"] as? Int, 1)
@@ -250,12 +267,12 @@ class TestUtils {
     }
 
     static func validateRequiredParams(_ params: [String: Any]) {
-        guard let hour = Int((params["hour"] as? String)!),
-            let dow = Int((params["dow"] as? String)!),
-            let timeZone = Int((params["tz"] as? String)!),
-            let timestamp = Int((params["timestamp"] as? String)!)
+        guard let hour = (params["hour"] as? String).flatMap({ Int($0) }),
+            let dow = (params["dow"] as? String).flatMap({ Int($0) }),
+            let timeZone = (params["tz"] as? String).flatMap({ Int($0) }),
+            let timestamp = (params["timestamp"] as? String).flatMap({ Int($0) })
         else {
-            XCTFail("Invalid parameter types")
+            XCTFail("Missing or non-integer hour, dow, tz or timestamp in request: \(params)")
             return
         }
 
@@ -354,6 +371,8 @@ class TestUtils {
         config.host = host
         config.enableDebug = true
         config.features = [CLYFeature.crashReporting]
+        // Hostless simulator runs can never report an orientation; off keeps hosted runs (device farm) identical.
+        config.enableOrientationTracking = false
         return config
     }
 
