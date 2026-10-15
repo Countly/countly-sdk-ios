@@ -1,6 +1,6 @@
 # iOS device tests through the Countly Device Farm, example for an SDK repo (countly-sdk-ios).
 #
-# A GitHub macOS runner builds and signs the test bundle, then the office iPhone runs it with no
+# A GitHub macOS runner builds and signs the test bundle, then a real iPhone runs it with no
 # host computer: the job joins the farm's queue with a GitHub OIDC token (no farm secret in the
 # repo), the phone's agent takes the job, runs the tests, and streams the results back here.
 #
@@ -34,7 +34,7 @@ permissions:
 
 jobs:
   ios:
-    name: iOS tests on the office iPhone
+    name: iOS real phone test
     runs-on: macos-15
     timeout-minutes: 90
     env:
