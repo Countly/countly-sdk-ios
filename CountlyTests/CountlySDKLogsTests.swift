@@ -751,6 +751,27 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
         XCTAssertFalse(captured.contains { $0.contains("DROPPED-EVENT-VALUE") }, "the values of a dropped event are never quoted")
     }
 
+    /// Custom request header values, often credentials, are never quoted in a gathered line, their names still are.
+    func testLogGathering_customHeaderValuesAreNotQuoted() throws {
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        // headers are only taken when a URL session configuration was given at start
+        config.urlSessionConfiguration = URLSessionConfiguration.ephemeral
+        Countly.sharedInstance().start(with: config)
+        TestUtils.sleep(1) {}
+        common.updateLogGatheringState(true, levels: allLevels, batch: maxBufferedLines, lgid: "gather_custom_headers")
+        clearBuffer()
+
+        Countly.sharedInstance().addCustomNetworkRequestHeaders(["Authorization": "Bearer S3CR3T-TOKEN", "X-Tenant": "TENANT-VALUE"])
+
+        let captured = (bufferedLines + awaitingConsentLines).compactMap { $0["m"] as? String }
+        XCTAssertTrue(captured.contains { $0.contains("Authorization") && $0.contains("X-Tenant") }, "the header names are still logged")
+        for value in ["S3CR3T-TOKEN", "TENANT-VALUE"] {
+            XCTAssertFalse(captured.contains { $0.contains(value) }, "[\(value)] is a header value, so no gathered line may quote it")
+        }
+        XCTAssertEqual("Bearer S3CR3T-TOKEN", CountlyConnectionManager.sharedInstance().urlSessionConfiguration?.httpAdditionalHeaders?["Authorization"] as? String, "the header itself is still applied")
+    }
+
     /// A delivery checks the consent of every line it takes, so a line whose consent was just withdrawn stays waiting.
     func testLogGathering_deliveryChecksTheConsentOfEveryLineItTakes() throws {
         startSDK(requiresConsent: true)

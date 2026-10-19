@@ -634,9 +634,9 @@ static dispatch_once_t onceToken;
 }
 
 - (void)addCustomNetworkRequestHeaders:(NSDictionary<NSString *, NSString *> *_Nullable)customHeaderValues {
+    // names only: a header value is often a credential, and log gathering can upload any line
     CLY_LOG_I(@"%s adding custom network request headers, keys: [%@], count: [%lu]", __FUNCTION__, customHeaderValues.allKeys, (unsigned long)customHeaderValues.count);
-    CLY_LOG_D(@"%s custom network request header detail, customHeaderValues: [%@]", __FUNCTION__, customHeaderValues);
-    
+
     // Ignore nil or empty dictionary
     if (customHeaderValues == nil || customHeaderValues.count == 0) {
         CLY_LOG_W(@"%s omitting the call, no custom network request header is provided", __FUNCTION__);
@@ -1538,6 +1538,8 @@ static dispatch_once_t onceToken;
     }
 
     [CountlyConsentManager.sharedInstance resetInstance];
+    // after the consent reset, which can still send an empty location
+    [CountlyLocationManager.sharedInstance resetInstance];
     [CountlyPersistency.sharedInstance resetInstance:clearStorage];
     [CountlyDeviceInfo.sharedInstance resetInstance];
     [CountlyConnectionManager.sharedInstance resetInstance];
@@ -1553,11 +1555,7 @@ static dispatch_once_t onceToken;
 
     if(clearStorage)
     {
-        NSString *appDomain = [[NSBundle mainBundle] bundleIdentifier];
-        [NSUserDefaults.standardUserDefaults removePersistentDomainForName:appDomain];
-
-        // halt(true) calls removePersistentDomainForName which doesn't work in xctest
-        // environment (different bundle ID), so clear SDK keys manually
+        // only the SDK's keys, the app keeps its own values in the same defaults; the PLCrashReporter suppression marker has to outlive halt
         NSArray* sdkKeys = @[
             @"kCountlyServerConfigPersistencyKey",
             @"kCountlyHealthCheckStatePersistencyKey",

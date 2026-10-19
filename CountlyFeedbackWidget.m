@@ -182,7 +182,8 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     CLY_LOG_D(@"%s widget navigation response received, widgetID: [%@], path: [%@], mimeType: [%@], statusCode: [%ld], headerCount: [%lu]",
               __FUNCTION__, self.ID, response.URL.path, mimeType, statusCode, (unsigned long)headers.count);
 
-    CLY_LOG_D(@"%s widget navigation response detail, widgetID: [%@], url: [%@], headers: [%@]", __FUNCTION__, self.ID, response.URL.absoluteString, headers);
+    // header names only: a response header value can be a session cookie
+    CLY_LOG_D(@"%s widget navigation response detail, widgetID: [%@], url: [%@], headerNames: [%@]", __FUNCTION__, self.ID, response.URL.absoluteString, headers.allKeys);
 
     if (statusCode >= 400) {
         CLY_LOG_E(@"%s widget navigation cancelled and widget dismissed, widgetID: [%@], statusCode: [%ld]", __FUNCTION__, self.ID, statusCode);

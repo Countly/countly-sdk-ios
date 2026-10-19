@@ -146,10 +146,7 @@ static dispatch_once_t onceToken;
         [self setLogGatheringOffLocked];
         _sdkLogsState = CLYSDKLogsStateUndecided;
     }
-    @synchronized (self) {
-        [self.pinnedImmediateURLSession finishTasksAndInvalidate];
-        self.pinnedImmediateURLSession = nil;
-    }
+    [self invalidatePinnedImmediateURLSession];
     onceToken = 0;
     s_sharedInstance = nil;
  }
@@ -1149,6 +1146,18 @@ void CountlyRunOnMainThread(dispatch_block_t block)
             self.pinnedImmediateURLSession = [NSURLSession sessionWithConfiguration:immediateConfig delegate:connectionManager delegateQueue:nil];
 
         return self.pinnedImmediateURLSession;
+    }
+}
+
+- (void)invalidatePinnedImmediateURLSession
+{
+    @synchronized (self) {
+        if (!self.pinnedImmediateURLSession)
+            return;
+
+        CLY_LOG_D(@"%s the immediate session kept for pinned certificates is dropped, the next immediate request builds a new one", __FUNCTION__);
+        [self.pinnedImmediateURLSession finishTasksAndInvalidate];
+        self.pinnedImmediateURLSession = nil;
     }
 }
 

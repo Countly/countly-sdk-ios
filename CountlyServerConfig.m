@@ -182,6 +182,7 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     _serverConfigUpdatesDisabled = NO;
     _requestTimeoutDuration = 30;
     _lastFetchTimestamp = 0;
+    [self restoreDeveloperValuesInto:_startConfig];
     _startConfig = nil;
     _lastAppliedAutomaticViewTracking = nil;
     _developerValues = nil;
@@ -265,6 +266,33 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
 - (NSNumber *)developerValueForKey:(NSString *)key orCurrent:(NSNumber *)current
 {
     return _developerValues[key] ?: current;
+}
+
+/// Puts the developer's values from start back into the configuration the SDK was started with. notifySdkConfigChange:
+/// writes the resolved values into it, and its internal limits and content parts are shared by every configuration in the
+/// process, so without this the next start would remember the halted run's behavior settings as the developer's values.
+- (void)restoreDeveloperValuesInto:(CountlyConfig *)config
+{
+    if (!config || !_developerValues)
+        return;
+
+    config.enableDebug = [_developerValues[kRLogging] boolValue];
+    config.requiresConsent = [_developerValues[kRConsentRequired] boolValue];
+    config.eventSendThreshold = [_developerValues[kREventQueueSize] unsignedIntegerValue];
+    config.storedRequestsLimit = [_developerValues[kRReqQueueSize] unsignedIntegerValue];
+    config.requestDropAgeHours = [_developerValues[kRDropOldRequestTime] unsignedIntegerValue];
+    config.updateSessionPeriod = [_developerValues[kRSessionUpdateInterval] doubleValue];
+    [config.sdkInternalLimits setMaxKeyLength:[_developerValues[kRLimitKeyLength] unsignedIntegerValue]];
+    [config.sdkInternalLimits setMaxValueSize:[_developerValues[kRLimitValueSize] unsignedIntegerValue]];
+    [config.sdkInternalLimits setMaxSegmentationValues:[_developerValues[kRLimitSegValues] unsignedIntegerValue]];
+    [config.sdkInternalLimits setMaxBreadcrumbCount:[_developerValues[kRLimitBreadcrumb] unsignedIntegerValue]];
+    [config.sdkInternalLimits setMaxStackTraceLineLength:[_developerValues[kRLimitTraceLength] unsignedIntegerValue]];
+    [config.sdkInternalLimits setMaxStackTraceLinesPerThread:[_developerValues[kRLimitTraceLine] unsignedIntegerValue]];
+#if (TARGET_OS_IOS)
+    [config.content restoreZoneTimerInterval:[_developerValues[kRContentZoneInterval] unsignedIntegerValue]];
+#endif
+
+    CLY_LOG_D(@"%s the developer's values from start are put back into the start configuration, requiresConsent: [%@], enableDebug: [%@], eventSendThreshold: [%lu], maxKeyLength: [%lu]", __FUNCTION__, config.requiresConsent ? @"YES" : @"NO", config.enableDebug ? @"YES" : @"NO", (unsigned long)config.eventSendThreshold, (unsigned long)config.sdkInternalLimits.getMaxKeyLength);
 }
 
 /// Replaces the stored behavior settings with a valid answer as a whole, so a setting the server no longer sends is

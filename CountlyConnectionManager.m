@@ -166,6 +166,7 @@ static dispatch_once_t onceToken;
         CLY_LOG_D(@"%s custom URL session configuration is set, the URL session will be recreated on the next request", __FUNCTION__);
         _URLSessionConfiguration = URLSessionConfiguration;
         _URLSession = nil;
+        [CountlyCommon.sharedInstance invalidatePinnedImmediateURLSession];
     }
 }
 
@@ -205,6 +206,8 @@ static dispatch_once_t onceToken;
     CLY_LOG_I(@"%s custom network request headers are applied, total header count: [%lu]", __FUNCTION__, (unsigned long)updatedHeaders.count);
     _URLSessionConfiguration.HTTPAdditionalHeaders = [updatedHeaders copy];
     _URLSession = nil;
+    // a session copies its configuration when it is created, so the one kept for pinned certificates would never send these headers
+    [CountlyCommon.sharedInstance invalidatePinnedImmediateURLSession];
 }
 
 - (void)proceedOnQueue
@@ -289,6 +292,13 @@ static dispatch_once_t onceToken;
         self.startTime = nil;
         self.hasAnyRequestFailed = NO;
         atomic_store(&_isProcessingQueue, NO);
+
+        // a request queued after the check above was turned away by the flag this pass held, as is one a runnable queued
+        if ([CountlyPersistency.sharedInstance firstItemInQueue])
+        {
+            CLY_LOG_D(@"%s a request was queued while the queue was being finished, processing continues", __FUNCTION__);
+            [self proceedOnQueue];
+        }
         return;
     }
     

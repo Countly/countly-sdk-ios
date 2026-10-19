@@ -97,6 +97,107 @@ class CountlyTests: CountlyBaseTestCase {
         XCTAssertNil(Countly.sharedInstance().remoteConfig().getValue("held_key").value, "and is not served either")
     }
 
+    /**
+     * <pre>
+     * "halt" gives the configuration given at start its own values back. Behavior settings write their resolved values
+     * into it, and its internal limits are shared by every configuration, so without this the next start would take the
+     * halted run's behavior settings for the developer's values.
+     *
+     * 1- Start with developer supplied behavior settings that lift the consent requirement and lower two values
+     * 2- Verify they applied, then halt
+     * 3- Verify the configuration, and a new one for the shared limits, hold the developer's values again
+     * 4- Start again without behavior settings and verify the developer's values apply
+     * </pre>
+     */
+    func testHalt_givesTheStartConfigurationItsOwnValuesBack() throws {
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        config.requiresConsent = true
+        config.eventSendThreshold = 7
+        config.sdkInternalLimits().setMaxKeyLength(64)
+        config.sdkBehaviorSettings = ServerConfigBuilder()
+            .consentRequired(false)
+            .logging(false)
+            .eventQueueSize(3)
+            .limitKeyLength(20)
+            .build()
+        Countly.sharedInstance().start(with: config)
+
+        XCTAssertFalse(CountlyConsentManager.sharedInstance().requiresConsent, "the behavior settings lift the consent requirement")
+        XCTAssertEqual(3, CountlyPersistency.sharedInstance().eventSendThreshold)
+        XCTAssertEqual(20, CountlyCommon.sharedInstance().maxKeyLength)
+        XCTAssertFalse(config.requiresConsent, "while the SDK runs, the resolved values live in the start configuration")
+
+        Countly.sharedInstance().halt(true)
+
+        XCTAssertTrue(config.requiresConsent, "halt gives back the developer's consent requirement")
+        XCTAssertTrue(config.enableDebug, "and the developer's logging")
+        XCTAssertEqual(7, config.eventSendThreshold, "and the developer's event threshold")
+        XCTAssertEqual(64, config.sdkInternalLimits().getMaxKeyLength(), "and the developer's key length limit")
+        XCTAssertEqual(64, CountlyConfig().sdkInternalLimits().getMaxKeyLength(), "which every configuration in the process shares")
+
+        // the property is nonnull in Swift, so the provided settings are cleared through KVC
+        config.setValue(nil, forKey: "sdkBehaviorSettings")
+        Countly.sharedInstance().start(with: config)
+
+        XCTAssertTrue(CountlyConsentManager.sharedInstance().requiresConsent, "without behavior settings the developer's consent requirement applies")
+        XCTAssertEqual(7, CountlyPersistency.sharedInstance().eventSendThreshold, "and the developer's event threshold")
+        XCTAssertEqual(64, CountlyCommon.sharedInstance().maxKeyLength, "and the developer's key length limit")
+    }
+
+    /**
+     * <pre>
+     * "halt" resets the location state, so location info disabled before it does not hold for the next start.
+     *
+     * 1- Start and disable location info
+     * 2- Halt and start again with consent required and all consents given
+     * 3- Verify location info is enabled and no request carries the empty location sent for disabled location info
+     * </pre>
+     */
+    func testHalt_resetsTheLocationState() throws {
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+        Countly.sharedInstance().disableLocationInfo()
+        XCTAssertEqual(true, CountlyLocationManager.sharedInstance()?.isLocationInfoDisabled, "location info is disabled before halt")
+
+        Countly.sharedInstance().halt(true)
+        let restart = createBaseConfig()
+        restart.requiresConsent = true
+        restart.enableAllConsents = true
+        Countly.sharedInstance().start(with: restart)
+
+        XCTAssertEqual(false, CountlyLocationManager.sharedInstance()?.isLocationInfoDisabled, "halt must reset the location state")
+        let rq = TestUtils.getCurrentRQ() ?? []
+        XCTAssertTrue(rq.first?.contains("begin_session=1") == true, "the session begin must be the first request, got: \(rq)")
+        for request in rq {
+            let location = TestUtils.parseQueryString(request)["location"] as? String
+            XCTAssertNotEqual("", location, "no request may carry the empty location of disabled location info: \(request)")
+        }
+    }
+
+    /**
+     * <pre>
+     * "halt" with storage cleared removes only the SDK's own values from the standard user defaults. The app keeps its
+     * own values in the same defaults, so they must survive it.
+     * </pre>
+     */
+    func testHalt_clearingStorageKeepsTheAppsOwnUserDefaults() throws {
+        let appKey = "ly.count.tests.appOwnValue"
+        UserDefaults.standard.set("app value", forKey: appKey)
+        defer { UserDefaults.standard.removeObject(forKey: appKey) }
+
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+        XCTAssertNotNil(UserDefaults.standard.object(forKey: "kCountlyStoredDeviceIDKey"), "the SDK stores its device ID in the standard user defaults")
+
+        Countly.sharedInstance().halt(true)
+
+        XCTAssertEqual("app value", UserDefaults.standard.string(forKey: appKey), "the app's own value must survive halt")
+        XCTAssertNil(UserDefaults.standard.object(forKey: "kCountlyStoredDeviceIDKey"), "the SDK's own values must be removed")
+    }
+
     func testPerformanceExample() async throws {
         // This is an example of a performance test case.
         measure {
