@@ -1,16 +1,55 @@
 ## XX.XX.XX
-* Added support for server requested SDK log gathering.
-* Added support for server requested connection tests that probe the endpoints the SDK depends on and report the results.
-* Added support for SDK behavior settings that control the SDK's automatic session tracking, automatic view tracking, automatic crash reporting, and Journey Trigger Views.
-* Added "userProfile" access on watchOS, tvOS and macOS.
-* Improved internal logging and changed the default log level from verbose to debug.
-* Improved state cleanup for events and view tracking when "halt" is called.
+* ! Minor breaking change ! Raised the minimum supported deployment targets to iOS 15, tvOS 15, watchOS 9 and macOS 12 (previously iOS 12, tvOS 12, watchOS 4 and macOS 10.14) for compatibility with Xcode 27. Apps targeting older versions are no longer supported.
+* ! Minor breaking change ! "changeDeviceIDWithMerge:" and "changeDeviceIDWithoutMerge:" now ignore nil, an empty string and "CLYDefaultDeviceID" instead of switching back to the default device ID.
 
+* Added support for server requested SDK log gathering and connection tests. A gathered log line is uploaded only after the consent of the feature that wrote it is given.
+* Added support for SDK behavior settings that control automatic session tracking, automatic view tracking, automatic crash reporting and Journey Trigger Views, also for the running session.
+* Added "userProfile" access on watchOS, tvOS and macOS.
+* Added a new method "setGlobalContentSegmentation" on "CountlyContentBuilder" that sets a segmentation recorded with every content event and with the events and answers of NPS, survey and rating feedback widgets, leaving out the keys widgets record as answers.
+* Improved internal logging and changed the default log level from verbose to debug.
+* Improved crash handling. The SDK's handlers now pass crashes on to the handlers they replaced, leave crash tools installed later and signals the app ignores, such as SIGPIPE, alone, and are removed by "halt".
+* Improved state cleanup on "halt", which now also resets events, view tracking, remote config and the content state on visionOS.
+
+* Mitigated an issue where SDK behavior settings were ignored when the server response contained additional fields.
+* Mitigated an issue where refreshing SDK behavior settings after the app returned from the background reset the configuration given at start until the next launch.
+* Mitigated an issue where the app could freeze instead of terminating on a crash after crash reporting was turned off at runtime or after "halt".
+* Mitigated an issue where, with PLCrashReporter, crashes captured while crash consent or automatic crash reporting was off, or after "halt", were sent later. They are now discarded without calling "crashOccuredOnPreviousSessionCallback", and both PLCrashReporter callbacks run on the main thread.
+* Mitigated an issue where certificate pinning was not applied to immediate requests such as SDK behavior settings, remote config, feedback widgets, content and health checks.
+* Mitigated an issue where an auto stopped view running when the app went to the background could stop right after the app returned to the foreground.
+* Mitigated an issue where health check counters of the previous app run were lost when a warning was logged before the SDK started.
+* Mitigated an issue where a warning was logged when the app became active while a session was already running.
+* Mitigated an issue where a local profile picture path was sent on macOS, tvOS and watchOS, where uploading a local picture is not supported.
+* Mitigated a possible crash when SDK behavior settings updated filters or Journey Trigger lists while data was being recorded.
+* Mitigated an issue where reserved events could be identified incorrectly on Intel based Macs.
 * Fixed a crash on visionOS when view tracking consent was given or cancelled.
 * Fixed a crash on watchOS and macOS when calling "halt".
 * Fixed macOS not starting a session when the app was not active at launch.
 * Fixed visibility reporting and background session suppression on visionOS.
 * Fixed view IDs returned by "startView" no longer resolving after the app was backgrounded and foregrounded, which made "stopViewWithID" fail and left the view reporting a new visit and a duration on every later foreground.
+
+* Removed the following deprecated calls from "Countly":
+  * "setNewDeviceID:onServer:", use "changeDeviceIDWithMerge:" or "changeDeviceIDWithoutMerge:" instead
+  * "giveConsentForAllFeatures", use "giveAllConsents" instead
+  * "recordHandledException:", use "recordException:" instead
+  * "recordHandledException:withStackTrace:" and "recordUnhandledException:withStackTrace:", use "recordException:isFatal:stackTrace:segmentation:" instead
+  * "recordView:" and "recordView:segmentation:", use "[views startAutoStoppedView:]" and "[views startAutoStoppedView:segmentation:]" instead
+  * "addExceptionForAutoViewTracking:", use the "automaticViewTrackingExclusionList" config option instead
+  * "removeExceptionForAutoViewTracking:" and "isAutoViewTrackingActive", which have no replacement
+  * "presentFeedbackWidgetWithID:completionHandler:", use "presentRatingWidgetWithID:completionHandler:" instead
+  * "getFeedbackWidgets:", use "[feedback getAvailableFeedbackWidgets:]" instead
+  * "recordAttributionID:", use "recordIndirectAttribution:" with the "CLYAttributionKeyIDFA" key, or "recordDirectAttributionWithCampaignType:andCampaignData:" instead
+  * "remoteConfigValueForKey:", use "[remoteConfig getValue:]" instead
+  * "updateRemoteConfigWithCompletionHandler:", use "[remoteConfig downloadKeys:]" instead
+  * "updateRemoteConfigOnlyForKeys:completionHandler:", use "[remoteConfig downloadSpecificKeys:completionHandler:]" instead
+  * "updateRemoteConfigExceptForKeys:completionHandler:", use "[remoteConfig downloadOmittingKeys:completionHandler:]" instead
+* Removed the following deprecated config options from "CountlyConfig":
+  * "maxKeyLength", "maxValueLength", "maxSegmentationValues" and "crashLogLimit", use "setMaxKeyLength:", "setMaxValueSize:", "setMaxSegmentationValues:" and "setMaxBreadcrumbCount:" of "sdkInternalLimits" instead
+  * "attributionID", use "indirectAttribution" with the "CLYAttributionKeyIDFA" key, or "campaignType" and "campaignData" instead
+  * "enableRemoteConfig", use "enableRemoteConfigAutomaticTriggers" instead
+  * "remoteConfigCompletionHandler", use "remoteConfigRegisterGlobalCallback:" instead
+  * "enablePerformanceMonitoring", use "enableAppStartTimeTracking", "enableForegroundBackgroundTracking" and "enableManualAppLoadedTrigger" of "apm" instead
+  * "enableServerConfiguration", which had no effect
+* Removed the deprecated feature constant "CLYAutoViewTracking", use the "enableAutomaticViewTracking" config option instead
 
 ## 26.1.4
 * Added support for reporting the app's current theme (light or dark) when presenting feedback widgets, rating widgets, and content, so they are displayed in matching conditions.

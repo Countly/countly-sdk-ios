@@ -28,7 +28,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         writerDelay: useconds_t = 0,
         readerDelay: useconds_t = 0,
         extraThreads: Int = 0,
-        timeout: TimeInterval = 180,
+        timeout: TimeInterval = 60,
         file: StaticString = #filePath,
         line: UInt = #line,
         writerBlock: @escaping (Int) -> Void,
@@ -210,7 +210,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
             group.leave()
         }
 
-        let result = group.wait(timeout: .now() + 180)
+        let result = group.wait(timeout: .now() + 30)
         XCTAssertEqual(result, .success, "String memory management test did not complete in time")
     }
 
@@ -266,7 +266,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
             group.leave()
         }
 
-        let result = group.wait(timeout: .now() + 180)
+        let result = group.wait(timeout: .now() + 45)
         XCTAssertEqual(result, .success, "Error message race condition test did not complete in time")
     }
 
@@ -321,7 +321,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
             group.leave()
         }
 
-        let result = group.wait(timeout: .now() + 180)
+        let result = group.wait(timeout: .now() + 30)
         XCTAssertEqual(result, .success, "Boundary conditions test did not complete in time")
     }
 
@@ -363,7 +363,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
                 group.leave()
             }
 
-            let result = group.wait(timeout: .now() + 180)
+            let result = group.wait(timeout: .now() + 30)
             XCTAssertEqual(result, .success, "Performance test did not complete in time")
         }
     }
@@ -400,8 +400,78 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
                 }
             }
 
-            let result = group.wait(timeout: .now() + 180)
+            let result = group.wait(timeout: .now() + 15)
             XCTAssertEqual(result, .success, "Concurrent performance test did not complete in time")
         }
+    }
+}
+
+/// Stored health counters, with every request answered by a reply without `result`, so no response clears them mid test.
+class CountlyHealthTrackerStoredCountersTests: CountlyBaseTestCase {
+    private let healthChecksLock = NSLock()
+    private var healthChecks: [[String: Any]] = []
+
+    /// Sets the reply before the base setup starts and halts the SDK, so the health check sent then is answered too.
+    override func setUpWithError() throws {
+        MockURLProtocol.requestHandler = { [weak self] request in
+            self?.recordHealthCheck(request)
+            return (
+                "{}".data(using: .utf8),
+                HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil),
+                nil
+            )
+        }
+        try super.setUpWithError()
+    }
+
+    /// The base config with every request routed through `MockURLProtocol`.
+    override func createBaseConfig() -> CountlyConfig {
+        let config = super.createBaseConfig()
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [MockURLProtocol.self]
+        config.urlSessionConfiguration = sessionConfig
+        config.manualSessionHandling = true
+        return config
+    }
+
+    /// Keeps the `hc` parameter of every health check request the SDK sends.
+    private func recordHealthCheck(_ request: URLRequest) {
+        guard let query = request.url?.query,
+              let healthCheck = TestUtils.parseQueryString(query)["hc"] as? [String: Any]
+        else { return }
+        healthChecksLock.lock()
+        healthChecks.append(healthCheck)
+        healthChecksLock.unlock()
+    }
+
+    /// The `hc` parameters recorded so far. Requests are answered on another thread, so every read is locked.
+    private func recordedHealthChecks() -> [[String: Any]] {
+        healthChecksLock.lock()
+        defer { healthChecksLock.unlock() }
+        return healthChecks
+    }
+
+    /// The first health check after start reports the previous run's stored counts together with those counted before start.
+    func test_countersStoredByThePreviousRun_areAddedToTheOnesCountedBeforeStart() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+
+        let tracker = try XCTUnwrap(CountlyHealthTracker.sharedInstance())
+        let hcQueue = try XCTUnwrap(tracker.value(forKey: "hcQueue") as? DispatchQueue)
+        hcQueue.sync { tracker.setValue(false, forKey: "persistedStateLoaded") }
+        UserDefaults.standard.set(["LWar": 5, "LErr": 2], forKey: "kCountlyHealthCheckStatePersistencyKey")
+
+        tracker.logWarning()
+        tracker.logError()
+
+        Countly.sharedInstance().start(with: createBaseConfig())
+
+        var reported: [String: Any]?
+        let didReport = TestUtils.waitUntil("a health check with the stored counters", timeout: 10) {
+            reported = recordedHealthChecks().first { ($0["wl"] as? Int ?? 0) >= 6 }
+            return reported != nil
+        }
+        let sent = recordedHealthChecks()
+        XCTAssertTrue(didReport, "the 5 stored warnings must be added to the one logged before start, got: \(sent)")
+        XCTAssertGreaterThanOrEqual(reported?["el"] as? Int ?? 0, 3, "the 2 stored errors must be added to the one logged before start")
     }
 }

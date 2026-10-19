@@ -151,22 +151,14 @@ class CountlyPlatformIntegrationTests: CountlyBaseTestCase {
             countly.responds(to: NSSelectorFromString("askForNotificationPermission")),
             "Push notification API availability does not match \(TestPlatform.osName)")
 
-        // Automatic view tracking. The public API, the `CountlyConfig` switch and the
-        // internal implementation must all agree: `CountlyConsentManager` calls
-        // `startAutoViewTracking` wherever the API is declared, so a narrower
-        // implementation guard is an unrecognized-selector crash on consent changes.
-        XCTAssertEqual(
-            TestPlatform.hasAutoViewTrackingAPI,
-            countly.responds(to: NSSelectorFromString("isAutoViewTrackingActive")),
-            "Auto view tracking API availability does not match \(TestPlatform.osName)")
+        // the config switch and the implementation must agree, or a consent change hits an unrecognized selector
         XCTAssertEqual(
             TestPlatform.hasAutoViewTrackingAPI,
             CountlyConfig().responds(to: NSSelectorFromString("enableAutomaticViewTracking")),
             "enableAutomaticViewTracking availability does not match \(TestPlatform.osName)")
         // Checked on the class, not the singleton: `CountlyViewTrackingInternal.sharedInstance`
         // returns nil until the SDK has started.
-        for selector in ["startAutoViewTracking", "stopAutoViewTracking",
-                         "addExceptionForAutoViewTracking:", "removeExceptionForAutoViewTracking:"] {
+        for selector in ["startAutoViewTracking", "stopAutoViewTracking"] {
             XCTAssertEqual(
                 TestPlatform.hasAutoViewTracking,
                 CountlyViewTrackingInternal.instancesRespond(to: NSSelectorFromString(selector)),
@@ -406,8 +398,7 @@ class CountlyPlatformLifecycleTests: CountlyBaseTestCase {
     #endif
 
     /// Visibility segmentation depends on a per-platform foreground check
-    /// (`UIApplication` / `NSApplication` / `WKExtension`). It must be resolvable —
-    /// and therefore emitted as 0 or 1 — on every platform.
+    /// (`UIApplication` / `NSApplication` / `WKExtension`); the test process is in the foreground everywhere, so it reports 1.
     func test_visibilityTracking_resolvesForegroundStateOnEveryPlatform() throws {
         let config = TestUtils.createBaseConfig()
         config.requiresConsent = false
@@ -437,8 +428,8 @@ class CountlyPlatformLifecycleTests: CountlyBaseTestCase {
         let visibility = try XCTUnwrap(
             segmentation["cly_v"] as? Int,
             "cly_v must be reported on \(TestPlatform.osName), got: \(segmentation)")
-        XCTAssertTrue(
-            visibility == 0 || visibility == 1, "cly_v must be 0 or 1, got \(visibility)")
+        XCTAssertEqual(
+            1, visibility, "the test process is in the foreground, cly_v must be 1 on \(TestPlatform.osName)")
     }
 
     #if os(macOS)
@@ -467,4 +458,50 @@ class CountlyPlatformLifecycleTests: CountlyBaseTestCase {
             XCTAssertEqual(1, count(of: "begin_session=1"), "and only one session")
     }
     #endif
+
+    #if !os(watchOS)
+    /// Activation while a session runs, as on macOS or after an iOS alert, keeps the session without a warning.
+    func test_activationWithARunningSession_keepsItWithoutAWarning() throws {
+        startWithAutomaticSession()
+        let sessionsAtStart = count(of: "begin_session=1")
+        XCTAssertGreaterThanOrEqual(sessionsAtStart, 1, "Expected a session at start")
+
+        let logger = WarningRecordingLogger()
+        CountlyCommon.sharedInstance().loggerDelegate = logger
+        defer { CountlyCommon.sharedInstance().loggerDelegate = nil }
+
+        #if os(macOS)
+            post(NSApplication.willResignActiveNotification)
+            post(NSApplication.didBecomeActiveNotification)
+        #else
+            post(UIApplication.willResignActiveNotification)
+            post(UIApplication.didBecomeActiveNotification)
+        #endif
+
+        XCTAssertEqual(sessionsAtStart, count(of: "begin_session=1"), "activation must keep the running session")
+        XCTAssertEqual(
+            0, logger.count(containing: "A session is already running"),
+            "activation must not warn about the session it keeps")
+    }
+    #endif
+}
+
+/// Collects the lines the SDK hands to a host app's logger. Lines can arrive from any queue.
+private final class WarningRecordingLogger: NSObject, CountlyLoggerDelegate {
+    private let lock = NSLock()
+    private var lines: [String] = []
+
+    /// Keeps every line the SDK logs.
+    func internalLog(_ log: String, with level: CLYInternalLogLevel) {
+        lock.lock()
+        lines.append(log)
+        lock.unlock()
+    }
+
+    /// Number of collected lines that contain the given text.
+    func count(containing text: String) -> Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return lines.filter { $0.contains(text) }.count
+    }
 }

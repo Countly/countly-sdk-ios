@@ -46,11 +46,11 @@ class CountlyCallbackBaseTestCase: XCTestCase {
         try super.setUpWithError()
         // These tests all fake HTTP responses through MockURLProtocol, which watchOS ignores.
         try TestPlatform.skipUnlessHTTPInterceptable()
-        #if os(macOS)
+        #if os(macOS) || os(iOS) || os(tvOS) || os(visionOS)
             // This class deliberately derives from XCTestCase rather than CountlyBaseTestCase
-            // (it starts the SDK once per class), so it has to install the macOS activation
-            // shim itself. Without it xctest looks inactive and the SDK refuses to open a
-            // session, which starves the request callbacks these tests wait on.
+            // (it starts the SDK once per class), so it has to install the activation shim
+            // itself. Without it the test host can look inactive and the SDK refuses to open
+            // a session, which starves the request callbacks these tests wait on.
             TestAppActivation.isActive = true
         #endif
     }

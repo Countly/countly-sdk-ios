@@ -9,6 +9,15 @@
 //TODO: improve logging, check edge cases
 NSString* const kCountlyEndpointContent = @"/o/sdk/content";
 NSString* const kCountlyCBFetchContent  = @"queue";
+NSString* const kCountlyCBKeyCampaignID = @"campaign_id";
+NSString* const kCountlyCBSurveyAnswerKeyPrefix = @"answ-";
+
+@interface CountlyContentBuilderInternal ()
+// 'atomic' rather than the 'nonatomic' used elsewhere here: an event can be recorded on one thread
+// while the setter runs on another, and the dictionary is always replaced whole rather than
+// mutated, so a reader either sees the old segmentation or the complete new one.
+@property (atomic, copy) NSDictionary<NSString *, id> *contentSegmentation;
+@end
 
 @implementation CountlyContentBuilderInternal {
     BOOL _isRequestQueueLocked;
@@ -349,6 +358,92 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     // overlay with nothing left holding a reference to it.
     [self closeShownContent];
     [self writeFlag:&_refreshRunnablePending value:NO];
+    self.contentSegmentation = nil;
+}
+
+#pragma mark - Global content segmentation
+
+- (void)setGlobalContentSegmentation:(NSDictionary<NSString *, id> *)segmentation
+{
+    CLY_LOG_I(@"%s global content segmentation will be set, key count: [%lu], keys: [%@]", __FUNCTION__, (unsigned long)segmentation.count, segmentation.allKeys);
+    CLY_LOG_D(@"%s global content segmentation value detail, segmentation: [%@]", __FUNCTION__, segmentation);
+
+    if (!segmentation.count)
+    {
+        self.contentSegmentation = nil;
+        return;
+    }
+
+    NSDictionary* filteredSegmentation = segmentation.cly_filterSupportedDataTypes;
+    NSDictionary* truncatedSegmentation = [filteredSegmentation cly_truncated:@"Global content segmentation"];
+    self.contentSegmentation = [truncatedSegmentation cly_limited:@"Global content segmentation"];
+}
+
+- (NSDictionary *)mergeGlobalContentSegmentationInto:(NSDictionary *)eventSegmentation
+{
+    NSDictionary* globalSegmentation = self.contentSegmentation;
+    if (!globalSegmentation.count)
+    {
+        return eventSegmentation;
+    }
+
+    NSMutableDictionary* merged = globalSegmentation.mutableCopy;
+    [merged addEntriesFromDictionary:eventSegmentation];
+
+    NSUInteger maxSegmentationValues = CountlyCommon.sharedInstance.maxSegmentationValues;
+    if (merged.count > maxSegmentationValues)
+    {
+        NSMutableArray* globalOnlyKeys = globalSegmentation.allKeys.mutableCopy;
+        [globalOnlyKeys removeObjectsInArray:eventSegmentation.allKeys];
+        NSUInteger droppedKeyCount = MIN(merged.count - maxSegmentationValues, globalOnlyKeys.count);
+        NSArray* droppedKeys = [globalOnlyKeys subarrayWithRange:(NSRange){0, droppedKeyCount}];
+        [merged removeObjectsForKeys:droppedKeys];
+
+        CLY_LOG_D(@"%s global content segmentation exceeds the room the event leaves under the SDK segmentation value limit and will be trimmed, eventKeyCount: [%lu], limit: [%lu], droppedKeyCount: [%lu], droppedKeys: [%@]", __FUNCTION__, (unsigned long)eventSegmentation.count, (unsigned long)maxSegmentationValues, (unsigned long)droppedKeyCount, droppedKeys);
+    }
+
+    return merged;
+}
+
+- (NSDictionary *)globalContentSegmentationForFeedbackWidget
+{
+    NSDictionary* globalSegmentation = self.contentSegmentation;
+    if (!globalSegmentation.count)
+    {
+        return @{};
+    }
+
+    NSSet<NSString *>* reservedKeys = [NSSet setWithArray:@[kCountlyFBKeyPlatform, kCountlyFBKeyAppVersion, kCountlyFBKeyWidgetID, kCountlyFBKeyClosed,
+                                                            kCountlyFBKeyShown, kCountlyFBKeyRating, kCountlyFBKeyComment, kCountlyFBKeyEmail,
+                                                            kCountlyFBKeyContactMe, kCountlyCBKeyCampaignID]];
+
+    NSMutableDictionary* widgetSegmentation = globalSegmentation.mutableCopy;
+    for (NSString* key in globalSegmentation)
+    {
+        if ([reservedKeys containsObject:key] || [key hasPrefix:kCountlyCBSurveyAnswerKeyPrefix])
+            [widgetSegmentation removeObjectForKey:key];
+    }
+
+    if (widgetSegmentation.count != globalSegmentation.count)
+    {
+        CLY_LOG_D(@"%s keys the server reads as a widget answer or uses to route a widget event are left out of feedback widget events, droppedKeyCount: [%lu]", __FUNCTION__, (unsigned long)(globalSegmentation.count - widgetSegmentation.count));
+    }
+
+    return widgetSegmentation;
+}
+
+- (NSDictionary *)mergeGlobalContentSegmentationIntoFeedbackWidgetEvent:(NSDictionary *)eventSegmentation
+{
+    NSDictionary* widgetSegmentation = [self globalContentSegmentationForFeedbackWidget];
+    if (!widgetSegmentation.count)
+    {
+        return eventSegmentation;
+    }
+
+    NSMutableDictionary* merged = widgetSegmentation.mutableCopy;
+    [merged addEntriesFromDictionary:eventSegmentation];
+
+    return merged;
 }
 
 - (void)fetchContents {

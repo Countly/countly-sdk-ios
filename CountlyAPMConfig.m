@@ -28,11 +28,4 @@ long long appLoadStartTimeOverride;
 {
     return appLoadStartTimeOverride;
 }
-
-- (void)enableAPMInternal:(BOOL)enableAPM
-{
-    self.enableForegroundBackgroundTracking = enableAPM;
-    self.enableAppStartTimeTracking = enableAPM;
-    self.enableManualAppLoadedTrigger = enableAPM;
-}
 @end

@@ -169,9 +169,11 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         Countly.sharedInstance().addCustomNetworkRequestHeaders(customHeaders)
         Countly.sharedInstance().addDirectRequest(["test": "request"])
 
-        TestUtils.waitUntil("a request to be intercepted") { TestURLProtocol.capturedHeaders() != nil }
+        TestUtils.waitUntil("the direct request to be intercepted") {
+            TestURLProtocol.capturedHeaders(forRequestContaining: "test=request") != nil
+        }
 
-        let captured = try XCTUnwrap(TestURLProtocol.capturedHeaders(), "No request was intercepted")
+        let captured = try XCTUnwrap(TestURLProtocol.capturedHeaders(forRequestContaining: "test=request"), "The direct request was not intercepted")
         // The empty key must never be forwarded.
         XCTAssertNil(captured[""])
         // The SDK keeps an empty value under a valid key, but Foundation strips
@@ -218,7 +220,9 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         config.alwaysUsePOST = false
         config.manualSessionHandling = true
         config.disableSDKBehaviorSettingsUpdates = true
-        config.enablePerformanceMonitoring = true
+        config.apm().enableForegroundBackgroundTracking = true
+        config.apm().enableAppStartTimeTracking = true
+        config.apm().enableManualAppLoadedTrigger = true
         let sessionConfig = URLSessionConfiguration.default
         sessionConfig.protocolClasses = [MockURLProtocol.self]
         config.urlSessionConfiguration = sessionConfig
@@ -341,7 +345,9 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         config.alwaysUsePOST = true
         config.manualSessionHandling = true
         config.disableSDKBehaviorSettingsUpdates = true
-        config.enablePerformanceMonitoring = true
+        config.apm().enableForegroundBackgroundTracking = true
+        config.apm().enableAppStartTimeTracking = true
+        config.apm().enableManualAppLoadedTrigger = true
         let sessionConfig = URLSessionConfiguration.default
         sessionConfig.protocolClasses = [MockURLProtocol.self]
         config.urlSessionConfiguration = sessionConfig

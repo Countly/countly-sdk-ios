@@ -61,6 +61,14 @@ static dispatch_once_t onceToken;
     return self;
 }
 
+/// Sets whether consent is required, and decides the gathered lines against it again.
+- (void)setRequiresConsent:(BOOL)requiresConsent
+{
+    _requiresConsent = requiresConsent;
+
+    [CountlyCommon.sharedInstance redecideSdkLogLinesConsent];
+}
+
 - (void)resetInstance {
     CLY_LOG_I(@"%s resetting consent manager instance, consent for all features will be cancelled", __FUNCTION__);
     [self cancelConsentForAllFeatures];
@@ -135,6 +143,8 @@ static dispatch_once_t onceToken;
         self.consentForMetrics = YES;
 
     [self sendConsents];
+
+    [CountlyCommon.sharedInstance redecideSdkLogLinesConsent];
 }
 
 
@@ -212,6 +222,8 @@ static dispatch_once_t onceToken;
 
     if (!shouldSkipSendingConsentsRequest)
         [self sendConsents];
+
+    [CountlyCommon.sharedInstance redecideSdkLogLinesConsent];
 }
 
 
@@ -429,9 +441,7 @@ static dispatch_once_t onceToken;
 
     if (consentForAttribution)
     {
-        CLY_LOG_D(@"%s consent granted, feature: [%@], attribution will be sent", __FUNCTION__, CLYConsentAttribution);
-
-        [CountlyConnectionManager.sharedInstance sendAttribution];
+        CLY_LOG_D(@"%s consent granted, feature: [%@], attribution can be recorded", __FUNCTION__, CLYConsentAttribution);
     }
     else
     {

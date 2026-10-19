@@ -68,5 +68,12 @@
     [CountlyContentBuilderInternal.sharedInstance previewContent:contentId];
 }
 
+- (void)setGlobalContentSegmentation:(NSDictionary<NSString *, id> *)segmentation
+{
+    CLY_LOG_I(@"%s setting the global content segmentation, keyCount: [%lu]", __FUNCTION__, (unsigned long)segmentation.count);
+
+    [CountlyContentBuilderInternal.sharedInstance setGlobalContentSegmentation:segmentation];
+}
+
 #endif
 @end

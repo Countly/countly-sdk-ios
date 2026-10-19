@@ -75,10 +75,12 @@ class CountlyConnectionTestTests: CountlyBaseTestCase {
 
     /// Answers the behavior settings fetch with the given response, records probes and answers them
     /// from the status table (400 by default), and fails every queued request so it stays in the queue.
-    private func installHandler(scResponse: String, probeStatus: [String: Int] = [:], probeError: [String: Error] = [:], probeDelay: TimeInterval = 0) {
+    /// With 'holdSettingsUntil', the settings reply, and so the battery, waits until the test signals it.
+    private func installHandler(scResponse: String, probeStatus: [String: Int] = [:], probeError: [String: Error] = [:], probeDelay: TimeInterval = 0, holdSettingsUntil: DispatchSemaphore? = nil) {
         MockURLProtocol.requestHandler = { [self] request in
             let urlString = request.url?.absoluteString ?? ""
             if urlString.contains("method=sc") && urlString.contains("app_key=") {
+                _ = holdSettingsUntil?.wait(timeout: .now() + 5)
                 return (scResponse.data(using: .utf8), HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil), nil)
             }
             if isProbe(request) {
@@ -151,6 +153,7 @@ class CountlyConnectionTestTests: CountlyBaseTestCase {
     // MARK: - battery and report
 
     func test_armedLiveResponse_probesEveryRowAndQueuesOneReportInOrder() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
         installHandler(scResponse: armedResponse())
         startSDK()
 
@@ -201,6 +204,7 @@ class CountlyConnectionTestTests: CountlyBaseTestCase {
     }
 
     func test_faultyEndpoints_areGradedPerSpec() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
         installHandler(scResponse: armedResponse(),
                        probeStatus: [
                         "/o/ping": 404,                       // strict row, a 404 is the DB being down
@@ -256,6 +260,7 @@ class CountlyConnectionTestTests: CountlyBaseTestCase {
     }
 
     func test_ctIsStrippedBeforeCachingAndNeverReadFromStorage() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
         installHandler(scResponse: armedResponse())
         startSDK()
         _ = try XCTUnwrap(waitForReport())
@@ -280,6 +285,7 @@ class CountlyConnectionTestTests: CountlyBaseTestCase {
     }
 
     func test_networkingDisabledByServerConfig_skipsTheBattery() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
         installHandler(scResponse: armedResponse(networking: false))
         startSDK()
         TestUtils.sleep(2) {}
@@ -290,6 +296,7 @@ class CountlyConnectionTestTests: CountlyBaseTestCase {
     }
 
     func test_secondDeliveryWhileABatteryRuns_isIgnored() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
         installHandler(scResponse: armedResponse(), probeDelay: 0.15)
         startSDK()
 
@@ -309,8 +316,11 @@ class CountlyConnectionTestTests: CountlyBaseTestCase {
     }
 
     func test_probesCarryTheSdkCustomHeaders() throws {
-        installHandler(scResponse: armedResponse())
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        let headersAdded = DispatchSemaphore(value: 0)
+        installHandler(scResponse: armedResponse(), holdSettingsUntil: headersAdded)
         startSDK(customHeaders: ["X-Gateway-Token": "abc123"])
+        headersAdded.signal()
         _ = try XCTUnwrap(waitForReport())
 
         let probes = recordedProbes()
@@ -318,6 +328,184 @@ class CountlyConnectionTestTests: CountlyBaseTestCase {
         for probe in probes {
             XCTAssertEqual("abc123", probe.allHTTPHeaderFields?["X-Gateway-Token"], "a header checking gateway would report a healthy server as unreachable")
         }
+    }
+
+    /// While the server turns tracking off the queue refuses every request, so the battery is not run at all.
+    func test_trackingDisabledByServerConfig_skipsTheBattery() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        var json = ServerConfigBuilder().tracking(false).buildJson()
+        json["ct"] = 1
+        let reply = String(data: try JSONSerialization.data(withJSONObject: json), encoding: .utf8)!
+        installHandler(scResponse: reply)
+        startSDK()
+        TestUtils.sleep(1) {}
+
+        XCTAssertTrue(recordedProbes().isEmpty, "no probe traffic for a report that could never be queued")
+        XCTAssertFalse(connectionTest.isBatteryRunning)
+        XCTAssertTrue(queuedReports().isEmpty)
+    }
+
+    /**
+     * <pre>
+     * A battery the app goes to the background during is not reported, its probes stalled, and it runs again
+     * in full once the app is active, without waiting for the server to deliver the request again.
+     *
+     * 1- Arm the test with slow probes and wait for the first probe
+     * 2- Send the app to the background, verify the battery stops early and nothing is reported
+     * 3- Bring the app back, verify a complete battery runs and exactly one report is queued
+     * </pre>
+     */
+    func test_appGoingToBackgroundDuringTheBattery_discardsItAndRunsItAgainWhenActive() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        installHandler(scResponse: armedResponse(), probeDelay: 0.1)
+        startSDK()
+        TestUtils.waitUntil("the battery to start probing") { !self.recordedProbes().isEmpty }
+
+        connectionTest.noteAppSuspended()
+        TestUtils.waitUntil("the interrupted battery to stop") { !self.connectionTest.isBatteryRunning }
+        XCTAssertFalse(connectionTest.isBatteryRunning)
+        XCTAssertLessThan(recordedProbes().count, expectedProbePaths.count, "the interrupted battery stops probing")
+        XCTAssertTrue(queuedReports().isEmpty, "a battery the app went to the background during is not reported")
+
+        resetRecordedProbes()
+        connectionTest.noteAppResumed()
+        let report = try XCTUnwrap(waitForReport())
+        XCTAssertEqual(expectedFeatures, rows(report).compactMap { $0["f"] as? String })
+        XCTAssertEqual(expectedProbePaths.count, recordedProbes().count, "the battery runs again in full")
+        XCTAssertEqual(1, queuedReports().count)
+    }
+
+    /**
+     * <pre>
+     * The report of a battery that runs while the device ID changes without merge goes out under the device ID
+     * the test was armed for, the only user the server accepts it from. A report is never queued without an app key.
+     *
+     * 1- Arm the test with slow probes and change the device ID without merge while it runs
+     * 2- Verify the report carries the armed device ID while the SDK moved on to the new one
+     * 3- Clear the app key, queue a report, and verify it is dropped
+     * </pre>
+     */
+    func test_report_forAUserReplacedWithoutMerge_goesOutUnderTheArmedDeviceID() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        installHandler(scResponse: armedResponse(), probeDelay: 0.1)
+        startSDK()
+        let armedDeviceID = CountlyDeviceInfo.sharedInstance().deviceID
+        TestUtils.waitUntil("the battery to start probing") { !self.recordedProbes().isEmpty }
+
+        Countly.sharedInstance().changeDeviceIDWithoutMerge("replacement_user")
+        _ = try XCTUnwrap(waitForReport())
+
+        let reportRequest = try XCTUnwrap(TestUtils.getCurrentRQ()?.first { $0.contains("ct_results=") })
+        XCTAssertEqual(armedDeviceID, TestUtils.parseQueryString(reportRequest)["device_id"] as? String)
+        XCTAssertEqual("replacement_user", CountlyDeviceInfo.sharedInstance().deviceID)
+
+        let manager = CountlyConnectionManager.sharedInstance()!
+        let appKey = manager.appKey
+        manager.appKey = ""
+        manager.sendConnectionTestResults("{}", deviceID: "any_user", deviceIDType: 0)
+        manager.appKey = appKey
+        XCTAssertEqual(1, queuedReports().count, "a report without an app key is dropped")
+    }
+
+    /**
+     * <pre>
+     * A battery armed while the app is in the background waits for the foreground, where its probes do not stall.
+     *
+     * 1- Hold the armed settings reply, send the app to the background, then release the reply
+     * 2- Verify no probe runs and no report is queued while the app stays in the background
+     * 3- Bring the app back, verify a complete battery runs and one report is queued
+     * </pre>
+     */
+    func test_batteryArmedWhileTheAppIsInTheBackground_waitsForTheForeground() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        let releaseSettings = DispatchSemaphore(value: 0)
+        installHandler(scResponse: armedResponse(), holdSettingsUntil: releaseSettings)
+        startSDK()
+
+        connectionTest.noteAppSuspended()
+        releaseSettings.signal()
+        TestUtils.sleep(1) {}
+        XCTAssertTrue(recordedProbes().isEmpty, "no probe runs while the app is in the background")
+        XCTAssertFalse(connectionTest.isBatteryRunning)
+        XCTAssertTrue(queuedReports().isEmpty)
+
+        connectionTest.noteAppResumed()
+        let report = try XCTUnwrap(waitForReport())
+        XCTAssertEqual(expectedFeatures, rows(report).compactMap { $0["f"] as? String })
+        XCTAssertEqual(expectedProbePaths.count, recordedProbes().count, "the battery runs in full once the app is active")
+        XCTAssertEqual(1, queuedReports().count)
+    }
+
+    /**
+     * <pre>
+     * The server arms the test for the user whose settings fetch asked for it, so a device ID change without merge while
+     * that fetch is in flight does not move the report to the new user.
+     *
+     * 1- Hold the armed settings reply and change the device ID without merge
+     * 2- Release the reply and verify the first report carries the device ID the fetch was made for
+     * </pre>
+     */
+    func test_report_forAUserReplacedWithoutMergeDuringTheSettingsFetch_goesOutUnderTheArmedDeviceID() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        let releaseSettings = DispatchSemaphore(value: 0)
+        installHandler(scResponse: armedResponse(), holdSettingsUntil: releaseSettings)
+        startSDK()
+        let armedDeviceID = CountlyDeviceInfo.sharedInstance().deviceID
+
+        Countly.sharedInstance().changeDeviceIDWithoutMerge("replacement_user")
+        releaseSettings.signal()
+        _ = try XCTUnwrap(waitForReport())
+
+        let reportRequest = try XCTUnwrap(TestUtils.getCurrentRQ()?.first { $0.contains("ct_results=") })
+        XCTAssertEqual(armedDeviceID, TestUtils.parseQueryString(reportRequest)["device_id"] as? String)
+        XCTAssertEqual("replacement_user", CountlyDeviceInfo.sharedInstance().deviceID)
+    }
+
+    /**
+     * <pre>
+     * A merge cancels the run the server armed for the merged user, so a merge while the arming fetch is on its way
+     * leaves the battery unrun.
+     *
+     * 1- Hold the armed settings reply and change the device ID with merge
+     * 2- Release the reply and verify no probe runs and no report is queued
+     * </pre>
+     */
+    func test_mergeDuringTheArmingFetch_skipsTheBattery() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        let releaseSettings = DispatchSemaphore(value: 0)
+        installHandler(scResponse: armedResponse(), holdSettingsUntil: releaseSettings)
+        startSDK()
+
+        Countly.sharedInstance().changeDeviceID(withMerge: "merged_user")
+        releaseSettings.signal()
+        TestUtils.sleep(1) {}
+
+        XCTAssertTrue(recordedProbes().isEmpty, "the server cancelled the run, so nothing is probed")
+        XCTAssertFalse(connectionTest.isBatteryRunning)
+        XCTAssertTrue(queuedReports().isEmpty)
+    }
+
+    /**
+     * <pre>
+     * A merge while the battery runs drops its report: the server rejects it under the merged ID, and under the old ID it
+     * would create the merged away user again.
+     *
+     * 1- Arm the test with slow probes and change the device ID with merge while it runs
+     * 2- Verify the battery finishes and no report is queued under either device ID
+     * </pre>
+     */
+    func test_mergeDuringTheBattery_dropsTheReport() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        installHandler(scResponse: armedResponse(), probeDelay: 0.1)
+        startSDK()
+        TestUtils.waitUntil("the battery to start probing") { !self.recordedProbes().isEmpty }
+
+        Countly.sharedInstance().changeDeviceID(withMerge: "merged_user")
+        TestUtils.waitUntil("the battery to finish", timeout: 15) { !self.connectionTest.isBatteryRunning }
+
+        XCTAssertFalse(connectionTest.isBatteryRunning)
+        XCTAssertEqual(expectedProbePaths.count, recordedProbes().count, "the battery itself runs to the end")
+        XCTAssertTrue(queuedReports().isEmpty, "the report of a run the merge cancelled is dropped")
     }
 
     // MARK: - pure pieces

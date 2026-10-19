@@ -31,8 +31,6 @@ extern NSString* const kCountlyVTKeyName;
 #if (TARGET_OS_IOS || TARGET_OS_TV)
 - (void)startAutoViewTracking;
 - (void)stopAutoViewTracking;
-- (void)addExceptionForAutoViewTracking:(NSString *)exception;
-- (void)removeExceptionForAutoViewTracking:(NSString *)exception;
 @property (nonatomic) BOOL isAutoViewTrackingActive;
 #endif
 

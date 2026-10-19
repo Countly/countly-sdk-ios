@@ -24,6 +24,7 @@ NSString* const kCountlyNotificationPermissionKey = @"kCountlyNotificationPermis
 NSString* const kCountlyIsCustomDeviceIDKey = @"kCountlyIsCustomDeviceIDKey";
 NSString* const kCountlyRemoteConfigKey = @"kCountlyRemoteConfigKey";
 NSString* const kCountlyServerConfigPersistencyKey = @"kCountlyServerConfigPersistencyKey";
+NSString* const kCountlyPLCrashCaptureSuppressedSinceKey = @"kCountlyPLCrashCaptureSuppressedSinceKey";
 
 
 NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
@@ -100,6 +101,13 @@ static dispatch_once_t onceToken;
         if (self.queuedRequests.count >= self.storedRequestsLimit)
         {
             [self removeOldAgeRequestsFromQueue];
+            [self removeSdkLogRequestsToMakeRoom];
+            if (self.queuedRequests.count >= self.storedRequestsLimit && [CountlyPersistency isSdkLogRequest:queryString])
+            {
+                // refused rather than making room, a log upload never pushes other data out, its lines go back to the gathering buffer
+                CLY_LOG_D(@"%s request is not queued, reason: the queue is full and a gathered log upload never pushes other requests out, queue size: [%lu]", __FUNCTION__, (unsigned long)self.queuedRequests.count);
+                return NO;
+            }
             if (self.queuedRequests.count >= self.storedRequestsLimit)
             {
                 NSUInteger exceededSize = self.queuedRequests.count - self.storedRequestsLimit;
@@ -241,6 +249,46 @@ static dispatch_once_t onceToken;
 
         self.isQueueBeingModified = NO;
     }
+}
+
+/// Drops the oldest gathered log uploads until the full queue has room, counting their lines as dropped. Call while holding the queue lock.
+- (void)removeSdkLogRequestsToMakeRoom
+{
+    NSInteger excessCount = (NSInteger)self.queuedRequests.count - (NSInteger)self.storedRequestsLimit + 1;
+    if (excessCount <= 0)
+        return;
+
+    NSMutableIndexSet* sdkLogRequestIndexes = NSMutableIndexSet.new;
+    [self.queuedRequests enumerateObjectsUsingBlock:^(NSString* queryString, NSUInteger idx, BOOL* stop)
+    {
+        if ([CountlyPersistency isSdkLogRequest:queryString])
+            [sdkLogRequestIndexes addIndex:idx];
+
+        *stop = (NSInteger)sdkLogRequestIndexes.count >= excessCount;
+    }];
+
+    if (sdkLogRequestIndexes.count == 0)
+        return;
+
+    NSArray* droppedRequests = [self.queuedRequests objectsAtIndexes:sdkLogRequestIndexes];
+    self.isQueueBeingModified = YES;
+    [self.queuedRequests removeObjectsAtIndexes:sdkLogRequestIndexes];
+    self.isQueueBeingModified = NO;
+    for (NSString* queryString in droppedRequests)
+        [CountlyCommon.sharedInstance countEvictedSdkLogRequest:queryString];
+
+    CLY_LOG_D(@"%s request queue is full, gathered log uploads are dropped before any other request, droppedCount: [%lu], queue size: [%lu]", __FUNCTION__, (unsigned long)droppedRequests.count, (unsigned long)self.queuedRequests.count);
+}
+
++ (BOOL)isSdkLogRequest:(NSString *)queryString
+{
+    static NSString* sdkLogsParameter;
+    static dispatch_once_t sdkLogsParameterOnce;
+    dispatch_once(&sdkLogsParameterOnce, ^{
+        sdkLogsParameter = [NSString stringWithFormat:@"&%@=", kCountlyQSSdkLogs];
+    });
+
+    return [queryString rangeOfString:sdkLogsParameter].location != NSNotFound;
 }
 
 - (void)removeOldAgeRequestsFromQueue
@@ -708,6 +756,30 @@ static dispatch_once_t onceToken;
         CLY_LOG_D(@"%s exception while storing the health check tracker state, exception name: [%@], reason: [%@]", __FUNCTION__,
                   exception.name, exception.reason);
     }
+}
+
+- (NSDate *)retrievePLCrashCaptureSuppressedSince
+{
+    id suppressedSince = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyPLCrashCaptureSuppressedSinceKey];
+    return [suppressedSince isKindOfClass:NSDate.class] ? suppressedSince : nil;
+}
+
+- (void)storePLCrashCaptureSuppressedSince:(NSDate *)date
+{
+    if (date)
+    {
+        [NSUserDefaults.standardUserDefaults setObject:date forKey:kCountlyPLCrashCaptureSuppressedSinceKey];
+    }
+    else
+    {
+        if (![NSUserDefaults.standardUserDefaults objectForKey:kCountlyPLCrashCaptureSuppressedSinceKey])
+            return;
+
+        [NSUserDefaults.standardUserDefaults removeObjectForKey:kCountlyPLCrashCaptureSuppressedSinceKey];
+    }
+
+    [NSUserDefaults.standardUserDefaults synchronize];
+    CLY_LOG_D(@"%s automatic crash capture suppression is stored, suppressedSince: [%@]", __FUNCTION__, date);
 }
 
 @end

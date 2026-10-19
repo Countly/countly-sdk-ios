@@ -43,4 +43,15 @@ class MockURLProtocol: URLProtocol {
     }
 
     override func stopLoading() {}
+
+    /// Answers every later request with an empty JSON object, so requests still in flight after a test do not fail the next one.
+    static func replyEmptyToEveryRequest() {
+        requestHandler = { request in
+            (
+                "{}".data(using: .utf8),
+                HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil),
+                nil
+            )
+        }
+    }
 }

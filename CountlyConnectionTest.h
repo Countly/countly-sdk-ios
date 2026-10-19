@@ -30,7 +30,17 @@ extern NSString* const kCountlyCTErrorOpaque;
 
 /// Runs the battery on a background queue, once per delivery, and queues the report. scLatencyMs is the wall clock
 /// of the behavior settings fetch that delivered the flag, negative when unknown.
+/// The battery runs for the current user.
 - (void)startBatteryWithServerConfigLatency:(long long)scLatencyMs;
+
+/// Runs the battery for the user whose settings fetch armed it: reports under that user, waits for the foreground, skips after a merge.
+- (void)startBatteryWithServerConfigLatency:(long long)scLatencyMs deviceID:(NSString *)deviceID deviceIDType:(NSUInteger)deviceIDType deviceIDMergeCount:(NSUInteger)deviceIDMergeCount;
+
+/// Called when the app goes to the background. A battery running across it is discarded, since its probes stalled.
+- (void)noteAppSuspended;
+
+/// Called when the app becomes active. Runs a battery the app going to the background interrupted again, while the server still awaits the report.
+- (void)noteAppResumed;
 
 /// Resolves a probe path against the configured server URL, path prefix included, and appends the marker and cache buster.
 + (NSString *)probeURLForPath:(NSString *)path serverURL:(NSString *)serverURL;
