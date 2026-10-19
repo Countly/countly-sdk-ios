@@ -26,6 +26,9 @@
 * Mitigated a possible crash when SDK behavior settings updated filters or Journey Trigger lists while data was being recorded.
 * Mitigated an issue where reserved events could be identified incorrectly on Intel based Macs.
 * Mitigated an issue where a request queued while the request queue was finishing was sent only when the queue was triggered again, for example by the next session update, which could delay the content of Journey Trigger Events and Views.
+* Mitigated an issue where, with location tracking turned off in the SDK behavior settings, the SDK queued a request without the app key at start. The server rejected it, and every request queued after it, the session begin included, was held back.
+* Mitigated an issue where headers added with "addCustomNetworkRequestHeaders" were written into the "URLSessionConfiguration" of the configuration given at start, so a start with that configuration after "halt" still sent them.
+* Mitigated a possible crash in "halt" while the health check state was being reset.
 * Fixed a bug where "halt" deleted every value the app itself stored in the standard user defaults. It now removes only the SDK's own values.
 * Fixed a crash on visionOS when view tracking consent was given or cancelled.
 * Fixed a crash on watchOS and macOS when calling "halt".

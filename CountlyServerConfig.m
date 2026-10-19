@@ -13,6 +13,8 @@
     NSNumber *_lastAppliedAutomaticViewTracking;
     // the developer's values from start, before any behavior setting was applied, see rememberDeveloperValues:
     NSDictionary *_developerValues;
+    // what notifySdkConfigChange: last wrote into the start config, see restoreDeveloperValuesInto:
+    NSDictionary *_writtenValues;
     // the keys of the applied settings: a setting they carry wins over the developer's value, also when it is NO or 0,
     // and a key that disappears from them is noticed
     NSSet *_appliedSettingKeys;
@@ -186,6 +188,7 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     _startConfig = nil;
     _lastAppliedAutomaticViewTracking = nil;
     _developerValues = nil;
+    _writtenValues = nil;
     _appliedSettingKeys = nil;
     if (_requestTimer)
     {
@@ -238,12 +241,19 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
 /// not a reliable source later, because notifySdkConfigChange: writes the resolved values into it.
 - (void)rememberDeveloperValues:(CountlyConfig *)config
 {
-    NSMutableDictionary *values = NSMutableDictionary.new;
+    NSMutableDictionary *values = [self notifiedValuesOf:config].mutableCopy;
     values[kRAutomaticSessionTracking] = @(!config.manualSessionHandling);
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
     values[kRAutomaticViewTracking] = @(config.enableAutomaticViewTracking);
 #endif
     values[kRAutomaticCrashReporting] = @([config.features containsObject:CLYCrashReporting]);
+    _developerValues = values.copy;
+}
+
+/// The values of a configuration that notifySdkConfigChange: writes, by the key of the behavior setting that decides each.
+- (NSDictionary *)notifiedValuesOf:(CountlyConfig *)config
+{
+    NSMutableDictionary *values = NSMutableDictionary.new;
     values[kRConsentRequired] = @(config.requiresConsent);
     values[kRLogging] = @(config.enableDebug);
     values[kREventQueueSize] = @(config.eventSendThreshold);
@@ -259,7 +269,7 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
 #if (TARGET_OS_IOS)
     values[kRContentZoneInterval] = @(config.content.getZoneTimerInterval);
 #endif
-    _developerValues = values.copy;
+    return values;
 }
 
 /// The developer's value of a setting from start, or the given current value when none was remembered
@@ -268,31 +278,58 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     return _developerValues[key] ?: current;
 }
 
-/// Puts the developer's values from start back into the configuration the SDK was started with. notifySdkConfigChange:
-/// writes the resolved values into it, and its internal limits and content parts are shared by every configuration in the
-/// process, so without this the next start would remember the halted run's behavior settings as the developer's values.
+/// Puts the developer's values from start back into the configuration the SDK was started with, where
+/// notifySdkConfigChange: wrote a value that is still there. It writes the resolved values into that configuration, and its
+/// internal limits and content parts are shared by every configuration in the process, so without this the next start
+/// would remember the halted run's behavior settings as the developer's values. A value that changed since was set by the
+/// app, on this configuration or on another one sharing those parts, and stays.
 - (void)restoreDeveloperValuesInto:(CountlyConfig *)config
 {
-    if (!config || !_developerValues)
+    if (!config || !_developerValues || !_writtenValues)
         return;
 
-    config.enableDebug = [_developerValues[kRLogging] boolValue];
-    config.requiresConsent = [_developerValues[kRConsentRequired] boolValue];
-    config.eventSendThreshold = [_developerValues[kREventQueueSize] unsignedIntegerValue];
-    config.storedRequestsLimit = [_developerValues[kRReqQueueSize] unsignedIntegerValue];
-    config.requestDropAgeHours = [_developerValues[kRDropOldRequestTime] unsignedIntegerValue];
-    config.updateSessionPeriod = [_developerValues[kRSessionUpdateInterval] doubleValue];
-    [config.sdkInternalLimits setMaxKeyLength:[_developerValues[kRLimitKeyLength] unsignedIntegerValue]];
-    [config.sdkInternalLimits setMaxValueSize:[_developerValues[kRLimitValueSize] unsignedIntegerValue]];
-    [config.sdkInternalLimits setMaxSegmentationValues:[_developerValues[kRLimitSegValues] unsignedIntegerValue]];
-    [config.sdkInternalLimits setMaxBreadcrumbCount:[_developerValues[kRLimitBreadcrumb] unsignedIntegerValue]];
-    [config.sdkInternalLimits setMaxStackTraceLineLength:[_developerValues[kRLimitTraceLength] unsignedIntegerValue]];
-    [config.sdkInternalLimits setMaxStackTraceLinesPerThread:[_developerValues[kRLimitTraceLine] unsignedIntegerValue]];
-#if (TARGET_OS_IOS)
-    [config.content restoreZoneTimerInterval:[_developerValues[kRContentZoneInterval] unsignedIntegerValue]];
-#endif
+    NSDictionary *current = [self notifiedValuesOf:config];
+    NSMutableDictionary *restored = NSMutableDictionary.new;
+    [_writtenValues enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSNumber *written, BOOL *stop) {
+        if ([current[key] isEqual:written])
+            restored[key] = self->_developerValues[key];
+    }];
+    [self writeValues:restored into:config];
 
-    CLY_LOG_D(@"%s the developer's values from start are put back into the start configuration, requiresConsent: [%@], enableDebug: [%@], eventSendThreshold: [%lu], maxKeyLength: [%lu]", __FUNCTION__, config.requiresConsent ? @"YES" : @"NO", config.enableDebug ? @"YES" : @"NO", (unsigned long)config.eventSendThreshold, (unsigned long)config.sdkInternalLimits.getMaxKeyLength);
+    CLY_LOG_D(@"%s the developer's values from start are put back into the start configuration, restoredKeys: [%@], keptKeys: [%lu]", __FUNCTION__, [restored.allKeys componentsJoinedByString:@","], (unsigned long)(_writtenValues.count - restored.count));
+}
+
+/// Writes the values given by behavior setting key into a configuration, leaving out the keys the dictionary does not carry.
+- (void)writeValues:(NSDictionary *)values into:(CountlyConfig *)config
+{
+    if (values[kRLogging])
+        config.enableDebug = [values[kRLogging] boolValue];
+    if (values[kRConsentRequired])
+        config.requiresConsent = [values[kRConsentRequired] boolValue];
+    if (values[kREventQueueSize])
+        config.eventSendThreshold = [values[kREventQueueSize] unsignedIntegerValue];
+    if (values[kRReqQueueSize])
+        config.storedRequestsLimit = [values[kRReqQueueSize] unsignedIntegerValue];
+    if (values[kRDropOldRequestTime])
+        config.requestDropAgeHours = [values[kRDropOldRequestTime] unsignedIntegerValue];
+    if (values[kRSessionUpdateInterval])
+        config.updateSessionPeriod = [values[kRSessionUpdateInterval] doubleValue];
+    if (values[kRLimitKeyLength])
+        [config.sdkInternalLimits setMaxKeyLength:[values[kRLimitKeyLength] unsignedIntegerValue]];
+    if (values[kRLimitValueSize])
+        [config.sdkInternalLimits setMaxValueSize:[values[kRLimitValueSize] unsignedIntegerValue]];
+    if (values[kRLimitSegValues])
+        [config.sdkInternalLimits setMaxSegmentationValues:[values[kRLimitSegValues] unsignedIntegerValue]];
+    if (values[kRLimitBreadcrumb])
+        [config.sdkInternalLimits setMaxBreadcrumbCount:[values[kRLimitBreadcrumb] unsignedIntegerValue]];
+    if (values[kRLimitTraceLength])
+        [config.sdkInternalLimits setMaxStackTraceLineLength:[values[kRLimitTraceLength] unsignedIntegerValue]];
+    if (values[kRLimitTraceLine])
+        [config.sdkInternalLimits setMaxStackTraceLinesPerThread:[values[kRLimitTraceLine] unsignedIntegerValue]];
+#if (TARGET_OS_IOS)
+    if (values[kRContentZoneInterval])
+        [config.content restoreZoneTimerInterval:[values[kRContentZoneInterval] unsignedIntegerValue]];
+#endif
 }
 
 /// Replaces the stored behavior settings with a valid answer as a whole, so a setting the server no longer sends is
@@ -703,11 +740,9 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
         [NSRunLoop.mainRunLoop addTimer:_requestTimer forMode:NSRunLoopCommonModes];
     }
 
-    if (!_locationTracking && !CountlyLocationManager.sharedInstance.isLocationInfoDisabled)
+    if (CountlyCommon.sharedInstance.hasFinishedInit)
     {
-        CLY_LOG_D(@"%s location tracking is disabled by behavior settings, location info will be cleared", __FUNCTION__);
-        [CountlyLocationManager.sharedInstance disableLocation];
-        [CountlyConnectionManager.sharedInstance sendLocationInfo];
+        [self applyLocationTrackingState];
     }
 
     if(_backoffMechanism && config.disableBackoffMechanism){
@@ -722,6 +757,18 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     {
         [self applyAutomaticTrackingState];
     }
+
+    _writtenValues = [self notifiedValuesOf:config];
+}
+
+- (void)applyLocationTrackingState
+{
+    if (_locationTracking || CountlyLocationManager.sharedInstance.isLocationInfoDisabled)
+        return;
+
+    CLY_LOG_D(@"%s location tracking is disabled by behavior settings, location info will be cleared", __FUNCTION__);
+    [CountlyLocationManager.sharedInstance disableLocation];
+    [CountlyConnectionManager.sharedInstance sendLocationInfo];
 }
 
 // Applies the resolved 'ast', 'avt' and 'acr' values, acting only on what changed, so it is safe after every settings response.
@@ -896,7 +943,7 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
             [CountlyConnectionTest.sharedInstance startBatteryWithServerConfigLatency:fetchLatencyMs deviceID:requestedDeviceID deviceIDType:requestedDeviceIDType deviceIDMergeCount:requestedDeviceIDMergeCount];
     };
     // Set default values
-    NSURLSessionTask *task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:[self serverConfigRequest] completionHandler:handler];
+    NSURLSessionTask *task = [CountlyCommon.sharedInstance immediateDataTaskWithRequest:[self serverConfigRequest] completionHandler:handler];
     // IMMEDIATE REQUEST to find them better in search
     [task resume];
 }

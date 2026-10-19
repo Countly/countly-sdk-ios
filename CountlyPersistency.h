@@ -14,6 +14,8 @@
 + (instancetype)sharedInstance;
 /// Whether the queued request is a gathered log upload.
 + (BOOL)isSdkLogRequest:(NSString *)queryString;
+/// Removes the values the SDK keeps in the standard user defaults, also those older SDK versions kept, since every one of them carries the "kCountly" prefix. The app's own values stay, and so does the PLCrashReporter suppression marker, so a crash between halt and the next start is still discarded.
++ (void)removeStoredUserDefaults;
 
 /// Appends a request to the queue. Returns NO when it was refused: tracking is disabled by server config, or the request is empty.
 - (BOOL)addToQueue:(NSString *)queryString;

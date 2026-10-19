@@ -275,7 +275,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
     }
 
     NSURLRequest* feedbackWidgetCheckRequest = [self widgetCheckURLRequest:widgetID];
-    NSURLSessionTask* task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:feedbackWidgetCheckRequest completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance immediateDataTaskWithRequest:feedbackWidgetCheckRequest completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
         // IMMEDIATE REQUEST to find them better in search
         NSDictionary* widgetInfo = nil;
@@ -489,7 +489,7 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         return;
     }
 
-    NSURLSessionTask* task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:[self feedbacksRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance immediateDataTaskWithRequest:[self feedbacksRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
         // IMMEDIATE REQUEST to find them better in search
         NSDictionary *feedbacksResponse = nil;

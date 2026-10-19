@@ -10,6 +10,39 @@ import XCTest
 @testable import Countly
 
 
+/// A logger that, once armed, keeps the first thread other than the main thread that logs a given line waiting for a while.
+private final class DelayingLogger: NSObject, CountlyLoggerDelegate {
+    private let text: String
+    private let delay: TimeInterval
+    private let lock = NSLock()
+    private var isArmed = false
+
+    /// A logger that delays the line containing the text by the given seconds.
+    init(delaying text: String, by delay: TimeInterval) {
+        self.text = text
+        self.delay = delay
+    }
+
+    /// Delays the next matching line.
+    func arm() {
+        lock.lock()
+        isArmed = true
+        lock.unlock()
+    }
+
+    /// Waits on the first matching line logged off the main thread after arm.
+    func internalLog(_ log: String, with level: CLYInternalLogLevel) {
+        guard !Thread.isMainThread, log.contains(text) else { return }
+        lock.lock()
+        let shouldDelay = isArmed
+        isArmed = false
+        lock.unlock()
+        if shouldDelay {
+            Thread.sleep(forTimeInterval: delay)
+        }
+    }
+}
+
 class CountlyTests: CountlyBaseTestCase {
     
     // MARK: - Configuration Tests
@@ -143,6 +176,7 @@ class CountlyTests: CountlyBaseTestCase {
         XCTAssertTrue(CountlyConsentManager.sharedInstance().requiresConsent, "without behavior settings the developer's consent requirement applies")
         XCTAssertEqual(7, CountlyPersistency.sharedInstance().eventSendThreshold, "and the developer's event threshold")
         XCTAssertEqual(64, CountlyCommon.sharedInstance().maxKeyLength, "and the developer's key length limit")
+        Countly.sharedInstance().halt(true)
     }
 
     /**
@@ -178,14 +212,136 @@ class CountlyTests: CountlyBaseTestCase {
 
     /**
      * <pre>
-     * "halt" with storage cleared removes only the SDK's own values from the standard user defaults. The app keeps its
-     * own values in the same defaults, so they must survive it.
+     * "halt" gives back only what behavior settings wrote into the configuration. A value the app set itself before halt
+     * stays, on the configuration given at start and on a newer one, which shares its internal limits and content parts.
+     *
+     * 1- Start without the consent requirement and with behavior settings that lower the key length limit
+     * 2- Require consent on that configuration, and prepare a newer one with its own key length limit and content zone interval
+     * 3- Halt and verify the app's values stayed, then start with each configuration and verify the app's values apply
      * </pre>
      */
-    func testHalt_clearingStorageKeepsTheAppsOwnUserDefaults() throws {
+    func testHalt_keepsTheValuesTheAppSetBeforeHalt() throws {
+#if os(iOS)
+        // the content parts are shared by every configuration in the process, like the limits the base class resets
+        CountlyConfig().content().restoreZoneTimerInterval(0)
+        defer { CountlyConfig().content().restoreZoneTimerInterval(0) }
+#endif
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        config.requiresConsent = false
+        config.sdkBehaviorSettings = ServerConfigBuilder().limitKeyLength(20).build()
+        Countly.sharedInstance().start(with: config)
+        XCTAssertEqual(20, CountlyCommon.sharedInstance().maxKeyLength, "the behavior settings lower the key length limit")
+
+        config.requiresConsent = true
+        let next = createBaseConfig()
+        next.manualSessionHandling = true
+        next.sdkInternalLimits().setMaxKeyLength(50)
+#if os(iOS)
+        next.content().setZoneTimerInterval(60)
+#endif
+        Countly.sharedInstance().halt(true)
+
+        XCTAssertTrue(config.requiresConsent, "the consent requirement the app set before halt stays")
+        XCTAssertEqual(50, CountlyConfig().sdkInternalLimits().getMaxKeyLength(), "and so does the key length limit of the newer configuration")
+#if os(iOS)
+        XCTAssertEqual(60, next.content().getZoneTimerInterval(), "and its content zone interval")
+#endif
+
+        // the property is nonnull in Swift, so the provided settings are cleared through KVC
+        config.setValue(nil, forKey: "sdkBehaviorSettings")
+        Countly.sharedInstance().start(with: config)
+        XCTAssertTrue(CountlyConsentManager.sharedInstance().requiresConsent, "the next start requires consent, as the app asked")
+        Countly.sharedInstance().halt(true)
+
+        Countly.sharedInstance().start(with: next)
+        XCTAssertEqual(50, CountlyCommon.sharedInstance().maxKeyLength, "a start with the newer configuration applies its key length limit")
+#if os(iOS)
+        XCTAssertEqual(60, CountlyContentBuilderInternal.sharedInstance().zoneTimerInterval, accuracy: 0.001, "and its content zone interval")
+#endif
+        Countly.sharedInstance().halt(true)
+    }
+
+#if os(iOS)
+    /**
+     * <pre>
+     * The content zone interval that behavior settings gave does not outlive "halt", so a next start that applies no
+     * behavior settings polls content at the default interval.
+     *
+     * 1- Start with behavior settings that set the content zone interval
+     * 2- Halt with storage cleared and start again with behavior settings updates disabled, so none apply
+     * 3- Verify content is polled at the default interval again
+     * </pre>
+     */
+    func testHalt_contentZoneIntervalOfBehaviorSettingsDoesNotOutliveHalt() throws {
+        // the content parts are shared by every configuration in the process, so an interval an earlier test set is cleared
+        CountlyConfig().content().restoreZoneTimerInterval(0)
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        config.sdkBehaviorSettings = ServerConfigBuilder().contentZoneInterval(60).build()
+        Countly.sharedInstance().start(with: config)
+        XCTAssertEqual(60, CountlyContentBuilderInternal.sharedInstance().zoneTimerInterval, accuracy: 0.001, "the behavior settings set the interval")
+
+        Countly.sharedInstance().halt(true)
+        let restart = createBaseConfig()
+        restart.manualSessionHandling = true
+        restart.disableSDKBehaviorSettingsUpdates = true
+        Countly.sharedInstance().start(with: restart)
+
+        XCTAssertEqual(30, CountlyContentBuilderInternal.sharedInstance().zoneTimerInterval, accuracy: 0.001, "without behavior settings the default interval applies")
+    }
+#endif
+
+    /**
+     * <pre>
+     * A header added at runtime belongs to that run. It is not written into the app's URL session configuration, so a
+     * next start with the same configuration, for the next user after a logout for example, does not send it.
+     *
+     * 1- Start with a URL session configuration and add an authorization header at runtime
+     * 2- Verify the URL session configuration the start configuration holds was left as the app set it
+     * 3- Halt with storage cleared, start again with the same configuration, and verify an immediate request goes without the header
+     * </pre>
+     */
+    func testHalt_headersAddedAtRuntimeAreNotSentByTheNextStart() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        TestURLProtocol.reset()
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [TestURLProtocol.self]
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        config.urlSessionConfiguration = sessionConfig
+        Countly.sharedInstance().start(with: config)
+
+        Countly.sharedInstance().addCustomNetworkRequestHeaders(["Authorization": "Bearer user-a"])
+        XCTAssertEqual("Bearer user-a", CountlyConnectionManager.sharedInstance().urlSessionConfiguration?.httpAdditionalHeaders?["Authorization"] as? String, "the header applies to this run")
+        XCTAssertNil(config.urlSessionConfiguration.httpAdditionalHeaders?["Authorization"], "the URL session configuration of the start configuration is left as the app set it")
+
+        Countly.sharedInstance().halt(true)
+        TestURLProtocol.reset()
+        Countly.sharedInstance().start(with: config)
+        let downloaded = XCTestExpectation(description: "the remote config download")
+        Countly.sharedInstance().remoteConfig().downloadKeys { _, _, _, _ in downloaded.fulfill() }
+        wait(for: [downloaded], timeout: TestUtils.asyncTimeout)
+
+        let headers = try XCTUnwrap(TestURLProtocol.capturedHeaders(forRequestContaining: "method=rc"), "the download must be intercepted")
+        XCTAssertNil(headers["Authorization"], "the next start must not send the previous run's header")
+    }
+
+    /**
+     * <pre>
+     * "halt" with storage cleared removes only the SDK's own values from the standard user defaults: the current ones and
+     * those older SDK versions kept, which an app updated from such a version still has. The app's own values stay, and
+     * so does the PLCrashReporter suppression marker, so a crash between halt and the next start is still discarded.
+     * </pre>
+     */
+    func testHalt_clearingStorageRemovesOnlyTheSDKsOwnUserDefaults() throws {
         let appKey = "ly.count.tests.appOwnValue"
+        let markerKey = "kCountlyPLCrashCaptureSuppressedSinceKey"
+        let olderVersionKeys = ["kCountlyRemoteConfigPersistencyKey", "kCountlyRemoteConfigPersistencyKeyMeta", "kCountlyTVOSNSUDKey"]
         UserDefaults.standard.set("app value", forKey: appKey)
-        defer { UserDefaults.standard.removeObject(forKey: appKey) }
+        UserDefaults.standard.set(Date(), forKey: markerKey)
+        olderVersionKeys.forEach { UserDefaults.standard.set(Data("stored by an older version".utf8), forKey: $0) }
+        defer { ([appKey, markerKey] + olderVersionKeys).forEach { UserDefaults.standard.removeObject(forKey: $0) } }
 
         let config = createBaseConfig()
         config.manualSessionHandling = true
@@ -195,7 +351,37 @@ class CountlyTests: CountlyBaseTestCase {
         Countly.sharedInstance().halt(true)
 
         XCTAssertEqual("app value", UserDefaults.standard.string(forKey: appKey), "the app's own value must survive halt")
+        XCTAssertNotNil(UserDefaults.standard.object(forKey: markerKey), "the PLCrashReporter suppression marker must survive halt")
         XCTAssertNil(UserDefaults.standard.object(forKey: "kCountlyStoredDeviceIDKey"), "the SDK's own values must be removed")
+        for key in olderVersionKeys {
+            XCTAssertNil(UserDefaults.standard.object(forKey: key), "[\(key)] was stored by an older SDK version, so halt must remove it too")
+        }
+    }
+
+    /**
+     * <pre>
+     * "halt" finishes resetting the health tracker before it returns. The reset runs on the tracker's own queue, and one
+     * still running while halt drops the shared state uses objects halt has already freed.
+     *
+     * 1- Start and count a warning in the health tracker
+     * 2- Halt while a logger holds the tracker's reset for a moment
+     * 3- Verify the count is cleared by the time halt returns
+     * </pre>
+     */
+    func testHalt_waitsForTheHealthTrackerReset() throws {
+        let logger = DelayingLogger(delaying: "clearing counters", by: 0.5)
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        config.loggerDelegate = logger
+        Countly.sharedInstance().start(with: config)
+        let tracker = try XCTUnwrap(CountlyHealthTracker.sharedInstance())
+        tracker.logWarning()
+        TestUtils.waitUntil("the warning is counted") { (tracker.value(forKey: "countLogWarning") as? Int ?? 0) > 0 }
+
+        logger.arm()
+        Countly.sharedInstance().halt(true)
+
+        XCTAssertEqual(0, tracker.value(forKey: "countLogWarning") as? Int, "the health tracker is reset by the time halt returns")
     }
 
     func testPerformanceExample() async throws {

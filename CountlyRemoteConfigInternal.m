@@ -156,7 +156,7 @@ static dispatch_once_t onceToken;
     }
 
     NSURLRequest* request = [self remoteConfigRequestForKeys:keys omitKeys:omitKeys];
-    NSURLSessionTask* task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance immediateDataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
                               {
         // IMMEDIATE REQUEST to find them better in search
         NSDictionary* remoteConfig = nil;
@@ -494,7 +494,7 @@ static dispatch_once_t onceToken;
     }
 
     NSURLRequest* request = [self downloadVariantsRequest];
-    NSURLSessionTask* task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance immediateDataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
                               {
         // IMMEDIATE REQUEST to find them better in search
         NSMutableDictionary* variants = NSMutableDictionary.new;
@@ -617,7 +617,7 @@ static dispatch_once_t onceToken;
     }
 
     NSURLRequest* request = [self enrollInVarianRequestForKey:key variantName:variantName];
-    NSURLSessionTask* task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance immediateDataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
         // IMMEDIATE REQUEST to find them better in search
         if (self != s_sharedInstance)
@@ -746,7 +746,7 @@ static dispatch_once_t onceToken;
     }
 
     NSURLRequest* request = [self downloadExperimentInfoRequest];
-    NSURLSessionTask* task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance immediateDataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
                               {
         // IMMEDIATE REQUEST to find them better in search
         NSMutableDictionary<NSString*, CountlyExperimentInformation*> * experiments = NSMutableDictionary.new;

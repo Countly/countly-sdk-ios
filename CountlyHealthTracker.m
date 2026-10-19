@@ -182,7 +182,8 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
 }
 
 - (void)resetInstance {
-    dispatch_async(self.hcQueue, ^{
+    // synchronous: halt goes on to free the shared state this block uses, and nothing on hcQueue waits for the caller
+    dispatch_sync(self.hcQueue, ^{
         [self clearValues];
         self->_healthCheckSent = NO;
         self->_healthCheckEnabled = YES;
@@ -223,7 +224,7 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
         return;
     }
 
-    NSURLSessionTask* task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:[self healthCheckRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance immediateDataTaskWithRequest:[self healthCheckRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
         // IMMEDIATE REQUEST to find them better in search
         if (error)

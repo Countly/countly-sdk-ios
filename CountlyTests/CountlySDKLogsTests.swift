@@ -1,6 +1,9 @@
 import CoreLocation
 import XCTest
 @testable import Countly
+#if os(iOS)
+import WebKit
+#endif
 
 /// Tests for per user SDK log gathering: the tri-state the SDK starts in, the speculative buffer
 /// that makes init logs available, adoption and discard, the directive sanitising, the buffer
@@ -772,6 +775,31 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
         XCTAssertEqual("Bearer S3CR3T-TOKEN", CountlyConnectionManager.sharedInstance().urlSessionConfiguration?.httpAdditionalHeaders?["Authorization"] as? String, "the header itself is still applied")
     }
 
+#if os(iOS)
+    /// The web view that shows content and feedback widgets logs the names of the response headers, never their values,
+    /// since a response header can carry a session cookie.
+    func testLogGathering_webViewResponseHeaderValuesAreNotQuoted() throws {
+        startSDK()
+        common.updateLogGatheringState(true, levels: allLevels, batch: maxBufferedLines, lgid: "gather_web_view_headers")
+        clearBuffer()
+
+        let url = try XCTUnwrap(URL(string: "https://content.example/page"))
+        let response = try XCTUnwrap(HTTPURLResponse(url: url, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: ["Set-Cookie": "session=C00KIE-VALUE", "X-Trace": "TRACE-VALUE"]))
+        // never released: WKNavigationResponse frees WebKit state in dealloc that a response WebKit did not create lacks
+        let navigationResponse = Unmanaged.passRetained(NavigationResponseStub(response: response)).takeUnretainedValue()
+        var policy: WKNavigationResponsePolicy?
+        let navigationDelegate: WKNavigationDelegate = CountlyWebViewManager()
+        navigationDelegate.webView?(WKWebView(), decidePolicyFor: navigationResponse) { policy = $0 }
+
+        XCTAssertEqual(.allow, policy, "a successful page is shown")
+        let captured = (bufferedLines + awaitingConsentLines).compactMap { $0["m"] as? String }
+        XCTAssertTrue(captured.contains { $0.contains("Set-Cookie") && $0.contains("X-Trace") }, "the header names are still logged")
+        for value in ["C00KIE-VALUE", "TRACE-VALUE"] {
+            XCTAssertFalse(captured.contains { $0.contains(value) }, "[\(value)] is a header value, so no gathered line may quote it")
+        }
+    }
+#endif
+
     /// A delivery checks the consent of every line it takes, so a line whose consent was just withdrawn stays waiting.
     func testLogGathering_deliveryChecksTheConsentOfEveryLineItTakes() throws {
         startSDK(requiresConsent: true)
@@ -912,6 +940,21 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
         XCTAssertEqual(0, bufferedLines.count)
     }
 }
+
+#if os(iOS)
+/// A navigation response the web view delegate can be handed without loading a page.
+private final class NavigationResponseStub: WKNavigationResponse {
+    private let stubbedResponse: URLResponse
+
+    /// A navigation response that hands the delegate the given response.
+    init(response: URLResponse) {
+        stubbedResponse = response
+        super.init()
+    }
+
+    override var response: URLResponse { stubbedResponse }
+}
+#endif
 
 /// Collects everything the SDK hands to a host app's logger, so a test can tell the local log apart from the uploaded one.
 private class RecordingLogger: NSObject, CountlyLoggerDelegate {

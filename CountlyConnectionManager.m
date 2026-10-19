@@ -164,7 +164,8 @@ static dispatch_once_t onceToken;
     if (URLSessionConfiguration != nil)
     {
         CLY_LOG_D(@"%s custom URL session configuration is set, the URL session will be recreated on the next request", __FUNCTION__);
-        _URLSessionConfiguration = URLSessionConfiguration;
+        // a copy: the custom headers and timeouts written into it belong to this run, not to the app's object
+        _URLSessionConfiguration = URLSessionConfiguration.copy;
         _URLSession = nil;
         [CountlyCommon.sharedInstance invalidatePinnedImmediateURLSession];
     }

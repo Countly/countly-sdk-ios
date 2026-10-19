@@ -350,9 +350,10 @@ static dispatch_once_t onceToken;
     [CountlyCommon.sharedInstance flushSdkLogs];
 
     // The behavior settings response for the fetch started above can arrive before init finishes, in
-    // which case it deliberately did not touch automatic tracking. Apply the resolved values now that
-    // the configuration is complete, so a server side 'avt' or 'acr' is never silently dropped.
+    // which case it deliberately did not touch automatic tracking or location. Apply the resolved values now that
+    // the configuration is complete, so a server side 'avt', 'acr' or 'lt' is never silently dropped.
     [CountlyServerConfig.sharedInstance applyAutomaticTrackingState];
+    [CountlyServerConfig.sharedInstance applyLocationTrackingState];
 }
 
 - (CountlyConfig *) checkAndFixInternalLimitsConfig:(CountlyConfig *)config
@@ -1555,27 +1556,7 @@ static dispatch_once_t onceToken;
 
     if(clearStorage)
     {
-        // only the SDK's keys, the app keeps its own values in the same defaults; the PLCrashReporter suppression marker has to outlive halt
-        NSArray* sdkKeys = @[
-            @"kCountlyServerConfigPersistencyKey",
-            @"kCountlyHealthCheckStatePersistencyKey",
-            @"kCountlyQueuedRequestsPersistencyKey",
-            @"kCountlyStartedEventsPersistencyKey",
-            @"kCountlyStoredDeviceIDKey",
-            @"kCountlyStoredNSUUIDKey",
-            @"kCountlyStarRatingStatusKey",
-            @"kCountlyRemoteConfigKey",
-            @"kCountlyIsCustomDeviceIDKey",
-            @"kCountlyNotificationPermissionKey",
-            @"kCountlyWatchParentDeviceIDKey"
-        ];
-        for (NSString* key in sdkKeys)
-        {
-            [NSUserDefaults.standardUserDefaults removeObjectForKey:key];
-        }
-
-        // Single synchronize after all UserDefaults modifications
-        [NSUserDefaults.standardUserDefaults synchronize];
+        [CountlyPersistency removeStoredUserDefaults];
     }
 }
 

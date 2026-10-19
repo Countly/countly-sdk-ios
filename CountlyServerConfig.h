@@ -59,6 +59,8 @@ extern NSString* const kCountlySCKeySC;
 - (BOOL)isJourneyTriggerView:(NSString *)viewName;
 - (NSInteger)userPropertyCacheLimit;
 - (void)applyAutomaticTrackingState;
+/// Clears the stored location info and sends the empty location when behavior settings turn location tracking off. Before init has finished a request would go without the app key, so startWithConfig calls this once init is complete.
+- (void)applyLocationTrackingState;
 
 @end
 
