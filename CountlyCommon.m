@@ -40,10 +40,14 @@ static const NSInteger kCountlySDKLogsDefaultBatchSize = 100;
 static const NSInteger kCountlySDKLogsMinBatchSize = 10;
 // second ceiling, on the characters held: a line may be 4096 long, so a line count alone does not bound memory
 static const NSInteger kCountlySDKLogsCharCeiling = 128 * 1024;
+// long lines reach the character ceiling before a batch fills, so from here the buffer goes out as a partial batch
+static const NSInteger kCountlySDKLogsDeliveryCharThreshold = kCountlySDKLogsCharCeiling * 3 / 4;
 static NSString* const kCountlySDKLogsAllLevels = @"ewidv";
 // gathering the log line that carries a batch would nest each batch inside the next one
 static NSString* const kCountlySDKLogsTransportMarker = @"sdk_logs";
 static NSString* const kCountlySDKLogsDeliveringKey = @"CountlySDKLogsDelivering";
+// the consent getter a line needs, NSNull for a line that needs both events and user details. Never part of an uploaded line
+static NSString* const kCountlySDKLogsAwaitedConsent = @"consent";
 
 @interface CountlyCommon ()
 {
@@ -68,10 +72,14 @@ static NSString* const kCountlySDKLogsDeliveringKey = @"CountlySDKLogsDelivering
 @property (nonatomic) NSString *sdkLogsGatheringId;
 @property (nonatomic) NSInteger sdkLogsDropCount;
 @property (nonatomic) NSInteger sdkLogsChars;
+// lines whose feature has no consent yet, kept apart from the buffer so they can never be uploaded before it is given
+@property (nonatomic) NSMutableArray* sdkLogsAwaitingConsent;
+@property (nonatomic) NSInteger sdkLogsAwaitingConsentChars;
 // a lock of its own rather than the array, so every piece of gathering state shares one monitor
 @property (nonatomic) NSObject* sdkLogsLock;
 // batch-full deliveries run here and never on the capturing thread, which may be inside a persistency lock
 @property (nonatomic) dispatch_queue_t sdkLogsDeliveryQueue;
+@property (nonatomic) NSURLSession* pinnedImmediateURLSession;
 @end
 
 NSString* const kCountlySDKVersion = @"26.1.4";
@@ -106,6 +114,7 @@ static dispatch_once_t onceToken;
         self.SDKName = kCountlySDKName;
         
         self.sdkLogs = NSMutableArray.new;
+        self.sdkLogsAwaitingConsent = NSMutableArray.new;
         self.sdkLogsState = CLYSDKLogsStateUndecided;
         self.sdkLogsBatchSize = kCountlySDKLogsDefaultBatchSize;
         self.sdkLogsLevels = kCountlySDKLogsAllLevels;
@@ -136,6 +145,10 @@ static dispatch_once_t onceToken;
     @synchronized (_sdkLogsLock) {
         [self setLogGatheringOffLocked];
         _sdkLogsState = CLYSDKLogsStateUndecided;
+    }
+    @synchronized (self) {
+        [self.pinnedImmediateURLSession finishTasksAndInvalidate];
+        self.pinnedImmediateURLSession = nil;
     }
     onceToken = 0;
     s_sharedInstance = nil;
@@ -229,6 +242,162 @@ void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...)
     return self.sdkLogsState != CLYSDKLogsStateOff;
 }
 
+/// The CountlyConsentManager getter a gathered line needs, keyed by the class that writes it, or by "Class selector" where one class serves several features.
+static NSDictionary<NSString *, NSString *>* CountlySDKLogsConsentByOwner(void)
+{
+    static NSDictionary* consentByOwner;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        NSString* sessions = NSStringFromSelector(@selector(consentForSessions));
+        NSString* events = NSStringFromSelector(@selector(consentForEvents));
+        NSString* users = NSStringFromSelector(@selector(consentForUserDetails));
+        NSString* crashes = NSStringFromSelector(@selector(consentForCrashReporting));
+        NSString* push = NSStringFromSelector(@selector(consentForPushNotifications));
+        NSString* location = NSStringFromSelector(@selector(consentForLocation));
+        NSString* views = NSStringFromSelector(@selector(consentForViewTracking));
+        NSString* attribution = NSStringFromSelector(@selector(consentForAttribution));
+        NSString* apm = NSStringFromSelector(@selector(consentForPerformanceMonitoring));
+        NSString* feedback = NSStringFromSelector(@selector(consentForFeedback));
+        NSString* remoteConfig = NSStringFromSelector(@selector(consentForRemoteConfig));
+        NSString* content = NSStringFromSelector(@selector(consentForContent));
+        NSString* metrics = NSStringFromSelector(@selector(consentForMetrics));
+
+        consentByOwner = @{
+            @"CountlyViewTracking": views,
+            @"CountlyViewTrackingInternal": views,
+            @"CountlyViewData": views,
+            @"CountlyUserDetails": users,
+            @"CountlyCrashReporter": crashes,
+            @"CountlyCrashData": crashes,
+            @"CountlyPushNotifications": push,
+            @"CountlyLocationManager": location,
+            @"CountlyPerformanceMonitoring": apm,
+            @"CountlyFeedbacks": feedback,
+            @"CountlyFeedbacksInternal": feedback,
+            @"CountlyFeedbackWidget": feedback,
+            @"CountlyRemoteConfig": remoteConfig,
+            @"CountlyRemoteConfigInternal": remoteConfig,
+            @"CountlyRCData": remoteConfig,
+            @"CountlyExperimentInformation": remoteConfig,
+            @"CountlyContentBuilder": content,
+            @"CountlyContentBuilderInternal": content,
+
+            @"Countly recordEvent": events,
+            @"Countly recordReservedEvent": events,
+            @"Countly isReservedEvent": events,
+            @"Countly processSegmentation": events,
+            @"Countly journeyTriggerCallback": events,
+            @"Countly startEvent": events,
+            @"Countly endEvent": events,
+            @"Countly cancelEvent": events,
+            @"Countly beginSession": sessions,
+            @"Countly updateSession": sessions,
+            @"Countly endSession": sessions,
+            @"Countly recordMetrics": metrics,
+            @"Countly askForNotificationPermission": push,
+            @"Countly askForNotificationPermissionWithOptions": push,
+            @"Countly recordActionForNotification": push,
+            @"Countly recordPushNotificationToken": push,
+            @"Countly clearPushNotificationToken": push,
+            @"Countly recordLocation": location,
+            @"Countly disableLocationInfo": location,
+            @"Countly recordException": crashes,
+            @"Countly recordError": crashes,
+            @"Countly recordCrashLog": crashes,
+            @"Countly clearCrashLogs": crashes,
+            @"Countly crashLog": crashes,
+            @"Countly askForStarRating": feedback,
+            @"Countly presentRatingWidgetWithID": feedback,
+            @"Countly recordRatingWidgetWithID": feedback,
+            @"Countly recordDirectAttributionWithCampaignType": attribution,
+            @"Countly recordIndirectAttribution": attribution,
+            @"Countly recordNetworkTrace": apm,
+            @"Countly startCustomTrace": apm,
+            @"Countly endCustomTrace": apm,
+            @"Countly cancelCustomTrace": apm,
+            @"Countly clearAllCustomTraces": apm,
+            @"Countly appLoadingFinished": apm,
+        };
+    });
+
+    return consentByOwner;
+}
+
+/// The consent getter a gathered line needs, or nil for a line no single feature owns, such as a queued request or a stored state.
+/// Every line opens with __FUNCTION__ ("-[Class selector]", "+[Class selector]", or "__12-[Class selector]_block_invoke" in a block) or with "[Class]".
+static NSString* CountlySDKLogsConsentForLine(NSString* line)
+{
+    static NSRegularExpression* ownerPattern;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        ownerPattern = [NSRegularExpression regularExpressionWithPattern:@"^(?:__\\d+)?[-+]?\\[(\\w+)(?: (\\w+))?" options:0 error:nil];
+    });
+
+    NSTextCheckingResult* match = [ownerPattern firstMatchInString:line options:NSMatchingAnchored range:NSMakeRange(0, MIN(line.length, (NSUInteger)256))];
+    if (!match)
+        return nil;
+
+    NSDictionary<NSString *, NSString *>* consentByOwner = CountlySDKLogsConsentByOwner();
+    NSString* className = [line substringWithRange:[match rangeAtIndex:1]];
+    NSRange selectorRange = [match rangeAtIndex:2];
+    if (selectorRange.location != NSNotFound)
+    {
+        NSString* methodConsent = consentByOwner[[NSString stringWithFormat:@"%@ %@", className, [line substringWithRange:selectorRange]]];
+        if (methodConsent)
+            return methodConsent;
+    }
+
+    return consentByOwner[className];
+}
+
+/// Whether a line needing the given consent getter may be gathered now. Always when consent is not required, never before
+/// the SDK has started, and a line of no single feature (NSNull) needs both the events and the user details consent.
+static BOOL CountlySDKLogsConsentGiven(id consent)
+{
+    CountlyConsentManager* consentManager = CountlyConsentManager.sharedInstance;
+    if (!consentManager)
+        return NO;
+
+    if (!consentManager.requiresConsent)
+        return YES;
+
+    if (![consent isKindOfClass:NSString.class])
+        return consentManager.consentForEvents && consentManager.consentForUserDetails;
+
+    return [[consentManager valueForKey:consent] boolValue];
+}
+
+/// A copy of the line carrying the consent it needs, or, with nil, the line as it is uploaded.
+static NSDictionary* CountlySDKLogsLineWithConsent(NSDictionary* line, id consent)
+{
+    NSMutableDictionary* copy = line.mutableCopy;
+    copy[kCountlySDKLogsAwaitedConsent] = consent;
+    return copy;
+}
+
+/// The batch as it goes on the wire, its lines without the consent they were gathered under.
+static NSDictionary* CountlySDKLogsUploadableBatch(NSDictionary* batch)
+{
+    NSMutableArray* lines = NSMutableArray.new;
+    for (NSDictionary* line in batch[kCountlyQSSDKLogsBatchLines])
+        [lines addObject:CountlySDKLogsLineWithConsent(line, nil)];
+
+    NSMutableDictionary* uploadable = batch.mutableCopy;
+    uploadable[kCountlyQSSDKLogsBatchLines] = lines;
+    return uploadable;
+}
+
+/// Marks init as finished or not. Finishing decides the consent of the lines captured while init ran, under the lock the
+/// capture reads this flag in, so every line is decided either here or when it is captured.
+- (void)setHasFinishedInit:(BOOL)hasFinishedInit
+{
+    @synchronized (_sdkLogsLock) {
+        _hasFinishedInit = hasFinishedInit;
+        if (hasFinishedInit)
+            [self redecideSdkLogLinesConsentLocked];
+    }
+}
+
 - (void)captureSdkLogLine:(NSString *)logString level:(char)levelChar {
     if (!self.isCapturingSdkLogs)
         return;
@@ -242,7 +411,8 @@ void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...)
     if ([logString rangeOfString:kCountlySDKLogsTransportMarker].location != NSNotFound)
         return;
 
-    BOOL batchIsFull = NO;
+    BOOL isDeliveryDue = NO;
+    BOOL includePartialBatch = NO;
 
     @synchronized (_sdkLogsLock) {
         if (_sdkLogsState == CLYSDKLogsStateOff)
@@ -261,28 +431,74 @@ void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...)
             message = [message substringToIndex:boundary.location];
         }
 
-        [_sdkLogs addObject:@{
+        // every line keeps its consent so a later withdrawal can send it back to wait, init lines are decided when init finishes
+        id consent = CountlySDKLogsConsentForLine(message) ?: NSNull.null;
+        NSDictionary* line = @{
             kCountlyQSSDKLogsTimestamp: @((long long)floor(NSDate.date.timeIntervalSince1970 * 1000)),
             kCountlyQSSdkLogsMessage: message,
             // a one character string, not a boxed char: @('e') would go on the wire as 101
-            kCountlyQSSdkLogsLevel: [NSString stringWithFormat:@"%c", levelChar]
-        }];
+            kCountlyQSSdkLogsLevel: [NSString stringWithFormat:@"%c", levelChar],
+            kCountlySDKLogsAwaitedConsent: consent
+        };
+        if (_hasFinishedInit && !CountlySDKLogsConsentGiven(consent))
+        {
+            [_sdkLogsAwaitingConsent addObject:line];
+            _sdkLogsAwaitingConsentChars += message.length;
+            [self trimSdkLogsAwaitingConsentLocked];
+            return;
+        }
+
+        NSInteger bufferedBefore = (NSInteger)_sdkLogs.count;
+        NSInteger charsBefore = _sdkLogsChars;
+        [_sdkLogs addObject:line];
         _sdkLogsChars += message.length;
         [self trimSdkLogsBufferLocked];
 
-        batchIsFull = _sdkLogsState == CLYSDKLogsStateGathering && (NSInteger)_sdkLogs.count >= _sdkLogsBatchSize;
+        isDeliveryDue = [self isSdkLogsDeliveryDueLockedFromCount:bufferedBefore chars:charsBefore includePartialBatch:&includePartialBatch];
     }
 
     // never on this thread: delivering touches the request queue and logs, which comes straight back
     // into this method, and the caller may be inside a persistency lock
-    if (batchIsFull)
-        [self scheduleSdkLogsDelivery:NO];
+    if (isDeliveryDue)
+        [self scheduleSdkLogsDelivery:includePartialBatch];
 }
 
 /// Characters of one gathered line's message, the unit the character ceiling counts.
 static NSInteger CountlySDKLogsLineLength(NSDictionary* line)
 {
     return (NSInteger)((NSString *)line[kCountlyQSSdkLogsMessage]).length;
+}
+
+/// Characters of the messages of all the given lines.
+static NSInteger CountlySDKLogsLength(NSArray* lines)
+{
+    NSInteger chars = 0;
+    for (NSDictionary* line in lines)
+        chars += CountlySDKLogsLineLength(line);
+
+    return chars;
+}
+
+/// Keeps only the lines of the given levels and returns the characters of what is kept.
+static NSInteger CountlySDKLogsKeepLevels(NSMutableArray* lines, NSString* levels)
+{
+    [lines filterUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NSDictionary* line, NSDictionary* bindings) {
+        return [levels containsString:line[kCountlyQSSdkLogsLevel]];
+    }]];
+
+    return CountlySDKLogsLength(lines);
+}
+
+/// Appends every line whose consent is given to buffered and every other line to awaiting, in the order of the given lines.
+static void CountlySDKLogsSplitByConsent(NSArray* lines, NSMutableArray* buffered, NSMutableArray* awaiting)
+{
+    for (NSDictionary* line in lines)
+    {
+        if (CountlySDKLogsConsentGiven(line[kCountlySDKLogsAwaitedConsent]))
+            [buffered addObject:line];
+        else
+            [awaiting addObject:line];
+    }
 }
 
 /// Drops the oldest lines until both the line and the character ceiling hold, counting them into the drop count. Call under the lock.
@@ -294,6 +510,89 @@ static NSInteger CountlySDKLogsLineLength(NSDictionary* line)
         [_sdkLogs removeObjectAtIndex:0];
         _sdkLogsDropCount++;
     }
+}
+
+/// Drops the oldest lines awaiting consent until both ceilings hold. Call under the lock.
+- (void)trimSdkLogsAwaitingConsentLocked
+{
+    // not counted into the drop count: a line that never had its consent was never gathered
+    while ((NSInteger)_sdkLogsAwaitingConsent.count > kCountlySDKLogsMaxBufferedLines || (_sdkLogsAwaitingConsentChars > kCountlySDKLogsCharCeiling && _sdkLogsAwaitingConsent.count > 1))
+    {
+        _sdkLogsAwaitingConsentChars -= CountlySDKLogsLineLength(_sdkLogsAwaitingConsent.firstObject);
+        [_sdkLogsAwaitingConsent removeObjectAtIndex:0];
+    }
+}
+
+/// Whether the buffer grown from the given counts calls for a delivery, setting includePartialBatch when only the character threshold does. Call under the lock.
+- (BOOL)isSdkLogsDeliveryDueLockedFromCount:(NSInteger)bufferedBefore chars:(NSInteger)charsBefore includePartialBatch:(BOOL *)includePartialBatch
+{
+    // only the line that completes a batch schedules a delivery, so a full buffer held back by tracking does not queue one per line
+    BOOL completesBatch = _sdkLogsState == CLYSDKLogsStateGathering && bufferedBefore < _sdkLogsBatchSize && (NSInteger)_sdkLogs.count >= _sdkLogsBatchSize;
+    BOOL reachesCharThreshold = !completesBatch && _sdkLogsState == CLYSDKLogsStateGathering && charsBefore < kCountlySDKLogsDeliveryCharThreshold && _sdkLogsChars >= kCountlySDKLogsDeliveryCharThreshold;
+
+    *includePartialBatch = reachesCharThreshold;
+    return completesBatch || reachesCharThreshold;
+}
+
+/// Moves lines into the buffer or the awaiting list by their consent, oldest first, and returns NO when none moved. Call under the lock.
+- (BOOL)redecideSdkLogLinesConsentLocked
+{
+    NSMutableArray* buffered = NSMutableArray.new;
+    NSMutableArray* awaiting = NSMutableArray.new;
+
+    CountlySDKLogsSplitByConsent(_sdkLogs, buffered, awaiting);
+    NSUInteger withdrawnCount = awaiting.count;
+    CountlySDKLogsSplitByConsent(_sdkLogsAwaitingConsent, buffered, awaiting);
+
+    if (withdrawnCount == 0 && awaiting.count == _sdkLogsAwaitingConsent.count)
+        return NO;
+
+    NSComparator byCaptureTime = ^NSComparisonResult(NSDictionary* a, NSDictionary* b) {
+        return [a[kCountlyQSSDKLogsTimestamp] compare:b[kCountlyQSSDKLogsTimestamp]];
+    };
+    [buffered sortWithOptions:NSSortStable usingComparator:byCaptureTime];
+    [awaiting sortWithOptions:NSSortStable usingComparator:byCaptureTime];
+
+    [_sdkLogs setArray:buffered];
+    _sdkLogsChars = CountlySDKLogsLength(_sdkLogs);
+    [_sdkLogsAwaitingConsent setArray:awaiting];
+    _sdkLogsAwaitingConsentChars = CountlySDKLogsLength(_sdkLogsAwaitingConsent);
+
+    [self trimSdkLogsBufferLocked];
+    [self trimSdkLogsAwaitingConsentLocked];
+    return YES;
+}
+
+- (void)redecideSdkLogLinesConsent
+{
+    BOOL isDeliveryDue = NO;
+    BOOL includePartialBatch = NO;
+
+    @synchronized (_sdkLogsLock) {
+        // the lines captured during init are decided when init finishes, the consent state is incomplete before that
+        if (!_hasFinishedInit)
+            return;
+
+        NSInteger bufferedBefore = (NSInteger)_sdkLogs.count;
+        NSInteger charsBefore = _sdkLogsChars;
+        if (![self redecideSdkLogLinesConsentLocked])
+            return;
+
+        isDeliveryDue = [self isSdkLogsDeliveryDueLockedFromCount:bufferedBefore chars:charsBefore includePartialBatch:&includePartialBatch];
+    }
+
+    if (isDeliveryDue)
+        [self scheduleSdkLogsDelivery:includePartialBatch];
+}
+
+- (void)countEvictedSdkLogRequest:(NSString *)queryString
+{
+    NSString* payload = [queryString cly_valueForQueryStringKey:kCountlyQSSdkLogs];
+    id batch = payload ? [NSJSONSerialization JSONObjectWithData:[payload cly_dataUTF8] options:0 error:nil] : nil;
+    if (![batch isKindOfClass:NSDictionary.class] || ![batch[kCountlyQSSDKLogsBatchLines] isKindOfClass:NSArray.class] || ![batch[kCountlyQSSDKLogsDropCount] isKindOfClass:NSNumber.class])
+        return;
+
+    [self countSdkLogBatchAsDropped:batch];
 }
 
 /// Queues a delivery run on the delivery queue. Nothing is uploaded before init finishes, the init lines go out from there.
@@ -316,8 +615,23 @@ static NSInteger CountlySDKLogsLineLength(NSDictionary* line)
     [self scheduleSdkLogsDelivery:YES];
 }
 
-/// Uploads one batch, then keeps going while full batches remain. Lines stay held while the request
-/// queue would drop them: tracking off, or no consent given yet.
+- (void)stopSdkLogGatheringForDeviceIDChange
+{
+    if (!self.isCapturingSdkLogs)
+        return;
+
+    // a delivery already running on the delivery queue would otherwise send the old user's lines under the new device ID
+    dispatch_semaphore_t delivered = dispatch_semaphore_create(0);
+    dispatch_async(self.sdkLogsDeliveryQueue, ^{
+        dispatch_semaphore_signal(delivered);
+    });
+    dispatch_semaphore_wait(delivered, dispatch_time(DISPATCH_TIME_NOW, (int64_t)NSEC_PER_SEC));
+
+    [self flushSdkLogs];
+    [self updateLogGatheringState:NO levels:nil batch:0 lgid:nil];
+}
+
+/// Uploads one batch, then keeps going while full batches remain. Lines stay buffered while tracking is off.
 - (void)deliverSdkLogBatches:(BOOL)includePartialBatch
 {
     if (!self.hasFinishedInit)
@@ -339,14 +653,6 @@ static NSInteger CountlySDKLogsLineLength(NSDictionary* line)
         return;
     }
 
-    if (!CountlyConsentManager.sharedInstance.hasAnyConsent)
-    {
-        // gathered lines quote event keys, segmentation and whole queued requests, so they are user
-        // data. Without any consent nothing else leaves the device either
-        CLY_LOG_D(@"%s, no consent given, keeping the gathered lines buffered", __FUNCTION__);
-        return;
-    }
-
     BOOL takePartial = includePartialBatch;
     NSDictionary* batch;
     while ((batch = [self takeSdkLogBatch:takePartial]))
@@ -354,7 +660,7 @@ static NSInteger CountlySDKLogsLineLength(NSDictionary* line)
         takePartial = NO;
         CLY_LOG_D(@"%s, delivering [ %lu ] gathered log lines, [ %@ ] dropped", __FUNCTION__, (unsigned long)((NSArray *)batch[kCountlyQSSDKLogsBatchLines]).count, batch[kCountlyQSSDKLogsDropCount]);
 
-        NSString* payload = CountlyJSONFromObject(batch);
+        NSString* payload = CountlyJSONFromObject(CountlySDKLogsUploadableBatch(batch));
         if (!payload)
         {
             // putting an unserialisable batch back would make it the head of every later delivery, so it is lost and counted
@@ -387,7 +693,12 @@ static NSInteger CountlySDKLogsLineLength(NSDictionary* line)
 - (NSDictionary *)takeSdkLogBatch:(BOOL)includePartialBatch
 {
     @synchronized (_sdkLogsLock) {
-        if (_sdkLogsState != CLYSDKLogsStateGathering || _sdkLogs.count == 0)
+        if (_sdkLogsState != CLYSDKLogsStateGathering)
+            return nil;
+
+        // a consent setter redecides only after its own side effects, whose log lines can complete a batch in between
+        [self redecideSdkLogLinesConsentLocked];
+        if (_sdkLogs.count == 0)
             return nil;
         if (!includePartialBatch && (NSInteger)_sdkLogs.count < _sdkLogsBatchSize)
             return nil;
@@ -469,6 +780,8 @@ static NSInteger CountlySDKLogsLineLength(NSDictionary* line)
     [_sdkLogs removeAllObjects];
     _sdkLogsDropCount = 0;
     _sdkLogsChars = 0;
+    [_sdkLogsAwaitingConsent removeAllObjects];
+    _sdkLogsAwaitingConsentChars = 0;
 }
 
 - (void)updateLogGatheringState:(BOOL)enabled levels:(nullable NSString *)levels batch:(NSInteger)batch lgid:(nullable NSString *)lgid {
@@ -497,16 +810,9 @@ static NSInteger CountlySDKLogsLineLength(NSDictionary* line)
         } else {
             [self setLogGatheringOnLocked:sanitizedLevels batch:sanitizedBatch gatheringId:lgid];
             // adoption: the provisional lines were gathered at every level, so apply the filter now
-            NSMutableArray* kept = NSMutableArray.new;
-            _sdkLogsChars = 0;
-            for (NSDictionary* line in _sdkLogs) {
-                if ([sanitizedLevels containsString:line[kCountlyQSSdkLogsLevel]]) {
-                    [kept addObject:line];
-                    _sdkLogsChars += CountlySDKLogsLineLength(line);
-                }
-            }
-            [_sdkLogs setArray:kept];
+            _sdkLogsChars = CountlySDKLogsKeepLevels(_sdkLogs, sanitizedLevels);
             [self trimSdkLogsBufferLocked];
+            _sdkLogsAwaitingConsentChars = CountlySDKLogsKeepLevels(_sdkLogsAwaitingConsent, sanitizedLevels);
             held = _sdkLogs.count;
         }
     }
@@ -539,6 +845,14 @@ static NSInteger CountlySDKLogsLineLength(NSDictionary* line)
 void CountlyPrint(NSString *stringToPrint)
 {
     NSLog(@"%@%@", kCountlyInternalLogPrefix, stringToPrint);
+}
+
+void CountlyRunOnMainThread(dispatch_block_t block)
+{
+    if (NSThread.isMainThread)
+        block();
+    else
+        dispatch_async(dispatch_get_main_queue(), block);
 }
 
 #pragma mark - Time/Date related methods
@@ -805,6 +1119,16 @@ void CountlyPrint(NSString *stringToPrint)
 
 - (NSURLSession *)ImmediateURLSession
 {
+    CountlyConnectionManager* connectionManager = CountlyConnectionManager.sharedInstance;
+    BOOL usesPinnedCertificates = connectionManager.pinnedCertificates.count > 0;
+    if (usesPinnedCertificates)
+    {
+        @synchronized (self) {
+            if (self.pinnedImmediateURLSession)
+                return self.pinnedImmediateURLSession;
+        }
+    }
+
     // Base on the user-provided URLSessionConfiguration so that things like
     // protocolClasses (test mocks), cookie policy, etc. are preserved.
     // If none was provided, fall back to default session configuration.
@@ -816,7 +1140,16 @@ void CountlyPrint(NSString *stringToPrint)
     immediateConfig.timeoutIntervalForRequest = 60;
     immediateConfig.timeoutIntervalForResource = 7 * 24 * 60 * 60;
 
-    return [NSURLSession sessionWithConfiguration:immediateConfig];
+    if (!usesPinnedCertificates)
+        return [NSURLSession sessionWithConfiguration:immediateConfig];
+
+    // the connection manager checks the pinned certificates, and one session is kept since a delegate session lives until invalidated
+    @synchronized (self) {
+        if (!self.pinnedImmediateURLSession)
+            self.pinnedImmediateURLSession = [NSURLSession sessionWithConfiguration:immediateConfig delegate:connectionManager delegateQueue:nil];
+
+        return self.pinnedImmediateURLSession;
+    }
 }
 
 #if (TARGET_OS_IOS || TARGET_OS_VISION)

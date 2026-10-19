@@ -590,15 +590,15 @@ class CountlyWebViewManagerTests: XCTestCase {
         """
         webView.loadHTMLString(html, baseURL: URL(string: "https://example.com"))
 
+        // Wait on the retry count: pendingReloadBlock clears itself after 0.6s, before the predicate is polled.
         let scheduled = XCTNSPredicateExpectation(predicate: NSPredicate(block: { [weak manager] _, _ in
-            manager?.pendingReloadBlock != nil
+            (manager?.resourceRetryCount ?? 0) >= 1
         }), object: nil)
         wait(for: [scheduled], timeout: TestUtils.asyncTimeout)
 
         XCTAssertFalse(manager.webViewClosed)
         XCTAssertFalse(dismissCalled)
         XCTAssertEqual(manager.resourceRetryCount, 1)
-        XCTAssertNotNil(manager.pendingReloadBlock)
 
         contentController.removeScriptMessageHandler(forName: "resourceLoadError")
         contentController.removeScriptMessageHandler(forName: "resourceVerifyResult")

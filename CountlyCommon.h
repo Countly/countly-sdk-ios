@@ -92,7 +92,6 @@ extern NSString* const kCountlySDKName;
 @property (nonatomic) BOOL shouldIgnoreTrustCheck;
 @property (nonatomic, weak) id <CountlyLoggerDelegate> loggerDelegate;
 @property (nonatomic) CLYInternalLogLevel internalLogLevel;
-@property (nonatomic, copy) NSString* attributionID;
 @property (nonatomic) BOOL manualSessionHandling;
 @property (nonatomic) BOOL enableManualSessionControlHybridMode;
 @property (nonatomic) BOOL enableOrientationTracking;
@@ -105,6 +104,11 @@ extern NSString* const kCountlySDKName;
 @property (nonatomic) NSUInteger maxValueLengthPicture;
 @property (nonatomic) NSUInteger maxSegmentationValues;
 
+/// Counts the device ID changes made without merge this run, so work started for one user can tell that it now belongs to another.
+@property (atomic) NSUInteger deviceIDChangeWithoutMergeCount;
+/// Counts the device ID changes made with merge this run. The server cancels the connection test it armed for a merged user.
+@property (atomic) NSUInteger deviceIDMergeCount;
+
 void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...) NS_FORMAT_FUNCTION(2, 3);
 /// YES when console output or the logger delegate would show a line of this level. Gate expensive dumps with this, it says nothing about log gathering.
 BOOL CountlyInternalLogIsEnabled(CLYInternalLogLevel level);
@@ -112,6 +116,8 @@ BOOL CountlyInternalLogIsEnabled(CLYInternalLogLevel level);
 BOOL CountlyInternalLogIsWanted(CLYInternalLogLevel level);
 void CountlyPrint(NSString *stringToPrint);
 NSString* CountlyJSONFromObject(id object);
+/// Runs the block right away when called on the main thread, so the state it reads is the state at the call, and queues it there otherwise.
+void CountlyRunOnMainThread(dispatch_block_t block);
 
 + (instancetype)sharedInstance;
 - (NSInteger)hourOfDay;
@@ -159,6 +165,15 @@ NSString* CountlyJSONFromObject(id object);
 
 /// Same as flushSdkLogs, on the delivery queue. The timer tick calls this so the main thread never serialises a batch.
 - (void)scheduleSdkLogsFlush;
+
+/// Moves held lines between the buffer and the awaiting list to match the current consent, keeping capture order.
+- (void)redecideSdkLogLinesConsent;
+
+/// Counts the lines of a queued 'sdk_logs' request the queue had to drop into the next batch's drop count, when it belongs to the running gather.
+- (void)countEvictedSdkLogRequest:(NSString *)queryString;
+
+/// Called before the device ID changes without merge. Uploads what consent allows under the current device ID, then stops gathering and drops the rest, since the gather belongs to the current user.
+- (void)stopSdkLogGatheringForDeviceIDChange;
 
 /// YES while lines are still being held or gathered, so log calls can skip formatting when nothing wants them.
 - (BOOL)isCapturingSdkLogs;
@@ -223,6 +238,11 @@ NSString* CountlyJSONFromObject(id object);
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation;
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation ID:(NSString *)ID;
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration ID:(NSString *)ID timestamp:(NSTimeInterval)timestamp;
+@end
+
+@interface Countly (AutomaticSessionTracking)
+/// Ends a session the SDK started once automatic session tracking is off, and starts one in the foreground once it is on. Main thread only.
+- (void)applyAutomaticSessionTracking;
 @end
 
 @interface CountlyUserDetails (ClearUserDetails)

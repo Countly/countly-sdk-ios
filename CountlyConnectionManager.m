@@ -13,6 +13,7 @@
     NSTimeInterval lastSessionStartTime;
     BOOL isCrashing;
     BOOL isSessionStarted;
+    BOOL isSessionStartedAutomatically;
 }
 @property (nonatomic) NSURLSession* URLSession;
 
@@ -126,6 +127,10 @@ static dispatch_once_t onceToken;
 
 - (BOOL)isSessionStarted {
     return isSessionStarted;
+}
+
+- (BOOL)isSessionStartedAutomatically {
+    return isSessionStartedAutomatically;
 }
 
 - (void)resetInstance {
@@ -289,7 +294,7 @@ static dispatch_once_t onceToken;
     
     // lines logged while sending a gathered log batch are not gathered, or every tick would upload a batch about the
     // last one. The caller may already be marked (the delivery loop lands here), so its mark is restored on the way out
-    BOOL isSdkLogsTransport = [firstItemInQueue cly_valueForQueryStringKey:kCountlyQSSdkLogs] != nil;
+    BOOL isSdkLogsTransport = [CountlyPersistency isSdkLogRequest:firstItemInQueue];
     BOOL callerTransportWork = CountlyCommon.sharedInstance.isSdkLogsTransportWork;
     [CountlyCommon.sharedInstance setSdkLogsTransportWork:callerTransportWork || isSdkLogsTransport];
 
@@ -658,6 +663,8 @@ static dispatch_once_t onceToken;
     }
 
     isSessionStarted = YES;
+    // the manual session API refuses to begin while automatic session tracking is on, so a session begun now is the SDK's own
+    isSessionStartedAutomatically = CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled;
     lastSessionStartTime = NSDate.date.timeIntervalSince1970;
     unsentSessionLength = 0.0;
 
@@ -670,10 +677,6 @@ static dispatch_once_t onceToken;
         if (locationRelatedInfoQueryString)
             queryString = [queryString stringByAppendingString:locationRelatedInfoQueryString];
     }
-
-    NSString* attributionQueryString = [self attributionQueryString];
-    if (attributionQueryString)
-        queryString = [queryString stringByAppendingString:attributionQueryString];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
     
@@ -722,6 +725,7 @@ static dispatch_once_t onceToken;
     }
 
     isSessionStarted = NO;
+    isSessionStartedAutomatically = NO;
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%d",
                              kCountlyQSKeySessionEnd, @"1",
                              kCountlyQSKeySessionDuration, (int)[self sessionLengthInSeconds]];
@@ -936,22 +940,15 @@ static dispatch_once_t onceToken;
     return YES;
 }
 
-- (void)sendConnectionTestResults:(NSString *)resultsJSON
+- (void)sendConnectionTestResults:(NSString *)resultsJSON deviceID:(NSString *)deviceID deviceIDType:(NSUInteger)deviceIDType
 {
-    NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@", kCountlyQSConnectionTestResults, resultsJSON.cly_URLEscaped];
-
-    [CountlyPersistency.sharedInstance addToQueue:queryString];
-
-    [self proceedOnQueue];
-}
-
-- (void)sendAttribution
-{
-    NSString * attributionQueryString = [self attributionQueryString];
-    if (!attributionQueryString)
+    if (!self.appKey.length)
+    {
+        CLY_LOG_D(@"%s connection test report is dropped, reason: there is no app key, the SDK is not started or is halting", __FUNCTION__);
         return;
+    }
 
-    NSString* queryString = [[self queryEssentials] stringByAppendingString:attributionQueryString];
+    NSString* queryString = [[self queryEssentialsForDeviceID:deviceID deviceIDType:deviceIDType] stringByAppendingFormat:@"&%@=%@", kCountlyQSConnectionTestResults, resultsJSON.cly_URLEscaped];
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
@@ -1086,10 +1083,16 @@ static dispatch_once_t onceToken;
 
 - (NSString *)queryEssentials
 {
+    return [self queryEssentialsForDeviceID:CountlyDeviceInfo.sharedInstance.deviceID deviceIDType:CountlyDeviceInfo.sharedInstance.deviceIDTypeValue];
+}
+
+/// The parameters every request carries, built for the given device ID and its type value.
+- (NSString *)queryEssentialsForDeviceID:(NSString *)deviceID deviceIDType:(NSUInteger)deviceIDType
+{
     return [NSString stringWithFormat:@"%@=%@&%@=%@&%@=%d&%@=%lld&%@=%d&%@=%d&%@=%d&%@=%@&%@=%@",
         kCountlyQSKeyAppKey, self.appKey.cly_URLEscaped,
-        kCountlyQSKeyDeviceID, CountlyDeviceInfo.sharedInstance.deviceID.cly_URLEscaped,
-        kCountlyQSKeyDeviceIDType, (int)CountlyDeviceInfo.sharedInstance.deviceIDTypeValue,
+        kCountlyQSKeyDeviceID, deviceID.cly_URLEscaped,
+        kCountlyQSKeyDeviceIDType, (int)deviceIDType,
         kCountlyQSKeyTimestamp, (long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000),
         kCountlyQSKeyTimeHourOfDay, (int)CountlyCommon.sharedInstance.hourOfDay,
         kCountlyQSKeyTimeDayOfWeek, (int)CountlyCommon.sharedInstance.dayOfWeek,
@@ -1150,19 +1153,6 @@ static dispatch_once_t onceToken;
         return locationInfoQueryString.copy;
 
     return nil;
-}
-
-- (NSString *)attributionQueryString
-{
-    if (!CountlyConsentManager.sharedInstance.consentForAttribution)
-        return nil;
-
-    if (!CountlyCommon.sharedInstance.attributionID)
-        return nil;
-
-    NSDictionary* attribution = @{kCountlyQSKeyIDFA: CountlyCommon.sharedInstance.attributionID};
-
-    return [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyAttributionID, [attribution cly_JSONify]];
 }
 
 - (NSMutableData *)pictureUploadDataForQueryString:(NSString *)queryString

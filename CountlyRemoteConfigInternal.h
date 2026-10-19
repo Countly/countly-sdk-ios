@@ -11,16 +11,14 @@
 @property (nonatomic) BOOL isRCAutomaticTriggersEnabled;
 @property (nonatomic) BOOL isRCValueCachingEnabled;
 @property (nonatomic) BOOL enrollABOnRCDownload;
-@property (nonatomic, copy) void (^remoteConfigCompletionHandler)(NSError * error);
 @property (nonatomic) NSMutableArray<RCDownloadCallback> *remoteConfigGlobalCallbacks;
 
 + (instancetype)sharedInstance;
+/// Forgets this instance, so the next start reads the stored values again and responses to earlier requests are ignored.
+- (void)resetInstance;
 
-- (void)startRemoteConfig;
 - (void)clearAll;
 - (void)clearCachedRemoteConfig;
-- (id)remoteConfigValueForKey:(NSString *)key;
-- (void)updateRemoteConfigForKeys:(NSArray *)keys omitKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * error))completionHandler;
 
 
 - (void)downloadRemoteConfigAutomatically;

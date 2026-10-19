@@ -343,7 +343,13 @@ NSString* const kCountlyFBKeyShown          = @"shown";
         customParams[@"rw"] = @"1";
         customParams[@"xb"] = @"1";
     }
-    
+
+    // the widget page records the answer itself, so this is the only way the global segmentation reaches it
+    NSDictionary *globalSegmentation = [CountlyContentBuilderInternal.sharedInstance globalContentSegmentationForFeedbackWidget];
+    if (globalSegmentation.count && [NSJSONSerialization isValidJSONObject:globalSegmentation]) {
+        customParams[@"sg"] = globalSegmentation;
+    }
+
     // Create JSON data from custom parameters
     NSError *error;
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:customParams options:0 error:&error];
@@ -400,7 +406,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
 
     CLY_LOG_D(@"%s widget result submission detail, widgetID: [%@], eventName: [%@], answers: [%@], segmentation: [%@]", __FUNCTION__, self.ID, eventName, segm, segmentation);
 
-    [Countly.sharedInstance recordReservedEvent:eventName segmentation:[CountlyContentBuilderInternal.sharedInstance mergeGlobalContentSegmentationInto:segmentation]];
+    [Countly.sharedInstance recordReservedEvent:eventName segmentation:[CountlyContentBuilderInternal.sharedInstance mergeGlobalContentSegmentationIntoFeedbackWidgetEvent:segmentation]];
     
     [CountlyConnectionManager.sharedInstance sendEvents];
 }
