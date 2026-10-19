@@ -69,8 +69,8 @@ jobs:
       - name: Build for the sdk ${{ matrix.env.sdk }} on macOS ${{ matrix.env.os_version }}
         run: xcodebuild -project Countly.xcodeproj build -sdk ${{ matrix.env.sdk }}
 
-  # The CountlyTests bundle on the iOS simulator, for pushes to master and staging and for manual
-  # runs. Pull requests skip it, the suite is run locally across all five platforms before a merge.
+  # The CountlyTests bundle on the iOS simulator, for pull requests, pushes to master and staging,
+  # and manual runs. The suite is also run locally across all five platforms before a merge.
   #
   # `continue-on-error` makes this advisory: a failing cell is reported, and it is up to the
   # developer to decide whether to act on it, but it does not fail the run. Parts of the suite
@@ -80,7 +80,6 @@ jobs:
   # platform adds about as much, see the destination step for the sdk prefixes it understands.
   test:
     # No `needs: build`: one failing build row, a retiring or preview image included, would skip it.
-    if: github.event_name != 'pull_request'
     name: Test ${{ matrix.env.sdk }} (Xcode ${{ matrix.env.xcode }})
     runs-on: macos-${{ matrix.env.os_version }}
     continue-on-error: true
