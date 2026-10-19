@@ -11,6 +11,11 @@
     // the developer's config from start, every later fetch applies the settings on top of it
     CountlyConfig *_startConfig;
     NSNumber *_lastAppliedAutomaticViewTracking;
+    // the developer's values from start, before any behavior setting was applied, see rememberDeveloperValues:
+    NSDictionary *_developerValues;
+    // the keys of the applied settings: a setting they carry wins over the developer's value, also when it is NO or 0,
+    // and a key that disappears from them is noticed
+    NSSet *_appliedSettingKeys;
 }
 @property (nonatomic) BOOL trackingEnabled;
 @property (nonatomic) BOOL networkingEnabled;
@@ -132,6 +137,13 @@ NSString *const kRConnectionTest = @"ct";
 static CountlyServerConfig *s_sharedInstance = nil;
 static dispatch_once_t onceToken;
 
+// the behavior settings refresh interval in hours when the server does not set one
+static const NSInteger kCountlyDefaultServerConfigUpdateInterval = 4;
+#if (TARGET_OS_IOS)
+// the content zone timer interval in seconds when neither the server nor the developer sets one, as CountlyContentBuilderInternal starts with
+static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
+#endif
+
 @implementation CountlyServerConfig
 
 + (instancetype)sharedInstance
@@ -152,7 +164,7 @@ static dispatch_once_t onceToken;
     {
         _timestamp = 0;
         _version = 0;
-        _currentServerConfigUpdateInterval = 4;
+        _currentServerConfigUpdateInterval = kCountlyDefaultServerConfigUpdateInterval;
         _requestTimer = nil;
         _serverConfigUpdatesDisabled = NO;
         _requestTimeoutDuration = 30;
@@ -166,12 +178,14 @@ static dispatch_once_t onceToken;
     CLY_LOG_I(@"%s resetting behavior settings state and shared instance", __FUNCTION__);
     _timestamp = 0;
     _version = 0;
-    _currentServerConfigUpdateInterval = 4;
+    _currentServerConfigUpdateInterval = kCountlyDefaultServerConfigUpdateInterval;
     _serverConfigUpdatesDisabled = NO;
     _requestTimeoutDuration = 30;
     _lastFetchTimestamp = 0;
     _startConfig = nil;
     _lastAppliedAutomaticViewTracking = nil;
+    _developerValues = nil;
+    _appliedSettingKeys = nil;
     if (_requestTimer)
     {
         [_requestTimer invalidate];
@@ -185,6 +199,7 @@ static dispatch_once_t onceToken;
 - (void)retrieveServerConfigFromStorage:(CountlyConfig *)config
 {
     _startConfig = config;
+    [self rememberDeveloperValues:config];
 
     // Seed the automatic tracking flags from the developer config: it is the lowest-precedence layer.
     // The SBS layers override them below (provided -> stored here, server in fetchServerConfig), giving
@@ -217,8 +232,47 @@ static dispatch_once_t onceToken;
     [CountlyPersistency.sharedInstance storeServerConfig:persistentBehaviorSettings];
 }
 
-- (void)mergeBehaviorSettings:(NSMutableDictionary *)baseConfig
-                          withConfig:(NSDictionary *)newConfig
+/// Remembers the developer's values from start, before any behavior setting is applied. A setting the server stops
+/// sending goes back to them, see revertSettingsMissingFrom: and notifySdkConfigChange:. The developer config itself is
+/// not a reliable source later, because notifySdkConfigChange: writes the resolved values into it.
+- (void)rememberDeveloperValues:(CountlyConfig *)config
+{
+    NSMutableDictionary *values = NSMutableDictionary.new;
+    values[kRAutomaticSessionTracking] = @(!config.manualSessionHandling);
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
+    values[kRAutomaticViewTracking] = @(config.enableAutomaticViewTracking);
+#endif
+    values[kRAutomaticCrashReporting] = @([config.features containsObject:CLYCrashReporting]);
+    values[kRConsentRequired] = @(config.requiresConsent);
+    values[kRLogging] = @(config.enableDebug);
+    values[kREventQueueSize] = @(config.eventSendThreshold);
+    values[kRReqQueueSize] = @(config.storedRequestsLimit);
+    values[kRDropOldRequestTime] = @(config.requestDropAgeHours);
+    values[kRSessionUpdateInterval] = @(config.updateSessionPeriod);
+    values[kRLimitKeyLength] = @(config.sdkInternalLimits.getMaxKeyLength);
+    values[kRLimitValueSize] = @(config.sdkInternalLimits.getMaxValueSize);
+    values[kRLimitSegValues] = @(config.sdkInternalLimits.getMaxSegmentationValues);
+    values[kRLimitBreadcrumb] = @(config.sdkInternalLimits.getMaxBreadcrumbCount);
+    values[kRLimitTraceLength] = @(config.sdkInternalLimits.getMaxStackTraceLineLength);
+    values[kRLimitTraceLine] = @(config.sdkInternalLimits.getMaxStackTraceLinesPerThread);
+#if (TARGET_OS_IOS)
+    values[kRContentZoneInterval] = @(config.content.getZoneTimerInterval);
+#endif
+    _developerValues = values.copy;
+}
+
+/// The developer's value of a setting from start, or the given current value when none was remembered
+- (NSNumber *)developerValueForKey:(NSString *)key orCurrent:(NSNumber *)current
+{
+    return _developerValues[key] ?: current;
+}
+
+/// Replaces the stored behavior settings with a valid answer as a whole, so a setting the server no longer sends is
+/// gone from them. An answer without a 'c' dictionary, a version or a timestamp changes nothing, and an empty 'c' is
+/// valid. A value in an unacceptable format is dropped by populateServerConfig:withConfig: before anything is applied
+/// or stored, so that setting is treated as not sent.
+- (void)replaceBehaviorSettings:(NSMutableDictionary *)baseConfig
+                     withConfig:(NSDictionary *)newConfig
 {
     // c must exist, other top level keys, like lg, are independent of it and handled on their own
     if(!newConfig[kRConfig]) {
@@ -247,23 +301,17 @@ static dispatch_once_t onceToken;
     if (version) {
         baseConfig[kRVersion] = version;
     }
-    
-    NSDictionary *cBase = baseConfig[kRConfig] ?: NSMutableDictionary.new;
+
     NSDictionary *cNew = newConfig[kRConfig];
+    NSMutableDictionary *cReplacement = NSMutableDictionary.new;
+    [cNew enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+        if (obj != nil && obj != [NSNull null]) {
+            cReplacement[key] = obj;
+        }
+    }];
 
-    if ([cBase isKindOfClass:[NSDictionary class]] || [cNew isKindOfClass:[NSDictionary class]]) {
-        NSMutableDictionary *cMerged = [cBase mutableCopy];
-
-        [cNew enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
-            if (obj != nil && obj != [NSNull null]) {
-                cMerged[key] = obj;
-            }
-        }];
-
-        [self removeConflictingFilterKeys:cMerged newConfig:cNew];
-        baseConfig[kRConfig] = cMerged;
-        CLY_LOG_D(@"%s incoming behavior settings merged into the stored ones, incomingKeyCount: [%lu], mergedKeyCount: [%lu]", __FUNCTION__, (unsigned long)cNew.count, (unsigned long)cMerged.count);
-    }
+    baseConfig[kRConfig] = cReplacement;
+    CLY_LOG_D(@"%s incoming behavior settings replaced the stored ones, keyCount: [%lu]", __FUNCTION__, (unsigned long)cReplacement.count);
 }
 
 - (void)setBoolProperty:(BOOL *)property fromDictionary:(NSMutableDictionary *)dictionary key:(NSString *)key logString:(NSMutableString *)logString
@@ -508,11 +556,17 @@ static dispatch_once_t onceToken;
 
     [self updateListingFilters:dictionary logString:logString];
 
+    [self revertSettingsMissingFrom:dictionary];
+
     // Update the config dictionary with cleaned values
     serverConfig[kRConfig] = dictionary;
 
-    if(![logString isEqualToString: @"Server Config: "]){
-        // means new config gotten, if that is the case notify SDK
+    NSSet *settingKeys = [NSSet setWithArray:dictionary.allKeys];
+    BOOL settingRemoved = _appliedSettingKeys != nil && ![_appliedSettingKeys isSubsetOfSet:settingKeys];
+    _appliedSettingKeys = settingKeys;
+
+    if(![logString isEqualToString: @"Server Config: "] || settingRemoved){
+        // means new config gotten, or a setting was removed, if that is the case notify SDK
         [self notifySdkConfigChange: config];
     }
 
@@ -526,39 +580,57 @@ static dispatch_once_t onceToken;
 
 - (void)notifySdkConfigChange:(CountlyConfig *)config
 {
-    config.enableDebug = _loggingEnabled || config.enableDebug;
+    // A setting the server does not send falls back to the developer's value from start, not to the config's current
+    // value: this method writes the resolved values into the config, so that would keep the last server value. A
+    // setting the server sends wins, also when it is NO or 0.
+    config.enableDebug = [_appliedSettingKeys containsObject:kRLogging] ? _loggingEnabled : [self developerValueForKey:kRLogging orCurrent:@(config.enableDebug)].boolValue;
     CountlyCommon.sharedInstance.enableDebug = config.enableDebug;
 
     // Limits could be moved to another function, but letting them stay here serves us a monopolized view of notify
-    [config.sdkInternalLimits setMaxKeyLength:_limitKeyLength ?: config.sdkInternalLimits.getMaxKeyLength];
-    [config.sdkInternalLimits setMaxValueSize:_limitValueSize ?: config.sdkInternalLimits.getMaxValueSize];
-    [config.sdkInternalLimits setMaxSegmentationValues:_limitSegValues ?: config.sdkInternalLimits.getMaxSegmentationValues];
-    [config.sdkInternalLimits setMaxBreadcrumbCount:_limitBreadcrumb ?: config.sdkInternalLimits.getMaxBreadcrumbCount];
-    [config.sdkInternalLimits setMaxStackTraceLineLength:_limitTraceLength ?: config.sdkInternalLimits.getMaxStackTraceLineLength];
-    [config.sdkInternalLimits setMaxStackTraceLinesPerThread:_limitTraceLine ?: config.sdkInternalLimits.getMaxStackTraceLinesPerThread];
+    [config.sdkInternalLimits setMaxKeyLength:_limitKeyLength ?: [self developerValueForKey:kRLimitKeyLength orCurrent:@(config.sdkInternalLimits.getMaxKeyLength)].unsignedIntegerValue];
+    [config.sdkInternalLimits setMaxValueSize:_limitValueSize ?: [self developerValueForKey:kRLimitValueSize orCurrent:@(config.sdkInternalLimits.getMaxValueSize)].unsignedIntegerValue];
+    [config.sdkInternalLimits setMaxSegmentationValues:_limitSegValues ?: [self developerValueForKey:kRLimitSegValues orCurrent:@(config.sdkInternalLimits.getMaxSegmentationValues)].unsignedIntegerValue];
+    [config.sdkInternalLimits setMaxBreadcrumbCount:_limitBreadcrumb ?: [self developerValueForKey:kRLimitBreadcrumb orCurrent:@(config.sdkInternalLimits.getMaxBreadcrumbCount)].unsignedIntegerValue];
+    [config.sdkInternalLimits setMaxStackTraceLineLength:_limitTraceLength ?: [self developerValueForKey:kRLimitTraceLength orCurrent:@(config.sdkInternalLimits.getMaxStackTraceLineLength)].unsignedIntegerValue];
+    [config.sdkInternalLimits setMaxStackTraceLinesPerThread:_limitTraceLine ?: [self developerValueForKey:kRLimitTraceLine orCurrent:@(config.sdkInternalLimits.getMaxStackTraceLinesPerThread)].unsignedIntegerValue];
 
     CountlyCommon.sharedInstance.maxKeyLength = config.sdkInternalLimits.getMaxKeyLength;
     CountlyCommon.sharedInstance.maxValueLength = config.sdkInternalLimits.getMaxValueSize;
     CountlyCommon.sharedInstance.maxValueLengthPicture = config.sdkInternalLimits.getMaxValueSizePicture;
     CountlyCommon.sharedInstance.maxSegmentationValues = config.sdkInternalLimits.getMaxSegmentationValues;
 
-    config.eventSendThreshold = _eventQueueSize ?: config.eventSendThreshold;
-    config.requestDropAgeHours = _dropOldRequestTime ?: config.requestDropAgeHours;
-    config.storedRequestsLimit = _requestQueueSize ?: config.storedRequestsLimit;
+    config.eventSendThreshold = _eventQueueSize ?: [self developerValueForKey:kREventQueueSize orCurrent:@(config.eventSendThreshold)].unsignedIntegerValue;
+    config.requestDropAgeHours = [_appliedSettingKeys containsObject:kRDropOldRequestTime] ? (NSUInteger)_dropOldRequestTime : [self developerValueForKey:kRDropOldRequestTime orCurrent:@(config.requestDropAgeHours)].unsignedIntegerValue;
+    config.storedRequestsLimit = _requestQueueSize ?: [self developerValueForKey:kRReqQueueSize orCurrent:@(config.storedRequestsLimit)].unsignedIntegerValue;
     CountlyPersistency.sharedInstance.eventSendThreshold = config.eventSendThreshold;
     CountlyPersistency.sharedInstance.requestDropAgeHours = config.requestDropAgeHours;
     CountlyPersistency.sharedInstance.storedRequestsLimit = MAX(1, config.storedRequestsLimit);
 
-    config.updateSessionPeriod = _sessionInterval ?: config.updateSessionPeriod;
+    config.updateSessionPeriod = _sessionInterval ?: [self developerValueForKey:kRSessionUpdateInterval orCurrent:@(config.updateSessionPeriod)].doubleValue;
     _sessionInterval = config.updateSessionPeriod;
 
     CLY_LOG_D(@"%s effective limits and queue settings applied, maxKeyLength: [%lu], maxValueLength: [%lu], maxValueLengthPicture: [%lu], maxSegmentationValues: [%lu], maxBreadcrumbCount: [%lu], eventSendThreshold: [%lu], requestDropAgeHours: [%lu], storedRequestsLimit: [%lu], updateSessionPeriod: [%.1f]", __FUNCTION__,
               (unsigned long)CountlyCommon.sharedInstance.maxKeyLength, (unsigned long)CountlyCommon.sharedInstance.maxValueLength, (unsigned long)CountlyCommon.sharedInstance.maxValueLengthPicture, (unsigned long)CountlyCommon.sharedInstance.maxSegmentationValues, (unsigned long)config.sdkInternalLimits.getMaxBreadcrumbCount,
               (unsigned long)config.eventSendThreshold, (unsigned long)config.requestDropAgeHours, (unsigned long)config.storedRequestsLimit, config.updateSessionPeriod);
 
-    BOOL consentDidChange = !config.requiresConsent && _consentRequired;
-    config.requiresConsent = _consentRequired ?: config.requiresConsent;
+    // The server can turn the consent requirement on and off; when it does not send 'cr', the developer's requirement applies
+    BOOL requiresConsent = [_appliedSettingKeys containsObject:kRConsentRequired] ? _consentRequired : [self developerValueForKey:kRConsentRequired orCurrent:@(config.requiresConsent)].boolValue;
+    BOOL consentDidChange = !config.requiresConsent && requiresConsent;
+    BOOL consentWasLifted = config.requiresConsent && !requiresConsent;
+    config.requiresConsent = requiresConsent;
     CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
+    if (consentWasLifted && CountlyCommon.sharedInstance.hasFinishedInit)
+    {
+        // features that waited for their consent start the way giving that consent starts them: automatic view
+        // tracking through applyAutomaticTrackingState below, push notifications here
+        CLY_LOG_D(@"%s consent requirement was turned off by behavior settings, features waiting for consent will be started", __FUNCTION__);
+        _lastAppliedAutomaticViewTracking = nil;
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_OSX)
+#ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
+        [CountlyPushNotifications.sharedInstance startPushNotifications];
+#endif
+#endif
+    }
     if(consentDidChange && CountlyCommon.sharedInstance.hasFinishedInit){
         CLY_LOG_D(@"%s consent requirement was turned on by behavior settings, consents will be resent", __FUNCTION__);
         [CountlyConsentManager.sharedInstance sendConsents];
@@ -569,11 +641,11 @@ static dispatch_once_t onceToken;
     }
 
 #if (TARGET_OS_IOS)
-    [config.content setZoneTimerInterval:_contentZoneInterval ?: config.content.getZoneTimerInterval];
-    if (config.content.getZoneTimerInterval)
-    {
-        CountlyContentBuilderInternal.sharedInstance.zoneTimerInterval = config.content.getZoneTimerInterval;
-    }
+    // setZoneTimerInterval: ignores values the developer can not set, so a removed 'czi' with no developer interval
+    // would leave the previous server interval in config.content; the content builder takes the resolved value
+    NSUInteger zoneTimerInterval = _contentZoneInterval ?: [self developerValueForKey:kRContentZoneInterval orCurrent:@(config.content.getZoneTimerInterval)].unsignedIntegerValue;
+    [config.content setZoneTimerInterval:zoneTimerInterval];
+    CountlyContentBuilderInternal.sharedInstance.zoneTimerInterval = zoneTimerInterval ?: kCountlyDefaultZoneTimerInterval;
     // clearContentState, not exitContentZone: this runs on every config apply, and exitContentZone
     // would pull displayed content off screen.
     if (!_enterContentZone)
@@ -592,10 +664,11 @@ static dispatch_once_t onceToken;
 #endif
     CountlyCrashReporter.sharedInstance.crashLogLimit = config.sdkInternalLimits.getMaxBreadcrumbCount;
 
-    if (_serverConfigUpdateInterval && _serverConfigUpdateInterval != _currentServerConfigUpdateInterval && _requestTimer)
+    NSInteger updateInterval = _serverConfigUpdateInterval ?: kCountlyDefaultServerConfigUpdateInterval;
+    if (updateInterval != _currentServerConfigUpdateInterval && _requestTimer)
     {
-        CLY_LOG_D(@"%s behavior settings refresh timer will be rescheduled, intervalHours: [%ld]", __FUNCTION__, (long)_serverConfigUpdateInterval);
-        _currentServerConfigUpdateInterval = _serverConfigUpdateInterval;
+        CLY_LOG_D(@"%s behavior settings refresh timer will be rescheduled, intervalHours: [%ld]", __FUNCTION__, (long)updateInterval);
+        _currentServerConfigUpdateInterval = updateInterval;
         [_requestTimer invalidate];
         _requestTimer = nil;
         _requestTimer = [NSTimer timerWithTimeInterval:_currentServerConfigUpdateInterval * 60 * 60 target:self selector:@selector(fetchServerConfigTimer:) userInfo:config repeats:YES];
@@ -761,16 +834,15 @@ static dispatch_once_t onceToken;
 
         if (error)
         {
-            CLY_LOG_D(@"[CountlyServerConfig] fetchServerConfig response, behavior settings fetch failed, statusCode: [%ld], error: [%@]", (long)((NSHTTPURLResponse *)response).statusCode, error.localizedDescription);
+            CLY_LOG_D(@"[CountlyServerConfig] fetchServerConfig response, behavior settings fetch failed, previously stored behavior settings will be kept, statusCode: [%ld], error: [%@]", (long)((NSHTTPURLResponse *)response).statusCode, error.localizedDescription);
         }
-
-        if (serverConfigResponse[kRConfig] != nil)
+        else if (serverConfigResponse[kRConfig] != nil)
         {
             NSMutableDictionary *persistentBehaviorSettings = [CountlyPersistency.sharedInstance retrieveServerConfig];
-            [self mergeBehaviorSettings:persistentBehaviorSettings withConfig:serverConfigResponse];
+            [self replaceBehaviorSettings:persistentBehaviorSettings withConfig:serverConfigResponse];
             [self populateServerConfig:persistentBehaviorSettings withConfig:config];
             [CountlyPersistency.sharedInstance storeServerConfig:persistentBehaviorSettings];
-            CLY_LOG_D(@"[CountlyServerConfig] fetchServerConfig response, fetched behavior settings were merged and persisted, storedKeyCount: [%lu]", (unsigned long)persistentBehaviorSettings.count);
+            CLY_LOG_D(@"[CountlyServerConfig] fetchServerConfig response, fetched behavior settings replaced the stored ones and were persisted, storedKeyCount: [%lu]", (unsigned long)persistentBehaviorSettings.count);
         }
         else
         {
@@ -833,51 +905,73 @@ static dispatch_once_t onceToken;
 }
 
 - (void)setDefaultValues {
-    _trackingEnabled = YES;
-    _networkingEnabled = YES;
-    _crashReportingEnabled = YES;
-    _automaticSessionTrackingEnabled = YES;
-    _automaticViewTrackingEnabled = NO;
-    _automaticCrashReportingEnabled = NO;
-    _customEventTrackingEnabled = YES;
-    _enterContentZone = NO;
-    _locationTracking = YES;
-    _viewTrackingEnabled = YES;
-    _sessionTrackingEnabled = YES;
-    _loggingEnabled = NO;
-    _refreshContentZone = YES;
-    _backoffMechanism = YES;
-    _bomAcceptedTimeoutSeconds = 10;
-    _bomRQPercentage = 0.5;
-    _bomRequestAge = 24;
-    _bomDuration = 60;
-
-    _eventQueueSize = 0;
-    _requestQueueSize = 0;
-    _sessionInterval = 0;
-    _limitKeyLength = 0;
-    _limitValueSize = 0;
-    _limitSegValues = 0;
-    _limitBreadcrumb = 0;
-    _limitTraceLine = 0;
-    _limitTraceLength = 0;
-    _consentRequired = NO;
-    _dropOldRequestTime = 0;
-    _contentZoneInterval = 0;
-
-    self.eventFilterSet = [NSSet set];
-    _eventFilterIsWhitelist = NO;
-    self.userPropertyFilterSet = [NSSet set];
-    _userPropertyFilterIsWhitelist = NO;
-    _userPropertyCacheLimit = 100;
-    self.segmentationFilterSet = [NSSet set];
-    _segmentationFilterIsWhitelist = NO;
-    self.eventSegmentationFilterMap = @{};
-    _eventSegmentationFilterIsWhitelist = NO;
-    self.journeyTriggerEvents = [NSSet set];
-    self.journeyTriggerViews = [NSSet set];
+    [self revertSettingsMissingFrom:@{}];
 
     CLY_LOG_D(@"%s behavior settings reset to built in SDK defaults", __FUNCTION__);
+}
+
+/// Puts every setting the given behavior settings do not carry back to its default, so a setting the server stops
+/// sending does not keep its last server value. The automatic tracking flags go back to the developer's values from
+/// start, and the integer settings to 0, which notifySdkConfigChange: resolves to the developer's value. It runs after
+/// the carried settings are applied, so a carried setting is never reset in between.
+- (void)revertSettingsMissingFrom:(NSDictionary *)dictionary
+{
+    if (!dictionary[kTracking]) _trackingEnabled = YES;
+    if (!dictionary[kNetworking]) _networkingEnabled = YES;
+    if (!dictionary[kRCrashReporting]) _crashReportingEnabled = YES;
+    if (!dictionary[kRAutomaticSessionTracking]) _automaticSessionTrackingEnabled = [self developerValueForKey:kRAutomaticSessionTracking orCurrent:@YES].boolValue;
+    if (!dictionary[kRAutomaticViewTracking]) _automaticViewTrackingEnabled = [self developerValueForKey:kRAutomaticViewTracking orCurrent:@NO].boolValue;
+    if (!dictionary[kRAutomaticCrashReporting]) _automaticCrashReportingEnabled = [self developerValueForKey:kRAutomaticCrashReporting orCurrent:@NO].boolValue;
+    if (!dictionary[kRCustomEventTracking]) _customEventTrackingEnabled = YES;
+    if (!dictionary[kREnterContentZone]) _enterContentZone = NO;
+    if (!dictionary[kRLocationTracking]) _locationTracking = YES;
+    if (!dictionary[kRViewTracking]) _viewTrackingEnabled = YES;
+    if (!dictionary[kRSessionTracking]) _sessionTrackingEnabled = YES;
+    if (!dictionary[kRLogging]) _loggingEnabled = NO;
+    if (!dictionary[kRRefreshContentZone]) _refreshContentZone = YES;
+    if (!dictionary[kRbackoffMechanism]) _backoffMechanism = YES;
+    if (!dictionary[kRBOMAcceptedTimeout]) _bomAcceptedTimeoutSeconds = 10;
+    if (!dictionary[kRBOMRQPercentage]) _bomRQPercentage = 0.5;
+    if (!dictionary[kRBOMRequestAge]) _bomRequestAge = 24;
+    if (!dictionary[kRBOMDuration]) _bomDuration = 60;
+
+    if (!dictionary[kREventQueueSize]) _eventQueueSize = 0;
+    if (!dictionary[kRReqQueueSize]) _requestQueueSize = 0;
+    if (!dictionary[kRSessionUpdateInterval]) _sessionInterval = 0;
+    if (!dictionary[kRLimitKeyLength]) _limitKeyLength = 0;
+    if (!dictionary[kRLimitValueSize]) _limitValueSize = 0;
+    if (!dictionary[kRLimitSegValues]) _limitSegValues = 0;
+    if (!dictionary[kRLimitBreadcrumb]) _limitBreadcrumb = 0;
+    if (!dictionary[kRLimitTraceLine]) _limitTraceLine = 0;
+    if (!dictionary[kRLimitTraceLength]) _limitTraceLength = 0;
+    if (!dictionary[kRConsentRequired]) _consentRequired = NO;
+    if (!dictionary[kRDropOldRequestTime]) _dropOldRequestTime = 0;
+    if (!dictionary[kRContentZoneInterval]) _contentZoneInterval = 0;
+    if (!dictionary[kRServerConfigUpdateInterval]) _serverConfigUpdateInterval = 0;
+    if (!dictionary[kRUserPropertyCacheLimit]) _userPropertyCacheLimit = 100;
+
+    if (!dictionary[kREventBlacklist] && !dictionary[kREventWhitelist])
+    {
+        self.eventFilterSet = [NSSet set];
+        _eventFilterIsWhitelist = NO;
+    }
+    if (!dictionary[kRUserPropertyBlacklist] && !dictionary[kRUserPropertyWhitelist])
+    {
+        self.userPropertyFilterSet = [NSSet set];
+        _userPropertyFilterIsWhitelist = NO;
+    }
+    if (!dictionary[kRSegmentationBlacklist] && !dictionary[kRSegmentationWhitelist])
+    {
+        self.segmentationFilterSet = [NSSet set];
+        _segmentationFilterIsWhitelist = NO;
+    }
+    if (!dictionary[kREventSegmentationBlacklist] && !dictionary[kREventSegmentationWhitelist])
+    {
+        self.eventSegmentationFilterMap = @{};
+        _eventSegmentationFilterIsWhitelist = NO;
+    }
+    if (!dictionary[kRJourneyTriggerEvents]) self.journeyTriggerEvents = [NSSet set];
+    if (!dictionary[kRJourneyTriggerViews]) self.journeyTriggerViews = [NSSet set];
 }
 
 - (void)disableSDKBehaviourSettings {
@@ -1045,39 +1139,6 @@ static dispatch_once_t onceToken;
 }
 
 #pragma mark - Listing Filters
-
-- (void)removeConflictingFilterKeys:(NSMutableDictionary *)mergedConfig newConfig:(NSDictionary *)newConfig
-{
-    // Remove conflicting filter keys per category.
-    // Within each category, if new config provides a blacklist, remove stored whitelist (and vice versa).
-    NSArray *filterPairs = @[
-        @[kREventBlacklist, kREventWhitelist],
-        @[kRSegmentationBlacklist, kRSegmentationWhitelist],
-        @[kREventSegmentationBlacklist, kREventSegmentationWhitelist],
-        @[kRUserPropertyBlacklist, kRUserPropertyWhitelist],
-    ];
-
-    for (NSArray *pair in filterPairs)
-    {
-        NSString *blacklistKey = pair[0];
-        NSString *whitelistKey = pair[1];
-
-        // Only consider valid filter values (arrays/dicts) for conflict resolution
-        id blacklistVal = newConfig[blacklistKey];
-        id whitelistVal = newConfig[whitelistKey];
-        BOOL hasValidBlacklist = [blacklistVal isKindOfClass:NSArray.class] || [blacklistVal isKindOfClass:NSDictionary.class];
-        BOOL hasValidWhitelist = [whitelistVal isKindOfClass:NSArray.class] || [whitelistVal isKindOfClass:NSDictionary.class];
-
-        if (hasValidBlacklist)
-        {
-            [mergedConfig removeObjectForKey:whitelistKey];
-        }
-        if (hasValidWhitelist)
-        {
-            [mergedConfig removeObjectForKey:blacklistKey];
-        }
-    }
-}
 
 - (void)updateListingFilters:(NSMutableDictionary *)dictionary logString:(NSMutableString *)logString
 {

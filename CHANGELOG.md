@@ -12,6 +12,9 @@
 
 * Mitigated an issue where SDK behavior settings were ignored when the server response contained additional fields.
 * Mitigated an issue where refreshing SDK behavior settings after the app returned from the background reset the configuration given at start until the next launch.
+* Mitigated an issue where a setting removed from the SDK behavior settings in SDK Manager did not go back to the value given at start.
+* Mitigated an issue where SDK behavior settings sent as false or 0, such as "log" or "dort", did not override the value given at start.
+* Mitigated an issue where the SDK behavior settings could not turn off a consent requirement set with "requiresConsent".
 * Mitigated an issue where the app could freeze instead of terminating on a crash after crash reporting was turned off at runtime or after "halt".
 * Mitigated an issue where, with PLCrashReporter, crashes captured while crash consent or automatic crash reporting was off, or after "halt", were sent later. They are now discarded without calling "crashOccuredOnPreviousSessionCallback", and both PLCrashReporter callbacks run on the main thread.
 * Mitigated an issue where certificate pinning was not applied to immediate requests such as SDK behavior settings, remote config, feedback widgets, content and health checks.

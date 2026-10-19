@@ -193,10 +193,10 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
                        "User-provided storedRequestsLimit must not be overridden when server config omits rqs")
     }
 
-    // MARK: - Per-category filter conflict resolution
+    // MARK: - Replaced, not merged, settings
 
     /// Drives the SDK's server-config fetch through a mocked URL session so
-    /// that `mergeBehaviorSettings` runs with a controlled response payload.
+    /// that `replaceBehaviorSettings` runs with a controlled response payload.
     private func mockURLSessionConfig(returning configDict: [String: Any]) -> URLSessionConfiguration {
         let response = makeServerConfig(configDict)
         let data = try! JSONSerialization.data(withJSONObject: response)
@@ -213,10 +213,91 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         return config
     }
 
-    /// When a new merged config provides a whitelist for one category, the
-    /// stored blacklist for that same category must be removed — but the
-    /// filter for an unrelated category must be preserved.
-    func test_perCategoryFilterConflict_doesNotClearUnrelatedCategories() {
+    /// Like `mockURLSessionConfig(returning:)`, but the settings request is
+    /// answered only once the returned semaphore is signalled, so the test can
+    /// check the state the stored settings set at start first.
+    private func heldMockURLSessionConfig(returning configDict: [String: Any]) -> (URLSessionConfiguration, DispatchSemaphore) {
+        let release = DispatchSemaphore(value: 0)
+        let response = makeServerConfig(configDict)
+        let data = try! JSONSerialization.data(withJSONObject: response)
+        MockURLProtocol.requestHandler = { request in
+            let url = request.url?.absoluteString ?? ""
+            if url.contains("method=sc") {
+                _ = release.wait(timeout: .now() + 5)
+                return (data, HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil), nil)
+            }
+            return ("{\"result\":\"fail\"}".data(using: .utf8),
+                    HTTPURLResponse(url: request.url!, statusCode: 400, httpVersion: nil, headerFields: nil), nil)
+        }
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [MockURLProtocol.self]
+        return (config, release)
+    }
+
+    /// Answers the settings request with the given body, status code or
+    /// network error as they are, so a test can send an answer the SDK must
+    /// not accept. The returned closure tells how many settings requests were
+    /// answered.
+    private func rawMockURLSessionConfig(body: [String: Any]?, statusCode: Int = 200, error: Error? = nil) -> (URLSessionConfiguration, () -> Int) {
+        let lock = NSLock()
+        var answeredCount = 0
+        let data = body.map { try! JSONSerialization.data(withJSONObject: $0) }
+        MockURLProtocol.requestHandler = { request in
+            let url = request.url?.absoluteString ?? ""
+            if url.contains("method=sc") {
+                lock.lock()
+                answeredCount += 1
+                lock.unlock()
+                if let error = error {
+                    return (nil, nil, error)
+                }
+                return (data, HTTPURLResponse(url: request.url!, statusCode: statusCode, httpVersion: nil, headerFields: nil), nil)
+            }
+            return ("{\"result\":\"fail\"}".data(using: .utf8),
+                    HTTPURLResponse(url: request.url!, statusCode: 400, httpVersion: nil, headerFields: nil), nil)
+        }
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [MockURLProtocol.self]
+        return (config, {
+            lock.lock()
+            defer { lock.unlock() }
+            return answeredCount
+        })
+    }
+
+    /// Starts the SDK with stored settings that turn tracking off and set the
+    /// event queue size to 3, lets the given settings answer arrive, and checks
+    /// that the stored settings and the values they set are unchanged.
+    private func assertStoredSettingsKept(after answer: (URLSessionConfiguration, () -> Int), file: StaticString = #filePath, line: UInt = #line) {
+        setStoredServerConfig(makeServerConfig([
+            "tracking": false,
+            "eqs": 3
+        ]))
+
+        let cfg = TestUtils.createBaseConfig()
+        cfg.manualSessionHandling = true
+        cfg.eventSendThreshold = 7
+        cfg.urlSessionConfiguration = answer.0
+
+        let countly = createLocalCountly()
+        countly.start(with: cfg)
+
+        TestUtils.sleep(2) {
+            XCTAssertGreaterThan(answer.1(), 0, "the settings request was answered", file: file, line: line)
+            XCTAssertFalse(CountlyServerConfig.sharedInstance().trackingEnabled(), "the stored tracking setting still applies", file: file, line: line)
+            XCTAssertEqual(3, CountlyPersistency.sharedInstance().eventSendThreshold, "the stored event queue size still applies", file: file, line: line)
+            let persisted = self.storedConfigDictionary()
+            XCTAssertEqual(2, persisted.count, "the stored settings are not replaced", file: file, line: line)
+            XCTAssertEqual(persisted["tracking"] as? Bool, false, file: file, line: line)
+            XCTAssertEqual(persisted["eqs"] as? Int, 3, file: file, line: line)
+        }
+    }
+
+    /// The next answer replaces the stored settings as a whole: a filter the
+    /// server no longer sends is removed, also from a category the answer does
+    /// not mention, and the user property filter is turned off.
+    func test_nextAnswer_replacesTheStoredSettings() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
         // Seed persisted config with both an event blacklist and a user
         // property blacklist already present.
         setStoredServerConfig(makeServerConfig([
@@ -224,7 +305,7 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
             "upb": ["blocked_prop"]
         ]))
 
-        // Mock a server response that only introduces an event whitelist (`ew`).
+        // Mock a server response that only carries an event whitelist (`ew`).
         let cfg = TestUtils.createBaseConfig()
         cfg.manualSessionHandling = true
         cfg.urlSessionConfiguration = mockURLSessionConfig(returning: [
@@ -236,16 +317,16 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
 
         TestUtils.sleep(2) {
             let persisted = self.storedConfigDictionary()
-            XCTAssertNil(persisted["eb"], "eb must be removed because new config provided ew")
+            XCTAssertEqual(["ew"], Array(persisted.keys), "only the keys of the last answer are stored")
             XCTAssertEqual(persisted["ew"] as? [String], ["allowed_event"])
-            XCTAssertEqual(persisted["upb"] as? [String], ["blocked_prop"],
-                           "upb must be preserved — the new config did not touch the user-property category")
+            XCTAssertTrue(CountlyServerConfig.sharedInstance().shouldRecordUserProperty("blocked_prop"),
+                          "the user property blacklist the server stopped sending is turned off")
         }
     }
 
-    /// Conflict resolution must work independently per category — providing
-    /// both a segmentation blacklist and a user-property whitelist must
-    /// remove only their same-category counterparts.
+    /// The answer replaces the stored settings in every category: the stored
+    /// segmentation whitelist and user property blacklist are gone, the new
+    /// segmentation blacklist and user property whitelist are kept.
     func test_perCategoryFilterConflict_independentAcrossCategories() {
         setStoredServerConfig(makeServerConfig([
             "sw": ["s_keep"],
@@ -264,11 +345,192 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
 
         TestUtils.sleep(2) {
             let persisted = self.storedConfigDictionary()
-            XCTAssertNil(persisted["sw"], "sw must be removed because new config provided sb")
+            XCTAssertNil(persisted["sw"], "sw is removed because the answer does not carry it")
             XCTAssertEqual(persisted["sb"] as? [String], ["s_blocked"])
-            XCTAssertNil(persisted["upb"], "upb must be removed because new config provided upw")
+            XCTAssertNil(persisted["upb"], "upb is removed because the answer does not carry it")
             XCTAssertEqual(persisted["upw"] as? [String], ["u_allowed"])
         }
+    }
+
+    /// A setting the server stops sending goes back to the developer's value,
+    /// or to the SDK default when the developer set none, instead of keeping
+    /// the last server value.
+    func test_removedSetting_goesBackToTheDeveloperValue() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        setStoredServerConfig(makeServerConfig([
+            "tracking": false,
+            "eqs": 3
+        ]))
+
+        let cfg = TestUtils.createBaseConfig()
+        cfg.manualSessionHandling = true
+        cfg.eventSendThreshold = 7
+        let (sessionConfig, release) = heldMockURLSessionConfig(returning: [
+            "networking": true
+        ])
+        cfg.urlSessionConfiguration = sessionConfig
+
+        let countly = createLocalCountly()
+        countly.start(with: cfg)
+        XCTAssertEqual(3, CountlyPersistency.sharedInstance().eventSendThreshold, "the stored settings apply at start")
+        XCTAssertFalse(CountlyServerConfig.sharedInstance().trackingEnabled())
+        release.signal()
+
+        TestUtils.sleep(2) {
+            XCTAssertTrue(CountlyServerConfig.sharedInstance().trackingEnabled(), "tracking was removed and goes back to the default")
+            XCTAssertEqual(7, CountlyPersistency.sharedInstance().eventSendThreshold, "the event queue size was removed and goes back to the developer's value")
+            XCTAssertEqual(["networking"], Array(self.storedConfigDictionary().keys))
+        }
+    }
+
+    /// An answer with no settings, which the server sends once every setting
+    /// is removed from SDK Manager, brings back all developer values,
+    /// including the developer's consent requirement.
+    func test_emptySettings_bringBackAllDeveloperValues() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        setStoredServerConfig(makeServerConfig([
+            "tracking": false,
+            "rqs": 50,
+            "cr": true
+        ]))
+
+        let cfg = TestUtils.createBaseConfig()
+        cfg.manualSessionHandling = true
+        cfg.requiresConsent = false
+        cfg.storedRequestsLimit = 500
+        let (sessionConfig, release) = heldMockURLSessionConfig(returning: [:])
+        cfg.urlSessionConfiguration = sessionConfig
+
+        let countly = createLocalCountly()
+        countly.start(with: cfg)
+        XCTAssertTrue(CountlyConsentManager.sharedInstance().requiresConsent, "the stored settings require consent at start")
+        XCTAssertEqual(50, CountlyPersistency.sharedInstance().storedRequestsLimit)
+        release.signal()
+
+        TestUtils.sleep(2) {
+            XCTAssertTrue(CountlyServerConfig.sharedInstance().trackingEnabled())
+            XCTAssertEqual(500, CountlyPersistency.sharedInstance().storedRequestsLimit)
+            XCTAssertFalse(CountlyConsentManager.sharedInstance().requiresConsent, "without 'cr' the developer's choice applies again")
+            XCTAssertEqual(0, self.storedConfigDictionary().count)
+        }
+    }
+
+    /// An answer with an error status is not applied, even when its body
+    /// carries settings.
+    func test_answerWithAnErrorStatus_keepsTheStoredSettings() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        assertStoredSettingsKept(after: rawMockURLSessionConfig(body: makeServerConfig([
+            "tracking": true,
+            "eqs": 50
+        ]), statusCode: 500))
+    }
+
+    /// A settings request that fails without an answer keeps the stored settings.
+    func test_failedSettingsRequest_keepsTheStoredSettings() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        assertStoredSettingsKept(after: rawMockURLSessionConfig(body: nil, error: URLError(.notConnectedToInternet)))
+    }
+
+    /// An answer whose 'c' is not an object is not valid and keeps the stored settings.
+    func test_answerWhoseSettingsAreNotAnObject_keepsTheStoredSettings() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        assertStoredSettingsKept(after: rawMockURLSessionConfig(body: [
+            "v": 1,
+            "t": Int(Date().timeIntervalSince1970),
+            "c": ["tracking"]
+        ]))
+    }
+
+    /// An answer without a version is not valid and keeps the stored settings.
+    func test_answerWithoutAVersion_keepsTheStoredSettings() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        assertStoredSettingsKept(after: rawMockURLSessionConfig(body: [
+            "t": Int(Date().timeIntervalSince1970),
+            "c": ["tracking": true, "eqs": 50] as [String: Any]
+        ]))
+    }
+
+    /// Only the values in an acceptable format replace the stored settings: a
+    /// setting sent with a wrong type, below its minimum or out of its range
+    /// is left out, so it goes back to the developer's value or the SDK default.
+    func test_valuesInAnUnacceptableFormat_areLeftOutOfTheReplacement() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        setStoredServerConfig(makeServerConfig([
+            "tracking": false,
+            "eqs": 3,
+            "eb": ["blocked_event"]
+        ]))
+
+        let cfg = TestUtils.createBaseConfig()
+        cfg.manualSessionHandling = true
+        cfg.eventSendThreshold = 7
+        let (sessionConfig, answered) = rawMockURLSessionConfig(body: makeServerConfig([
+            "cet": false,
+            "tracking": "no",
+            "eqs": "3",
+            "rqs": 0,
+            "bom_rqp": 2.0,
+            "eb": "blocked_event"
+        ]))
+        cfg.urlSessionConfiguration = sessionConfig
+
+        let countly = createLocalCountly()
+        countly.start(with: cfg)
+
+        TestUtils.sleep(2) {
+            XCTAssertGreaterThan(answered(), 0, "the settings request was answered")
+            XCTAssertEqual(["cet"], Array(self.storedConfigDictionary().keys), "only the value in an acceptable format is stored")
+            XCTAssertFalse(CountlyServerConfig.sharedInstance().customEventTrackingEnabled(), "the value in an acceptable format is applied")
+            XCTAssertTrue(CountlyServerConfig.sharedInstance().trackingEnabled(), "a tracking value that is not a boolean is left out, the SDK default applies")
+            XCTAssertEqual(7, CountlyPersistency.sharedInstance().eventSendThreshold, "an event queue size that is not a number is left out, the developer's value applies")
+            XCTAssertTrue(CountlyServerConfig.sharedInstance().shouldRecordEvent("blocked_event"), "an event blacklist that is not a list is left out, the stored one is gone")
+        }
+    }
+
+    /// The server can lift a consent requirement the developer set, and the
+    /// developer's requirement applies again once the server stops sending 'cr'.
+    func test_serverCanLiftTheConsentRequirement() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        setStoredServerConfig(makeServerConfig([
+            "cr": false
+        ]))
+
+        let cfg = TestUtils.createBaseConfig()
+        cfg.manualSessionHandling = true
+        cfg.requiresConsent = true
+        let (sessionConfig, release) = heldMockURLSessionConfig(returning: [
+            "tracking": true
+        ])
+        cfg.urlSessionConfiguration = sessionConfig
+
+        let countly = createLocalCountly()
+        countly.start(with: cfg)
+        XCTAssertFalse(CountlyConsentManager.sharedInstance().requiresConsent, "the stored settings lift the developer's consent requirement")
+        release.signal()
+
+        TestUtils.sleep(2) {
+            XCTAssertTrue(CountlyConsentManager.sharedInstance().requiresConsent, "without 'cr' the developer's consent requirement applies again")
+        }
+    }
+
+    /// A setting the server sends wins over the developer's value also when
+    /// it is false or 0: logging the developer turned on goes off, and a
+    /// request drop age the developer set is turned off.
+    func test_settingSentAsOffOrZero_winsOverTheDeveloperValue() {
+        setStoredServerConfig(makeServerConfig([
+            "log": false,
+            "dort": 0
+        ]))
+
+        let cfg = TestUtils.createBaseConfig()
+        cfg.manualSessionHandling = true
+        cfg.enableDebug = true
+        cfg.requestDropAgeHours = 48
+        let countly = createLocalCountly()
+        countly.start(with: cfg)
+
+        XCTAssertFalse(CountlyCommon.sharedInstance().enableDebug, "the server's log=false turns the developer's logging off")
+        XCTAssertEqual(0, CountlyPersistency.sharedInstance().requestDropAgeHours, "the server's dort=0 turns the developer's drop age off")
     }
 
     // MARK: - Consent during init
