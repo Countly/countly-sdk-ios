@@ -9,7 +9,7 @@
 * Improved internal logging and changed the default log level from verbose to debug.
 * Improved crash handling. The SDK's handlers now pass crashes on to the handlers they replaced, leave crash tools installed later and signals the app ignores, such as SIGPIPE, alone, and are removed by "halt".
 * Improved state cleanup on "halt", which now also resets events, view tracking, remote config and the content state on visionOS.
-* Documented that the PLCrashReporter Mach type signal handler selected by "shouldUseMachSignalHandler" is not compatible with Apple's Enhanced Security capability, which terminates the app during SDK setup. Use the default BSD type signal handler on those apps.
+* Improved the "shouldUseMachSignalHandler" documentation with a warning that the PLCrashReporter Mach type signal handler is not compatible with Apple's Enhanced Security capability, under which the system terminates the app when crash reporting starts. Use the default BSD type instead.
 
 * Mitigated an issue where SDK behavior settings were ignored when the server response contained additional fields.
 * Mitigated an issue where refreshing SDK behavior settings after the app returned from the background reset the configuration given at start until the next launch.
