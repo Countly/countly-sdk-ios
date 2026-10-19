@@ -751,6 +751,28 @@ class CountlyViewForegroundBackgroundTests: CountlyViewBaseTest {
         validateRecordedViews(startedEventsCount: [:], endedEventsDurations: [:])
     }
 
+    /// A view ID handed out before a background and foreground cycle still stops its view afterwards.
+    /// Without it the stop call is ignored, the reopened view stays open and reports another visit
+    /// and another duration on every later cycle.
+    func testStopViewWithIDHandedOutBeforeBackgroundForegroundCycle() throws {
+        let config = createBaseConfig()
+        Countly.sharedInstance().start(with: config)
+
+        let viewID = Countly.sharedInstance().views().startView("View1")
+
+        goBackgroundForeground()
+
+        Countly.sharedInstance().views().stopView(withID: viewID)
+
+        validateQueuedViews(startedEventsCount: ["View1": 1], endedEventsDurations: ["View1": [3]])
+
+        validateRecordedViews(startedEventsCount: ["View1": 1], endedEventsDurations: ["View1": [3]])
+
+        let eventCountAfterStop = getRecordedViews().count
+        Countly.sharedInstance().views().stopView(withID: viewID)
+        XCTAssertEqual(getRecordedViews().count, eventCountAfterStop, "Stopping an already stopped view ID should not record another event.")
+    }
+
     /// An auto stopped view running when the app went to the background keeps running after the views restart in the foreground.
     func testAutoStoppedViewKeepsRunningWhenViewsRestartAfterForeground() throws {
         let config = createBaseConfig()
@@ -772,6 +794,66 @@ class CountlyViewForegroundBackgroundTests: CountlyViewBaseTest {
         Countly.sharedInstance().views().stopAllViews(nil)
         let autoStoppedEnds = getRecordedViews().filter { ($0.segmentation?["name"] as? String) == "A1" && ($0.segmentation?["visit"] as? Int) != 1 }
         XCTAssertEqual(1, autoStoppedEnds.count, "the auto stopped view must run until it is stopped")
+    }
+
+    /// A view ID handed out before two background and foreground cycles still segments, pauses, resumes and
+    /// stops its view. It keeps a single entry pointing at the view's current ID, dropped once the view stops.
+    func testHeldViewIDResolvesAfterTwoBackgroundForegroundCycles() throws {
+        let config = createBaseConfig()
+        Countly.sharedInstance().start(with: config)
+
+        let viewID = try XCTUnwrap(Countly.sharedInstance().views().startView("View1"))
+
+        goBackgroundForeground()
+        goBackgroundForeground()
+
+        let currentViewID = try XCTUnwrap(CountlyViewTrackingInternal.sharedInstance().currentViewID)
+        XCTAssertEqual(restartedViewIDs(), [viewID: currentViewID])
+
+        Countly.sharedInstance().views().addSegmentationToView(withID: viewID, segmentation: ["key": "value"])
+        Countly.sharedInstance().views().pauseView(withID: viewID)
+        Countly.sharedInstance().views().resumeView(withID: viewID)
+        Countly.sharedInstance().views().stopView(withID: viewID)
+
+        let endedViews = getRecordedViews().filter { ($0.segmentation?["visit"] as? Int) != 1 }
+        XCTAssertEqual(endedViews.compactMap { $0.segmentation?["key"] as? String }, ["value", "value"])
+        XCTAssertEqual(openViewIDs(), [])
+        XCTAssertEqual(restartedViewIDs(), [:])
+    }
+
+    /// Each view ID handed out before a background and foreground cycle stops its own view afterwards,
+    /// including the ID of an auto stopped view, which is started again after the regular ones.
+    func testEachHeldViewIDStopsItsOwnViewAfterBackgroundForegroundCycle() throws {
+        let config = createBaseConfig()
+        Countly.sharedInstance().start(with: config)
+
+        let regularViewID = try XCTUnwrap(Countly.sharedInstance().views().startView("R1"))
+        let autoStoppedViewID = try XCTUnwrap(Countly.sharedInstance().views().startAutoStoppedView("A1"))
+
+        goBackgroundForeground()
+
+        XCTAssertEqual(Set(restartedViewIDs().keys), [regularViewID, autoStoppedViewID])
+
+        Countly.sharedInstance().views().stopView(withID: autoStoppedViewID)
+        Countly.sharedInstance().views().stopView(withID: regularViewID)
+
+        let endedViews = getRecordedViews().filter { ($0.segmentation?["visit"] as? Int) != 1 }
+        XCTAssertEqual(endedViews.compactMap { $0.segmentation?["name"] as? String }, ["A1", "R1"])
+        XCTAssertEqual(openViewIDs(), [])
+        XCTAssertEqual(restartedViewIDs(), [:])
+    }
+
+    /// The view IDs handed out to the host whose views were started again,
+    /// mapped to the IDs those views are open under now.
+    private func restartedViewIDs() -> [String: String] {
+        CountlyViewTrackingInternal.sharedInstance().value(forKey: "restartedViewIDs") as? [String: String] ?? [:]
+    }
+
+    /// The IDs of the views that are open now, sorted.
+    private func openViewIDs() -> [String] {
+        let openViews = CountlyViewTrackingInternal.sharedInstance()
+            .value(forKey: "viewDataDictionary") as? [String: Any]
+        return (openViews ?? [:]).keys.sorted()
     }
 
     private func goBackgroundForeground() {

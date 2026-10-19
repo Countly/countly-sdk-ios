@@ -28,6 +28,7 @@
 * Fixed a crash on watchOS and macOS when calling "halt".
 * Fixed macOS not starting a session when the app was not active at launch.
 * Fixed visibility reporting and background session suppression on visionOS.
+* Fixed view IDs returned by "startView" no longer resolving after the app was backgrounded and foregrounded, which made "stopViewWithID" fail and left the view reporting a new visit and a duration on every later foreground.
 
 * Removed the following deprecated calls from "Countly":
   * "setNewDeviceID:onServer:", use "changeDeviceIDWithMerge:" or "changeDeviceIDWithoutMerge:" instead
