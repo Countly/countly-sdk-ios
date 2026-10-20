@@ -18,6 +18,8 @@
     // the keys of the applied settings: a setting they carry wins over the developer's value, also when it is NO or 0,
     // and a key that disappears from them is noticed
     NSSet *_appliedSettingKeys;
+    // the consent requirement whose consent state was last sent, nil until start has handled consent
+    NSNumber *_handledConsentRequirement;
 }
 @property (nonatomic) BOOL trackingEnabled;
 @property (nonatomic) BOOL networkingEnabled;
@@ -190,6 +192,10 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     _developerValues = nil;
     _writtenValues = nil;
     _appliedSettingKeys = nil;
+    // an answer still in flight applies to this dropped instance, which must not send consents into the next run
+    @synchronized (self) {
+        _handledConsentRequirement = nil;
+    }
     if (_requestTimer)
     {
         [_requestTimer invalidate];
@@ -680,30 +686,9 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
 
     // The server can turn the consent requirement on and off; when it does not send 'cr', the developer's requirement applies
     BOOL requiresConsent = [_appliedSettingKeys containsObject:kRConsentRequired] ? _consentRequired : [self developerValueForKey:kRConsentRequired orCurrent:@(config.requiresConsent)].boolValue;
-    BOOL consentDidChange = !config.requiresConsent && requiresConsent;
-    BOOL consentWasLifted = config.requiresConsent && !requiresConsent;
     config.requiresConsent = requiresConsent;
     CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
-    if (consentWasLifted && CountlyCommon.sharedInstance.hasFinishedInit)
-    {
-        // features that waited for their consent start the way giving that consent starts them: automatic view
-        // tracking through applyAutomaticTrackingState below, push notifications here
-        CLY_LOG_D(@"%s consent requirement was turned off by behavior settings, features waiting for consent will be started", __FUNCTION__);
-        _lastAppliedAutomaticViewTracking = nil;
-#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_OSX)
-#ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
-        [CountlyPushNotifications.sharedInstance startPushNotifications];
-#endif
-#endif
-    }
-    if(consentDidChange && CountlyCommon.sharedInstance.hasFinishedInit){
-        CLY_LOG_D(@"%s consent requirement was turned on by behavior settings, consents will be resent", __FUNCTION__);
-        [CountlyConsentManager.sharedInstance sendConsents];
-        if (!CountlyConsentManager.sharedInstance.consentForLocation)
-        {
-            [CountlyConnectionManager.sharedInstance sendLocationInfo];
-        }
-    }
+    [self applyConsentRequirement];
 
 #if (TARGET_OS_IOS)
     // setZoneTimerInterval: ignores values the developer can not set, so a removed 'czi' with no developer interval
@@ -759,6 +744,52 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     }
 
     _writtenValues = [self notifiedValuesOf:config];
+}
+
+- (BOOL)takeConsentRequirementForStart:(CountlyConfig *)config
+{
+    @synchronized (self) {
+        _handledConsentRequirement = @(config.requiresConsent);
+        return config.requiresConsent;
+    }
+}
+
+- (void)applyConsentRequirement
+{
+    BOOL wasTurnedOn = NO;
+    BOOL wasLifted = NO;
+    @synchronized (self) {
+        // until start has handled consent, start sends the consent state for whichever requirement it finds
+        if (!_handledConsentRequirement)
+            return;
+
+        BOOL requiresConsent = CountlyConsentManager.sharedInstance.requiresConsent;
+        wasTurnedOn = requiresConsent && !_handledConsentRequirement.boolValue;
+        wasLifted = !requiresConsent && _handledConsentRequirement.boolValue;
+        _handledConsentRequirement = @(requiresConsent);
+    }
+
+    if (wasLifted)
+    {
+        // features that waited for their consent start the way giving that consent starts them: automatic view
+        // tracking through applyAutomaticTrackingState, push notifications here
+        CLY_LOG_D(@"%s consent requirement was turned off by behavior settings, features waiting for consent will be started", __FUNCTION__);
+        _lastAppliedAutomaticViewTracking = nil;
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_OSX)
+#ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
+        [CountlyPushNotifications.sharedInstance startPushNotifications];
+#endif
+#endif
+    }
+    if (wasTurnedOn)
+    {
+        CLY_LOG_D(@"%s consent requirement was turned on by behavior settings, consents will be resent", __FUNCTION__);
+        [CountlyConsentManager.sharedInstance sendConsents];
+        if (!CountlyConsentManager.sharedInstance.consentForLocation)
+        {
+            [CountlyConnectionManager.sharedInstance sendLocationInfo];
+        }
+    }
 }
 
 - (void)applyLocationTrackingState

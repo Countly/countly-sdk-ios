@@ -29,6 +29,7 @@
 * Mitigated an issue where, with location tracking turned off in the SDK behavior settings, the SDK queued a request without the app key at start. The server rejected it, and every request queued after it, the session begin included, was held back.
 * Mitigated an issue where headers added with "addCustomNetworkRequestHeaders" were written into the "URLSessionConfiguration" of the configuration given at start, so a start with that configuration after "halt" still sent them.
 * Mitigated a possible crash in "halt" while the health check state was being reset.
+* Mitigated an issue where, when the SDK behavior settings turned the consent requirement on while the SDK was finishing its start, the consent state and the empty location were not sent.
 * Fixed a bug where "halt" deleted every value the app itself stored in the standard user defaults. It now removes only the SDK's own values.
 * Fixed a crash on visionOS when view tracking consent was given or cancelled.
 * Fixed a crash on watchOS and macOS when calling "halt".

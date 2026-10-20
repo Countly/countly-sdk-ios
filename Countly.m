@@ -315,11 +315,12 @@ static dispatch_once_t onceToken;
     [CountlyConnectionManager.sharedInstance proceedOnQueue];
     
     //TODO: Should move at the top after checking the the edge cases of current implementation
+    BOOL requiresConsent = [CountlyServerConfig.sharedInstance takeConsentRequirementForStart:config];
     if (config.enableAllConsents)
         [self giveAllConsents];
     else if (config.consents)
         [self giveConsentForFeatures:config.consents];
-    else if (config.requiresConsent)
+    else if (requiresConsent)
         [CountlyConsentManager.sharedInstance sendConsents];
     
     if (!CountlyConsentManager.sharedInstance.consentForSessions)
@@ -351,7 +352,8 @@ static dispatch_once_t onceToken;
 
     // The behavior settings response for the fetch started above can arrive before init finishes, in
     // which case it deliberately did not touch automatic tracking or location. Apply the resolved values now that
-    // the configuration is complete, so a server side 'avt', 'acr' or 'lt' is never silently dropped.
+    // the configuration is complete, so a server side 'cr', 'avt', 'acr' or 'lt' is never silently dropped.
+    [CountlyServerConfig.sharedInstance applyConsentRequirement];
     [CountlyServerConfig.sharedInstance applyAutomaticTrackingState];
     [CountlyServerConfig.sharedInstance applyLocationTrackingState];
 }
