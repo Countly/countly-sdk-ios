@@ -1,5 +1,5 @@
 ## XX.XX.XX
-* !! Major breaking change !! Raised the minimum supported deployment targets to iOS 15, tvOS 15, watchOS 9 and macOS 12 (previously iOS 12, tvOS 12, watchOS 4 and macOS 10.14, and iOS 10 and tvOS 10 for "Countly-PL") for compatibility with Xcode 27. Apps targeting older versions are no longer supported.
+* ! Minor breaking change ! Raised the minimum supported deployment targets to iOS 15, tvOS 15, watchOS 9 and macOS 12 (previously iOS 12, tvOS 12, watchOS 4 and macOS 10.14, and iOS 10 and tvOS 10 for "Countly-PL") for compatibility with Xcode 27. Apps targeting older versions are no longer supported.
 * ! Minor breaking change ! "changeDeviceIDWithMerge:" and "changeDeviceIDWithoutMerge:" now ignore nil, an empty string and "CLYDefaultDeviceID" instead of switching back to the default device ID.
 * ! Minor breaking change ! A SIGPIPE the app does not ignore now ends the app after it is reported, as it would without the SDK. Previously the SDK reported it, kept the app running and turned automatic crash reporting off.
 
