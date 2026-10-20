@@ -275,9 +275,10 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
             .refreshContentZone(false)
             .tracking(false)
             .consentRequired(true)
-        
-        let tracker = setupTestAllFeatures(sc.buildJson())
-        
+
+        // answered after start, so the health check start sends always goes out before networking is turned off
+        let tracker = setupTestAllFeatures(sc.buildJson(), answerAfterStart: true)
+
         XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count)
         XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
         
@@ -291,7 +292,6 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count)
         XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
         
-        // hc 1 because server returned networking not getting applied before hc sent
         validateCounts(tracker, hc: 1, fc: 0, rc: 0, cc: 0, sc: 1)
     }
     
@@ -957,9 +957,10 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         }
     }
 
-    private func setupTestAllFeatures(_ serverConfig: [String: Any], drainQueue: Bool = false) -> CountTracker {
+    private func setupTestAllFeatures(_ serverConfig: [String: Any], drainQueue: Bool = false, answerAfterStart: Bool = false) -> CountTracker {
         let tracker = CountTracker()
         tracker.drainQueue = drainQueue
+        let startReturned = DispatchSemaphore(value: 0)
 
         // Define the mock behavior
         MockURLProtocol.requestHandler = { request in
@@ -977,6 +978,9 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
                 tracker.counts[3] += 1
             } else if requestString.contains("method=sc") {
                 tracker.counts[4] += 1
+                if answerAfterStart {
+                    _ = startReturned.wait(timeout: .now() + TestUtils.asyncTimeout)
+                }
                 do{
                     responseString = try JSONSerialization.data(withJSONObject: serverConfig)
                 } catch {
@@ -1011,8 +1015,9 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         let countlyConfig = TestUtils.createBaseConfig()
         countlyConfig.manualSessionHandling = true
         countlyConfig.urlSessionConfiguration = config;
-        
+
         Countly.sharedInstance().start(with: countlyConfig)
+        startReturned.signal()
         #if os(iOS) || os(visionOS)
         CountlyContentBuilderInternal.sharedInstance().contentInitialDelay = 0;
         #endif
