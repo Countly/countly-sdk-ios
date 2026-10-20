@@ -782,4 +782,21 @@ static dispatch_once_t onceToken;
     CLY_LOG_D(@"%s automatic crash capture suppression is stored, suppressedSince: [%@]", __FUNCTION__, date);
 }
 
++ (void)removeStoredUserDefaults
+{
+    NSUserDefaults* defaults = NSUserDefaults.standardUserDefaults;
+    NSUInteger removedCount = 0;
+    for (NSString* key in defaults.dictionaryRepresentation.allKeys)
+    {
+        if (![key hasPrefix:@"kCountly"] || [key isEqualToString:kCountlyPLCrashCaptureSuppressedSinceKey])
+            continue;
+
+        [defaults removeObjectForKey:key];
+        removedCount++;
+    }
+
+    [defaults synchronize];
+    CLY_LOG_D(@"%s the SDK's values are removed from the standard user defaults, removedCount: [%lu]", __FUNCTION__, (unsigned long)removedCount);
+}
+
 @end

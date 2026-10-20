@@ -9,15 +9,24 @@
 
 @implementation CountlyLocationManager
 
+static CountlyLocationManager* s_sharedInstance = nil;
+static dispatch_once_t onceToken;
+
 + (instancetype)sharedInstance
 {
     if (!CountlyCommon.sharedInstance.hasStarted)
         return nil;
 
-    static CountlyLocationManager* s_sharedInstance;
-    static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{s_sharedInstance = self.new;});
     return s_sharedInstance;
+}
+
+/// Drops the singleton, so the next start begins without the stored location fields and with location info enabled.
+- (void)resetInstance
+{
+    CLY_LOG_I(@"%s location manager is being reset, stored location fields and the disabled state are cleared", __FUNCTION__);
+    onceToken = 0;
+    s_sharedInstance = nil;
 }
 
 - (instancetype)init

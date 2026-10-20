@@ -152,6 +152,12 @@ void CountlyRunOnMainThread(dispatch_block_t block);
 
 - (NSURLSession *)ImmediateURLSession;
 
+/// Creates a task on the immediate session. A header or configuration change can drop the session kept while certificates are pinned at any time, and creating a task on a dropped session raises, so the task is created under the lock that drops it.
+- (NSURLSessionDataTask *)immediateDataTaskWithRequest:(NSURLRequest *)request completionHandler:(void (^)(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error))completionHandler;
+
+/// Drops the immediate session kept while certificates are pinned, so the next immediate request builds one from the current URL session configuration. Requests in flight finish first.
+- (void)invalidatePinnedImmediateURLSession;
+
 - (CGSize)getWindowSize;
 
 /// Applies a live 'lg' directive. Enabling adopts the held lines, disabling or a different gather id drops them.
@@ -248,5 +254,12 @@ void CountlyRunOnMainThread(dispatch_block_t block);
 @interface CountlyUserDetails (ClearUserDetails)
 - (void)clearUserDetails;
 @end
+
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+@interface CountlyContentConfig (ZoneTimerIntervalRestore)
+/// Sets the zone timer interval without the lower bound of the public setter, so the unset value 0 can be put back.
+- (void)restoreZoneTimerInterval:(NSUInteger)zoneTimerIntervalSeconds;
+@end
+#endif
 
 NS_ASSUME_NONNULL_END

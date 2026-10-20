@@ -360,11 +360,11 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
         headers = http.allHeaderFields;
     }
 
-    // Host and path only, and header names are never printed: the response headers and the URL
-    // query string can carry identifiers.
+    // Host and path only: the URL query string can carry identifiers.
     CLY_LOG_D(@"%s navigation response received, host: [%@], path: [%@], mimeType: [%@], status: [%ld], headerCount: [%lu]", __FUNCTION__, response.URL.host, response.URL.path, mimeType, statusCode, (unsigned long)headers.count);
 
-    CLY_LOG_D(@"%s navigation response detail, url: [%@], status: [%ld], headers: [%@]", __FUNCTION__, response.URL.absoluteString, statusCode, headers);
+    // header names only: a response header value can be a session cookie, and log gathering can upload any line
+    CLY_LOG_D(@"%s navigation response detail, url: [%@], status: [%ld], headerNames: [%@]", __FUNCTION__, response.URL.absoluteString, statusCode, headers.allKeys);
 
     if (statusCode >= 400) {
         CLY_LOG_E(@"%s cancelling the navigation because of an HTTP error status, status: [%ld], path: [%@], dismissing the web view, reason: [http-error]", __FUNCTION__, statusCode, response.URL.path);

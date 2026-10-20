@@ -11,6 +11,9 @@ NSString* const kCountlyEndpointContent = @"/o/sdk/content";
 NSString* const kCountlyCBFetchContent  = @"queue";
 NSString* const kCountlyCBKeyCampaignID = @"campaign_id";
 NSString* const kCountlyCBSurveyAnswerKeyPrefix = @"answ-";
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+static const NSTimeInterval kCountlyCBDefaultZoneTimerInterval = 30.0;
+#endif
 
 @interface CountlyContentBuilderInternal ()
 // 'atomic' rather than the 'nonatomic' used elsewhere here: an event can be recorded on one thread
@@ -49,7 +52,7 @@ NSString* const kCountlyCBSurveyAnswerKeyPrefix = @"answ-";
 {
     if (self = [super init])
     {
-        self.zoneTimerInterval = 30.0;
+        self.zoneTimerInterval = kCountlyCBDefaultZoneTimerInterval;
         _requestTimer = nil;
         _isCurrentlyContentShown = NO;
         _contentQueue = dispatch_queue_create("ly.countly.content.queue", DISPATCH_QUEUE_SERIAL);
@@ -359,6 +362,8 @@ NSString* const kCountlyCBSurveyAnswerKeyPrefix = @"answ-";
     [self closeShownContent];
     [self writeFlag:&_refreshRunnablePending value:NO];
     self.contentSegmentation = nil;
+    // the singleton outlives halt, and a next start that applies no behavior settings never sets the interval
+    self.zoneTimerInterval = kCountlyCBDefaultZoneTimerInterval;
 }
 
 #pragma mark - Global content segmentation
@@ -482,7 +487,7 @@ NSString* const kCountlyCBSurveyAnswerKeyPrefix = @"answ-";
     CLY_LOG_D(@"%s fetching the content details, isPreview: [%@]", __FUNCTION__, contentId ? @"YES" : @"NO");
     [self setRequestQueueLockedThreadSafe:YES];
     
-    NSURLSessionTask *dataTask = [[CountlyCommon.sharedInstance ImmediateURLSession] dataTaskWithRequest:[self fetchContentsRequest:contentId] completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+    NSURLSessionTask *dataTask = [CountlyCommon.sharedInstance immediateDataTaskWithRequest:[self fetchContentsRequest:contentId] completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         // IMMEDIATE REQUEST to find them better in search
         if (error) {
             CLY_LOG_D(@"%s fetching the content details failed, it will be retried on the next content zone tick, error: [%@], domain: [%@], code: [%ld]", __FUNCTION__, error.localizedDescription, error.domain, (long)error.code);

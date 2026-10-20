@@ -146,10 +146,7 @@ static dispatch_once_t onceToken;
         [self setLogGatheringOffLocked];
         _sdkLogsState = CLYSDKLogsStateUndecided;
     }
-    @synchronized (self) {
-        [self.pinnedImmediateURLSession finishTasksAndInvalidate];
-        self.pinnedImmediateURLSession = nil;
-    }
+    [self invalidatePinnedImmediateURLSession];
     onceToken = 0;
     s_sharedInstance = nil;
  }
@@ -1119,36 +1116,49 @@ void CountlyRunOnMainThread(dispatch_block_t block)
 
 - (NSURLSession *)ImmediateURLSession
 {
-    CountlyConnectionManager* connectionManager = CountlyConnectionManager.sharedInstance;
-    BOOL usesPinnedCertificates = connectionManager.pinnedCertificates.count > 0;
-    if (usesPinnedCertificates)
-    {
-        @synchronized (self) {
-            if (self.pinnedImmediateURLSession)
-                return self.pinnedImmediateURLSession;
-        }
+    // one lock for the check, the copy and the creation, or a header change between them finds nothing to drop
+    @synchronized (self) {
+        CountlyConnectionManager* connectionManager = CountlyConnectionManager.sharedInstance;
+        BOOL usesPinnedCertificates = connectionManager.pinnedCertificates.count > 0;
+        if (usesPinnedCertificates && self.pinnedImmediateURLSession)
+            return self.pinnedImmediateURLSession;
+
+        // Base on the user-provided URLSessionConfiguration so that things like
+        // protocolClasses (test mocks), cookie policy, etc. are preserved.
+        // If none was provided, fall back to default session configuration.
+        NSURLSessionConfiguration *userConfig = connectionManager.URLSessionConfiguration;
+        NSURLSessionConfiguration *immediateConfig = userConfig ? [userConfig copy] : [NSURLSessionConfiguration defaultSessionConfiguration];
+
+        // Immediate requests must not be constrained by the SDK's configured
+        // request timeout, so they get the system defaults.
+        immediateConfig.timeoutIntervalForRequest = 60;
+        immediateConfig.timeoutIntervalForResource = 7 * 24 * 60 * 60;
+
+        if (!usesPinnedCertificates)
+            return [NSURLSession sessionWithConfiguration:immediateConfig];
+
+        // the connection manager checks the pinned certificates, and one session is kept since a delegate session lives until invalidated
+        self.pinnedImmediateURLSession = [NSURLSession sessionWithConfiguration:immediateConfig delegate:connectionManager delegateQueue:nil];
+        return self.pinnedImmediateURLSession;
     }
+}
 
-    // Base on the user-provided URLSessionConfiguration so that things like
-    // protocolClasses (test mocks), cookie policy, etc. are preserved.
-    // If none was provided, fall back to default session configuration.
-    NSURLSessionConfiguration *userConfig = CountlyConnectionManager.sharedInstance.URLSessionConfiguration;
-    NSURLSessionConfiguration *immediateConfig = userConfig ? [userConfig copy] : [NSURLSessionConfiguration defaultSessionConfiguration];
+- (NSURLSessionDataTask *)immediateDataTaskWithRequest:(NSURLRequest *)request completionHandler:(void (^)(NSData *, NSURLResponse *, NSError *))completionHandler
+{
+    @synchronized (self) {
+        return [self.ImmediateURLSession dataTaskWithRequest:request completionHandler:completionHandler];
+    }
+}
 
-    // Immediate requests must not be constrained by the SDK's configured
-    // request timeout — reset to the system defaults.
-    immediateConfig.timeoutIntervalForRequest = 60;
-    immediateConfig.timeoutIntervalForResource = 7 * 24 * 60 * 60;
-
-    if (!usesPinnedCertificates)
-        return [NSURLSession sessionWithConfiguration:immediateConfig];
-
-    // the connection manager checks the pinned certificates, and one session is kept since a delegate session lives until invalidated
+- (void)invalidatePinnedImmediateURLSession
+{
     @synchronized (self) {
         if (!self.pinnedImmediateURLSession)
-            self.pinnedImmediateURLSession = [NSURLSession sessionWithConfiguration:immediateConfig delegate:connectionManager delegateQueue:nil];
+            return;
 
-        return self.pinnedImmediateURLSession;
+        CLY_LOG_D(@"%s the immediate session kept for pinned certificates is dropped, the next immediate request builds a new one", __FUNCTION__);
+        [self.pinnedImmediateURLSession finishTasksAndInvalidate];
+        self.pinnedImmediateURLSession = nil;
     }
 }
 

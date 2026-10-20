@@ -13,9 +13,13 @@
     NSNumber *_lastAppliedAutomaticViewTracking;
     // the developer's values from start, before any behavior setting was applied, see rememberDeveloperValues:
     NSDictionary *_developerValues;
+    // what notifySdkConfigChange: last wrote into the start config, see restoreDeveloperValuesInto:
+    NSDictionary *_writtenValues;
     // the keys of the applied settings: a setting they carry wins over the developer's value, also when it is NO or 0,
     // and a key that disappears from them is noticed
     NSSet *_appliedSettingKeys;
+    // the consent requirement whose consent state was last sent, nil until start has handled consent
+    NSNumber *_handledConsentRequirement;
 }
 @property (nonatomic) BOOL trackingEnabled;
 @property (nonatomic) BOOL networkingEnabled;
@@ -182,10 +186,16 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     _serverConfigUpdatesDisabled = NO;
     _requestTimeoutDuration = 30;
     _lastFetchTimestamp = 0;
+    [self restoreDeveloperValuesInto:_startConfig];
     _startConfig = nil;
     _lastAppliedAutomaticViewTracking = nil;
     _developerValues = nil;
+    _writtenValues = nil;
     _appliedSettingKeys = nil;
+    // an answer still in flight applies to this dropped instance, which must not send consents into the next run
+    @synchronized (self) {
+        _handledConsentRequirement = nil;
+    }
     if (_requestTimer)
     {
         [_requestTimer invalidate];
@@ -237,12 +247,19 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
 /// not a reliable source later, because notifySdkConfigChange: writes the resolved values into it.
 - (void)rememberDeveloperValues:(CountlyConfig *)config
 {
-    NSMutableDictionary *values = NSMutableDictionary.new;
+    NSMutableDictionary *values = [self notifiedValuesOf:config].mutableCopy;
     values[kRAutomaticSessionTracking] = @(!config.manualSessionHandling);
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
     values[kRAutomaticViewTracking] = @(config.enableAutomaticViewTracking);
 #endif
     values[kRAutomaticCrashReporting] = @([config.features containsObject:CLYCrashReporting]);
+    _developerValues = values.copy;
+}
+
+/// The values of a configuration that notifySdkConfigChange: writes, by the key of the behavior setting that decides each.
+- (NSDictionary *)notifiedValuesOf:(CountlyConfig *)config
+{
+    NSMutableDictionary *values = NSMutableDictionary.new;
     values[kRConsentRequired] = @(config.requiresConsent);
     values[kRLogging] = @(config.enableDebug);
     values[kREventQueueSize] = @(config.eventSendThreshold);
@@ -258,13 +275,67 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
 #if (TARGET_OS_IOS)
     values[kRContentZoneInterval] = @(config.content.getZoneTimerInterval);
 #endif
-    _developerValues = values.copy;
+    return values;
 }
 
 /// The developer's value of a setting from start, or the given current value when none was remembered
 - (NSNumber *)developerValueForKey:(NSString *)key orCurrent:(NSNumber *)current
 {
     return _developerValues[key] ?: current;
+}
+
+/// Puts the developer's values from start back into the configuration the SDK was started with, where
+/// notifySdkConfigChange: wrote a value that is still there. It writes the resolved values into that configuration, and its
+/// internal limits and content parts are shared by every configuration in the process, so without this the next start
+/// would remember the halted run's behavior settings as the developer's values. A value that changed since was set by the
+/// app, on this configuration or on another one sharing those parts, and stays.
+- (void)restoreDeveloperValuesInto:(CountlyConfig *)config
+{
+    if (!config || !_developerValues || !_writtenValues)
+        return;
+
+    NSDictionary *current = [self notifiedValuesOf:config];
+    NSMutableDictionary *restored = NSMutableDictionary.new;
+    [_writtenValues enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSNumber *written, BOOL *stop) {
+        if ([current[key] isEqual:written])
+            restored[key] = self->_developerValues[key];
+    }];
+    [self writeValues:restored into:config];
+
+    CLY_LOG_D(@"%s the developer's values from start are put back into the start configuration, restoredKeys: [%@], keptKeys: [%lu]", __FUNCTION__, [restored.allKeys componentsJoinedByString:@","], (unsigned long)(_writtenValues.count - restored.count));
+}
+
+/// Writes the values given by behavior setting key into a configuration, leaving out the keys the dictionary does not carry.
+- (void)writeValues:(NSDictionary *)values into:(CountlyConfig *)config
+{
+    if (values[kRLogging])
+        config.enableDebug = [values[kRLogging] boolValue];
+    if (values[kRConsentRequired])
+        config.requiresConsent = [values[kRConsentRequired] boolValue];
+    if (values[kREventQueueSize])
+        config.eventSendThreshold = [values[kREventQueueSize] unsignedIntegerValue];
+    if (values[kRReqQueueSize])
+        config.storedRequestsLimit = [values[kRReqQueueSize] unsignedIntegerValue];
+    if (values[kRDropOldRequestTime])
+        config.requestDropAgeHours = [values[kRDropOldRequestTime] unsignedIntegerValue];
+    if (values[kRSessionUpdateInterval])
+        config.updateSessionPeriod = [values[kRSessionUpdateInterval] doubleValue];
+    if (values[kRLimitKeyLength])
+        [config.sdkInternalLimits setMaxKeyLength:[values[kRLimitKeyLength] unsignedIntegerValue]];
+    if (values[kRLimitValueSize])
+        [config.sdkInternalLimits setMaxValueSize:[values[kRLimitValueSize] unsignedIntegerValue]];
+    if (values[kRLimitSegValues])
+        [config.sdkInternalLimits setMaxSegmentationValues:[values[kRLimitSegValues] unsignedIntegerValue]];
+    if (values[kRLimitBreadcrumb])
+        [config.sdkInternalLimits setMaxBreadcrumbCount:[values[kRLimitBreadcrumb] unsignedIntegerValue]];
+    if (values[kRLimitTraceLength])
+        [config.sdkInternalLimits setMaxStackTraceLineLength:[values[kRLimitTraceLength] unsignedIntegerValue]];
+    if (values[kRLimitTraceLine])
+        [config.sdkInternalLimits setMaxStackTraceLinesPerThread:[values[kRLimitTraceLine] unsignedIntegerValue]];
+#if (TARGET_OS_IOS)
+    if (values[kRContentZoneInterval])
+        [config.content restoreZoneTimerInterval:[values[kRContentZoneInterval] unsignedIntegerValue]];
+#endif
 }
 
 /// Replaces the stored behavior settings with a valid answer as a whole, so a setting the server no longer sends is
@@ -615,30 +686,9 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
 
     // The server can turn the consent requirement on and off; when it does not send 'cr', the developer's requirement applies
     BOOL requiresConsent = [_appliedSettingKeys containsObject:kRConsentRequired] ? _consentRequired : [self developerValueForKey:kRConsentRequired orCurrent:@(config.requiresConsent)].boolValue;
-    BOOL consentDidChange = !config.requiresConsent && requiresConsent;
-    BOOL consentWasLifted = config.requiresConsent && !requiresConsent;
     config.requiresConsent = requiresConsent;
     CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
-    if (consentWasLifted && CountlyCommon.sharedInstance.hasFinishedInit)
-    {
-        // features that waited for their consent start the way giving that consent starts them: automatic view
-        // tracking through applyAutomaticTrackingState below, push notifications here
-        CLY_LOG_D(@"%s consent requirement was turned off by behavior settings, features waiting for consent will be started", __FUNCTION__);
-        _lastAppliedAutomaticViewTracking = nil;
-#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_OSX)
-#ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
-        [CountlyPushNotifications.sharedInstance startPushNotifications];
-#endif
-#endif
-    }
-    if(consentDidChange && CountlyCommon.sharedInstance.hasFinishedInit){
-        CLY_LOG_D(@"%s consent requirement was turned on by behavior settings, consents will be resent", __FUNCTION__);
-        [CountlyConsentManager.sharedInstance sendConsents];
-        if (!CountlyConsentManager.sharedInstance.consentForLocation)
-        {
-            [CountlyConnectionManager.sharedInstance sendLocationInfo];
-        }
-    }
+    [self applyConsentRequirement];
 
 #if (TARGET_OS_IOS)
     // setZoneTimerInterval: ignores values the developer can not set, so a removed 'czi' with no developer interval
@@ -675,11 +725,9 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
         [NSRunLoop.mainRunLoop addTimer:_requestTimer forMode:NSRunLoopCommonModes];
     }
 
-    if (!_locationTracking && !CountlyLocationManager.sharedInstance.isLocationInfoDisabled)
+    if (CountlyCommon.sharedInstance.hasFinishedInit)
     {
-        CLY_LOG_D(@"%s location tracking is disabled by behavior settings, location info will be cleared", __FUNCTION__);
-        [CountlyLocationManager.sharedInstance disableLocation];
-        [CountlyConnectionManager.sharedInstance sendLocationInfo];
+        [self applyLocationTrackingState];
     }
 
     if(_backoffMechanism && config.disableBackoffMechanism){
@@ -694,6 +742,64 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     {
         [self applyAutomaticTrackingState];
     }
+
+    _writtenValues = [self notifiedValuesOf:config];
+}
+
+- (BOOL)takeConsentRequirementForStart:(CountlyConfig *)config
+{
+    @synchronized (self) {
+        _handledConsentRequirement = @(config.requiresConsent);
+        return config.requiresConsent;
+    }
+}
+
+- (void)applyConsentRequirement
+{
+    BOOL wasTurnedOn = NO;
+    BOOL wasLifted = NO;
+    @synchronized (self) {
+        // until start has handled consent, start sends the consent state for whichever requirement it finds
+        if (!_handledConsentRequirement)
+            return;
+
+        BOOL requiresConsent = CountlyConsentManager.sharedInstance.requiresConsent;
+        wasTurnedOn = requiresConsent && !_handledConsentRequirement.boolValue;
+        wasLifted = !requiresConsent && _handledConsentRequirement.boolValue;
+        _handledConsentRequirement = @(requiresConsent);
+    }
+
+    if (wasLifted)
+    {
+        // features that waited for their consent start the way giving that consent starts them: automatic view
+        // tracking through applyAutomaticTrackingState, push notifications here
+        CLY_LOG_D(@"%s consent requirement was turned off by behavior settings, features waiting for consent will be started", __FUNCTION__);
+        _lastAppliedAutomaticViewTracking = nil;
+#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_OSX)
+#ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
+        [CountlyPushNotifications.sharedInstance startPushNotifications];
+#endif
+#endif
+    }
+    if (wasTurnedOn)
+    {
+        CLY_LOG_D(@"%s consent requirement was turned on by behavior settings, consents will be resent", __FUNCTION__);
+        [CountlyConsentManager.sharedInstance sendConsents];
+        if (!CountlyConsentManager.sharedInstance.consentForLocation)
+        {
+            [CountlyConnectionManager.sharedInstance sendLocationInfo];
+        }
+    }
+}
+
+- (void)applyLocationTrackingState
+{
+    if (_locationTracking || CountlyLocationManager.sharedInstance.isLocationInfoDisabled)
+        return;
+
+    CLY_LOG_D(@"%s location tracking is disabled by behavior settings, location info will be cleared", __FUNCTION__);
+    [CountlyLocationManager.sharedInstance disableLocation];
+    [CountlyConnectionManager.sharedInstance sendLocationInfo];
 }
 
 // Applies the resolved 'ast', 'avt' and 'acr' values, acting only on what changed, so it is safe after every settings response.
@@ -868,7 +974,7 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
             [CountlyConnectionTest.sharedInstance startBatteryWithServerConfigLatency:fetchLatencyMs deviceID:requestedDeviceID deviceIDType:requestedDeviceIDType deviceIDMergeCount:requestedDeviceIDMergeCount];
     };
     // Set default values
-    NSURLSessionTask *task = [CountlyCommon.sharedInstance.ImmediateURLSession dataTaskWithRequest:[self serverConfigRequest] completionHandler:handler];
+    NSURLSessionTask *task = [CountlyCommon.sharedInstance immediateDataTaskWithRequest:[self serverConfigRequest] completionHandler:handler];
     // IMMEDIATE REQUEST to find them better in search
     [task resume];
 }

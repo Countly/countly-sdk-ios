@@ -5,8 +5,9 @@
 // Please visit www.count.ly for more information.
 
 #import <Foundation/Foundation.h>
+#import "Resettable.h"
 
-@interface CountlyLocationManager : NSObject
+@interface CountlyLocationManager : NSObject <Resettable>
 @property (nonatomic, copy) NSString* location;
 @property (nonatomic, copy) NSString* city;
 @property (nonatomic, copy) NSString* ISOCountryCode;

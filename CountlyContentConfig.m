@@ -57,6 +57,11 @@
     return _zoneTimerInterval;
 }
 
+- (void)restoreZoneTimerInterval:(NSUInteger)zoneTimerIntervalSeconds
+{
+    _zoneTimerInterval = zoneTimerIntervalSeconds;
+}
+
 - (void)setWebviewDisplayOption:(WebViewDisplayOption)webViewDisplayOption
 {
     _webViewDisplayOption = webViewDisplayOption;

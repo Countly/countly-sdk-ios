@@ -131,7 +131,7 @@ class CountlyConnectionTestTests: CountlyBaseTestCase {
         }
     }
 
-    private func waitForReport(timeout: TimeInterval = 10) -> [String: Any]? {
+    private func waitForReport(timeout: TimeInterval = TestUtils.asyncTimeout) -> [String: Any]? {
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {
             if let report = queuedReports().first { return report }
@@ -306,7 +306,7 @@ class CountlyConnectionTestTests: CountlyBaseTestCase {
         connectionTest.startBattery(withServerConfigLatency: 5)
         connectionTest.startBattery(withServerConfigLatency: 5)
 
-        _ = try XCTUnwrap(waitForReport(timeout: 15))
+        _ = try XCTUnwrap(waitForReport())
         TestUtils.sleep(1) {}
 
         XCTAssertEqual(1, queuedReports().count, "each delivery during a running battery must be dropped, not queued")

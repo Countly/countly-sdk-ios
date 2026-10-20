@@ -647,6 +647,141 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
                      "without pinned certificates the system trust evaluation applies")
     }
 
+    /**
+     * <pre>
+     * With pinned certificates the immediate session is kept between requests, so it has to be rebuilt when the
+     * custom headers change, or a header added after start would never reach an immediate request.
+     *
+     * 1- Start with pinned certificates and a header given at start, which builds the kept session
+     * 2- Add a header after start and download remote config, an immediate request
+     * 3- Verify the request carried both headers and the new session still answers the trust challenge
+     * </pre>
+     */
+    func test_immediateURLSession_pinnedSessionCarriesHeadersAddedAfterStart() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        // answered in process, so no TLS challenge ever looks up the pinned certificate file, which does not exist
+        TestURLProtocol.reset()
+        let cfg = TestUtils.createBaseConfig()
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [TestURLProtocol.self]
+        sessionConfig.httpAdditionalHeaders = ["X-At-Start": "start_value"]
+        cfg.urlSessionConfiguration = sessionConfig
+        cfg.manualSessionHandling = true
+        cfg.pinnedCertificates = ["pinned.cer"]
+        Countly.sharedInstance().start(with: cfg)
+
+        let connectionManager = try XCTUnwrap(CountlyConnectionManager.sharedInstance())
+        let sessionBeforeHeaders = CountlyCommon.sharedInstance().immediateURLSession()
+        Countly.sharedInstance().addCustomNetworkRequestHeaders(["Authorization": "Bearer 123"])
+
+        let downloaded = XCTestExpectation(description: "the remote config download")
+        Countly.sharedInstance().remoteConfig().downloadKeys { _, _, _, _ in downloaded.fulfill() }
+        wait(for: [downloaded], timeout: TestUtils.asyncTimeout)
+
+        let headers = try XCTUnwrap(TestURLProtocol.capturedHeaders(forRequestContaining: "method=rc"), "the download must be intercepted")
+        XCTAssertEqual("Bearer 123", headers["Authorization"], "a header added after start must reach an immediate request")
+        XCTAssertEqual("start_value", headers["X-At-Start"], "the header given at start must still be sent")
+
+        let sessionAfterHeaders = CountlyCommon.sharedInstance().immediateURLSession()
+        XCTAssertFalse(sessionAfterHeaders === sessionBeforeHeaders, "the session kept before the header change must not be reused")
+        XCTAssertTrue(sessionAfterHeaders.delegate === connectionManager, "the rebuilt session must still answer the trust challenge")
+        XCTAssertTrue(CountlyCommon.sharedInstance().immediateURLSession() === sessionAfterHeaders, "the rebuilt session is kept until the next change")
+    }
+
+    /// Starts with pinned certificates and an in-process mock, so the immediate session is the kept delegate session and
+    /// no TLS challenge ever looks up the pinned certificate file, which does not exist. Logging is off, since formatting
+    /// log lines would space out the calls a race needs to overlap.
+    private func startWithPinnedCertificatesAndNoLogging() {
+        MockURLProtocol.replyEmptyToEveryRequest()
+        let cfg = TestUtils.createBaseConfig()
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [MockURLProtocol.self]
+        cfg.urlSessionConfiguration = sessionConfig
+        cfg.manualSessionHandling = true
+        cfg.pinnedCertificates = ["pinned.cer"]
+        cfg.enableDebug = false
+        Countly.sharedInstance().start(with: cfg)
+        CountlyCommon.sharedInstance().decideLogGatheringOffIfUndecided("the test runs without logging")
+    }
+
+#if os(iOS)
+    /**
+     * <pre>
+     * With pinned certificates a header change drops the kept immediate session, possibly while a request is being built
+     * for it. A task created on a dropped session raises and ends the app, so the session is taken once the request is
+     * built.
+     *
+     * 1- Start with pinned certificates and hold the feedback widget list fetch while it builds its request
+     * 2- Change a header meanwhile, which drops the kept session, then let the fetch go on
+     * 3- Verify the fetch completes
+     * </pre>
+     */
+    func test_immediateURLSession_headerChangeWhileARequestIsBuiltDoesNotCrash() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        startWithPinnedCertificatesAndNoLogging()
+        _ = CountlyCommon.sharedInstance().immediateURLSession()
+
+        let builder = try XCTUnwrap(class_getInstanceMethod(CountlyFeedbacksInternal.self, NSSelectorFromString("feedbacksRequest")))
+        typealias BuildRequest = @convention(c) (AnyObject, Selector) -> AnyObject
+        let originalIMP = method_getImplementation(builder)
+        let buildRequest = unsafeBitCast(originalIMP, to: BuildRequest.self)
+        let building = DispatchSemaphore(value: 0)
+        let resume = DispatchSemaphore(value: 0)
+        let heldBuild: @convention(block) (AnyObject) -> AnyObject = { feedbacks in
+            building.signal()
+            _ = resume.wait(timeout: .now() + 10)
+            return buildRequest(feedbacks, NSSelectorFromString("feedbacksRequest"))
+        }
+        method_setImplementation(builder, imp_implementationWithBlock(heldBuild))
+        defer { method_setImplementation(builder, originalIMP) }
+
+        let fetched = XCTestExpectation(description: "the feedback widget list fetch")
+        DispatchQueue.global().async {
+            Countly.sharedInstance().feedback().getAvailableFeedbackWidgets { _, _ in fetched.fulfill() }
+        }
+        XCTAssertEqual(.success, building.wait(timeout: .now() + 5), "the fetch is building its request")
+        Countly.sharedInstance().addCustomNetworkRequestHeaders(["Authorization": "Bearer 123"])
+        // a session refuses new tasks once its queue has processed the invalidation, not as soon as it is asked
+        TestUtils.sleep(0.5) {}
+        resume.signal()
+
+        wait(for: [fetched], timeout: TestUtils.asyncTimeout)
+    }
+#endif
+
+    /**
+     * <pre>
+     * With pinned certificates a header change that lands while the kept immediate session is being created is not lost:
+     * the session kept afterwards carries the new header.
+     *
+     * 1- Start with pinned certificates
+     * 2- In each round drop the kept session, then create it on one thread while another changes a header
+     * 3- Verify the session kept after each round carries that round's header
+     * </pre>
+     */
+    func test_immediateURLSession_headerChangeRacingTheSessionCreationIsKept() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        startWithPinnedCertificatesAndNoLogging()
+
+        var staleRounds: [Int] = []
+        for round in 0..<1000 {
+            CountlyCommon.sharedInstance().invalidatePinnedImmediateURLSession()
+            DispatchQueue.concurrentPerform(iterations: 2) { worker in
+                if worker == 0 {
+                    _ = CountlyCommon.sharedInstance().immediateURLSession()
+                } else {
+                    Countly.sharedInstance().addCustomNetworkRequestHeaders(["X-Round": "\(round)"])
+                }
+            }
+            let keptHeader = CountlyCommon.sharedInstance().immediateURLSession().configuration.httpAdditionalHeaders?["X-Round"] as? String
+            if keptHeader != "\(round)" {
+                staleRounds.append(round)
+            }
+        }
+
+        XCTAssertEqual([], staleRounds, "the kept session must carry the header of its round")
+    }
+
     // MARK: - Server config persistence is the cleaned dictionary
 
     /// After populate, the persisted config must reflect the cleaned version

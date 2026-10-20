@@ -315,11 +315,12 @@ static dispatch_once_t onceToken;
     [CountlyConnectionManager.sharedInstance proceedOnQueue];
     
     //TODO: Should move at the top after checking the the edge cases of current implementation
+    BOOL requiresConsent = [CountlyServerConfig.sharedInstance takeConsentRequirementForStart:config];
     if (config.enableAllConsents)
         [self giveAllConsents];
     else if (config.consents)
         [self giveConsentForFeatures:config.consents];
-    else if (config.requiresConsent)
+    else if (requiresConsent)
         [CountlyConsentManager.sharedInstance sendConsents];
     
     if (!CountlyConsentManager.sharedInstance.consentForSessions)
@@ -350,9 +351,11 @@ static dispatch_once_t onceToken;
     [CountlyCommon.sharedInstance flushSdkLogs];
 
     // The behavior settings response for the fetch started above can arrive before init finishes, in
-    // which case it deliberately did not touch automatic tracking. Apply the resolved values now that
-    // the configuration is complete, so a server side 'avt' or 'acr' is never silently dropped.
+    // which case it deliberately did not touch automatic tracking or location. Apply the resolved values now that
+    // the configuration is complete, so a server side 'cr', 'avt', 'acr' or 'lt' is never silently dropped.
+    [CountlyServerConfig.sharedInstance applyConsentRequirement];
     [CountlyServerConfig.sharedInstance applyAutomaticTrackingState];
+    [CountlyServerConfig.sharedInstance applyLocationTrackingState];
 }
 
 - (CountlyConfig *) checkAndFixInternalLimitsConfig:(CountlyConfig *)config
@@ -634,9 +637,9 @@ static dispatch_once_t onceToken;
 }
 
 - (void)addCustomNetworkRequestHeaders:(NSDictionary<NSString *, NSString *> *_Nullable)customHeaderValues {
+    // names only: a header value is often a credential, and log gathering can upload any line
     CLY_LOG_I(@"%s adding custom network request headers, keys: [%@], count: [%lu]", __FUNCTION__, customHeaderValues.allKeys, (unsigned long)customHeaderValues.count);
-    CLY_LOG_D(@"%s custom network request header detail, customHeaderValues: [%@]", __FUNCTION__, customHeaderValues);
-    
+
     // Ignore nil or empty dictionary
     if (customHeaderValues == nil || customHeaderValues.count == 0) {
         CLY_LOG_W(@"%s omitting the call, no custom network request header is provided", __FUNCTION__);
@@ -1538,6 +1541,8 @@ static dispatch_once_t onceToken;
     }
 
     [CountlyConsentManager.sharedInstance resetInstance];
+    // after the consent reset, which can still send an empty location
+    [CountlyLocationManager.sharedInstance resetInstance];
     [CountlyPersistency.sharedInstance resetInstance:clearStorage];
     [CountlyDeviceInfo.sharedInstance resetInstance];
     [CountlyConnectionManager.sharedInstance resetInstance];
@@ -1553,31 +1558,7 @@ static dispatch_once_t onceToken;
 
     if(clearStorage)
     {
-        NSString *appDomain = [[NSBundle mainBundle] bundleIdentifier];
-        [NSUserDefaults.standardUserDefaults removePersistentDomainForName:appDomain];
-
-        // halt(true) calls removePersistentDomainForName which doesn't work in xctest
-        // environment (different bundle ID), so clear SDK keys manually
-        NSArray* sdkKeys = @[
-            @"kCountlyServerConfigPersistencyKey",
-            @"kCountlyHealthCheckStatePersistencyKey",
-            @"kCountlyQueuedRequestsPersistencyKey",
-            @"kCountlyStartedEventsPersistencyKey",
-            @"kCountlyStoredDeviceIDKey",
-            @"kCountlyStoredNSUUIDKey",
-            @"kCountlyStarRatingStatusKey",
-            @"kCountlyRemoteConfigKey",
-            @"kCountlyIsCustomDeviceIDKey",
-            @"kCountlyNotificationPermissionKey",
-            @"kCountlyWatchParentDeviceIDKey"
-        ];
-        for (NSString* key in sdkKeys)
-        {
-            [NSUserDefaults.standardUserDefaults removeObjectForKey:key];
-        }
-
-        // Single synchronize after all UserDefaults modifications
-        [NSUserDefaults.standardUserDefaults synchronize];
+        [CountlyPersistency removeStoredUserDefaults];
     }
 }
 

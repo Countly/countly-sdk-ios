@@ -298,4 +298,33 @@ class CountlyQueueFlushRunnablesTests: CountlyCallbackBaseTestCase {
         // Now nested runnable should have executed
         XCTAssertTrue(nestedRunnableExecuted)
     }
+
+    /**
+     * Test that a request a runnable queues is sent without anything else triggering the queue.
+     * Runnables run while the pass that emptied the queue still holds it, so the queue call they make is
+     * turned away there, the same way as a request queued by another thread at that moment.
+     */
+    func test_queueFlushRunnables_requestQueuedByARunnableIsSent() throws {
+        guard let connectionManager = connectionManager else {
+            XCTFail("ConnectionManager not available")
+            return
+        }
+
+        let sent = XCTestExpectation(description: "the request the runnable queued is sent")
+        var sentSuccessfully: Bool?
+        connectionManager.addQueueFlushRunnable {
+            connectionManager.addToQueue(withCallback: "test=queued_by_runnable", callback: { _, success in
+                sentSuccessfully = success
+                sent.fulfill()
+            })
+            connectionManager.proceedOnQueue()
+        }
+
+        Countly.sharedInstance().addDirectRequest(["test": "request"])
+
+        wait(for: [sent], timeout: TestUtils.asyncTimeout)
+        XCTAssertEqual(true, sentSuccessfully, "the request the runnable queued must be sent and answered")
+        TestUtils.waitUntil("the queue to empty") { CountlyPersistency.sharedInstance().remainingRequestCount() == 0 }
+        XCTAssertEqual(0, CountlyPersistency.sharedInstance().remainingRequestCount(), "nothing may be left waiting in the queue")
+    }
 }
