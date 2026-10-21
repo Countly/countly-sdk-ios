@@ -119,7 +119,7 @@ static NSUInteger CountlySDKLogsLevelMask(NSString* levels)
     return mask;
 }
 
-NSString* const kCountlySDKVersion = @"26.1.4";
+NSString* const kCountlySDKVersion = @"26.8.0";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";

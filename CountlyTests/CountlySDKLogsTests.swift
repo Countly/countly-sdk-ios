@@ -814,6 +814,23 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
         XCTAssertEqual(uploadedBeforeNewUser, uploadedBatches().count, "the new user is not part of the old user's gather")
     }
 
+    /// The last batch of the previous user's gather does not carry the next user's device ID, so one user's logs never name
+    /// the user after them.
+    func testLogGathering_deviceIDChangeWithoutMerge_lastBatchDoesNotCarryTheNewDeviceID() throws {
+        startSDK()
+        let newDeviceID = "next_user_identifier"
+
+        common.updateLogGatheringState(true, levels: allLevels, batch: maxBufferedLines, lgid: "gather_old_user")
+        clearBuffer()
+        capture(3, level: "e")
+
+        Countly.sharedInstance().changeDeviceIDWithoutMerge(newDeviceID)
+        settleDelivery()
+
+        XCTAssertFalse(uploadedBatches().isEmpty, "the held lines go out before the switch")
+        XCTAssertFalse(uploadedMessages().contains { $0.contains(newDeviceID) }, "the old user's lines never name the next user")
+    }
+
     /// A config response requested for the previous device ID can not arm gathering again once the device ID changed without merge.
     func testLogGathering_deviceIDChangeWithoutMerge_ignoresTheDirectiveRequestedForTheOldID() throws {
         try TestPlatform.skipUnlessHTTPInterceptable()
