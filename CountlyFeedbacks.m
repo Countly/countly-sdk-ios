@@ -30,6 +30,7 @@
 
 - (void)enterContentZone:(NSArray<NSString *> *)tags
 {
+    CLY_LOG_I(@"%s content zone entry requested, tagCount: [%lu]", __FUNCTION__, (unsigned long)tags.count);
     [CountlyContentBuilderInternal.sharedInstance enterContentZone:tags];
 }
 
@@ -42,6 +43,7 @@
 }
 
 - (void) presentNPS:(NSString *)nameIDorTag widgetCallback:(WidgetCallback) widgetCallback {
+    CLY_LOG_I(@"%s NPS widget requested, nameIDorTag: [%@], callbackProvided: [%@]", __FUNCTION__, nameIDorTag, (widgetCallback != nil) ? @"YES" : @"NO");
     [CountlyFeedbacksInternal.sharedInstance presentNPS:nameIDorTag widgetCallback:widgetCallback];
 }
 
@@ -54,6 +56,7 @@
 }
 
 - (void) presentSurvey:(NSString *)nameIDorTag widgetCallback:(WidgetCallback) widgetCallback {
+    CLY_LOG_I(@"%s survey widget requested, nameIDorTag: [%@], callbackProvided: [%@]", __FUNCTION__, nameIDorTag, (widgetCallback != nil) ? @"YES" : @"NO");
     [CountlyFeedbacksInternal.sharedInstance presentSurvey:nameIDorTag widgetCallback:widgetCallback];
 }
 
@@ -66,12 +69,13 @@
 }
 
 - (void) presentRating:(NSString *)nameIDorTag widgetCallback:(WidgetCallback) widgetCallback {
+    CLY_LOG_I(@"%s rating widget requested, nameIDorTag: [%@], callbackProvided: [%@]", __FUNCTION__, nameIDorTag, (widgetCallback != nil) ? @"YES" : @"NO");
     [CountlyFeedbacksInternal.sharedInstance presentRating:nameIDorTag widgetCallback:widgetCallback];
 }
 
 - (void)getAvailableFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> *feedbackWidgets, NSError * error))completionHandler
 {
-    CLY_LOG_I(@"%s %@", __FUNCTION__, completionHandler);
+    CLY_LOG_I(@"%s available feedback widgets requested, completionHandlerProvided: [%@]", __FUNCTION__, (completionHandler != nil) ? @"YES" : @"NO");
     [CountlyFeedbacksInternal.sharedInstance getFeedbackWidgets:completionHandler];
 }
 #endif

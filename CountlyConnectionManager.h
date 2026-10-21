@@ -15,6 +15,7 @@ extern NSString* const kCountlyQSKeySDKName;
 extern NSString* const kCountlyQSKeyMethod;
 extern NSString* const kCountlyQSKeyMetrics;
 extern NSString* const kCountlyQSKeyTheme;
+extern NSString* const kCountlyQSSdkLogs;
 
 extern NSString* const kCountlyEndpointI;
 extern NSString* const kCountlyEndpointO;
@@ -49,13 +50,16 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 
 - (void)sendEventsWithSaveIfNeeded;
 - (void)sendEvents;
+/// Queues one serialised 'sdk_logs' batch. Returns NO when the queue refuses it and the caller still owns the lines.
+- (BOOL)sendSdkLogs:(NSString * _Nonnull)sdkLogsJSON;
+/// Queues the connection test report as its own 'ct_results' request under the given device ID, and drops it when there is no app key.
+- (void)sendConnectionTestResults:(NSString * _Nonnull)resultsJSON deviceID:(NSString * _Nonnull)deviceID deviceIDType:(NSUInteger)deviceIDType;
 - (void)attemptToSendStoredRequests;
 - (void)sendPushToken:(NSString *)token;
 - (void)sendLocationInfo;
 - (void)sendUserDetails:(NSString *)userDetails;
 - (void)sendCrashReport:(NSString *)report immediately:(BOOL)immediately;
 - (void)sendOldDeviceID:(NSString *)oldDeviceID;
-- (void)sendAttribution;
 - (void)sendDirectAttributionWithCampaignID:(NSString *)campaignID andCampaignUserID:(NSString *)campaignUserID;
 - (void)sendAttributionData:(NSString *)attributionData;
 - (void)sendIndirectAttribution:(NSDictionary *)attribution;
@@ -74,6 +78,8 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 - (NSString *)appendChecksum:(NSString *)queryString;
 
 - (BOOL)isSessionStarted;
+/// Whether the running session was started by the SDK's automatic session tracking rather than by the app.
+- (BOOL)isSessionStartedAutomatically;
 
 #pragma mark - Request Callbacks
 

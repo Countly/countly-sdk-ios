@@ -7,7 +7,6 @@
 #import <Foundation/Foundation.h>
 
 @interface CountlyCrashReporter : NSObject
-@property (nonatomic) BOOL isEnabledOnInitialConfig;
 @property (nonatomic) NSDictionary<NSString *, NSString *>* crashSegmentation;
 @property (nonatomic) NSUInteger crashLogLimit;
 @property (nonatomic) NSRegularExpression* crashFilter;
@@ -25,6 +24,10 @@
 - (void)recordError:(NSString *)errorName isFatal:(BOOL)isFatal stackTrace:(NSArray *)stackTrace segmentation:(NSDictionary *)segmentation;
 - (void)log:(NSString *)log;
 - (void)clearCrashLogs;
+/// Puts back the crash handlers Countly replaced, or with PLCrashReporter, which stays installed, discards what it captures until the next start.
+- (void)resetInstance;
+/// Marks what PLCrashReporter captures from now on as unwanted, so it is purged instead of sent. No-op for the built in handlers.
+- (void)suppressAutomaticCrashCapture;
 @end
 
 

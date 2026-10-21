@@ -24,6 +24,7 @@ NSString* const kCountlyNotificationPermissionKey = @"kCountlyNotificationPermis
 NSString* const kCountlyIsCustomDeviceIDKey = @"kCountlyIsCustomDeviceIDKey";
 NSString* const kCountlyRemoteConfigKey = @"kCountlyRemoteConfigKey";
 NSString* const kCountlyServerConfigPersistencyKey = @"kCountlyServerConfigPersistencyKey";
+NSString* const kCountlyPLCrashCaptureSuppressedSinceKey = @"kCountlyPLCrashCaptureSuppressedSinceKey";
 
 
 NSString* const kCountlyCustomCrashLogFileName = @"CountlyCustomCrash.log";
@@ -56,6 +57,8 @@ static dispatch_once_t onceToken;
 #pragma GCC diagnostic pop
 
             self.queuedRequests = [readDict[kCountlyQueuedRequestsPersistencyKey] mutableCopy];
+
+            CLY_LOG_D(@"%s persistent storage file is loaded, data size: [%lu] bytes, restored request count: [%lu]", __FUNCTION__, (unsigned long)readData.length, (unsigned long)self.queuedRequests.count);
         }
 
         if (!self.queuedRequests)
@@ -72,16 +75,23 @@ static dispatch_once_t onceToken;
 
 #pragma mark ---
 
-- (void)addToQueue:(NSString *)queryString
+- (BOOL)addToQueue:(NSString *)queryString
 {
+    // NOTE: reachable from CountlySignalHandler through CountlyConnectionManager sendCrashReport,
+    // so every log here and in removeOldAgeRequestsFromQueue stays at Debug or lower, even the
+    // request dropping ones. CountlyInternalLog re-enters CountlyHealthTracker, which uses
+    // dispatch_once and dispatch_async, and neither is async-signal-safe.
     if (!CountlyServerConfig.sharedInstance.trackingEnabled)
     {
-        CLY_LOG_D(@"'addToQueue' is aborted: SDK Tracking is disabled from server config!");
-        return;
+        CLY_LOG_D(@"%s request is not queued, reason: SDK tracking is disabled from server config, query string length: [%lu]", __FUNCTION__, (unsigned long)queryString.length);
+        return NO;
     }
     
     if (!queryString.length || [queryString isEqual:NSNull.null])
-        return;
+    {
+        CLY_LOG_D(@"%s request is not queued, reason: query string is nil or empty", __FUNCTION__);
+        return NO;
+    }
     
     queryString = [queryString stringByAppendingFormat:@"&%@=%@",
                    kCountlyAppVersionKey, CountlyDeviceInfo.appVersion];
@@ -91,6 +101,13 @@ static dispatch_once_t onceToken;
         if (self.queuedRequests.count >= self.storedRequestsLimit)
         {
             [self removeOldAgeRequestsFromQueue];
+            [self removeSdkLogRequestsToMakeRoom];
+            if (self.queuedRequests.count >= self.storedRequestsLimit && [CountlyPersistency isSdkLogRequest:queryString])
+            {
+                // refused rather than making room, a log upload never pushes other data out, its lines go back to the gathering buffer
+                CLY_LOG_D(@"%s request is not queued, reason: the queue is full and a gathered log upload never pushes other requests out, queue size: [%lu]", __FUNCTION__, (unsigned long)self.queuedRequests.count);
+                return NO;
+            }
             if (self.queuedRequests.count >= self.storedRequestsLimit)
             {
                 NSUInteger exceededSize = self.queuedRequests.count - self.storedRequestsLimit;
@@ -98,13 +115,15 @@ static dispatch_once_t onceToken;
                 // for example if exceeded count is 136 and our limit is 100 we should remove 100 items
                 // in other case if exceeded count is 36 and out limit is 100 we can only remove 36 items because we have that amount
                 NSUInteger gonnaRemoveSize = MIN(exceededSize, kCountlyRequestRemovalLoopLimit) + 1;
-                CLY_LOG_W(@"[CountlyPersistency] addToQueue, request queue size:[ %lu ] exceeded limit:[ %lu ], will remove first:[ %lu ] request(s)", self.queuedRequests.count, self.storedRequestsLimit, gonnaRemoveSize);
+                CLY_LOG_D(@"%s request queue size: [%lu] exceeded the limit: [%lu], the first [%lu] request(s) will be dropped", __FUNCTION__, (unsigned long)self.queuedRequests.count, (unsigned long)self.storedRequestsLimit, (unsigned long)gonnaRemoveSize);
                 NSRange itemsToRemove = NSMakeRange(0, gonnaRemoveSize);
                 [self.queuedRequests removeObjectsInRange:itemsToRemove];
             }
         }
         [self.queuedRequests addObject:queryString];
+        CLY_LOG_V(@"%s request is queued, query string length: [%lu], queue size: [%lu]", __FUNCTION__, (unsigned long)queryString.length, (unsigned long)self.queuedRequests.count);
     }
+    return YES;
 }
 
 - (void)removeFromQueue:(NSString *)queryString
@@ -112,7 +131,10 @@ static dispatch_once_t onceToken;
     @synchronized (self)
     {
         if (self.queuedRequests.count)
+        {
             [self.queuedRequests removeObject:queryString inRange:(NSRange){0, 1}];
+            CLY_LOG_D(@"%s request at the head of the queue is removed, remaining request count: [%lu]", __FUNCTION__, (unsigned long)self.queuedRequests.count);
+        }
     }
 }
 
@@ -124,10 +146,28 @@ static dispatch_once_t onceToken;
     }
 }
 
+- (BOOL)queueContainsSdkLogs
+{
+    @synchronized (self)
+    {
+        for (NSString* queryString in self.queuedRequests)
+        {
+            if ([CountlyPersistency isSdkLogRequest:queryString])
+                return YES;
+        }
+
+        return NO;
+    }
+}
+
 - (void)flushQueue
 {
     @synchronized (self)
     {
+        if (self.queuedRequests.count)
+        {
+            CLY_LOG_D(@"%s request queue is being flushed, [%lu] queued request(s) will be dropped", __FUNCTION__, (unsigned long)self.queuedRequests.count);
+        }
         [self.queuedRequests removeAllObjects];
     }
 }
@@ -142,6 +182,7 @@ static dispatch_once_t onceToken;
 
 - (void)replaceAllTemporaryDeviceIDsInQueueWithDeviceID:(NSString *)deviceID
 {
+    CLY_LOG_D(@"%s replacing the temporary device ID in the queued requests, queued request count: [%lu]", __FUNCTION__, (unsigned long)[self remainingRequestCount]);
     NSString* temporaryDeviceIDQueryString = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, CLYTemporaryDeviceID];
     NSString* realDeviceIDQueryString = [NSString stringWithFormat:@"&%@=%@", kCountlyQSKeyDeviceID, deviceID.cly_URLEscaped];
 
@@ -156,7 +197,7 @@ static dispatch_once_t onceToken;
         {
             if ([queryString containsString:temporaryDeviceIDQueryString])
             {
-                CLY_LOG_D(@"Detected a request with temporary device ID in queue and replaced it with real device ID.");
+                CLY_LOG_V(@"[CountlyPersistency] replaceAllTemporaryDeviceIDsInQueueWithDeviceID, a queued request with the temporary device ID is replaced with the real device ID, request index: [%lu]", (unsigned long)idx);
                 NSString * replacedQueryString = [queryString stringByReplacingOccurrencesOfString:temporaryDeviceIDQueryString withString:realDeviceIDQueryString];
                 replacedQueryString = [replacedQueryString stringByReplacingOccurrencesOfString:temporaryDeviceIDTypeQueryString withString:realDeviceIDTypeQueryString];
                 self.queuedRequests[idx] = replacedQueryString;
@@ -171,6 +212,7 @@ static dispatch_once_t onceToken;
 {
     @synchronized (self)
     {
+        CLY_LOG_D(@"%s replacing different app keys in the queued requests, queued request count: [%lu]", __FUNCTION__, (unsigned long)self.queuedRequests.count);
         self.isQueueBeingModified = YES;
 
         [self.queuedRequests.copy enumerateObjectsUsingBlock:^(NSString* queryString, NSUInteger idx, BOOL* stop)
@@ -179,7 +221,7 @@ static dispatch_once_t onceToken;
 
             if (![appKeyInQueryString isEqualToString:CountlyConnectionManager.sharedInstance.appKey.cly_URLEscaped])
             {
-                CLY_LOG_D(@"Detected a request with a different app key (%@) in queue and replaced it with current app key.", appKeyInQueryString);
+                CLY_LOG_V(@"[CountlyPersistency] replaceAllAppKeysInQueueWithCurrentAppKey, a queued request with a different app key is replaced with the current app key, request index: [%lu]", (unsigned long)idx);
 
                 NSString* currentAppKeyQueryString = [NSString stringWithFormat:@"%@=%@", kCountlyQSKeyAppKey, CountlyConnectionManager.sharedInstance.appKey.cly_URLEscaped];
                 NSString* differentAppKeyQueryString = [NSString stringWithFormat:@"%@=%@", kCountlyQSKeyAppKey, appKeyInQueryString];
@@ -196,6 +238,7 @@ static dispatch_once_t onceToken;
 {
     @synchronized (self)
     {
+        NSUInteger requestCountBeforeAppKeyFilter = self.queuedRequests.count;
         self.isQueueBeingModified = YES;
 
         NSPredicate* predicate = [NSPredicate predicateWithBlock:^BOOL(NSString* queryString, NSDictionary<NSString *, id> * bindings)
@@ -205,7 +248,7 @@ static dispatch_once_t onceToken;
             BOOL isSameAppKey = [appKeyInQueryString isEqualToString:CountlyConnectionManager.sharedInstance.appKey.cly_URLEscaped];
             if (!isSameAppKey)
             {
-                CLY_LOG_D(@"Detected a request with a different app key (%@) in queue and removed it.", appKeyInQueryString);
+                CLY_LOG_V(@"[CountlyPersistency] removeDifferentAppKeysFromQueue, a queued request with a different app key will be dropped");
             }
 
             return isSameAppKey;
@@ -213,8 +256,53 @@ static dispatch_once_t onceToken;
 
         [self.queuedRequests filterUsingPredicate:predicate];
 
+        if (requestCountBeforeAppKeyFilter > self.queuedRequests.count)
+        {
+            CLY_LOG_W(@"%s dropped [%lu] queued request(s) with a different app key, remaining request count: [%lu]", __FUNCTION__, (unsigned long)(requestCountBeforeAppKeyFilter - self.queuedRequests.count), (unsigned long)self.queuedRequests.count);
+        }
+
         self.isQueueBeingModified = NO;
     }
+}
+
+/// Drops the oldest gathered log uploads until the full queue has room, counting their lines as dropped. Call while holding the queue lock.
+- (void)removeSdkLogRequestsToMakeRoom
+{
+    NSInteger excessCount = (NSInteger)self.queuedRequests.count - (NSInteger)self.storedRequestsLimit + 1;
+    if (excessCount <= 0)
+        return;
+
+    NSMutableIndexSet* sdkLogRequestIndexes = NSMutableIndexSet.new;
+    [self.queuedRequests enumerateObjectsUsingBlock:^(NSString* queryString, NSUInteger idx, BOOL* stop)
+    {
+        if ([CountlyPersistency isSdkLogRequest:queryString])
+            [sdkLogRequestIndexes addIndex:idx];
+
+        *stop = (NSInteger)sdkLogRequestIndexes.count >= excessCount;
+    }];
+
+    if (sdkLogRequestIndexes.count == 0)
+        return;
+
+    NSArray* droppedRequests = [self.queuedRequests objectsAtIndexes:sdkLogRequestIndexes];
+    self.isQueueBeingModified = YES;
+    [self.queuedRequests removeObjectsAtIndexes:sdkLogRequestIndexes];
+    self.isQueueBeingModified = NO;
+    for (NSString* queryString in droppedRequests)
+        [CountlyCommon.sharedInstance countEvictedSdkLogRequest:queryString];
+
+    CLY_LOG_D(@"%s request queue is full, gathered log uploads are dropped before any other request, droppedCount: [%lu], queue size: [%lu]", __FUNCTION__, (unsigned long)droppedRequests.count, (unsigned long)self.queuedRequests.count);
+}
+
++ (BOOL)isSdkLogRequest:(NSString *)queryString
+{
+    static NSString* sdkLogsParameter;
+    static dispatch_once_t sdkLogsParameterOnce;
+    dispatch_once(&sdkLogsParameterOnce, ^{
+        sdkLogsParameter = [NSString stringWithFormat:@"&%@=", kCountlyQSSdkLogs];
+    });
+
+    return [queryString rangeOfString:sdkLogsParameter].location != NSNotFound;
 }
 
 - (void)removeOldAgeRequestsFromQueue
@@ -222,6 +310,7 @@ static dispatch_once_t onceToken;
     @synchronized (self)
     {
         if(self.requestDropAgeHours && self.requestDropAgeHours > 0) {
+            NSUInteger requestCountBeforeAgeFilter = self.queuedRequests.count;
             self.isQueueBeingModified = YES;
             
             NSPredicate* predicate = [NSPredicate predicateWithBlock:^BOOL(NSString* queryString, NSDictionary<NSString *, id> * bindings)
@@ -231,6 +320,11 @@ static dispatch_once_t onceToken;
             }];
             
             [self.queuedRequests filterUsingPredicate:predicate];
+            
+            if (requestCountBeforeAgeFilter > self.queuedRequests.count)
+            {
+                CLY_LOG_D(@"%s dropped [%lu] old age queued request(s), request drop age in hours: [%lu], remaining request count: [%lu]", __FUNCTION__, (unsigned long)(requestCountBeforeAgeFilter - self.queuedRequests.count), (unsigned long)self.requestDropAgeHours, (unsigned long)self.queuedRequests.count);
+            }
             
             self.isQueueBeingModified = NO;
         }
@@ -254,7 +348,7 @@ static dispatch_once_t onceToken;
     BOOL isOldAgeRequest = durationInHours >= self.requestDropAgeHours;
     if (isOldAgeRequest)
     {
-        CLY_LOG_D(@"Detected a request with an old age (age in hours: %f) in queue and removed it.", durationInHours);
+        CLY_LOG_V(@"%s a queued request exceeded the request drop age and will be dropped, request age in hours: [%.2f], request drop age in hours: [%lu]", __FUNCTION__, durationInHours, (unsigned long)self.requestDropAgeHours);
     }
     
     return isOldAgeRequest;
@@ -277,6 +371,8 @@ static dispatch_once_t onceToken;
         }
         
         [self.recordedEvents addObject:event];
+
+        CLY_LOG_D(@"%s event is added to the in memory event queue, pending event count: [%lu], event send threshold: [%lu], callback provided: [%@]", __FUNCTION__, (unsigned long)self.recordedEvents.count, (unsigned long)self.eventSendThreshold, (callback != nil) ? @"YES" : @"NO");
         
         if (callback != nil || self.recordedEvents.count >= self.eventSendThreshold)
         {
@@ -292,9 +388,23 @@ static dispatch_once_t onceToken;
         if (self.recordedEvents.count == 0)
             return nil;
 
-        NSArray *eventDictionaries = [self.recordedEvents valueForKey:@"dictionaryRepresentation"];
+        NSMutableArray *eventDictionaries = NSMutableArray.new;
+        for (CountlyEvent *event in self.recordedEvents)
+        {
+            NSDictionary *eventDictionary = event.dictionaryRepresentation;
+            // one event JSON can not represent would otherwise take every event of the batch down with it
+            if ([NSJSONSerialization isValidJSONObject:eventDictionary])
+                [eventDictionaries addObject:eventDictionary];
+            else
+                CLY_LOG_D(@"%s an event JSON can not represent is dropped, key: [%@]", __FUNCTION__, event.key);
+        }
+
+        CLY_LOG_D(@"%s serializing the recorded events for the next request, event count: [%lu]", __FUNCTION__, (unsigned long)eventDictionaries.count);
 
         [self.recordedEvents removeAllObjects];
+
+        if (eventDictionaries.count == 0)
+            return nil;
 
         return [eventDictionaries cly_JSONify];
     }
@@ -305,20 +415,29 @@ static dispatch_once_t onceToken;
 {
     @synchronized (self.recordedEvents)
     {
+        if (self.recordedEvents.count)
+        {
+            CLY_LOG_D(@"%s in memory event queue is being flushed, [%lu] recorded event(s) will be dropped", __FUNCTION__, (unsigned long)self.recordedEvents.count);
+        }
         [self.recordedEvents removeAllObjects];
     }
 }
 
 - (void)resetInstance:(BOOL) clearStorage 
 {
-    CLY_LOG_I(@"%s Clear Storage: %d", __FUNCTION__, clearStorage);
+    CLY_LOG_I(@"%s persistency instance is being reset, clear storage: [%@]", __FUNCTION__, clearStorage ? @"YES" : @"NO");
     [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
     [self flushEvents];
     [self clearAllTimedEvents];
-    [self flushQueue];
     if(clearStorage)
     {
+        [self flushQueue];
         [self saveToFile];
+    }
+    else
+    {
+        // keeping the storage keeps every queued request, also the ones queued since the last save
+        [self saveToFileSync];
     }
     onceToken = 0;
     s_sharedInstance = nil;
@@ -332,11 +451,13 @@ static dispatch_once_t onceToken;
     {
         if (self.startedEvents[event.key])
         {
-            CLY_LOG_W(@"Event with key '%@' already started!", event.key);
+            CLY_LOG_W(@"%s timed event is not started, reason: a timed event with the same key is already started, key: [%@]", __FUNCTION__, event.key);
             return;
         }
 
         self.startedEvents[event.key] = event;
+
+        CLY_LOG_D(@"%s timed event is started, key: [%@], started timed event count: [%lu]", __FUNCTION__, event.key, (unsigned long)self.startedEvents.count);
     }
 }
 
@@ -345,6 +466,9 @@ static dispatch_once_t onceToken;
     @synchronized (self.startedEvents)
     {
         CountlyEvent *event = self.startedEvents[key];
+
+        CLY_LOG_D(@"%s timed event is requested from the started timed events, key: [%@], found: [%@]", __FUNCTION__, key, (event != nil) ? @"YES" : @"NO");
+
         [self.startedEvents removeObjectForKey:key];
 
         return event;
@@ -355,6 +479,7 @@ static dispatch_once_t onceToken;
 {
     @synchronized (self.startedEvents)
     {
+        CLY_LOG_D(@"%s clearing all started timed events, started timed event count: [%lu]", __FUNCTION__, (unsigned long)self.startedEvents.count);
         [self.startedEvents removeAllObjects];
     }
 }
@@ -380,6 +505,7 @@ static dispatch_once_t onceToken;
             [fileHandle seekToEndOfFile];
             [fileHandle writeData:[line dataUsingEncoding:NSUTF8StringEncoding]];
             [fileHandle closeFile];
+            CLY_LOG_V(@"[CountlyPersistency] writeCustomCrashLogToFile, a line is appended to the custom crash log file, line length: [%lu]", (unsigned long)line.length);
         }
         else
         {
@@ -387,7 +513,7 @@ static dispatch_once_t onceToken;
             [line writeToFile:crashLogFileURL.path atomically:YES encoding:NSUTF8StringEncoding error:&error];
             if (error)
             {
-                CLY_LOG_W(@"%s, Crash Log File can not be created, got error %@", __FUNCTION__, error);
+                CLY_LOG_W(@"[CountlyPersistency] writeCustomCrashLogToFile, custom crash log file can not be created, error domain: [%@], error code: [%ld], error description: [%@]", error.domain, (long)error.code, error.localizedDescription);
             }
         }
     });
@@ -397,6 +523,8 @@ static dispatch_once_t onceToken;
 {
     NSURL* crashLogFileURL = [[self storageDirectoryURL] URLByAppendingPathComponent:kCountlyCustomCrashLogFileName];
     NSData* readData = [NSData dataWithContentsOfURL:crashLogFileURL];
+
+    CLY_LOG_D(@"%s custom crash logs are read from the custom crash log file, data size: [%lu] bytes", __FUNCTION__, (unsigned long)readData.length);
 
     NSString* storedCustomCrashLogs = nil;
     if (readData)
@@ -413,11 +541,11 @@ static dispatch_once_t onceToken;
     NSError* error = nil;
     if ([NSFileManager.defaultManager fileExistsAtPath:crashLogFileURL.path])
     {
-        CLY_LOG_D(@"Detected Crash Log File and deleting it.");
+        CLY_LOG_D(@"%s custom crash log file is detected and it is being deleted", __FUNCTION__);
         [NSFileManager.defaultManager removeItemAtURL:crashLogFileURL error:&error];
         if (error)
         {
-            CLY_LOG_W(@"%s, Crash Log File can not be deleted, got error %@", __FUNCTION__, error);
+            CLY_LOG_W(@"%s custom crash log file can not be deleted, error domain: [%@], error code: [%ld], error description: [%@]", __FUNCTION__, error.domain, (long)error.code, error.localizedDescription);
         }
     }
 }
@@ -448,7 +576,7 @@ static dispatch_once_t onceToken;
             [NSFileManager.defaultManager createDirectoryAtURL:URL withIntermediateDirectories:YES attributes:nil error:&error];
             if (error)
             {
-                CLY_LOG_W(@"%s, Application Support directory can not be created, got error %@", __FUNCTION__, error);
+                CLY_LOG_E(@"[CountlyPersistency] storageDirectoryURL, storage directory can not be created, error domain: [%@], error code: [%ld], error description: [%@]", error.domain, (long)error.code, error.localizedDescription);
             }
         }
     });
@@ -481,18 +609,27 @@ static dispatch_once_t onceToken;
 
 - (void)saveToFileSync
 {
+    // NOTE: reachable from CountlySignalHandler through CountlyConnectionManager sendCrashReport,
+    // keep every log here at Debug or lower. See the note on addToQueue.
     NSData* saveData;
+    NSUInteger queuedRequestCountForLog = 0;
 
     @synchronized (self)
     {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
         saveData = [NSKeyedArchiver archivedDataWithRootObject:@{kCountlyQueuedRequestsPersistencyKey: self.queuedRequests}];
+        queuedRequestCountForLog = self.queuedRequests.count;
 #pragma GCC diagnostic pop
     }
 
     BOOL writeResult = [saveData writeToFile:[self storageFileURL].path atomically:YES];
-    CLY_LOG_D(@"Result of writing data to file: %d", writeResult);
+    CLY_LOG_D(@"%s request queue is written to the persistent storage file, success: [%@], data size: [%lu] bytes, request count: [%lu]", __FUNCTION__, writeResult ? @"YES" : @"NO", (unsigned long)saveData.length, (unsigned long)queuedRequestCountForLog);
+
+    if (!writeResult)
+    {
+        CLY_LOG_D(@"%s writing the request queue to the persistent storage file failed, data size: [%lu] bytes, request count: [%lu]", __FUNCTION__, (unsigned long)saveData.length, (unsigned long)queuedRequestCountForLog);
+    }
 
     [CountlyCommon.sharedInstance finishBackgroundTask];
 }
@@ -505,11 +642,12 @@ static dispatch_once_t onceToken;
 
     if (retrievedDeviceID)
     {
-        CLY_LOG_D(@"Device ID successfully retrieved from UserDefaults: %@", retrievedDeviceID);
+        CLY_LOG_D(@"%s device ID is retrieved from the user defaults, device ID length: [%lu]", __FUNCTION__, (unsigned long)retrievedDeviceID.length);
+        CLY_LOG_D(@"%s retrieved device ID detail, device ID: [%@]", __FUNCTION__, retrievedDeviceID);
         return retrievedDeviceID;
     }
 
-    CLY_LOG_D(@"There is no stored Device ID in UserDefaults!");
+    CLY_LOG_D(@"%s there is no stored device ID in the user defaults", __FUNCTION__);
 
     return nil;
 }
@@ -519,7 +657,8 @@ static dispatch_once_t onceToken;
     [NSUserDefaults.standardUserDefaults setObject:deviceID forKey:kCountlyStoredDeviceIDKey];
     [NSUserDefaults.standardUserDefaults synchronize];
 
-    CLY_LOG_D(@"Device ID successfully stored in UserDefaults: %@", deviceID);
+    CLY_LOG_D(@"%s device ID is stored in the user defaults, device ID length: [%lu]", __FUNCTION__, (unsigned long)deviceID.length);
+    CLY_LOG_D(@"%s stored device ID detail, device ID: [%@]", __FUNCTION__, deviceID);
 }
 
 - (NSString *)retrieveNSUUID
@@ -587,6 +726,8 @@ static dispatch_once_t onceToken;
     NSDictionary* remoteConfig = [NSKeyedUnarchiver unarchiveObjectWithData:data];
     if (!remoteConfig)
         remoteConfig = NSDictionary.new;
+
+    CLY_LOG_D(@"%s remote config is retrieved from the storage, stored data size: [%lu] bytes, key count: [%lu]", __FUNCTION__, (unsigned long)data.length, (unsigned long)remoteConfig.count);
     
     return remoteConfig;
 }
@@ -595,14 +736,19 @@ static dispatch_once_t onceToken;
 {
     [NSUserDefaults.standardUserDefaults setObject:[NSKeyedArchiver archivedDataWithRootObject:remoteConfig] forKey:kCountlyRemoteConfigKey];
     [NSUserDefaults.standardUserDefaults synchronize];
+
+    CLY_LOG_D(@"%s remote config is stored, key count: [%lu]", __FUNCTION__, (unsigned long)remoteConfig.count);
 }
 
 - (NSMutableDictionary *)retrieveServerConfig
 {
     NSDictionary* serverConfig = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyServerConfigPersistencyKey];
     if ([serverConfig isKindOfClass:[NSDictionary class]]) {
+         CLY_LOG_D(@"%s server config is retrieved from the storage, key count: [%lu]", __FUNCTION__, (unsigned long)serverConfig.count);
          return [serverConfig mutableCopy];
      }
+
+     CLY_LOG_D(@"%s there is no stored server config, returning an empty one", __FUNCTION__);
 
      return [NSMutableDictionary new];
 }
@@ -611,6 +757,8 @@ static dispatch_once_t onceToken;
 {
     [NSUserDefaults.standardUserDefaults setObject:serverConfig forKey:kCountlyServerConfigPersistencyKey];
     [NSUserDefaults.standardUserDefaults synchronize];
+
+    CLY_LOG_D(@"%s server config is stored, key count: [%lu]", __FUNCTION__, (unsigned long)serverConfig.count);
 }
 
 - (NSDictionary *)retrieveHealthCheckTrackerState
@@ -618,6 +766,8 @@ static dispatch_once_t onceToken;
     NSDictionary* healthCheckTrackerState = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyHealthCheckStatePersistencyKey];
     if (!healthCheckTrackerState)
         healthCheckTrackerState = NSDictionary.new;
+
+    CLY_LOG_D(@"%s health check tracker state is retrieved from the storage, key count: [%lu]", __FUNCTION__, (unsigned long)healthCheckTrackerState.count);
     
     return healthCheckTrackerState;
 }
@@ -627,11 +777,57 @@ static dispatch_once_t onceToken;
     @try {
         [NSUserDefaults.standardUserDefaults setObject:healthCheckTrackerState forKey:kCountlyHealthCheckStatePersistencyKey];
         [NSUserDefaults.standardUserDefaults synchronize];
+
+        CLY_LOG_D(@"%s health check tracker state is stored, key count: [%lu]", __FUNCTION__, (unsigned long)healthCheckTrackerState.count);
     }
     @catch (NSException *exception) {
-        CLY_LOG_E(@"%s, Exception while storing health check tracker state: %@, reason: %@", __FUNCTION__,
+        // NOTE: Debug on purpose. This method is only ever called from inside CountlyHealthTracker's
+        // hcQueue, and CountlyInternalLog re-enters that class for Error and Warning levels, which
+        // would repopulate the very counters this write is persisting or clearing.
+        CLY_LOG_D(@"%s exception while storing the health check tracker state, exception name: [%@], reason: [%@]", __FUNCTION__,
                   exception.name, exception.reason);
     }
+}
+
+- (NSDate *)retrievePLCrashCaptureSuppressedSince
+{
+    id suppressedSince = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyPLCrashCaptureSuppressedSinceKey];
+    return [suppressedSince isKindOfClass:NSDate.class] ? suppressedSince : nil;
+}
+
+- (void)storePLCrashCaptureSuppressedSince:(NSDate *)date
+{
+    if (date)
+    {
+        [NSUserDefaults.standardUserDefaults setObject:date forKey:kCountlyPLCrashCaptureSuppressedSinceKey];
+    }
+    else
+    {
+        if (![NSUserDefaults.standardUserDefaults objectForKey:kCountlyPLCrashCaptureSuppressedSinceKey])
+            return;
+
+        [NSUserDefaults.standardUserDefaults removeObjectForKey:kCountlyPLCrashCaptureSuppressedSinceKey];
+    }
+
+    [NSUserDefaults.standardUserDefaults synchronize];
+    CLY_LOG_D(@"%s automatic crash capture suppression is stored, suppressedSince: [%@]", __FUNCTION__, date);
+}
+
++ (void)removeStoredUserDefaults
+{
+    NSUserDefaults* defaults = NSUserDefaults.standardUserDefaults;
+    NSUInteger removedCount = 0;
+    for (NSString* key in defaults.dictionaryRepresentation.allKeys)
+    {
+        if (![key hasPrefix:@"kCountly"] || [key isEqualToString:kCountlyPLCrashCaptureSuppressedSinceKey])
+            continue;
+
+        [defaults removeObjectForKey:key];
+        removedCount++;
+    }
+
+    [defaults synchronize];
+    CLY_LOG_D(@"%s the SDK's values are removed from the standard user defaults, removedCount: [%lu]", __FUNCTION__, (unsigned long)removedCount);
 }
 
 @end

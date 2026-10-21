@@ -70,10 +70,9 @@ class CountlyDeviceIDTests: CountlyBaseTestCase {
         let newId = "New_ID"
         Countly.sharedInstance().setID(newId)
         XCTAssertEqual(2, CountlyPersistency.sharedInstance().remainingRequestCount())
-        guard let queuedRequests =  CountlyPersistency.sharedInstance().value(forKey: "queuedRequests") as? [String] else {
-            fatalError("Failed to get queuedRequests from CountlyPersistency")
+        if let setIdRequest = TestUtils.requestAt(1) {
+            validateSetIdOnServerRequest(request: setIdRequest, newDeviceId: newId)
         }
-        validateSetIdOnServerRequest(request: queuedRequests[1], newDeviceId: newId)
         validateDeveloperSuppliedID(deviceID: newId)
         
         Countly.sharedInstance().setID("")
@@ -87,8 +86,41 @@ class CountlyDeviceIDTests: CountlyBaseTestCase {
         Countly.sharedInstance().setID(sdkDeviceID)
         validateDeveloperSuppliedID(deviceID: newId)
     }
-    
-    
+
+    // "changeDeviceIDWithMerge" and "changeDeviceIDWithoutMerge" with nil, an empty string or "CLYDefaultDeviceID"
+    // - validate that every call is ignored, the custom device ID stays and no request is queued
+    // - validate that an ignored change without merge keeps the given consents
+    // - validate that an empty value does not leave temporary device ID mode
+    // - validate that a valid device ID is still applied afterwards
+
+    func test_changeDeviceID_emptyValuesAreIgnored() {
+        let config = createBaseConfig()
+        config.requiresConsent = true
+        config.consents = [CLYConsent.sessions, CLYConsent.events]
+        config.manualSessionHandling = true
+        config.deviceID = testDeviceID
+        Countly.sharedInstance().start(with: config)
+        validateDeveloperSuppliedID(deviceID: testDeviceID)
+        let requestCountBefore = CountlyPersistency.sharedInstance().remainingRequestCount()
+
+        for emptyValue in [nil, "", CLYDefaultDeviceID] as [String?] {
+            Countly.sharedInstance().changeDeviceID(withMerge: emptyValue)
+            Countly.sharedInstance().changeDeviceIDWithoutMerge(emptyValue)
+        }
+
+        validateDeveloperSuppliedID(deviceID: testDeviceID)
+        XCTAssertEqual(requestCountBefore, CountlyPersistency.sharedInstance().remainingRequestCount(), "an ignored device ID change must not queue a request")
+        XCTAssertTrue(CountlyConsentManager.sharedInstance().consentForEvents, "an ignored change without merge must keep the given consents")
+
+        Countly.sharedInstance().enableTemporaryDeviceIDMode()
+        Countly.sharedInstance().changeDeviceIDWithoutMerge(CLYDefaultDeviceID)
+        XCTAssertEqual(CLYTemporaryDeviceID, Countly.sharedInstance().deviceID(), "an empty value must not leave temporary device ID mode")
+
+        Countly.sharedInstance().changeDeviceIDWithoutMerge("valid_id")
+        validateDeveloperSuppliedID(deviceID: "valid_id")
+    }
+
+
     func validateDeveloperSuppliedID(deviceID: String) {
         let sdkDeviceID = Countly.sharedInstance().deviceID()
         XCTAssertTrue(Countly.sharedInstance().deviceIDType() == CLYDeviceIDType.custom, "Countly deviced id type should be Custom when device id is provided during init.")
@@ -97,7 +129,7 @@ class CountlyDeviceIDTests: CountlyBaseTestCase {
     
     func validateSdkGeneratedID() {
         let sdkDeviceID = Countly.sharedInstance().deviceID()
-        XCTAssertTrue(Countly.sharedInstance().deviceIDType() == CLYDeviceIDType.IDFV, "Countly deviced id type should be IDFV when no device id is provided during init.")
+        XCTAssertTrue(Countly.sharedInstance().deviceIDType() == TestPlatform.defaultDeviceIDType, "Countly deviced id type should be the platform default (IDFV on iOS/tvOS/visionOS, NSUUID on watchOS/macOS) when no device id is provided during init.")
         XCTAssertTrue(sdkDeviceID == getIDFV(), "Countly device id not match with provided device id.")
     }
     
@@ -106,8 +138,8 @@ class CountlyDeviceIDTests: CountlyBaseTestCase {
         
         let sdkDeviceID = Countly.sharedInstance().deviceID()
         
-        let oldDeviceID = parsedRequest["old_device_id"] as! String;
-        let deviceIDInRequest = parsedRequest["device_id"] as! String;
+        let oldDeviceID = parsedRequest["old_device_id"] as? String
+        let deviceIDInRequest = parsedRequest["device_id"] as? String
         
         XCTAssertTrue(Countly.sharedInstance().deviceIDType() == CLYDeviceIDType.custom, "Countly deviced id type should be Custom.")
         XCTAssertTrue(oldDeviceID == getIDFV())

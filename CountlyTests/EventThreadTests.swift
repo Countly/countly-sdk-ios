@@ -9,8 +9,11 @@
 import XCTest
 @testable import Countly
 
-final class EventRaceReproTests: XCTestCase {
+final class EventRaceReproTests: CountlyBaseTestCase {
     func testPreviousEventIDRace() {
+        // CountlyBaseTestCase.setUpWithError purges the state, including the previous-event
+        // chain, left behind by whichever class ran before this one. Without that the first
+        // event asserted below inherits a `peid` from the previous test.
         let config = CountlyConfig()
         config.appKey = "appkey"
         config.host = "https://127.0.0.1"
@@ -18,6 +21,9 @@ final class EventRaceReproTests: XCTestCase {
         config.requiresConsent = false
         config.eventSendThreshold = UInt(10_000)
         config.experimental().enablePreviousNameRecording = true;
+        // `CountlyConfig.experimental` is a process-wide shared object, so leaving the flag
+        // set would turn previous-name recording on for every later test.
+        defer { config.experimental().enablePreviousNameRecording = false }
         Countly.sharedInstance().start(with: config)
 
         Countly.sharedInstance().recordEvent("warmup")
@@ -91,8 +97,11 @@ final class EventRaceReproTests: XCTestCase {
         XCTAssertFalse(queuedEvents.isEmpty, "No events found in queued requests")
 
         let expectedNonReservedCount = 1 + (workers * iterations)
+        // Match only this test's own events. Filtering merely on "not reserved" also picked up a
+        // custom event left by a neighbouring test whose flush completed after setUp purged the
+        // queue, which showed up as one extra event and a non-empty chain at index 0.
         let nonReservedEvents = queuedEvents
-            .filter { !$0.key.hasPrefix("[CLY]_") }
+            .filter { $0.key == "warmup" || $0.key.hasPrefix("Login Result #") }
 
         XCTAssertEqual(nonReservedEvents.count, expectedNonReservedCount)
 

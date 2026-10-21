@@ -61,9 +61,18 @@ static dispatch_once_t onceToken;
     return self;
 }
 
+/// Sets whether consent is required, and decides the gathered lines against it again.
+- (void)setRequiresConsent:(BOOL)requiresConsent
+{
+    _requiresConsent = requiresConsent;
+
+    [CountlyCommon.sharedInstance redecideSdkLogLinesConsent];
+}
+
 - (void)resetInstance {
-    CLY_LOG_I(@"%s", __FUNCTION__);
-    [self cancelConsentForAllFeatures];
+    // the given consents are forgotten, not withdrawn: a withdrawal would tell the server the user withdrew every consent
+    // and unregister the app from push notifications, while halt only resets the SDK
+    CLY_LOG_I(@"%s resetting consent manager instance, the given consents are forgotten without a consent request", __FUNCTION__);
     onceToken = 0;
     s_sharedInstance = nil;
 }
@@ -72,17 +81,26 @@ static dispatch_once_t onceToken;
 
 - (void)giveAllConsents
 {
-    [self giveConsentForFeatures:[self allFeatures]];
+    NSArray* allFeatures = [self allFeatures];
+    [self giveConsentForFeatures:allFeatures];
 }
 
 
 - (void)giveConsentForFeatures:(NSArray *)features
 {
+    CLY_LOG_I(@"%s giving consent for features, feature count: [%lu], features: [%@]", __FUNCTION__, (unsigned long)features.count, features);
+
     if (!self.requiresConsent)
+    {
+        CLY_LOG_V(@"%s requiresConsent is not enabled, giving consent for features will be ignored", __FUNCTION__);
         return;
+    }
 
     if (!features.count)
+    {
+        CLY_LOG_E(@"%s feature list is empty, there is no consent to give", __FUNCTION__);
         return;
+    }
 
     //NOTE: Due to some legacy Countly Server location info problems, giving consent for location should be the first.
     //NOTE: Otherwise, if location consent is given after sessions consent, begin_session request will be sent with an empty string as location.
@@ -126,18 +144,22 @@ static dispatch_once_t onceToken;
         self.consentForMetrics = YES;
 
     [self sendConsents];
+
+    [CountlyCommon.sharedInstance redecideSdkLogLinesConsent];
 }
 
 
 - (void)cancelConsentForAllFeatures
 {
-    [self cancelConsentForFeatures:[self allFeatures]];
+    NSArray* allFeatures = [self allFeatures];
+    [self cancelConsentForFeatures:allFeatures];
 }
 
 
 - (void)cancelConsentForAllFeaturesWithoutSendingConsentsRequest
 {
-    [self cancelConsentForFeatures:[self allFeatures] shouldSkipSendingConsentsRequest:YES];
+    NSArray* allFeatures = [self allFeatures];
+    [self cancelConsentForFeatures:allFeatures shouldSkipSendingConsentsRequest:YES];
 }
 
 
@@ -149,8 +171,13 @@ static dispatch_once_t onceToken;
 
 - (void)cancelConsentForFeatures:(NSArray *)features shouldSkipSendingConsentsRequest:(BOOL)shouldSkipSendingConsentsRequest
 {
+    CLY_LOG_I(@"%s cancelling consent for features, feature count: [%lu], features: [%@], skipSendingConsentsRequest: [%@]", __FUNCTION__, (unsigned long)features.count, features, shouldSkipSendingConsentsRequest ? @"YES" : @"NO");
+
     if (!self.requiresConsent)
+    {
+        CLY_LOG_V(@"%s requiresConsent is not enabled, cancelling consent for features will be ignored", __FUNCTION__);
         return;
+    }
 
     if ([features containsObject:CLYConsentSessions] && self.consentForSessions)
     {
@@ -196,6 +223,8 @@ static dispatch_once_t onceToken;
 
     if (!shouldSkipSendingConsentsRequest)
         [self sendConsents];
+
+    [CountlyCommon.sharedInstance redecideSdkLogLinesConsent];
 }
 
 
@@ -217,6 +246,8 @@ static dispatch_once_t onceToken;
         CLYConsentContent: @(self.consentForContent),
         CLYConsentMetrics: @(self.consentForMetrics),
     };
+
+    CLY_LOG_D(@"%s consents state will be sent to the server, feature count: [%lu]", __FUNCTION__, (unsigned long)consents.count);
 
     [CountlyConnectionManager.sharedInstance sendConsents:[consents cly_JSONify]];
 }
@@ -271,14 +302,14 @@ static dispatch_once_t onceToken;
 
     if (consentForSessions)
     {
-        CLY_LOG_D(@"Consent for Session is given.");
+        CLY_LOG_D(@"%s consent granted, feature: [%@], begin session will be requested unless manual session handling is enabled", __FUNCTION__, CLYConsentSessions);
 
-        if (!CountlyCommon.sharedInstance.manualSessionHandling)
+        if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
             [CountlyConnectionManager.sharedInstance beginSession];
     }
     else
     {
-        CLY_LOG_D(@"Consent for Session is cancelled.");
+        CLY_LOG_D(@"%s consent cancelled, feature: [%@], session tracking will no longer be performed", __FUNCTION__, CLYConsentSessions);
     }
 }
 
@@ -289,11 +320,11 @@ static dispatch_once_t onceToken;
 
     if (consentForEvents)
     {
-        CLY_LOG_D(@"Consent for Events is given.");
+        CLY_LOG_D(@"%s consent granted, feature: [%@], custom events will be recorded", __FUNCTION__, CLYConsentEvents);
     }
     else
     {
-        CLY_LOG_D(@"Consent for Events is cancelled.");
+        CLY_LOG_D(@"%s consent cancelled, feature: [%@], recorded events will be sent and timed events will be cleared", __FUNCTION__, CLYConsentEvents);
 
         [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
         [CountlyPersistency.sharedInstance clearAllTimedEvents];
@@ -307,13 +338,13 @@ static dispatch_once_t onceToken;
 
     if (consentForUserDetails)
     {
-        CLY_LOG_D(@"Consent for UserDetails is given.");
+        CLY_LOG_D(@"%s consent granted, feature: [%@], orientation will be recorded and user details will be saved", __FUNCTION__, CLYConsentUserDetails);
         [CountlyCommon.sharedInstance recordOrientation];
         [CountlyUserDetails.sharedInstance save];
     }
     else
     {
-        CLY_LOG_D(@"Consent for UserDetails is cancelled.");
+        CLY_LOG_D(@"%s consent cancelled, feature: [%@], stored user details will be cleared", __FUNCTION__, CLYConsentUserDetails);
 
         [CountlyUserDetails.sharedInstance clearUserDetails];
     }
@@ -326,13 +357,13 @@ static dispatch_once_t onceToken;
 
     if (consentForCrashReporting)
     {
-        CLY_LOG_D(@"Consent for CrashReporting is given.");
+        CLY_LOG_D(@"%s consent granted, feature: [%@], crash reporting will be started", __FUNCTION__, CLYConsentCrashReporting);
 
         [CountlyCrashReporter.sharedInstance startCrashReporting];
     }
     else
     {
-        CLY_LOG_D(@"Consent for CrashReporting is cancelled.");
+        CLY_LOG_D(@"%s consent cancelled, feature: [%@], crash reporting will be stopped", __FUNCTION__, CLYConsentCrashReporting);
 
         [CountlyCrashReporter.sharedInstance stopCrashReporting];
     }
@@ -346,7 +377,7 @@ static dispatch_once_t onceToken;
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_OSX)
     if (consentForPushNotifications)
     {
-        CLY_LOG_D(@"Consent for PushNotifications is given.");
+        CLY_LOG_D(@"%s consent granted, feature: [%@], push notifications will be started", __FUNCTION__, CLYConsentPushNotifications);
 
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
         [CountlyPushNotifications.sharedInstance startPushNotifications];
@@ -354,7 +385,7 @@ static dispatch_once_t onceToken;
     }
     else
     {
-        CLY_LOG_D(@"Consent for PushNotifications is cancelled.");
+        CLY_LOG_D(@"%s consent cancelled, feature: [%@], push notifications will be stopped", __FUNCTION__, CLYConsentPushNotifications);
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
         [CountlyPushNotifications.sharedInstance stopPushNotifications];
 #endif
@@ -369,13 +400,13 @@ static dispatch_once_t onceToken;
 
     if (consentForLocation)
     {
-        CLY_LOG_D(@"Consent for Location is given.");
+        CLY_LOG_D(@"%s consent granted, feature: [%@], location info will be sent", __FUNCTION__, CLYConsentLocation);
 
         [CountlyLocationManager.sharedInstance sendLocationInfo];
     }
     else
     {
-        CLY_LOG_D(@"Consent for Location is cancelled.");
+        CLY_LOG_D(@"%s consent cancelled, feature: [%@], location info will be cleared on the server", __FUNCTION__, CLYConsentLocation);
         
         [CountlyConnectionManager.sharedInstance sendLocationInfo];
     }
@@ -386,16 +417,18 @@ static dispatch_once_t onceToken;
 {
     _consentForViewTracking = consentForViewTracking;
 
-#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV)
+// Automatic view tracking is only implemented for iOS and tvOS, so the guard must not include
+// visionOS: the methods below would be declared but have no definition there
+#if (TARGET_OS_IOS || TARGET_OS_TV)
     if (consentForViewTracking)
     {
-        CLY_LOG_D(@"Consent for ViewTracking is given.");
+        CLY_LOG_D(@"%s consent granted, feature: [%@], automatic view tracking will be started", __FUNCTION__, CLYConsentViewTracking);
 
         [CountlyViewTrackingInternal.sharedInstance startAutoViewTracking];
     }
     else
     {
-        CLY_LOG_D(@"Consent for ViewTracking is cancelled.");
+        CLY_LOG_D(@"%s consent cancelled, feature: [%@], automatic view tracking will be stopped", __FUNCTION__, CLYConsentViewTracking);
 
         [CountlyViewTrackingInternal.sharedInstance stopAutoViewTracking];
     }
@@ -409,13 +442,11 @@ static dispatch_once_t onceToken;
 
     if (consentForAttribution)
     {
-        CLY_LOG_D(@"Consent for Attribution is given.");
-
-        [CountlyConnectionManager.sharedInstance sendAttribution];
+        CLY_LOG_D(@"%s consent granted, feature: [%@], attribution can be recorded", __FUNCTION__, CLYConsentAttribution);
     }
     else
     {
-        CLY_LOG_D(@"Consent for Attribution is cancelled.");
+        CLY_LOG_D(@"%s consent cancelled, feature: [%@], attribution will no longer be sent", __FUNCTION__, CLYConsentAttribution);
     }
 }
 
@@ -427,13 +458,13 @@ static dispatch_once_t onceToken;
 #if (TARGET_OS_IOS || TARGET_OS_VISION)
     if (consentForPerformanceMonitoring)
     {
-        CLY_LOG_D(@"Consent for PerformanceMonitoring is given.");
+        CLY_LOG_D(@"%s consent granted, feature: [%@], performance monitoring will be started", __FUNCTION__, CLYConsentPerformanceMonitoring);
         
         [CountlyPerformanceMonitoring.sharedInstance startPerformanceMonitoring];
     }
     else
     {
-        CLY_LOG_D(@"Consent for PerformanceMonitoring is cancelled.");
+        CLY_LOG_D(@"%s consent cancelled, feature: [%@], performance monitoring will be stopped", __FUNCTION__, CLYConsentPerformanceMonitoring);
 
         [CountlyPerformanceMonitoring.sharedInstance stopPerformanceMonitoring];
     }
@@ -447,13 +478,13 @@ static dispatch_once_t onceToken;
 #if (TARGET_OS_IOS || TARGET_OS_VISION)
     if (consentForFeedback)
     {
-        CLY_LOG_D(@"Consent for Feedback is given.");
+        CLY_LOG_D(@"%s consent granted, feature: [%@], star rating auto ask will be checked", __FUNCTION__, CLYConsentFeedback);
 
         [CountlyFeedbacksInternal.sharedInstance checkForStarRatingAutoAsk];
     }
     else
     {
-        CLY_LOG_D(@"Consent for Feedback is cancelled.");
+        CLY_LOG_D(@"%s consent cancelled, feature: [%@], feedback widgets will no longer be shown", __FUNCTION__, CLYConsentFeedback);
     }
 #endif
 }
@@ -464,13 +495,13 @@ static dispatch_once_t onceToken;
 
     if (consentForRemoteConfig)
     {
-        CLY_LOG_D(@"Consent for RemoteConfig is given.");
+        CLY_LOG_D(@"%s consent granted, feature: [%@], automatic remote config download will be triggered", __FUNCTION__, CLYConsentRemoteConfig);
 
         [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfigAutomatically];
     }
     else
     {
-        CLY_LOG_D(@"Consent for RemoteConfig is cancelled.");
+        CLY_LOG_D(@"%s consent cancelled, feature: [%@], remote config values will no longer be downloaded", __FUNCTION__, CLYConsentRemoteConfig);
     }
 }
 
@@ -480,11 +511,11 @@ static dispatch_once_t onceToken;
 
     if (consentForMetrics)
     {
-        CLY_LOG_D(@"Consent for Metrics is given.");
+        CLY_LOG_D(@"%s consent granted, feature: [%@], metrics will be included in requests", __FUNCTION__, CLYConsentMetrics);
     }
     else
     {
-        CLY_LOG_D(@"Consent for Metrics is cancelled.");
+        CLY_LOG_D(@"%s consent cancelled, feature: [%@], metrics will be omitted from requests", __FUNCTION__, CLYConsentMetrics);
     }
 }
 
@@ -494,11 +525,11 @@ static dispatch_once_t onceToken;
     
     if (consentForContent)
     {
-        CLY_LOG_D(@"Consent for Content is given.");
+        CLY_LOG_D(@"%s consent granted, feature: [%@], content zone can be entered", __FUNCTION__, CLYConsentContent);
     }
     else
     {
-        CLY_LOG_D(@"Consent for Content is cancelled.");
+        CLY_LOG_D(@"%s consent cancelled, feature: [%@], content zone will be exited", __FUNCTION__, CLYConsentContent);
 #if (TARGET_OS_IOS || TARGET_OS_VISION)
         [CountlyContentBuilderInternal.sharedInstance exitContentZone];
 #endif

@@ -84,7 +84,7 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
         // Call validateRecordedEvents to check if the events match expectations
         validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
         
-        validateRecordedEventSegmentations(forEventID: viewID ?? "", expectedSegmentations: ["name": "View1", "visit": 1, "key": "value", "segment": "iOS"])
+        validateRecordedEventSegmentations(forEventID: viewID ?? "", expectedSegmentations: ["name": "View1", "visit": 1, "key": "value", "segment": CountlyDeviceInfo.osName()!])
     }
     
     func testStartViewAndStopViewWithID() throws {
@@ -260,8 +260,13 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
             stopExpectation.fulfill()
         }
         
-        Countly.sharedInstance().views().startView("View1")
-        Countly.sharedInstance().views().stopView(withName: "View1")
+        // A second, immediately stopped view with the SAME name. It has to be stopped by ID:
+        // `stopView(withName:)` resolves a name by enumerating an NSMutableDictionary and taking
+        // the first match, so with two running views called "View1" which one it stops is
+        // undefined. That is what made this test pass locally and fail on CI, where the name
+        // lookup killed the view the scheduled pause/resume calls below reference.
+        let secondViewID = Countly.sharedInstance().views().startView("View1")
+        Countly.sharedInstance().views().stopView(withID: secondViewID)
         
         // Wait for all expectations to be fulfilled
         wait(for: [pauseExpectation, resumeExpectation,pauseExpectation1, resumeExpectation1, stopExpectation], timeout: 35.0)
@@ -275,6 +280,9 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
         validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
     }
     
+    // Automatic view tracking is only implemented for iOS and tvOS; on visionOS the public API
+    // is a logged no-op, so manual view recording is not suppressed there.
+    #if os(iOS) || os(tvOS)
     func testStartViewWhileAutoViewTrackingEnabled() throws {
         let config = createBaseConfig()
         config.enableAutomaticViewTracking = true // Enable auto view tracking
@@ -294,7 +302,77 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
         // Call validateRecordedEvents to check if the events match expectations
         validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
     }
-    
+
+    /// Each screen automatic view tracking records ends the one before it, as automatic views do on Android, so every
+    /// screen reports its own duration instead of staying open.
+    func testAutomaticViewsEndThePreviousScreen() throws {
+        let config = createBaseConfig()
+        config.enableAutomaticViewTracking = true
+        Countly.sharedInstance().start(with: config)
+
+        let first = UIViewController()
+        first.title = "FirstScreen"
+        let second = UIViewController()
+        second.title = "SecondScreen"
+        let appear = NSSelectorFromString("performAutoViewTrackingForViewController:")
+
+        CountlyViewTrackingInternal.sharedInstance().perform(appear, with: first)
+        TestUtils.sleep(2) {}
+        CountlyViewTrackingInternal.sharedInstance().perform(appear, with: second)
+
+        let openViews = CountlyViewTrackingInternal.sharedInstance().value(forKey: "viewDataDictionary") as? [String: Any]
+        XCTAssertEqual(1, openViews?.count, "only the screen on top stays open")
+        validateRecordedViews(startedEventsCount: ["FirstScreen": 1, "SecondScreen": 1], endedEventsDurations: ["FirstScreen": [2]])
+    }
+
+    /// The screen already on top when automatic view tracking starts is ended by the next screen too, instead of staying
+    /// open next to every later one until the app goes to the background.
+    func testAutomaticViewTrackingEndsTheScreenOnTopAtStart() throws {
+        let top = UIViewController()
+        top.title = "TopAtStart"
+        let topViewController = try XCTUnwrap(class_getInstanceMethod(CountlyCommon.self, NSSelectorFromString("topViewController")))
+        let topBlock: @convention(block) (AnyObject) -> UIViewController? = { _ in top }
+        let originalTopViewController = method_setImplementation(topViewController, imp_implementationWithBlock(topBlock))
+        defer { method_setImplementation(topViewController, originalTopViewController) }
+
+        let config = createBaseConfig()
+        config.enableAutomaticViewTracking = true
+        Countly.sharedInstance().start(with: config)
+
+        let next = UIViewController()
+        next.title = "NextScreen"
+        TestUtils.sleep(2) {}
+        CountlyViewTrackingInternal.sharedInstance().perform(NSSelectorFromString("performAutoViewTrackingForViewController:"), with: next)
+
+        let openViews = CountlyViewTrackingInternal.sharedInstance().value(forKey: "viewDataDictionary") as? [String: Any]
+        XCTAssertEqual(1, openViews?.count, "only the screen on top stays open")
+        validateRecordedViews(startedEventsCount: ["TopAtStart": 1, "NextScreen": 1], endedEventsDurations: ["TopAtStart": [2]])
+    }
+
+    #endif
+
+    #if os(iOS)
+    /// Content and feedback widgets appear in the SDK's own web view controller, which is not a screen of the app, so it
+    /// neither records a view nor ends the view of the screen under it.
+    func testAutomaticViewTrackingIgnoresTheSDKsWebViewController() throws {
+        let config = createBaseConfig()
+        config.enableAutomaticViewTracking = true
+        Countly.sharedInstance().start(with: config)
+
+        let screen = UIViewController()
+        screen.title = "AppScreen"
+        let webViewControllerClass = try XCTUnwrap(NSClassFromString("CountlyWebViewController") as? UIViewController.Type)
+        let appear = NSSelectorFromString("performAutoViewTrackingForViewController:")
+
+        CountlyViewTrackingInternal.sharedInstance().perform(appear, with: screen)
+        CountlyViewTrackingInternal.sharedInstance().perform(appear, with: webViewControllerClass.init())
+
+        let openViews = CountlyViewTrackingInternal.sharedInstance().value(forKey: "viewDataDictionary") as? [String: Any]
+        XCTAssertEqual(1, openViews?.count, "the app's screen stays the open view")
+        validateRecordedViews(startedEventsCount: ["AppScreen": 1, "CountlyWebViewController": 0], endedEventsDurations: [:])
+    }
+    #endif
+
     func testStartAndStopAutoStoppedViewWithSegmentation() throws {
         let config = createBaseConfig()
         Countly.sharedInstance().start(with: config)
@@ -481,8 +559,8 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
         // Wait for all expectations to be fulfilled
         wait(for: [waitForStart, waitForSecondSegmentation, waitForStop], timeout: 12.0)
         
-        validateRecordedEventSegmentations(forEventID: viewID ?? "", expectedSegmentations: ["name": "View1", "visit": 1, "startKey": "startValue", "segment": "iOS"])
-        validateRecordedEventSegmentations(forEventID: viewID ?? "", expectedSegmentations: ["name": "View1", "key1": "value1", "key2": "value2", "segment": "iOS"])
+        validateRecordedEventSegmentations(forEventID: viewID ?? "", expectedSegmentations: ["name": "View1", "visit": 1, "startKey": "startValue", "segment": CountlyDeviceInfo.osName()!])
+        validateRecordedEventSegmentations(forEventID: viewID ?? "", expectedSegmentations: ["name": "View1", "key1": "value1", "key2": "value2", "segment": CountlyDeviceInfo.osName()!])
     }
     
     func testStartViewWithConsentNotGiven() throws {
@@ -550,12 +628,16 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
         // Wait for all expectations to be fulfilled
         wait(for: [stopView1Expectation, startView2Expectation, stopView2Expectation], timeout: 12.0)
         
-        validateRecordedEventSegmentations(forEventID: viewID2, expectedSegmentations: ["visit": 1, "key": "value", "name": "View2", "segment": "iOS"])
-        validateRecordedEventSegmentations(forEventID: viewID2, expectedSegmentations: ["key": "newValue", "name": "View2", "segment": "iOS"])
+        validateRecordedEventSegmentations(forEventID: viewID2, expectedSegmentations: ["visit": 1, "key": "value", "name": "View2", "segment": CountlyDeviceInfo.osName()!])
+        validateRecordedEventSegmentations(forEventID: viewID2, expectedSegmentations: ["key": "newValue", "name": "View2", "segment": CountlyDeviceInfo.osName()!])
     }
 
 }
 
+// The automatic background/foreground view lifecycle is driven by UIApplication
+// notifications, which the SDK only observes on iOS, tvOS and visionOS. macOS and
+// watchOS lifecycle behaviour is covered by CountlyPlatformLifecycleTests instead.
+#if os(iOS) || os(tvOS) || os(visionOS)
 class CountlyViewForegroundBackgroundTests: CountlyViewBaseTest {
     func testStartMultipleViewsMoveAppToBackgroundAndReturnToForeground() throws {
         let config = createBaseConfig()
@@ -736,7 +818,112 @@ class CountlyViewForegroundBackgroundTests: CountlyViewBaseTest {
         // Call validateRecordedEvents to check if the events match expectations
         validateRecordedViews(startedEventsCount: [:], endedEventsDurations: [:])
     }
-    
+
+    /// A view ID handed out before a background and foreground cycle still stops its view afterwards.
+    /// Without it the stop call is ignored, the reopened view stays open and reports another visit
+    /// and another duration on every later cycle.
+    func testStopViewWithIDHandedOutBeforeBackgroundForegroundCycle() throws {
+        let config = createBaseConfig()
+        Countly.sharedInstance().start(with: config)
+
+        let viewID = Countly.sharedInstance().views().startView("View1")
+
+        goBackgroundForeground()
+
+        Countly.sharedInstance().views().stopView(withID: viewID)
+
+        validateQueuedViews(startedEventsCount: ["View1": 1], endedEventsDurations: ["View1": [3]])
+
+        validateRecordedViews(startedEventsCount: ["View1": 1], endedEventsDurations: ["View1": [3]])
+
+        let eventCountAfterStop = getRecordedViews().count
+        Countly.sharedInstance().views().stopView(withID: viewID)
+        XCTAssertEqual(getRecordedViews().count, eventCountAfterStop, "Stopping an already stopped view ID should not record another event.")
+    }
+
+    /// An auto stopped view running when the app went to the background keeps running after the views restart in the foreground.
+    func testAutoStoppedViewKeepsRunningWhenViewsRestartAfterForeground() throws {
+        let config = createBaseConfig()
+        Countly.sharedInstance().start(with: config)
+
+        let regularViews = ["R1", "R2", "R3", "R4", "R5"]
+        regularViews.forEach { Countly.sharedInstance().views().startView($0) }
+        Countly.sharedInstance().views().startAutoStoppedView("A1")
+
+        NotificationCenter.default.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+        NotificationCenter.default.post(name: UIApplication.didBecomeActiveNotification, object: nil)
+
+        let restoredViews = getRecordedViews()
+        let restartedNames = restoredViews.filter { ($0.segmentation?["visit"] as? Int) == 1 }.compactMap { $0.segmentation?["name"] as? String }
+        XCTAssertEqual((regularViews + ["A1"]).sorted(), restartedNames.sorted(), "every view running before the background must start again")
+        let stoppedNames = restoredViews.filter { ($0.segmentation?["visit"] as? Int) != 1 }.compactMap { $0.segmentation?["name"] as? String }
+        XCTAssertEqual([], stoppedNames, "restoring the views must not stop any of them")
+
+        Countly.sharedInstance().views().stopAllViews(nil)
+        let autoStoppedEnds = getRecordedViews().filter { ($0.segmentation?["name"] as? String) == "A1" && ($0.segmentation?["visit"] as? Int) != 1 }
+        XCTAssertEqual(1, autoStoppedEnds.count, "the auto stopped view must run until it is stopped")
+    }
+
+    /// A view ID handed out before two background and foreground cycles still segments, pauses, resumes and
+    /// stops its view. It keeps a single entry pointing at the view's current ID, dropped once the view stops.
+    func testHeldViewIDResolvesAfterTwoBackgroundForegroundCycles() throws {
+        let config = createBaseConfig()
+        Countly.sharedInstance().start(with: config)
+
+        let viewID = try XCTUnwrap(Countly.sharedInstance().views().startView("View1"))
+
+        goBackgroundForeground()
+        goBackgroundForeground()
+
+        let currentViewID = try XCTUnwrap(CountlyViewTrackingInternal.sharedInstance().currentViewID)
+        XCTAssertEqual(restartedViewIDs(), [viewID: currentViewID])
+
+        Countly.sharedInstance().views().addSegmentationToView(withID: viewID, segmentation: ["key": "value"])
+        Countly.sharedInstance().views().pauseView(withID: viewID)
+        Countly.sharedInstance().views().resumeView(withID: viewID)
+        Countly.sharedInstance().views().stopView(withID: viewID)
+
+        let endedViews = getRecordedViews().filter { ($0.segmentation?["visit"] as? Int) != 1 }
+        XCTAssertEqual(endedViews.compactMap { $0.segmentation?["key"] as? String }, ["value", "value"])
+        XCTAssertEqual(openViewIDs(), [])
+        XCTAssertEqual(restartedViewIDs(), [:])
+    }
+
+    /// Each view ID handed out before a background and foreground cycle stops its own view afterwards,
+    /// including the ID of an auto stopped view, which is started again after the regular ones.
+    func testEachHeldViewIDStopsItsOwnViewAfterBackgroundForegroundCycle() throws {
+        let config = createBaseConfig()
+        Countly.sharedInstance().start(with: config)
+
+        let regularViewID = try XCTUnwrap(Countly.sharedInstance().views().startView("R1"))
+        let autoStoppedViewID = try XCTUnwrap(Countly.sharedInstance().views().startAutoStoppedView("A1"))
+
+        goBackgroundForeground()
+
+        XCTAssertEqual(Set(restartedViewIDs().keys), [regularViewID, autoStoppedViewID])
+
+        Countly.sharedInstance().views().stopView(withID: autoStoppedViewID)
+        Countly.sharedInstance().views().stopView(withID: regularViewID)
+
+        let endedViews = getRecordedViews().filter { ($0.segmentation?["visit"] as? Int) != 1 }
+        XCTAssertEqual(endedViews.compactMap { $0.segmentation?["name"] as? String }, ["A1", "R1"])
+        XCTAssertEqual(openViewIDs(), [])
+        XCTAssertEqual(restartedViewIDs(), [:])
+    }
+
+    /// The view IDs handed out to the host whose views were started again,
+    /// mapped to the IDs those views are open under now.
+    private func restartedViewIDs() -> [String: String] {
+        CountlyViewTrackingInternal.sharedInstance().value(forKey: "restartedViewIDs") as? [String: String] ?? [:]
+    }
+
+    /// The IDs of the views that are open now, sorted.
+    private func openViewIDs() -> [String] {
+        let openViews = CountlyViewTrackingInternal.sharedInstance()
+            .value(forKey: "viewDataDictionary") as? [String: Any]
+        return (openViews ?? [:]).keys.sorted()
+    }
+
     private func goBackgroundForeground() {
         // Create expectations for various events
         let waitForStart = XCTestExpectation(description: "Wait for 3 seconds before backgrounding app.")
@@ -767,7 +954,65 @@ class CountlyViewForegroundBackgroundTests: CountlyViewBaseTest {
     }
 }
 
+#endif
+
 class CountlyViewBaseTest: CountlyBaseTestCase {
+
+    /// These tests run for up to 20 seconds and then read the *event queue* to inspect the
+    /// views they recorded. `updateSessionPeriod` defaults to 20 s on watchOS (60 s elsewhere),
+    /// so the session timer fired mid-test and flushed the event queue into the request queue,
+    /// leaving nothing to assert on. Push it well past the longest test.
+    override func createBaseConfig() -> CountlyConfig {
+        let config = super.createBaseConfig()
+        config.updateSessionPeriod = 300
+        return config
+    }
+
+    /// How far a recorded view duration may sit from the expected whole-second value.
+    ///
+    /// These durations come from wall-clock timers driven by `DispatchQueue.asyncAfter`, so on a
+    /// loaded or slower machine (every CI runner) they drift by a fraction of a second. Matching
+    /// exact integers made these tests fail on CI while passing locally, and truncating with
+    /// `Int(event.duration)` made it worse: 3.98 s became 3, a whole second off an expected 4.
+    /// Half a second catches a segment a whole second off, while leaving room for the drift the test can not control.
+    static let durationTolerance = 0.5
+
+    /// Matches each expected duration against the nearest unmatched recorded one, so the
+    /// comparison is order-insensitive and tolerant of scheduler jitter.
+    func validateDurations(
+        _ actual: [String: [Double]], _ expected: [String: [Int]],
+        file: StaticString = #filePath, line: UInt = #line
+    ) {
+        for (key, expectedDurations) in expected {
+            var remaining = actual[key] ?? []
+            XCTAssertEqual(
+                remaining.count, expectedDurations.count,
+                "Ended events count for key \(key) does not match expected count \(expectedDurations.count)",
+                file: file, line: line)
+
+            for expectedDuration in expectedDurations {
+                let target = Double(expectedDuration)
+                guard
+                    let closest = remaining.indices.min(by: {
+                        abs(remaining[$0] - target) < abs(remaining[$1] - target)
+                    }),
+                    abs(remaining[closest] - target) <= Self.durationTolerance
+                else {
+                    XCTFail(
+                        "No recorded duration within \(Self.durationTolerance)s of \(expectedDuration) for key \(key). Unmatched: \(remaining)",
+                        file: file, line: line)
+                    continue
+                }
+                remaining.remove(at: closest)
+            }
+
+            XCTAssertTrue(
+                remaining.isEmpty,
+                "Not all actual durations were matched for key \(key). Unmatched: \(remaining)",
+                file: file, line: line)
+        }
+    }
+
     
     // Helper methods to validate results
     
@@ -781,7 +1026,7 @@ class CountlyViewBaseTest: CountlyBaseTestCase {
         
         // Track occurrences for started and ended events
         var actualStartedEventsCount: [String: Int] = [:]
-        var actualEndedEventsDurations: [String: [Int]] = [:]
+        var actualEndedEventsDurations: [String: [Double]] = [:]
         
         // Iterate through recorded events to populate actual counts and durations
         for event in recordedEvents {
@@ -793,7 +1038,7 @@ class CountlyViewBaseTest: CountlyBaseTestCase {
                         actualStartedEventsCount[eventKey, default: 0] += 1
                     }
                     else{
-                        actualEndedEventsDurations[eventKey, default: []].append(Int(event.duration))
+                        actualEndedEventsDurations[eventKey, default: []].append(event.duration)
                     }
                 }
             }
@@ -805,30 +1050,7 @@ class CountlyViewBaseTest: CountlyBaseTestCase {
             XCTAssertEqual(actualCount, expectedCount, "Started events count for key \(key) does not match expected count \(expectedCount)")
         }
         
-        // Validate ended events durations
-        for (key, expectedDurations) in endedEventsDurations {
-            let actualDurations = actualEndedEventsDurations[key] ?? []
-            
-            // First, ensure the counts match
-            XCTAssertEqual(actualDurations.count, expectedDurations.count, "Ended events count for key \(key) does not match expected count \(expectedDurations.count)")
-            
-            // Create a mutable copy of actualDurations to modify
-            var mutableActualDurations = actualDurations
-            
-            // Check each duration matches
-            for (index, expectedDuration) in expectedDurations.enumerated() {
-                // Check if the expected duration exists in the actual durations
-                XCTAssertTrue(mutableActualDurations.contains(expectedDuration), "Duration at index \(index) for key \(key) does not match expected duration \(expectedDuration)")
-                
-                // Remove the expectedDuration from mutableActualDurations
-                if let foundIndex = mutableActualDurations.firstIndex(of: expectedDuration) {
-                    mutableActualDurations.remove(at: foundIndex)
-                }
-            }
-            
-            // Optionally, check if all expected durations have been matched
-            XCTAssertTrue(mutableActualDurations.isEmpty, "Not all actual durations were matched with expected durations for key \(key)")
-        }
+        validateDurations(actualEndedEventsDurations, endedEventsDurations)
         
     }
     
@@ -842,7 +1064,7 @@ class CountlyViewBaseTest: CountlyBaseTestCase {
         
         // Initialize dictionaries to track actual counts and durations for verification
         var actualStartedEventsCount: [String: Int] = [:]
-        var actualEndedEventsDurations: [String: [Int]] = [:]
+        var actualEndedEventsDurations: [String: [Double]] = [:]
         
         // Loop through each event request to process events
         for request in eventRequests {
@@ -867,7 +1089,7 @@ class CountlyViewBaseTest: CountlyBaseTestCase {
                             }
                             // Check for stop events with "dur" for duration
                             else {
-                                actualEndedEventsDurations[eventKey, default: []].append(Int(event.duration))
+                                actualEndedEventsDurations[eventKey, default: []].append(event.duration)
                             }
                         }
                     }
@@ -883,14 +1105,16 @@ class CountlyViewBaseTest: CountlyBaseTestCase {
             XCTAssertEqual(actualCount, expectedCount, "Started events count for key \(key) does not match expected count \(expectedCount)")
         }
         
-        // Validate ended events durations
+        // Validate ended events durations, in order.
         for (key, expectedDurations) in endedEventsDurations {
             let actualDurations = actualEndedEventsDurations[key] ?? []
             XCTAssertEqual(actualDurations.count, expectedDurations.count, "Ended events count for key \(key) does not match expected count \(expectedDurations.count)")
-            
-            // Check each duration matches
-            for (index, expectedDuration) in expectedDurations.enumerated() {
-                XCTAssertEqual(actualDurations[index], expectedDuration, "Duration at index \(index) for key \(key) does not match expected duration \(expectedDuration)")
+
+            for (index, expectedDuration) in expectedDurations.enumerated() where index < actualDurations.count {
+                XCTAssertEqual(
+                    actualDurations[index], Double(expectedDuration),
+                    accuracy: CountlyViewBaseTest.durationTolerance,
+                    "Duration at index \(index) for key \(key) does not match expected duration \(expectedDuration)")
             }
         }
     }
