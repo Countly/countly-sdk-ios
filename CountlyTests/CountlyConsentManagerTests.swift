@@ -153,24 +153,28 @@ class CountlyConsentManagerTests: CountlyBaseTestCase {
         config.enableAutomaticViewTracking = true
         config.sdkBehaviorSettings = ServerConfigBuilder().consentRequired(true).build()
         Countly.sharedInstance().start(with: config)
-        XCTAssertTrue(CountlyConsentManager.sharedInstance().requiresConsent, "the built in behavior settings require consent")
+        XCTAssertTrue(CountlyConsentManager.sharedInstance().requiresConsent,
+                      "the built in behavior settings require consent")
         XCTAssertFalse(CountlyViewTrackingInternal.sharedInstance().isAutoViewTrackingActive, "automatic view tracking waits for its consent")
 
         release.signal()
         TestUtils.waitUntil("automatic view tracking starts") { CountlyViewTrackingInternal.sharedInstance().isAutoViewTrackingActive }
-        XCTAssertFalse(CountlyConsentManager.sharedInstance().requiresConsent, "without the server's requirement the developer's applies")
+        XCTAssertFalse(CountlyConsentManager.sharedInstance().requiresConsent,
+                       "without the server's requirement the developer's applies")
         XCTAssertTrue(CountlyViewTrackingInternal.sharedInstance().isAutoViewTrackingActive, "automatic view tracking starts once nothing waits for consent")
     }
 #endif
 
     /**
      * <pre>
-     * Behavior settings can not lift a consent requirement the developer set, so consents given and withdrawn keep their
-     * effect, and a device ID change without merge still removes them.
+     * Behavior settings can not lift a consent requirement the developer set, so consents given and
+     * withdrawn keep their effect, and a device ID change without merge still removes them.
      *
-     * 1- Start requiring consent with events consent given, and hold a behavior settings answer that does not require consent
+     * 1- Start requiring consent with events consent given, and hold a behavior settings answer that
+     *    does not require consent
      * 2- Let the answer through and verify consent is still required and the events consent still given
-     * 3- Withdraw the events consent and verify it is withdrawn, then give it again and change the device ID without merge
+     * 3- Withdraw the events consent and verify it is withdrawn, then give it again and change the device
+     *    ID without merge
      * 4- Verify the change removed the consent
      * </pre>
      */
@@ -185,7 +189,8 @@ class CountlyConsentManagerTests: CountlyBaseTestCase {
 
         release.signal()
         TestUtils.waitUntil("the behavior settings answer is stored") {
-            ((CountlyPersistency.sharedInstance().retrieveServerConfig()?["c"] as? [String: Any])?["cr"] as? Bool) == false
+            let stored = CountlyPersistency.sharedInstance().retrieveServerConfig()?["c"] as? [String: Any]
+            return (stored?["cr"] as? Bool) == false
         }
         XCTAssertTrue(CountlyConsentManager.sharedInstance().requiresConsent, "the developer's requirement stays")
         XCTAssertTrue(CountlyConsentManager.sharedInstance().consentForEvents, "and the consent given at start with it")
@@ -195,7 +200,8 @@ class CountlyConsentManagerTests: CountlyBaseTestCase {
 
         Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.events])
         Countly.sharedInstance().changeDeviceIDWithoutMerge("next_user")
-        XCTAssertFalse(CountlyConsentManager.sharedInstance().consentForEvents, "the next user does not inherit the consent")
+        XCTAssertFalse(CountlyConsentManager.sharedInstance().consentForEvents,
+                       "the next user does not inherit the consent")
     }
 
     /// A configuration whose requests go to an in-process mock, with manual sessions.

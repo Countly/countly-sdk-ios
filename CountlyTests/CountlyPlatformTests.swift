@@ -433,9 +433,13 @@ class CountlyPlatformLifecycleTests: CountlyBaseTestCase {
     }
 
     #if os(iOS) || os(tvOS) || os(visionOS)
-    /// An inactive app, under a system alert or in the app switcher, is still on screen, so its events count as visible, as
-    /// on Android, while the events of an app in the background do not.
+    /// An inactive app, under a system alert or in the app switcher, is still on screen, so its events
+    /// count as visible, as on Android, while the events of an app in the background do not.
     func test_visibilityTracking_countsAnInactiveAppAsVisible() throws {
+        // a hostless run has no shared application, so there is no state for the stub to answer with
+        guard UIApplication.value(forKey: "sharedApplication") != nil else {
+            throw XCTSkip("needs a host application, as on the device farm")
+        }
         let config = TestUtils.createBaseConfig()
         config.requiresConsent = false
         config.manualSessionHandling = true
@@ -464,7 +468,8 @@ class CountlyPlatformLifecycleTests: CountlyBaseTestCase {
         let eventRequest = try XCTUnwrap(requestQueue().first { $0.contains(key) })
         let events = try XCTUnwrap(TestUtils.parseQueryString(eventRequest)["events"] as? String)
         let parsed = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(events.utf8)) as? [[String: Any]])
-        let segmentation = try XCTUnwrap(parsed.first(where: { $0["key"] as? String == key })?["segmentation"] as? [String: Any])
+        let event = parsed.first(where: { $0["key"] as? String == key })
+        let segmentation = try XCTUnwrap(event?["segmentation"] as? [String: Any])
         return try XCTUnwrap(segmentation["cly_v"] as? Int, "cly_v must be reported, got: \(segmentation)")
     }
     #endif

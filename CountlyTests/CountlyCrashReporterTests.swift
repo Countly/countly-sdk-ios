@@ -283,8 +283,9 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
 
     /**
      * <pre>
-     * A broken pipe is often survived, and only the app's own SIGPIPE handler knows whether it is, so the SDK leaves a
-     * SIGPIPE the app handles to it, as it leaves one the app ignores, while it still installs over the app's other handlers.
+     * A broken pipe is often survived, and only the app's own SIGPIPE handler knows whether it is, so the
+     * SDK leaves a SIGPIPE the app handles to it, as it leaves one the app ignores, while it still
+     * installs over the app's other handlers.
      *
      * 1- Install app handlers for SIGPIPE and SIGFPE and start with crash reporting
      * 2- Verify the app's SIGPIPE handler is still live and the SDK's handler runs for SIGFPE
@@ -306,18 +307,21 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
         config.manualSessionHandling = true
         Countly.sharedInstance().start(with: config)
         XCTAssertEqual(appSignalAddress, liveSignalHandler(SIGPIPE), "the app's SIGPIPE handler stays live")
-        XCTAssertNotEqual(appSignalAddress, liveSignalHandler(SIGFPE), "the SDK still installs over the app's other handlers")
+        XCTAssertNotEqual(appSignalAddress, liveSignalHandler(SIGFPE),
+                          "the SDK still installs over the app's other handlers")
 
         raise(SIGPIPE)
         XCTAssertEqual(1, appSignalHandlerCalls, "the broken pipe goes to the app's handler alone")
-        XCTAssertFalse(TestUtils.getCurrentRQ()?.contains { $0.contains("crash=") } ?? true, "and is not reported as a crash")
+        let queue = TestUtils.getCurrentRQ() ?? []
+        XCTAssertFalse(queue.contains { $0.contains("crash=") }, "and is not reported as a crash")
         Countly.sharedInstance().halt(true)
     }
 
     /**
      * <pre>
-     * A crash tool installed while the SDK's handlers were removed chains to the handler before them, not to the SDK's, so
-     * the SDK installs over it once crash reporting is wanted again instead of staying silently off.
+     * A crash tool installed while the SDK's handlers were removed chains to the handler before them, not
+     * to the SDK's, so the SDK installs over it once crash reporting is wanted again instead of staying
+     * silently off.
      *
      * 1- Start requiring consent with crash consent given, then withdraw it, which removes the SDK's handler
      * 2- Install a crash tool's exception handler
@@ -341,7 +345,8 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
 
         NSSetUncaughtExceptionHandler(toolExceptionHandler)
         Countly.sharedInstance().giveConsent(forFeature: CLYConsent.crashReporting)
-        XCTAssertEqual(sdkExceptionAddress, liveExceptionHandler(), "the SDK installs over the tool installed while it was removed")
+        XCTAssertEqual(sdkExceptionAddress, liveExceptionHandler(),
+                       "the SDK installs over the tool installed while it was removed")
         XCTAssertNotEqual(toolExceptionAddress, liveExceptionHandler())
 
         Countly.sharedInstance().halt(true)
@@ -391,7 +396,8 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
         TestUtils.waitUntil("the reply to turn automatic crash reporting off") {
             CountlyServerConfig.sharedInstance()?.automaticCrashReportingEnabled() == false
         }
-        XCTAssertNotEqual(appSignalAddress, liveSignalHandler(SIGFPE), "a runtime 'acr' = false leaves the SDK's handler installed")
+        XCTAssertNotEqual(appSignalAddress, liveSignalHandler(SIGFPE),
+                          "a runtime 'acr' = false leaves the SDK's handler installed")
 
         raise(SIGFPE)
 
@@ -403,7 +409,8 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
         serverConfig.setValue(true, forKey: "automaticCrashReportingEnabled")
         try XCTUnwrap(CountlyCrashReporter.sharedInstance()).startCrashReporting()
         serverConfig.setValue(false, forKey: "automaticCrashReportingEnabled")
-        XCTAssertNotEqual(appSignalAddress, liveSignalHandler(SIGFPE), "the SDK installs its handler over the app's again")
+        XCTAssertNotEqual(appSignalAddress, liveSignalHandler(SIGFPE),
+                          "the SDK installs its handler over the app's again")
 
         raise(SIGFPE)
 

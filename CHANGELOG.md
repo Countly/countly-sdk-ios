@@ -26,7 +26,7 @@
 * Mitigated an issue where events recorded while the app was inactive, for example under a system alert or in the app switcher, were reported as not visible on iOS, tvOS, visionOS and watchOS.
 * Mitigated an issue where a feedback widget that failed to load was recorded as closed by the user, which could keep it hidden from that user.
 * Mitigated an issue where "halt" in consent mode queued a request that withdrew every consent and unregistered the app from push notifications, and where "halt:" without clearing the storage dropped the requests queued since the last save.
-* Mitigated an issue where the content configuration, the content behavior settings and the Journey Trigger refresh were not applied on visionOS.
+* Mitigated an issue where the Journey Trigger content refresh and the "ecz" SDK behavior setting had no effect on visionOS.
 * Mitigated an issue where the SDK's privacy manifest was not included in the Swift package, the CocoaPods pods or the framework. It now also declares the diagnostic data that SDK log gathering collects.
 * Mitigated an issue where, with PLCrashReporter, crashes captured while crash consent or automatic crash reporting was off, or after "halt", were sent later. They are now discarded without calling "crashOccuredOnPreviousSessionCallback", and both PLCrashReporter callbacks run on the main thread.
 * Mitigated an issue where certificate pinning was not applied to immediate requests such as SDK behavior settings, remote config, feedback widgets, content and health checks.

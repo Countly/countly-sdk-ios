@@ -144,10 +144,12 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
     private func startSDKWithAnsweringServer() -> ReceivedLogBatches {
         let received = ReceivedLogBatches(harnessPrefix: harnessPrefix)
         MockURLProtocol.requestHandler = { request in
-            if let batch = CountlySDKLogsTests.sdkLogsBatch(ofQueryString: CountlyServerConfigTests.capturedQueryString(request)) {
+            let queryString = CountlyServerConfigTests.capturedQueryString(request)
+            if let batch = CountlySDKLogsTests.sdkLogsBatch(ofQueryString: queryString) {
                 received.append(batch)
             }
-            return ("{\"result\":\"Success\"}".data(using: .utf8), HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil), nil)
+            let ok = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)
+            return ("{\"result\":\"Success\"}".data(using: .utf8), ok, nil)
         }
 
         let config = createBaseConfig()
@@ -218,12 +220,30 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
         XCTAssertEqual(0, bufferedLines.count + awaitingConsentLines.count, "nothing is held for the next user")
         XCTAssertFalse(CountlyInternalLogIsWanted(CLYInternalLogLevelVerbose), "and nothing is formatted for capture")
 
+        // the settings answer is held, so its failure can not decide against gathering before the checks below
+        let releaseSettings = DispatchSemaphore(value: 0)
+        MockURLProtocol.requestHandler = { request in
+            if request.url?.absoluteString.contains("method=sc") == true {
+                _ = releaseSettings.wait(timeout: .now() + 10)
+            }
+            let failed = HTTPURLResponse(url: request.url!, statusCode: 400, httpVersion: nil, headerFields: nil)
+            return ("{\"result\":\"fail\"}".data(using: .utf8), failed, nil)
+        }
+        defer {
+            releaseSettings.signal()
+            MockURLProtocol.replyEmptyToEveryRequest()
+        }
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [MockURLProtocol.self]
         let config = createBaseConfig()
         config.manualSessionHandling = true
+        config.urlSessionConfiguration = sessionConfig
         Countly.sharedInstance().start(with: config)
+
+        let messages = bufferedLines.compactMap { $0["m"] as? String }
         XCTAssertEqual(stateUndecided, state, "the next start captures again")
-        XCTAssertTrue(bufferedLines.contains { ($0["m"] as? String)?.contains("startWithConfig") == true }, "from its own first lines")
-        XCTAssertFalse(bufferedLines.contains { ($0["m"] as? String)?.contains("logged_out_event") == true }, "but nothing the app logged while halted")
+        XCTAssertTrue(messages.contains { $0.contains("startWithConfig") }, "from its own first lines")
+        XCTAssertFalse(messages.contains { $0.contains("logged_out_event") }, "but nothing the app logged while halted")
     }
 
     // MARK: - adoption and discard
@@ -1058,13 +1078,16 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
         config.disableSDKBehaviorSettingsUpdates = true
         config.sdkBehaviorSettings = ServerConfigBuilder().segmentationBlacklist(["secret_key"]).userPropertyBlacklist(["secret_property"]).build()
         config.providedUserProperties = ["secret_property": "PROPERTY-VALUE", "kept_property": "KEPT-PROPERTY"]
-        Countly.sharedInstance().start(with: config)
+        // armed before start, since start decides against gathering while undecided once updates are disabled
         common.updateLogGatheringState(true, levels: allLevels, batch: maxBufferedLines, lgid: "gather_filtered_values")
+        Countly.sharedInstance().start(with: config)
 
         Countly.sharedInstance().startEvent("timed_event")
         Countly.sharedInstance().endEvent("timed_event", segmentation: ["secret_key": "SEGMENT-VALUE", "kept_key": "KEPT-SEGMENT"], count: 1, sum: 0)
 
-        let captured = (bufferedLines + awaitingConsentLines).compactMap { $0["m"] as? String }
+        // the init lines already went out with the batch init end sends, the later ones are still held
+        settleDelivery()
+        let captured = (bufferedLines + awaitingConsentLines).compactMap { $0["m"] as? String } + uploadedMessages()
         XCTAssertTrue(captured.contains { $0.contains("KEPT-SEGMENT") }, "a value the settings let through is still logged")
         XCTAssertTrue(captured.contains { $0.contains("KEPT-PROPERTY") }, "and so is a user property they let through")
         XCTAssertFalse(captured.contains { $0.contains("SEGMENT-VALUE") }, "a segmentation value the settings filter out is not quoted")

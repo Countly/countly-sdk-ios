@@ -269,8 +269,9 @@ class CountlyConnectionTestTests: CountlyBaseTestCase {
         XCTAssertNotNil(stored?["c"], "the config itself must still be cached")
         XCTAssertNil(stored?["ct"], "the flag must never survive into storage")
 
-        // a stored flag, even if one got there somehow, must not arm anything on the next start. The storage is cleared
-        // so the report of this run, which a halt keeping the storage would keep queued, is not counted as the next one's
+        // a stored flag, even if one got there somehow, must not arm anything on the next start. The storage
+        // is cleared so the report of this run, which a halt keeping the storage would keep queued, is not
+        // counted as the next one's
         Countly.sharedInstance().halt(true)
         var poisoned = ServerConfigBuilder().buildJson()
         poisoned["ct"] = 1

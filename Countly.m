@@ -291,7 +291,7 @@ static dispatch_once_t onceToken;
     if (config.apm.getAppStartTimestampOverride) {
         appLoadStartTime = config.apm.getAppStartTimestampOverride;
     }
-#if (TARGET_OS_IOS || TARGET_OS_VISION)
+#if (TARGET_OS_IOS)
     if(config.content.getGlobalContentCallback) {
         CountlyContentBuilderInternal.sharedInstance.contentCallback = config.content.getGlobalContentCallback;
     }

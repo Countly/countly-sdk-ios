@@ -179,7 +179,7 @@ static id CountlyBehaviorSettingWithoutNulls(id value)
 
     return value;
 }
-#if (TARGET_OS_IOS || TARGET_OS_VISION)
+#if (TARGET_OS_IOS)
 // the content zone timer interval in seconds when neither the server nor the developer sets one, as CountlyContentBuilderInternal starts with
 static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
 #endif
@@ -312,7 +312,7 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     values[kRLimitBreadcrumb] = @(config.sdkInternalLimits.getMaxBreadcrumbCount);
     values[kRLimitTraceLength] = @(config.sdkInternalLimits.getMaxStackTraceLineLength);
     values[kRLimitTraceLine] = @(config.sdkInternalLimits.getMaxStackTraceLinesPerThread);
-#if (TARGET_OS_IOS || TARGET_OS_VISION)
+#if (TARGET_OS_IOS)
     values[kRContentZoneInterval] = @(config.content.getZoneTimerInterval);
 #endif
     return values;
@@ -372,7 +372,7 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
         [config.sdkInternalLimits setMaxStackTraceLineLength:[values[kRLimitTraceLength] unsignedIntegerValue]];
     if (values[kRLimitTraceLine])
         [config.sdkInternalLimits setMaxStackTraceLinesPerThread:[values[kRLimitTraceLine] unsignedIntegerValue]];
-#if (TARGET_OS_IOS || TARGET_OS_VISION)
+#if (TARGET_OS_IOS)
     if (values[kRContentZoneInterval])
         [config.content restoreZoneTimerInterval:[values[kRContentZoneInterval] unsignedIntegerValue]];
 #endif
@@ -732,12 +732,14 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
     [self applyConsentRequirement];
 
-#if (TARGET_OS_IOS || TARGET_OS_VISION)
+#if (TARGET_OS_IOS)
     // setZoneTimerInterval: ignores values the developer can not set, so a removed 'czi' with no developer interval
     // would leave the previous server interval in config.content; the content builder takes the resolved value
     NSUInteger zoneTimerInterval = _contentZoneInterval ?: [self developerValueForKey:kRContentZoneInterval orCurrent:@(config.content.getZoneTimerInterval)].unsignedIntegerValue;
     [config.content setZoneTimerInterval:zoneTimerInterval];
     CountlyContentBuilderInternal.sharedInstance.zoneTimerInterval = zoneTimerInterval ?: kCountlyDefaultZoneTimerInterval;
+#endif
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
     // clearContentState, not exitContentZone: this runs on every config apply, and exitContentZone
     // would pull displayed content off screen.
     if (!_enterContentZone)

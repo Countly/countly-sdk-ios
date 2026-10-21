@@ -177,8 +177,10 @@ class CountlyTests: CountlyBaseTestCase {
         wait(for: [downloaded], timeout: 10)
 
         XCTAssertNotNil(downloadError, "the download reports that its answer is not for the current device ID")
-        XCTAssertNil(Countly.sharedInstance().remoteConfig().getValue("previous_user_key").value, "the next user gets none of the previous user's values")
-        XCTAssertNil(CountlyPersistency.sharedInstance().retrieveRemoteConfig()["previous_user_key"], "and none are stored")
+        XCTAssertNil(Countly.sharedInstance().remoteConfig().getValue("previous_user_key").value,
+                     "the next user gets none of the previous user's values")
+        XCTAssertNil(CountlyPersistency.sharedInstance().retrieveRemoteConfig()["previous_user_key"],
+                     "and none are stored")
     }
 
     /**

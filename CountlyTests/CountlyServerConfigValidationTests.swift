@@ -450,8 +450,8 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         ]))
     }
 
-    /// An answer whose version is null is not valid and keeps the stored settings, instead of crashing every start while
-    /// the server keeps sending it.
+    /// An answer whose version is null is not valid and keeps the stored settings, instead of crashing
+    /// every start while the server keeps sending it.
     func test_answerWithANullVersion_keepsTheStoredSettings() throws {
         try TestPlatform.skipUnlessHTTPInterceptable()
         assertStoredSettingsKept(after: rawMockURLSessionConfig(body: [
@@ -471,8 +471,8 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         ]))
     }
 
-    /// Nulls inside a list or a dictionary of an answer are left out of what is stored, which the standard user defaults
-    /// could not store, and the rest of the setting applies.
+    /// Nulls inside a list or a dictionary of an answer are left out of what is stored, which the
+    /// standard user defaults could not store, and the rest of the setting applies.
     func test_nullsInsideAnAnswersSettings_areLeftOut() throws {
         try TestPlatform.skipUnlessHTTPInterceptable()
         let cfg = TestUtils.createBaseConfig()
@@ -486,8 +486,10 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         TestUtils.sleep(2) {
             let stored = self.storedConfigDictionary()
             XCTAssertEqual(["blocked_event"], stored["eb"] as? [String], "the null is left out of the stored list")
-            XCTAssertEqual(["checkout": ["card"]], stored["esb"] as? [String: [String]], "and out of a list inside a dictionary")
-            XCTAssertFalse(CountlyServerConfig.sharedInstance().shouldRecordEvent("blocked_event"), "the rest of the setting applies")
+            XCTAssertEqual(["checkout": ["card"]], stored["esb"] as? [String: [String]],
+                           "and out of a list inside a dictionary")
+            XCTAssertFalse(CountlyServerConfig.sharedInstance().shouldRecordEvent("blocked_event"),
+                           "the rest of the setting applies")
         }
     }
 
@@ -507,7 +509,8 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
 
         release.signal()
         TestUtils.sleep(2) {
-            XCTAssertTrue(self.storedConfigDictionary()["bom"] as? Bool == true, "the answer turning the backoff on is applied")
+            XCTAssertTrue(self.storedConfigDictionary()["bom"] as? Bool == true,
+                          "the answer turning the backoff on is applied")
             XCTAssertFalse(CountlyServerConfig.sharedInstance().backoffMechanism(), "and the backoff stays off")
         }
     }
@@ -519,7 +522,8 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         cfg.disableSDKBehaviorSettingsUpdates = true
         cfg.sdkBehaviorSettings = "{\"v\":null,\"t\":1,\"c\":{\"tracking\":false}}"
         createLocalCountly().start(with: cfg)
-        XCTAssertTrue(CountlyServerConfig.sharedInstance().trackingEnabled(), "settings without a usable version are not applied")
+        XCTAssertTrue(CountlyServerConfig.sharedInstance().trackingEnabled(),
+                      "settings without a usable version are not applied")
         XCTAssertTrue(storedConfigDictionary().isEmpty, "and nothing is stored")
     }
 
@@ -560,8 +564,9 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         }
     }
 
-    /// The server can not lift a consent requirement the developer set, neither from the stored settings nor from a live
-    /// answer, while a 'cr' true it sends turns the requirement on for a developer who did not set it.
+    /// The server can not lift a consent requirement the developer set, neither from the stored settings
+    /// nor from a live answer, while a 'cr' true it sends turns the requirement on for a developer who
+    /// did not set it.
     func test_serverCanOnlyTurnTheConsentRequirementOn() throws {
         try TestPlatform.skipUnlessHTTPInterceptable()
         setStoredServerConfig(makeServerConfig([
@@ -578,7 +583,8 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
 
         let countly = createLocalCountly()
         countly.start(with: cfg)
-        XCTAssertTrue(CountlyConsentManager.sharedInstance().requiresConsent, "a stored 'cr' false does not lift the developer's requirement")
+        XCTAssertTrue(CountlyConsentManager.sharedInstance().requiresConsent,
+                      "a stored 'cr' false does not lift the developer's requirement")
         release.signal()
 
         TestUtils.sleep(2) {
@@ -594,7 +600,8 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         next.requiresConsent = false
         next.disableSDKBehaviorSettingsUpdates = true
         createLocalCountly().start(with: next)
-        XCTAssertTrue(CountlyConsentManager.sharedInstance().requiresConsent, "a 'cr' true requires consent the developer did not require")
+        XCTAssertTrue(CountlyConsentManager.sharedInstance().requiresConsent,
+                      "a 'cr' true requires consent the developer did not require")
     }
 
     /// A setting the server sends wins over the developer's value also when
