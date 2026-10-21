@@ -1,22 +1,33 @@
 ## XX.XX.XX
 * ! Minor breaking change ! Raised the minimum supported deployment targets to iOS 15, tvOS 15, watchOS 9 and macOS 12 (previously iOS 12, tvOS 12, watchOS 4 and macOS 10.14, and iOS 10 and tvOS 10 for "Countly-PL") for compatibility with Xcode 27. Apps targeting older versions are no longer supported.
 * ! Minor breaking change ! "changeDeviceIDWithMerge:" and "changeDeviceIDWithoutMerge:" now ignore nil, an empty string and "CLYDefaultDeviceID" instead of switching back to the default device ID.
-* ! Minor breaking change ! A SIGPIPE the app does not ignore now ends the app after it is reported, as it would without the SDK. Previously the SDK reported it, kept the app running and turned automatic crash reporting off.
+* ! Minor breaking change ! A SIGPIPE the app neither ignores nor handles itself now ends the app after it is reported, as it would without the SDK. Previously the SDK reported it, kept the app running and turned automatic crash reporting off.
 
 * Added support for server requested SDK log gathering and connection tests. A gathered log line is uploaded only after the consent of the feature that wrote it is given.
-* Added support for SDK behavior settings that control automatic session tracking, automatic view tracking, automatic crash reporting and Journey Trigger Views, also for the running session.
+* Added support for SDK behavior settings that control automatic session tracking, automatic view tracking, automatic crash reporting and Journey Trigger Views, also for the running session. Automatic crash reporting can be turned on this way also for an app that does not list "CLYCrashReporting" in "features", and crash consent still applies.
 * Added "userProfile" access on watchOS, tvOS and macOS.
 * Added a new method "setGlobalContentSegmentation" on "CountlyContentBuilder" that sets a segmentation recorded with every content event and with the events and answers of NPS, survey and rating feedback widgets, leaving out the keys widgets record as answers.
 * Improved internal logging and changed the default log level from verbose to debug.
-* Improved crash handling. The SDK's handlers now pass crashes on to the handlers they replaced, leave crash tools installed later and signals the app ignores, such as SIGPIPE, alone, and are removed by "halt".
+* Improved crash handling. The SDK's handlers now pass crashes on to the handlers they replaced, leave crash tools installed later, signals the app ignores and a SIGPIPE the app handles itself alone, and are removed by "halt".
 * Improved state cleanup on "halt", which now also resets events, view tracking, remote config, location and the content state on visionOS, and puts back into the configuration given at start the values SDK behavior settings changed in it.
 
 * Mitigated an issue where SDK behavior settings were ignored when the server response contained additional fields.
 * Mitigated an issue where refreshing SDK behavior settings after the app returned from the background reset the configuration given at start until the next launch.
 * Mitigated an issue where a setting removed from the SDK behavior settings in SDK Manager did not go back to the value given at start.
-* Mitigated an issue where SDK behavior settings sent as false or 0, such as "log" or "dort", did not override the value given at start.
-* Mitigated an issue where the SDK behavior settings could not turn off a consent requirement set with "requiresConsent".
+* Mitigated an issue where SDK behavior settings sent as false or 0, such as "log" or "dort", did not override the value given at start. The consent requirement stays the exception: SDK behavior settings can turn it on, but never turn off a requirement set with "requiresConsent".
 * Mitigated an issue where the app could freeze instead of terminating on a crash after crash reporting was turned off at runtime or after "halt".
+* Mitigated an issue where the app could freeze instead of terminating on a crash that happened inside the SDK's request handling or while the SDK held an internal lock. The SDK now waits at most 5 seconds for the crash report and sends it on the next start when it did not go out in time.
+* Mitigated possible crashes, repeated on every start, when the server or a proxy answered a request with a JSON list instead of an object, when SDK behavior settings carried a null version, timestamp or list entry, and when the A/B testing helpers received an error answer.
+* Mitigated a crash, repeated on every start, after "pictureLocalPath" was set to NSNull. As documented, NSNull now clears the picture on the server.
+* Mitigated an issue where an event with a NaN or infinite sum, duration or segmentation value dropped every other event recorded with it. The invalid value is now left out.
+* Mitigated an issue where "disableBackoffMechanism" took effect only while SDK behavior settings kept changing.
+* Mitigated an issue where remote config values downloaded for the previous device ID were stored for the next one when the device ID changed during the download.
+* Mitigated an issue where automatic view tracking did not end the previous view when the next one appeared, so views stayed open and reported no duration, or a very long one.
+* Mitigated an issue where events recorded while the app was inactive, for example under a system alert or in the app switcher, were reported as not visible on iOS, tvOS, visionOS and watchOS.
+* Mitigated an issue where a feedback widget that failed to load was recorded as closed by the user, which could keep it hidden from that user.
+* Mitigated an issue where "halt" in consent mode queued a request that withdrew every consent and unregistered the app from push notifications, and where "halt:" without clearing the storage dropped the requests queued since the last save.
+* Mitigated an issue where the Journey Trigger content refresh and the "ecz" SDK behavior setting had no effect on visionOS.
+* Mitigated an issue where the SDK's privacy manifest was not included in the Swift package, the CocoaPods pods or the framework. It now also declares the diagnostic data that SDK log gathering collects.
 * Mitigated an issue where, with PLCrashReporter, crashes captured while crash consent or automatic crash reporting was off, or after "halt", were sent later. They are now discarded without calling "crashOccuredOnPreviousSessionCallback", and both PLCrashReporter callbacks run on the main thread.
 * Mitigated an issue where certificate pinning was not applied to immediate requests such as SDK behavior settings, remote config, feedback widgets, content and health checks.
 * Mitigated an issue where an auto stopped view running when the app went to the background could stop right after the app returned to the foreground.

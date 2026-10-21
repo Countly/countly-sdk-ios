@@ -82,6 +82,11 @@
             didSet { _ = installed }
         }
 
+        /// A state reported instead of the one `isActive` picks, such as `.inactive`. Reset to nil before every test.
+        static var stateOverride: UIApplication.State? = nil {
+            didSet { _ = installed }
+        }
+
         /// Swaps `UIApplication.applicationState` for a stub backed by `isActive`. Idempotent.
         static func installIfNeeded() {
             _ = installed
@@ -106,7 +111,7 @@
         /// Stands in for `applicationState` once swapped, reporting the state chosen through
         /// `TestAppActivation.isActive` instead of where the test host really is.
         @objc dynamic var cly_testApplicationState: UIApplication.State {
-            return TestAppActivation.isActive ? .active : .background
+            return TestAppActivation.stateOverride ?? (TestAppActivation.isActive ? .active : .background)
         }
     }
 

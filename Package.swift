@@ -43,6 +43,11 @@ let package = Package(
                 "CountlyTests/"
             ],
 
+            resources:
+            [
+                .copy("PrivacyInfo.xcprivacy")
+            ],
+
             linkerSettings: 
             [
                 .linkedFramework("Foundation"),

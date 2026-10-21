@@ -94,6 +94,8 @@ NSString* const kCountlyEndpointWidget = @"/widget";
 NSString* const kCountlyEndpointSurveys = @"/surveys";
 
 const NSInteger kCountlyGETRequestMaxLength = 2048;
+// how long a crashing app waits for the immediate crash report before queueing it for the next start
+static const NSTimeInterval kCountlyCrashReportSendTimeout = 5.0;
 
 @implementation CountlyConnectionManager : NSObject
 
@@ -896,9 +898,11 @@ static dispatch_once_t onceToken;
 
     [CountlyPersistency.sharedInstance saveToFileSync];
 
+    // queued without the app version, which the queue adds to every request itself
+    NSString* storedQueryString = queryString;
     queryString = [queryString stringByAppendingFormat:@"&%@=%@",
                    kCountlyAppVersionKey, CountlyDeviceInfo.appVersion];
-    
+
     NSString* serverInputEndpoint = [self.host stringByAppendingString:kCountlyEndpointI];
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverInputEndpoint]];
     request.HTTPMethod = @"POST";
@@ -906,19 +910,38 @@ static dispatch_once_t onceToken;
 
     CLY_LOG_I(@"%s sending crash report immediately, endpoint: [%@], method: [%@], body size: [%lu] bytes", __FUNCTION__, kCountlyEndpointI, request.HTTPMethod, (unsigned long)request.HTTPBody.length);
 
+    // the completion and the timeout below race to settle the report, and only the first one may queue it for later
+    NSObject* settleLock = NSObject.new;
+    __block BOOL isSettled = NO;
+    BOOL (^settle)(void) = ^BOOL {
+        @synchronized (settleLock) {
+            BOOL isFirst = !isSettled;
+            isSettled = YES;
+            return isFirst;
+        }
+    };
+
+    // a session of its own: a crash inside a completion of the queue's session holds that session's serial delegate queue,
+    // where this report's completion would then never run
+    NSURLSession* crashReportSession = [NSURLSession sessionWithConfiguration:self.URLSessionConfiguration delegate:(self.pinnedCertificates ? self : nil) delegateQueue:NSOperationQueue.new];
     dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);
 
-    [[self.URLSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError*  error)
+    [[crashReportSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError*  error)
     {
-        if (error || ![self isRequestSuccessful:response data:data])
+        BOOL isFailed = error || ![self isRequestSuccessful:response data:data];
+        if (isFailed)
         {
             CLY_LOG_D(@"[CountlyConnectionManager] sendCrashReport completion, immediate crash report request failed and it is queued to be sent later, endpoint: [%@], status code: [%ld], response size: [%ld] bytes, error domain: [%@], error code: [%ld], error description: [%@]", request.URL.path, (long)((NSHTTPURLResponse*)response).statusCode, (long)data.length, error.domain ?: @"none", (long)error.code, error.localizedDescription ?: @"none");
-            [CountlyPersistency.sharedInstance addToQueue:queryString];
-            [CountlyPersistency.sharedInstance saveToFileSync];
         }
         else
         {
             CLY_LOG_D(@"[CountlyConnectionManager] sendCrashReport completion, immediate crash report request completed successfully, endpoint: [%@], response size: [%ld] bytes", request.URL.path, (long)data.length);
+        }
+
+        if (settle() && isFailed)
+        {
+            [CountlyPersistency.sharedInstance addToQueue:storedQueryString];
+            [CountlyPersistency.sharedInstance saveToFileSync];
         }
 
         dispatch_semaphore_signal(semaphore);
@@ -927,7 +950,14 @@ static dispatch_once_t onceToken;
 
     [self logRequest:request];
 
-    dispatch_semaphore_wait(semaphore, DISPATCH_TIME_FOREVER);
+    if (dispatch_semaphore_wait(semaphore, dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kCountlyCrashReportSendTimeout * NSEC_PER_SEC))) != 0 && settle())
+    {
+        CLY_LOG_D(@"%s immediate crash report request did not complete in time, it is queued to be sent later, timeout: [%.0f] seconds", __FUNCTION__, kCountlyCrashReportSendTimeout);
+        [CountlyPersistency.sharedInstance addToQueue:storedQueryString];
+        [CountlyPersistency.sharedInstance saveToFileSync];
+    }
+
+    [crashReportSession finishTasksAndInvalidate];
 }
 
 - (void)sendOldDeviceID:(NSString *)oldDeviceID
@@ -1177,9 +1207,12 @@ static dispatch_once_t onceToken;
         return nil;
 
     NSDictionary* pathDictionary = [NSJSONSerialization JSONObjectWithData:[unescapedUserDetails cly_dataUTF8] options:0 error:nil];
-    localPicturePath = pathDictionary[kCountlyLocalPicturePath];
+    if (![pathDictionary isKindOfClass:NSDictionary.class])
+        return nil;
 
-    if (!localPicturePath.length)
+    // a request queued with a null path goes out as plain user details instead of failing every send
+    localPicturePath = pathDictionary[kCountlyLocalPicturePath];
+    if (![localPicturePath isKindOfClass:NSString.class] || !localPicturePath.length)
         return nil;
 
     CLY_LOG_D(@"%s local picture path is extracted from the query string, path length: [%lu], file extension: [%@]", __FUNCTION__, (unsigned long)localPicturePath.length, localPicturePath.pathExtension.lowercaseString);
@@ -1266,11 +1299,18 @@ static dispatch_once_t onceToken;
     if (code >= 200 && code < 300)
     {
         NSError* error = nil;
-        NSDictionary* serverReply = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error]; 
+        NSDictionary* serverReply = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
 
         if (error)
         {
             CLY_LOG_E(@"%s server reply is not a valid JSON, the request is considered failed, response size: [%ld] bytes, error description: [%@]", __FUNCTION__, (long)data.length, error.localizedDescription);
+            return NO;
+        }
+
+        // a proxy or a misconfigured host can answer a list, which has no result field to read
+        if (![serverReply isKindOfClass:NSDictionary.class])
+        {
+            CLY_LOG_E(@"%s server reply is not a JSON object, the request is considered failed, response size: [%ld] bytes, replyType: [%@]", __FUNCTION__, (long)data.length, NSStringFromClass([serverReply class]));
             return NO;
         }
         

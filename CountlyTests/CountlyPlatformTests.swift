@@ -432,6 +432,48 @@ class CountlyPlatformLifecycleTests: CountlyBaseTestCase {
             1, visibility, "the test process is in the foreground, cly_v must be 1 on \(TestPlatform.osName)")
     }
 
+    #if os(iOS) || os(tvOS) || os(visionOS)
+    /// An inactive app, under a system alert or in the app switcher, is still on screen, so its events
+    /// count as visible, as on Android, while the events of an app in the background do not.
+    func test_visibilityTracking_countsAnInactiveAppAsVisible() throws {
+        // a hostless run has no shared application, so there is no state for the stub to answer with
+        guard UIApplication.value(forKey: "sharedApplication") != nil else {
+            throw XCTSkip("needs a host application, as on the device farm")
+        }
+        let config = TestUtils.createBaseConfig()
+        config.requiresConsent = false
+        config.manualSessionHandling = true
+        config.experimental().enableVisibiltyTracking = true
+        defer {
+            config.experimental().enableVisibiltyTracking = false
+            TestAppActivation.stateOverride = nil
+        }
+        Countly.sharedInstance().start(with: config)
+
+        TestAppActivation.stateOverride = .inactive
+        XCTAssertEqual(1, try recordedVisibility(of: "inactive_event"), "an inactive app is visible")
+
+        TestAppActivation.stateOverride = .background
+        XCTAssertEqual(0, try recordedVisibility(of: "background_event"), "an app in the background is not")
+    }
+
+    /// Records an event, turns it into a request and returns the visibility it was recorded with.
+    private func recordedVisibility(of key: String) throws -> Int {
+        Countly.sharedInstance().recordEvent(key)
+        CountlyConnectionManager.sharedInstance().sendEvents()
+        waitUntil("the event to reach the request queue") {
+            self.requestQueue().contains { $0.contains(key) }
+        }
+
+        let eventRequest = try XCTUnwrap(requestQueue().first { $0.contains(key) })
+        let events = try XCTUnwrap(TestUtils.parseQueryString(eventRequest)["events"] as? String)
+        let parsed = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(events.utf8)) as? [[String: Any]])
+        let event = parsed.first(where: { $0["key"] as? String == key })
+        let segmentation = try XCTUnwrap(event?["segmentation"] as? [String: Any])
+        return try XCTUnwrap(segmentation["cly_v"] as? Int, "cly_v must be reported, got: \(segmentation)")
+    }
+    #endif
+
     #if os(macOS)
     /// `beginSession` refuses to open a session while a macOS app is not active (launched
     /// hidden, as a login item, or opened by another app). macOS observes

@@ -184,6 +184,7 @@ typedef enum : NSUInteger
  * For receiving SDK's internal logs even in production builds.
  * @discussion If set, SDK will forward its internal logs to this delegate object regardless of @c enableDebug initial config value.
  * @discussion @c internalLog:withLevel: method declared as @c required in @c CountlyLoggerDelegate protocol will be called with log @c NSString.
+ * @discussion It is called on whichever thread the SDK logs from, sometimes while the SDK holds one of its internal locks. Keep it quick, do not call back into the SDK from it, and do not wait for the main thread in it.
  */
 @property (nonatomic, weak) id <CountlyLoggerDelegate> loggerDelegate;
 
@@ -208,6 +209,7 @@ typedef enum : NSUInteger
  * @discussion @b macOS:
  * @discussion @c CLYPushNotifications for push notifications
  * @discussion @c CLYCrashReporting for crash reporting
+ * @discussion @c CLYCrashReporting turns automatic crash reporting on. SDK behavior settings can turn it off, and can also turn it on for an app that does not list @c CLYCrashReporting, when an operator enables automatic crash reporting in SDK Manager. Crash consent still applies.
  */
 @property (nonatomic, copy) NSArray<CLYFeature>* features;
 
@@ -248,6 +250,7 @@ typedef enum : NSUInteger
 /**
  * For limiting features based on user consent.
  * @discussion If set, SDK will wait for explicit consent to be given for features to work.
+ * @discussion SDK behavior settings can require consent when this is not set, but can never lift a requirement set here.
  */
 @property (nonatomic) BOOL requiresConsent;
 
@@ -417,6 +420,7 @@ typedef enum : NSUInteger
 /**
  * For handling sessions manually.
  * @discussion If set, SDK does not handle beginning, updating and ending sessions automatically. Methods @c beginSession, @c updateSession and @c endSession need to be called manually.
+ * @discussion SDK behavior settings can turn automatic session tracking on or off and override this. While it is on, the manual session methods are ignored.
  */
 @property (nonatomic) BOOL manualSessionHandling;
 
@@ -607,6 +611,7 @@ typedef enum : NSUInteger
 
 /**
  * Set the server configuration to be set while initializing the SDK
+ * @discussion They apply only while no behavior settings from the server are stored, so on the first run. The first answer from the server replaces them as a whole, so a setting the server does not send goes back to its value in this configuration. A consent requirement that has to hold in any case belongs in @c requiresConsent, which no behavior setting lifts.
  */
 @property(nonatomic, copy) NSString *sdkBehaviorSettings;
 

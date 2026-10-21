@@ -70,8 +70,9 @@ static dispatch_once_t onceToken;
 }
 
 - (void)resetInstance {
-    CLY_LOG_I(@"%s resetting consent manager instance, consent for all features will be cancelled", __FUNCTION__);
-    [self cancelConsentForAllFeatures];
+    // the given consents are forgotten, not withdrawn: a withdrawal would tell the server the user withdrew every consent
+    // and unregister the app from push notifications, while halt only resets the SDK
+    CLY_LOG_I(@"%s resetting consent manager instance, the given consents are forgotten without a consent request", __FUNCTION__);
     onceToken = 0;
     s_sharedInstance = nil;
 }

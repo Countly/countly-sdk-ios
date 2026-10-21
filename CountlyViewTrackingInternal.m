@@ -902,8 +902,9 @@ static dispatch_once_t onceToken;
         }
     }
 
+    // auto stopped, so the next screen ends this one, as automatic views do on Android
     if (!isException)
-        [self startViewInternal:viewTitle customSegmentation:nil];
+        [self startViewInternal:viewTitle customSegmentation:nil isAutoStoppedView:YES];
 }
 
 

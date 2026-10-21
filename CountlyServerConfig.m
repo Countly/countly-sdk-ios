@@ -20,6 +20,8 @@
     NSSet *_appliedSettingKeys;
     // the consent requirement whose consent state was last sent, nil until start has handled consent
     NSNumber *_handledConsentRequirement;
+    // the developer's disableBackoffMechanism from start, which no behavior setting turns back on
+    BOOL _isBackoffDisabledByDeveloper;
 }
 @property (nonatomic) BOOL trackingEnabled;
 @property (nonatomic) BOOL networkingEnabled;
@@ -143,6 +145,40 @@ static dispatch_once_t onceToken;
 
 // the behavior settings refresh interval in hours when the server does not set one
 static const NSInteger kCountlyDefaultServerConfigUpdateInterval = 4;
+
+/// Whether a behavior settings version or timestamp can be read as a number.
+static BOOL CountlyIsBehaviorSettingsNumber(id value)
+{
+    return [value isKindOfClass:NSNumber.class] || [value isKindOfClass:NSString.class];
+}
+
+/// A copy of a behavior setting value without the nulls inside its lists and dictionaries, which the standard user
+/// defaults can not store and every reader would have to step around.
+static id CountlyBehaviorSettingWithoutNulls(id value)
+{
+    if ([value isKindOfClass:NSArray.class])
+    {
+        NSMutableArray* cleaned = NSMutableArray.new;
+        for (id element in (NSArray *)value)
+        {
+            if (element != NSNull.null)
+                [cleaned addObject:CountlyBehaviorSettingWithoutNulls(element)];
+        }
+        return cleaned;
+    }
+
+    if ([value isKindOfClass:NSDictionary.class])
+    {
+        NSMutableDictionary* cleaned = NSMutableDictionary.new;
+        [(NSDictionary *)value enumerateKeysAndObjectsUsingBlock:^(id key, id element, BOOL* stop) {
+            if (element != NSNull.null)
+                cleaned[key] = CountlyBehaviorSettingWithoutNulls(element);
+        }];
+        return cleaned;
+    }
+
+    return value;
+}
 #if (TARGET_OS_IOS)
 // the content zone timer interval in seconds when neither the server nor the developer sets one, as CountlyContentBuilderInternal starts with
 static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
@@ -192,6 +228,7 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     _developerValues = nil;
     _writtenValues = nil;
     _appliedSettingKeys = nil;
+    _isBackoffDisabledByDeveloper = NO;
     // an answer still in flight applies to this dropped instance, which must not send consents into the next run
     @synchronized (self) {
         _handledConsentRequirement = nil;
@@ -210,6 +247,7 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
 {
     _startConfig = config;
     [self rememberDeveloperValues:config];
+    _isBackoffDisabledByDeveloper = config.disableBackoffMechanism;
 
     // Seed the automatic tracking flags from the developer config: it is the lowest-precedence layer.
     // The SBS layers override them below (provided -> stored here, server in fetchServerConfig), giving
@@ -231,7 +269,9 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
         id parsed = [NSJSONSerialization JSONObjectWithData:[config.sdkBehaviorSettings cly_dataUTF8] options:0 error:&error];
 
         if ([parsed isKindOfClass:[NSDictionary class]]) {
-            persistentBehaviorSettings = [(NSDictionary *)parsed mutableCopy];
+            // checked like a server answer, so a null in them can not crash every start
+            persistentBehaviorSettings = NSMutableDictionary.new;
+            [self replaceBehaviorSettings:persistentBehaviorSettings withConfig:parsed];
             CLY_LOG_D(@"%s cache was empty, falling back to developer supplied behavior settings, keyCount: [%lu]", __FUNCTION__, (unsigned long)persistentBehaviorSettings.count);
         } else {
             CLY_LOG_E(@"%s could not parse developer supplied sdkBehaviorSettings, they will be ignored, error: [%@]", __FUNCTION__, error.localizedDescription);
@@ -351,9 +391,9 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
         return;
     }
 
-    if (!newConfig[kRVersion] || !newConfig[kRTimestamp])
+    if (!CountlyIsBehaviorSettingsNumber(newConfig[kRVersion]) || !CountlyIsBehaviorSettingsNumber(newConfig[kRTimestamp]))
     {
-        CLY_LOG_W(@"%s incoming behavior settings will be ignored, version or timestamp entry is missing", __FUNCTION__);
+        CLY_LOG_W(@"%s incoming behavior settings will be ignored, version or timestamp entry is missing or not a number", __FUNCTION__);
         return;
     }
 
@@ -377,7 +417,7 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     NSMutableDictionary *cReplacement = NSMutableDictionary.new;
     [cNew enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
         if (obj != nil && obj != [NSNull null]) {
-            cReplacement[key] = obj;
+            cReplacement[key] = CountlyBehaviorSettingWithoutNulls(obj);
         }
     }];
 
@@ -523,9 +563,9 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
         return;
     }
 
-    if (!serverConfig[kRVersion] || !serverConfig[kRTimestamp])
+    if (!CountlyIsBehaviorSettingsNumber(serverConfig[kRVersion]) || !CountlyIsBehaviorSettingsNumber(serverConfig[kRTimestamp]))
     {
-        CLY_LOG_W(@"%s version or timestamp is missing in the behavior settings, falling back to SDK defaults", __FUNCTION__);
+        CLY_LOG_W(@"%s version or timestamp is missing in the behavior settings or not a number, falling back to SDK defaults", __FUNCTION__);
         return;
     }
 
@@ -684,8 +724,10 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
               (unsigned long)CountlyCommon.sharedInstance.maxKeyLength, (unsigned long)CountlyCommon.sharedInstance.maxValueLength, (unsigned long)CountlyCommon.sharedInstance.maxValueLengthPicture, (unsigned long)CountlyCommon.sharedInstance.maxSegmentationValues, (unsigned long)config.sdkInternalLimits.getMaxBreadcrumbCount,
               (unsigned long)config.eventSendThreshold, (unsigned long)config.requestDropAgeHours, (unsigned long)config.storedRequestsLimit, config.updateSessionPeriod);
 
-    // The server can turn the consent requirement on and off; when it does not send 'cr', the developer's requirement applies
-    BOOL requiresConsent = [_appliedSettingKeys containsObject:kRConsentRequired] ? _consentRequired : [self developerValueForKey:kRConsentRequired orCurrent:@(config.requiresConsent)].boolValue;
+    // The server can require consent but never lift a requirement the developer set, since the consents the app gave and
+    // withdrew are not recorded while consent is not required
+    BOOL developerRequiresConsent = [self developerValueForKey:kRConsentRequired orCurrent:@(config.requiresConsent)].boolValue;
+    BOOL requiresConsent = developerRequiresConsent || ([_appliedSettingKeys containsObject:kRConsentRequired] && _consentRequired);
     config.requiresConsent = requiresConsent;
     CountlyConsentManager.sharedInstance.requiresConsent = config.requiresConsent;
     [self applyConsentRequirement];
@@ -696,6 +738,8 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     NSUInteger zoneTimerInterval = _contentZoneInterval ?: [self developerValueForKey:kRContentZoneInterval orCurrent:@(config.content.getZoneTimerInterval)].unsignedIntegerValue;
     [config.content setZoneTimerInterval:zoneTimerInterval];
     CountlyContentBuilderInternal.sharedInstance.zoneTimerInterval = zoneTimerInterval ?: kCountlyDefaultZoneTimerInterval;
+#endif
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
     // clearContentState, not exitContentZone: this runs on every config apply, and exitContentZone
     // would pull displayed content off screen.
     if (!_enterContentZone)
@@ -728,11 +772,6 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     if (CountlyCommon.sharedInstance.hasFinishedInit)
     {
         [self applyLocationTrackingState];
-    }
-
-    if(_backoffMechanism && config.disableBackoffMechanism){
-        CLY_LOG_D(@"%s backoff mechanism is enabled by behavior settings but disabled in the developer config, it will stay off", __FUNCTION__);
-        _backoffMechanism = NO;
     }
 
     // Skipped while init is still running: 'shouldUsePLCrashReporter' is not assigned until later in
@@ -772,12 +811,14 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     if (wasLifted)
     {
         // features that waited for their consent start the way giving that consent starts them: automatic view
-        // tracking through applyAutomaticTrackingState, push notifications here
-        CLY_LOG_D(@"%s consent requirement was turned off by behavior settings, features waiting for consent will be started", __FUNCTION__);
+        // tracking through applyAutomaticTrackingState, push notifications here, on the main thread its registration needs
+        CLY_LOG_D(@"%s consent requirement the behavior settings turned on is off again, features waiting for consent will be started", __FUNCTION__);
         _lastAppliedAutomaticViewTracking = nil;
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_OSX)
 #ifndef COUNTLY_EXCLUDE_PUSHNOTIFICATIONS
-        [CountlyPushNotifications.sharedInstance startPushNotifications];
+        CountlyRunOnMainThread(^{
+            [CountlyPushNotifications.sharedInstance startPushNotifications];
+        });
 #endif
 #endif
     }
@@ -788,6 +829,13 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
         if (!CountlyConsentManager.sharedInstance.consentForLocation)
         {
             [CountlyConnectionManager.sharedInstance sendLocationInfo];
+        }
+
+        // crash handlers installed while no consent was required would otherwise keep capturing, and PLCrashReporter would
+        // send that capture on the next start
+        if (!CountlyConsentManager.sharedInstance.consentForCrashReporting)
+        {
+            [CountlyCrashReporter.sharedInstance stopCrashReporting];
         }
     }
 }
@@ -1211,7 +1259,8 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
 
 - (BOOL)backoffMechanism
 {
-    return _backoffMechanism;
+    // read here rather than written into the resolved value, which every answer resets to the server's or the default
+    return _backoffMechanism && !_isBackoffDisabledByDeveloper;
 }
 
 - (NSInteger)bomAcceptedTimeoutSeconds

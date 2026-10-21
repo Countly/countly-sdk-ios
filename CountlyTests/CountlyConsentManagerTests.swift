@@ -135,30 +135,74 @@ class CountlyConsentManagerTests: CountlyBaseTestCase {
 #if os(iOS) || os(tvOS)
     /**
      * <pre>
-     * Behavior settings that lift the consent requirement after start has finished start the features that were waiting
-     * for their consent, such as automatic view tracking.
+     * A consent requirement the behavior settings turned on is lifted again once they stop requiring consent, which
+     * starts the features that were waiting for their consent, such as automatic view tracking.
      *
-     * 1- Start requiring consent, with automatic view tracking and no consent given, and hold the behavior settings answer
-     * 2- Verify automatic view tracking waits for its consent
-     * 3- Let the answer, which lifts the requirement, through and verify automatic view tracking starts
+     * 1- Start without requiring consent, with built in behavior settings that require it and automatic view tracking,
+     *    and hold the live behavior settings answer
+     * 2- Verify consent is required and automatic view tracking waits for its consent
+     * 3- Let the answer, which does not require consent, through and verify automatic view tracking starts
      * </pre>
      */
-    func test_consentLiftedByBehaviorSettingsAfterStart_startsTheFeaturesWaitingForConsent() throws {
+    func test_consentRequirementOfTheBehaviorSettingsLiftedAgain_startsTheFeaturesWaitingForConsent() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        let release = holdBehaviorSettingsAnswer(ServerConfigBuilder().consentRequired(false))
+        defer { MockURLProtocol.replyEmptyToEveryRequest() }
+        let config = mockedConfig()
+        config.requiresConsent = false
+        config.enableAutomaticViewTracking = true
+        config.sdkBehaviorSettings = ServerConfigBuilder().consentRequired(true).build()
+        Countly.sharedInstance().start(with: config)
+        XCTAssertTrue(CountlyConsentManager.sharedInstance().requiresConsent,
+                      "the built in behavior settings require consent")
+        XCTAssertFalse(CountlyViewTrackingInternal.sharedInstance().isAutoViewTrackingActive, "automatic view tracking waits for its consent")
+
+        release.signal()
+        TestUtils.waitUntil("automatic view tracking starts") { CountlyViewTrackingInternal.sharedInstance().isAutoViewTrackingActive }
+        XCTAssertFalse(CountlyConsentManager.sharedInstance().requiresConsent,
+                       "without the server's requirement the developer's applies")
+        XCTAssertTrue(CountlyViewTrackingInternal.sharedInstance().isAutoViewTrackingActive, "automatic view tracking starts once nothing waits for consent")
+    }
+#endif
+
+    /**
+     * <pre>
+     * Behavior settings can not lift a consent requirement the developer set, so consents given and
+     * withdrawn keep their effect, and a device ID change without merge still removes them.
+     *
+     * 1- Start requiring consent with events consent given, and hold a behavior settings answer that
+     *    does not require consent
+     * 2- Let the answer through and verify consent is still required and the events consent still given
+     * 3- Withdraw the events consent and verify it is withdrawn, then give it again and change the device
+     *    ID without merge
+     * 4- Verify the change removed the consent
+     * </pre>
+     */
+    func test_behaviorSettingsCanNotLiftTheDevelopersConsentRequirement() throws {
         try TestPlatform.skipUnlessHTTPInterceptable()
         let release = holdBehaviorSettingsAnswer(ServerConfigBuilder().consentRequired(false))
         defer { MockURLProtocol.replyEmptyToEveryRequest() }
         let config = mockedConfig()
         config.requiresConsent = true
-        config.enableAutomaticViewTracking = true
+        config.consents = [CLYConsent.events]
         Countly.sharedInstance().start(with: config)
-        XCTAssertFalse(CountlyViewTrackingInternal.sharedInstance().isAutoViewTrackingActive, "automatic view tracking waits for its consent")
 
         release.signal()
-        TestUtils.waitUntil("automatic view tracking starts") { CountlyViewTrackingInternal.sharedInstance().isAutoViewTrackingActive }
-        XCTAssertFalse(CountlyConsentManager.sharedInstance().requiresConsent, "the behavior settings lift the consent requirement")
-        XCTAssertTrue(CountlyViewTrackingInternal.sharedInstance().isAutoViewTrackingActive, "automatic view tracking starts once nothing waits for consent")
+        TestUtils.waitUntil("the behavior settings answer is stored") {
+            let stored = CountlyPersistency.sharedInstance().retrieveServerConfig()?["c"] as? [String: Any]
+            return (stored?["cr"] as? Bool) == false
+        }
+        XCTAssertTrue(CountlyConsentManager.sharedInstance().requiresConsent, "the developer's requirement stays")
+        XCTAssertTrue(CountlyConsentManager.sharedInstance().consentForEvents, "and the consent given at start with it")
+
+        Countly.sharedInstance().cancelConsent(forFeatures: [CLYConsent.events])
+        XCTAssertFalse(CountlyConsentManager.sharedInstance().consentForEvents, "a withdrawal takes effect")
+
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.events])
+        Countly.sharedInstance().changeDeviceIDWithoutMerge("next_user")
+        XCTAssertFalse(CountlyConsentManager.sharedInstance().consentForEvents,
+                       "the next user does not inherit the consent")
     }
-#endif
 
     /// A configuration whose requests go to an in-process mock, with manual sessions.
     private func mockedConfig() -> CountlyConfig {

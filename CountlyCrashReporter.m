@@ -71,6 +71,9 @@ void CountlySignalHandler(int signalCode);
 static NSUncaughtExceptionHandler* s_previousExceptionHandler = NULL;
 static BOOL s_hasInstalledExceptionHandler = NO;
 static atomic_bool s_isHandlingUncaughtException = false;
+// set by the first automatically detected crash, so the signal that ends the process after it, which a later crash
+// tool can chain back into Countly, is not reported as a second crash
+static atomic_bool s_hasReportedAutomaticCrash = false;
 
 /// Installs Countly's uncaught exception handler, chaining to the one it replaces, and leaves a handler installed over it in place.
 static void CountlyInstallUncaughtExceptionHandler(void)
@@ -87,11 +90,17 @@ static void CountlyInstallUncaughtExceptionHandler(void)
     NSSetUncaughtExceptionHandler(&CountlyUncaughtExceptionHandler);
 }
 
-/// Puts back the uncaught exception handler Countly replaced, unless another handler has replaced Countly's since.
+/// Puts back the uncaught exception handler Countly replaced, unless another handler has replaced Countly's since, and then
+/// forgets it, so the next install chains to whatever is live by then.
 static void CountlyUninstallUncaughtExceptionHandler(void)
 {
-    if (NSGetUncaughtExceptionHandler() == &CountlyUncaughtExceptionHandler)
-        NSSetUncaughtExceptionHandler(s_previousExceptionHandler);
+    // a handler installed over Countly's still chains into it, so the replaced one has to stay known for that chain
+    if (NSGetUncaughtExceptionHandler() != &CountlyUncaughtExceptionHandler)
+        return;
+
+    NSSetUncaughtExceptionHandler(s_previousExceptionHandler);
+    s_previousExceptionHandler = NULL;
+    s_hasInstalledExceptionHandler = NO;
 }
 
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV || TARGET_OS_OSX)
@@ -130,6 +139,10 @@ static void CountlyInstallSignalHandlers(void)
             continue;
 
         BOOL isDefault = isPlainDisposition && current.sa_handler == SIG_DFL;
+        // a broken pipe is often survived: only the app's own handler knows, so a SIGPIPE it handles is left to it like one it ignores
+        if (signalCode == SIGPIPE && !isDefault)
+            continue;
+
         BOOL isReplacedAction = s_hasPreviousSignalAction[signalCode] && CountlyIsSameSignalAction(&current, &s_previousSignalActions[signalCode]);
         if (s_hasPreviousSignalAction[signalCode] && !isDefault && !isReplacedAction)
             continue;
@@ -149,7 +162,8 @@ static void CountlyInstallSignalHandlers(void)
     }
 }
 
-/// Puts back the actions Countly replaced, for the signals where Countly's handler is still the live one.
+/// Puts back the actions Countly replaced, for the signals where Countly's handler is still the live one, and forgets those, so
+/// the next install chains to whatever is live by then. A signal whose handler was installed over Countly's keeps its record.
 static void CountlyUninstallSignalHandlers(void)
 {
     for (size_t i = 0; i < kCountlyCrashSignalsCount; i++)
@@ -157,7 +171,11 @@ static void CountlyUninstallSignalHandlers(void)
         int signalCode = kCountlyCrashSignals[i];
         struct sigaction current;
         if (s_hasPreviousSignalAction[signalCode] && sigaction(signalCode, NULL, &current) == 0 && CountlyIsCountlySignalAction(&current))
+        {
             sigaction(signalCode, &s_previousSignalActions[signalCode], NULL);
+            memset(&s_previousSignalActions[signalCode], 0, sizeof(s_previousSignalActions[signalCode]));
+            s_hasPreviousSignalAction[signalCode] = NO;
+        }
     }
 }
 
@@ -179,6 +197,7 @@ static void CountlyForgetReplacedCrashHandlers(void)
     s_previousExceptionHandler = NULL;
     s_hasInstalledExceptionHandler = NO;
     atomic_store(&s_isHandlingUncaughtException, false);
+    atomic_store(&s_hasReportedAutomaticCrash, false);
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV || TARGET_OS_OSX)
     memset(s_previousSignalActions, 0, sizeof(s_previousSignalActions));
     memset(s_hasPreviousSignalAction, 0, sizeof(s_hasPreviousSignalAction));
@@ -293,6 +312,7 @@ static void CountlyForgetReplacedCrashHandlers(void)
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV || TARGET_OS_OSX)
             CountlyInstallSignalHandlers();
 #endif
+            atomic_store(&s_hasReportedAutomaticCrash, false);
             self.crashHandlerInstallation = CLYCrashHandlerInstallationDefault;
         }
     }
@@ -543,6 +563,16 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
     // a handler installed over Countly's can still chain into it after crash consent is withdrawn
     if (isAutoDetect && !CountlyConsentManager.sharedInstance.consentForCrashReporting)
         return;
+
+    if (isAutoDetect)
+    {
+        if (atomic_exchange(&s_hasReportedAutomaticCrash, true))
+            return;
+
+        // the immediate send below waits for its completion, which logs on another thread and must not wait for a log
+        // gathering lock this thread may hold
+        CountlySDKLogsStopCaptureForCrash();
+    }
 
     NSArray* stackTrace = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
     if (!stackTrace)
@@ -892,6 +922,13 @@ void CountlySignalHandler(int signalCode)
 - (void)reportException:(NSException *)exception
 {
     [super reportException:exception];
+
+    // the exception is captured without the app asking, so it follows automatic crash reporting as the uncaught handler does
+    if (!CountlyServerConfig.sharedInstance.automaticCrashReportingEnabled)
+    {
+        CLY_LOG_D(@"%s exception caught by the application class is not recorded, automatic crash reporting is disabled", __FUNCTION__);
+        return;
+    }
 
     //NOTE: Custom UncaughtExceptionHandler is called with an irrelevant stack trace, not the original crash call stack trace.
     //NOTE: And system's own UncaughtExceptionHandler handles the exception by just printing it to the Console.

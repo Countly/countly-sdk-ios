@@ -165,7 +165,13 @@ static dispatch_once_t onceToken;
         {
             remoteConfig = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
         }
-        
+
+        if (!error && ![remoteConfig isKindOfClass:NSDictionary.class])
+        {
+            remoteConfig = nil;
+            error = [NSError errorWithDomain:kCountlyErrorDomain code:CLYErrorRemoteConfigGeneralAPIError userInfo:@{NSLocalizedDescriptionKey: @"Remote config response is not a JSON object"}];
+        }
+
         if (!error)
         {
             if (((NSHTTPURLResponse*)response).statusCode != 200)
@@ -345,9 +351,18 @@ static dispatch_once_t onceToken;
     }
 
     CLY_LOG_D(@"%s remote config value download is starting, requestKind: [%@], fetchType: [%@], keys: [%@], keyCount: [%lu], omitKeys: [%@], omitKeyCount: [%lu], completionHandlerProvided: [%@]", __FUNCTION__, kCountlyRCKeyRC, (!keys && !omitKeys) ? @"full" : @"partial", keys, (unsigned long)keys.count, omitKeys, (unsigned long)omitKeys.count, (completionHandler != nil) ? @"YES" : @"NO");
-    
+
+    NSString* requestedDeviceID = CountlyDeviceInfo.sharedInstance.deviceID;
     [self fetchRemoteConfigForKeys:keys omitKeys:omitKeys completionHandler:^(NSDictionary *remoteConfig, NSError *error)
      {
+        // an answer for the user before a device ID change would otherwise be stored as the values of the next user
+        if (!error && ![CountlyDeviceInfo.sharedInstance.deviceID isEqualToString:requestedDeviceID])
+        {
+            CLY_LOG_D(@"%s remote config values arrived for a device ID that changed during the download, they are discarded", __FUNCTION__);
+            remoteConfig = nil;
+            error = [NSError errorWithDomain:kCountlyErrorDomain code:CLYErrorRemoteConfigGeneralAPIError userInfo:@{NSLocalizedDescriptionKey: @"Remote config values are for the device ID before the change"}];
+        }
+
         BOOL fullValueUpdate = false;
         NSDictionary* remoteConfigMeta = remoteConfig ? [self createRCMeta:remoteConfig] : @{};
         CLYRequestResult requestResult = CLYResponseSuccess;
@@ -501,21 +516,21 @@ static dispatch_once_t onceToken;
         
         if (!error)
         {
-            NSDictionary* variants_ = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
-            [variants_ enumerateKeysAndObjectsUsingBlock:^(NSString * key, NSArray* value, BOOL * stop)
+            id variantsResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+            // an error body such as {"result": "..."} is a dictionary too, so every entry is checked before it is read
+            NSDictionary* variantsByKey = [variantsResponse isKindOfClass:NSDictionary.class] ? variantsResponse : nil;
+            [variantsByKey enumerateKeysAndObjectsUsingBlock:^(id key, id value, BOOL * stop)
              {
+                if (![key isKindOfClass:NSString.class] || ![value isKindOfClass:NSArray.class])
+                    return;
+
                 NSMutableArray<NSString*>* valuesArray = NSMutableArray.new;
-                [value enumerateObjectsUsingBlock:^(id arrayValue, NSUInteger idx, BOOL * stop)
-                 {
-                    
-                    NSString *valueType = NSStringFromClass([arrayValue class]);
-                    if ([valueType isEqualToString:@"__NSDictionaryI"]) {
-                        [valuesArray addObject:arrayValue[@"name"]];
-                    }
-                    else {
-                        [valuesArray addObject:arrayValue];
-                    }
-                }];
+                for (id arrayValue in (NSArray *)value)
+                {
+                    id variantName = [arrayValue isKindOfClass:NSDictionary.class] ? arrayValue[@"name"] : arrayValue;
+                    if ([variantName isKindOfClass:NSString.class])
+                        [valuesArray addObject:variantName];
+                }
                 variants[key] = valuesArray;
             }];
         }
@@ -631,9 +646,12 @@ static dispatch_once_t onceToken;
         if (!error)
         {
             variants = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+            if (![variants isKindOfClass:NSDictionary.class])
+                variants = nil;
+
             if (((NSHTTPURLResponse*)response).statusCode != 200)
             {
-                NSMutableDictionary* userInfo = variants.mutableCopy;
+                NSMutableDictionary* userInfo = variants.mutableCopy ?: NSMutableDictionary.new;
                 userInfo[NSLocalizedDescriptionKey] = @"Enroll In RC Variant general API error";
                 error = [NSError errorWithDomain:kCountlyErrorDomain code:CLYErrorRemoteConfigGeneralAPIError userInfo:userInfo];
             }
@@ -754,13 +772,18 @@ static dispatch_once_t onceToken;
         if (!error)
         {
             
-            NSArray* experimentsInfo = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
-            [experimentsInfo enumerateObjectsUsingBlock:^(NSDictionary* value, NSUInteger idx, BOOL * stop)
-             {
+            id experimentsResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+            // an error body is a dictionary, not the list of experiments
+            NSArray* experimentsInfo = [experimentsResponse isKindOfClass:NSArray.class] ? experimentsResponse : nil;
+            for (id value in experimentsInfo)
+            {
+                if (![value isKindOfClass:NSDictionary.class])
+                    continue;
+
                 CountlyExperimentInformation* experimentInfo = [[CountlyExperimentInformation alloc] initWithID:value[@"id"] experimentName:value[@"name"] experimentDescription:value[@"description"] currentVariant:value[@"currentVariant"] variants:value[@"variants"]];
-                experiments[experimentInfo.experimentID] = experimentInfo;
-                
-            }];
+                if (experimentInfo.experimentID)
+                    experiments[experimentInfo.experimentID] = experimentInfo;
+            }
         }
         
         if (!error)

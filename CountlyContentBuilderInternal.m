@@ -501,7 +501,7 @@ static const NSTimeInterval kCountlyCBDefaultZoneTimerInterval = 30.0;
         NSError *jsonError;
         NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
 
-        if (jsonError || !jsonResponse) {
+        if (jsonError || ![jsonResponse isKindOfClass:NSDictionary.class]) {
             CLY_LOG_D(@"%s failed to parse the content details JSON or the response was empty, it will be retried on the next content zone tick, error: [%@], responseLength: [%lu]", __FUNCTION__, jsonError.localizedDescription, (unsigned long)data.length);
             [self setRequestQueueLockedThreadSafe:NO];
             if (failureCallback) {

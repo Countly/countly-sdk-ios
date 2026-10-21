@@ -425,4 +425,90 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         }
         CountlyPersistency.sharedInstance().saveToFileSync()
     }
+
+    /// A configuration whose requests go to MockURLProtocol, with manual sessions and no behavior settings fetch.
+    private func mockedConfig() -> CountlyConfig {
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [MockURLProtocol.self]
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        config.disableSDKBehaviorSettingsUpdates = true
+        config.urlSessionConfiguration = sessionConfig
+        return config
+    }
+
+    /**
+     * <pre>
+     * A success status whose body is a JSON list, as a proxy or a misconfigured host can answer, fails
+     * the request instead of crashing the app, so the request stays queued for the next attempt.
+     *
+     * 1- Start against a server that answers every event request with a list
+     * 2- Record an event and send it
+     * 3- Verify the app is still running and the event request is still queued
+     * </pre>
+     */
+    func test_replyThatIsAList_failsTheRequestInsteadOfCrashing() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        let answered = expectation(description: "the event request is answered")
+        answered.assertForOverFulfill = false
+        MockURLProtocol.requestHandler = { request in
+            let body = CountlyServerConfigTests.capturedQueryString(request)
+            if body.contains("list_reply_probe") {
+                answered.fulfill()
+                let ok = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)
+                return ("[]".data(using: .utf8), ok, nil)
+            }
+            let ok = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)
+            return ("{\"result\":\"Success\"}".data(using: .utf8), ok, nil)
+        }
+        defer { MockURLProtocol.replyEmptyToEveryRequest() }
+
+        Countly.sharedInstance().start(with: mockedConfig())
+        Countly.sharedInstance().recordEvent("list_reply_probe")
+        CountlyConnectionManager.sharedInstance().sendEvents()
+        wait(for: [answered], timeout: 5)
+        TestUtils.sleep(0.5) {}
+
+        let queue = TestUtils.getCurrentRQ() ?? []
+        XCTAssertTrue(queue.contains { $0.contains("list_reply_probe") }, "the request answered with a list stays queued")
+    }
+
+    /**
+     * <pre>
+     * An automatically detected crash is sent at once, but the crashing app waits for that send for a
+     * bounded time only: a send that does not complete in time is queued for the next start instead of
+     * holding the app forever.
+     *
+     * 1- Start against a server that holds the crash report answer far longer than the wait
+     * 2- Send a crash report the way the crash handler does and time it
+     * 3- Verify the call returned after the bounded wait and the report is queued
+     * </pre>
+     */
+    func test_immediateCrashReport_waitsBoundedAndQueuesTheReport() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        let release = DispatchSemaphore(value: 0)
+        MockURLProtocol.requestHandler = { request in
+            if CountlyServerConfigTests.capturedQueryString(request).contains("crash=") {
+                _ = release.wait(timeout: .now() + 15)
+            }
+            let ok = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)
+            return ("{\"result\":\"Success\"}".data(using: .utf8), ok, nil)
+        }
+        defer {
+            release.signal()
+            MockURLProtocol.replyEmptyToEveryRequest()
+        }
+
+        Countly.sharedInstance().start(with: mockedConfig())
+        let started = Date()
+        let report = "{\"_error\":\"bounded_wait_probe\"}"
+        CountlyConnectionManager.sharedInstance().sendCrashReport(report, immediately: true)
+        let waited = Date().timeIntervalSince(started)
+
+        XCTAssertGreaterThanOrEqual(waited, 4.5, "the crash report send is waited for")
+        XCTAssertLessThan(waited, 8, "but not longer than the bounded wait")
+        let queue = TestUtils.getCurrentRQ() ?? []
+        XCTAssertTrue(queue.contains { $0.contains("bounded_wait_probe") },
+                      "a send that did not complete is queued for the next start")
+    }
 }

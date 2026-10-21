@@ -130,13 +130,134 @@ class CountlyTests: CountlyBaseTestCase {
         XCTAssertNil(Countly.sharedInstance().remoteConfig().getValue("held_key").value, "and is not served either")
     }
 
+    /// A configuration whose requests go to MockURLProtocol, with manual sessions.
+    private func mockedConfig() -> CountlyConfig {
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [MockURLProtocol.self]
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        config.urlSessionConfiguration = sessionConfig
+        return config
+    }
+
+    /**
+     * <pre>
+     * Remote config values downloaded for a user are not stored for the next one when the device ID changes while the
+     * download is in flight.
+     *
+     * 1- Start, and hold the answer of a value download
+     * 2- Change the device ID without merge while the download waits
+     * 3- Let the answer through and verify the next user gets none of its values and the download reports an error
+     * </pre>
+     */
+    func testRemoteConfig_answerForThePreviousDeviceID_isNotStoredForTheNextOne() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        let releaseDownload = DispatchSemaphore(value: 0)
+        MockURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)
+            guard request.url?.absoluteString.contains("method=rc") == true else {
+                return ("{}".data(using: .utf8), response, nil)
+            }
+            _ = releaseDownload.wait(timeout: .now() + 5)
+            return (#"{"previous_user_key":"previous_user_value"}"#.data(using: .utf8), response, nil)
+        }
+        defer { MockURLProtocol.replyEmptyToEveryRequest() }
+        let config = mockedConfig()
+        config.enableRemoteConfigAutomaticTriggers = false
+        Countly.sharedInstance().start(with: config)
+
+        let downloaded = XCTestExpectation(description: "the download completes")
+        var downloadError: Error?
+        Countly.sharedInstance().remoteConfig().downloadKeys { _, error, _, _ in
+            downloadError = error
+            downloaded.fulfill()
+        }
+        Countly.sharedInstance().changeDeviceIDWithoutMerge("next_user")
+        releaseDownload.signal()
+        wait(for: [downloaded], timeout: 10)
+
+        XCTAssertNotNil(downloadError, "the download reports that its answer is not for the current device ID")
+        XCTAssertNil(Countly.sharedInstance().remoteConfig().getValue("previous_user_key").value,
+                     "the next user gets none of the previous user's values")
+        XCTAssertNil(CountlyPersistency.sharedInstance().retrieveRemoteConfig()["previous_user_key"],
+                     "and none are stored")
+    }
+
+    /**
+     * <pre>
+     * The A/B testing helpers report an error body as an error instead of crashing on it.
+     *
+     * 1- Start against a server that answers both A/B helper requests with an error body
+     * 2- Download the variants and the experiments
+     * 3- Verify both callbacks report an error
+     * </pre>
+     */
+    func testRemoteConfig_abTestingHelpers_reportAnErrorBodyAsAnError() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        MockURLProtocol.requestHandler = { request in
+            let url = request.url?.absoluteString ?? ""
+            if url.contains("ab_fetch_variants") || url.contains("ab_fetch_experiments") {
+                return (#"{"result":"Missing parameter"}"#.data(using: .utf8), HTTPURLResponse(url: request.url!, statusCode: 400, httpVersion: nil, headerFields: nil), nil)
+            }
+            return ("{}".data(using: .utf8), HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil), nil)
+        }
+        defer { MockURLProtocol.replyEmptyToEveryRequest() }
+        Countly.sharedInstance().start(with: mockedConfig())
+
+        let variants = XCTestExpectation(description: "the variants download completes")
+        let experiments = XCTestExpectation(description: "the experiments download completes")
+        var variantsError: Error?
+        var experimentsError: Error?
+        Countly.sharedInstance().remoteConfig().testingDownloadVariantInformation { _, error in
+            variantsError = error
+            variants.fulfill()
+        }
+        Countly.sharedInstance().remoteConfig().testingDownloadExperimentInformation { _, error in
+            experimentsError = error
+            experiments.fulfill()
+        }
+        wait(for: [variants, experiments], timeout: 10)
+
+        XCTAssertNotNil(variantsError, "an error body is an error for the variants")
+        XCTAssertNotNil(experimentsError, "and for the experiments")
+    }
+
+    /**
+     * <pre>
+     * One event with a value JSON can not represent, NaN for example, does not take the other events of its batch down:
+     * the value is left out and every event goes out.
+     *
+     * 1- Record an event, one with a NaN segmentation value and a NaN sum, and another event
+     * 2- Turn them into a request
+     * 3- Verify the request carries all three events, without the NaN values
+     * </pre>
+     */
+    func testEvents_aNaNValueDoesNotDropTheBatch() throws {
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+
+        Countly.sharedInstance().recordEvent("event_before_nan")
+        Countly.sharedInstance().recordEvent("nan_event", segmentation: ["ratio": NSNumber(value: Double.nan), "kept": "value"], count: 1, sum: Double.nan)
+        Countly.sharedInstance().recordEvent("event_after_nan")
+        CountlyConnectionManager.sharedInstance().sendEvents()
+
+        let request = try XCTUnwrap(TestUtils.getCurrentRQ()?.first { $0.contains("event_before_nan") }, "the batch is queued")
+        let events = try XCTUnwrap(TestUtils.parseQueryString(request)["events"] as? String)
+        let parsed = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(events.utf8)) as? [[String: Any]])
+        XCTAssertEqual(["event_before_nan", "nan_event", "event_after_nan"], parsed.compactMap { $0["key"] as? String }, "every event of the batch goes out")
+        let nanEvent = try XCTUnwrap(parsed.first { $0["key"] as? String == "nan_event" })
+        XCTAssertNil(nanEvent["sum"], "the NaN sum is left out")
+        XCTAssertEqual(["kept": "value"], nanEvent["segmentation"] as? [String: String], "and so is the NaN segmentation value")
+    }
+
     /**
      * <pre>
      * "halt" gives the configuration given at start its own values back. Behavior settings write their resolved values
      * into it, and its internal limits are shared by every configuration, so without this the next start would take the
      * halted run's behavior settings for the developer's values.
      *
-     * 1- Start with developer supplied behavior settings that lift the consent requirement and lower two values
+     * 1- Start with developer supplied behavior settings that require consent and lower two values
      * 2- Verify they applied, then halt
      * 3- Verify the configuration, and a new one for the shared limits, hold the developer's values again
      * 4- Start again without behavior settings and verify the developer's values apply
@@ -145,25 +266,25 @@ class CountlyTests: CountlyBaseTestCase {
     func testHalt_givesTheStartConfigurationItsOwnValuesBack() throws {
         let config = createBaseConfig()
         config.manualSessionHandling = true
-        config.requiresConsent = true
+        config.requiresConsent = false
         config.eventSendThreshold = 7
         config.sdkInternalLimits().setMaxKeyLength(64)
         config.sdkBehaviorSettings = ServerConfigBuilder()
-            .consentRequired(false)
+            .consentRequired(true)
             .logging(false)
             .eventQueueSize(3)
             .limitKeyLength(20)
             .build()
         Countly.sharedInstance().start(with: config)
 
-        XCTAssertFalse(CountlyConsentManager.sharedInstance().requiresConsent, "the behavior settings lift the consent requirement")
+        XCTAssertTrue(CountlyConsentManager.sharedInstance().requiresConsent, "the behavior settings require consent")
         XCTAssertEqual(3, CountlyPersistency.sharedInstance().eventSendThreshold)
         XCTAssertEqual(20, CountlyCommon.sharedInstance().maxKeyLength)
-        XCTAssertFalse(config.requiresConsent, "while the SDK runs, the resolved values live in the start configuration")
+        XCTAssertTrue(config.requiresConsent, "while the SDK runs, the resolved values live in the start configuration")
 
         Countly.sharedInstance().halt(true)
 
-        XCTAssertTrue(config.requiresConsent, "halt gives back the developer's consent requirement")
+        XCTAssertFalse(config.requiresConsent, "halt gives back the developer's consent requirement")
         XCTAssertTrue(config.enableDebug, "and the developer's logging")
         XCTAssertEqual(7, config.eventSendThreshold, "and the developer's event threshold")
         XCTAssertEqual(64, config.sdkInternalLimits().getMaxKeyLength(), "and the developer's key length limit")
@@ -173,9 +294,52 @@ class CountlyTests: CountlyBaseTestCase {
         config.setValue(nil, forKey: "sdkBehaviorSettings")
         Countly.sharedInstance().start(with: config)
 
-        XCTAssertTrue(CountlyConsentManager.sharedInstance().requiresConsent, "without behavior settings the developer's consent requirement applies")
+        XCTAssertFalse(CountlyConsentManager.sharedInstance().requiresConsent, "without behavior settings the developer's consent requirement applies")
         XCTAssertEqual(7, CountlyPersistency.sharedInstance().eventSendThreshold, "and the developer's event threshold")
         XCTAssertEqual(64, CountlyCommon.sharedInstance().maxKeyLength, "and the developer's key length limit")
+        Countly.sharedInstance().halt(true)
+    }
+
+    /**
+     * <pre>
+     * "halt" forgets the given consents without telling the server they were withdrawn, and "halt(false)" keeps every
+     * request queued before it for the next start, also the ones queued since the last save.
+     *
+     * 1- Start requiring consent with every consent given, against a server whose answers keep requests queued
+     * 2- Record an event and turn it into a request, then halt without clearing the storage
+     * 3- Start again and verify the event request is still queued and no consent request withdraws a consent
+     * </pre>
+     */
+    func testHalt_forgetsConsentsWithoutWithdrawingThemAndKeepsTheQueue() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        MockURLProtocol.requestHandler = { request in
+            (#"{"result":"fail"}"#.data(using: .utf8), HTTPURLResponse(url: request.url!, statusCode: 400, httpVersion: nil, headerFields: nil), nil)
+        }
+        defer { MockURLProtocol.replyEmptyToEveryRequest() }
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [MockURLProtocol.self]
+
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        config.requiresConsent = true
+        config.enableAllConsents = true
+        config.disableSDKBehaviorSettingsUpdates = true
+        config.urlSessionConfiguration = sessionConfig
+        Countly.sharedInstance().start(with: config)
+        Countly.sharedInstance().recordEvent("event_before_halt")
+        CountlyConnectionManager.sharedInstance().sendEvents()
+        Countly.sharedInstance().halt(false)
+
+        let next = createBaseConfig()
+        next.manualSessionHandling = true
+        next.disableSDKBehaviorSettingsUpdates = true
+        next.urlSessionConfiguration = sessionConfig
+        Countly.sharedInstance().start(with: next)
+        let rq = TestUtils.getCurrentRQ() ?? []
+        XCTAssertTrue(rq.contains { $0.contains("event_before_halt") }, "the request queued before halt is kept: \(rq)")
+        let consentStates = rq.compactMap { TestUtils.parseQueryString($0)["consent"] as? [String: Any] }
+        XCTAssertFalse(consentStates.isEmpty, "the consent state of the first start is kept too: \(rq)")
+        XCTAssertFalse(consentStates.contains { $0.values.contains { ($0 as? Bool) == false } }, "halt withdraws no consent: \(consentStates)")
         Countly.sharedInstance().halt(true)
     }
 

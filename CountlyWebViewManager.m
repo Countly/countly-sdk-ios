@@ -882,7 +882,8 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
         CLY_LOG_D(@"%s parsing the content events JSON failed, error: [%@], domain: [%@], code: [%ld], jsonLength: [%lu]", __FUNCTION__, error.localizedDescription, error.domain, (long)error.code, (unsigned long)jsonString.length);
     }
 
-    CLY_LOG_D(@"%s content events JSON parsed, json: [%@], events: [%@]", __FUNCTION__, jsonString, events);
+    // counts only, each event is logged below with the segmentation the behavior settings let through
+    CLY_LOG_D(@"%s content events JSON parsed, jsonLength: [%lu], eventCount: [%lu]", __FUNCTION__, (unsigned long)jsonString.length, [events isKindOfClass:NSArray.class] ? (unsigned long)events.count : 0UL);
 
     if (!events || ![events isKindOfClass:[NSArray class]]) {
             CLY_LOG_E(@"%s the content events payload is nil or not an array, ignoring the action", __FUNCTION__);
@@ -915,7 +916,7 @@ static const NSTimeInterval kCLYContentShownDeadline = 60.0;
                 self.contentShownDeadlineTimer = nil;
             }
 
-            CLY_LOG_D(@"%s recording a content event, key: [%@], segmentation: [%@]", __FUNCTION__, key, segmentation);
+            CLY_LOG_D(@"%s recording a content event, key: [%@], segmentation: [%@]", __FUNCTION__, key, [Countly.sharedInstance loggableSegmentation:segmentation eventKey:key]);
 
             [Countly.sharedInstance recordEvent:key segmentation:[CountlyContentBuilderInternal.sharedInstance mergeGlobalContentSegmentationInto:segmentation]];
     }
