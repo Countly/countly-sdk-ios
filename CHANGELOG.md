@@ -1,12 +1,12 @@
-## XX.XX.XX
-* ! Minor breaking change ! Raised the minimum supported deployment targets to iOS 15, tvOS 15, watchOS 9 and macOS 12 (previously iOS 12, tvOS 12, watchOS 4 and macOS 10.14, and iOS 10 and tvOS 10 for "Countly-PL") for compatibility with Xcode 27. Apps targeting older versions are no longer supported.
+## 26.8.0
+* ! Minor breaking change ! Raised the minimum supported deployment targets to iOS 15, tvOS 15, watchOS 9 and macOS 12 (previously iOS 12, tvOS 12, watchOS 4 and macOS 10.14, and iOS 10 and tvOS 10 for "Countly-PL") for compatibility with Xcode 27. Apps targeting older versions are no longer supported and can keep using 26.1.4.
 * ! Minor breaking change ! "changeDeviceIDWithMerge:" and "changeDeviceIDWithoutMerge:" now ignore nil, an empty string and "CLYDefaultDeviceID" instead of switching back to the default device ID.
-* ! Minor breaking change ! A SIGPIPE the app neither ignores nor handles itself now ends the app after it is reported, as it would without the SDK. Previously the SDK reported it, kept the app running and turned automatic crash reporting off.
+* ! Minor breaking change ! A SIGPIPE the app neither ignores nor handles itself now ends the app after it is reported, as it would without the SDK. Previously the SDK reported it, kept the app running and turned automatic crash reporting off. An app that has to survive a broken pipe should ignore or handle SIGPIPE before starting the SDK.
 
-* Added support for server requested SDK log gathering and connection tests. A gathered log line is uploaded only after the consent of the feature that wrote it is given.
+* Added support for server requested SDK log gathering and connection tests. When consent is required, a gathered log line is uploaded only after the consent of the feature that wrote it is given, and a line no single feature wrote waits for both the events and the user details consent.
 * Added support for SDK behavior settings that control automatic session tracking, automatic view tracking, automatic crash reporting and Journey Trigger Views, also for the running session. Automatic crash reporting can be turned on this way also for an app that does not list "CLYCrashReporting" in "features", and crash consent still applies.
 * Added "userProfile" access on watchOS, tvOS and macOS.
-* Added a new method "setGlobalContentSegmentation" on "CountlyContentBuilder" that sets a segmentation recorded with every content event and with the events and answers of NPS, survey and rating feedback widgets, leaving out the keys widgets record as answers.
+* Added a new method "setGlobalContentSegmentation" on "CountlyContentBuilder" that sets a segmentation recorded with every content event and with the events and answers of NPS, survey and rating feedback widgets presented or reported through "CountlyFeedbackWidget", leaving out the keys widgets record as answers. The legacy "presentRatingWidgetWithID:" and "recordRatingWidgetWithID:" calls do not carry it. (Experimental!)
 * Improved internal logging and changed the default log level from verbose to debug.
 * Improved crash handling. The SDK's handlers now pass crashes on to the handlers they replaced, leave crash tools installed later, signals the app ignores and a SIGPIPE the app handles itself alone, and are removed by "halt".
 * Improved state cleanup on "halt", which now also resets events, view tracking, remote config, location and the content state on visionOS, and puts back into the configuration given at start the values SDK behavior settings changed in it.
@@ -22,7 +22,8 @@
 * Mitigated an issue where an event with a NaN or infinite sum, duration or segmentation value dropped every other event recorded with it. The invalid value is now left out.
 * Mitigated an issue where "disableBackoffMechanism" took effect only while SDK behavior settings kept changing.
 * Mitigated an issue where remote config values downloaded for the previous device ID were stored for the next one when the device ID changed during the download.
-* Mitigated an issue where automatic view tracking did not end the previous view when the next one appeared, so views stayed open and reported no duration, or a very long one.
+* Mitigated an issue where automatic view tracking did not end the previous view when the next one appeared, so views stayed open and reported no duration, or a very long one. This also covers the screen already on top when automatic view tracking starts, which now also honors the exclusion list.
+* Mitigated an issue where automatic view tracking recorded the SDK's own content and feedback widget screen as a view.
 * Mitigated an issue where events recorded while the app was inactive, for example under a system alert or in the app switcher, were reported as not visible on iOS, tvOS, visionOS and watchOS.
 * Mitigated an issue where a feedback widget that failed to load was recorded as closed by the user, which could keep it hidden from that user.
 * Mitigated an issue where "halt" in consent mode queued a request that withdrew every consent and unregistered the app from push notifications, and where "halt:" without clearing the storage dropped the requests queued since the last save.

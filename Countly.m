@@ -253,13 +253,14 @@ static dispatch_once_t onceToken;
     }
 
 #if (TARGET_OS_IOS || TARGET_OS_TV )
+    // before the start, which records the screen already on top unless it is excluded
+    if (config.automaticViewTrackingExclusionList) {
+        [CountlyViewTrackingInternal.sharedInstance addAutoViewTrackingExclutionList:config.automaticViewTrackingExclusionList];
+    }
     // Automatic view tracking is resolved through the SBS precedence chain, so the server can enable it even when the developer did not
     if (CountlyServerConfig.sharedInstance.viewTrackingEnabled && CountlyServerConfig.sharedInstance.automaticViewTrackingEnabled)
     {
         [CountlyViewTrackingInternal.sharedInstance startAutoViewTracking];
-    }
-    if (config.automaticViewTrackingExclusionList) {
-        [CountlyViewTrackingInternal.sharedInstance addAutoViewTrackingExclutionList:config.automaticViewTrackingExclusionList];
     }
 #endif
     
@@ -784,8 +785,8 @@ static dispatch_once_t onceToken;
 
 - (void)setIDInternal:(NSString *)deviceID onServer:(BOOL)onServer
 {
+    // the value itself is logged only once a gather of the current user is closed, so it never reaches that user's logs
     CLY_LOG_D(@"%s applying the device ID change, valueProvided: [%@], onServer: [%@]", __FUNCTION__, deviceID.length ? @"YES" : @"NO", onServer ? @"YES" : @"NO");
-    CLY_LOG_D(@"%s device ID change detail, deviceID: [%@], onServer: [%@]", __FUNCTION__, deviceID, onServer ? @"YES" : @"NO");
     if (!CountlyCommon.sharedInstance.hasStarted)
     {
         CLY_LOG_W(@"%s omitting the device ID change, the SDK has not been started yet", __FUNCTION__);
@@ -809,6 +810,7 @@ static dispatch_once_t onceToken;
     if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
     {
         CLY_LOG_I(@"%s leaving temporary device ID mode and switching back to normal mode", __FUNCTION__);
+        CLY_LOG_D(@"%s device ID change detail, deviceID: [%@], onServer: [%@]", __FUNCTION__, deviceID, onServer ? @"YES" : @"NO");
 
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];
         
@@ -833,6 +835,8 @@ static dispatch_once_t onceToken;
 
     if (onServer)
     {
+        // a merge keeps the user, and the server moves a running gather to the new device ID with it
+        CLY_LOG_D(@"%s device ID change detail, deviceID: [%@], onServer: [YES]", __FUNCTION__, deviceID);
         NSString* oldDeviceID = CountlyDeviceInfo.sharedInstance.deviceID;
 
         CountlyCommon.sharedInstance.deviceIDMergeCount++;
@@ -845,6 +849,7 @@ static dispatch_once_t onceToken;
         [self suspend];
 
         [CountlyCommon.sharedInstance stopSdkLogGatheringForDeviceIDChange];
+        CLY_LOG_D(@"%s device ID change detail, deviceID: [%@], onServer: [NO]", __FUNCTION__, deviceID);
 
         CountlyCommon.sharedInstance.deviceIDChangeWithoutMergeCount++;
         [CountlyDeviceInfo.sharedInstance initializeDeviceID:deviceID];

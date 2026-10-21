@@ -77,6 +77,7 @@ static dispatch_once_t onceToken;
         self.automaticViewTrackingExclusionList =
         @[
             @"CLYInternalViewController",
+            @"CountlyWebViewController",
             @"UINavigationController",
             @"UIAlertController",
             @"UIPageViewController",
@@ -302,9 +303,15 @@ static dispatch_once_t onceToken;
     [self swizzleViewTrackingMethods];
 
     UIViewController* topVC = CountlyCommon.sharedInstance.topViewController;
-    NSString* viewTitle = [self titleForViewController:topVC];
-    CLY_LOG_D(@"%s automatic view tracking enabled, top view will be started automatically, name: [%@]", __FUNCTION__, viewTitle);
-    [self startViewInternal:viewTitle customSegmentation:nil];
+    if (!topVC)
+    {
+        CLY_LOG_D(@"%s automatic view tracking enabled, no screen is on top yet, the first one to appear will be started", __FUNCTION__);
+        return;
+    }
+
+    CLY_LOG_D(@"%s automatic view tracking enabled, top view will be started automatically, name: [%@]", __FUNCTION__, [self titleForViewController:topVC]);
+    // the same path as a screen that appears later, so it is auto stopped by the next one and the exclusion list applies
+    [self performAutoViewTrackingForViewController:topVC];
 }
 
 - (void)stopAutoViewTracking

@@ -325,6 +325,52 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
         validateRecordedViews(startedEventsCount: ["FirstScreen": 1, "SecondScreen": 1], endedEventsDurations: ["FirstScreen": [2]])
     }
 
+    /// The screen already on top when automatic view tracking starts is ended by the next screen too, instead of staying
+    /// open next to every later one until the app goes to the background.
+    func testAutomaticViewTrackingEndsTheScreenOnTopAtStart() throws {
+        let top = UIViewController()
+        top.title = "TopAtStart"
+        let topViewController = try XCTUnwrap(class_getInstanceMethod(CountlyCommon.self, NSSelectorFromString("topViewController")))
+        let topBlock: @convention(block) (AnyObject) -> UIViewController? = { _ in top }
+        let originalTopViewController = method_setImplementation(topViewController, imp_implementationWithBlock(topBlock))
+        defer { method_setImplementation(topViewController, originalTopViewController) }
+
+        let config = createBaseConfig()
+        config.enableAutomaticViewTracking = true
+        Countly.sharedInstance().start(with: config)
+
+        let next = UIViewController()
+        next.title = "NextScreen"
+        TestUtils.sleep(2) {}
+        CountlyViewTrackingInternal.sharedInstance().perform(NSSelectorFromString("performAutoViewTrackingForViewController:"), with: next)
+
+        let openViews = CountlyViewTrackingInternal.sharedInstance().value(forKey: "viewDataDictionary") as? [String: Any]
+        XCTAssertEqual(1, openViews?.count, "only the screen on top stays open")
+        validateRecordedViews(startedEventsCount: ["TopAtStart": 1, "NextScreen": 1], endedEventsDurations: ["TopAtStart": [2]])
+    }
+
+    #endif
+
+    #if os(iOS)
+    /// Content and feedback widgets appear in the SDK's own web view controller, which is not a screen of the app, so it
+    /// neither records a view nor ends the view of the screen under it.
+    func testAutomaticViewTrackingIgnoresTheSDKsWebViewController() throws {
+        let config = createBaseConfig()
+        config.enableAutomaticViewTracking = true
+        Countly.sharedInstance().start(with: config)
+
+        let screen = UIViewController()
+        screen.title = "AppScreen"
+        let webViewControllerClass = try XCTUnwrap(NSClassFromString("CountlyWebViewController") as? UIViewController.Type)
+        let appear = NSSelectorFromString("performAutoViewTrackingForViewController:")
+
+        CountlyViewTrackingInternal.sharedInstance().perform(appear, with: screen)
+        CountlyViewTrackingInternal.sharedInstance().perform(appear, with: webViewControllerClass.init())
+
+        let openViews = CountlyViewTrackingInternal.sharedInstance().value(forKey: "viewDataDictionary") as? [String: Any]
+        XCTAssertEqual(1, openViews?.count, "the app's screen stays the open view")
+        validateRecordedViews(startedEventsCount: ["AppScreen": 1, "CountlyWebViewController": 0], endedEventsDurations: [:])
+    }
     #endif
 
     func testStartAndStopAutoStoppedViewWithSegmentation() throws {
