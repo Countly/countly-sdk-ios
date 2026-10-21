@@ -28,8 +28,9 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
     override func setUp() {
         super.setUp()
         TestUtils.cleanup()
-        // halt() resets CountlyCommon, so gathering starts each test in its natural state:
-        // undecided, with an empty buffer. Only the lines halt itself logged need clearing.
+        // halt() resets CountlyCommon and pauses capture until the next start, so capture is resumed the way a start
+        // resumes it, which leaves each test in the state a process starts in: undecided, with an empty buffer
+        common.resumeSdkLogCaptureForStart()
         clearBuffer()
     }
 
@@ -40,10 +41,23 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
 
     // MARK: - helpers
 
+    /// Runs the body under the SDK's gathering lock: the SDK captures into the same arrays from its own threads, and
+    /// mutating or copying them unlocked crashes inside the SDK now and then.
+    private func withGatheringLock<T>(_ body: () -> T) -> T {
+        let lock = common.value(forKey: "sdkLogsLock") as AnyObject
+        objc_sync_enter(lock)
+        defer { objc_sync_exit(lock) }
+        return body()
+    }
+
     private func clearBuffer() {
-        (common.value(forKey: "sdkLogs") as? NSMutableArray)?.removeAllObjects()
-        (common.value(forKey: "sdkLogsAwaitingConsent") as? NSMutableArray)?.removeAllObjects()
-        common.setValue(NSNumber(value: 0), forKey: "sdkLogsDropCount")
+        withGatheringLock {
+            (common.value(forKey: "sdkLogs") as? NSMutableArray)?.removeAllObjects()
+            common.setValue(NSNumber(value: 0), forKey: "sdkLogsChars")
+            (common.value(forKey: "sdkLogsAwaitingConsent") as? NSMutableArray)?.removeAllObjects()
+            common.setValue(NSNumber(value: 0), forKey: "sdkLogsAwaitingConsentChars")
+            common.setValue(NSNumber(value: 0), forKey: "sdkLogsDropCount")
+        }
     }
 
     private func capture(_ count: Int, level: Character = "d", message: String = "harness line") {
@@ -56,7 +70,7 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
     private let harnessPrefix = "harness line"
 
     private var bufferedLines: [[String: Any]] {
-        (common.value(forKey: "sdkLogs") as? [[String: Any]]) ?? []
+        withGatheringLock { (common.value(forKey: "sdkLogs") as? [[String: Any]]) ?? [] }
     }
 
     /// Only the lines this test injected. Arming gathering logs a line of its own, which is then
@@ -67,7 +81,7 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
 
     /// The captured lines that wait for the consent of their feature, kept apart from the buffer.
     private var awaitingConsentLines: [[String: Any]] {
-        (common.value(forKey: "sdkLogsAwaitingConsent") as? [[String: Any]]) ?? []
+        withGatheringLock { (common.value(forKey: "sdkLogsAwaitingConsent") as? [[String: Any]]) ?? [] }
     }
 
     /// Whether a captured line is one this test injected.
@@ -100,25 +114,50 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
 
     /// Puts gathering back into the state the SDK boots in, after something decided against it.
     private func forceUndecided() {
-        common.setValue(NSNumber(value: stateUndecided), forKey: "sdkLogsState")
-        common.setValue(allLevels, forKey: "sdkLogsLevels")
+        withGatheringLock {
+            common.setValue(NSNumber(value: stateUndecided), forKey: "sdkLogsState")
+            common.setValue(allLevels, forKey: "sdkLogsLevels")
+        }
         clearBuffer()
     }
 
     /// Every queued request carrying an sdk_logs batch, decoded, oldest first.
     private func uploadedBatches() -> [[String: Any]] {
         guard let rq = TestUtils.getCurrentRQ() else { return [] }
-        return rq.compactMap { request in
-            let parsed = TestUtils.parseQueryString(request)
-            guard let raw = parsed["sdk_logs"] else { return nil }
-            if let dict = raw as? [String: Any] {
-                return dict
-            }
-            if let string = raw as? String, let data = string.data(using: .utf8) {
-                return try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-            }
-            return nil
+        return rq.compactMap { CountlySDKLogsTests.sdkLogsBatch(ofQueryString: $0) }
+    }
+
+    /// The sdk_logs batch a request query string carries, decoded, or nil when it carries none.
+    fileprivate static func sdkLogsBatch(ofQueryString queryString: String) -> [String: Any]? {
+        guard let raw = TestUtils.parseQueryString(queryString)["sdk_logs"] else { return nil }
+        if let dict = raw as? [String: Any] {
+            return dict
         }
+        if let string = raw as? String, let data = string.data(using: .utf8) {
+            return try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        }
+        return nil
+    }
+
+    /// Starts the SDK against a mock server that answers every request with success, so the request queue drains, and
+    /// returns what records the log batches that server receives.
+    private func startSDKWithAnsweringServer() -> ReceivedLogBatches {
+        let received = ReceivedLogBatches(harnessPrefix: harnessPrefix)
+        MockURLProtocol.requestHandler = { request in
+            if let batch = CountlySDKLogsTests.sdkLogsBatch(ofQueryString: CountlyServerConfigTests.capturedQueryString(request)) {
+                received.append(batch)
+            }
+            return ("{\"result\":\"Success\"}".data(using: .utf8), HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil), nil)
+        }
+
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        config.disableSDKBehaviorSettingsUpdates = true
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [MockURLProtocol.self]
+        config.urlSessionConfiguration = sessionConfig
+        Countly.sharedInstance().start(with: config)
+        return received
     }
 
     /// The most recent queued request carrying an sdk_logs batch, decoded.
@@ -165,6 +204,26 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
 
         // which levels the operator wants arrives with the directive, so nothing can be filtered yet
         XCTAssertEqual(allLevels.count, harnessLines.count)
+    }
+
+    /// What the app logs between halt and the next start, after a logout for example, belongs to no user the next start
+    /// brings, so capture pauses at halt and resumes with the first line of the next start.
+    func testLogGathering_haltPausesCaptureUntilTheNextStart() throws {
+        startSDK()
+        Countly.sharedInstance().halt(true)
+        XCTAssertEqual(stateOff, state, "halt pauses capture")
+
+        Countly.sharedInstance().recordEvent("logged_out_event", segmentation: ["card": "4242"])
+        capture(2)
+        XCTAssertEqual(0, bufferedLines.count + awaitingConsentLines.count, "nothing is held for the next user")
+        XCTAssertFalse(CountlyInternalLogIsWanted(CLYInternalLogLevelVerbose), "and nothing is formatted for capture")
+
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+        XCTAssertEqual(stateUndecided, state, "the next start captures again")
+        XCTAssertTrue(bufferedLines.contains { ($0["m"] as? String)?.contains("startWithConfig") == true }, "from its own first lines")
+        XCTAssertFalse(bufferedLines.contains { ($0["m"] as? String)?.contains("logged_out_event") == true }, "but nothing the app logged while halted")
     }
 
     // MARK: - adoption and discard
@@ -275,15 +334,44 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
 
     // MARK: - the buffer ceiling
 
-    func testLogGathering_ceilingDropsTheOldestLinesAndCountsThem() throws {
-        capture(maxBufferedLines + 25)
+    func testLogGathering_ceilingDropsTheOldestLinesAndCountsThemOnceAGatherAdoptsThem() throws {
+        capture(maxBufferedLines + 25, level: "e")
 
         XCTAssertEqual(maxBufferedLines, bufferedLines.count)
-        XCTAssertEqual(25, dropCount, "the loss is reported as 'd' instead of disappearing silently")
+        XCTAssertEqual(0, dropCount, "a loss while undecided belongs to no gather yet")
 
         // the oldest went first, so the newest line has to still be there
-        let last = bufferedLines.last?["m"] as? String
+        let last = harnessLines.last?["m"] as? String
         XCTAssertEqual("harness line \(maxBufferedLines + 24)", last)
+
+        common.updateLogGatheringState(true, levels: "e", batch: maxBufferedLines, lgid: "gather_ceiling")
+
+        // the oldest lines are this test's own, and any line the SDK logged meanwhile pushed one more of them out
+        XCTAssertGreaterThanOrEqual(dropCount, 25)
+        XCTAssertEqual(maxBufferedLines + 25 - harnessLines.count, dropCount, "the loss is reported as 'd' instead of disappearing silently")
+    }
+
+    /// Lines dropped while undecided count into 'd' only for the levels the adopting gather asks for, and not at all when
+    /// gathering is turned off instead.
+    func testLogGathering_undecidedDropsCountOnlyForTheAdoptedLevels() throws {
+        capture(maxBufferedLines, level: "v")
+        capture(100, level: "e")
+        common.updateLogGatheringState(true, levels: "e", batch: maxBufferedLines, lgid: "gather_errors_only")
+        XCTAssertEqual(0, dropCount, "the dropped lines were verbose, which this gather never asked for")
+
+        forceUndecided()
+        capture(maxBufferedLines, level: "e")
+        capture(100, level: "v")
+        common.updateLogGatheringState(true, levels: "ew", batch: maxBufferedLines, lgid: "gather_errors_and_warnings")
+        XCTAssertEqual(100, dropCount, "the dropped lines were errors, which this gather asked for")
+
+        forceUndecided()
+        capture(maxBufferedLines + 30, level: "e")
+        common.decideLogGatheringOffIfUndecided("fetch failed")
+        common.setValue(NSNumber(value: stateUndecided), forKey: "sdkLogsState")
+        capture(1, level: "e")
+        common.updateLogGatheringState(true, levels: allLevels, batch: maxBufferedLines, lgid: "gather_after_off")
+        XCTAssertEqual(0, dropCount, "turning gathering off forgets what was dropped before it")
     }
 
     func testLogGathering_longMessagesAreTruncated() throws {
@@ -345,27 +433,42 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
     }
 
     func testLogGathering_uploadReportsAndResetsTheDropCount() throws {
-        startSDK()
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        let server = startSDKWithAnsweringServer()
+        defer { MockURLProtocol.replyEmptyToEveryRequest() }
 
         forceUndecided()
         // while gathering is on every captured line drains a batch, so the buffer only ever
         // overflows before a directive arrives. Overflow first, then let a gather adopt the rest.
         capture(maxBufferedLines + 12, level: "e")
-        XCTAssertEqual(12, dropCount)
+        XCTAssertEqual(0, dropCount, "a loss while undecided belongs to no gather yet")
 
         common.updateLogGatheringState(true, levels: "e", batch: minBatchSize, lgid: "gather_dropped")
-        common.flushSdkLogs()
-        settleDelivery()
 
-        // adoption drains the full batches on the delivery queue while the flush drains on this thread, so
-        // several batches went out and the queue order is not the take order: the loss travels with exactly one
-        let batches = uploadedBatches()
-        XCTAssertGreaterThan(batches.count, 1, "adopting a buffer past the batch size has to deliver it")
-        let dropCounts = batches.map { ($0["d"] as? NSNumber)?.intValue ?? -1 }
-        XCTAssertEqual(1, dropCounts.filter { $0 == 12 }.count, "the gap has to reach the operator once: \(dropCounts)")
-        XCTAssertEqual(batches.count - 1, dropCounts.filter { $0 == 0 }.count, "and must not be counted twice: \(dropCounts)")
+        // the SDK's own lines, logged meanwhile, can push out a few more of the oldest test lines, so the check is that
+        // every captured line either reached the server or was reported as dropped
+        let capturedCount = maxBufferedLines + 12
+        let gatherBatches: () -> [[String: Any]] = { server.batches.filter { ($0["i"] as? String) == "gather_dropped" } }
+        let accountedCount: () -> Int = {
+            server.harnessMessages.count + gatherBatches().reduce(0) { $0 + (($1["d"] as? NSNumber)?.intValue ?? 0) }
+        }
+
+        // one batch waits in the queue at a time, so the backlog reaches the server batch by batch, and the remainder
+        // smaller than a batch waits for the timer, played here whenever the queue is empty
+        TestUtils.waitUntil("every held line to reach the server", timeout: 30) {
+            if accountedCount() < capturedCount && !CountlyPersistency.sharedInstance().queueContainsSdkLogs() {
+                self.common.scheduleSdkLogsFlush()
+            }
+            return accountedCount() >= capturedCount
+        }
+
+        let dropCounts = gatherBatches().map { ($0["d"] as? NSNumber)?.intValue ?? -1 }
+        XCTAssertGreaterThanOrEqual(dropCounts.first ?? 0, 12, "adopting the lines adopts their loss, reported with the first batch")
+        XCTAssertEqual(1, dropCounts.filter { $0 > 0 }.count, "and only once: \(dropCounts)")
+        XCTAssertEqual(capturedCount, accountedCount())
+        let delivered = server.harnessMessages
+        XCTAssertEqual(((capturedCount - delivered.count)..<capturedCount).map { "\(harnessPrefix) \($0)" }, delivered, "the oldest were dropped, the rest went out once, in capture order")
         XCTAssertEqual(0, dropCount)
-        XCTAssertEqual(maxBufferedLines, batches.reduce(0) { $0 + (($1["l"] as? [Any])?.count ?? 0) }, "every held line went out, none twice")
     }
 
     func testLogGathering_fullBatchIsDeliveredOffTheCapturingThread() throws {
@@ -378,6 +481,122 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
 
         let batch = try XCTUnwrap(lastUploadedBatch(), "a full batch has to go out without a flush")
         XCTAssertEqual(minBatchSize, (batch["l"] as? [Any])?.count)
+        XCTAssertEqual(0, harnessLines.count)
+    }
+
+    // MARK: - one batch in the queue, and the last batch of a stopped gather
+
+    /// One gathered batch waits in the request queue at a time: the next goes out once the queue has sent it, so a
+    /// backlog reaches the server batch by batch, in capture order, with no line lost or sent twice.
+    func testLogGathering_nextBatchGoesOutOnceTheWaitingOneIsSent() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        let server = startSDKWithAnsweringServer()
+        defer { MockURLProtocol.replyEmptyToEveryRequest() }
+
+        common.updateLogGatheringState(true, levels: "e", batch: minBatchSize, lgid: "gather_backlog")
+        clearBuffer()
+        capture(minBatchSize * 3, level: "e")
+
+        TestUtils.waitUntil("every held line to reach the server") { server.harnessMessages.count >= self.minBatchSize * 3 }
+
+        let batches = server.batches.filter { ($0["i"] as? String) == "gather_backlog" }
+        XCTAssertEqual(3, batches.count, "one batch per round trip of the queue")
+        XCTAssertTrue(batches.allSatisfy { (($0["l"] as? [Any])?.count ?? 0) <= minBatchSize }, "no batch is larger than the batch size")
+        XCTAssertEqual((0..<minBatchSize * 3).map { "\(harnessPrefix) \($0)" }, server.harnessMessages)
+        XCTAssertEqual(0, harnessLines.count)
+    }
+
+    /// While requests fail only one gathered batch waits in the request queue: the batch size and the timer hold the rest
+    /// in the capped buffer instead of crowding the queue, and going to the background still gets every held line out.
+    func testLogGathering_onlyOneBatchWaitsInTheQueueWhileRequestsFail() throws {
+        startSDK()
+        common.updateLogGatheringState(true, levels: "e", batch: minBatchSize, lgid: "gather_offline")
+        clearBuffer()
+
+        capture(minBatchSize * 3 + 5, level: "e")
+        settleDelivery()
+        common.scheduleSdkLogsFlush()
+        settleDelivery()
+
+        XCTAssertEqual(1, uploadedBatches().count, "a second batch would only wait behind the first")
+        XCTAssertEqual(minBatchSize * 2 + 5, harnessLines.count, "the rest stays held")
+        XCTAssertEqual(0, dropCount)
+
+        #if os(iOS) || os(tvOS) || os(visionOS)
+        NotificationCenter.default.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+        #else
+        // the other platforms have no background notification the SDK observes, this is the flush it would run
+        common.flushSdkLogs()
+        #endif
+
+        XCTAssertEqual((0..<minBatchSize * 3 + 5).map { "\(harnessPrefix) \($0)" }, uploadedMessages().filter { $0.hasPrefix(harnessPrefix) }, "the background flush drains every held line, in order")
+        XCTAssertEqual(0, harnessLines.count)
+    }
+
+    /// A device ID change without merge gets every held line out under the old device ID, past the batch waiting in the queue.
+    func testLogGathering_deviceIDChangeWithoutMerge_drainsEveryHeldBatchUnderTheOldID() throws {
+        startSDK()
+        let oldDeviceID = Countly.sharedInstance().deviceID()
+        common.updateLogGatheringState(true, levels: "e", batch: minBatchSize, lgid: "gather_old_user_backlog")
+        clearBuffer()
+        capture(minBatchSize * 2 + 5, level: "e")
+        settleDelivery()
+        XCTAssertEqual(1, uploadedBatches().count)
+
+        Countly.sharedInstance().changeDeviceIDWithoutMerge("new_user")
+
+        let logRequests = (TestUtils.getCurrentRQ() ?? []).map { TestUtils.parseQueryString($0) }.filter { $0["sdk_logs"] != nil }
+        XCTAssertTrue(logRequests.allSatisfy { ($0["device_id"] as? String) == oldDeviceID }, "every gathered line belongs to the old user")
+        XCTAssertEqual((0..<minBatchSize * 2 + 5).map { "\(harnessPrefix) \($0)" }, uploadedMessages().filter { $0.hasPrefix(harnessPrefix) })
+        XCTAssertEqual(stateOff, state)
+    }
+
+    /// A gather the server stops gets its held lines out once, under its own id and with the loss the buffer ceiling
+    /// caused, and nothing goes out after that.
+    func testLogGathering_stoppedGatherUploadsItsHeldLinesOnceUnderItsId() throws {
+        startSDK()
+        common.updateLogGatheringState(true, levels: "e", batch: minBatchSize, lgid: "gather_tail")
+        clearBuffer()
+        capture(minBatchSize, level: "e")
+        settleDelivery()
+        XCTAssertEqual(1, uploadedBatches().count, "the first batch waits in the queue")
+
+        // held behind the waiting batch until the buffer ceiling drops the oldest
+        capture(maxBufferedLines + 40, level: "e")
+        XCTAssertEqual(maxBufferedLines, bufferedLines.count)
+
+        common.updateLogGatheringState(false, levels: "", batch: 0, lgid: "")
+
+        let batches = uploadedBatches()
+        XCTAssertEqual(2, batches.count, "the held lines go out as one last batch")
+        let tail = try XCTUnwrap(batches.last)
+        XCTAssertEqual("gather_tail", tail["i"] as? String, "under the id of the gather that stopped")
+        let tailHarnessLines = ((tail["l"] as? [[String: Any]]) ?? []).filter(isHarnessLine).count
+        let tailDropCount = (tail["d"] as? NSNumber)?.intValue ?? -1
+        XCTAssertGreaterThanOrEqual(tailDropCount, 40, "with the loss the ceiling caused")
+        XCTAssertEqual(maxBufferedLines + 40, tailHarnessLines + tailDropCount, "every captured line is either in the last batch or counted as dropped")
+        XCTAssertEqual(stateOff, state)
+        XCTAssertEqual(0, bufferedLines.count)
+
+        capture(minBatchSize, level: "e")
+        common.flushSdkLogs()
+        XCTAssertEqual(2, uploadedBatches().count, "a stopped gather sends nothing more")
+    }
+
+    /// Only a running gather that stops sends a last batch: lines held while undecided and the lines of a gather the
+    /// server replaced belong to no gather that can still take them.
+    func testLogGathering_onlyARunningGatherSendsALastBatch() throws {
+        startSDK()
+        forceUndecided()
+        capture(5, level: "e")
+        common.updateLogGatheringState(false, levels: "", batch: 0, lgid: "")
+        XCTAssertEqual(0, uploadedBatches().count, "lines held while undecided belong to no gather")
+
+        common.updateLogGatheringState(true, levels: "e", batch: defaultBatchSize, lgid: "gather_replaced")
+        clearBuffer()
+        capture(5, level: "e")
+        common.updateLogGatheringState(true, levels: "e", batch: defaultBatchSize, lgid: "gather_replacement")
+        XCTAssertEqual(0, uploadedBatches().count, "the server rejects the lines of a gather it replaced")
         XCTAssertEqual(0, harnessLines.count)
     }
 
@@ -474,6 +693,60 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
         settleDelivery()
 
         XCTAssertTrue(uploadedMessages().contains { $0.contains("someone@example.com") }, "the consent releases the line that waited for it")
+    }
+
+    /// Every way a line opens maps to the consent of its owner: instance, class and block methods, Countly's methods by
+    /// selector, the bracket prefix, and lines no single feature owns, which need the events and user details consent.
+    func testLogGathering_lineOwnersMapToTheConsentOfTheirFeature() throws {
+        startSDK(requiresConsent: true)
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.viewTracking])
+        common.updateLogGatheringState(true, levels: allLevels, batch: maxBufferedLines, lgid: "gather_owners")
+        clearBuffer()
+
+        let viewLines = ["-[CountlyViewTrackingInternal startView:segmentation:] owner probe",
+                         "__56-[CountlyViewTrackingInternal startViewInternal:customSegmentation:]_block_invoke owner probe",
+                         "+[CountlyViewData new] owner probe",
+                         "-[UIViewController(CountlyViewTracking) Countly_viewDidAppear:] owner probe"]
+        let eventLines = ["-[Countly recordEvent:segmentation:count:sum:duration:] owner probe",
+                          "__29-[Countly journeyTriggerCallback]_block_invoke owner probe"]
+        let locationLines = ["-[Countly recordLocation:city:ISOCountryCode:IP:] owner probe"]
+        let userLines = ["[CountlyUserDetails] owner probe"]
+        let crashLines = ["CountlyExceptionHandler crash recorded, isFatal: [YES] owner probe"]
+        let pushLines = ["-[NSObject(CountlyPushNotifications) Countly_application:didRegisterForRemoteNotificationsWithDeviceToken:] owner probe"]
+        let unownedLines = ["-[Countly startWithConfig:] owner probe", "[CountlyServerConfig] owner probe", "__-[CountlyViewData new] owner probe", "owner probe without an owner", "CountlyJSONFromObject owner probe"]
+        for line in viewLines + eventLines + locationLines + userLines + crashLines + pushLines + unownedLines {
+            common.captureSdkLogLine(line, level: CChar(Character("d").asciiValue!))
+        }
+
+        let isHeld: ([String]) -> Bool = { lines in lines.allSatisfy { line in self.bufferedLines.contains { $0["m"] as? String == line } } }
+        let isWaiting: ([String]) -> Bool = { lines in lines.allSatisfy { line in self.awaitingConsentLines.contains { $0["m"] as? String == line } } }
+
+        XCTAssertTrue(isHeld(viewLines), "the views consent covers view tracking lines in every opening form, the swizzled callbacks included")
+        XCTAssertTrue(isWaiting(eventLines + locationLines + userLines + crashLines + pushLines + unownedLines))
+
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.events])
+        XCTAssertTrue(isHeld(eventLines), "Countly's own methods are attributed by selector")
+        XCTAssertTrue(isWaiting(locationLines + userLines + crashLines + pushLines + unownedLines), "a line no feature owns needs the user details consent too")
+
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.userDetails])
+        XCTAssertTrue(isHeld(userLines + unownedLines))
+        XCTAssertTrue(isWaiting(locationLines + crashLines + pushLines), "the location, crash and push lines still wait for their own consent")
+
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.crashReporting, CLYConsent.pushNotifications])
+        XCTAssertTrue(isHeld(crashLines + pushLines), "the crash handler's lines answer to the crashes consent, the swizzled push callback's to the push consent")
+        XCTAssertTrue(isWaiting(locationLines))
+    }
+
+    /// While a gather asks for some levels only, log calls of the levels it leaves out are not even formatted.
+    func testLogGathering_levelsAGatherLeavesOutAreNotWanted() throws {
+        XCTAssertTrue(CountlyInternalLogIsWanted(CLYInternalLogLevelVerbose), "every level is wanted while undecided")
+
+        common.updateLogGatheringState(true, levels: "e", batch: defaultBatchSize, lgid: "gather_errors")
+        XCTAssertTrue(CountlyInternalLogIsWanted(CLYInternalLogLevelError))
+        XCTAssertFalse(CountlyInternalLogIsWanted(CLYInternalLogLevelDebug), "a debug line would be formatted only to be dropped")
+
+        common.updateLogGatheringState(false, levels: "", batch: 0, lgid: "")
+        XCTAssertFalse(CountlyInternalLogIsWanted(CLYInternalLogLevelError), "with the console off nothing wants a line once gathering is off")
     }
 
     /// A line captured while init runs is decided when init finishes, and goes out without the consent it was checked against.
@@ -693,7 +966,8 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
         capture(minBatchSize)
         settleDelivery()
         let queuedLogUploads = uploadedBatches()
-        XCTAssertGreaterThanOrEqual(queuedLogUploads.count, 2)
+        XCTAssertEqual(1, queuedLogUploads.count, "one log upload waits in the queue at a time")
+        XCTAssertEqual(minBatchSize, harnessLines.count, "the next batch is held until the waiting one is sent")
         let queuedLogLines = queuedLogUploads.reduce(0) { total, batch in
             total + ((batch["l"] as? [Any])?.count ?? 0) + ((batch["d"] as? NSNumber)?.intValue ?? 0)
         }
@@ -708,9 +982,10 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
         XCTAssertGreaterThanOrEqual(dropCount, queuedLogLines, "the dropped uploads' lines are reported as dropped")
 
         capture(minBatchSize)
-        settleDelivery()
+        common.flushSdkLogs()
         XCTAssertEqual(4, TestUtils.getCurrentRQ()?.filter { $0.contains("analytics=request_") }.count, "a new log upload does not push a request out of a full queue")
         XCTAssertEqual(0, uploadedBatches().count)
+        XCTAssertGreaterThanOrEqual(harnessLines.count, minBatchSize, "the refused lines are held again")
     }
 
     /// Values the behavior settings filter out are never quoted in a gathered line, values they let through still are.
@@ -773,6 +1048,27 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
             XCTAssertFalse(captured.contains { $0.contains(value) }, "[\(value)] is a header value, so no gathered line may quote it")
         }
         XCTAssertEqual("Bearer S3CR3T-TOKEN", CountlyConnectionManager.sharedInstance().urlSessionConfiguration?.httpAdditionalHeaders?["Authorization"] as? String, "the header itself is still applied")
+    }
+
+    /// A segmentation value or a user property the behavior settings filter out never reaches the server, so no gathered
+    /// line quotes it either: not the line of a timed event's end, and not the line of the user properties given at start.
+    func testLogGathering_valuesTheBehaviorSettingsFilterOutAreNotQuoted() throws {
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        config.disableSDKBehaviorSettingsUpdates = true
+        config.sdkBehaviorSettings = ServerConfigBuilder().segmentationBlacklist(["secret_key"]).userPropertyBlacklist(["secret_property"]).build()
+        config.providedUserProperties = ["secret_property": "PROPERTY-VALUE", "kept_property": "KEPT-PROPERTY"]
+        Countly.sharedInstance().start(with: config)
+        common.updateLogGatheringState(true, levels: allLevels, batch: maxBufferedLines, lgid: "gather_filtered_values")
+
+        Countly.sharedInstance().startEvent("timed_event")
+        Countly.sharedInstance().endEvent("timed_event", segmentation: ["secret_key": "SEGMENT-VALUE", "kept_key": "KEPT-SEGMENT"], count: 1, sum: 0)
+
+        let captured = (bufferedLines + awaitingConsentLines).compactMap { $0["m"] as? String }
+        XCTAssertTrue(captured.contains { $0.contains("KEPT-SEGMENT") }, "a value the settings let through is still logged")
+        XCTAssertTrue(captured.contains { $0.contains("KEPT-PROPERTY") }, "and so is a user property they let through")
+        XCTAssertFalse(captured.contains { $0.contains("SEGMENT-VALUE") }, "a segmentation value the settings filter out is not quoted")
+        XCTAssertFalse(captured.contains { $0.contains("PROPERTY-VALUE") }, "and neither is a filtered user property")
     }
 
 #if os(iOS)
@@ -868,11 +1164,13 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
         let long = String(repeating: "c", count: maxMessageLength - 100)
         capture(40, message: long)
 
-        // 40 x 4000 is past 128 KB, so the oldest went and were counted
+        // 40 x 4000 is past 128 KB, so the oldest went, and they count once a gather adopts the rest
         XCTAssertLessThanOrEqual(bufferedLines.count, 32)
-        XCTAssertGreaterThanOrEqual(dropCount, 8)
         XCTAssertLessThanOrEqual(bufferedLines.reduce(0) { $0 + (($1["m"] as? String)?.count ?? 0) }, 128 * 1024)
         XCTAssertEqual(long + " 39", bufferedLines.last?["m"] as? String)
+
+        common.updateLogGatheringState(true, levels: "d", batch: maxBufferedLines, lgid: "gather_long_lines_ceiling")
+        XCTAssertGreaterThanOrEqual(dropCount, 8)
     }
 
     func testLogGathering_levelsAreLowercasedAndDeduplicated() throws {
@@ -956,11 +1254,52 @@ private final class NavigationResponseStub: WKNavigationResponse {
 }
 #endif
 
+/// The sdk_logs batches a mock server received, in arrival order. Filled on the URL loading threads, read by the test.
+private final class ReceivedLogBatches {
+    private let lock = NSLock()
+    private var received: [[String: Any]] = []
+    private let harnessPrefix: String
+
+    /// Records batches, telling the test's own lines apart by the given message prefix.
+    init(harnessPrefix: String) {
+        self.harnessPrefix = harnessPrefix
+    }
+
+    /// Records one received batch.
+    func append(_ batch: [String: Any]) {
+        lock.lock()
+        received.append(batch)
+        lock.unlock()
+    }
+
+    /// Every batch received so far.
+    var batches: [[String: Any]] {
+        lock.lock()
+        defer { lock.unlock() }
+        return received
+    }
+
+    /// The messages of the test's own lines across every received batch, in arrival order.
+    var harnessMessages: [String] {
+        batches.flatMap { ($0["l"] as? [[String: Any]]) ?? [] }.compactMap { $0["m"] as? String }.filter { $0.hasPrefix(harnessPrefix) }
+    }
+}
+
 /// Collects everything the SDK hands to a host app's logger, so a test can tell the local log apart from the uploaded one.
 private class RecordingLogger: NSObject, CountlyLoggerDelegate {
-    private(set) var lines: [String] = []
+    private let lock = NSLock()
+    private var recorded: [String] = []
+
+    /// The lines received so far. The SDK logs from any of its threads, so the list is read and written under a lock.
+    var lines: [String] {
+        lock.lock()
+        defer { lock.unlock() }
+        return recorded
+    }
 
     func internalLog(_ log: String, with level: CLYInternalLogLevel) {
-        lines.append(log)
+        lock.lock()
+        defer { lock.unlock() }
+        recorded.append(log)
     }
 }

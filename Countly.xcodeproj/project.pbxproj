@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		62868085F6E0E2F98BD3804A /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 395683372BB2988300C7A06B /* PrivacyInfo.xcprivacy */; };
 		1A3110632A7128CD001CB507 /* CountlyViewData.m in Sources */ = {isa = PBXBuildFile; fileRef = 1A3110622A7128CD001CB507 /* CountlyViewData.m */; };
 		1A3110652A7128ED001CB507 /* CountlyViewData.h in Headers */ = {isa = PBXBuildFile; fileRef = 1A3110642A7128DC001CB507 /* CountlyViewData.h */; };
 		1A3110702A7141AF001CB507 /* CountlyViewTracking.h in Headers */ = {isa = PBXBuildFile; fileRef = 1A31106E2A7141AF001CB507 /* CountlyViewTracking.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -567,6 +568,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				62868085F6E0E2F98BD3804A /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -1039,6 +1039,37 @@ class CountlyUserProfileTests: CountlyBaseTestCase {
         XCTAssertEqual(1, custom.count, "Expected exactly one custom property, got: \(custom)")
         XCTAssertEqual("\(expected)", "\(custom[key] ?? "nil")", "Custom property '\(key)' mismatch")
     }
+
+    #if os(iOS) || os(visionOS)
+    /**
+     * <pre>
+     * Setting the local picture path to NSNull clears the picture on the server, as its documentation says, instead of
+     * queueing a request whose null path crashed every send, and such a request already in the queue goes out as plain
+     * user details.
+     *
+     * 1- Start and set the local picture path to NSNull, then save
+     * 2- Verify the user details clear the picture with the empty string and no local picture request is queued
+     * 3- Verify a queued request with a null local picture path builds no picture upload
+     * </pre>
+     */
+    func test_pictureLocalPathSetToNull_clearsThePictureWithoutAPictureRequest() throws {
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+
+        Countly.user().pictureLocalPath = NSNull()
+        Countly.user().save()
+
+        let queue = TestUtils.getCurrentRQ() ?? []
+        let userDetails = queue.compactMap { TestUtils.parseQueryString($0)["user_details"] as? [String: Any] }
+        XCTAssertTrue(userDetails.contains { $0["picture"] as? String == "" }, "the picture is cleared with the empty string: \(queue)")
+        XCTAssertFalse(queue.contains { $0.contains("kCountlyLocalPicturePath") }, "no local picture request is queued")
+
+        let legacyRequest = "app_key=key&device_id=id&user_details=" + "{\"kCountlyLocalPicturePath\":null}".addingPercentEncoding(withAllowedCharacters: .alphanumerics)!
+        let upload = CountlyConnectionManager.sharedInstance().perform(NSSelectorFromString("pictureUploadDataForQueryString:"), with: legacyRequest)
+        XCTAssertNil(upload, "a queued request with a null path builds no picture upload")
+    }
+    #endif
 }
 
 

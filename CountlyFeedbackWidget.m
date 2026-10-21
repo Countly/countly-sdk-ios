@@ -95,17 +95,21 @@ NSString* const kCountlyFBKeyShown          = @"shown";
         CLY_LOG_D(@"%s widget web view placement computed, widgetID: [%@], width: [%.2f], height: [%.2f]", __FUNCTION__, self.ID, frame.size.width, frame.size.height);
         
         CountlyWebViewManager* webViewManager =  CountlyWebViewManager.new;
+        __block BOOL hasAppeared = NO;
             [webViewManager createWebViewWithURL:[self generateWidgetURL] frame:frame appearBlock:^
              {
                 CLY_LOG_I(@"%s new style widget shown, widgetID: [%@], widgetType: [%@]", __FUNCTION__, self.ID, self.type);
+                hasAppeared = YES;
                 if(widgetCallback)
                     widgetCallback(WIDGET_APPEARED);
             } dismissBlock:^
              {
-                CLY_LOG_I(@"%s new style widget dismissed, widgetID: [%@], widgetType: [%@]", __FUNCTION__, self.ID, self.type);
+                CLY_LOG_I(@"%s new style widget dismissed, widgetID: [%@], widgetType: [%@], hadAppeared: [%@]", __FUNCTION__, self.ID, self.type, hasAppeared ? @"YES" : @"NO");
                 if (widgetCallback)
                     widgetCallback(WIDGET_CLOSED);
-                [self recordReservedEventForDismissing];
+                // a widget that failed to load was not closed by the user, and a close event can hide it from them for good
+                if (hasAppeared)
+                    [self recordReservedEventForDismissing];
             }];
     });
 }

@@ -283,6 +283,8 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
         if (!error)
         {
             widgetInfo = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+            if (![widgetInfo isKindOfClass:NSDictionary.class])
+                widgetInfo = nil;
         }
 
         CLY_LOG_D(@"%s rating widget check response detail, widgetID: [%@], url: [%@], widgetInfo: [%@]", __FUNCTION__, widgetID, response.URL.absoluteString, widgetInfo);

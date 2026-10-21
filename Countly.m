@@ -124,6 +124,7 @@ static dispatch_once_t onceToken;
     }
     
     CountlyCommon.sharedInstance.hasStarted = YES;
+    [CountlyCommon.sharedInstance resumeSdkLogCaptureForStart];
     CountlyCommon.sharedInstance.enableDebug = config.enableDebug;
     CountlyCommon.sharedInstance.shouldIgnoreTrustCheck = config.shouldIgnoreTrustCheck;
     CountlyCommon.sharedInstance.loggerDelegate = config.loggerDelegate;
@@ -187,7 +188,7 @@ static dispatch_once_t onceToken;
 
     if (config.providedUserProperties.count > 0) {
         CLY_LOG_I(@"%s applying the user properties provided at init, count: [%lu]", __FUNCTION__, (unsigned long)config.providedUserProperties.count);
-        CLY_LOG_D(@"%s provided user property detail at init, providedUserProperties: [%@]", __FUNCTION__, config.providedUserProperties);
+        CLY_LOG_D(@"%s provided user property detail at init, providedUserProperties: [%@]", __FUNCTION__, [self loggableUserProperties:config.providedUserProperties]);
         [Countly.sharedInstance.userProfile setProperties:config.providedUserProperties];
     }
 
@@ -290,7 +291,7 @@ static dispatch_once_t onceToken;
     if (config.apm.getAppStartTimestampOverride) {
         appLoadStartTime = config.apm.getAppStartTimestampOverride;
     }
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
     if(config.content.getGlobalContentCallback) {
         CountlyContentBuilderInternal.sharedInstance.contentCallback = config.content.getGlobalContentCallback;
     }
@@ -348,7 +349,7 @@ static dispatch_once_t onceToken;
     CountlyCommon.sharedInstance.hasFinishedInit = YES;
 
     // the request queue is usable from here on, so this is the first chance for the lines gathered during init to go out
-    [CountlyCommon.sharedInstance flushSdkLogs];
+    [CountlyCommon.sharedInstance scheduleSdkLogsFlush];
 
     // The behavior settings response for the fetch started above can arrive before init finishes, in
     // which case it deliberately did not touch automatic tracking or location. Apply the resolved values now that
@@ -452,11 +453,12 @@ static dispatch_once_t onceToken;
     
     [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
 
-    // nothing about the gathered lines is persisted, so the only way the tail survives the app going away is getting it out now
-    [CountlyCommon.sharedInstance flushSdkLogs];
-    
     if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
         [CountlyConnectionManager.sharedInstance endSession];
+
+    // after the session end, so the session summary is queued ahead of the log batches. Nothing about the gathered
+    // lines is persisted, so the only way the tail survives the app going away is getting it out now
+    [CountlyCommon.sharedInstance flushSdkLogs];
 
     [CountlyPersistency.sharedInstance saveToFile];
 }
@@ -1004,10 +1006,26 @@ static dispatch_once_t onceToken;
 /// The segmentation the behavior settings let through, empty for an event they drop, for log lines that log gathering may upload.
 - (NSDictionary *)loggableSegmentation:(NSDictionary *)segmentation eventKey:(NSString *)key
 {
+    // the behavior settings filter custom events only, a reserved event is recorded with its segmentation as it is
+    if ([self isReservedEvent:key])
+        return segmentation;
+
     if (!CountlyServerConfig.sharedInstance.customEventTrackingEnabled || ![CountlyServerConfig.sharedInstance shouldRecordEvent:key])
         return @{};
 
     return [CountlyServerConfig.sharedInstance filterSegmentation:segmentation eventKey:key];
+}
+
+/// The user properties the behavior settings let through, for log lines that log gathering may upload.
+- (NSDictionary *)loggableUserProperties:(NSDictionary *)properties
+{
+    NSMutableDictionary* loggable = NSMutableDictionary.new;
+    [properties enumerateKeysAndObjectsUsingBlock:^(id key, id value, BOOL* stop) {
+        if (![key isKindOfClass:NSString.class] || [CountlyServerConfig.sharedInstance shouldRecordUserProperty:key])
+            loggable[key] = value;
+    }];
+
+    return loggable;
 }
 
 #pragma mark -
@@ -1124,7 +1142,7 @@ static dispatch_once_t onceToken;
     return ^(NSString *response, BOOL success) {
         if (success)
         {
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
             dispatch_async(dispatch_get_main_queue(), ^{
                 [CountlyContentBuilderInternal.sharedInstance refreshContentZoneJTE];
             });
@@ -1156,15 +1174,17 @@ static dispatch_once_t onceToken;
 }
 
 - (BOOL)isAppInForeground {
+    // anything but the background counts as visible, as on Android: an inactive app, under a system alert or in the app
+    // switcher, is still on screen. macOS has no background state, and the SDK treats a resigned app as one there
 #if TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_VISION
     UIApplicationState state = [UIApplication sharedApplication].applicationState;
-    return state == UIApplicationStateActive;
+    return state != UIApplicationStateBackground;
 #elif TARGET_OS_OSX
     NSApplication *app = [NSApplication sharedApplication];
     return app.isActive;
 #elif TARGET_OS_WATCH
     WKExtension *extension = [WKExtension sharedExtension];
-    return extension.applicationState == WKApplicationStateActive;
+    return extension.applicationState != WKApplicationStateBackground;
 #else
     return NO;
 #endif
@@ -1214,7 +1234,7 @@ static dispatch_once_t onceToken;
 - (void)endEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum
 {
     CLY_LOG_I(@"%s ending a timed event, key: [%@], segmentation keys: [%@], segmentation key count: [%lu], count: [%lu], sum: [%f]", __FUNCTION__, key, segmentation.allKeys, (unsigned long)segmentation.count, (unsigned long)count, sum);
-    CLY_LOG_D(@"%s timed event end segmentation detail, key: [%@], segmentation: [%@]", __FUNCTION__, key, segmentation);
+    CLY_LOG_D(@"%s timed event end segmentation detail, key: [%@], segmentation: [%@]", __FUNCTION__, key, [self loggableSegmentation:segmentation eventKey:key]);
 
     if (!CountlyConsentManager.sharedInstance.consentForEvents)
     {
@@ -1541,7 +1561,6 @@ static dispatch_once_t onceToken;
     }
 
     [CountlyConsentManager.sharedInstance resetInstance];
-    // after the consent reset, which can still send an empty location
     [CountlyLocationManager.sharedInstance resetInstance];
     [CountlyPersistency.sharedInstance resetInstance:clearStorage];
     [CountlyDeviceInfo.sharedInstance resetInstance];

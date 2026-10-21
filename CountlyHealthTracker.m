@@ -236,7 +236,7 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
         NSError *jsonError;
         NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
 
-        if (jsonError || !jsonResponse) {
+        if (jsonError || ![jsonResponse isKindOfClass:NSDictionary.class]) {
             CLY_LOG_E(@"%s could not parse the health check response, counters will not be cleared, error: [%@]", __FUNCTION__, jsonError.localizedDescription);
             return;
         }

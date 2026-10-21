@@ -80,6 +80,9 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
     [self serializeStringField:self.phone key:kCountlyUDKeyPhone explanation:@"User details phone" into:userDictionary picture:NO];
     [self serializeStringField:self.gender key:kCountlyUDKeyGender explanation:@"User details gender" into:userDictionary picture:NO];
     [self serializeStringField:self.pictureURL key:kCountlyUDKeyPicture explanation:@"User details picture" into:userDictionary picture:YES];
+    // a local picture path set to NSNull clears the picture, with the empty string the server clears a field on
+    if (self.pictureLocalPath == NSNull.null && !self.pictureURL)
+        userDictionary[kCountlyUDKeyPicture] = @"";
 
     if (self.birthYear) {
         if ([self.birthYear isKindOfClass:NSNumber.class] && ((NSNumber *)self.birthYear).integerValue < 0) {
@@ -391,7 +394,8 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
         [CountlyConnectionManager.sharedInstance sendUserDetails:userDetails];
     }
 
-    if (self.pictureLocalPath && !self.pictureURL)
+    // NSNull clears the picture, which the serialized details above already carry, so only a path goes out on its own
+    if ([self.pictureLocalPath isKindOfClass:NSString.class] && !self.pictureURL)
     {
 #if (TARGET_OS_IOS || TARGET_OS_VISION)
         CLY_LOG_D(@"%s local picture path will be sent in a separate request, valueType: [%@]", __FUNCTION__, NSStringFromClass([self.pictureLocalPath class]));

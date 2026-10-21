@@ -21,6 +21,8 @@
 - (BOOL)addToQueue:(NSString *)queryString;
 - (void)removeFromQueue:(NSString *)queryString;
 - (NSString *)firstItemInQueue;
+/// Whether a gathered log upload waits in the request queue.
+- (BOOL)queueContainsSdkLogs;
 - (void)flushQueue;
 - (NSUInteger)remainingRequestCount;
 - (void)replaceAllTemporaryDeviceIDsInQueueWithDeviceID:(NSString *)deviceID;

@@ -20,6 +20,7 @@ Pod::Spec.new do |s|
     core.source_files = '*.{h,m}'
     core.public_header_files = 'Countly.h', 'CountlyUserDetails.h', 'CountlyConfig.h', 'CountlyFeedbackWidget.h', 'CountlyRCData.h', 'CountlyRemoteConfig.h', 'CountlyViewTracking.h', 'CountlyExperimentInformation.h', 'CountlyAPMConfig.h', 'CountlySDKLimitsConfig.h', 'Resettable.h', "CountlyCrashesConfig.h", "CountlyCrashData.h", "CountlyContentBuilder.h", "CountlyExperimentalConfig.h", "CountlyContentConfig.h", "CountlyFeedbacks.h"
     core.preserve_path = 'countly_dsym_uploader.sh'
+    core.resource_bundles = { 'Countly' => ['PrivacyInfo.xcprivacy'] }
     core.ios.frameworks = ['Foundation', 'UIKit', 'UserNotifications', 'CoreLocation', 'WebKit', 'CoreTelephony', 'WatchConnectivity']
     core.visionos.frameworks = ['Foundation', 'UIKit', 'UserNotifications', 'CoreLocation', 'WebKit']
   end

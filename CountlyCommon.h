@@ -114,6 +114,9 @@ void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...) NS_FOR
 BOOL CountlyInternalLogIsEnabled(CLYInternalLogLevel level);
 /// YES when anything at all wants a line of this level: a developer facing sink, or the log gathering capture.
 BOOL CountlyInternalLogIsWanted(CLYInternalLogLevel level);
+/// Stops log gathering capture for the rest of the process, so the threads that log while a crash is reported never wait
+/// for a gathering lock the crashing thread may hold. Async signal safe.
+void CountlySDKLogsStopCaptureForCrash(void);
 void CountlyPrint(NSString *stringToPrint);
 NSString* CountlyJSONFromObject(id object);
 /// Runs the block right away when called on the main thread, so the state it reads is the state at the call, and queues it there otherwise.
@@ -166,10 +169,10 @@ void CountlyRunOnMainThread(dispatch_block_t block);
 /// Decides against gathering when no directive has been seen yet and none can arrive this run (failed fetch, temporary device id, updates disabled). A running gather is left alone.
 - (void)decideLogGatheringOffIfUndecided:(NSString *)reason;
 
-/// Uploads the held lines now, partial batch included, on the calling thread. Background and init end call this.
+/// Uploads every held line now, partial batch included, on the calling thread, also while another batch waits in the request queue. Background, terminate and a device ID change call this, since the held lines live in memory only.
 - (void)flushSdkLogs;
 
-/// Same as flushSdkLogs, on the delivery queue. The timer tick calls this so the main thread never serialises a batch.
+/// Uploads one batch, partial included, on the delivery queue, and waits for the request queue to send it before the next. The timer tick and init end call this.
 - (void)scheduleSdkLogsFlush;
 
 /// Moves held lines between the buffer and the awaiting list to match the current consent, keeping capture order.
@@ -180,9 +183,15 @@ void CountlyRunOnMainThread(dispatch_block_t block);
 
 /// Called before the device ID changes without merge. Uploads what consent allows under the current device ID, then stops gathering and drops the rest, since the gather belongs to the current user.
 - (void)stopSdkLogGatheringForDeviceIDChange;
+/// Lets log gathering capture again from the first line of a start, after halt paused it so the lines the app logged
+/// between the halt and this start are not gathered for the user who starts now.
+- (void)resumeSdkLogCaptureForStart;
 
 /// YES while lines are still being held or gathered, so log calls can skip formatting when nothing wants them.
 - (BOOL)isCapturingSdkLogs;
+
+/// YES while lines of this level are still being held or gathered, so log calls of the levels a gather leaves out skip formatting.
+- (BOOL)isCapturingSdkLogLevel:(CLYInternalLogLevel)level;
 
 /// Marks the calling thread as sending a gathered batch, so what it logs meanwhile is not gathered again.
 - (void)setSdkLogsTransportWork:(BOOL)transporting;
@@ -241,6 +250,8 @@ void CountlyRunOnMainThread(dispatch_block_t block);
 @end
 
 @interface Countly (RecordReservedEvent)
+/// The segmentation the behavior settings let through, for log lines that log gathering may upload.
+- (NSDictionary *)loggableSegmentation:(NSDictionary *)segmentation eventKey:(NSString *)key;
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation;
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation ID:(NSString *)ID;
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration ID:(NSString *)ID timestamp:(NSTimeInterval)timestamp;

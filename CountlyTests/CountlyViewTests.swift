@@ -302,7 +302,29 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
         // Call validateRecordedEvents to check if the events match expectations
         validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
     }
-    
+
+    /// Each screen automatic view tracking records ends the one before it, as automatic views do on Android, so every
+    /// screen reports its own duration instead of staying open.
+    func testAutomaticViewsEndThePreviousScreen() throws {
+        let config = createBaseConfig()
+        config.enableAutomaticViewTracking = true
+        Countly.sharedInstance().start(with: config)
+
+        let first = UIViewController()
+        first.title = "FirstScreen"
+        let second = UIViewController()
+        second.title = "SecondScreen"
+        let appear = NSSelectorFromString("performAutoViewTrackingForViewController:")
+
+        CountlyViewTrackingInternal.sharedInstance().perform(appear, with: first)
+        TestUtils.sleep(2) {}
+        CountlyViewTrackingInternal.sharedInstance().perform(appear, with: second)
+
+        let openViews = CountlyViewTrackingInternal.sharedInstance().value(forKey: "viewDataDictionary") as? [String: Any]
+        XCTAssertEqual(1, openViews?.count, "only the screen on top stays open")
+        validateRecordedViews(startedEventsCount: ["FirstScreen": 1, "SecondScreen": 1], endedEventsDurations: ["FirstScreen": [2]])
+    }
+
     #endif
 
     func testStartAndStopAutoStoppedViewWithSegmentation() throws {

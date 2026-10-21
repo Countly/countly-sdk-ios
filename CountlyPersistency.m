@@ -146,6 +146,20 @@ static dispatch_once_t onceToken;
     }
 }
 
+- (BOOL)queueContainsSdkLogs
+{
+    @synchronized (self)
+    {
+        for (NSString* queryString in self.queuedRequests)
+        {
+            if ([CountlyPersistency isSdkLogRequest:queryString])
+                return YES;
+        }
+
+        return NO;
+    }
+}
+
 - (void)flushQueue
 {
     @synchronized (self)
@@ -374,11 +388,23 @@ static dispatch_once_t onceToken;
         if (self.recordedEvents.count == 0)
             return nil;
 
-        NSArray *eventDictionaries = [self.recordedEvents valueForKey:@"dictionaryRepresentation"];
+        NSMutableArray *eventDictionaries = NSMutableArray.new;
+        for (CountlyEvent *event in self.recordedEvents)
+        {
+            NSDictionary *eventDictionary = event.dictionaryRepresentation;
+            // one event JSON can not represent would otherwise take every event of the batch down with it
+            if ([NSJSONSerialization isValidJSONObject:eventDictionary])
+                [eventDictionaries addObject:eventDictionary];
+            else
+                CLY_LOG_D(@"%s an event JSON can not represent is dropped, key: [%@]", __FUNCTION__, event.key);
+        }
 
         CLY_LOG_D(@"%s serializing the recorded events for the next request, event count: [%lu]", __FUNCTION__, (unsigned long)eventDictionaries.count);
 
         [self.recordedEvents removeAllObjects];
+
+        if (eventDictionaries.count == 0)
+            return nil;
 
         return [eventDictionaries cly_JSONify];
     }
@@ -403,10 +429,15 @@ static dispatch_once_t onceToken;
     [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
     [self flushEvents];
     [self clearAllTimedEvents];
-    [self flushQueue];
     if(clearStorage)
     {
+        [self flushQueue];
         [self saveToFile];
+    }
+    else
+    {
+        // keeping the storage keeps every queued request, also the ones queued since the last save
+        [self saveToFileSync];
     }
     onceToken = 0;
     s_sharedInstance = nil;
