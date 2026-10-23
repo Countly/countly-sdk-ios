@@ -678,7 +678,7 @@ static dispatch_once_t onceToken;
     isSessionStarted = YES;
     // the manual session API refuses to begin while automatic session tracking is on, so a session begun now is the SDK's own
     isSessionStartedAutomatically = CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled;
-    lastSessionStartTime = NSDate.date.timeIntervalSince1970;
+    lastSessionStartTime = CountlyCommon.sharedInstance.monotonicTime;
     unsentSessionLength = 0.0;
 
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%@",
@@ -1338,7 +1338,7 @@ static dispatch_once_t onceToken;
 
 - (NSInteger)sessionLengthInSeconds
 {
-    NSTimeInterval currentTime = NSDate.date.timeIntervalSince1970;
+    NSTimeInterval currentTime = CountlyCommon.sharedInstance.monotonicTime;
     unsentSessionLength += (currentTime - lastSessionStartTime);
     lastSessionStartTime = currentTime;
     int sessionLengthInSeconds = (int)unsentSessionLength;

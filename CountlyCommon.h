@@ -128,6 +128,8 @@ void CountlyRunOnMainThread(dispatch_block_t block);
 - (NSInteger)timeZone;
 - (NSInteger)timeSinceLaunch;
 - (NSTimeInterval)uniqueTimestamp;
+/// Seconds on a clock that a change of the system clock does not move and that keeps counting while the device sleeps. Only the difference of two readings means anything, so it is for durations, never for timestamps.
+- (NSTimeInterval)monotonicTime;
 - (NSString *)randomEventID;
 
 - (void)startBackgroundTask;
