@@ -253,6 +253,51 @@ class CountlyTests: CountlyBaseTestCase {
 
     /**
      * <pre>
+     * The system clock moving an hour forward between "startEvent" and "endEvent" does not change the timed event's duration.
+     *
+     * 1- Start a timed event and move its stored system clock start an hour back
+     * 2- End the timed event
+     * 3- Verify its duration is near zero and its timestamp is still from the system clock
+     * </pre>
+     */
+    func testTimedEvent_systemClockMovedForward_durationUnchanged() throws {
+        try endTimedEventAfterSystemClockChange(by: 3600)
+    }
+
+    /**
+     * <pre>
+     * The system clock moving an hour back between "startEvent" and "endEvent" does not change the timed event's duration.
+     *
+     * 1- Start a timed event and move its stored system clock start an hour forward
+     * 2- End the timed event
+     * 3- Verify its duration is near zero and its timestamp is still from the system clock
+     * </pre>
+     */
+    func testTimedEvent_systemClockMovedBack_durationUnchanged() throws {
+        try endTimedEventAfterSystemClockChange(by: -3600)
+    }
+
+    /// Ends a timed event right after moving its stored system clock start by `clockChange` the other way, which is how a
+    /// change of the system clock between start and end looks to the SDK, and verifies the recorded event.
+    private func endTimedEventAfterSystemClockChange(by clockChange: TimeInterval) throws {
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+
+        Countly.sharedInstance().startEvent("clock_change_event")
+        let startedEvents = try XCTUnwrap(CountlyPersistency.sharedInstance().value(forKey: "startedEvents") as? NSDictionary)
+        let startedEvent = try XCTUnwrap(startedEvents["clock_change_event"] as? CountlyEvent)
+        startedEvent.timestamp -= clockChange
+
+        Countly.sharedInstance().endEvent("clock_change_event")
+
+        let event = try XCTUnwrap(TestUtils.getCurrentEQ()?.first { $0.key == "clock_change_event" }, "the timed event is recorded")
+        XCTAssertEqual(0, event.duration, accuracy: 0.5, "the duration does not follow the system clock")
+        XCTAssertEqual(Date().timeIntervalSince1970, event.timestamp, accuracy: 5, "the timestamp does")
+    }
+
+    /**
+     * <pre>
      * "halt" gives the configuration given at start its own values back. Behavior settings write their resolved values
      * into it, and its internal limits are shared by every configuration, so without this the next start would take the
      * halted run's behavior settings for the developer's values.

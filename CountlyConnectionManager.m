@@ -408,13 +408,12 @@ static dispatch_once_t onceToken;
     }
 
     request.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
-    NSDate *startTimeRequest = [NSDate date];
+    NSTimeInterval requestStartTime = CountlyCommon.sharedInstance.monotonicTime;
     self.connection = [self.URLSession dataTaskWithRequest:request completionHandler:^(NSData * data, NSURLResponse * response, NSError * error)
     {
         [CountlyCommon.sharedInstance setSdkLogsTransportWork:isSdkLogsTransport];
         self.connection = nil;
-        NSDate *endTimeRequest = [NSDate date];
-        long duration = (long)[endTimeRequest timeIntervalSinceDate:startTimeRequest];
+        long duration = (long)(CountlyCommon.sharedInstance.monotonicTime - requestStartTime);
         
         if(response) {
             NSInteger code = ((NSHTTPURLResponse*)response).statusCode;
@@ -685,7 +684,7 @@ static dispatch_once_t onceToken;
     isSessionStartedAutomatically = CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled;
     if (isSessionStartedAutomatically)
         [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"begin:a"];
-    lastSessionStartTime = NSDate.date.timeIntervalSince1970;
+    lastSessionStartTime = CountlyCommon.sharedInstance.monotonicTime;
     unsentSessionLength = 0.0;
 
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%@",
@@ -1349,7 +1348,7 @@ static dispatch_once_t onceToken;
 
 - (NSInteger)sessionLengthInSeconds
 {
-    NSTimeInterval currentTime = NSDate.date.timeIntervalSince1970;
+    NSTimeInterval currentTime = CountlyCommon.sharedInstance.monotonicTime;
     unsentSessionLength += (currentTime - lastSessionStartTime);
     lastSessionStartTime = currentTime;
     int sessionLengthInSeconds = (int)unsentSessionLength;

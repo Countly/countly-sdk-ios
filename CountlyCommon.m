@@ -59,7 +59,7 @@ static atomic_bool s_isSdkLogCapturePausedUntilStart = false;
 @interface CountlyCommon ()
 {
     NSCalendar* gregorianCalendar;
-    NSTimeInterval startTime;
+    NSTimeInterval startTime; // a monotonicTime reading, for timeSinceLaunch
     // lines dropped while undecided, per level: only the levels the adopted directive asks for become part of 'd'
     NSInteger sdkLogsUndecidedDrops[sizeof(kCountlySDKLogsLevelChars) - 1];
 }
@@ -144,7 +144,7 @@ static dispatch_once_t onceToken;
     if (self = [super init])
     {
         gregorianCalendar = [NSCalendar.alloc initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
-        startTime = NSDate.date.timeIntervalSince1970;
+        startTime = self.monotonicTime;
         
         self.lastTimestamp = 0;
         self.SDKVersion = kCountlySDKVersion;
@@ -1173,7 +1173,7 @@ void CountlyRunOnMainThread(dispatch_block_t block)
 
 - (NSInteger)timeSinceLaunch
 {
-    return (int)NSDate.date.timeIntervalSince1970 - startTime;
+    return (NSInteger)(self.monotonicTime - startTime);
 }
 
 - (NSTimeInterval)uniqueTimestamp
@@ -1186,6 +1186,12 @@ void CountlyRunOnMainThread(dispatch_block_t block)
         self.lastTimestamp = now;
 
     return (NSTimeInterval)(self.lastTimestamp / 1000.0);
+}
+
+- (NSTimeInterval)monotonicTime
+{
+    // CLOCK_MONOTONIC_RAW, unlike CACurrentMediaTime and systemUptime, keeps counting while the device sleeps, so time asleep stays in a duration
+    return clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW) / (double)NSEC_PER_SEC;
 }
 
 - (NSString *)randomEventID

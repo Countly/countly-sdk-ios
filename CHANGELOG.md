@@ -9,6 +9,7 @@
 * Mitigated issues where health check data could be lost.
 * Mitigated an issue where the health check did not use the app version set through custom metrics.
 * Mitigated an issue where the SDK could crash at start when the app bundle has no version string.
+* Mitigated an issue where a change of the system clock made durations negative, too short or too long: sessions, views, timed events, APM custom traces, foreground and background time, and the running time in crash reports. Timestamps still follow the system clock.
 
 ## 26.8.0
 * ! Minor breaking change ! Raised the minimum supported deployment targets to iOS 15, tvOS 15, watchOS 9 and macOS 12 (previously iOS 12, tvOS 12, watchOS 4 and macOS 10.14, and iOS 10 and tvOS 10 for "Countly-PL") for compatibility with Xcode 27. Apps targeting older versions are no longer supported and can keep using 26.1.4.
