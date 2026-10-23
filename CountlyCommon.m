@@ -1179,6 +1179,12 @@ void CountlyRunOnMainThread(dispatch_block_t block)
     return (NSTimeInterval)(self.lastTimestamp / 1000.0);
 }
 
+- (NSTimeInterval)monotonicTime
+{
+    // CLOCK_MONOTONIC_RAW, unlike CACurrentMediaTime and systemUptime, keeps counting while the device sleeps, so time asleep stays in a duration
+    return clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW) / (double)NSEC_PER_SEC;
+}
+
 - (NSString *)randomEventID
 {
     const int size = 6;

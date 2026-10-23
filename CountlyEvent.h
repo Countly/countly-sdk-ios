@@ -20,6 +20,8 @@
 @property (nonatomic) NSUInteger hourOfDay;
 @property (nonatomic) NSUInteger dayOfWeek;
 @property (nonatomic) NSTimeInterval duration;
+/// "monotonicTime" of "CountlyCommon" when a timed event started, for its duration. It is neither sent nor stored.
+@property (nonatomic) NSTimeInterval monotonicStartTime;
 - (NSDictionary *)dictionaryRepresentation;
 
 @end

@@ -15,7 +15,7 @@
     {
         self.viewID = viewID;
         self.viewName = viewName;
-        self.viewStartTime = CountlyCommon.sharedInstance.uniqueTimestamp;
+        self.viewStartTime = CountlyCommon.sharedInstance.monotonicTime;
         self.isAutoStoppedView = false;
         self.willStartAgain = false;
     }
@@ -25,7 +25,7 @@
 
 - (NSInteger)duration
 {
-    NSTimeInterval duration = NSDate.date.timeIntervalSince1970 - self.viewStartTime;
+    NSTimeInterval duration = CountlyCommon.sharedInstance.monotonicTime - self.viewStartTime;
     return (NSInteger)round(duration); // Rounds to the nearest integer, to fix long value converted to 0 on server side.
 }
 
@@ -34,13 +34,13 @@
     if (self.viewStartTime)
     {
         // For safe side we have set the value to current time stamp instead of 0 when pausing the view, as setting it to 0 could result in an invalid duration value.
-        self.viewStartTime = CountlyCommon.sharedInstance.uniqueTimestamp;
+        self.viewStartTime = CountlyCommon.sharedInstance.monotonicTime;
     }
 }
 
 - (void)resumeView
 {
-    self.viewStartTime = CountlyCommon.sharedInstance.uniqueTimestamp;
+    self.viewStartTime = CountlyCommon.sharedInstance.monotonicTime;
 }
 
 
