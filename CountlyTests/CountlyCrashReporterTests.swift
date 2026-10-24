@@ -417,6 +417,83 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
         XCTAssertEqual(2, appSignalHandlerCalls, "a signal the app survived does not make the next one end the app")
         XCTAssertEqual(appSignalAddress, liveSignalHandler(SIGFPE), "the app's handler is live again")
     }
+
+    /// Starts the SDK with crash reporting while every request fails, so a crash it reports stays in the request queue.
+    private func startWithEveryRequestFailing() {
+        MockURLProtocol.requestHandler = { request in
+            ("{\"result\":\"fail\"}".data(using: .utf8), HTTPURLResponse(url: request.url!, statusCode: 400, httpVersion: nil, headerFields: nil), nil)
+        }
+
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [MockURLProtocol.self]
+        config.urlSessionConfiguration = sessionConfig
+        Countly.sharedInstance().start(with: config)
+    }
+
+    /**
+     * <pre>
+     * A crash the SDK reports is passed on to the exception handler the app had before the SDK started, as one it does
+     * not report is.
+     *
+     * 1- Install an app exception handler, then start with crash reporting while every request fails
+     * 2- Call the SDK's handler the way the runtime calls it for an uncaught exception
+     * 3- Verify the crash is queued, and the app's handler ran once and is live again
+     * </pre>
+     */
+    func test_uncaughtExceptionHandler_passesAReportedCrashOnToTheReplacedHandler() throws {
+        appExceptionHandlerCalls = 0
+        let appExceptionHandler: @convention(c) (NSException) -> Void = { _ in appExceptionHandlerCalls += 1 }
+        NSSetUncaughtExceptionHandler(appExceptionHandler)
+        defer {
+            NSSetUncaughtExceptionHandler(nil)
+            MockURLProtocol.replyEmptyToEveryRequest()
+        }
+        let appExceptionAddress = unsafeBitCast(appExceptionHandler, to: UnsafeRawPointer.self)
+
+        startWithEveryRequestFailing()
+        let sdkExceptionHandler = try XCTUnwrap(NSGetUncaughtExceptionHandler())
+        XCTAssertNotEqual(appExceptionAddress, liveExceptionHandler(), "the SDK installs its exception handler over the app's")
+
+        sdkExceptionHandler(NSException(name: NSExceptionName("ReportedException"), reason: "reported and passed on", userInfo: nil))
+
+        XCTAssertTrue(TestUtils.getCurrentRQ()?.contains { $0.contains("crash=") && $0.contains("ReportedException") } ?? false, "the SDK reports the crash")
+        XCTAssertEqual(1, appExceptionHandlerCalls, "and passes it on to the handler it replaced")
+        XCTAssertEqual(appExceptionAddress, liveExceptionHandler(), "which is live again")
+        Countly.sharedInstance().halt(true)
+    }
+
+    /**
+     * <pre>
+     * A signal the SDK reports as a crash goes on to the handler the app had before the SDK started, not to the default
+     * action, which would end the app before that handler runs.
+     *
+     * 1- Install an app SIGFPE handler, then start with crash reporting while every request fails
+     * 2- Raise the signal
+     * 3- Verify the crash is queued, and the app's handler ran once and is live again
+     * </pre>
+     */
+    func test_signalHandler_handsAReportedCrashOnToTheReplacedHandler() throws {
+        appSignalHandlerCalls = 0
+        let appSignalHandler: @convention(c) (Int32) -> Void = { _ in appSignalHandlerCalls += 1 }
+        signal(SIGFPE, appSignalHandler)
+        defer {
+            signal(SIGFPE, SIG_DFL)
+            MockURLProtocol.replyEmptyToEveryRequest()
+        }
+        let appSignalAddress = unsafeBitCast(appSignalHandler, to: UnsafeRawPointer.self)
+
+        startWithEveryRequestFailing()
+        XCTAssertNotEqual(appSignalAddress, liveSignalHandler(SIGFPE), "the SDK installs its signal handler over the app's")
+
+        raise(SIGFPE)
+
+        XCTAssertTrue(TestUtils.getCurrentRQ()?.contains { $0.contains("crash=") && $0.contains("SIGFPE") } ?? false, "the SDK reports the crash")
+        XCTAssertEqual(1, appSignalHandlerCalls, "and hands the signal on to the handler it replaced")
+        XCTAssertEqual(appSignalAddress, liveSignalHandler(SIGFPE), "which is live again")
+        Countly.sharedInstance().halt(true)
+    }
     #endif
 
 }
