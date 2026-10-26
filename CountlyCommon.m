@@ -286,11 +286,17 @@ void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...)
     return self.sdkLogsState != CLYSDKLogsStateOff && !atomic_load(&s_isSdkLogCaptureStoppedForCrash);
 }
 
-/// Stops gathering log lines while an automatically detected crash is reported. Halt lifts it, since the app can outlive a
-/// reported crash whose signal goes on to a handler of the app's own.
+/// Stops gathering log lines while an automatically detected crash is reported. Halt and a new start of crash reporting
+/// lift it, since the app can outlive a reported crash whose signal goes on to a handler of the app's own.
 void CountlySDKLogsStopCaptureForCrash(void)
 {
     atomic_store(&s_isSdkLogCaptureStoppedForCrash, true);
+}
+
+/// Gathers log lines again after a reported crash the app outlived, once crash reporting starts again.
+void CountlySDKLogsResumeCaptureAfterCrash(void)
+{
+    atomic_store(&s_isSdkLogCaptureStoppedForCrash, false);
 }
 
 - (BOOL)isCapturingSdkLogLevel:(CLYInternalLogLevel)level

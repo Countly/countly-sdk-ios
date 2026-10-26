@@ -432,6 +432,25 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
         Countly.sharedInstance().start(with: config)
     }
 
+    /// Halts the SDK after writing an empty request queue to disk. Halt writes the queue it clears in the background, so on a
+    /// slow runner the next test's start would otherwise load the crash this test left queued.
+    private func haltWithAnEmptyStoredQueue() {
+        CountlyPersistency.sharedInstance().flushQueue()
+        CountlyPersistency.sharedInstance().saveToFileSync()
+        Countly.sharedInstance().halt(true)
+    }
+
+    /// The messages of the log lines the SDK holds for the running gather that start with the given text, read under its
+    /// gathering lock, since the SDK captures into the same arrays from its own threads.
+    private func heldLogLines(startingWith prefix: String) -> [String] {
+        let common: CountlyCommon = CountlyCommon.sharedInstance()
+        let lock = common.value(forKey: "sdkLogsLock") as AnyObject
+        objc_sync_enter(lock)
+        defer { objc_sync_exit(lock) }
+        let held = ["sdkLogs", "sdkLogsAwaitingConsent"].flatMap { (common.value(forKey: $0) as? [[String: Any]]) ?? [] }
+        return held.compactMap { $0["m"] as? String }.filter { $0.hasPrefix(prefix) }
+    }
+
     /**
      * <pre>
      * A crash the SDK reports is passed on to the exception handler the app had before the SDK started, as one it does
@@ -461,7 +480,7 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
         XCTAssertTrue(TestUtils.getCurrentRQ()?.contains { $0.contains("crash=") && $0.contains("ReportedException") } ?? false, "the SDK reports the crash")
         XCTAssertEqual(1, appExceptionHandlerCalls, "and passes it on to the handler it replaced")
         XCTAssertEqual(appExceptionAddress, liveExceptionHandler(), "which is live again")
-        Countly.sharedInstance().halt(true)
+        haltWithAnEmptyStoredQueue()
     }
 
     /**
@@ -492,7 +511,54 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
         XCTAssertTrue(TestUtils.getCurrentRQ()?.contains { $0.contains("crash=") && $0.contains("SIGFPE") } ?? false, "the SDK reports the crash")
         XCTAssertEqual(1, appSignalHandlerCalls, "and hands the signal on to the handler it replaced")
         XCTAssertEqual(appSignalAddress, liveSignalHandler(SIGFPE), "which is live again")
-        Countly.sharedInstance().halt(true)
+        haltWithAnEmptyStoredQueue()
+    }
+
+    /**
+     * <pre>
+     * Log gathering stops capturing while the SDK reports a crash. An app that outlives a reported crash through a handler
+     * of its own gets capture back when crash reporting starts again, as it gets the SDK's handler back.
+     *
+     * 1- Install an app SIGFPE handler, start with crash reporting while every request fails, and arm a gather of errors
+     * 2- Raise the signal and verify the crash is queued, the app's handler ran, and a line logged after it is not gathered
+     * 3- Start crash reporting again and verify the SDK's handler is live and a line logged now is gathered
+     * </pre>
+     */
+    func test_signalHandler_logCaptureResumesWithCrashReporting_afterTheAppOutlivesAReportedCrash() throws {
+        appSignalHandlerCalls = 0
+        let appSignalHandler: @convention(c) (Int32) -> Void = { _ in appSignalHandlerCalls += 1 }
+        signal(SIGFPE, appSignalHandler)
+        defer {
+            signal(SIGFPE, SIG_DFL)
+            MockURLProtocol.replyEmptyToEveryRequest()
+        }
+        let appSignalAddress = unsafeBitCast(appSignalHandler, to: UnsafeRawPointer.self)
+        let errorLevel = CChar(Character("e").asciiValue!)
+
+        startWithEveryRequestFailing()
+        let common: CountlyCommon = CountlyCommon.sharedInstance()
+        // the delivery that init end scheduled runs first, so the lines of the gather armed below stay held where they are read
+        try XCTUnwrap(common.value(forKey: "sdkLogsDeliveryQueue") as? DispatchQueue).sync {}
+        // errors only, so the SDK's own lines stay out of the gather
+        common.updateLogGatheringState(true, levels: "e", batch: 100, lgid: "crash_gather")
+        common.captureSdkLogLine("gathered before the crash", level: errorLevel)
+        XCTAssertTrue(common.isCapturingSdkLogs(), "the gather captures")
+
+        raise(SIGFPE)
+        common.captureSdkLogLine("gathered while crash reporting is off", level: errorLevel)
+
+        XCTAssertTrue(TestUtils.getCurrentRQ()?.contains { $0.contains("crash=") && $0.contains("SIGFPE") } ?? false, "the SDK reports the crash")
+        XCTAssertEqual(1, appSignalHandlerCalls, "and the app outlives it")
+        XCTAssertFalse(common.isCapturingSdkLogs(), "capture stops for the report")
+
+        try XCTUnwrap(CountlyCrashReporter.sharedInstance()).startCrashReporting()
+        common.captureSdkLogLine("gathered once crash reporting is back", level: errorLevel)
+
+        XCTAssertNotEqual(appSignalAddress, liveSignalHandler(SIGFPE), "crash reporting starts again")
+        XCTAssertTrue(common.isCapturingSdkLogs(), "and so does capture")
+        XCTAssertEqual(["gathered before the crash", "gathered once crash reporting is back"], heldLogLines(startingWith: "gathered"),
+                       "only the line logged while crash reporting was off is missing")
+        haltWithAnEmptyStoredQueue()
     }
     #endif
 

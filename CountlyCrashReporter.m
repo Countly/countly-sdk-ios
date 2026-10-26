@@ -313,6 +313,7 @@ static void CountlyForgetReplacedCrashHandlers(void)
             CountlyInstallSignalHandlers();
 #endif
             atomic_store(&s_hasReportedAutomaticCrash, false);
+            CountlySDKLogsResumeCaptureAfterCrash();
             self.crashHandlerInstallation = CLYCrashHandlerInstallationDefault;
         }
     }
