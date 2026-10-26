@@ -548,6 +548,43 @@ class CountlyTests: CountlyBaseTestCase {
         XCTAssertEqual(0, tracker.value(forKey: "countLogWarning") as? Int, "the health tracker is reset by the time halt returns")
     }
 
+#if os(iOS)
+    /**
+     * <pre>
+     * The start records the orientation the app starts in, with automatic and with manual sessions, and records none when
+     * orientation tracking is off.
+     *
+     * 1- Make the orientation the SDK reads portrait, since a test run without a host app has no window scene
+     * 2- Start with orientation tracking on, with automatic and then with manual sessions, and verify one portrait event
+     * 3- Start with orientation tracking off and verify there is no orientation event
+     * </pre>
+     */
+    func testOrientation_theStartRecordsTheOrientationTheAppStartsIn() throws {
+        let orientationRead = try XCTUnwrap(class_getInstanceMethod(CountlyCommon.self, NSSelectorFromString("currentInterfaceOrientation")))
+        let portrait: @convention(block) (AnyObject) -> Int = { _ in UIInterfaceOrientation.portrait.rawValue }
+        let originalOrientationRead = method_setImplementation(orientationRead, imp_implementationWithBlock(portrait))
+        defer { method_setImplementation(orientationRead, originalOrientationRead) }
+
+        for manualSessionHandling in [false, true] {
+            let config = createBaseConfig()
+            config.enableOrientationTracking = true
+            config.manualSessionHandling = manualSessionHandling
+            Countly.sharedInstance().start(with: config)
+
+            let orientationEvents = TestUtils.getCurrentEQ()?.filter { $0.key == "[CLY]_orientation" } ?? []
+            XCTAssertEqual(1, orientationEvents.count, "the start records the orientation, manualSessionHandling: \(manualSessionHandling)")
+            XCTAssertEqual("portrait", orientationEvents.first?.segmentation?["mode"] as? String)
+            Countly.sharedInstance().halt(true)
+        }
+
+        let trackingOff = createBaseConfig()
+        trackingOff.manualSessionHandling = true
+        Countly.sharedInstance().start(with: trackingOff)
+        XCTAssertFalse(TestUtils.getCurrentEQ()?.contains { $0.key == "[CLY]_orientation" } ?? false, "orientation tracking off records none")
+        Countly.sharedInstance().halt(true)
+    }
+#endif
+
     func testPerformanceExample() async throws {
         // This is an example of a performance test case.
         measure {

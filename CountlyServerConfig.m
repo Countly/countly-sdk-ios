@@ -1389,7 +1389,7 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
         _eventSegmentationFilterIsWhitelist = YES;
         [logString appendFormat:@"%@: %@, ", kREventSegmentationWhitelist, esw];
         if (esb)
-            [dictionary removeObjectForKey:kREventSegmentationBlacklist]; // a blacklist that is not a valid list is not stored next to the whitelist
+            [dictionary removeObjectForKey:kREventSegmentationBlacklist]; // a blacklist that is not a valid object is not stored next to the whitelist
     } else {
         if (esb)
             [dictionary removeObjectForKey:kREventSegmentationBlacklist];

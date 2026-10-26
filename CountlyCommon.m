@@ -1212,8 +1212,8 @@ void CountlyRunOnMainThread(dispatch_block_t block)
 
 #if (TARGET_OS_IOS)
 /**
- * The interface orientation of the app's window scene. Apps that use the scene lifecycle report no orientation
- * through the status bar, so the status bar is only asked when no window scene knows one.
+ * The interface orientation of the app's window scene. On iOS 27 an app that uses the scene lifecycle reports no
+ * orientation through the status bar, so the status bar is only asked when no window scene knows one.
  * @return the current interface orientation, or @c UIInterfaceOrientationUnknown when none can be read
  */
 - (UIInterfaceOrientation)currentInterfaceOrientation
