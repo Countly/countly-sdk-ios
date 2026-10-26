@@ -564,6 +564,35 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         }
     }
 
+    /// A blacklist in an unacceptable format is left out of the replacement also when
+    /// a whitelist of the same category comes with it, so only the whitelists are stored.
+    func test_blacklistInAnUnacceptableFormat_nextToAWhitelist_isLeftOut() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        let cfg = TestUtils.createBaseConfig()
+        cfg.manualSessionHandling = true
+        let (sessionConfig, answered) = rawMockURLSessionConfig(body: makeServerConfig([
+            "ew": ["allowed_event"],
+            "eb": "not_a_list",
+            "upw": ["allowed_prop"],
+            "upb": true,
+            "sw": ["allowed_key"],
+            "sb": 5,
+            "esw": ["allowed_event": ["allowed_key"]],
+            "esb": "not_an_object"
+        ]))
+        cfg.urlSessionConfiguration = sessionConfig
+
+        let countly = createLocalCountly()
+        countly.start(with: cfg)
+
+        TestUtils.sleep(2) {
+            XCTAssertGreaterThan(answered(), 0, "the settings request was answered")
+            XCTAssertEqual(["esw", "ew", "sw", "upw"], self.storedConfigDictionary().keys.sorted(), "only the whitelists are stored")
+            XCTAssertTrue(CountlyServerConfig.sharedInstance().shouldRecordEvent("allowed_event"), "the event whitelist applies")
+            XCTAssertFalse(CountlyServerConfig.sharedInstance().shouldRecordEvent("other_event"), "an event the whitelist does not name is dropped")
+        }
+    }
+
     /// The server can not lift a consent requirement the developer set, neither from the stored settings
     /// nor from a live answer, while a 'cr' true it sends turns the requirement on for a developer who
     /// did not set it.

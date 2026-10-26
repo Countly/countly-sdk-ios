@@ -1,4 +1,6 @@
 ## XX.XX.XX
+* Mitigated an issue where orientation events were not recorded on iOS 27 in apps that use the UIScene lifecycle.
+* Mitigated an issue where the orientation was not recorded at start.
 * Mitigated an issue where a crash the SDK reported was not passed on to the crash handler it replaced.
 * Mitigated an issue where building the SDK produced nullability warnings.
 
