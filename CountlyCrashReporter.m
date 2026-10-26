@@ -179,11 +179,11 @@ static void CountlyUninstallSignalHandlers(void)
     }
 }
 
-/// Restores the action Countly replaced, or the default one, and raises the signal again so it lands there once the handler returns.
-static void CountlyHandOverSignal(int signalCode)
+/// Restores the given action Countly replaced, or the default one when there is none, and raises the signal again so it lands there once the handler returns.
+static void CountlyHandOverSignal(int signalCode, const struct sigaction *previousAction)
 {
-    if (s_hasPreviousSignalAction[signalCode] && !CountlyIsCountlySignalAction(&s_previousSignalActions[signalCode]))
-        sigaction(signalCode, &s_previousSignalActions[signalCode], NULL);
+    if (previousAction && !CountlyIsCountlySignalAction(previousAction))
+        sigaction(signalCode, previousAction, NULL);
     else
         signal(signalCode, SIG_DFL);
 
@@ -313,6 +313,7 @@ static void CountlyForgetReplacedCrashHandlers(void)
             CountlyInstallSignalHandlers();
 #endif
             atomic_store(&s_hasReportedAutomaticCrash, false);
+            CountlySDKLogsResumeCaptureAfterCrash();
             self.crashHandlerInstallation = CLYCrashHandlerInstallationDefault;
         }
     }
@@ -535,6 +536,8 @@ static void CountlyForgetReplacedCrashHandlers(void)
 }
 
 /// The uncaught exception handler Countly installs: reports the crash, then passes it on to the handler Countly replaced.
+/// That handler is read before the report, since a reported crash stops crash reporting, which puts the replaced handler
+/// back and forgets it.
 void CountlyUncaughtExceptionHandler(NSException *exception)
 {
     // a handler that chains back into Countly's would otherwise call the two in turn forever
@@ -542,9 +545,9 @@ void CountlyUncaughtExceptionHandler(NSException *exception)
     if (!atomic_compare_exchange_strong(&s_isHandlingUncaughtException, &expected, true))
         return;
 
+    NSUncaughtExceptionHandler* previousHandler = s_previousExceptionHandler;
     CountlyExceptionHandler(exception, true, true);
 
-    NSUncaughtExceptionHandler* previousHandler = s_previousExceptionHandler;
     if (previousHandler && previousHandler != &CountlyUncaughtExceptionHandler)
         previousHandler(exception);
 }
@@ -652,6 +655,9 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
         [CountlyCrashReporter.sharedInstance stopCrashReporting];
 }
 
+/// The signal handler Countly installs: reports the crash, then hands the signal over to the action Countly replaced.
+/// That action is read before the report, since a reported crash stops crash reporting, which puts the replaced actions
+/// back and forgets them.
 void CountlySignalHandler(int signalCode)
 {
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV || TARGET_OS_OSX)
@@ -674,6 +680,9 @@ void CountlySignalHandler(int signalCode)
         raise(signalCode);
         return;
     }
+
+    struct sigaction previousAction = s_previousSignalActions[signalCode];
+    BOOL hasPreviousAction = s_hasPreviousSignalAction[signalCode];
 #endif
 
     const unsigned int kCountlyStackFramesMax = 128;
@@ -701,7 +710,7 @@ void CountlySignalHandler(int signalCode)
     CountlyExceptionHandler(e, true, true);
 
 #if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV || TARGET_OS_OSX)
-    CountlyHandOverSignal(signalCode);
+    CountlyHandOverSignal(signalCode, hasPreviousAction ? &previousAction : NULL);
     atomic_store(&s_signalHandlingThread[signalCode], kCountlySignalHandedOver);
 #endif
 }
