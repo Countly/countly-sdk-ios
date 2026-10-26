@@ -1,6 +1,8 @@
 ## XX.XX.XX
 * Mitigated an issue where orientation events were not recorded on iOS 27 in apps that use the UIScene lifecycle.
 * Mitigated an issue where the orientation was not recorded at start.
+* Mitigated an issue where a crash the SDK reported was not passed on to the crash handler it replaced.
+* Mitigated an issue where building the SDK produced nullability warnings.
 
 ## 26.8.0
 * ! Minor breaking change ! Raised the minimum supported deployment targets to iOS 15, tvOS 15, watchOS 9 and macOS 12 (previously iOS 12, tvOS 12, watchOS 4 and macOS 10.14, and iOS 10 and tvOS 10 for "Countly-PL") for compatibility with Xcode 27. Apps targeting older versions are no longer supported and can keep using 26.1.4.

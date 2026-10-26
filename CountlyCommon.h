@@ -114,9 +114,12 @@ void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...) NS_FOR
 BOOL CountlyInternalLogIsEnabled(CLYInternalLogLevel level);
 /// YES when anything at all wants a line of this level: a developer facing sink, or the log gathering capture.
 BOOL CountlyInternalLogIsWanted(CLYInternalLogLevel level);
-/// Stops log gathering capture for the rest of the process, so the threads that log while a crash is reported never wait
-/// for a gathering lock the crashing thread may hold. Async signal safe.
+/// Stops log gathering capture until crash reporting starts again or the SDK is halted, so the threads that log while a
+/// crash is reported never wait for a gathering lock the crashing thread may hold. Async signal safe.
 void CountlySDKLogsStopCaptureForCrash(void);
+/// Lifts CountlySDKLogsStopCaptureForCrash once crash reporting starts again, since the app can outlive a reported crash
+/// through a handler of its own.
+void CountlySDKLogsResumeCaptureAfterCrash(void);
 void CountlyPrint(NSString *stringToPrint);
 NSString* CountlyJSONFromObject(id object);
 /// Runs the block right away when called on the main thread, so the state it reads is the state at the call, and queues it there otherwise.
