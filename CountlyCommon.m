@@ -1210,20 +1210,44 @@ void CountlyRunOnMainThread(dispatch_block_t block)
     [self performSelector:@selector(recordOrientation) withObject:nil afterDelay:0.5];
 }
 
+#if (TARGET_OS_IOS)
+/**
+ * The interface orientation of the app's window scene. Apps that use the scene lifecycle report no orientation
+ * through the status bar, so the status bar is only asked when no window scene knows one.
+ * @return the current interface orientation, or @c UIInterfaceOrientationUnknown when none can be read
+ */
+- (UIInterfaceOrientation)currentInterfaceOrientation
+{
+    UIInterfaceOrientation interfaceOrientation = CountlyCommon.keyWindow.windowScene.interfaceOrientation;
+    if (interfaceOrientation != UIInterfaceOrientationUnknown)
+        return interfaceOrientation;
+
+    // early in launch no window is key yet, while the connected scene already has its orientation
+    for (UIScene* scene in UIApplication.sharedApplication.connectedScenes)
+    {
+        if ([scene isKindOfClass:UIWindowScene.class] && ((UIWindowScene *)scene).interfaceOrientation != UIInterfaceOrientationUnknown)
+            return ((UIWindowScene *)scene).interfaceOrientation;
+    }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    return UIApplication.sharedApplication.statusBarOrientation;
+#pragma GCC diagnostic pop
+}
+#endif
+
 - (void)recordOrientation
 {
 #if (TARGET_OS_IOS)
     if (!self.enableOrientationTracking)
         return;
-    
+
     if ([UIApplication sharedApplication].applicationState == UIApplicationStateBackground) {
         CLY_LOG_D(@"%s app is in the background, orientation recording will be ignored", __FUNCTION__);
         return;
     }
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    UIInterfaceOrientation interfaceOrientation = UIApplication.sharedApplication.statusBarOrientation;
-#pragma GCC diagnostic pop
+
+    UIInterfaceOrientation interfaceOrientation = [self currentInterfaceOrientation];
 
     NSString* mode = nil;
     if (UIInterfaceOrientationIsPortrait(interfaceOrientation))

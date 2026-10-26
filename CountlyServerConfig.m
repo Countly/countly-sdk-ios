@@ -1310,6 +1310,8 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
         self.eventFilterSet = [NSSet setWithArray:ew];
         _eventFilterIsWhitelist = YES;
         [logString appendFormat:@"%@: %@, ", kREventWhitelist, ew];
+        if (eb)
+            [dictionary removeObjectForKey:kREventBlacklist]; // a blacklist that is not a valid list is not stored next to the whitelist
     } else {
         if (eb)
             [dictionary removeObjectForKey:kREventBlacklist];
@@ -1330,6 +1332,8 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
         self.userPropertyFilterSet = [NSSet setWithArray:upw];
         _userPropertyFilterIsWhitelist = YES;
         [logString appendFormat:@"%@: %@, ", kRUserPropertyWhitelist, upw];
+        if (upb)
+            [dictionary removeObjectForKey:kRUserPropertyBlacklist]; // a blacklist that is not a valid list is not stored next to the whitelist
     } else {
         if (upb)
             [dictionary removeObjectForKey:kRUserPropertyBlacklist];
@@ -1350,6 +1354,8 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
         self.segmentationFilterSet = [NSSet setWithArray:sw];
         _segmentationFilterIsWhitelist = YES;
         [logString appendFormat:@"%@: %@, ", kRSegmentationWhitelist, sw];
+        if (sb)
+            [dictionary removeObjectForKey:kRSegmentationBlacklist]; // a blacklist that is not a valid list is not stored next to the whitelist
     } else {
         if (sb)
             [dictionary removeObjectForKey:kRSegmentationBlacklist];
@@ -1382,6 +1388,8 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
         self.eventSegmentationFilterMap = map.copy;
         _eventSegmentationFilterIsWhitelist = YES;
         [logString appendFormat:@"%@: %@, ", kREventSegmentationWhitelist, esw];
+        if (esb)
+            [dictionary removeObjectForKey:kREventSegmentationBlacklist]; // a blacklist that is not a valid list is not stored next to the whitelist
     } else {
         if (esb)
             [dictionary removeObjectForKey:kREventSegmentationBlacklist];
