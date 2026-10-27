@@ -45,7 +45,7 @@ NS_ASSUME_NONNULL_BEGIN
  * Sets a new host to be used in requests.
  * @discussion Requests already queued previously will also be using the new host.
  * @discussion The new host needs to be a non-zero length string, otherwise it is ignored.
- * @discussion @c recordPushNotificationToken and @c updateRemoteConfigWithCompletionHandler: methods may need to be called after the host change.
+ * @discussion @c recordPushNotificationToken and @c [remoteConfig downloadKeys:] methods may need to be called after the host change.
  * @param newHost The new host
  */
 - (void)setNewHost:(NSString *)newHost;
@@ -55,7 +55,7 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Before switching to the new app key, this method suspends Countly and resumes it immediately after.
  * @discussion The requests already queued prior to this method call will keep using the old app key.
  * @discussion The new app key needs to be a non-zero length string, otherwise it is ignored.
- * @discussion @c recordPushNotificationToken and @c updateRemoteConfigWithCompletionHandler: methods may need to be called again after the app key change.
+ * @discussion @c recordPushNotificationToken and @c [remoteConfig downloadKeys:] methods may need to be called again after the app key change.
  * @param newAppKey The new app key
  */
 - (void)setNewAppKey:(NSString *)newAppKey;
@@ -175,18 +175,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Sets new device ID to be persistently stored and used in following requests.
- * @discussion Value passed for @c deviceID parameter has to be a non-zero length valid string, otherwise default device ID will be used instead.
- * @discussion If value passed for @c deviceID parameter is exactly same to the current device ID, method call is ignored.
- * @discussion When passing @c CLYTemporaryDeviceID for @c deviceID parameter, argument for @c onServer parameter does not matter.
- * @discussion When setting a new device ID while the current device ID is @c CLYTemporaryDeviceID, argument for @c onServer parameter does not matter.
- * @param deviceID New device ID
- * @param onServer If set, data on Countly Server will be merged automatically, otherwise device will be counted as a new device
- */
-- (void)setNewDeviceID:(NSString * _Nullable)deviceID onServer:(BOOL)onServer DEPRECATED_MSG_ATTRIBUTE("Use 'changeDeviceIDWithMerge: or changeDeviceIDWithoutMerge:' method instead!");
-
-/**
- * Sets new device ID to be persistently stored and used in following requests.
- * @discussion Value passed for @c deviceID parameter has to be a non-zero length valid string, otherwise default device ID will be used instead.
+ * @discussion Value passed for @c deviceID parameter has to be a non-zero length valid string, otherwise method call is ignored.
  * @discussion If value passed for @c deviceID parameter is exactly same to the current device ID, method call is ignored.
  * @discussion When passing @c CLYTemporaryDeviceID for @c deviceID parameter, argument for @c onServer parameter does not matter.
  * @param deviceID New device ID
@@ -195,7 +184,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 /**
  * Sets new device ID to be persistently stored and used in following requests.
- * @discussion Value passed for @c deviceID parameter has to be a non-zero length valid string, otherwise default device ID will be used instead.
+ * @discussion Value passed for @c deviceID parameter has to be a non-zero length valid string, otherwise method call is ignored.
  * @discussion If value passed for @c deviceID parameter is exactly same to the current device ID, method call is ignored.
  * @discussion When passing @c CLYTemporaryDeviceID for @c deviceID parameter, argument for @c onServer parameter does not matter.
  * @param deviceID New device ID
@@ -231,13 +220,6 @@ NS_ASSUME_NONNULL_BEGIN
  * @param features Array of feature names to give consent to
  */
 - (void)giveConsentForFeatures:(NSArray<CLYConsent> *)features;
-
-/**
- * Grants consent to all features and starts them.
- * @discussion This is a convenience method for grating consent for all features at once.
- * @discussion Inner workings of @c giveConsentForFeature: method applies for this method as well.
- */
-- (void)giveConsentForAllFeatures DEPRECATED_MSG_ATTRIBUTE("Use 'giveAllConsents:' method instead!");
 
 /**
  * Grants consent to all features and starts them.
@@ -509,27 +491,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)recordError:(NSString *)errorName isFatal:(BOOL)isFatal stackTrace:(NSArray * _Nullable)stackTrace segmentation:(NSDictionary<NSString *, id> * _Nullable)segmentation;
 
 /**
- * Records a handled exception manually.
- * @param exception Exception to be recorded
- */
-- (void)recordHandledException:(NSException *)exception DEPRECATED_MSG_ATTRIBUTE("Use 'recordException:' method instead!");
-
-/**
- * Records a handled exception and given stack trace manually.
- * @param exception Exception to be recorded
- * @param stackTrace Stack trace to be recorded
- */
-- (void)recordHandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace DEPRECATED_MSG_ATTRIBUTE("Use 'recordException:isFatal:stackTrace:segmentation:' method instead! (passing isFatal:NO, segmentation:nil)");
-
-/**
- * Records an unhandled exception and given stack trace manually.
- * @discussion For recording non-native level fatal exceptions, where the app keeps running at native level and can recover.
- * @param exception Exception to be recorded
- * @param stackTrace Stack trace to be recorded
- */
-- (void)recordUnhandledException:(NSException *)exception withStackTrace:(NSArray * _Nullable)stackTrace DEPRECATED_MSG_ATTRIBUTE("Use 'recordException:isFatal:stackTrace:segmentation:' method instead! (passing isFatal:YES, segmentation:nil)");
-
-/**
  * Records custom logs to be delivered with crash report.
  * @discussion Logs recorded by this method are stored in a non-persistent structure, and delivered to Countly Server only in case of a crash.
  * @param log Custom log string to be recorded
@@ -545,50 +506,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 
 #pragma mark - View Tracking
-
-/**
- * Records a visited view with given name.
- * @discussion Total duration of the view will be calculated on next @c recordView: call.
- * @discussion If AutoViewTracking feature is enabled on initial configuration, this method does not need to be called manually.
- * @param viewName Name of the view visited, a non-zero length valid string
- */
-- (void)recordView:(NSString *)viewName DEPRECATED_MSG_ATTRIBUTE("Use '[views startView/startAutoStoppedView:]' method instead!");
-
-/**
- * Records a visited view with given name and custom segmentation.
- * @discussion This is an extended version of @c recordView: method.
- * @discussion If segmentation has any of Countly reserved keys, they will be ignored:
- * @discussion @c name, @c segment, @c visit, @c start, @c bounce, @c exit, @c view, @c domain, @c dur
- * @discussion Segmentation should be an @c NSDictionary, with keys and values are both @c NSString's only.
- * @discussion Custom objects in segmentation will cause events not to be sent to Countly Server.
- * @discussion Nested values in segmentation will be ignored by Countly Server event segmentation section.
- * @param viewName Name of the view visited, a non-zero length valid string
- * @param segmentation Custom segmentation key-value pairs
- */
-- (void)recordView:(NSString *)viewName segmentation:(NSDictionary<NSString *, id> *)segmentation DEPRECATED_MSG_ATTRIBUTE("Use '[views startView/startAutoStoppedView:]' method instead!");
-
-#if (TARGET_OS_IOS || TARGET_OS_VISION || TARGET_OS_TV )
-/**
- * Adds exception for AutoViewTracking.
- * @discussion @c UIViewControllers with specified title or class name will be ignored by AutoViewTracking and their appearances and disappearances will not be recorded.
- * @discussion Adding an already added @c UIViewController title or subclass name again will have no effect.
- * @param exception @c UIViewController title or subclass name to be added as exception
- */
-- (void)addExceptionForAutoViewTracking:(NSString *)exception DEPRECATED_MSG_ATTRIBUTE("Use '[views setGlobalViewSegmentation:]' method or 'globalViewSegmentation' of config instead!");
-
-/**
- * Removes exception for AutoViewTracking.
- * @discussion Removing an already removed (or not yet added) @c UIViewController title or subclass name will have no effect.
- * @param exception @c UIViewController title or subclass name to be removed
- */
-- (void)removeExceptionForAutoViewTracking:(NSString *)exception DEPRECATED_MSG_ATTRIBUTE("Don't use this method, it will be remove in future release");
-
-/**
- * Temporarily activates or deactivates AutoViewTracking, if AutoViewTracking feature is enabled on initial configuration.
- * @discussion If AutoViewTracking feature is not enabled on initial configuration, this property has no effect.
- */
-@property (nonatomic) BOOL isAutoViewTrackingActive DEPRECATED_MSG_ATTRIBUTE("Don't use this variable, it will be remove in future release");
-#endif
 
 /**
  * Interface variable to access views tracking functionalities.
@@ -616,23 +533,6 @@ NS_ASSUME_NONNULL_BEGIN
  * @param completion A block object to be executed when user gives a star-rating or dismisses dialog without rating
  */
 - (void)askForStarRating:(void(^)(NSInteger rating))completion;
-
-/**
- * Presents feedback widget with given ID in a WKWebView placed in a UIViewController.
- * @discussion First, the availability of the feedback widget will be checked asynchronously.
- * @discussion If the feedback widget with given ID is available, it will be modally presented.
- * @discussion Otherwise, @c completionHandler will be executed with an @c NSError.
- * @discussion @c completionHandler will also be executed with @c nil when feedback widget is dismissed by user.
- * @discussion Calls to this method will be ignored and @c completionHandler will not be executed if:
- * @discussion - Consent for @c CLYConsentFeedback is not given, while @c requiresConsent flag is set on initial configuration.
- * @discussion - Current device ID is @c CLYTemporaryDeviceID.
- * @discussion - @c widgetID is not a non-zero length valid string.
- * @discussion This is a legacy method for presenting Rating type feedback widgets only.
- * @discussion Passing widget ID's of Survey or NPS type feedback widgets will not work.
- * @param widgetID ID of the feedback widget created on Countly Server.
- * @param completionHandler A completion handler block to be executed when feedback widget is dismissed by user or there is an error.
- */
-- (void)presentFeedbackWidgetWithID:(NSString *)widgetID completionHandler:(void (^)(NSError * __nullable error))completionHandler DEPRECATED_MSG_ATTRIBUTE("Use 'presentRatingWidgetWithID:completionHandler' method instead!");
 
 /**
  * Presents rating widget with given ID in a WKWebView placed in a UIViewController.
@@ -683,17 +583,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)recordRatingWidgetWithID:(NSString *)widgetID rating:(NSInteger)rating email:(NSString * _Nullable)email comment:(NSString * _Nullable)comment userCanBeContacted:(BOOL)userCanBeContacted;
 
 /**
- * Fetches a list of available feedback widgets.
- * @discussion When feedback widgets are fetched successfully, @c completionHandler will be executed with an array of @c CountlyFeedbackWidget objects.
- * @discussion Otherwise, @c completionHandler will be executed with an @c NSError.
- * @discussion Calls to this method will be ignored and @c completionHandler will not be executed if:
- * @discussion - Consent for @c CLYConsentFeedback is not given, while @c requiresConsent flag is set on initial configuration.
- * @discussion - Current device ID is @c CLYTemporaryDeviceID.
- * @param completionHandler A completion handler block to be executed when list is fetched successfully or there is an error.
- */
-- (void)getFeedbackWidgets:(void (^)(NSArray <CountlyFeedbackWidget *> * __nullable feedbackWidgets, NSError * __nullable error))completionHandler DEPRECATED_MSG_ATTRIBUTE("Use '[feedback getAvailableFeedbackWidgets:]' method instead!");
-
-/**
  * This is an experimental feature and it can have breaking changes
  * Interface variable to access content  functionalities.
  * @discussion Content interface for developer to interact with SDK.
@@ -705,23 +594,19 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion Feedback widget  interface for developer to interact with SDK.
  */
 - (CountlyFeedbacks *) feedback;
-
-- (CountlyUserDetails *) userProfile;
 #endif
+
+#pragma mark - User Profiles
+
+/**
+ * Interface variable to access user profile functionalities.
+ * @discussion User profile interface for developer to interact with SDK.
+ */
+- (CountlyUserDetails *) userProfile;
 
 
 
 #pragma mark - Attribution
-
-/**
- * Records attribution ID (IDFA) for campaign attribution.
- * @discussion This method overrides @c attributionID property specified on initial configuration, and sends an immediate request.
- * @discussion Also, this attribution ID will be sent with all @c begin_session requests.
- * @discussion Calls to this method will be ignored if:
- * @discussion - Consent for @c CLYConsentAttribution is not given, while @c requiresConsent flag is set on initial configuration.
- * @param attributionID Attribution ID (IDFA)
- */
-- (void)recordAttributionID:(NSString *)attributionID DEPRECATED_MSG_ATTRIBUTE("Use 'recordDirectAttributionWithCampaignType:' or  'recordIndirectAttribution' method instead!");
 
 /**
  * Records direct attribution with campaign type and data.
@@ -746,46 +631,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)recordIndirectAttribution:(NSDictionary<NSString *, NSString *> *)attribution;
 
 #pragma mark - Remote Config
-/**
- * Returns last retrieved remote config value for given key, if exists.
- * @discussion If remote config is never retrieved from Countly Server before, this method will return @c nil.
- * @discussion If @c key is not defined in remote config on Countly Server, this method will return @c nil.
- * @discussion If Countly Server is not reachable, this method will return the last retrieved value which is stored on device.
- * @param key Remote config key specified on Countly Server
- */
-- (id)remoteConfigValueForKey:(NSString *)key DEPRECATED_MSG_ATTRIBUTE("Use '[remoteConfig getValue:]' method instead!");
-
-/**
- * Manually updates all locally stored remote config values by fetching latest values from Countly Server, and executes completion handler.
- * @discussion @c completionHandler has an @c NSError parameter that will be either @ nil or an @c NSError object, depending on result.
- * @discussion Calls to this method will be ignored and @c completionHandler will not be executed if:
- * @discussion - There is not any consent given, while @c requiresConsent flag is set on initial configuration.
- * @discussion - Current device ID is @c CLYTemporaryDeviceID.
- * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure.
- */
-- (void)updateRemoteConfigWithCompletionHandler:(void (^)(NSError * __nullable error))completionHandler DEPRECATED_MSG_ATTRIBUTE("Use '[remoteConfig downloadKeys:]' method instead!");
-
-/**
- * Manually updates locally stored remote config values only for specified keys, by fetching latest values from Countly Server, and executes completion handler.
- * @discussion @c completionHandler has an @c NSError parameter that will be either @ nil or an @c NSError object, depending on result.
- * @discussion Calls to this method will be ignored and @c completionHandler will not be executed if:
- * @discussion - There is not any consent given, while @c requiresConsent flag is set on initial configuration.
- * @discussion - Current device ID is @c CLYTemporaryDeviceID.
- * @param keys An array of remote config keys to update
- * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure
- */
-- (void)updateRemoteConfigOnlyForKeys:(NSArray *)keys completionHandler:(void (^)(NSError * __nullable error))completionHandler DEPRECATED_MSG_ATTRIBUTE("Use '[remoteConfig downloadSpecificKeys:]' method instead!");
-
-/**
- * Manually updates locally stored remote config values except for specified keys, by fetching latest values from Countly Server, and executes completion handler.
- * @discussion @c completionHandler has an @c NSError parameter that will be either @ nil or an @c NSError object, depending on result.
- * @discussion Calls to this method will be ignored and @c completionHandler will not be executed if:
- * @discussion - There is not any consent given, while @c requiresConsent flag is set on initial configuration.
- * @discussion - Current device ID is @c CLYTemporaryDeviceID.
- * @param omitKeys An array of remote config keys to omit from updating
- * @param completionHandler A completion handler block to be executed when updating of remote config is completed, either with success or failure
- */
-- (void)updateRemoteConfigExceptForKeys:(NSArray *)omitKeys completionHandler:(void (^)(NSError * __nullable error))completionHandler DEPRECATED_MSG_ATTRIBUTE("Use '[remoteConfig downloadOmittingKeys:]' method instead!");
 
 - (CountlyRemoteConfig *) remoteConfig;
 

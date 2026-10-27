@@ -4,6 +4,7 @@
 #import "CountlyHealthTracker.h"
 #import "CountlyHealthTracker+Tests.h"
 #import "CountlyContentBuilderInternal.h"
+#import "CountlyContentBuilderInternal+Tests.h"
 #import "CountlyWebViewManager.h"
 #import "CountlyWebViewManager+Tests.h"
 #import "PassThroughBackgroundView.h"

@@ -10,24 +10,16 @@
 @property (nonatomic) NSMutableArray<RCDownloadCallback> *remoteConfigGlobalCallbacks;
 @end
 
-@interface CountlyAPMConfig ()
-- (void)enableAPMInternal:(BOOL)enableAPM;
-@end
-
 @implementation CountlyConfig
 
 //NOTE: Countly features
 #if (TARGET_OS_IOS || TARGET_OS_VISION)
 CLYFeature const CLYPushNotifications   = @"CLYPushNotifications";
 CLYFeature const CLYCrashReporting      = @"CLYCrashReporting";
-// CLYAutoViewTracking is deprecated, Use 'config.enableAutomaticViewTracking' instead
-CLYFeature const CLYAutoViewTracking    = @"CLYAutoViewTracking" ;
 #elif (TARGET_OS_WATCH)
 CLYFeature const CLYCrashReporting      = @"CLYCrashReporting";
 #elif (TARGET_OS_TV)
 CLYFeature const CLYCrashReporting      = @"CLYCrashReporting";
-// CLYAutoViewTracking is deprecated, Use 'config.enableAutomaticViewTracking' instead
-CLYFeature const CLYAutoViewTracking    = @"CLYAutoViewTracking";
 #elif (TARGET_OS_OSX)
 CLYFeature const CLYPushNotifications   = @"CLYPushNotifications";
 CLYFeature const CLYCrashReporting      = @"CLYCrashReporting";
@@ -63,17 +55,12 @@ CLYDeviceIDType const CLYDeviceIDTypeNSUUID     = @"CLYDeviceIDTypeNSUUID";
 #endif
         self.eventSendThreshold = 100;
         self.storedRequestsLimit = 1000;
-        self.crashLogLimit = kCountlyMaxBreadcrumbCount;
-        
-        self.maxKeyLength = kCountlyMaxKeyLength;
-        self.maxValueLength = kCountlyMaxValueSize;
-        self.maxSegmentationValues = kCountlyMaxSegmentationValues;
         
         self.location = kCLLocationCoordinate2DInvalid;
         
         self.URLSessionConfiguration = NSURLSessionConfiguration.defaultSessionConfiguration;
         
-        self.internalLogLevel = CLYInternalLogLevelVerbose;
+        self.internalLogLevel = CLYInternalLogLevelDebug;
         
         self.enableOrientationTracking = YES;
         self.remoteConfigGlobalCallbacks = NSMutableArray.new;
@@ -97,15 +84,6 @@ CLYDeviceIDType const CLYDeviceIDTypeNSUUID     = @"CLYDeviceIDTypeNSUUID";
 - (NSMutableArray<RCDownloadCallback> *) getRemoteConfigGlobalCallbacks
 {
     return self.remoteConfigGlobalCallbacks;
-}
-
-- (void)setEnablePerformanceMonitoring:(BOOL)enablePerformanceMonitoring
-{
-    if (apmConfig == nil) {
-        apmConfig = CountlyAPMConfig.new;
-    }
-    [apmConfig enableAPMInternal:enablePerformanceMonitoring];
-    
 }
 
 - (nonnull CountlyAPMConfig *)apm {

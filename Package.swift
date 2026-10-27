@@ -1,4 +1,4 @@
-// swift-tools-version:5.3
+// swift-tools-version:5.9
 
 import PackageDescription
 
@@ -8,10 +8,11 @@ let package = Package(
 
     platforms: 
     [
-        .iOS(.v10),
-        .macOS(.v10_14),
-        .tvOS(.v10),
-        .watchOS(.v4)
+        .iOS(.v15),
+        .macOS(.v12),
+        .tvOS(.v15),
+        .watchOS(.v9),
+        .visionOS(.v1)
     ],
  
     products: 
@@ -42,17 +43,22 @@ let package = Package(
                 "CountlyTests/"
             ],
 
+            resources:
+            [
+                .copy("PrivacyInfo.xcprivacy")
+            ],
+
             linkerSettings: 
             [
                 .linkedFramework("Foundation"),
-                .linkedFramework("UIKit", .when(platforms: [.iOS, .tvOS])),
+                .linkedFramework("UIKit", .when(platforms: [.iOS, .tvOS, .visionOS])),
                 .linkedFramework("WatchKit", .when(platforms: [.watchOS])),
                 .linkedFramework("WatchConnectivity", .when(platforms: [.iOS, .watchOS])),
                 .linkedFramework("AppKit", .when(platforms: [.macOS])),
                 .linkedFramework("IOKit", .when(platforms: [.macOS])),
-                .linkedFramework("UserNotifications", .when(platforms: [.iOS, .macOS])),
+                .linkedFramework("UserNotifications", .when(platforms: [.iOS, .macOS, .visionOS])),
                 .linkedFramework("CoreLocation"),
-                .linkedFramework("WebKit", .when(platforms: [.iOS])),
+                .linkedFramework("WebKit", .when(platforms: [.iOS, .visionOS])),
                 .linkedFramework("CoreTelephony", .when(platforms: [.iOS])),
             ]),
         .testTarget(

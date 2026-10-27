@@ -1,20 +1,117 @@
 ## XX.XX.XX
+* Added method usage and log codes to the health check. It now reports how often the session, event, view and crash methods were called, also those the SDK called itself, and how often the problems behind its warnings and errors happened, such as a manual view call while automatic view tracking is on.
+
+* Mitigated an issue where orientation events were not recorded on iOS 27 in apps that use the UIScene lifecycle.
+* Mitigated an issue where the orientation was not recorded at start.
+* Mitigated an issue where a crash the SDK reported was not passed on to the crash handler it replaced.
+* Mitigated an issue where building the SDK produced nullability warnings.
+* Mitigated an issue where the health check counts recorded while a health check was being sent were lost.
+
+## 26.8.0
+* ! Minor breaking change ! Raised the minimum supported deployment targets to iOS 15, tvOS 15, watchOS 9 and macOS 12 (previously iOS 12, tvOS 12, watchOS 4 and macOS 10.14, and iOS 10 and tvOS 10 for "Countly-PL") for compatibility with Xcode 27. Apps targeting older versions are no longer supported and can keep using 26.1.4.
+* ! Minor breaking change ! "changeDeviceIDWithMerge:" and "changeDeviceIDWithoutMerge:" now ignore nil, an empty string and "CLYDefaultDeviceID" instead of switching back to the default device ID.
+* ! Minor breaking change ! A SIGPIPE the app neither ignores nor handles itself now ends the app after it is reported, as it would without the SDK. Previously the SDK reported it, kept the app running and turned automatic crash reporting off. An app that has to survive a broken pipe should ignore or handle SIGPIPE before starting the SDK.
+
+* Added support for server requested SDK log gathering and connection tests. When consent is required, a gathered log line is uploaded only after the consent of the feature that wrote it is given, and a line no single feature wrote waits for both the events and the user details consent.
+* Added support for SDK behavior settings that control automatic session tracking, automatic view tracking, automatic crash reporting and Journey Trigger Views, also for the running session. Automatic crash reporting can be turned on this way also for an app that does not list "CLYCrashReporting" in "features", and crash consent still applies.
+* Added "userProfile" access on watchOS, tvOS and macOS.
+* Added a new method "setGlobalContentSegmentation" on "CountlyContentBuilder" that sets a segmentation recorded with every content event and with the events and answers of NPS, survey and rating feedback widgets presented or reported through "CountlyFeedbackWidget", leaving out the keys widgets record as answers. The legacy "presentRatingWidgetWithID:" and "recordRatingWidgetWithID:" calls do not carry it. (Experimental!)
+* Improved internal logging and changed the default log level from verbose to debug.
+* Improved crash handling. The SDK's handlers now pass crashes on to the handlers they replaced, leave crash tools installed later, signals the app ignores and a SIGPIPE the app handles itself alone, and are removed by "halt".
+* Improved state cleanup on "halt", which now also resets events, view tracking, remote config, location and the content state on visionOS, and puts back into the configuration given at start the values SDK behavior settings changed in it.
+
+* Mitigated an issue where SDK behavior settings were ignored when the server response contained additional fields.
+* Mitigated an issue where refreshing SDK behavior settings after the app returned from the background reset the configuration given at start until the next launch.
+* Mitigated an issue where a setting removed from the SDK behavior settings in SDK Manager did not go back to the value given at start.
+* Mitigated an issue where SDK behavior settings sent as false or 0, such as "log" or "dort", did not override the value given at start. The consent requirement stays the exception: SDK behavior settings can turn it on, but never turn off a requirement set with "requiresConsent".
+* Mitigated an issue where the app could freeze instead of terminating on a crash after crash reporting was turned off at runtime or after "halt".
+* Mitigated an issue where the app could freeze instead of terminating on a crash that happened inside the SDK's request handling or while the SDK held an internal lock. The SDK now waits at most 5 seconds for the crash report and sends it on the next start when it did not go out in time.
+* Mitigated possible crashes, repeated on every start, when the server or a proxy answered a request with a JSON list instead of an object, when SDK behavior settings carried a null version, timestamp or list entry, and when the A/B testing helpers received an error answer.
+* Mitigated a crash, repeated on every start, after "pictureLocalPath" was set to NSNull. As documented, NSNull now clears the picture on the server.
+* Mitigated an issue where an event with a NaN or infinite sum, duration or segmentation value dropped every other event recorded with it. The invalid value is now left out.
+* Mitigated an issue where "disableBackoffMechanism" took effect only while SDK behavior settings kept changing.
+* Mitigated an issue where remote config values downloaded for the previous device ID were stored for the next one when the device ID changed during the download.
+* Mitigated an issue where automatic view tracking did not end the previous view when the next one appeared, so views stayed open and reported no duration, or a very long one. This also covers the screen already on top when automatic view tracking starts, which now also honors the exclusion list.
+* Mitigated an issue where automatic view tracking recorded the SDK's own content and feedback widget screen as a view.
+* Mitigated an issue where events recorded while the app was inactive, for example under a system alert or in the app switcher, were reported as not visible on iOS, tvOS, visionOS and watchOS.
+* Mitigated an issue where a feedback widget that failed to load was recorded as closed by the user, which could keep it hidden from that user.
+* Mitigated an issue where "halt" in consent mode queued a request that withdrew every consent and unregistered the app from push notifications, and where "halt:" without clearing the storage dropped the requests queued since the last save.
+* Mitigated an issue where the Journey Trigger content refresh and the "ecz" SDK behavior setting had no effect on visionOS.
+* Mitigated an issue where the SDK's privacy manifest was not included in the Swift package, the CocoaPods pods or the framework. It now also declares the diagnostic data that SDK log gathering collects.
+* Mitigated an issue where, with PLCrashReporter, crashes captured while crash consent or automatic crash reporting was off, or after "halt", were sent later. They are now discarded without calling "crashOccuredOnPreviousSessionCallback", and both PLCrashReporter callbacks run on the main thread.
+* Mitigated an issue where certificate pinning was not applied to immediate requests such as SDK behavior settings, remote config, feedback widgets, content and health checks.
+* Mitigated an issue where an auto stopped view running when the app went to the background could stop right after the app returned to the foreground.
+* Mitigated an issue where health check counters of the previous app run were lost when a warning was logged before the SDK started.
+* Mitigated an issue where a warning was logged when the app became active while a session was already running.
+* Mitigated an issue where a local profile picture path was sent on macOS, tvOS and watchOS, where uploading a local picture is not supported.
+* Mitigated a possible crash when SDK behavior settings updated filters or Journey Trigger lists while data was being recorded.
+* Mitigated an issue where reserved events could be identified incorrectly on Intel based Macs.
+* Mitigated an issue where a request queued while the request queue was finishing was sent only when the queue was triggered again, for example by the next session update, which could delay the content of Journey Trigger Events and Views.
+* Mitigated an issue where, with location tracking turned off in the SDK behavior settings, the SDK queued a request without the app key at start. The server rejected it, and every request queued after it, the session begin included, was held back.
+* Mitigated an issue where headers added with "addCustomNetworkRequestHeaders" were written into the "URLSessionConfiguration" of the configuration given at start, so a start with that configuration after "halt" still sent them.
+* Mitigated a possible crash in "halt" while the health check state was being reset.
+* Mitigated an issue where, when the SDK behavior settings turned the consent requirement on while the SDK was finishing its start, the consent state and the empty location were not sent.
+* Fixed a bug where "halt" deleted every value the app itself stored in the standard user defaults. It now removes only the SDK's own values.
+* Fixed a crash on visionOS when view tracking consent was given or cancelled.
+* Fixed a crash on watchOS and macOS when calling "halt".
+* Fixed macOS not starting a session when the app was not active at launch.
+* Fixed visibility reporting and background session suppression on visionOS.
+* Fixed view IDs returned by "startView" no longer resolving after the app was backgrounded and foregrounded, which made "stopViewWithID" fail and left the view reporting a new visit and a duration on every later foreground.
+
+* Removed the following deprecated calls from "Countly":
+  * "setNewDeviceID:onServer:", use "changeDeviceIDWithMerge:" or "changeDeviceIDWithoutMerge:" instead
+  * "giveConsentForAllFeatures", use "giveAllConsents" instead
+  * "recordHandledException:", use "recordException:" instead
+  * "recordHandledException:withStackTrace:" and "recordUnhandledException:withStackTrace:", use "recordException:isFatal:stackTrace:segmentation:" instead
+  * "recordView:" and "recordView:segmentation:", use "[views startAutoStoppedView:]" and "[views startAutoStoppedView:segmentation:]" instead
+  * "addExceptionForAutoViewTracking:", use the "automaticViewTrackingExclusionList" config option instead
+  * "removeExceptionForAutoViewTracking:" and "isAutoViewTrackingActive", which have no replacement
+  * "presentFeedbackWidgetWithID:completionHandler:", use "presentRatingWidgetWithID:completionHandler:" instead
+  * "getFeedbackWidgets:", use "[feedback getAvailableFeedbackWidgets:]" instead
+  * "recordAttributionID:", use "recordIndirectAttribution:" with the "CLYAttributionKeyIDFA" key, or "recordDirectAttributionWithCampaignType:andCampaignData:" instead
+  * "remoteConfigValueForKey:", use "[remoteConfig getValue:]" instead
+  * "updateRemoteConfigWithCompletionHandler:", use "[remoteConfig downloadKeys:]" instead
+  * "updateRemoteConfigOnlyForKeys:completionHandler:", use "[remoteConfig downloadSpecificKeys:completionHandler:]" instead
+  * "updateRemoteConfigExceptForKeys:completionHandler:", use "[remoteConfig downloadOmittingKeys:completionHandler:]" instead
+* Removed the following deprecated config options from "CountlyConfig":
+  * "maxKeyLength", "maxValueLength", "maxSegmentationValues" and "crashLogLimit", use "setMaxKeyLength:", "setMaxValueSize:", "setMaxSegmentationValues:" and "setMaxBreadcrumbCount:" of "sdkInternalLimits" instead
+  * "attributionID", use "indirectAttribution" with the "CLYAttributionKeyIDFA" key, or "campaignType" and "campaignData" instead
+  * "enableRemoteConfig", use "enableRemoteConfigAutomaticTriggers" instead
+  * "remoteConfigCompletionHandler", use "remoteConfigRegisterGlobalCallback:" instead
+  * "enablePerformanceMonitoring", use "enableAppStartTimeTracking", "enableForegroundBackgroundTracking" and "enableManualAppLoadedTrigger" of "apm" instead
+  * "enableServerConfiguration", which had no effect
+* Removed the deprecated feature constant "CLYAutoViewTracking", use the "enableAutomaticViewTracking" config option instead
+
+## 26.1.4
+* Added support for reporting the app's current theme (light or dark) when presenting feedback widgets, rating widgets, and content, so they are displayed in matching conditions.
+* Added visionOS support for feedback widgets (NPS, Survey, and Rating) and content.
+* Added a content configuration option "disableRotation" on "CountlyContentConfig" that pins displayed content to the portrait layout.
+* Calling "exitContentZone" now also closes content that is currently displayed, instead of only stopping content retrieval.
+
+* Mitigated an issue where feedback widgets could be closed automatically after about a minute even while the user was still interacting with them.
+
+## 26.1.3
+* Added a content configuration option to reload the content web view when its load stalls, enabled via "enableContentReloadOnStall" on "CountlyContentConfig", with a configurable stall timeout "setContentReloadOnStallTimeout:" in milliseconds (default 1000).
+* Added a content configuration option to disable pinch zoom, disabled via "disableZoom".
+* Added a content configuration option to provide a handler for links opened from the content web view, so the app can route its own deep links instead of the SDK opening the system browser, set via "setContentURLHandler:".
+* Improved link handling for content and feedback widgets, so links that carry their own query parameters, such as deep links, are parsed correctly.
+
+## 26.1.2
+* ! Minor breaking change ! Raised the minimum supported deployment target to iOS 12 and tvOS 12 (previously iOS 10 and tvOS 10) for compatibility with Xcode 26 and the iOS 26 SDK. Apps targeting iOS 10/11 or tvOS 10/11 are no longer supported.
+
+* Added support for building against the iOS 26 SDK with Xcode 26.
 * Added a new user properties functions on `CountlyUserDetails`:
   * `setProperty:value:` for setting a single predefined or custom user property.
   * `setProperties:` for setting multiple predefined and custom properties in one call.
 * Added `providedUserProperties` to `CountlyConfig` to set initial user properties that are applied and saved automatically right after `start`.
 * Added `setMaxValueSizePicture:` to `CountlySDKLimitsConfig` to control the maximum size of picture URLs and picture paths independently of other value limits (default 4096).
-* Improved `$push` / `$pull` / `$addToSet` wire format: values are now always sent as arrays so multiple consecutive calls on the same key accumulate correctly.
 * Updated resolution extraction to accommodate iOS 26 deprecations.
-* Health check now reports anonymous SDK method usage (`fu`) and triggered log codes (`lc`) to help diagnose integration issues.
 
 * Mitigated a race condition in the request queue that could drop or duplicate requests.
 * Mitigated an issue where non-queued requests were affected from request timeout settings.
-* Mitigated a race condition for tests in the request queue that could drop or duplicate requests.
-* Mitigated an issue where server config defaults overrode user-provided SDK limits.
-* Mitigated an issue where invalid or unknown `sdkBehaviorSettings` keys were persisted.
-* Mitigated an issue where listing-filter conflicts cleared keys across unrelated categories.
-* Mitigated an issue where consent could be sent twice during initialization.
+* Mitigated an issue where default SDK behavior settings overrode user-provided SDK limits.
+* Mitigated an issue where consent could be sent twice during initialization when enabled via SDK Behavior Settings.
+* Mitigated an issue where content fetches and remote config requests could be sent while in temporary device ID mode, creating a `CLYTemporaryDeviceID` user on the server.
 
 * Deprecated the direct property setters on `CountlyUserDetails`: `name`, `username`, `email`, `organization`, `phone`, `gender`, `pictureURL`, `pictureLocalPath`, `birthYear`, `custom`. Use `setProperty:value:` or `setProperties:` instead.
 * Deprecated `set:value:`, `set:numberValue:`, `set:boolValue:` on `CountlyUserDetails`. Use `setProperty:value:` instead.

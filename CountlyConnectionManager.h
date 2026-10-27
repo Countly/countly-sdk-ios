@@ -7,6 +7,8 @@
 #import <Foundation/Foundation.h>
 #import "Resettable.h"
 
+NS_ASSUME_NONNULL_BEGIN
+
 extern NSString* const kCountlyQSKeyAppKey;
 extern NSString* const kCountlyQSKeyDeviceID;
 extern NSString* const kCountlyQSKeyDeviceIDType;
@@ -14,6 +16,8 @@ extern NSString* const kCountlyQSKeySDKVersion;
 extern NSString* const kCountlyQSKeySDKName;
 extern NSString* const kCountlyQSKeyMethod;
 extern NSString* const kCountlyQSKeyMetrics;
+extern NSString* const kCountlyQSKeyTheme;
+extern NSString* const kCountlyQSSdkLogs;
 
 extern NSString* const kCountlyEndpointI;
 extern NSString* const kCountlyEndpointO;
@@ -28,17 +32,18 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 
 @interface CountlyConnectionManager : NSObject <NSURLSessionDelegate, Resettable>
 
-@property (nonatomic) NSString* appKey;
-@property (nonatomic) NSString* host;
-@property (nonatomic) NSURLSessionTask* connection;
-@property (nonatomic) NSArray* pinnedCertificates;
-@property (nonatomic) NSString* secretSalt;
+@property (nonatomic, nullable) NSString* appKey;
+@property (nonatomic, nullable) NSString* host;
+@property (nonatomic, nullable) NSURLSessionTask* connection;
+@property (nonatomic, nullable) NSArray* pinnedCertificates;
+@property (nonatomic, nullable) NSString* secretSalt;
 @property (nonatomic) BOOL alwaysUsePOST;
-@property (nonatomic) NSURLSessionConfiguration* URLSessionConfiguration;
+@property (nonatomic, nullable) NSURLSessionConfiguration* URLSessionConfiguration;
 
 @property (nonatomic) BOOL isTerminating;
 
-+ (instancetype)sharedInstance;
+/// The shared instance, nil until the SDK starts. Unspecified rather than nullable, so Swift callers reach it without unwrapping, as they do now.
++ (null_unspecified instancetype)sharedInstance;
 
 - (void)recordMetrics:(nullable NSDictionary *)metricsOverride;
 
@@ -48,24 +53,27 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 
 - (void)sendEventsWithSaveIfNeeded;
 - (void)sendEvents;
+/// Queues one serialised 'sdk_logs' batch. Returns NO when the queue refuses it and the caller still owns the lines.
+- (BOOL)sendSdkLogs:(NSString *)sdkLogsJSON;
+/// Queues the connection test report as its own 'ct_results' request under the given device ID, and drops it when there is no app key.
+- (void)sendConnectionTestResults:(NSString *)resultsJSON deviceID:(NSString *)deviceID deviceIDType:(NSUInteger)deviceIDType;
 - (void)attemptToSendStoredRequests;
 - (void)sendPushToken:(NSString *)token;
 - (void)sendLocationInfo;
 - (void)sendUserDetails:(NSString *)userDetails;
-- (void)sendCrashReport:(NSString *)report immediately:(BOOL)immediately;
+- (void)sendCrashReport:(nullable NSString *)report immediately:(BOOL)immediately;
 - (void)sendOldDeviceID:(NSString *)oldDeviceID;
-- (void)sendAttribution;
-- (void)sendDirectAttributionWithCampaignID:(NSString *)campaignID andCampaignUserID:(NSString *)campaignUserID;
+- (void)sendDirectAttributionWithCampaignID:(NSString *)campaignID andCampaignUserID:(nullable NSString *)campaignUserID;
 - (void)sendAttributionData:(NSString *)attributionData;
 - (void)sendIndirectAttribution:(NSDictionary *)attribution;
 - (void)sendConsents:(NSString *)consents;
 - (void)sendPerformanceMonitoringTrace:(NSString *)trace;
 
-- (void)sendEnrollABRequestForKeys:(NSArray*)keys;
-- (void)sendExitABRequestForKeys:(NSArray*)keys;
+- (void)sendEnrollABRequestForKeys:(nullable NSArray*)keys;
+- (void)sendExitABRequestForKeys:(nullable NSArray*)keys;
 
-- (void)addDirectRequest:(NSDictionary<NSString *, NSString *> *)requestParameters;
-- (void)addCustomNetworkRequestHeaders:(NSDictionary<NSString *, NSString *> *_Nullable)customHeaderValues;
+- (void)addDirectRequest:(nullable NSDictionary<NSString *, NSString *> *)requestParameters;
+- (void)addCustomNetworkRequestHeaders:(nullable NSDictionary<NSString *, NSString *> *)customHeaderValues;
 
 - (void)proceedOnQueue;
 
@@ -73,6 +81,8 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 - (NSString *)appendChecksum:(NSString *)queryString;
 
 - (BOOL)isSessionStarted;
+/// Whether the running session was started by the SDK's automatic session tracking rather than by the app.
+- (BOOL)isSessionStartedAutomatically;
 
 #pragma mark - Request Callbacks
 
@@ -96,7 +106,7 @@ typedef void (^CLYQueueFlushRunnable)(void);
  * @discussion Runnables only execute when ALL requests complete successfully.
  * @param runnable Block to be executed when queue is successfully flushed
  */
-- (void)addQueueFlushRunnable:(CLYQueueFlushRunnable _Nonnull)runnable;
+- (void)addQueueFlushRunnable:(CLYQueueFlushRunnable)runnable;
 
 /**
  * Removes all registered queue flush runnables.
@@ -111,7 +121,7 @@ typedef void (^CLYQueueFlushRunnable)(void);
  * @param queryString Query string for the request
  * @param callback Block to be executed when this request completes
  */
-- (void)addToQueueWithCallback:(NSString *)queryString callback:(CLYRequestCallback)callback;
+- (void)addToQueueWithCallback:(NSString *)queryString callback:(nullable CLYRequestCallback)callback;
 
 /**
  * Sends pending events with an associated callback.
@@ -119,6 +129,8 @@ typedef void (^CLYQueueFlushRunnable)(void);
  * @discussion Serializes recorded events, adds them to queue with callback, and proceeds on queue.
  * @param callback Block to be executed when the events request completes
  */
-- (void)sendEventsWithCallback:(CLYRequestCallback)callback;
+- (void)sendEventsWithCallback:(nullable CLYRequestCallback)callback;
 
 @end
+
+NS_ASSUME_NONNULL_END

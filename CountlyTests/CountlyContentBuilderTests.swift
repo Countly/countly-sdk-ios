@@ -20,6 +20,11 @@ class CountlyContentBuilderTests: CountlyBaseTestCase {
 
     override func tearDown() {
         CountlyContentBuilderInternal.sharedInstance().exitContentZone()
+        // Reset reload-on-stall / zoom state so it can't leak into later tests.
+        CountlyContentBuilderInternal.sharedInstance().enableContentReloadOnStall = false
+        CountlyContentBuilderInternal.sharedInstance().contentReloadOnStallTimeout = 0
+        CountlyContentBuilderInternal.sharedInstance().disableZoom = false
+        CountlyContentBuilderInternal.sharedInstance().contentURLHandler = nil
         Countly.sharedInstance().halt(true)
         MockURLProtocol.requestHandler = nil
         super.tearDown()
@@ -231,6 +236,507 @@ class CountlyContentBuilderTests: CountlyBaseTestCase {
         TestUtils.sleep(3) {}
 
         XCTAssertEqual(fetchCount, countAfterFirstFetch, "No additional content fetches should occur after exitContentZone")
+    }
+
+    /**
+     * <pre>
+     * Reproduction + regression test for the temporary-device-ID leak.
+     *
+     * The content fetch is an immediate request (it bypasses the persisted request queue and its
+     * temporary-ID guard) and it carries device_id. While in temporary device ID mode it must not be
+     * sent, otherwise a "CLYTemporaryDeviceID" user is created on the server.
+     *
+     * 1- Init SDK with MockURLProtocol, then enter temporary device ID mode
+     * 2- Enter content zone with zero initial delay
+     * 3- Verify NO request to /o/sdk/content is made while in temporary mode (inverted expectation)
+     * 4- Exit content zone, switch to a real device ID (leaving temporary mode)
+     * 5- Re-enter content zone and verify the content fetch now fires normally
+     * </pre>
+     */
+    func test_fetchContent_isBlocked_inTemporaryDeviceIDMode() {
+        let noFetchInTempMode = self.expectation(description: "No content fetch while in temporary device ID mode")
+        noFetchInTempMode.isInverted = true
+        let fetchAfterExit = self.expectation(description: "Content fetch resumes after leaving temporary mode")
+        fetchAfterExit.assertForOverFulfill = false
+
+        var inTemporaryMode = true
+        MockURLProtocol.requestHandler = { request in
+            if let url = request.url?.absoluteString, url.contains("/o/sdk/content") {
+                if inTemporaryMode {
+                    noFetchInTempMode.fulfill()
+                } else {
+                    fetchAfterExit.fulfill()
+                }
+            }
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: nil)!
+            return ("{}".data(using: .utf8)!, response, nil)
+        }
+
+        let config = createContentTestConfig()
+        Countly.sharedInstance().start(with: config)
+        Countly.sharedInstance().enableTemporaryDeviceIDMode()
+
+        CountlyContentBuilderInternal.sharedInstance().contentInitialDelay = 0
+        CountlyContentBuilderInternal.sharedInstance().enterContentZone([])
+
+        // Phase 1: nothing should hit the content endpoint while in temporary mode
+        wait(for: [noFetchInTempMode], timeout: 5)
+
+        // Phase 2: leave temporary mode by assigning a real device ID, then re-enter the content zone
+        CountlyContentBuilderInternal.sharedInstance().exitContentZone()
+        inTemporaryMode = false
+        Countly.sharedInstance().changeDeviceIDWithoutMerge("real_user_after_temp")
+
+        CountlyContentBuilderInternal.sharedInstance().contentInitialDelay = 0
+        CountlyContentBuilderInternal.sharedInstance().enterContentZone([])
+
+        wait(for: [fetchAfterExit], timeout: 15)
+    }
+
+    /**
+     * <pre>
+     * Content reload-on-stall configuration plumbs through to the internal builder.
+     *
+     * 1- A fresh CountlyContentConfig defaults the stall timeout to 1000 ms and reload disabled
+     * 2- enableContentReloadOnStall and setContentReloadOnStallTimeout: round-trip on the config
+     * 3- After start, the internal builder reflects the enabled flag and the timeout
+     *    converted from milliseconds to seconds (2500 ms -> 2.5 s)
+     * </pre>
+     */
+    func test_contentReloadOnStall_configDefaultsAndPlumbing() {
+        // 1- Fresh config object: default 1000 ms, reload disabled.
+        let freshContent = CountlyContentConfig()
+        XCTAssertEqual(freshContent.getContentReloadOnStallTimeout(), 1000)
+        XCTAssertFalse(freshContent.getEnableContentReloadOnStall())
+
+        // 2- Round-trip on the config used for start.
+        let config = createContentTestConfig()
+        config.content().setContentReloadOnStallTimeout(2500)
+        config.content().enableContentReloadOnStall()
+        XCTAssertEqual(config.content().getContentReloadOnStallTimeout(), 2500)
+        XCTAssertTrue(config.content().getEnableContentReloadOnStall())
+
+        // 3- Plumbed to the internal builder on start, converted ms -> seconds.
+        MockURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: nil)!
+            return ("{}".data(using: .utf8)!, response, nil)
+        }
+        Countly.sharedInstance().start(with: config)
+        XCTAssertTrue(CountlyContentBuilderInternal.sharedInstance().enableContentReloadOnStall)
+        XCTAssertEqual(CountlyContentBuilderInternal.sharedInstance().contentReloadOnStallTimeout, 2.5, accuracy: 0.0001)
+    }
+
+    /**
+     * <pre>
+     * disableZoom is a one-way config switch that plumbs through to the internal builder.
+     *
+     * 1- A fresh CountlyContentConfig has zoom enabled (disableZoom == false)
+     * 2- disableZoom() turns it on and round-trips on the config
+     * 3- After start, the internal builder reflects it
+     * </pre>
+     */
+    func test_disableZoom_configDefaultsAndPlumbing() {
+        // 1- Fresh config: zoom NOT disabled by default.
+        XCTAssertFalse(CountlyContentConfig().getDisableZoom())
+
+        // 2- One-way switch round-trips on the config used for start.
+        let config = createContentTestConfig()
+        config.content().disableZoom()
+        XCTAssertTrue(config.content().getDisableZoom())
+
+        // 3- Plumbed to the internal builder on start.
+        MockURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: nil)!
+            return ("{}".data(using: .utf8)!, response, nil)
+        }
+        Countly.sharedInstance().start(with: config)
+        XCTAssertTrue(CountlyContentBuilderInternal.sharedInstance().disableZoom)
+    }
+
+    /**
+     * <pre>
+     * A content URL handler set on the config plumbs through to the internal builder.
+     *
+     * 1- A fresh CountlyContentConfig has no handler by default
+     * 2- setContentURLHandler: round-trips on the config
+     * 3- After start, the internal builder holds the handler
+     * </pre>
+     */
+    func test_contentURLHandler_configDefaultsAndPlumbing() {
+        XCTAssertNil(CountlyContentConfig().getContentURLHandler())
+
+        let config = createContentTestConfig()
+        let handler: (URL) -> Bool = { _ in true }
+        config.content().setContentURLHandler(handler)
+        XCTAssertNotNil(config.content().getContentURLHandler())
+
+        MockURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: nil)!
+            return ("{}".data(using: .utf8)!, response, nil)
+        }
+        Countly.sharedInstance().start(with: config)
+        XCTAssertNotNil(CountlyContentBuilderInternal.sharedInstance().contentURLHandler)
+    }
+
+    /**
+     * <pre>
+     * The single-content presentation latch rejects a second concurrent presentation.
+     *
+     * Two content fetches completing near-simultaneously used to both pass the "already
+     * shown" guard (the flag was only set once the web view was presented, after a network
+     * round trip) and present two overlapping web views. tryBeginContentPresentation is an
+     * atomic test-and-set that closes that window.
+     *
+     * 1- From a clean state, the first presentation acquires the slot
+     * 2- A second presentation while the slot is held is rejected
+     * 3- After the shown content is dismissed, the slot is free again
+     * </pre>
+     */
+    func test_contentPresentationLatch_rejectsSecondConcurrentPresentation() {
+        let cb = CountlyContentBuilderInternal.sharedInstance()
+        cb.resetInstance()  // known "not shown" state
+
+        XCTAssertTrue(cb.tryBeginContentPresentation(), "first presentation should acquire the slot")
+        XCTAssertFalse(cb.tryBeginContentPresentation(), "second concurrent presentation must be rejected")
+        XCTAssertTrue(cb.isContentShownThreadSafe())
+
+        cb.endContentPresentation()
+        // endContentPresentation is async on the serial content queue; the subsequent sync
+        // read drains the queue (FIFO), so the slot reads free.
+        XCTAssertFalse(cb.isContentShownThreadSafe())
+        XCTAssertTrue(cb.tryBeginContentPresentation(), "slot should be free again after dismissal")
+
+        cb.endContentPresentation()
+        XCTAssertFalse(cb.isContentShownThreadSafe())
+    }
+
+    /**
+     * <pre>
+     * resetInstance releases the content slot through the serial content queue.
+     *
+     * The flag write in resetInstance must go through the same queue as every other accessor
+     * (not a raw ivar write), so a reset cannot race a concurrent claim and cannot leave the
+     * slot stuck "shown" (which would silently disable the content zone).
+     *
+     * 1- Claim the slot
+     * 2- resetInstance
+     * 3- The slot reads free (a subsequent claim succeeds)
+     * </pre>
+     */
+    func test_resetInstance_releasesContentSlot() {
+        let cb = CountlyContentBuilderInternal.sharedInstance()
+        cb.resetInstance()
+
+        XCTAssertTrue(cb.tryBeginContentPresentation())
+        XCTAssertTrue(cb.isContentShownThreadSafe())
+
+        cb.resetInstance()
+        XCTAssertFalse(cb.isContentShownThreadSafe())
+        XCTAssertTrue(cb.tryBeginContentPresentation(), "slot should be claimable again after reset")
+
+        cb.endContentPresentation()
+    }
+
+    // MARK: - Rotation
+
+    /// disableRotation is a one-way switch that defaults to off and plumbs through to the builder.
+    func test_disableRotation_configDefaultsAndPlumbing() {
+        XCTAssertFalse(CountlyContentConfig().getDisableRotation())
+
+        let config = createContentTestConfig()
+        config.content().disableRotation()
+        XCTAssertTrue(config.content().getDisableRotation())
+
+        MockURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: nil)!
+            return ("{}".data(using: .utf8)!, response, nil)
+        }
+        Countly.sharedInstance().start(with: config)
+        XCTAssertTrue(CountlyContentBuilderInternal.sharedInstance().disableRotation)
+
+        CountlyContentBuilderInternal.sharedInstance().disableRotation = false
+    }
+
+    // MARK: - exitContentZone closes displayed content
+
+    /// Waits for pending main-queue work (FIFO), so a deferred teardown has completed.
+    private func drainMainQueue(_ description: String = "main queue drained") {
+        let marker = expectation(description: description)
+        DispatchQueue.main.async { marker.fulfill() }
+        waitForExpectations(timeout: 2)
+    }
+
+    /// exitContentZone must release the shown slot, or every later enter silently no-ops.
+    func test_exitContentZone_releasesShownSlot_soTheZoneIsNotDeadEnded() {
+        let cb = CountlyContentBuilderInternal.sharedInstance()
+        cb.resetInstance()
+
+        XCTAssertTrue(cb.tryBeginContentPresentation(), "content is now 'shown'")
+        XCTAssertTrue(cb.isContentShownThreadSafe())
+
+        cb.exitContentZone()
+        // Deliberately NO queue drain. The slot must be free by the time exitContentZone returns,
+        // otherwise an enterContentZone in the same turn hits the "already shown" guard, silently
+        // no-ops, and dead-ends the zone until the process restarts.
+        XCTAssertFalse(cb.isContentShownThreadSafe(), "the slot must be released synchronously on main")
+        XCTAssertTrue(cb.tryBeginContentPresentation(), "a later presentation must be possible again")
+
+        cb.endContentPresentation()
+    }
+
+    /// Closing content fires the dismiss block, which schedules the ~30s zone re-entry. An
+    /// SDK-initiated close must suppress it, or the zone the app exited comes back.
+    func test_exitContentZone_doesNotReArmTheZone_afterClosingDisplayedContent() {
+        let cb = CountlyContentBuilderInternal.sharedInstance()
+        cb.resetInstance()
+
+        // A port nobody listens on: fails instantly, but a real web view is still created.
+        let placement: [String: Any] = ["x": 0, "y": 0, "w": 200, "h": 200]
+        cb.showContent(withHtmlPath: "https://localhost:1/content", placementCoordinates: ["p": placement, "l": placement])
+        drainMainQueue("content presented")
+
+        XCTAssertTrue(cb.isContentShownThreadSafe(), "content should be presented")
+
+        cb.exitContentZone()
+        drainMainQueue("content closed")
+        // closeWebView defers one more turn; the dismiss block runs there.
+        drainMainQueue("dismiss block ran")
+
+        XCTAssertFalse(cb.isContentShownThreadSafe(), "the content must be gone")
+        XCTAssertFalse(cb.isZoneReentryTimerArmed(), "an SDK-initiated close must not schedule a zone re-entry")
+
+        // The only test presenting a real overlay window; a lingering one leaks into other suites.
+        cb.resetInstance()
+        drainMainQueue("reset settled")
+    }
+
+    /// Internal zone cycles use clearContentState so a routine config apply cannot dismiss content.
+    func test_clearContentState_leavesDisplayedContentAlone() {
+        let cb = CountlyContentBuilderInternal.sharedInstance()
+        cb.resetInstance()
+
+        XCTAssertTrue(cb.tryBeginContentPresentation())
+
+        cb.clearContentState()
+
+        XCTAssertTrue(cb.isContentShownThreadSafe(), "clearContentState must not dismiss displayed content")
+
+        cb.endContentPresentation()
+    }
+
+    // MARK: - Global content segmentation
+
+    /// Starts the SDK with a mock that fails every request, so the request queue keeps what the SDK
+    /// records instead of draining it as it goes. A given segmentation value limit replaces the default.
+    private func startSDKWithFailingNetwork(maxSegmentationValues: UInt? = nil) {
+        MockURLProtocol.requestHandler = { _ in
+            (nil, nil, NSError(domain: "CountlyTests", code: -1))
+        }
+        let config = createContentTestConfig()
+        if let maxSegmentationValues = maxSegmentationValues {
+            config.sdkInternalLimits().setMaxSegmentationValues(maxSegmentationValues)
+        }
+        Countly.sharedInstance().start(with: config)
+    }
+
+    /// Segmentation of the last event recorded with the given key. Both queues are searched because
+    /// recording a feedback widget event flushes the event queue into the request queue right after,
+    /// while a content web view event is left in the event queue.
+    private func lastEventSegmentation(_ key: String) -> [String: Any] {
+        if let event = (TestUtils.getCurrentEQ() ?? []).last(where: { $0.key == key }) {
+            return (event.segmentation as? [String: Any]) ?? [:]
+        }
+
+        for requestStr in (TestUtils.getCurrentRQ() ?? []).reversed() {
+            let request = TestUtils.parseQueryString(requestStr)
+            guard let eventsStr = request["events"] as? String,
+                let data = eventsStr.data(using: .utf8),
+                let events = (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]]
+            else { continue }
+
+            for event in events.reversed() where event["key"] as? String == key {
+                return event["segmentation"] as? [String: Any] ?? [:]
+            }
+        }
+        XCTFail("No '\(key)' event found in either queue")
+        return [:]
+    }
+
+    /**
+     * <pre>
+     * Test that the global content segmentation reaches a feedback widget event, that the keys the
+     * widget builds for itself win over a global value of the same name, and that 'nil' clears it.
+     *
+     * 1- Init SDK with a mock that fails every request, so the request queue keeps what is recorded
+     * 2- Set a global content segmentation that also carries a key the widget answers itself
+     * 3- Record an NPS widget result
+     * 4- Verify the event carries the global keys and that the answer won over the global value
+     * 5- Clear the global content segmentation with 'nil' and record the same result again
+     * 6- Verify the second event carries only what the widget builds for itself
+     * </pre>
+     */
+    func test_globalContentSegmentation_stampsFeedbackWidgetEvents_withoutOverridingTheirKeys() {
+        startSDKWithFailingNetwork()
+
+        let widget = MockFeedbackWidget(id: "1234", type: CLYFeedbackWidgetType.NPS)
+
+        Countly.sharedInstance().content().setGlobalContentSegmentation([
+            "screen": "checkout",
+            "step": 3,
+            "rating": "should lose to the answer",
+        ])
+        widget.recordResult(["rating": 4])
+
+        let stamped = lastEventSegmentation("[CLY]_nps")
+        XCTAssertEqual("checkout", stamped["screen"] as? String)
+        XCTAssertEqual("3", "\(stamped["step"] ?? "")")
+        XCTAssertEqual("4", "\(stamped["rating"] ?? "")", "the widget answer must win over the global value")
+        XCTAssertEqual("1234", stamped["widget_id"] as? String)
+        XCTAssertEqual(CountlyDeviceInfo.osName(), stamped["platform"] as? String)
+
+        Countly.sharedInstance().content().setGlobalContentSegmentation(nil)
+        widget.recordResult(["rating": 4])
+
+        let cleared = lastEventSegmentation("[CLY]_nps")
+        XCTAssertNil(cleared["screen"], "a cleared global segmentation must not reach the next event")
+        XCTAssertNil(cleared["step"], "a cleared global segmentation must not reach the next event")
+        XCTAssertEqual("4", "\(cleared["rating"] ?? "")")
+    }
+
+    /**
+     * <pre>
+     * Test that a global value never overrides a key the events build themselves, that a later call
+     * replaces the whole segmentation instead of merging into it, that a session ending and a new one
+     * starting do not forget it, and that content web view events carry it.
+     *
+     * 1- Init SDK with a mock that fails every request
+     * 2- Set a global content segmentation with one custom key
+     * 3- Replace it with one that also carries keys the widget builds itself, then restart the session
+     * 4- Record a content web view event and verify it carries the replacement and not the first set
+     * 5- Dismiss an NPS widget and verify the replacement survived the session restart
+     * 6- Verify the keys the widget builds itself still come from the widget
+     * </pre>
+     */
+    func test_globalContentSegmentation_neverOverridesTheEventsOwnKeys_andSurvivesASessionRestart() {
+        startSDKWithFailingNetwork()
+
+        Countly.sharedInstance().content().setGlobalContentSegmentation(["screen": "settings"])
+        Countly.sharedInstance().content().setGlobalContentSegmentation([
+            "state": "logged_in",
+            "widget_id": "hijacked",
+            "platform": "hijacked",
+            "closed": "hijacked",
+        ])
+
+        Countly.sharedInstance().endSession()
+        Countly.sharedInstance().beginSession()
+
+        let webViewManager = CountlyWebViewManager()
+        webViewManager.recordEvents(withJSONString: #"[{"key":"[CLY]_action","sg":{"type":"cta"}}]"#)
+
+        let contentSegmentation = lastEventSegmentation("[CLY]_action")
+        XCTAssertEqual("cta", contentSegmentation["type"] as? String)
+        XCTAssertEqual("logged_in", contentSegmentation["state"] as? String)
+        XCTAssertNil(contentSegmentation["screen"], "setting a segmentation replaces the previous one")
+
+        let widget = MockFeedbackWidget(id: "1234", type: CLYFeedbackWidgetType.NPS)
+        widget.recordResult(nil)
+
+        let widgetSegmentation = lastEventSegmentation("[CLY]_nps")
+        XCTAssertEqual("logged_in", widgetSegmentation["state"] as? String)
+        XCTAssertNil(widgetSegmentation["screen"], "setting a segmentation replaces the previous one")
+        XCTAssertEqual("1234", widgetSegmentation["widget_id"] as? String)
+        XCTAssertEqual(CountlyDeviceInfo.osName(), widgetSegmentation["platform"] as? String)
+        XCTAssertEqual("1", "\(widgetSegmentation["closed"] ?? "")")
+    }
+
+    /**
+     * <pre>
+     * Test that the global content segmentation is limited when it is set, and that a feedback
+     * widget event is not limited again, so it keeps every key of its own next to the global keys.
+     *
+     * 1- Init SDK with a segmentation value limit of 4 and a mock that fails every request
+     * 2- Set a global content segmentation of 6 keys
+     * 3- Record an NPS widget result that builds 5 keys for itself
+     * 4- Verify the event keeps all of its own keys and exactly 4 of the global keys
+     * </pre>
+     */
+    func test_globalContentSegmentation_isLimitedWhenSet_andWidgetEventsKeepAllOfTheirKeys() {
+        startSDKWithFailingNetwork(maxSegmentationValues: 4)
+
+        let globalSegmentation = ["g1": "a", "g2": "b", "g3": "c", "g4": "d", "g5": "e", "g6": "f"]
+        Countly.sharedInstance().content().setGlobalContentSegmentation(globalSegmentation)
+
+        let widget = MockFeedbackWidget(id: "1234", type: CLYFeedbackWidgetType.NPS)
+        widget.recordResult(["rating": 4, "comment": "fine"])
+
+        let widgetSegmentation = lastEventSegmentation("[CLY]_nps")
+        XCTAssertEqual("4", "\(widgetSegmentation["rating"] ?? "")")
+        XCTAssertEqual("fine", widgetSegmentation["comment"] as? String)
+        XCTAssertEqual("1234", widgetSegmentation["widget_id"] as? String)
+        XCTAssertEqual(CountlyDeviceInfo.osName(), widgetSegmentation["platform"] as? String)
+        XCTAssertNotNil(widgetSegmentation["app_version"])
+        XCTAssertEqual(4, globalSegmentation.keys.filter { widgetSegmentation[$0] != nil }.count, "the global segmentation is limited once, when it is set")
+    }
+
+    /**
+     * <pre>
+     * Test that a presented widget page receives the global content segmentation without the keys the server
+     * reads as answers, that a dismissal never carries a global answer, and that a content event keeps its own
+     * keys when the merged segmentation is over the limit.
+     *
+     * 1- Init SDK with a segmentation value limit of 3 and a mock that fails every request
+     * 2- Set a global content segmentation with one plain key and two reserved ones
+     * 3- Verify the widget URL's custom object carries only the plain key as 'sg'
+     * 4- Dismiss an NPS widget and verify the event carries the plain key and no global rating
+     * 5- Record a content event with two keys of its own and verify both survive the limit
+     * </pre>
+     */
+    func test_globalContentSegmentation_reachesWidgetPagesWithoutReservedKeys_andContentEventsKeepTheirOwnKeys() throws {
+        startSDKWithFailingNetwork(maxSegmentationValues: 3)
+        Countly.sharedInstance().content().setGlobalContentSegmentation(["plan": "pro", "closed": 1, "rating": 5])
+
+        let widget = MockFeedbackWidget(id: "1234", type: CLYFeedbackWidgetType.NPS)
+        let url = try XCTUnwrap(widget.perform(NSSelectorFromString("generateWidgetURL"))?.takeUnretainedValue() as? URL)
+        let customValue = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "custom" }?.value)
+        let custom = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(customValue.utf8)) as? [String: Any])
+        XCTAssertEqual(["plan": "pro"] as NSDictionary, custom["sg"] as? NSDictionary, "the widget page gets the global segmentation without the keys the server reads as answers")
+        XCTAssertEqual("1", custom["tc"] as? String)
+
+        widget.recordResult(nil)
+        let dismissal = lastEventSegmentation("[CLY]_nps")
+        XCTAssertEqual("pro", dismissal["plan"] as? String)
+        XCTAssertNil(dismissal["rating"], "a global rating never turns a dismissal into an answer")
+        XCTAssertEqual("1", "\(dismissal["closed"] ?? "")")
+
+        let webViewManager = CountlyWebViewManager()
+        webViewManager.recordEvents(withJSONString: #"[{"key":"[CLY]_action","sg":{"type":"cta","content_id":"c1"}}]"#)
+        let content = lastEventSegmentation("[CLY]_action")
+        XCTAssertEqual("cta", content["type"] as? String)
+        XCTAssertEqual("c1", content["content_id"] as? String, "the event's own keys survive the segmentation limit")
+        XCTAssertEqual(1, ["plan", "closed", "rating"].filter { content[$0] != nil }.count, "global keys fill only the room the event leaves")
+    }
+
+    /// The rating feedback widget gets the global segmentation on its page and its events, without the keys it records as answers.
+    func test_globalContentSegmentation_reachesTheRatingFeedbackWidget_withoutItsAnswerKeys() throws {
+        startSDKWithFailingNetwork()
+        Countly.sharedInstance().content().setGlobalContentSegmentation(["plan": "pro", "rating": 5, "comment": "global", "email": "global@example.com", "contactMe": true])
+
+        let widget = MockFeedbackWidget(id: "5678", type: CLYFeedbackWidgetType.rating)
+        let url = try XCTUnwrap(widget.perform(NSSelectorFromString("generateWidgetURL"))?.takeUnretainedValue() as? URL)
+        XCTAssertTrue(url.path.hasSuffix("/feedback/rating"), "the rating feedback widget page, got: \(url.path)")
+        let customValue = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "custom" }?.value)
+        let custom = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(customValue.utf8)) as? [String: Any])
+        XCTAssertEqual(["plan": "pro"] as NSDictionary, custom["sg"] as? NSDictionary, "the rating page gets the global segmentation without its answer keys")
+
+        widget.recordResult(["rating": 3, "comment": "user comment"])
+        let answer = lastEventSegmentation("[CLY]_star_rating")
+        XCTAssertEqual(3, answer["rating"] as? Int, "the user's rating is kept")
+        XCTAssertEqual("user comment", answer["comment"] as? String, "the user's comment is kept")
+        XCTAssertNil(answer["email"], "a global email never appears as the user's answer")
+        XCTAssertNil(answer["contactMe"])
+        XCTAssertEqual("pro", answer["plan"] as? String, "the global segmentation is recorded with the rating")
+        XCTAssertEqual("5678", answer["widget_id"] as? String)
     }
 }
 #endif

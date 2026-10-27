@@ -32,14 +32,20 @@
 #import "CountlyContentBuilderInternal.h"
 #import "CountlyExperimentalConfig.h"
 #import "CountlyHealthTracker.h"
+#import "CountlyConnectionTest.h"
 
+//NOTE: Error and Warning call through unconditionally, because CountlyInternalLog also increments the
+//health tracker's error and warning counters, which must keep counting even when logging is disabled.
 #define CLY_LOG_E(fmt, ...) CountlyInternalLog(CLYInternalLogLevelError, fmt, ##__VA_ARGS__)
 #define CLY_LOG_W(fmt, ...) CountlyInternalLog(CLYInternalLogLevelWarning, fmt, ##__VA_ARGS__)
-#define CLY_LOG_I(fmt, ...) CountlyInternalLog(CLYInternalLogLevelInfo, fmt, ##__VA_ARGS__)
-#define CLY_LOG_D(fmt, ...) CountlyInternalLog(CLYInternalLogLevelDebug, fmt, ##__VA_ARGS__)
-#define CLY_LOG_V(fmt, ...) CountlyInternalLog(CLYInternalLogLevelVerbose, fmt, ##__VA_ARGS__)
 
-#if (TARGET_OS_IOS)
+//NOTE: Info, Debug and Verbose are guarded so their arguments are not evaluated when nobody wants the line.
+//Gated on 'wanted', not 'enabled': log gathering has to receive these lines while console logging is off.
+#define CLY_LOG_I(fmt, ...) do { if (CountlyInternalLogIsWanted(CLYInternalLogLevelInfo)) CountlyInternalLog(CLYInternalLogLevelInfo, fmt, ##__VA_ARGS__); } while (0)
+#define CLY_LOG_D(fmt, ...) do { if (CountlyInternalLogIsWanted(CLYInternalLogLevelDebug)) CountlyInternalLog(CLYInternalLogLevelDebug, fmt, ##__VA_ARGS__); } while (0)
+#define CLY_LOG_V(fmt, ...) do { if (CountlyInternalLogIsWanted(CLYInternalLogLevelVerbose)) CountlyInternalLog(CLYInternalLogLevelVerbose, fmt, ##__VA_ARGS__); } while (0)
+
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 #import <UIKit/UIKit.h>
 #import <WebKit/WebKit.h>
 #endif
@@ -86,7 +92,6 @@ extern NSString* const kCountlySDKName;
 @property (nonatomic) BOOL shouldIgnoreTrustCheck;
 @property (nonatomic, weak) id <CountlyLoggerDelegate> loggerDelegate;
 @property (nonatomic) CLYInternalLogLevel internalLogLevel;
-@property (nonatomic, copy) NSString* attributionID;
 @property (nonatomic) BOOL manualSessionHandling;
 @property (nonatomic) BOOL enableManualSessionControlHybridMode;
 @property (nonatomic) BOOL enableOrientationTracking;
@@ -99,8 +104,26 @@ extern NSString* const kCountlySDKName;
 @property (nonatomic) NSUInteger maxValueLengthPicture;
 @property (nonatomic) NSUInteger maxSegmentationValues;
 
+/// Counts the device ID changes made without merge this run, so work started for one user can tell that it now belongs to another.
+@property (atomic) NSUInteger deviceIDChangeWithoutMergeCount;
+/// Counts the device ID changes made with merge this run. The server cancels the connection test it armed for a merged user.
+@property (atomic) NSUInteger deviceIDMergeCount;
+
 void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...) NS_FORMAT_FUNCTION(2, 3);
+/// YES when console output or the logger delegate would show a line of this level. Gate expensive dumps with this, it says nothing about log gathering.
+BOOL CountlyInternalLogIsEnabled(CLYInternalLogLevel level);
+/// YES when anything at all wants a line of this level: a developer facing sink, or the log gathering capture.
+BOOL CountlyInternalLogIsWanted(CLYInternalLogLevel level);
+/// Stops log gathering capture until crash reporting starts again or the SDK is halted, so the threads that log while a
+/// crash is reported never wait for a gathering lock the crashing thread may hold. Async signal safe.
+void CountlySDKLogsStopCaptureForCrash(void);
+/// Lifts CountlySDKLogsStopCaptureForCrash once crash reporting starts again, since the app can outlive a reported crash
+/// through a handler of its own.
+void CountlySDKLogsResumeCaptureAfterCrash(void);
 void CountlyPrint(NSString *stringToPrint);
+NSString* CountlyJSONFromObject(id object);
+/// Runs the block right away when called on the main thread, so the state it reads is the state at the call, and queues it there otherwise.
+void CountlyRunOnMainThread(dispatch_block_t block);
 
 + (instancetype)sharedInstance;
 - (NSInteger)hourOfDay;
@@ -117,6 +140,12 @@ void CountlyPrint(NSString *stringToPrint);
 - (UIViewController *)topViewController;
 - (void)tryPresentingViewController:(UIViewController *)viewController;
 - (void)tryPresentingViewController:(UIViewController *)viewController withCompletion:(void (^ __nullable) (void))completion;
++ (UIWindow *)keyWindow;
++ (CGRect)screenBounds;
+#endif
+
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+- (UIInterfaceOrientation)interfaceOrientation;
 #endif
 
 - (void)observeDeviceOrientationChanges;
@@ -129,11 +158,57 @@ void CountlyPrint(NSString *stringToPrint);
 
 - (NSURLSession *)ImmediateURLSession;
 
+/// Creates a task on the immediate session. A header or configuration change can drop the session kept while certificates are pinned at any time, and creating a task on a dropped session raises, so the task is created under the lock that drops it.
+- (NSURLSessionDataTask *)immediateDataTaskWithRequest:(NSURLRequest *)request completionHandler:(void (^)(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error))completionHandler;
+
+/// Drops the immediate session kept while certificates are pinned, so the next immediate request builds one from the current URL session configuration. Requests in flight finish first.
+- (void)invalidatePinnedImmediateURLSession;
+
 - (CGSize)getWindowSize;
+
+/// Applies a live 'lg' directive. Enabling adopts the held lines, disabling or a different gather id drops them.
+- (void)updateLogGatheringState:(BOOL)enabled levels:(nullable NSString *)levels batch:(NSInteger)batch lgid:(nullable NSString *)lgid;
+
+/// Decides against gathering when no directive has been seen yet and none can arrive this run (failed fetch, temporary device id, updates disabled). A running gather is left alone.
+- (void)decideLogGatheringOffIfUndecided:(NSString *)reason;
+
+/// Uploads every held line now, partial batch included, on the calling thread, also while another batch waits in the request queue. Background, terminate and a device ID change call this, since the held lines live in memory only.
+- (void)flushSdkLogs;
+
+/// Uploads one batch, partial included, on the delivery queue, and waits for the request queue to send it before the next. The timer tick and init end call this.
+- (void)scheduleSdkLogsFlush;
+
+/// Moves held lines between the buffer and the awaiting list to match the current consent, keeping capture order.
+- (void)redecideSdkLogLinesConsent;
+
+/// Counts the lines of a queued 'sdk_logs' request the queue had to drop into the next batch's drop count, when it belongs to the running gather.
+- (void)countEvictedSdkLogRequest:(NSString *)queryString;
+
+/// Called before the device ID changes without merge. Uploads what consent allows under the current device ID, then stops gathering and drops the rest, since the gather belongs to the current user.
+- (void)stopSdkLogGatheringForDeviceIDChange;
+/// Lets log gathering capture again from the first line of a start, after halt paused it so the lines the app logged
+/// between the halt and this start are not gathered for the user who starts now.
+- (void)resumeSdkLogCaptureForStart;
+
+/// YES while lines are still being held or gathered, so log calls can skip formatting when nothing wants them.
+- (BOOL)isCapturingSdkLogs;
+
+/// YES while lines of this level are still being held or gathered, so log calls of the levels a gather leaves out skip formatting.
+- (BOOL)isCapturingSdkLogLevel:(CLYInternalLogLevel)level;
+
+/// Marks the calling thread as sending a gathered batch, so what it logs meanwhile is not gathered again.
+- (void)setSdkLogsTransportWork:(BOOL)transporting;
+
+/// Whether the calling thread is currently marked as transport work.
+- (BOOL)isSdkLogsTransportWork;
+
+// the capture funnel, called from CountlyInternalLog above the console logging gates. Declared here
+// so tests can feed it exact lines instead of going through a variadic C function
+- (void)captureSdkLogLine:(NSString *)logString level:(char)levelChar;
 @end
 
 
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 @interface CLYInternalViewController : UIViewController <WKNavigationDelegate>
 @property (nonatomic, weak) WKWebView* webView;
 @end
@@ -178,13 +253,29 @@ void CountlyPrint(NSString *stringToPrint);
 @end
 
 @interface Countly (RecordReservedEvent)
+/// The segmentation the behavior settings let through, for log lines that log gathering may upload.
+- (NSDictionary *)loggableSegmentation:(NSDictionary *)segmentation eventKey:(NSString *)key;
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation;
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation ID:(NSString *)ID;
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration ID:(NSString *)ID timestamp:(NSTimeInterval)timestamp;
+/// Records an event as the public recordEvent does, without counting it as a recordEvent call of the app for the health check.
+- (void)recordEventInternal:(NSString *)key segmentation:(NSDictionary<NSString *, id> * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
+@end
+
+@interface Countly (AutomaticSessionTracking)
+/// Ends a session the SDK started once automatic session tracking is off, and starts one in the foreground once it is on. Main thread only.
+- (void)applyAutomaticSessionTracking;
 @end
 
 @interface CountlyUserDetails (ClearUserDetails)
 - (void)clearUserDetails;
 @end
+
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+@interface CountlyContentConfig (ZoneTimerIntervalRestore)
+/// Sets the zone timer interval without the lower bound of the public setter, so the unset value 0 can be put back.
+- (void)restoreZoneTimerInterval:(NSUInteger)zoneTimerIntervalSeconds;
+@end
+#endif
 
 NS_ASSUME_NONNULL_END

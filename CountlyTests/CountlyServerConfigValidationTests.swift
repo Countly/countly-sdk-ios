@@ -69,7 +69,6 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         ]))
 
         let cfg = TestUtils.createBaseConfig()
-        cfg.enableServerConfiguration = true
         cfg.manualSessionHandling = true
         let countly = createLocalCountly()
         countly.start(with: cfg)
@@ -93,7 +92,6 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         ]))
 
         let cfg = TestUtils.createBaseConfig()
-        cfg.enableServerConfiguration = true
         cfg.manualSessionHandling = true
         let countly = createLocalCountly()
         countly.start(with: cfg)
@@ -113,7 +111,6 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         ]))
 
         let cfg = TestUtils.createBaseConfig()
-        cfg.enableServerConfiguration = true
         cfg.manualSessionHandling = true
         let countly = createLocalCountly()
         countly.start(with: cfg)
@@ -129,7 +126,6 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         ]))
 
         let cfg = TestUtils.createBaseConfig()
-        cfg.enableServerConfiguration = true
         cfg.manualSessionHandling = true
         let countly = createLocalCountly()
         countly.start(with: cfg)
@@ -145,7 +141,6 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         ]))
 
         let cfg = TestUtils.createBaseConfig()
-        cfg.enableServerConfiguration = true
         cfg.manualSessionHandling = true
         let countly = createLocalCountly()
         countly.start(with: cfg)
@@ -163,7 +158,6 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         ]))
 
         let cfg = TestUtils.createBaseConfig()
-        cfg.enableServerConfiguration = true
         cfg.manualSessionHandling = true
         let countly = createLocalCountly()
         countly.start(with: cfg)
@@ -187,7 +181,6 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         ]))
 
         let cfg = TestUtils.createBaseConfig()
-        cfg.enableServerConfiguration = true
         cfg.manualSessionHandling = true
         cfg.eventSendThreshold = 7      // user-provided
         cfg.storedRequestsLimit = 555    // user-provided
@@ -200,10 +193,10 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
                        "User-provided storedRequestsLimit must not be overridden when server config omits rqs")
     }
 
-    // MARK: - Per-category filter conflict resolution
+    // MARK: - Replaced, not merged, settings
 
     /// Drives the SDK's server-config fetch through a mocked URL session so
-    /// that `mergeBehaviorSettings` runs with a controlled response payload.
+    /// that `replaceBehaviorSettings` runs with a controlled response payload.
     private func mockURLSessionConfig(returning configDict: [String: Any]) -> URLSessionConfiguration {
         let response = makeServerConfig(configDict)
         let data = try! JSONSerialization.data(withJSONObject: response)
@@ -220,10 +213,91 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         return config
     }
 
-    /// When a new merged config provides a whitelist for one category, the
-    /// stored blacklist for that same category must be removed — but the
-    /// filter for an unrelated category must be preserved.
-    func test_perCategoryFilterConflict_doesNotClearUnrelatedCategories() {
+    /// Like `mockURLSessionConfig(returning:)`, but the settings request is
+    /// answered only once the returned semaphore is signalled, so the test can
+    /// check the state the stored settings set at start first.
+    private func heldMockURLSessionConfig(returning configDict: [String: Any]) -> (URLSessionConfiguration, DispatchSemaphore) {
+        let release = DispatchSemaphore(value: 0)
+        let response = makeServerConfig(configDict)
+        let data = try! JSONSerialization.data(withJSONObject: response)
+        MockURLProtocol.requestHandler = { request in
+            let url = request.url?.absoluteString ?? ""
+            if url.contains("method=sc") {
+                _ = release.wait(timeout: .now() + 5)
+                return (data, HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil), nil)
+            }
+            return ("{\"result\":\"fail\"}".data(using: .utf8),
+                    HTTPURLResponse(url: request.url!, statusCode: 400, httpVersion: nil, headerFields: nil), nil)
+        }
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [MockURLProtocol.self]
+        return (config, release)
+    }
+
+    /// Answers the settings request with the given body, status code or
+    /// network error as they are, so a test can send an answer the SDK must
+    /// not accept. The returned closure tells how many settings requests were
+    /// answered.
+    private func rawMockURLSessionConfig(body: [String: Any]?, statusCode: Int = 200, error: Error? = nil) -> (URLSessionConfiguration, () -> Int) {
+        let lock = NSLock()
+        var answeredCount = 0
+        let data = body.map { try! JSONSerialization.data(withJSONObject: $0) }
+        MockURLProtocol.requestHandler = { request in
+            let url = request.url?.absoluteString ?? ""
+            if url.contains("method=sc") {
+                lock.lock()
+                answeredCount += 1
+                lock.unlock()
+                if let error = error {
+                    return (nil, nil, error)
+                }
+                return (data, HTTPURLResponse(url: request.url!, statusCode: statusCode, httpVersion: nil, headerFields: nil), nil)
+            }
+            return ("{\"result\":\"fail\"}".data(using: .utf8),
+                    HTTPURLResponse(url: request.url!, statusCode: 400, httpVersion: nil, headerFields: nil), nil)
+        }
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [MockURLProtocol.self]
+        return (config, {
+            lock.lock()
+            defer { lock.unlock() }
+            return answeredCount
+        })
+    }
+
+    /// Starts the SDK with stored settings that turn tracking off and set the
+    /// event queue size to 3, lets the given settings answer arrive, and checks
+    /// that the stored settings and the values they set are unchanged.
+    private func assertStoredSettingsKept(after answer: (URLSessionConfiguration, () -> Int), file: StaticString = #filePath, line: UInt = #line) {
+        setStoredServerConfig(makeServerConfig([
+            "tracking": false,
+            "eqs": 3
+        ]))
+
+        let cfg = TestUtils.createBaseConfig()
+        cfg.manualSessionHandling = true
+        cfg.eventSendThreshold = 7
+        cfg.urlSessionConfiguration = answer.0
+
+        let countly = createLocalCountly()
+        countly.start(with: cfg)
+
+        TestUtils.sleep(2) {
+            XCTAssertGreaterThan(answer.1(), 0, "the settings request was answered", file: file, line: line)
+            XCTAssertFalse(CountlyServerConfig.sharedInstance().trackingEnabled(), "the stored tracking setting still applies", file: file, line: line)
+            XCTAssertEqual(3, CountlyPersistency.sharedInstance().eventSendThreshold, "the stored event queue size still applies", file: file, line: line)
+            let persisted = self.storedConfigDictionary()
+            XCTAssertEqual(2, persisted.count, "the stored settings are not replaced", file: file, line: line)
+            XCTAssertEqual(persisted["tracking"] as? Bool, false, file: file, line: line)
+            XCTAssertEqual(persisted["eqs"] as? Int, 3, file: file, line: line)
+        }
+    }
+
+    /// The next answer replaces the stored settings as a whole: a filter the
+    /// server no longer sends is removed, also from a category the answer does
+    /// not mention, and the user property filter is turned off.
+    func test_nextAnswer_replacesTheStoredSettings() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
         // Seed persisted config with both an event blacklist and a user
         // property blacklist already present.
         setStoredServerConfig(makeServerConfig([
@@ -231,7 +305,7 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
             "upb": ["blocked_prop"]
         ]))
 
-        // Mock a server response that only introduces an event whitelist (`ew`).
+        // Mock a server response that only carries an event whitelist (`ew`).
         let cfg = TestUtils.createBaseConfig()
         cfg.manualSessionHandling = true
         cfg.urlSessionConfiguration = mockURLSessionConfig(returning: [
@@ -243,16 +317,16 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
 
         TestUtils.sleep(2) {
             let persisted = self.storedConfigDictionary()
-            XCTAssertNil(persisted["eb"], "eb must be removed because new config provided ew")
+            XCTAssertEqual(["ew"], Array(persisted.keys), "only the keys of the last answer are stored")
             XCTAssertEqual(persisted["ew"] as? [String], ["allowed_event"])
-            XCTAssertEqual(persisted["upb"] as? [String], ["blocked_prop"],
-                           "upb must be preserved — the new config did not touch the user-property category")
+            XCTAssertTrue(CountlyServerConfig.sharedInstance().shouldRecordUserProperty("blocked_prop"),
+                          "the user property blacklist the server stopped sending is turned off")
         }
     }
 
-    /// Conflict resolution must work independently per category — providing
-    /// both a segmentation blacklist and a user-property whitelist must
-    /// remove only their same-category counterparts.
+    /// The answer replaces the stored settings in every category: the stored
+    /// segmentation whitelist and user property blacklist are gone, the new
+    /// segmentation blacklist and user property whitelist are kept.
     func test_perCategoryFilterConflict_independentAcrossCategories() {
         setStoredServerConfig(makeServerConfig([
             "sw": ["s_keep"],
@@ -271,11 +345,312 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
 
         TestUtils.sleep(2) {
             let persisted = self.storedConfigDictionary()
-            XCTAssertNil(persisted["sw"], "sw must be removed because new config provided sb")
+            XCTAssertNil(persisted["sw"], "sw is removed because the answer does not carry it")
             XCTAssertEqual(persisted["sb"] as? [String], ["s_blocked"])
-            XCTAssertNil(persisted["upb"], "upb must be removed because new config provided upw")
+            XCTAssertNil(persisted["upb"], "upb is removed because the answer does not carry it")
             XCTAssertEqual(persisted["upw"] as? [String], ["u_allowed"])
         }
+    }
+
+    /// A setting the server stops sending goes back to the developer's value,
+    /// or to the SDK default when the developer set none, instead of keeping
+    /// the last server value.
+    func test_removedSetting_goesBackToTheDeveloperValue() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        setStoredServerConfig(makeServerConfig([
+            "tracking": false,
+            "eqs": 3
+        ]))
+
+        let cfg = TestUtils.createBaseConfig()
+        cfg.manualSessionHandling = true
+        cfg.eventSendThreshold = 7
+        let (sessionConfig, release) = heldMockURLSessionConfig(returning: [
+            "networking": true
+        ])
+        cfg.urlSessionConfiguration = sessionConfig
+
+        let countly = createLocalCountly()
+        countly.start(with: cfg)
+        XCTAssertEqual(3, CountlyPersistency.sharedInstance().eventSendThreshold, "the stored settings apply at start")
+        XCTAssertFalse(CountlyServerConfig.sharedInstance().trackingEnabled())
+        release.signal()
+
+        TestUtils.sleep(2) {
+            XCTAssertTrue(CountlyServerConfig.sharedInstance().trackingEnabled(), "tracking was removed and goes back to the default")
+            XCTAssertEqual(7, CountlyPersistency.sharedInstance().eventSendThreshold, "the event queue size was removed and goes back to the developer's value")
+            XCTAssertEqual(["networking"], Array(self.storedConfigDictionary().keys))
+        }
+    }
+
+    /// An answer with no settings, which the server sends once every setting
+    /// is removed from SDK Manager, brings back all developer values,
+    /// including the developer's consent requirement.
+    func test_emptySettings_bringBackAllDeveloperValues() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        setStoredServerConfig(makeServerConfig([
+            "tracking": false,
+            "rqs": 50,
+            "cr": true
+        ]))
+
+        let cfg = TestUtils.createBaseConfig()
+        cfg.manualSessionHandling = true
+        cfg.requiresConsent = false
+        cfg.storedRequestsLimit = 500
+        let (sessionConfig, release) = heldMockURLSessionConfig(returning: [:])
+        cfg.urlSessionConfiguration = sessionConfig
+
+        let countly = createLocalCountly()
+        countly.start(with: cfg)
+        XCTAssertTrue(CountlyConsentManager.sharedInstance().requiresConsent, "the stored settings require consent at start")
+        XCTAssertEqual(50, CountlyPersistency.sharedInstance().storedRequestsLimit)
+        release.signal()
+
+        TestUtils.sleep(2) {
+            XCTAssertTrue(CountlyServerConfig.sharedInstance().trackingEnabled())
+            XCTAssertEqual(500, CountlyPersistency.sharedInstance().storedRequestsLimit)
+            XCTAssertFalse(CountlyConsentManager.sharedInstance().requiresConsent, "without 'cr' the developer's choice applies again")
+            XCTAssertEqual(0, self.storedConfigDictionary().count)
+        }
+    }
+
+    /// An answer with an error status is not applied, even when its body
+    /// carries settings.
+    func test_answerWithAnErrorStatus_keepsTheStoredSettings() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        assertStoredSettingsKept(after: rawMockURLSessionConfig(body: makeServerConfig([
+            "tracking": true,
+            "eqs": 50
+        ]), statusCode: 500))
+    }
+
+    /// A settings request that fails without an answer keeps the stored settings.
+    func test_failedSettingsRequest_keepsTheStoredSettings() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        assertStoredSettingsKept(after: rawMockURLSessionConfig(body: nil, error: URLError(.notConnectedToInternet)))
+    }
+
+    /// An answer whose 'c' is not an object is not valid and keeps the stored settings.
+    func test_answerWhoseSettingsAreNotAnObject_keepsTheStoredSettings() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        assertStoredSettingsKept(after: rawMockURLSessionConfig(body: [
+            "v": 1,
+            "t": Int(Date().timeIntervalSince1970),
+            "c": ["tracking"]
+        ]))
+    }
+
+    /// An answer without a version is not valid and keeps the stored settings.
+    func test_answerWithoutAVersion_keepsTheStoredSettings() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        assertStoredSettingsKept(after: rawMockURLSessionConfig(body: [
+            "t": Int(Date().timeIntervalSince1970),
+            "c": ["tracking": true, "eqs": 50] as [String: Any]
+        ]))
+    }
+
+    /// An answer whose version is null is not valid and keeps the stored settings, instead of crashing
+    /// every start while the server keeps sending it.
+    func test_answerWithANullVersion_keepsTheStoredSettings() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        assertStoredSettingsKept(after: rawMockURLSessionConfig(body: [
+            "v": NSNull(),
+            "t": Int(Date().timeIntervalSince1970),
+            "c": ["tracking": true, "eqs": 50] as [String: Any]
+        ]))
+    }
+
+    /// An answer whose timestamp is null is not valid either.
+    func test_answerWithANullTimestamp_keepsTheStoredSettings() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        assertStoredSettingsKept(after: rawMockURLSessionConfig(body: [
+            "v": 1,
+            "t": NSNull(),
+            "c": ["tracking": true, "eqs": 50] as [String: Any]
+        ]))
+    }
+
+    /// Nulls inside a list or a dictionary of an answer are left out of what is stored, which the
+    /// standard user defaults could not store, and the rest of the setting applies.
+    func test_nullsInsideAnAnswersSettings_areLeftOut() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        let cfg = TestUtils.createBaseConfig()
+        cfg.manualSessionHandling = true
+        cfg.urlSessionConfiguration = rawMockURLSessionConfig(body: makeServerConfig([
+            "eb": ["blocked_event", NSNull()],
+            "esb": ["checkout": ["card", NSNull()]]
+        ])).0
+        createLocalCountly().start(with: cfg)
+
+        TestUtils.sleep(2) {
+            let stored = self.storedConfigDictionary()
+            XCTAssertEqual(["blocked_event"], stored["eb"] as? [String], "the null is left out of the stored list")
+            XCTAssertEqual(["checkout": ["card"]], stored["esb"] as? [String: [String]],
+                           "and out of a list inside a dictionary")
+            XCTAssertFalse(CountlyServerConfig.sharedInstance().shouldRecordEvent("blocked_event"),
+                           "the rest of the setting applies")
+        }
+    }
+
+    /// The developer's disableBackoffMechanism holds for the whole run: neither the start without stored settings, nor
+    /// an answer without 'bom', nor one with 'bom' true turns the backoff back on.
+    func test_disableBackoffMechanism_holdsForEveryAnswer() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        let cfg = TestUtils.createBaseConfig()
+        cfg.manualSessionHandling = true
+        cfg.disableBackoffMechanism = true
+        let (sessionConfig, release) = heldMockURLSessionConfig(returning: [
+            "bom": true
+        ])
+        cfg.urlSessionConfiguration = sessionConfig
+        createLocalCountly().start(with: cfg)
+        XCTAssertFalse(CountlyServerConfig.sharedInstance().backoffMechanism(), "the backoff is off from start")
+
+        release.signal()
+        TestUtils.sleep(2) {
+            XCTAssertTrue(self.storedConfigDictionary()["bom"] as? Bool == true,
+                          "the answer turning the backoff on is applied")
+            XCTAssertFalse(CountlyServerConfig.sharedInstance().backoffMechanism(), "and the backoff stays off")
+        }
+    }
+
+    /// Built in settings are checked like an answer, so a null in them can not crash every start either.
+    func test_builtInSettingsWithANullVersion_areIgnored() {
+        let cfg = TestUtils.createBaseConfig()
+        cfg.manualSessionHandling = true
+        cfg.disableSDKBehaviorSettingsUpdates = true
+        cfg.sdkBehaviorSettings = "{\"v\":null,\"t\":1,\"c\":{\"tracking\":false}}"
+        createLocalCountly().start(with: cfg)
+        XCTAssertTrue(CountlyServerConfig.sharedInstance().trackingEnabled(),
+                      "settings without a usable version are not applied")
+        XCTAssertTrue(storedConfigDictionary().isEmpty, "and nothing is stored")
+    }
+
+    /// Only the values in an acceptable format replace the stored settings: a
+    /// setting sent with a wrong type, below its minimum or out of its range
+    /// is left out, so it goes back to the developer's value or the SDK default.
+    func test_valuesInAnUnacceptableFormat_areLeftOutOfTheReplacement() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        setStoredServerConfig(makeServerConfig([
+            "tracking": false,
+            "eqs": 3,
+            "eb": ["blocked_event"]
+        ]))
+
+        let cfg = TestUtils.createBaseConfig()
+        cfg.manualSessionHandling = true
+        cfg.eventSendThreshold = 7
+        let (sessionConfig, answered) = rawMockURLSessionConfig(body: makeServerConfig([
+            "cet": false,
+            "tracking": "no",
+            "eqs": "3",
+            "rqs": 0,
+            "bom_rqp": 2.0,
+            "eb": "blocked_event"
+        ]))
+        cfg.urlSessionConfiguration = sessionConfig
+
+        let countly = createLocalCountly()
+        countly.start(with: cfg)
+
+        TestUtils.sleep(2) {
+            XCTAssertGreaterThan(answered(), 0, "the settings request was answered")
+            XCTAssertEqual(["cet"], Array(self.storedConfigDictionary().keys), "only the value in an acceptable format is stored")
+            XCTAssertFalse(CountlyServerConfig.sharedInstance().customEventTrackingEnabled(), "the value in an acceptable format is applied")
+            XCTAssertTrue(CountlyServerConfig.sharedInstance().trackingEnabled(), "a tracking value that is not a boolean is left out, the SDK default applies")
+            XCTAssertEqual(7, CountlyPersistency.sharedInstance().eventSendThreshold, "an event queue size that is not a number is left out, the developer's value applies")
+            XCTAssertTrue(CountlyServerConfig.sharedInstance().shouldRecordEvent("blocked_event"), "an event blacklist that is not a list is left out, the stored one is gone")
+        }
+    }
+
+    /// A blacklist in an unacceptable format is left out of the replacement also when
+    /// a whitelist of the same category comes with it, so only the whitelists are stored.
+    func test_blacklistInAnUnacceptableFormat_nextToAWhitelist_isLeftOut() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        let cfg = TestUtils.createBaseConfig()
+        cfg.manualSessionHandling = true
+        let (sessionConfig, answered) = rawMockURLSessionConfig(body: makeServerConfig([
+            "ew": ["allowed_event"],
+            "eb": "not_a_list",
+            "upw": ["allowed_prop"],
+            "upb": true,
+            "sw": ["allowed_key"],
+            "sb": 5,
+            "esw": ["allowed_event": ["allowed_key"]],
+            "esb": "not_an_object"
+        ]))
+        cfg.urlSessionConfiguration = sessionConfig
+
+        let countly = createLocalCountly()
+        countly.start(with: cfg)
+
+        TestUtils.sleep(2) {
+            XCTAssertGreaterThan(answered(), 0, "the settings request was answered")
+            XCTAssertEqual(["esw", "ew", "sw", "upw"], self.storedConfigDictionary().keys.sorted(), "only the whitelists are stored")
+            XCTAssertTrue(CountlyServerConfig.sharedInstance().shouldRecordEvent("allowed_event"), "the event whitelist applies")
+            XCTAssertFalse(CountlyServerConfig.sharedInstance().shouldRecordEvent("other_event"), "an event the whitelist does not name is dropped")
+        }
+    }
+
+    /// The server can not lift a consent requirement the developer set, neither from the stored settings
+    /// nor from a live answer, while a 'cr' true it sends turns the requirement on for a developer who
+    /// did not set it.
+    func test_serverCanOnlyTurnTheConsentRequirementOn() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        setStoredServerConfig(makeServerConfig([
+            "cr": false
+        ]))
+
+        let cfg = TestUtils.createBaseConfig()
+        cfg.manualSessionHandling = true
+        cfg.requiresConsent = true
+        let (sessionConfig, release) = heldMockURLSessionConfig(returning: [
+            "cr": false
+        ])
+        cfg.urlSessionConfiguration = sessionConfig
+
+        let countly = createLocalCountly()
+        countly.start(with: cfg)
+        XCTAssertTrue(CountlyConsentManager.sharedInstance().requiresConsent,
+                      "a stored 'cr' false does not lift the developer's requirement")
+        release.signal()
+
+        TestUtils.sleep(2) {
+            XCTAssertTrue(CountlyConsentManager.sharedInstance().requiresConsent, "and neither does a live one")
+        }
+
+        countly.halt(true)
+        setStoredServerConfig(makeServerConfig([
+            "cr": true
+        ]))
+        let next = TestUtils.createBaseConfig()
+        next.manualSessionHandling = true
+        next.requiresConsent = false
+        next.disableSDKBehaviorSettingsUpdates = true
+        createLocalCountly().start(with: next)
+        XCTAssertTrue(CountlyConsentManager.sharedInstance().requiresConsent,
+                      "a 'cr' true requires consent the developer did not require")
+    }
+
+    /// A setting the server sends wins over the developer's value also when
+    /// it is false or 0: logging the developer turned on goes off, and a
+    /// request drop age the developer set is turned off.
+    func test_settingSentAsOffOrZero_winsOverTheDeveloperValue() {
+        setStoredServerConfig(makeServerConfig([
+            "log": false,
+            "dort": 0
+        ]))
+
+        let cfg = TestUtils.createBaseConfig()
+        cfg.manualSessionHandling = true
+        cfg.enableDebug = true
+        cfg.requestDropAgeHours = 48
+        let countly = createLocalCountly()
+        countly.start(with: cfg)
+
+        XCTAssertFalse(CountlyCommon.sharedInstance().enableDebug, "the server's log=false turns the developer's logging off")
+        XCTAssertEqual(0, CountlyPersistency.sharedInstance().requestDropAgeHours, "the server's dort=0 turns the developer's drop age off")
     }
 
     // MARK: - Consent during init
@@ -288,7 +663,6 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         ]))
 
         let cfg = TestUtils.createBaseConfig()
-        cfg.enableServerConfiguration = true
         cfg.manualSessionHandling = true
         // Do NOT set requiresConsent on the user config — only the server config requires it.
         let countly = createLocalCountly()
@@ -365,6 +739,169 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
                        "ImmediateURLSession should not adopt the SDK's request timeout — that's the bug being mitigated")
     }
 
+    /// With pinned certificates the immediate session checks them like the request queue, without pins it keeps the system trust.
+    func test_immediateURLSession_checksPinnedCertificatesLikeTheRequestQueue() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        // answered in process, so no TLS challenge ever looks up the pinned certificate file, which does not exist
+        MockURLProtocol.replyEmptyToEveryRequest()
+
+        let cfg = TestUtils.createBaseConfig()
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [MockURLProtocol.self]
+        cfg.urlSessionConfiguration = sessionConfig
+        cfg.manualSessionHandling = true
+        cfg.pinnedCertificates = ["pinned.cer"]
+        Countly.sharedInstance().start(with: cfg)
+
+        let connectionManager = try XCTUnwrap(CountlyConnectionManager.sharedInstance())
+        let pinnedSession = CountlyCommon.sharedInstance().immediateURLSession()
+        XCTAssertTrue(pinnedSession.delegate === connectionManager,
+                      "with pinned certificates the connection manager must answer the trust challenge")
+        XCTAssertEqual(60.0, pinnedSession.configuration.timeoutIntervalForRequest, accuracy: 0.001,
+                       "pinning must not change the immediate session timeout")
+        XCTAssertTrue(CountlyCommon.sharedInstance().immediateURLSession() === pinnedSession,
+                      "a session with a delegate lives until it is invalidated, so every immediate request shares one")
+
+        connectionManager.pinnedCertificates = nil
+        XCTAssertNil(CountlyCommon.sharedInstance().immediateURLSession().delegate,
+                     "without pinned certificates the system trust evaluation applies")
+    }
+
+    /**
+     * <pre>
+     * With pinned certificates the immediate session is kept between requests, so it has to be rebuilt when the
+     * custom headers change, or a header added after start would never reach an immediate request.
+     *
+     * 1- Start with pinned certificates and a header given at start, which builds the kept session
+     * 2- Add a header after start and download remote config, an immediate request
+     * 3- Verify the request carried both headers and the new session still answers the trust challenge
+     * </pre>
+     */
+    func test_immediateURLSession_pinnedSessionCarriesHeadersAddedAfterStart() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        // answered in process, so no TLS challenge ever looks up the pinned certificate file, which does not exist
+        TestURLProtocol.reset()
+        let cfg = TestUtils.createBaseConfig()
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [TestURLProtocol.self]
+        sessionConfig.httpAdditionalHeaders = ["X-At-Start": "start_value"]
+        cfg.urlSessionConfiguration = sessionConfig
+        cfg.manualSessionHandling = true
+        cfg.pinnedCertificates = ["pinned.cer"]
+        Countly.sharedInstance().start(with: cfg)
+
+        let connectionManager = try XCTUnwrap(CountlyConnectionManager.sharedInstance())
+        let sessionBeforeHeaders = CountlyCommon.sharedInstance().immediateURLSession()
+        Countly.sharedInstance().addCustomNetworkRequestHeaders(["Authorization": "Bearer 123"])
+
+        let downloaded = XCTestExpectation(description: "the remote config download")
+        Countly.sharedInstance().remoteConfig().downloadKeys { _, _, _, _ in downloaded.fulfill() }
+        wait(for: [downloaded], timeout: TestUtils.asyncTimeout)
+
+        let headers = try XCTUnwrap(TestURLProtocol.capturedHeaders(forRequestContaining: "method=rc"), "the download must be intercepted")
+        XCTAssertEqual("Bearer 123", headers["Authorization"], "a header added after start must reach an immediate request")
+        XCTAssertEqual("start_value", headers["X-At-Start"], "the header given at start must still be sent")
+
+        let sessionAfterHeaders = CountlyCommon.sharedInstance().immediateURLSession()
+        XCTAssertFalse(sessionAfterHeaders === sessionBeforeHeaders, "the session kept before the header change must not be reused")
+        XCTAssertTrue(sessionAfterHeaders.delegate === connectionManager, "the rebuilt session must still answer the trust challenge")
+        XCTAssertTrue(CountlyCommon.sharedInstance().immediateURLSession() === sessionAfterHeaders, "the rebuilt session is kept until the next change")
+    }
+
+    /// Starts with pinned certificates and an in-process mock, so the immediate session is the kept delegate session and
+    /// no TLS challenge ever looks up the pinned certificate file, which does not exist. Logging is off, since formatting
+    /// log lines would space out the calls a race needs to overlap.
+    private func startWithPinnedCertificatesAndNoLogging() {
+        MockURLProtocol.replyEmptyToEveryRequest()
+        let cfg = TestUtils.createBaseConfig()
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [MockURLProtocol.self]
+        cfg.urlSessionConfiguration = sessionConfig
+        cfg.manualSessionHandling = true
+        cfg.pinnedCertificates = ["pinned.cer"]
+        cfg.enableDebug = false
+        Countly.sharedInstance().start(with: cfg)
+        CountlyCommon.sharedInstance().decideLogGatheringOffIfUndecided("the test runs without logging")
+    }
+
+#if os(iOS)
+    /**
+     * <pre>
+     * With pinned certificates a header change drops the kept immediate session, possibly while a request is being built
+     * for it. A task created on a dropped session raises and ends the app, so the session is taken once the request is
+     * built.
+     *
+     * 1- Start with pinned certificates and hold the feedback widget list fetch while it builds its request
+     * 2- Change a header meanwhile, which drops the kept session, then let the fetch go on
+     * 3- Verify the fetch completes
+     * </pre>
+     */
+    func test_immediateURLSession_headerChangeWhileARequestIsBuiltDoesNotCrash() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        startWithPinnedCertificatesAndNoLogging()
+        _ = CountlyCommon.sharedInstance().immediateURLSession()
+
+        let builder = try XCTUnwrap(class_getInstanceMethod(CountlyFeedbacksInternal.self, NSSelectorFromString("feedbacksRequest")))
+        typealias BuildRequest = @convention(c) (AnyObject, Selector) -> AnyObject
+        let originalIMP = method_getImplementation(builder)
+        let buildRequest = unsafeBitCast(originalIMP, to: BuildRequest.self)
+        let building = DispatchSemaphore(value: 0)
+        let resume = DispatchSemaphore(value: 0)
+        let heldBuild: @convention(block) (AnyObject) -> AnyObject = { feedbacks in
+            building.signal()
+            _ = resume.wait(timeout: .now() + 10)
+            return buildRequest(feedbacks, NSSelectorFromString("feedbacksRequest"))
+        }
+        method_setImplementation(builder, imp_implementationWithBlock(heldBuild))
+        defer { method_setImplementation(builder, originalIMP) }
+
+        let fetched = XCTestExpectation(description: "the feedback widget list fetch")
+        DispatchQueue.global().async {
+            Countly.sharedInstance().feedback().getAvailableFeedbackWidgets { _, _ in fetched.fulfill() }
+        }
+        XCTAssertEqual(.success, building.wait(timeout: .now() + 5), "the fetch is building its request")
+        Countly.sharedInstance().addCustomNetworkRequestHeaders(["Authorization": "Bearer 123"])
+        // a session refuses new tasks once its queue has processed the invalidation, not as soon as it is asked
+        TestUtils.sleep(0.5) {}
+        resume.signal()
+
+        wait(for: [fetched], timeout: TestUtils.asyncTimeout)
+    }
+#endif
+
+    /**
+     * <pre>
+     * With pinned certificates a header change that lands while the kept immediate session is being created is not lost:
+     * the session kept afterwards carries the new header.
+     *
+     * 1- Start with pinned certificates
+     * 2- In each round drop the kept session, then create it on one thread while another changes a header
+     * 3- Verify the session kept after each round carries that round's header
+     * </pre>
+     */
+    func test_immediateURLSession_headerChangeRacingTheSessionCreationIsKept() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        startWithPinnedCertificatesAndNoLogging()
+
+        var staleRounds: [Int] = []
+        for round in 0..<1000 {
+            CountlyCommon.sharedInstance().invalidatePinnedImmediateURLSession()
+            DispatchQueue.concurrentPerform(iterations: 2) { worker in
+                if worker == 0 {
+                    _ = CountlyCommon.sharedInstance().immediateURLSession()
+                } else {
+                    Countly.sharedInstance().addCustomNetworkRequestHeaders(["X-Round": "\(round)"])
+                }
+            }
+            let keptHeader = CountlyCommon.sharedInstance().immediateURLSession().configuration.httpAdditionalHeaders?["X-Round"] as? String
+            if keptHeader != "\(round)" {
+                staleRounds.append(round)
+            }
+        }
+
+        XCTAssertEqual([], staleRounds, "the kept session must carry the header of its round")
+    }
+
     // MARK: - Server config persistence is the cleaned dictionary
 
     /// After populate, the persisted config must reflect the cleaned version
@@ -379,7 +916,6 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
         ]))
 
         let cfg = TestUtils.createBaseConfig()
-        cfg.enableServerConfiguration = true
         cfg.manualSessionHandling = true
         let countly = createLocalCountly()
         countly.start(with: cfg)
@@ -420,7 +956,8 @@ class CountlyServerConfigValidationTests: CountlyBaseTestCase {
     /// This test counts outbound hits for a uniquely-marked request and
     /// asserts at most one is sent even when proceedOnQueue is invoked
     /// concurrently from many threads.
-    func test_proceedOnQueue_doesNotDoubleSendHeadRequest() {
+    func test_proceedOnQueue_doesNotDoubleSendHeadRequest() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
         let lock = NSLock()
         var markerHits = 0
         MockURLProtocol.requestHandler = { request in

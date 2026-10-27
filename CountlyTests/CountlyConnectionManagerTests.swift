@@ -82,6 +82,7 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
      * intercept request with a test protocol and validate existance of 2 added headers
      */
     func test_addCustomNetworkRequestHeaders() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
         let config = createBaseConfig()
         let sessionConfig = URLSessionConfiguration.default
         sessionConfig.protocolClasses = [TestURLProtocol.self]
@@ -96,9 +97,11 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         
         Countly.sharedInstance().addCustomNetworkRequestHeaders(customHeaders)
         Countly.sharedInstance().addDirectRequest(["test": "request"])
-        
-        TestUtils.sleep(2) {}
-        
+
+        TestUtils.waitUntil("the request to carry the custom headers") {
+            TestURLProtocol.capturedHeaders()?["Authorization"] == "Bearer 123"
+        }
+
         let captured = TestURLProtocol.capturedHeaders()
         XCTAssertEqual(captured?["Authorization"], "Bearer 123")
         XCTAssertEqual(captured?["X-Test"], "Value1")
@@ -112,6 +115,7 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
      * intercept request with a test protocol and validate existance of 2 added headers and validate one header is overridden
      */
     func test_addCustomNetworkRequestHeaders_override() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
         let config = createBaseConfig()
         let sessionConfig = URLSessionConfiguration.default
         sessionConfig.protocolClasses = [TestURLProtocol.self]
@@ -149,6 +153,7 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
      * intercept request with a test protocol and validate that only 1 header exists
      */
     func test_addCustomNetworkRequestHeaders_invalid() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
         let config = createBaseConfig()
         let sessionConfig = URLSessionConfiguration.default
         sessionConfig.protocolClasses = [TestURLProtocol.self]
@@ -163,11 +168,19 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         
         Countly.sharedInstance().addCustomNetworkRequestHeaders(customHeaders)
         Countly.sharedInstance().addDirectRequest(["test": "request"])
-        
-        TestUtils.sleep(2) {}
-        
-        let captured = TestURLProtocol.capturedHeaders()
-        XCTAssertEqual(captured?.count, 1)
+
+        TestUtils.waitUntil("the direct request to be intercepted") {
+            TestURLProtocol.capturedHeaders(forRequestContaining: "test=request") != nil
+        }
+
+        let captured = try XCTUnwrap(TestURLProtocol.capturedHeaders(forRequestContaining: "test=request"), "The direct request was not intercepted")
+        // The empty key must never be forwarded.
+        XCTAssertNil(captured[""])
+        // The SDK keeps an empty value under a valid key, but Foundation strips
+        // empty-valued headers on macOS before they reach the URLProtocol, so accept
+        // either and assert that nothing else was added.
+        XCTAssertEqual("", captured["Authorization"] ?? "")
+        XCTAssertTrue(captured.count <= 1, "Unexpected headers forwarded: \(captured)")
     }
     
     /**
@@ -183,7 +196,8 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
      * 5- Verify request URL contains query string (no HTTP body)
      * </pre>
      */
-    func test_allRequests_useGET_whenAlwaysUsePOSTDisabled() {
+    func test_allRequests_useGET_whenAlwaysUsePOSTDisabled() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
         let expectation = self.expectation(description: "Requests intercepted")
         expectation.assertForOverFulfill = false
 
@@ -206,7 +220,9 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         config.alwaysUsePOST = false
         config.manualSessionHandling = true
         config.disableSDKBehaviorSettingsUpdates = true
-        config.enablePerformanceMonitoring = true
+        config.apm().enableForegroundBackgroundTracking = true
+        config.apm().enableAppStartTimeTracking = true
+        config.apm().enableManualAppLoadedTrigger = true
         let sessionConfig = URLSessionConfiguration.default
         sessionConfig.protocolClasses = [MockURLProtocol.self]
         config.urlSessionConfiguration = sessionConfig
@@ -286,7 +302,8 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
      * 5- Verify requests have HTTP body and no query string in URL
      * </pre>
      */
-    func test_allRequests_usePOST_whenAlwaysUsePOSTEnabled() {
+    func test_allRequests_usePOST_whenAlwaysUsePOSTEnabled() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
         let expectation = self.expectation(description: "Requests intercepted")
         expectation.assertForOverFulfill = false
 
@@ -328,7 +345,9 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         config.alwaysUsePOST = true
         config.manualSessionHandling = true
         config.disableSDKBehaviorSettingsUpdates = true
-        config.enablePerformanceMonitoring = true
+        config.apm().enableForegroundBackgroundTracking = true
+        config.apm().enableAppStartTimeTracking = true
+        config.apm().enableManualAppLoadedTrigger = true
         let sessionConfig = URLSessionConfiguration.default
         sessionConfig.protocolClasses = [MockURLProtocol.self]
         config.urlSessionConfiguration = sessionConfig
@@ -405,5 +424,91 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
             CountlyPersistency.sharedInstance().add(toQueue: "&request=REQUEST\(loop)")
         }
         CountlyPersistency.sharedInstance().saveToFileSync()
+    }
+
+    /// A configuration whose requests go to MockURLProtocol, with manual sessions and no behavior settings fetch.
+    private func mockedConfig() -> CountlyConfig {
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [MockURLProtocol.self]
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        config.disableSDKBehaviorSettingsUpdates = true
+        config.urlSessionConfiguration = sessionConfig
+        return config
+    }
+
+    /**
+     * <pre>
+     * A success status whose body is a JSON list, as a proxy or a misconfigured host can answer, fails
+     * the request instead of crashing the app, so the request stays queued for the next attempt.
+     *
+     * 1- Start against a server that answers every event request with a list
+     * 2- Record an event and send it
+     * 3- Verify the app is still running and the event request is still queued
+     * </pre>
+     */
+    func test_replyThatIsAList_failsTheRequestInsteadOfCrashing() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        let answered = expectation(description: "the event request is answered")
+        answered.assertForOverFulfill = false
+        MockURLProtocol.requestHandler = { request in
+            let body = CountlyServerConfigTests.capturedQueryString(request)
+            if body.contains("list_reply_probe") {
+                answered.fulfill()
+                let ok = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)
+                return ("[]".data(using: .utf8), ok, nil)
+            }
+            let ok = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)
+            return ("{\"result\":\"Success\"}".data(using: .utf8), ok, nil)
+        }
+        defer { MockURLProtocol.replyEmptyToEveryRequest() }
+
+        Countly.sharedInstance().start(with: mockedConfig())
+        Countly.sharedInstance().recordEvent("list_reply_probe")
+        CountlyConnectionManager.sharedInstance().sendEvents()
+        wait(for: [answered], timeout: 5)
+        TestUtils.sleep(0.5) {}
+
+        let queue = TestUtils.getCurrentRQ() ?? []
+        XCTAssertTrue(queue.contains { $0.contains("list_reply_probe") }, "the request answered with a list stays queued")
+    }
+
+    /**
+     * <pre>
+     * An automatically detected crash is sent at once, but the crashing app waits for that send for a
+     * bounded time only: a send that does not complete in time is queued for the next start instead of
+     * holding the app forever.
+     *
+     * 1- Start against a server that holds the crash report answer far longer than the wait
+     * 2- Send a crash report the way the crash handler does and time it
+     * 3- Verify the call returned after the bounded wait and the report is queued
+     * </pre>
+     */
+    func test_immediateCrashReport_waitsBoundedAndQueuesTheReport() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        let release = DispatchSemaphore(value: 0)
+        MockURLProtocol.requestHandler = { request in
+            if CountlyServerConfigTests.capturedQueryString(request).contains("crash=") {
+                _ = release.wait(timeout: .now() + 15)
+            }
+            let ok = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)
+            return ("{\"result\":\"Success\"}".data(using: .utf8), ok, nil)
+        }
+        defer {
+            release.signal()
+            MockURLProtocol.replyEmptyToEveryRequest()
+        }
+
+        Countly.sharedInstance().start(with: mockedConfig())
+        let started = Date()
+        let report = "{\"_error\":\"bounded_wait_probe\"}"
+        CountlyConnectionManager.sharedInstance().sendCrashReport(report, immediately: true)
+        let waited = Date().timeIntervalSince(started)
+
+        XCTAssertGreaterThanOrEqual(waited, 4.5, "the crash report send is waited for")
+        XCTAssertLessThan(waited, 8, "but not longer than the bounded wait")
+        let queue = TestUtils.getCurrentRQ() ?? []
+        XCTAssertTrue(queue.contains { $0.contains("bounded_wait_probe") },
+                      "a send that did not complete is queued for the next start")
     }
 }

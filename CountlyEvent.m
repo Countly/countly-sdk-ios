@@ -42,11 +42,14 @@ NSString* const kCountlyEventKeyDuration      = @"dur";
     eventData[kCountlyEventKeyPVID] = self.PVID;
     eventData[kCountlyEventKeyPEID] = self.PEID;
     eventData[kCountlyEventKeyCount] = @(self.count);
-    eventData[kCountlyEventKeySum] = @(self.sum);
+    // a value JSON can not represent, such as NaN, is left out as Android does, since it would fail the whole batch
+    if (isfinite(self.sum))
+        eventData[kCountlyEventKeySum] = @(self.sum);
     eventData[kCountlyEventKeyTimestamp] = @((long long)(self.timestamp * 1000));
     eventData[kCountlyEventKeyHourOfDay] = @(self.hourOfDay);
     eventData[kCountlyEventKeyDayOfWeek] = @(self.dayOfWeek);
-    eventData[kCountlyEventKeyDuration] = @(self.duration);
+    if (isfinite(self.duration))
+        eventData[kCountlyEventKeyDuration] = @(self.duration);
     return eventData;
 }
 

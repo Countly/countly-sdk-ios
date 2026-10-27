@@ -35,7 +35,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.proceedOnQueue()
 
-        wait(for: [expectation], timeout: 5.0)
+        wait(for: [expectation], timeout: TestUtils.asyncTimeout)
 
         XCTAssertNotNil(receivedSuccess)
         XCTAssertTrue(receivedSuccess ?? false, "Callback should receive success=true")
@@ -65,7 +65,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.proceedOnQueue()
 
-        wait(for: [expectation], timeout: 5.0)
+        wait(for: [expectation], timeout: TestUtils.asyncTimeout)
 
         XCTAssertNotNil(receivedSuccess)
         XCTAssertFalse(receivedSuccess ?? true, "Callback should receive success=false on server error")
@@ -93,7 +93,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.proceedOnQueue()
 
-        wait(for: [expectation], timeout: 5.0)
+        wait(for: [expectation], timeout: TestUtils.asyncTimeout)
 
         XCTAssertNotNil(receivedSuccess)
         XCTAssertFalse(receivedSuccess ?? true, "Callback should receive success=false on invalid JSON")
@@ -120,7 +120,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.proceedOnQueue()
 
-        wait(for: [expectation], timeout: 5.0)
+        wait(for: [expectation], timeout: TestUtils.asyncTimeout)
 
         XCTAssertNotNil(receivedSuccess)
         XCTAssertFalse(receivedSuccess ?? true, "Callback should receive success=false when JSON missing 'result' key")
@@ -147,7 +147,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.proceedOnQueue()
 
-        wait(for: [expectation], timeout: 5.0)
+        wait(for: [expectation], timeout: TestUtils.asyncTimeout)
 
         // Wait a bit more to ensure callback isn't called again
         TestUtils.sleep(0.5) {}
@@ -176,7 +176,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.proceedOnQueue()
 
-        wait(for: [expectation1], timeout: 5.0)
+        wait(for: [expectation1], timeout: TestUtils.asyncTimeout)
 
         connectionManager.addToQueue(withCallback: "test=second_request", callback: { response, success in
             secondCallbackCount += 1
@@ -185,7 +185,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.proceedOnQueue()
 
-        wait(for: [expectation2], timeout: 5.0)
+        wait(for: [expectation2], timeout: TestUtils.asyncTimeout)
 
         XCTAssertEqual(firstCallbackCount, 1, "First callback should be called once")
         XCTAssertEqual(secondCallbackCount, 1, "Second callback should be called once")
@@ -212,7 +212,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.proceedOnQueue()
 
-        wait(for: [expectation], timeout: 5.0)
+        wait(for: [expectation], timeout: TestUtils.asyncTimeout)
 
         TestUtils.sleep(0.5) {}
 
@@ -253,7 +253,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.proceedOnQueue()
 
-        wait(for: [expectation], timeout: 5.0)
+        wait(for: [expectation], timeout: TestUtils.asyncTimeout)
 
         XCTAssertTrue(callback1Executed, "Callback 1 should have executed")
         XCTAssertTrue(callback2Executed, "Callback 2 should have executed")
@@ -297,7 +297,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.proceedOnQueue()
 
-        wait(for: [expectation], timeout: 5.0)
+        wait(for: [expectation], timeout: TestUtils.asyncTimeout)
 
         XCTAssertEqual(executionOrder, [1, 2, 3], "Callbacks should execute in FIFO order")
     }
@@ -325,7 +325,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.proceedOnQueue()
 
-        wait(for: [expectation], timeout: 5.0)
+        wait(for: [expectation], timeout: TestUtils.asyncTimeout)
 
         XCTAssertTrue(receivedSuccess ?? false, "Callback should receive success on 201")
     }
@@ -356,7 +356,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.proceedOnQueue()
 
-        wait(for: [callbackExpectation], timeout: 5.0)
+        wait(for: [callbackExpectation], timeout: TestUtils.asyncTimeout)
 
         TestUtils.sleep(0.5) {}
 
@@ -390,7 +390,7 @@ class CountlyRequestCallbackTests: CountlyCallbackBaseTestCase {
 
         connectionManager.proceedOnQueue()
 
-        wait(for: [callbackExpectation], timeout: 5.0)
+        wait(for: [callbackExpectation], timeout: TestUtils.asyncTimeout)
 
         TestUtils.sleep(0.5) {}
 

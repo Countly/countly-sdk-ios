@@ -9,16 +9,36 @@
 //TODO: improve logging, check edge cases
 NSString* const kCountlyEndpointContent = @"/o/sdk/content";
 NSString* const kCountlyCBFetchContent  = @"queue";
+NSString* const kCountlyCBKeyCampaignID = @"campaign_id";
+NSString* const kCountlyCBSurveyAnswerKeyPrefix = @"answ-";
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+static const NSTimeInterval kCountlyCBDefaultZoneTimerInterval = 30.0;
+#endif
+
+@interface CountlyContentBuilderInternal ()
+// 'atomic' rather than the 'nonatomic' used elsewhere here: an event can be recorded on one thread
+// while the setter runs on another, and the dictionary is always replaced whole rather than
+// mutated, so a reader either sees the old segmentation or the complete new one.
+@property (atomic, copy) NSDictionary<NSString *, id> *contentSegmentation;
+@end
 
 @implementation CountlyContentBuilderInternal {
     BOOL _isRequestQueueLocked;
     BOOL _isCurrentlyContentShown;
+    BOOL _refreshRunnablePending;
+    // Bumped per presentation claim, so a deferred teardown can tell if a newer one took the slot.
+    NSUInteger _presentationSequence;
     NSTimer *_requestTimer;
     NSTimer *_minuteTimer;
     dispatch_queue_t _contentQueue;
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+    // The presented content's manager, retained so the zone can close it. Main thread only.
+    // Guarded: CountlyWebViewManager only exists on iOS/visionOS, and this file builds everywhere.
+    CountlyWebViewManager *_webViewManager;
+#endif
 }
 
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 + (instancetype)sharedInstance {
     static CountlyContentBuilderInternal *instance = nil;
     static dispatch_once_t onceToken;
@@ -32,7 +52,7 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 {
     if (self = [super init])
     {
-        self.zoneTimerInterval = 30.0;
+        self.zoneTimerInterval = kCountlyCBDefaultZoneTimerInterval;
         _requestTimer = nil;
         _isCurrentlyContentShown = NO;
         _contentQueue = dispatch_queue_create("ly.countly.content.queue", DISPATCH_QUEUE_SERIAL);
@@ -42,51 +62,133 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     return self;
 }
 
-- (BOOL)isRequestQueueLockedThreadSafe {
-    __block BOOL locked = NO;
+#pragma mark - Thread-safe flag helpers
+
+// Every BOOL flag below (_isRequestQueueLocked, _isCurrentlyContentShown,
+// _refreshRunnablePending) is accessed only through these helpers so all reads/writes are
+// serialized on the single serial _contentQueue. The blocks capture the raw ivar pointer,
+// which is safe because this class is a never-released singleton (its ivars outlive any
+// queued block).
+- (BOOL)readFlag:(BOOL *)flag {
     if (!_contentQueue) {
-        return _isRequestQueueLocked;
+        return *flag;
     }
+    __block BOOL value = NO;
     dispatch_sync(_contentQueue, ^{
-        locked = self->_isRequestQueueLocked;
+        value = *flag;
     });
-    return locked;
+    return value;
 }
 
-- (void)setRequestQueueLockedThreadSafe:(BOOL)locked {
+- (void)writeFlag:(BOOL *)flag value:(BOOL)value {
     if (!_contentQueue) {
-        _isRequestQueueLocked = locked;
+        *flag = value;
         return;
     }
     dispatch_async(_contentQueue, ^{
-        self->_isRequestQueueLocked = locked;
+        *flag = value;
     });
 }
 
+// Atomically set *flag to YES if it was NO. Returns YES only for the caller that made the
+// NO->YES transition, so exactly one caller "wins" a contended flag.
+- (BOOL)testAndSetFlag:(BOOL *)flag {
+    __block BOOL acquired = NO;
+    if (!_contentQueue) {
+        if (!*flag) { *flag = YES; acquired = YES; }
+        return acquired;
+    }
+    dispatch_sync(_contentQueue, ^{
+        if (!*flag) { *flag = YES; acquired = YES; }
+    });
+    return acquired;
+}
+
+- (BOOL)isRequestQueueLockedThreadSafe {
+    return [self readFlag:&_isRequestQueueLocked];
+}
+
+- (void)setRequestQueueLockedThreadSafe:(BOOL)locked {
+    [self writeFlag:&_isRequestQueueLocked value:locked];
+}
+
+// Atomically claim the single "content is shown" slot. Returns YES if the caller acquired it,
+// NO if content is already shown or a racing fetch already claimed it, in which case the caller
+// MUST NOT present another web view. Previously the flag was set only when the web view was
+// presented (after a network round trip), so two near-simultaneous fetches could both pass the
+// guard and present two overlapping web views; this test-and-set closes that window.
+- (BOOL)tryBeginContentPresentation {
+    __block BOOL acquired = NO;
+
+    if (!_contentQueue) {
+        if (!_isCurrentlyContentShown) { _isCurrentlyContentShown = YES; _presentationSequence++; acquired = YES; }
+        return acquired;
+    }
+
+    dispatch_sync(_contentQueue, ^{
+        if (!self->_isCurrentlyContentShown) {
+            self->_isCurrentlyContentShown = YES;
+            self->_presentationSequence++;
+            acquired = YES;
+        }
+    });
+
+    return acquired;
+}
+
+- (NSUInteger)currentPresentationSequence {
+    if (!_contentQueue) {
+        return _presentationSequence;
+    }
+    __block NSUInteger value = 0;
+    dispatch_sync(_contentQueue, ^{
+        value = self->_presentationSequence;
+    });
+    return value;
+}
+
+// Release the content slot (called when the shown web view is dismissed, or on reset) so the
+// next zone cycle can present again.
+- (void)endContentPresentation {
+    [self writeFlag:&_isCurrentlyContentShown value:NO];
+}
+
+- (BOOL)isContentShownThreadSafe {
+    return [self readFlag:&_isCurrentlyContentShown];
+}
+
+// Whether a zone re-entry is scheduled. Read by tests.
+- (BOOL)isZoneReentryTimerArmed {
+    return _minuteTimer != nil;
+}
+
 - (void)enterContentZone {
-    
-    if(_isCurrentlyContentShown){
-        CLY_LOG_I(@"%s a content is already shown, skipping" ,__FUNCTION__);
+
+    if([self isContentShownThreadSafe]){
+        CLY_LOG_D(@"%s a content is already shown, skipping this untagged enter", __FUNCTION__);
         return;
     }
-    
+
     [self enterContentZone:@[]];
 }
 
 - (void)enterContentZone:(NSArray<NSString *> *)tags {
-    if(_isCurrentlyContentShown){
-        CLY_LOG_I(@"%s a content is already shown, skipping" ,__FUNCTION__);
+    if([self isContentShownThreadSafe]){
+        CLY_LOG_D(@"%s a content is already shown, skipping this tagged enter, tagCount: [%lu]", __FUNCTION__, (unsigned long)tags.count);
         return;
     }
-    
+
     [_minuteTimer invalidate];
     _minuteTimer = nil;
     
     if (!CountlyConsentManager.sharedInstance.consentForContent)
+    {
+        CLY_LOG_V(@"%s no consent given for content, skipping the content zone enter", __FUNCTION__);
         return;
+    }
     
     if(_requestTimer != nil) {
-        CLY_LOG_I(@"%s already entered for content zone, please exit from content zone first to start again", __FUNCTION__);
+        CLY_LOG_W(@"%s already entered the content zone, please exit from the content zone first to start again", __FUNCTION__);
         return;
     }
     
@@ -96,6 +198,8 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     if (CountlyCommon.sharedInstance.timeSinceLaunch < _contentInitialDelay) {
         contentDelay = _contentInitialDelay;
     }
+    
+    CLY_LOG_D(@"%s content zone entered, tagCount: [%lu], initialDelay: [%d] seconds, zoneTimerInterval: [%.1f] seconds", __FUNCTION__, (unsigned long)tags.count, contentDelay, self.zoneTimerInterval);
     
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(contentDelay * NSEC_PER_SEC)), dispatch_get_main_queue(), ^
     {
@@ -109,34 +213,96 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 }
 
 - (void)exitContentZone {
+    CLY_LOG_I(@"%s exiting the content zone and taking the content off screen", __FUNCTION__);
     [self clearContentState];
+    // Also takes the content off screen. Internal cycles use clearContentState instead.
+    [self closeShownContent];
+}
+
+// Dismisses the content on screen and frees the presentation slot, in one main-queue turn.
+// The slot is deliberately not released earlier: that would let a fetch present a second web view
+// mid-teardown.
+- (void)closeShownContent {
+    // Synchronous when already on the main thread, which is where exitContentZone is called from in
+    // practice. Deferring the slot release would leave it claimed for the rest of the turn, so an
+    // exitContentZone immediately followed by enterContentZone would silently no-op and dead-end
+    // the zone.
+    if ([NSThread isMainThread]) {
+        [self tearDownShownContent];
+        return;
+    }
+
+    NSUInteger requestedForSequence = [self currentPresentationSequence];
+
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if ([self currentPresentationSequence] != requestedForSequence) {
+            // A newer presentation owns the slot now; it is not ours to tear down.
+            CLY_LOG_D(@"%s a newer presentation superseded this close request, skipping", __FUNCTION__);
+            return;
+        }
+
+        [self tearDownShownContent];
+    });
+}
+
+// Main thread only.
+- (void)tearDownShownContent {
+    CountlyWebViewManager *manager = self->_webViewManager;
+    if (manager) {
+        CLY_LOG_I(@"%s closing the currently shown content", __FUNCTION__);
+        // Cleared first so the dismiss block skips re-arming the zone for an SDK-initiated close.
+        self->_webViewManager = nil;
+        [manager closeWebView];
+    }
+
+    // Released even with nothing retained, so a stranded claim cannot dead-end later enters.
+    [self endContentPresentation];
 }
 
 - (void)changeContent:(NSArray<NSString *> *)tags {
     if (![tags isEqualToArray:self.currentTags]) {
+        CLY_LOG_D(@"%s the tags changed, restarting the content zone, newTagCount: [%lu], oldTagCount: [%lu]", __FUNCTION__, (unsigned long)tags.count, (unsigned long)self.currentTags.count);
         [self exitContentZone];
         [self enterContentZone:tags];
     }
 }
 
 - (void)previewContent:(NSString *)contentId {
+    CLY_LOG_D(@"%s fetching a content for preview, contentId: [%@]", __FUNCTION__, contentId);
     [self fetchContents:nil contentId:contentId];
 }
 
 - (void)refreshContentZone {
     if (![CountlyServerConfig.sharedInstance refreshContentZoneEnabled])
     {
+        CLY_LOG_D(@"%s the content zone refresh is disabled by the server config, skipping", __FUNCTION__);
         return;
     }
-    if(_isCurrentlyContentShown){
-        CLY_LOG_I(@"%s a content is already shown, skipping" ,__FUNCTION__);
+    if([self isContentShownThreadSafe]){
+        CLY_LOG_D(@"%s a content is already shown, skipping this content zone refresh", __FUNCTION__);
         return;
     }
-    
+
+    // Coalesce refreshes: only one refresh runnable may be pending at a time. Without this,
+    // multiple refreshContentZone calls before the request queue flushes each append a runnable
+    // (addQueueFlushRunnable does not dedup); they then all fire together and trigger N
+    // concurrent content fetches (a burst against the edge) whose extra results are discarded.
+    if (![self testAndSetFlag:&_refreshRunnablePending]) {
+        CLY_LOG_D(@"%s a content refresh is already pending, skipping this duplicate refresh", __FUNCTION__);
+        return;
+    }
+
+    __weak typeof(self) weakSelf = self;
     [CountlyConnectionManager.sharedInstance addQueueFlushRunnable:^{
-        CLY_LOG_I(@"%s queue flueshed, will re-fetch contents" ,__FUNCTION__);
-        [self exitContentZone];
-        [self enterContentZone];
+        __strong typeof(weakSelf) strongSelf = weakSelf;
+        if (!strongSelf) return;
+        // Clear the pending flag first so a refresh requested during/after this flush can
+        // schedule the next one.
+        [strongSelf writeFlag:&strongSelf->_refreshRunnablePending value:NO];
+        CLY_LOG_D(@"%s the request queue flushed, will re-fetch contents", __FUNCTION__);
+        // State only: a refresh must never pull content off screen
+        [strongSelf clearContentState];
+        [strongSelf enterContentZone];
     }];
     [CountlyConnectionManager.sharedInstance attemptToSendStoredRequests];
 }
@@ -144,30 +310,30 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 - (void)refreshContentZoneJTE {
     if (![CountlyServerConfig.sharedInstance refreshContentZoneEnabled])
     {
-        CLY_LOG_D(@"%s, refresh content zone is disabled, skipping JTE content refresh", __FUNCTION__);
+        CLY_LOG_D(@"%s the content zone refresh is disabled by the server config, skipping the JTE content refresh", __FUNCTION__);
         return;
     }
-    if(_isCurrentlyContentShown){
-        CLY_LOG_I(@"%s a content is already shown, skipping JTE content refresh" ,__FUNCTION__);
+    if([self isContentShownThreadSafe]){
+        CLY_LOG_D(@"%s a content is already shown, skipping the JTE content refresh", __FUNCTION__);
         return;
     }
 
-    CLY_LOG_D(@"%s, Starting JTE content refresh with retries", __FUNCTION__);
-    [self exitContentZone];
+    // State only: a journey trigger must never pull content off screen
+    [self clearContentState];
     [self fetchContentsForJourneyWithMaxAttempts:3 currentAttempt:1];
 }
 
 - (void)fetchContentsForJourneyWithMaxAttempts:(NSInteger)maxAttempts currentAttempt:(NSInteger)currentAttempt {
-    CLY_LOG_D(@"%s, JTE content fetch attempt %ld of %ld", __FUNCTION__, (long)currentAttempt, (long)maxAttempts);
+    CLY_LOG_D(@"%s JTE content fetch starting, attempt: [%ld], maxAttempts: [%ld]", __FUNCTION__, (long)currentAttempt, (long)maxAttempts);
 
     [self fetchContents:^{
         if (currentAttempt < maxAttempts) {
-            CLY_LOG_D(@"Retrying JTE content fetch in 1 second (attempt %ld of %ld)", (long)(currentAttempt + 1), (long)maxAttempts);
+            CLY_LOG_D(@"%s retrying the JTE content fetch in [1] second, reason: [the content fetch failed or returned no content], nextAttempt: [%ld], maxAttempts: [%ld]", __FUNCTION__, (long)(currentAttempt + 1), (long)maxAttempts);
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
                 [self fetchContentsForJourneyWithMaxAttempts:maxAttempts currentAttempt:currentAttempt + 1];
             });
         } else {
-            CLY_LOG_D(@"JTE content fetch exhausted all %ld attempts. Re-entering content zone.", (long)maxAttempts);
+            CLY_LOG_D(@"%s the JTE content fetch exhausted every attempt, reason: [the content fetch failed or returned no content], maxAttempts: [%ld], re-entering the content zone", __FUNCTION__, (long)maxAttempts);
             dispatch_async(dispatch_get_main_queue(), ^{
                 [self enterContentZone];
             });
@@ -180,11 +346,109 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 - (void)clearContentState {
     [_requestTimer invalidate];
     _requestTimer = nil;
-    
+
     [_minuteTimer invalidate];
     _minuteTimer = nil;
     self.currentTags = nil;
     [self setRequestQueueLockedThreadSafe:NO];
+}
+
+- (void)resetInstance {
+    CLY_LOG_I(@"%s resetting the content builder state", __FUNCTION__);
+    [self clearContentState];
+    // Also releases the shown slot. A second release here used to race its own deferred teardown:
+    // freeing the slot early let a fetch claim it, which made the queued close skip and strand the
+    // overlay with nothing left holding a reference to it.
+    [self closeShownContent];
+    [self writeFlag:&_refreshRunnablePending value:NO];
+    self.contentSegmentation = nil;
+    // the singleton outlives halt, and a next start that applies no behavior settings never sets the interval
+    self.zoneTimerInterval = kCountlyCBDefaultZoneTimerInterval;
+}
+
+#pragma mark - Global content segmentation
+
+- (void)setGlobalContentSegmentation:(NSDictionary<NSString *, id> *)segmentation
+{
+    CLY_LOG_I(@"%s global content segmentation will be set, key count: [%lu], keys: [%@]", __FUNCTION__, (unsigned long)segmentation.count, segmentation.allKeys);
+    CLY_LOG_D(@"%s global content segmentation value detail, segmentation: [%@]", __FUNCTION__, segmentation);
+
+    if (!segmentation.count)
+    {
+        self.contentSegmentation = nil;
+        return;
+    }
+
+    NSDictionary* filteredSegmentation = segmentation.cly_filterSupportedDataTypes;
+    NSDictionary* truncatedSegmentation = [filteredSegmentation cly_truncated:@"Global content segmentation"];
+    self.contentSegmentation = [truncatedSegmentation cly_limited:@"Global content segmentation"];
+}
+
+- (NSDictionary *)mergeGlobalContentSegmentationInto:(NSDictionary *)eventSegmentation
+{
+    NSDictionary* globalSegmentation = self.contentSegmentation;
+    if (!globalSegmentation.count)
+    {
+        return eventSegmentation;
+    }
+
+    NSMutableDictionary* merged = globalSegmentation.mutableCopy;
+    [merged addEntriesFromDictionary:eventSegmentation];
+
+    NSUInteger maxSegmentationValues = CountlyCommon.sharedInstance.maxSegmentationValues;
+    if (merged.count > maxSegmentationValues)
+    {
+        NSMutableArray* globalOnlyKeys = globalSegmentation.allKeys.mutableCopy;
+        [globalOnlyKeys removeObjectsInArray:eventSegmentation.allKeys];
+        NSUInteger droppedKeyCount = MIN(merged.count - maxSegmentationValues, globalOnlyKeys.count);
+        NSArray* droppedKeys = [globalOnlyKeys subarrayWithRange:(NSRange){0, droppedKeyCount}];
+        [merged removeObjectsForKeys:droppedKeys];
+
+        CLY_LOG_D(@"%s global content segmentation exceeds the room the event leaves under the SDK segmentation value limit and will be trimmed, eventKeyCount: [%lu], limit: [%lu], droppedKeyCount: [%lu], droppedKeys: [%@]", __FUNCTION__, (unsigned long)eventSegmentation.count, (unsigned long)maxSegmentationValues, (unsigned long)droppedKeyCount, droppedKeys);
+    }
+
+    return merged;
+}
+
+- (NSDictionary *)globalContentSegmentationForFeedbackWidget
+{
+    NSDictionary* globalSegmentation = self.contentSegmentation;
+    if (!globalSegmentation.count)
+    {
+        return @{};
+    }
+
+    NSSet<NSString *>* reservedKeys = [NSSet setWithArray:@[kCountlyFBKeyPlatform, kCountlyFBKeyAppVersion, kCountlyFBKeyWidgetID, kCountlyFBKeyClosed,
+                                                            kCountlyFBKeyShown, kCountlyFBKeyRating, kCountlyFBKeyComment, kCountlyFBKeyEmail,
+                                                            kCountlyFBKeyContactMe, kCountlyCBKeyCampaignID]];
+
+    NSMutableDictionary* widgetSegmentation = globalSegmentation.mutableCopy;
+    for (NSString* key in globalSegmentation)
+    {
+        if ([reservedKeys containsObject:key] || [key hasPrefix:kCountlyCBSurveyAnswerKeyPrefix])
+            [widgetSegmentation removeObjectForKey:key];
+    }
+
+    if (widgetSegmentation.count != globalSegmentation.count)
+    {
+        CLY_LOG_D(@"%s keys the server reads as a widget answer or uses to route a widget event are left out of feedback widget events, droppedKeyCount: [%lu]", __FUNCTION__, (unsigned long)(globalSegmentation.count - widgetSegmentation.count));
+    }
+
+    return widgetSegmentation;
+}
+
+- (NSDictionary *)mergeGlobalContentSegmentationIntoFeedbackWidgetEvent:(NSDictionary *)eventSegmentation
+{
+    NSDictionary* widgetSegmentation = [self globalContentSegmentationForFeedbackWidget];
+    if (!widgetSegmentation.count)
+    {
+        return eventSegmentation;
+    }
+
+    NSMutableDictionary* merged = widgetSegmentation.mutableCopy;
+    [merged addEntriesFromDictionary:eventSegmentation];
+
+    return merged;
 }
 
 - (void)fetchContents {
@@ -193,26 +457,40 @@ NSString* const kCountlyCBFetchContent  = @"queue";
 
 - (void)fetchContents:(void (^)(void))failureCallback contentId:(NSString *)contentId {
     if (!CountlyConsentManager.sharedInstance.consentForContent)
+    {
+        CLY_LOG_V(@"%s no consent given for content, skipping the content fetch", __FUNCTION__);
         return;
+    }
 
     if (!CountlyServerConfig.sharedInstance.networkingEnabled)
-        return;
-    
-    if(_isCurrentlyContentShown){
-        CLY_LOG_I(@"%s a content is already shown, skipping" ,__FUNCTION__);
+    {
+        CLY_LOG_D(@"%s networking is disabled by the server config, skipping the content fetch", __FUNCTION__);
         return;
     }
-    
+
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+    {
+        CLY_LOG_D(@"%s content can not be fetched while in temporary device ID mode", __FUNCTION__);
+        return;
+    }
+
+    if([self isContentShownThreadSafe]){
+        CLY_LOG_D(@"%s a content is already shown, skipping the content fetch", __FUNCTION__);
+        return;
+    }
+
     if ([self isRequestQueueLockedThreadSafe]) {
+        CLY_LOG_D(@"%s a content fetch is already in flight, skipping this one", __FUNCTION__);
         return;
     }
     
+    CLY_LOG_D(@"%s fetching the content details, isPreview: [%@]", __FUNCTION__, contentId ? @"YES" : @"NO");
     [self setRequestQueueLockedThreadSafe:YES];
     
-    NSURLSessionTask *dataTask = [[CountlyCommon.sharedInstance ImmediateURLSession] dataTaskWithRequest:[self fetchContentsRequest:contentId] completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+    NSURLSessionTask *dataTask = [CountlyCommon.sharedInstance immediateDataTaskWithRequest:[self fetchContentsRequest:contentId] completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
         // IMMEDIATE REQUEST to find them better in search
         if (error) {
-            CLY_LOG_I(@"%s fetch content details failed: [%@]", __FUNCTION__, error);
+            CLY_LOG_D(@"%s fetching the content details failed, it will be retried on the next content zone tick, error: [%@], domain: [%@], code: [%ld]", __FUNCTION__, error.localizedDescription, error.domain, (long)error.code);
             [self setRequestQueueLockedThreadSafe:NO];
             if (failureCallback) {
                 failureCallback();
@@ -223,8 +501,8 @@ NSString* const kCountlyCBFetchContent  = @"queue";
         NSError *jsonError;
         NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
 
-        if (jsonError || !jsonResponse) {
-            CLY_LOG_I(@"%s failed to parse JSON or empty response: [%@]", __FUNCTION__, jsonError);
+        if (jsonError || ![jsonResponse isKindOfClass:NSDictionary.class]) {
+            CLY_LOG_D(@"%s failed to parse the content details JSON or the response was empty, it will be retried on the next content zone tick, error: [%@], responseLength: [%lu]", __FUNCTION__, jsonError.localizedDescription, (unsigned long)data.length);
             [self setRequestQueueLockedThreadSafe:NO];
             if (failureCallback) {
                 failureCallback();
@@ -232,11 +510,15 @@ NSString* const kCountlyCBFetchContent  = @"queue";
             return;
         }
         
+        CLY_LOG_D(@"%s the content details response parsed, url: [%@], jsonResponse: [%@]", __FUNCTION__, response.URL.absoluteString, jsonResponse);
+
         NSString *pathToHtml = jsonResponse[@"html"];
         NSDictionary *placementCoordinates = jsonResponse[@"geo"];
         if(pathToHtml) {
+            CLY_LOG_D(@"%s the content details response carries a content, will present it", __FUNCTION__);
             [self showContentWithHtmlPath:pathToHtml placementCoordinates:placementCoordinates];
         } else if (failureCallback) {
+            CLY_LOG_D(@"%s the content details response carries no content, invoking the failure callback", __FUNCTION__);
             failureCallback();
         }
         [self setRequestQueueLockedThreadSafe:NO];
@@ -275,12 +557,14 @@ NSString* const kCountlyCBFetchContent  = @"queue";
         NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:contentEndpoint]];
         request.HTTPMethod = @"POST";
         request.HTTPBody = [queryString cly_dataUTF8];
+        CLY_LOG_D(@"%s the content fetch request built as POST, url: [%@], body: [%@]", __FUNCTION__, contentEndpoint, queryString);
         return request.copy;
     }
     else
     {
         NSString* withQueryString = [contentEndpoint stringByAppendingFormat:@"?%@", queryString];
         NSURLRequest* request = [NSURLRequest requestWithURL:[NSURL URLWithString:withQueryString]];
+        CLY_LOG_D(@"%s the content fetch request built as GET, url: [%@]", __FUNCTION__, withQueryString);
         return request;
     }
 }
@@ -289,7 +573,7 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     //TODO: check why area is not clickable and safearea things
     CGSize size = [CountlyCommon.sharedInstance getWindowSize];
     
-    UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
+    UIInterfaceOrientation orientation = [CountlyCommon.sharedInstance interfaceOrientation];
     BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
 
     CGFloat lHpW = isLandscape ? size.height : size.width;
@@ -300,7 +584,9 @@ NSString* const kCountlyCBFetchContent  = @"queue";
         @"landscape": @{@"height": @(lHpW), @"width": @(lWpH)}
     };
     
-    CLY_LOG_D(@"%s, resolutionDict: [%@]", __FUNCTION__, resolutionDict);
+    CLY_LOG_D(@"%s resolution reported to the server, portraitWidth: [%.0f], portraitHeight: [%.0f], isLandscape: [%@]", __FUNCTION__, lHpW, lWpH, isLandscape ? @"YES" : @"NO");
+
+    CLY_LOG_D(@"%s the resolution payload detail, resolutionDict: [%@]", __FUNCTION__, resolutionDict);
     
     NSData *jsonData = [NSJSONSerialization dataWithJSONObject:resolutionDict options:0 error:nil];
     return [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
@@ -311,47 +597,82 @@ NSString* const kCountlyCBFetchContent  = @"queue";
     NSURL *url = [NSURL URLWithString:urlString];
     
     if (!url || !url.scheme || !url.host) {
-        CLY_LOG_E(@"%s the URL is not valid: [%@]", __FUNCTION__, urlString);
+        CLY_LOG_E(@"%s the content URL is not valid, urlLength: [%lu]", __FUNCTION__, (unsigned long)urlString.length);
+        CLY_LOG_D(@"%s the invalid content URL detail, url: [%@]", __FUNCTION__, urlString);
         return;
     }
 
-    
+    // Claim the single content slot before dispatching to main. If content is already shown,
+    // or a racing content fetch already claimed it, skip: never present a second overlapping
+    // web view for the same zone.
+    if (![self tryBeginContentPresentation]) {
+        CLY_LOG_D(@"%s a content is already shown, skipping this duplicate presentation", __FUNCTION__);
+        return;
+    }
+
+    NSUInteger claimedSequence = [self currentPresentationSequence];
+
     dispatch_async(dispatch_get_main_queue(), ^ {
+        // The zone can be exited while this is in flight, which releases our claim. Do not present
+        // content the app has already exited, and do not ride a claim a newer fetch has taken.
+        if (![self isContentShownThreadSafe] || [self currentPresentationSequence] != claimedSequence) {
+            CLY_LOG_D(@"%s the presentation claim was released or superseded before presenting, skipping", __FUNCTION__);
+            return;
+        }
+
         // Detect screen orientation
-        UIInterfaceOrientation orientation = [UIApplication sharedApplication].statusBarOrientation;
-        BOOL isLandscape = UIInterfaceOrientationIsLandscape(orientation);
-            
-        // Get the appropriate coordinates based on the orientation
+        UIInterfaceOrientation orientation = [CountlyCommon.sharedInstance interfaceOrientation];
+        // disableRotation pins content to the portrait layout, whatever the device is doing.
+        BOOL isLandscape = self.disableRotation ? NO : UIInterfaceOrientationIsLandscape(orientation);
+
+        // Initial placement only; from here on the page's resize_me reply drives the size.
         NSDictionary *coordinates = isLandscape ? placementCoordinates[@"l"] : placementCoordinates[@"p"];
-        
+
         CGFloat x = [coordinates[@"x"] floatValue];
         CGFloat y = [coordinates[@"y"] floatValue];
         CGFloat width = [coordinates[@"w"] floatValue];
         CGFloat height = [coordinates[@"h"] floatValue];
-        
+
         CGRect frame = CGRectMake(x, y, width, height);
-        
-        // Log the URL and the frame
-        CLY_LOG_I(@"%s showing content from URL: [%@], frame: [%@]", __FUNCTION__, url, NSStringFromCGRect(frame));
+
+        // Append the current theme so the content renders matching the app (resolved on the main
+        // thread here, where the trait collection is safe to read).
+        NSURL *themedURL = [NSURL URLWithString:[CountlyDeviceInfo URLStringByAppendingThemeMode:urlString]] ?: url;
+
+        // Host and path only: the content URL query carries the app key and the device ID.
+        CLY_LOG_I(@"%s showing a content, host: [%@], path: [%@], frame: [%@], isLandscape: [%@], rotationDisabled: [%@]", __FUNCTION__, themedURL.host, themedURL.path, NSStringFromCGRect(frame), isLandscape ? @"YES" : @"NO", self.disableRotation ? @"YES" : @"NO");
+        CLY_LOG_D(@"%s the content being shown URL detail, url: [%@], placementCoordinates: [%@]", __FUNCTION__, themedURL.absoluteString, placementCoordinates);
         CountlyWebViewManager* webViewManager =  CountlyWebViewManager.new;
-            [webViewManager createWebViewWithURL:url frame:frame appearBlock:^
+        // Retained so exitContentZone / resetInstance can dismiss what we present
+        self->_webViewManager = webViewManager;
+        // Weak: the manager owns this block, so a strong capture would be a retain cycle.
+        __weak CountlyWebViewManager *weakManager = webViewManager;
+            [webViewManager createWebViewWithURL:themedURL frame:frame appearBlock:^
              {
-                CLY_LOG_I(@"%s webview should be appeared", __FUNCTION__);
+                CLY_LOG_I(@"%s the content web view appeared on screen", __FUNCTION__);
             } dismissBlock:^
              {
-                CLY_LOG_I(@"%s webview dismissed", __FUNCTION__);
-                self->_isCurrentlyContentShown = NO;
-                self->_minuteTimer = [NSTimer scheduledTimerWithTimeInterval:self->_zoneTimerInterval
-                                                                 target:self
-                                                               selector:@selector(enterContentZone)
-                                                               userInfo:nil
-                                                                repeats:NO];
+                CLY_LOG_I(@"%s the content web view was dismissed, isCurrentContent: [%@]", __FUNCTION__, (self->_webViewManager == weakManager) ? @"YES" : @"NO");
+
+                // Only the current content's dismissal may touch shared zone state; this block can
+                // belong to a superseded web view.
+                if (self->_webViewManager == weakManager) {
+                    self->_webViewManager = nil;
+                    [self endContentPresentation];
+                    self->_minuteTimer = [NSTimer scheduledTimerWithTimeInterval:self->_zoneTimerInterval
+                                                                     target:self
+                                                                   selector:@selector(enterContentZone)
+                                                                   userInfo:nil
+                                                                    repeats:NO];
+                }
+
+                // Reported regardless: this web view really did close.
                 if(self.contentCallback) {
                     self.contentCallback(CLOSED, NSDictionary.new);
                 }
             }];
-            CLY_LOG_I(@"%s webview initiated pausing content calls ", __FUNCTION__);
-            self->_isCurrentlyContentShown = YES;
+            // The shown slot was already claimed synchronously by tryBeginContentPresentation
+            // above, before this async block was dispatched.
             [self clearContentState];
     });
 }

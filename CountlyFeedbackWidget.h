@@ -19,7 +19,7 @@ extern NSString* const kCountlyReservedEventNPS;
 extern NSString* const kCountlyReservedEventRating;
 
 @interface CountlyFeedbackWidget : NSObject
-#if (TARGET_OS_IOS)
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
 
 @property (nonatomic, readonly) CLYFeedbackWidgetType type;
 @property (nonatomic, readonly) NSString* ID;
