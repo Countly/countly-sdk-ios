@@ -602,17 +602,78 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         XCTAssertEqual(counted(tracker).usage["events"]?["record"], 2)
     }
 
-    /// An event dropped for missing consent is reported as w401.
-    func testConsentBlockedRecordsLogCode() {
+    /// With consent required and none given, no call of any feature is counted, and neither is a log code such a call
+    /// records, since knowing which methods an app calls is itself tracking information.
+    func testNothingIsCountedForFeaturesWithoutConsent() {
         let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
         let config = createBaseConfig()
         config.requiresConsent = true
         startWithoutHealthCheck(config)
         resetCounters(tracker)
 
+        Countly.sharedInstance().beginSession()
+        Countly.sharedInstance().updateSession()
+        Countly.sharedInstance().endSession()
         Countly.sharedInstance().recordEvent("blocked_event")
+        Countly.sharedInstance().startEvent("blocked_timed")
+        Countly.sharedInstance().endEvent("blocked_timed")
+        Countly.sharedInstance().cancelEvent("blocked_timed")
+        Countly.sharedInstance().views().startView("Screen")
+        Countly.sharedInstance().views().stopView(withName: "Screen")
+        Countly.sharedInstance().views().stopAllViews([:])
+        Countly.sharedInstance().recordException(NSException(name: .genericException, reason: "blocked", userInfo: nil))
+        Countly.sharedInstance().recordCrashLog("blocked")
+        Countly.sharedInstance().clearCrashLogs()
 
-        XCTAssertEqual(counted(tracker).codes["w401"], 1)
+        let (usage, codes) = counted(tracker)
+        XCTAssertTrue(usage.isEmpty, "got: \(usage)")
+        XCTAssertTrue(codes.isEmpty, "got: \(codes)")
+    }
+
+    /// Consent for one feature lets its calls be counted, while the calls of a feature without consent stay uncounted.
+    func testOnlyFeaturesWithConsentAreCounted() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        let config = createBaseConfig()
+        config.requiresConsent = true
+        startWithoutHealthCheck(config)
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.events])
+        resetCounters(tracker)
+
+        Countly.sharedInstance().recordEvent("allowed_event")
+        Countly.sharedInstance().views().startView("Screen")
+
+        let usage = counted(tracker).usage
+        XCTAssertEqual(usage["events"]?["record"], 1)
+        XCTAssertNil(usage["views"], "got: \(usage)")
+    }
+
+    /// Withdrawing consent stops the counting of that feature's calls from then on.
+    func testCountingStopsWhenConsentIsWithdrawn() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        let config = createBaseConfig()
+        config.requiresConsent = true
+        startWithoutHealthCheck(config)
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.events])
+        resetCounters(tracker)
+
+        Countly.sharedInstance().recordEvent("before_withdrawal")
+        Countly.sharedInstance().cancelConsent(forFeatures: [CLYConsent.events])
+        Countly.sharedInstance().recordEvent("after_withdrawal")
+
+        XCTAssertEqual(counted(tracker).usage["events"]?["record"], 1)
+    }
+
+    /// A usage area the health check does not know is never counted.
+    func testUnknownUsageAreaIsNotCounted() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        resetCounters(tracker)
+
+        tracker.recordUsage("unknown", method: "record")
+        tracker.recordLogCode("w740", forUsageArea: "unknown")
+
+        let (usage, codes) = counted(tracker)
+        XCTAssertTrue(usage.isEmpty, "got: \(usage)")
+        XCTAssertTrue(codes.isEmpty, "got: \(codes)")
     }
 
     /// Methods with and without a modifier are counted as separate keys.

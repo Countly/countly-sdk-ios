@@ -178,9 +178,33 @@ void CountlyHealthTrackerResumeRecordingAfterCrash(void)
         return;
     }
 
+    if (![self hasConsentForUsageArea:area]) {
+        return;
+    }
+
     dispatch_async(self.hcQueue, ^{
         [self addCount:1 toUsageOfArea:area method:method];
     });
+}
+
+/// Whether the feature behind a method usage area has consent right now. Knowing which methods an app calls is itself
+/// tracking information, so a call of a feature without consent is not counted. An unknown area is not counted either.
+/// Every consent counts as given while the app does not require consent.
+- (BOOL)hasConsentForUsageArea:(NSString *)area {
+    CountlyConsentManager *consent = CountlyConsentManager.sharedInstance;
+    if ([area isEqualToString:@"sessions"]) {
+        return consent.consentForSessions;
+    }
+    if ([area isEqualToString:@"events"]) {
+        return consent.consentForEvents;
+    }
+    if ([area isEqualToString:@"views"]) {
+        return consent.consentForViewTracking;
+    }
+    if ([area isEqualToString:@"crashes"]) {
+        return consent.consentForCrashReporting;
+    }
+    return NO;
 }
 
 - (void)recordLogCode:(NSString *)code {
@@ -191,6 +215,14 @@ void CountlyHealthTrackerResumeRecordingAfterCrash(void)
     dispatch_async(self.hcQueue, ^{
         [self addCount:1 toLogCode:code];
     });
+}
+
+- (void)recordLogCode:(NSString *)code forUsageArea:(NSString *)area {
+    if (![self hasConsentForUsageArea:area]) {
+        return;
+    }
+
+    [self recordLogCode:code];
 }
 
 /// Adds to the count of a method, up to the cap a health check reports. Call from init or on the health tracker queue.

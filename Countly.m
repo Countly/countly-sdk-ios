@@ -667,7 +667,7 @@ static dispatch_once_t onceToken;
     if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
     {
         CLY_LOG_W(@"%s omitting the session begin, automatic session tracking is active", __FUNCTION__);
-        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740" forUsageArea:@"sessions"];
         return;
     }
 
@@ -682,7 +682,7 @@ static dispatch_once_t onceToken;
     if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
     {
         CLY_LOG_W(@"%s omitting the session update, automatic session tracking is active", __FUNCTION__);
-        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740" forUsageArea:@"sessions"];
         return;
     }
 
@@ -697,7 +697,7 @@ static dispatch_once_t onceToken;
     if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
     {
         CLY_LOG_W(@"%s omitting the session end, automatic session tracking is active", __FUNCTION__);
-        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740" forUsageArea:@"sessions"];
         return;
     }
 
@@ -998,13 +998,11 @@ static dispatch_once_t onceToken;
         if (!isReservedEvent.boolValue)
         {
             CLY_LOG_V(@"%s no consent given for the reserved event, it will not be recorded, key: [%@]", __FUNCTION__, key);
-            [CountlyHealthTracker.sharedInstance recordLogCode:@"w401"];
             return;
         }
         CLY_LOG_V(@"%s specific consent is given for the reserved event, it will be recorded, key: [%@]", __FUNCTION__, key);
     } else if (!CountlyConsentManager.sharedInstance.consentForEvents) {
         CLY_LOG_V(@"%s no consent given for events, the event will not be recorded, key: [%@]", __FUNCTION__, key);
-        [CountlyHealthTracker.sharedInstance recordLogCode:@"w401"];
         return;
     }
     
@@ -1242,7 +1240,6 @@ static dispatch_once_t onceToken;
     if (!CountlyConsentManager.sharedInstance.consentForEvents)
     {
         CLY_LOG_V(@"%s no consent given for events, the timed event will not be started, key: [%@]", __FUNCTION__, key);
-        [CountlyHealthTracker.sharedInstance recordLogCode:@"w401"];
         return;
     }
 
@@ -1267,7 +1264,6 @@ static dispatch_once_t onceToken;
     if (!CountlyConsentManager.sharedInstance.consentForEvents)
     {
         CLY_LOG_V(@"%s no consent given for events, the timed event will not be ended, key: [%@]", __FUNCTION__, key);
-        [CountlyHealthTracker.sharedInstance recordLogCode:@"w401"];
         return;
     }
 
@@ -1292,7 +1288,6 @@ static dispatch_once_t onceToken;
     if (!CountlyConsentManager.sharedInstance.consentForEvents)
     {
         CLY_LOG_V(@"%s no consent given for events, the timed event will not be cancelled, key: [%@]", __FUNCTION__, key);
-        [CountlyHealthTracker.sharedInstance recordLogCode:@"w401"];
         return;
     }
 

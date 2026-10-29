@@ -29,11 +29,16 @@
 - (void)sendHealthCheck;
 
 /// Counts one call of a public SDK method for the health check "fu" map, under its feature area ("sessions", "events", "views",
-/// "crashes") and method name. A method the SDK called by itself carries the ":a" suffix, for example "begin:a".
+/// "crashes") and method name. A method the SDK called by itself carries the ":a" suffix, for example "begin:a". Nothing is
+/// counted while the area's feature has no consent.
 - (void)recordUsage:(NSString *)area method:(NSString *)method;
 
 /// Counts one occurrence of an SDK log code for the health check "lc" map, a level letter and three digits such as "w740".
 - (void)recordLogCode:(NSString *)code;
+
+/// Counts one occurrence of a log code that a public method of a feature area records, like recordUsage:method:, so nothing
+/// is counted while the area's feature has no consent.
+- (void)recordLogCode:(NSString *)code forUsageArea:(NSString *)area;
 
 // Exposed for testing purposes only.
 - (void)resetInstance;
