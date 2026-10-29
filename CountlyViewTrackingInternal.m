@@ -186,9 +186,11 @@ static dispatch_once_t onceToken;
 {
     CLY_LOG_I(@"%s start view requested, name: [%@], segmentation key count: [%lu], segmentation keys: [%@]", __FUNCTION__, viewName, (unsigned long)segmentation.count, segmentation.allKeys);
     CLY_LOG_D(@"%s start view segmentation value detail, name: [%@], segmentation: [%@]", __FUNCTION__, viewName, segmentation);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"views" method:@"start"];
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s manual start view is not allowed while automatic view tracking is active, name: [%@] will not be started", __FUNCTION__, viewName);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
         return nil;
     }
 #endif
@@ -200,9 +202,11 @@ static dispatch_once_t onceToken;
 {
     CLY_LOG_I(@"%s start auto stopped view requested, name: [%@], segmentation key count: [%lu], segmentation keys: [%@]", __FUNCTION__, viewName, (unsigned long)segmentation.count, segmentation.allKeys);
     CLY_LOG_D(@"%s start auto stopped view segmentation value detail, name: [%@], segmentation: [%@]", __FUNCTION__, viewName, segmentation);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"views" method:@"startAuto"];
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s manual start auto stopped view is not allowed while automatic view tracking is active, name: [%@] will not be started", __FUNCTION__, viewName);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
         return nil;
     }
 #endif
@@ -214,9 +218,11 @@ static dispatch_once_t onceToken;
 {
     CLY_LOG_I(@"%s stop view by name requested, name: [%@], segmentation key count: [%lu], segmentation keys: [%@]", __FUNCTION__, viewName, (unsigned long)segmentation.count, segmentation.allKeys);
     CLY_LOG_D(@"%s stop view by name segmentation value detail, name: [%@], segmentation: [%@]", __FUNCTION__, viewName, segmentation);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"views" method:@"stop"];
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s manual stop view by name is not allowed while automatic view tracking is active, name: [%@] will not be stopped", __FUNCTION__, viewName);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
         return;
     }
 #endif
@@ -228,9 +234,11 @@ static dispatch_once_t onceToken;
 {
     CLY_LOG_I(@"%s stop view by ID requested, view ID: [%@], segmentation key count: [%lu], segmentation keys: [%@]", __FUNCTION__, viewID, (unsigned long)segmentation.count, segmentation.allKeys);
     CLY_LOG_D(@"%s stop view by ID segmentation value detail, view ID: [%@], segmentation: [%@]", __FUNCTION__, viewID, segmentation);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"views" method:@"stop"];
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s manual stop view by ID is not allowed while automatic view tracking is active, view ID: [%@] will not be stopped", __FUNCTION__, viewID);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
         return;
     }
 #endif
@@ -240,9 +248,11 @@ static dispatch_once_t onceToken;
 - (void)pauseViewWithID:(NSString *)viewID
 {
     CLY_LOG_I(@"%s pause view requested, view ID: [%@]", __FUNCTION__, viewID);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"views" method:@"pause"];
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s manual pause view is not allowed while automatic view tracking is active, view ID: [%@] will not be paused", __FUNCTION__, viewID);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
         return;
     }
 #endif
@@ -252,9 +262,11 @@ static dispatch_once_t onceToken;
 - (void)resumeViewWithID:(NSString *)viewID
 {
     CLY_LOG_I(@"%s resume view requested, view ID: [%@]", __FUNCTION__, viewID);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"views" method:@"resume"];
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s manual resume view is not allowed while automatic view tracking is active, view ID: [%@] will not be resumed", __FUNCTION__, viewID);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
         return;
     }
 #endif
@@ -265,9 +277,11 @@ static dispatch_once_t onceToken;
 {
     CLY_LOG_I(@"%s stop all views requested, segmentation key count: [%lu], segmentation keys: [%@]", __FUNCTION__, (unsigned long)segmentation.count, segmentation.allKeys);
     CLY_LOG_D(@"%s stop all views segmentation value detail, segmentation: [%@]", __FUNCTION__, segmentation);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"views" method:@"stopAll"];
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s manual stop all views is not allowed while automatic view tracking is active, no view will be stopped", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
         return;
     }
 #endif
@@ -911,7 +925,10 @@ static dispatch_once_t onceToken;
 
     // auto stopped, so the next screen ends this one, as automatic views do on Android
     if (!isException)
+    {
+        [CountlyHealthTracker.sharedInstance recordUsage:@"views" method:@"start:a"];
         [self startViewInternal:viewTitle customSegmentation:nil isAutoStoppedView:YES];
+    }
 }
 
 

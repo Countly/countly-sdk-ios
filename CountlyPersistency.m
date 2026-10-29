@@ -10,10 +10,12 @@
 @property (nonatomic) NSMutableArray* recordedEvents;
 @property (nonatomic) NSMutableDictionary* startedEvents;
 @property (nonatomic) BOOL isQueueBeingModified;
+@property (nonatomic) NSUInteger automaticCrashReportCount;
 @end
 
 @implementation CountlyPersistency
 NSString* const kCountlyQueuedRequestsPersistencyKey = @"kCountlyQueuedRequestsPersistencyKey";
+NSString* const kCountlyAutomaticCrashReportCountPersistencyKey = @"kCountlyAutomaticCrashReportCountPersistencyKey";
 NSString* const kCountlyStartedEventsPersistencyKey = @"kCountlyStartedEventsPersistencyKey";
 NSString* const kCountlyHealthCheckStatePersistencyKey = @"kCountlyHealthCheckStatePersistencyKey";
 NSString* const kCountlyStoredDeviceIDKey = @"kCountlyStoredDeviceIDKey";
@@ -57,6 +59,7 @@ static dispatch_once_t onceToken;
 #pragma GCC diagnostic pop
 
             self.queuedRequests = [readDict[kCountlyQueuedRequestsPersistencyKey] mutableCopy];
+            self.automaticCrashReportCount = [readDict[kCountlyAutomaticCrashReportCountPersistencyKey] unsignedIntegerValue];
 
             CLY_LOG_D(@"%s persistent storage file is loaded, data size: [%lu] bytes, restored request count: [%lu]", __FUNCTION__, (unsigned long)readData.length, (unsigned long)self.queuedRequests.count);
         }
@@ -116,6 +119,7 @@ static dispatch_once_t onceToken;
                 // in other case if exceeded count is 36 and out limit is 100 we can only remove 36 items because we have that amount
                 NSUInteger gonnaRemoveSize = MIN(exceededSize, kCountlyRequestRemovalLoopLimit) + 1;
                 CLY_LOG_D(@"%s request queue size: [%lu] exceeded the limit: [%lu], the first [%lu] request(s) will be dropped", __FUNCTION__, (unsigned long)self.queuedRequests.count, (unsigned long)self.storedRequestsLimit, (unsigned long)gonnaRemoveSize);
+                [CountlyHealthTracker.sharedInstance recordLogCode:@"w310"];
                 NSRange itemsToRemove = NSMakeRange(0, gonnaRemoveSize);
                 [self.queuedRequests removeObjectsInRange:itemsToRemove];
             }
@@ -452,6 +456,7 @@ static dispatch_once_t onceToken;
         if (self.startedEvents[event.key])
         {
             CLY_LOG_W(@"%s timed event is not started, reason: a timed event with the same key is already started, key: [%@]", __FUNCTION__, event.key);
+            [CountlyHealthTracker.sharedInstance recordLogCode:@"w722"];
             return;
         }
 
@@ -618,7 +623,7 @@ static dispatch_once_t onceToken;
     {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        saveData = [NSKeyedArchiver archivedDataWithRootObject:@{kCountlyQueuedRequestsPersistencyKey: self.queuedRequests}];
+        saveData = [NSKeyedArchiver archivedDataWithRootObject:@{kCountlyQueuedRequestsPersistencyKey: self.queuedRequests, kCountlyAutomaticCrashReportCountPersistencyKey: @(self.automaticCrashReportCount)}];
         queuedRequestCountForLog = self.queuedRequests.count;
 #pragma GCC diagnostic pop
     }
@@ -781,12 +786,38 @@ static dispatch_once_t onceToken;
         CLY_LOG_D(@"%s health check tracker state is stored, key count: [%lu]", __FUNCTION__, (unsigned long)healthCheckTrackerState.count);
     }
     @catch (NSException *exception) {
-        // NOTE: Debug on purpose. This method is only ever called from inside CountlyHealthTracker's
-        // hcQueue, and CountlyInternalLog re-enters that class for Error and Warning levels, which
-        // would repopulate the very counters this write is persisting or clearing.
+        // NOTE: Debug on purpose. This method is only ever called by CountlyHealthTracker, from its
+        // hcQueue or while it is created, and CountlyInternalLog re-enters that class for Error and Warning
+        // levels, which would repopulate the very counters this write is persisting or clearing.
         CLY_LOG_D(@"%s exception while storing the health check tracker state, exception name: [%@], reason: [%@]", __FUNCTION__,
                   exception.name, exception.reason);
     }
+}
+
+- (void)recordAutomaticCrashReport
+{
+    @synchronized (self)
+    {
+        self.automaticCrashReportCount++;
+    }
+}
+
+- (NSUInteger)takeAutomaticCrashReportCount
+{
+    NSUInteger count = 0;
+    @synchronized (self)
+    {
+        count = self.automaticCrashReportCount;
+        self.automaticCrashReportCount = 0;
+    }
+
+    if (count > 0)
+    {
+        CLY_LOG_D(@"%s automatically detected crash reports taken for the health check, count: [%lu]", __FUNCTION__, (unsigned long)count);
+        [self saveToFile];
+    }
+
+    return count;
 }
 
 - (NSDate *)retrievePLCrashCaptureSuppressedSince

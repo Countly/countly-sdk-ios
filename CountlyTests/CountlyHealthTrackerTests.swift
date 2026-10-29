@@ -404,9 +404,423 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
             XCTAssertEqual(result, .success, "Concurrent performance test did not complete in time")
         }
     }
+
+    // MARK: - Method Usage & Log Code Tests
+
+    /// Persists the counters and waits until the health tracker queue ran the work queued on it, also the work that
+    /// work queues.
+    private func drainHealthCheckQueue(_ tracker: CountlyHealthTracker) {
+        tracker.saveState()
+        tracker.hcQueue.sync {}
+        tracker.hcQueue.sync {}
+    }
+
+    /// Clears every counter of the health tracker and waits until it is done.
+    private func resetCounters(_ tracker: CountlyHealthTracker) {
+        tracker.clearAndSave()
+        tracker.hcQueue.sync {}
+    }
+
+    /// The method usage and log codes counted so far, read on the health tracker queue once the queued work ran.
+    private func counted(_ tracker: CountlyHealthTracker) -> (usage: [String: [String: Int]], codes: [String: Int]) {
+        drainHealthCheckQueue(tracker)
+        var usage: [String: [String: Int]] = [:]
+        var codes: [String: Int] = [:]
+        tracker.hcQueue.sync {
+            for (area, methods) in tracker.methodUsage {
+                guard let area = area as? String, let methods = methods as? [String: NSNumber] else { continue }
+                usage[area] = methods.mapValues { $0.intValue }
+            }
+            for (code, count) in tracker.logCodes {
+                guard let code = code as? String, let count = count as? NSNumber else { continue }
+                codes[code] = count.intValue
+            }
+        }
+        return (usage, codes)
+    }
+
+    /// Starts the SDK with the health check marked as sent, so no server answer takes counters away while a test reads
+    /// them.
+    private func startWithoutHealthCheck(_ config: CountlyConfig) {
+        CountlyHealthTracker.sharedInstance().setValue(true, forKey: "healthCheckSent")
+        Countly.sharedInstance().start(with: config)
+    }
+
+    /// The `hc` parameter a health check request carries.
+    private func healthCheckParameter(of request: URLRequest) -> [String: Any] {
+        let query = request.url?.query ?? String(data: request.httpBody ?? Data(), encoding: .utf8) ?? ""
+        return TestUtils.parseQueryString(query)["hc"] as? [String: Any] ?? [:]
+    }
+
+    /// recordUsage and recordLogCode add up per feature area and method, and per code.
+    func testRecordUsageAndLogCodeAccumulate() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        resetCounters(tracker)
+
+        tracker.recordUsage("events", method: "record")
+        tracker.recordUsage("events", method: "record")
+        tracker.recordUsage("views", method: "start")
+        tracker.recordLogCode("w204")
+        tracker.recordLogCode("e301")
+
+        let (usage, codes) = counted(tracker)
+        XCTAssertEqual(usage["events"]?["record"], 2)
+        XCTAssertEqual(usage["views"]?["start"], 1)
+        XCTAssertEqual(codes["w204"], 1)
+        XCTAssertEqual(codes["e301"], 1)
+    }
+
+    /// An empty feature area, method or code is ignored.
+    func testRecordUsageIgnoresEmptyInputs() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        resetCounters(tracker)
+
+        tracker.recordUsage("", method: "record")
+        tracker.recordUsage("events", method: "")
+        tracker.recordLogCode("")
+
+        let (usage, codes) = counted(tracker)
+        XCTAssertTrue(usage.isEmpty)
+        XCTAssertTrue(codes.isEmpty)
+    }
+
+    /// Counting from many threads at once is safe and stays within the cap a health check reports.
+    func testRecordUsageThreadSafety() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        resetCounters(tracker)
+        runConcurrentStressTest(
+            iterations: 10_000,
+            writerBlock: { _ in tracker.recordUsage("events", method: "record") },
+            readerBlock: { tracker.saveState() }
+        )
+
+        let count = counted(tracker).usage["events"]?["record"] ?? 0
+        XCTAssertTrue(count > 0 && count <= 65535, "expected 0 < count <= 65535, got \(count)")
+    }
+
+    /// The counts are persisted with the other counters, and clearAndSave clears them.
+    func testUsageAndLogCodesPersistAndClear() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        startWithoutHealthCheck(createBaseConfig())
+        resetCounters(tracker)
+        tracker.recordUsage("events", method: "record")
+        tracker.recordLogCode("w204")
+        drainHealthCheckQueue(tracker)
+
+        let state = CountlyPersistency.sharedInstance().retrieveHealthCheckTrackerState() ?? [:]
+        XCTAssertEqual((state["MU"] as? [String: [String: NSNumber]])?["events"]?["record"], 1)
+        XCTAssertEqual((state["LC"] as? [String: NSNumber])?["w204"], 1)
+
+        resetCounters(tracker)
+        let (usage, codes) = counted(tracker)
+        XCTAssertTrue(usage.isEmpty)
+        XCTAssertTrue(codes.isEmpty)
+    }
+
+    /// The health check request carries the counted method usage and log codes.
+    func testHealthCheckRequestIncludesFuLcWhenPresent() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        startWithoutHealthCheck(createBaseConfig())
+        resetCounters(tracker)
+        tracker.recordUsage("events", method: "record")
+        tracker.recordLogCode("w204")
+        drainHealthCheckQueue(tracker)
+
+        let healthCheck = healthCheckParameter(of: tracker.healthCheckRequest())
+        XCTAssertEqual((healthCheck["fu"] as? [String: [String: Int]])?["events"]?["record"], 1, "got: \(healthCheck)")
+        XCTAssertEqual((healthCheck["lc"] as? [String: Int])?["w204"], 1, "got: \(healthCheck)")
+    }
+
+    /// An error message holding '&', '=' and '+' reaches the server intact, so it can not cut the hc parameter short.
+    func testHealthCheckRequestEscapesTheErrorMessage() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        startWithoutHealthCheck(createBaseConfig())
+        resetCounters(tracker)
+
+        tracker.logFailedNetworkRequest(withStatusCode: 502, errorResponse: "a&b=c+d")
+        tracker.recordLogCode("e301")
+        drainHealthCheckQueue(tracker)
+
+        let healthCheck = healthCheckParameter(of: tracker.healthCheckRequest())
+        XCTAssertEqual(healthCheck["em"] as? String, "a&b=c+d", "got: \(healthCheck)")
+        XCTAssertEqual((healthCheck["lc"] as? [String: Int])?["e301"], 1, "got: \(healthCheck)")
+    }
+
+    /// An automatic session is counted when it really begins, here once session consent is given, not when start tries
+    /// to begin
+    /// it without consent.
+    func testAutomaticSessionBeginIsCountedWhenConsentLetsItBegin() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        let config = createBaseConfig()
+        config.requiresConsent = true
+        startWithoutHealthCheck(config)
+
+        XCTAssertNil(counted(tracker).usage["sessions"]?["begin:a"])
+
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.sessions])
+
+        XCTAssertEqual(counted(tracker).usage["sessions"]?["begin:a"], 1)
+    }
+
+#if os(iOS) || os(tvOS)
+    /// Going to the background stores the automatic session end it makes, so an app killed in the background still
+    /// reports it.
+    func testEnteringBackgroundStoresTheAutomaticSessionEnd() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        startWithoutHealthCheck(createBaseConfig())
+        resetCounters(tracker)
+
+        NotificationCenter.default.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+        tracker.hcQueue.sync {}
+
+        let state = CountlyPersistency.sharedInstance().retrieveHealthCheckTrackerState() ?? [:]
+        XCTAssertEqual((state["MU"] as? [String: [String: NSNumber]])?["sessions"]?["end:a"], 1, "got: \(state)")
+    }
+#endif
+
+    /// "fu" and "lc" are sent also when nothing was counted, so the server can tell an SDK that reports them from one
+    /// that does not.
+    func testHealthCheckRequestAlwaysCarriesFuAndLc() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        startWithoutHealthCheck(createBaseConfig())
+        resetCounters(tracker)
+
+        let healthCheck = healthCheckParameter(of: tracker.healthCheckRequest())
+        XCTAssertEqual((healthCheck["fu"] as? [String: Any])?.isEmpty, true, "got: \(healthCheck)")
+        XCTAssertEqual((healthCheck["lc"] as? [String: Any])?.isEmpty, true, "got: \(healthCheck)")
+    }
+
+    /// Every recordEvent call of the app is counted once, whichever convenience form it uses.
+    func testPublicMethodsPopulateUsage() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        startWithoutHealthCheck(createBaseConfig())
+        resetCounters(tracker)
+
+        Countly.sharedInstance().recordEvent("test_event")
+        Countly.sharedInstance().recordEvent("test_event_2", segmentation: ["key": "value"])
+
+        XCTAssertEqual(counted(tracker).usage["events"]?["record"], 2)
+    }
+
+    /// An event dropped for missing consent is reported as w401.
+    func testConsentBlockedRecordsLogCode() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        let config = createBaseConfig()
+        config.requiresConsent = true
+        startWithoutHealthCheck(config)
+        resetCounters(tracker)
+
+        Countly.sharedInstance().recordEvent("blocked_event")
+
+        XCTAssertEqual(counted(tracker).codes["w401"], 1)
+    }
+
+    /// Methods with and without a modifier are counted as separate keys.
+    func testModifierLeavesAreIndependentKeys() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        resetCounters(tracker)
+
+        tracker.recordUsage("sessions", method: "begin")
+        tracker.recordUsage("sessions", method: "begin:a")
+        tracker.recordUsage("sessions", method: "begin:a")
+
+        let sessions = counted(tracker).usage["sessions"]
+        XCTAssertEqual(sessions?["begin"], 1, "manual begin tracked separately")
+        XCTAssertEqual(sessions?["begin:a"], 2, "automatic begin tracked separately")
+    }
+
+    /// Pausing, resuming and stopping all views are counted, so a view lifecycle closed with stopAllViews is balanced.
+    func testViewStopAllPauseAndResumeAreCounted() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        startWithoutHealthCheck(createBaseConfig())
+        resetCounters(tracker)
+
+        let viewID = Countly.sharedInstance().views().startView("Screen")
+        Countly.sharedInstance().views().pauseView(withID: viewID)
+        Countly.sharedInstance().views().resumeView(withID: viewID)
+        Countly.sharedInstance().views().stopAllViews([:])
+
+        let views = counted(tracker).usage["views"]
+        XCTAssertEqual(views?["start"], 1)
+        XCTAssertEqual(views?["pause"], 1)
+        XCTAssertEqual(views?["resume"], 1)
+        XCTAssertEqual(views?["stopAll"], 1)
+    }
+
+    /// Ending a timed event records the event, but is counted as an endEvent call only.
+    func testEndedTimedEventIsNotCountedAsRecordEvent() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        startWithoutHealthCheck(createBaseConfig())
+        resetCounters(tracker)
+
+        Countly.sharedInstance().startEvent("timed")
+        Countly.sharedInstance().endEvent("timed")
+
+        let events = counted(tracker).usage["events"]
+        XCTAssertEqual(events?["start"], 1)
+        XCTAssertEqual(events?["end"], 1)
+        XCTAssertNil(events?["record"])
+    }
+
+    /// Manual session calls are ignored while automatic session tracking is on, which is reported as w740.
+    func testManualSessionCallsDuringAutomaticSessionsRecordW740() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        startWithoutHealthCheck(createBaseConfig())
+        resetCounters(tracker)
+
+        Countly.sharedInstance().beginSession()
+        Countly.sharedInstance().updateSession()
+        Countly.sharedInstance().endSession()
+
+        let (usage, codes) = counted(tracker)
+        XCTAssertEqual(usage["sessions"]?["begin"], 1)
+        XCTAssertEqual(usage["sessions"]?["update"], 1)
+        XCTAssertEqual(usage["sessions"]?["end"], 1)
+        XCTAssertEqual(codes["w740"], 3)
+    }
+
+    /// While an automatically detected crash is reported nothing is counted, until crash reporting starts again.
+    func testRecordingStopsForCrashUntilCrashReportingStartsAgain() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        resetCounters(tracker)
+        defer { CountlyHealthTrackerResumeRecordingAfterCrash() }
+
+        CountlyHealthTrackerStopRecordingForCrash()
+        tracker.recordUsage("events", method: "record")
+        tracker.recordLogCode("w201")
+        let stopped = counted(tracker)
+        XCTAssertTrue(stopped.usage.isEmpty)
+        XCTAssertTrue(stopped.codes.isEmpty)
+
+        CountlyHealthTrackerResumeRecordingAfterCrash()
+        tracker.recordUsage("events", method: "record")
+        XCTAssertEqual(counted(tracker).usage["events"]?["record"], 1)
+    }
+
+    /// An automatically detected crash the previous run reported is counted as crashes/record:a once the stored
+    /// counters are read.
+    func testAutomaticCrashReportOfThePreviousRunIsReported() throws {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        startWithoutHealthCheck(createBaseConfig())
+        let persistency = try XCTUnwrap(CountlyPersistency.sharedInstance())
+        resetCounters(tracker)
+
+        persistency.recordAutomaticCrashReport()
+        tracker.hcQueue.sync { tracker.setValue(false, forKey: "persistedStateLoaded") }
+
+        let usage = tracker.healthCheckSnapshot()["fu"] as? [String: [String: NSNumber]]
+        XCTAssertEqual(usage?["crashes"]?["record:a"], 1)
+        XCTAssertEqual(persistency.takeAutomaticCrashReportCount(), 0, "the count is taken only once")
+    }
+
+    /// The automatic crash count is written with the request queue, so it survives the crash that ends the process.
+    func testAutomaticCrashReportCountIsSavedWithTheRequestQueue() throws {
+        startWithoutHealthCheck(createBaseConfig())
+        let persistency = try XCTUnwrap(CountlyPersistency.sharedInstance())
+        _ = persistency.takeAutomaticCrashReportCount()
+        defer {
+            _ = persistency.takeAutomaticCrashReportCount()
+            persistency.saveToFileSync()
+        }
+
+        persistency.recordAutomaticCrashReport()
+        persistency.saveToFileSync()
+
+        XCTAssertEqual(CountlyPersistency().takeAutomaticCrashReportCount(), 1)
+    }
+
+    /// A health check the server accepted takes away only what it reported, not what was counted while it was sent. The
+    /// plain
+    /// warning and error counts are left out: the health check the base setup sends may be answered during the test.
+    func testSuccessfulHealthCheckKeepsWhatWasCountedWhileItWasSent() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        startWithoutHealthCheck(createBaseConfig())
+        resetCounters(tracker)
+
+        tracker.recordUsage("events", method: "record")
+        tracker.recordUsage("events", method: "record")
+        tracker.recordLogCode("w201")
+        tracker.logFailedNetworkRequest(withStatusCode: 500, errorResponse: "first")
+        drainHealthCheckQueue(tracker)
+        let sent = tracker.healthCheckSnapshot()
+
+        tracker.recordUsage("events", method: "record")
+        tracker.recordLogCode("w202")
+        tracker.logFailedNetworkRequest(withStatusCode: 503, errorResponse: "second")
+        tracker.clearSentValues(sent)
+
+        let (usage, codes) = counted(tracker)
+        XCTAssertEqual(usage["events"]?["record"], 1)
+        XCTAssertNil(codes["w201"])
+        XCTAssertEqual(codes["w202"], 1)
+
+        let left = tracker.healthCheckSnapshot() ?? [:]
+        XCTAssertEqual(left["sc"] as? Int, 503, "a failure newer than the report must be kept")
+        XCTAssertEqual(left["em"] as? String, "second")
+    }
+
+    // MARK: - Log codes from real call sites
+
+    /// Starting the SDK a second time is ignored and reported as w110.
+    func testInitTwiceRecordsW110() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        let config = createBaseConfig()
+        startWithoutHealthCheck(config)
+        resetCounters(tracker)
+
+        Countly.sharedInstance().start(with: config)
+
+        XCTAssertEqual(counted(tracker).codes["w110"], 1)
+    }
+
+    /// Ending a timed event that was not started is reported as w720, cancelling one as w721.
+    func testEndingOrCancellingTimedEventThatWasNotStarted() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        startWithoutHealthCheck(createBaseConfig())
+        resetCounters(tracker)
+
+        Countly.sharedInstance().endEvent("never_started")
+        Countly.sharedInstance().cancelEvent("also_never_started")
+
+        let codes = counted(tracker).codes
+        XCTAssertEqual(codes["w720"], 1)
+        XCTAssertEqual(codes["w721"], 1)
+    }
+
+    /// Starting a timed event whose key is already running is reported as w722.
+    func testDuplicateStartEventRecordsW722() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        startWithoutHealthCheck(createBaseConfig())
+        resetCounters(tracker)
+
+        Countly.sharedInstance().startEvent("dup_key")
+        Countly.sharedInstance().startEvent("dup_key")
+
+        let (usage, codes) = counted(tracker)
+        XCTAssertEqual(usage["events"]?["start"], 2)
+        XCTAssertEqual(codes["w722"], 1)
+    }
+
+#if os(iOS) || os(tvOS)
+    /// A manual view call while automatic view tracking is active is ignored and reported as w740.
+    func testManualViewDuringAutoTrackingRecordsW740() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        let config = createBaseConfig()
+        config.enableAutomaticViewTracking = true
+        startWithoutHealthCheck(config)
+        resetCounters(tracker)
+
+        _ = Countly.sharedInstance().views().startView("ManualWhileAuto")
+
+        let (usage, codes) = counted(tracker)
+        XCTAssertEqual(usage["views"]?["start"], 1)
+        XCTAssertEqual(codes["w740"], 1)
+    }
+#endif
 }
 
-/// Stored health counters, with every request answered by a reply without `result`, so no response clears them mid test.
+/// Stored health counters, with every request answered by a reply without `result`, so no response clears them mid
+/// test.
 class CountlyHealthTrackerStoredCountersTests: CountlyBaseTestCase {
     private let healthChecksLock = NSLock()
     private var healthChecks: [[String: Any]] = []
@@ -451,7 +865,8 @@ class CountlyHealthTrackerStoredCountersTests: CountlyBaseTestCase {
         return healthChecks
     }
 
-    /// The first health check after start reports the previous run's stored counts together with those counted before start.
+    /// The first health check after start reports the previous run's stored counts together with those counted before
+    /// start.
     func test_countersStoredByThePreviousRun_areAddedToTheOnesCountedBeforeStart() throws {
         try TestPlatform.skipUnlessHTTPInterceptable()
 

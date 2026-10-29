@@ -314,6 +314,7 @@ static void CountlyForgetReplacedCrashHandlers(void)
 #endif
             atomic_store(&s_hasReportedAutomaticCrash, false);
             CountlySDKLogsResumeCaptureAfterCrash();
+            CountlyHealthTrackerResumeRecordingAfterCrash();
             self.crashHandlerInstallation = CLYCrashHandlerInstallationDefault;
         }
     }
@@ -492,6 +493,7 @@ static void CountlyForgetReplacedCrashHandlers(void)
         CLY_LOG_I(@"%s pending crash report recorded, isFatal: [%@], breadcrumbLength: [%lu], customSegmentationProvided: [%@]", __FUNCTION__, @"YES", (unsigned long)[(NSString *)crashReport[kCountlyCRKeyCustom] length], (self.crashSegmentation.count > 0) ? @"YES" : @"NO");
         CLY_LOG_D(@"%s pending crash report detail, report: [%@]", __FUNCTION__, crashReport);
 
+        [CountlyHealthTracker.sharedInstance recordUsage:@"crashes" method:@"record:a"];
         [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:NO];
     }
 
@@ -575,6 +577,7 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
         // the immediate send below waits for its completion, which logs on another thread and must not wait for a log
         // gathering lock this thread may hold
         CountlySDKLogsStopCaptureForCrash();
+        CountlyHealthTrackerStopRecordingForCrash();
     }
 
     NSArray* stackTrace = exception.userInfo[kCountlyExceptionUserInfoBacktraceKey];
@@ -647,6 +650,9 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
 
         CLY_LOG_I(@"%s crash recorded, isFatal: [%@], isAutoDetected: [%@], customSegmentationKeyCount: [%lu], breadcrumbCount: [%lu]", __FUNCTION__, crashData.fatal ? @"YES" : @"NO", isAutoDetect ? @"YES" : @"NO", (unsigned long)crashData.crashSegmentation.count, (unsigned long)crashData.breadcrumbs.count);
         CLY_LOG_D(@"%s crash detail, breadcrumbs: [%@], crashSegmentation: [%@], stackTrace: [%@]", __FUNCTION__, crashData.breadcrumbs, crashData.crashSegmentation, crashData.stackTrace);
+
+        if (isAutoDetect)
+            [CountlyPersistency.sharedInstance recordAutomaticCrashReport];
 
         [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:isAutoDetect];
     }

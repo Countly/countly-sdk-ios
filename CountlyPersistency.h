@@ -73,6 +73,12 @@
 - (NSDictionary *)retrieveHealthCheckTrackerState;
 - (void)storeHealthCheckTrackerState:(NSDictionary *)healthCheckTrackerState;
 
+/// Counts an automatically detected crash the SDK reports, for the health check. Kept in memory and written with the request queue
+/// by the save the crash report itself makes, so the crash handler, which can run in a signal handler, needs no other write. Never logs.
+- (void)recordAutomaticCrashReport;
+/// The automatically detected crashes counted since the last call, also those the previous run stored, and starts counting from zero.
+- (NSUInteger)takeAutomaticCrashReportCount;
+
 /// When automatic crash capture stopped being wanted while PLCrashReporter stays installed, or nil while it is wanted.
 - (NSDate *)retrievePLCrashCaptureSuppressedSince;
 /// Stores when automatic crash capture stopped being wanted, nil clears it.

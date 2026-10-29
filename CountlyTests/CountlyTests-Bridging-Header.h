@@ -2,6 +2,7 @@
 #import "CountlyConnectionManager.h"
 #import "CountlyViewTrackingInternal.h"
 #import "CountlyHealthTracker.h"
+#import "CountlyHealthTracker+Tests.h"
 #import "CountlyContentBuilderInternal.h"
 #import "CountlyContentBuilderInternal+Tests.h"
 #import "CountlyWebViewManager.h"

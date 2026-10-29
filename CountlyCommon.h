@@ -258,6 +258,8 @@ void CountlyRunOnMainThread(dispatch_block_t block);
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation;
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation ID:(NSString *)ID;
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration ID:(NSString *)ID timestamp:(NSTimeInterval)timestamp;
+/// Records an event as the public recordEvent does, without counting it as a recordEvent call of the app for the health check.
+- (void)recordEventInternal:(NSString *)key segmentation:(NSDictionary<NSString *, id> * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
 @end
 
 @interface Countly (AutomaticSessionTracking)

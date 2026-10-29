@@ -480,6 +480,7 @@ static dispatch_once_t onceToken;
                 }
 
                 [CountlyHealthTracker.sharedInstance logFailedNetworkRequestWithStatusCode:((NSHTTPURLResponse*)response).statusCode errorResponse: [data cly_stringUTF8]];
+                [CountlyHealthTracker.sharedInstance recordLogCode:@"e301"];
                 [CountlyHealthTracker.sharedInstance saveState];
                 self.startTime = nil;
                 atomic_store(&self->_isProcessingQueue, NO);
@@ -678,6 +679,8 @@ static dispatch_once_t onceToken;
     isSessionStarted = YES;
     // the manual session API refuses to begin while automatic session tracking is on, so a session begun now is the SDK's own
     isSessionStartedAutomatically = CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled;
+    if (isSessionStartedAutomatically)
+        [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"begin:a"];
     lastSessionStartTime = NSDate.date.timeIntervalSince1970;
     unsentSessionLength = 0.0;
 
@@ -736,6 +739,10 @@ static dispatch_once_t onceToken;
         CLY_LOG_D(@"%s No session is running, this 'endSession' will be ignored", __FUNCTION__);
         return;
     }
+
+    // a crash report ends the session from what can be a signal handler, where the health tracker must not be touched
+    if (isSessionStartedAutomatically && !isCrashing)
+        [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"end:a"];
 
     isSessionStarted = NO;
     isSessionStartedAutomatically = NO;
