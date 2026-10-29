@@ -220,10 +220,7 @@ static dispatch_once_t onceToken;
 
     // Automatic session tracking is resolved through the SBS precedence chain (server can override the developer's manual session control choice)
     if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
-    {
-        [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"begin:a"];
         [CountlyConnectionManager.sharedInstance beginSession];
-    }
     else
         [CountlyCommon.sharedInstance recordOrientation];
     
@@ -461,10 +458,7 @@ static dispatch_once_t onceToken;
     [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
 
     if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
-    {
-        [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"end:a"];
         [CountlyConnectionManager.sharedInstance endSession];
-    }
 
     // after the session end, so the session summary is queued ahead of the log batches. Nothing about the gathered
     // lines is persisted, so the only way the tail survives the app going away is getting it out now
@@ -499,10 +493,7 @@ static dispatch_once_t onceToken;
     
     // activation also resumes without a suspend before it (every macOS activation, an iOS alert), so a session may still be running
     if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled && !CountlyConnectionManager.sharedInstance.isSessionStarted)
-    {
-        [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"begin:a"];
         [CountlyConnectionManager.sharedInstance beginSession];
-    }
 
     [CountlyViewTrackingInternal.sharedInstance applicationWillEnterForeground];
     
@@ -526,9 +517,10 @@ static dispatch_once_t onceToken;
 - (void)applicationDidEnterBackground:(NSNotification *)notification
 {
     CLY_LOG_D(@"%s the app did enter background, saving the state and suspending", __FUNCTION__);
-    [CountlyHealthTracker.sharedInstance saveState];
     [CountlyConnectionTest.sharedInstance noteAppSuspended];
     [self suspend];
+    // after suspend, so the counts it makes are stored before the app may be killed in the background
+    [CountlyHealthTracker.sharedInstance saveState];
 }
 
 - (void)applicationWillEnterForeground:(NSNotification *)notification
@@ -725,13 +717,11 @@ static dispatch_once_t onceToken;
             return;
 
         CLY_LOG_D(@"%s automatic session tracking is on and no session is running, a session will be started", __FUNCTION__);
-        [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"begin:a"];
         [connectionManager beginSession];
     }
     else if (connectionManager.isSessionStarted && connectionManager.isSessionStartedAutomatically)
     {
         CLY_LOG_D(@"%s automatic session tracking is off, the session the SDK started automatically will be ended", __FUNCTION__);
-        [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"end:a"];
         [connectionManager sendEventsWithSaveIfNeeded];
         [connectionManager endSession];
     }

@@ -410,21 +410,6 @@ void CountlyHealthTrackerResumeRecordingAfterCrash(void)
     [task resume];
 }
 
-- (NSString *)dictionaryToJsonString:(NSDictionary *)json {
-    NSError *error;
-    NSData *data = [NSJSONSerialization dataWithJSONObject:json options:0 error:&error];
-    NSString *encodedData = @"";
-
-    if (!error && data) {
-        NSString *jsonString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-        encodedData = [jsonString stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
-    } else {
-        CLY_LOG_E(@"%s could not build the json payload for the health check request, an empty value will be sent, keyCount: [%lu], error: [%@]", __FUNCTION__, (unsigned long)json.count, error.localizedDescription);
-    }
-
-    return encodedData;
-}
-
 /// The health check parameter as it is sent, taken from the current counters. "fu" and "lc" are always present, empty when
 /// nothing was counted, so the server can tell an SDK that reports them from one that does not.
 - (NSDictionary *)healthCheckSnapshot {
@@ -454,12 +439,9 @@ void CountlyHealthTrackerResumeRecordingAfterCrash(void)
 - (NSURLRequest *)healthCheckRequestWithHealthCheck:(NSDictionary *)healthCheck {
     NSString *queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
 
-    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"hc", [self dictionaryToJsonString:healthCheck]];
-    
-    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"metrics", [self dictionaryToJsonString:@{
-        CLYMetricKeyAppVersion: CountlyDeviceInfo.appVersion
-     }]];
-
+    // fully escaped, as the error message is a server response that can hold '&', '=' or '+'
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"hc", [healthCheck cly_JSONify]];
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"metrics", [@{CLYMetricKeyAppVersion: CountlyDeviceInfo.appVersion} cly_JSONify]];
 
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
     NSString* hcSendURL = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"%@",kCountlyEndpointI];

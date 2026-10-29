@@ -407,7 +407,8 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
 
     // MARK: - Method Usage & Log Code Tests
 
-    /// Persists the counters and waits until the health tracker queue ran the work queued on it, also the work that work queues.
+    /// Persists the counters and waits until the health tracker queue ran the work queued on it, also the work that
+    /// work queues.
     private func drainHealthCheckQueue(_ tracker: CountlyHealthTracker) {
         tracker.saveState()
         tracker.hcQueue.sync {}
@@ -438,7 +439,8 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         return (usage, codes)
     }
 
-    /// Starts the SDK with the health check marked as sent, so no server answer takes counters away while a test reads them.
+    /// Starts the SDK with the health check marked as sent, so no server answer takes counters away while a test reads
+    /// them.
     private func startWithoutHealthCheck(_ config: CountlyConfig) {
         CountlyHealthTracker.sharedInstance().setValue(true, forKey: "healthCheckSent")
         Countly.sharedInstance().start(with: config)
@@ -524,20 +526,68 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         tracker.recordLogCode("w204")
         drainHealthCheckQueue(tracker)
 
-        let hc = healthCheckParameter(of: tracker.healthCheckRequest())
-        XCTAssertEqual((hc["fu"] as? [String: [String: Int]])?["events"]?["record"], 1, "got: \(hc)")
-        XCTAssertEqual((hc["lc"] as? [String: Int])?["w204"], 1, "got: \(hc)")
+        let healthCheck = healthCheckParameter(of: tracker.healthCheckRequest())
+        XCTAssertEqual((healthCheck["fu"] as? [String: [String: Int]])?["events"]?["record"], 1, "got: \(healthCheck)")
+        XCTAssertEqual((healthCheck["lc"] as? [String: Int])?["w204"], 1, "got: \(healthCheck)")
     }
 
-    /// "fu" and "lc" are sent also when nothing was counted, so the server can tell an SDK that reports them from one that does not.
+    /// An error message holding '&', '=' and '+' reaches the server intact, so it can not cut the hc parameter short.
+    func testHealthCheckRequestEscapesTheErrorMessage() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        startWithoutHealthCheck(createBaseConfig())
+        resetCounters(tracker)
+
+        tracker.logFailedNetworkRequest(withStatusCode: 502, errorResponse: "a&b=c+d")
+        tracker.recordLogCode("e301")
+        drainHealthCheckQueue(tracker)
+
+        let healthCheck = healthCheckParameter(of: tracker.healthCheckRequest())
+        XCTAssertEqual(healthCheck["em"] as? String, "a&b=c+d", "got: \(healthCheck)")
+        XCTAssertEqual((healthCheck["lc"] as? [String: Int])?["e301"], 1, "got: \(healthCheck)")
+    }
+
+    /// An automatic session is counted when it really begins, here once session consent is given, not when start tries
+    /// to begin
+    /// it without consent.
+    func testAutomaticSessionBeginIsCountedWhenConsentLetsItBegin() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        let config = createBaseConfig()
+        config.requiresConsent = true
+        startWithoutHealthCheck(config)
+
+        XCTAssertNil(counted(tracker).usage["sessions"]?["begin:a"])
+
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.sessions])
+
+        XCTAssertEqual(counted(tracker).usage["sessions"]?["begin:a"], 1)
+    }
+
+#if os(iOS) || os(tvOS)
+    /// Going to the background stores the automatic session end it makes, so an app killed in the background still
+    /// reports it.
+    func testEnteringBackgroundStoresTheAutomaticSessionEnd() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        startWithoutHealthCheck(createBaseConfig())
+        resetCounters(tracker)
+
+        NotificationCenter.default.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+        tracker.hcQueue.sync {}
+
+        let state = CountlyPersistency.sharedInstance().retrieveHealthCheckTrackerState() ?? [:]
+        XCTAssertEqual((state["MU"] as? [String: [String: NSNumber]])?["sessions"]?["end:a"], 1, "got: \(state)")
+    }
+#endif
+
+    /// "fu" and "lc" are sent also when nothing was counted, so the server can tell an SDK that reports them from one
+    /// that does not.
     func testHealthCheckRequestAlwaysCarriesFuAndLc() {
         let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
         startWithoutHealthCheck(createBaseConfig())
         resetCounters(tracker)
 
-        let hc = healthCheckParameter(of: tracker.healthCheckRequest())
-        XCTAssertEqual((hc["fu"] as? [String: Any])?.isEmpty, true, "got: \(hc)")
-        XCTAssertEqual((hc["lc"] as? [String: Any])?.isEmpty, true, "got: \(hc)")
+        let healthCheck = healthCheckParameter(of: tracker.healthCheckRequest())
+        XCTAssertEqual((healthCheck["fu"] as? [String: Any])?.isEmpty, true, "got: \(healthCheck)")
+        XCTAssertEqual((healthCheck["lc"] as? [String: Any])?.isEmpty, true, "got: \(healthCheck)")
     }
 
     /// Every recordEvent call of the app is counted once, whichever convenience form it uses.
@@ -647,7 +697,8 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         XCTAssertEqual(counted(tracker).usage["events"]?["record"], 1)
     }
 
-    /// An automatically detected crash the previous run reported is counted as crashes/record:a once the stored counters are read.
+    /// An automatically detected crash the previous run reported is counted as crashes/record:a once the stored
+    /// counters are read.
     func testAutomaticCrashReportOfThePreviousRunIsReported() throws {
         let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
         startWithoutHealthCheck(createBaseConfig())
@@ -678,7 +729,8 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         XCTAssertEqual(CountlyPersistency().takeAutomaticCrashReportCount(), 1)
     }
 
-    /// A health check the server accepted takes away only what it reported, not what was counted while it was sent. The plain
+    /// A health check the server accepted takes away only what it reported, not what was counted while it was sent. The
+    /// plain
     /// warning and error counts are left out: the health check the base setup sends may be answered during the test.
     func testSuccessfulHealthCheckKeepsWhatWasCountedWhileItWasSent() {
         let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
@@ -702,7 +754,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         XCTAssertNil(codes["w201"])
         XCTAssertEqual(codes["w202"], 1)
 
-        let left = tracker.healthCheckSnapshot()
+        let left = tracker.healthCheckSnapshot() ?? [:]
         XCTAssertEqual(left["sc"] as? Int, 503, "a failure newer than the report must be kept")
         XCTAssertEqual(left["em"] as? String, "second")
     }
@@ -758,7 +810,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         startWithoutHealthCheck(config)
         resetCounters(tracker)
 
-        let _ = Countly.sharedInstance().views().startView("ManualWhileAuto")
+        _ = Countly.sharedInstance().views().startView("ManualWhileAuto")
 
         let (usage, codes) = counted(tracker)
         XCTAssertEqual(usage["views"]?["start"], 1)
@@ -767,7 +819,8 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
 #endif
 }
 
-/// Stored health counters, with every request answered by a reply without `result`, so no response clears them mid test.
+/// Stored health counters, with every request answered by a reply without `result`, so no response clears them mid
+/// test.
 class CountlyHealthTrackerStoredCountersTests: CountlyBaseTestCase {
     private let healthChecksLock = NSLock()
     private var healthChecks: [[String: Any]] = []
@@ -812,7 +865,8 @@ class CountlyHealthTrackerStoredCountersTests: CountlyBaseTestCase {
         return healthChecks
     }
 
-    /// The first health check after start reports the previous run's stored counts together with those counted before start.
+    /// The first health check after start reports the previous run's stored counts together with those counted before
+    /// start.
     func test_countersStoredByThePreviousRun_areAddedToTheOnesCountedBeforeStart() throws {
         try TestPlatform.skipUnlessHTTPInterceptable()
 
