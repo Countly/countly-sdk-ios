@@ -190,7 +190,7 @@ static dispatch_once_t onceToken;
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s manual start view is not allowed while automatic view tracking is active, name: [%@] will not be started", __FUNCTION__, viewName);
-        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740" forUsageArea:@"views"];
         return nil;
     }
 #endif
@@ -206,7 +206,7 @@ static dispatch_once_t onceToken;
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s manual start auto stopped view is not allowed while automatic view tracking is active, name: [%@] will not be started", __FUNCTION__, viewName);
-        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740" forUsageArea:@"views"];
         return nil;
     }
 #endif
@@ -222,7 +222,7 @@ static dispatch_once_t onceToken;
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s manual stop view by name is not allowed while automatic view tracking is active, name: [%@] will not be stopped", __FUNCTION__, viewName);
-        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740" forUsageArea:@"views"];
         return;
     }
 #endif
@@ -238,7 +238,7 @@ static dispatch_once_t onceToken;
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s manual stop view by ID is not allowed while automatic view tracking is active, view ID: [%@] will not be stopped", __FUNCTION__, viewID);
-        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740" forUsageArea:@"views"];
         return;
     }
 #endif
@@ -252,7 +252,7 @@ static dispatch_once_t onceToken;
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s manual pause view is not allowed while automatic view tracking is active, view ID: [%@] will not be paused", __FUNCTION__, viewID);
-        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740" forUsageArea:@"views"];
         return;
     }
 #endif
@@ -266,7 +266,7 @@ static dispatch_once_t onceToken;
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s manual resume view is not allowed while automatic view tracking is active, view ID: [%@] will not be resumed", __FUNCTION__, viewID);
-        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740" forUsageArea:@"views"];
         return;
     }
 #endif
@@ -281,7 +281,7 @@ static dispatch_once_t onceToken;
 #if (TARGET_OS_IOS || TARGET_OS_TV)
     if (self.isAutoViewTrackingActive) {
         CLY_LOG_W(@"%s manual stop all views is not allowed while automatic view tracking is active, no view will be stopped", __FUNCTION__);
-        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740"];
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740" forUsageArea:@"views"];
         return;
     }
 #endif
