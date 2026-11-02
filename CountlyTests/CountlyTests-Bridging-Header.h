@@ -1,5 +1,6 @@
 #import "CountlyCommon.h"
 #import "CountlyConnectionManager.h"
+#import "CountlyConnectionManager+Tests.h"
 #import "CountlyViewTrackingInternal.h"
 #import "CountlyHealthTracker.h"
 #import "CountlyHealthTracker+Tests.h"

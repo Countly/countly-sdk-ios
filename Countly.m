@@ -131,6 +131,9 @@ static dispatch_once_t onceToken;
     CountlyCommon.sharedInstance.loggerDelegate = config.loggerDelegate;
     CountlyCommon.sharedInstance.internalLogLevel = config.internalLogLevel;
 
+    if (config.disableHealthCheck)
+        [CountlyHealthTracker.sharedInstance disableHealthCheck];
+
     config = [self checkAndFixInternalLimitsConfig:config];
     _startConfig = config;
 
@@ -367,6 +370,7 @@ static dispatch_once_t onceToken;
     if (config.sdkInternalLimits.getMaxKeyLength == 0) {
         [config.sdkInternalLimits setMaxKeyLength:kCountlyMaxKeyLength];
         CLY_LOG_W(@"%s ignoring the provided 'maxKeyLength' because it is less than 1, falling back to: [%lu]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxKeyLength);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w121"];
     }
     else if(config.sdkInternalLimits.getMaxKeyLength != kCountlyMaxKeyLength)
     {
@@ -376,6 +380,7 @@ static dispatch_once_t onceToken;
     if (config.sdkInternalLimits.getMaxValueSize == 0) {
         [config.sdkInternalLimits setMaxValueSize:kCountlyMaxValueSize];
         CLY_LOG_W(@"%s ignoring the provided 'maxValueSize' because it is less than 1, falling back to: [%lu]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxValueSize);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w121"];
     }
     else if(config.sdkInternalLimits.getMaxValueSize != kCountlyMaxValueSize)
     {
@@ -385,6 +390,7 @@ static dispatch_once_t onceToken;
     if (config.sdkInternalLimits.getMaxSegmentationValues == 0) {
         [config.sdkInternalLimits setMaxSegmentationValues:kCountlyMaxSegmentationValues];
         CLY_LOG_W(@"%s ignoring the provided 'maxSegmentationValues' because it is less than 1, falling back to: [%lu]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxSegmentationValues);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w121"];
     }
     else if(config.sdkInternalLimits.getMaxSegmentationValues != kCountlyMaxSegmentationValues)
     {
@@ -394,6 +400,7 @@ static dispatch_once_t onceToken;
     if (config.sdkInternalLimits.getMaxBreadcrumbCount == 0) {
         [config.sdkInternalLimits setMaxBreadcrumbCount:kCountlyMaxBreadcrumbCount];
         CLY_LOG_W(@"%s ignoring the provided 'maxBreadcrumbCount' because it is less than 1, falling back to: [%lu]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxBreadcrumbCount);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w121"];
     }
     else if(config.sdkInternalLimits.getMaxBreadcrumbCount != kCountlyMaxBreadcrumbCount)
     {
@@ -414,6 +421,10 @@ static dispatch_once_t onceToken;
 
 #pragma mark -
 
+/// Runs every session update period while the app is active: sends the session update the SDK makes by itself, counted for the
+/// health check only when a session is there to update, and moves the recorded events into a request. It does not store the
+/// health counters: a save ends the run of backoffs in a row the health check reports, and a backoff pause lasts about as long
+/// as this period, so saving here would cut every run.
 - (void)onTimer:(NSTimer *)timer
 {
     CLY_LOG_D(@"%s session timer fired, automaticSessions: [%@], hybridSessions: [%@], isSuspended: [%@]", __FUNCTION__, CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled ? @"YES" : @"NO", CountlyCommon.sharedInstance.enableManualSessionControlHybridMode ? @"YES" : @"NO", isSuspended ? @"YES" : @"NO");
@@ -423,7 +434,8 @@ static dispatch_once_t onceToken;
     // Hybrid mode keeps the automatic session update going even when automatic session tracking is not active
     if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled || CountlyCommon.sharedInstance.enableManualSessionControlHybridMode)
     {
-        [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"update:a"];
+        if (CountlyConnectionManager.sharedInstance.isSessionStarted && CountlyServerConfig.sharedInstance.sessionTrackingEnabled)
+            [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"update:a"];
         [CountlyConnectionManager.sharedInstance updateSession];
     }
     
@@ -686,6 +698,9 @@ static dispatch_once_t onceToken;
         return;
     }
 
+    if ([self isSessionMissingForManualSessionCall])
+        CLY_LOG_W(@"%s the session update will be ignored, no session is running", __FUNCTION__);
+
     [CountlyConnectionManager.sharedInstance updateSession];
 }
 
@@ -701,8 +716,23 @@ static dispatch_once_t onceToken;
         return;
     }
 
+    if ([self isSessionMissingForManualSessionCall])
+        CLY_LOG_W(@"%s the session end will be ignored, no session is running", __FUNCTION__);
+
     [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
     [CountlyConnectionManager.sharedInstance endSession];
+    [CountlyHealthTracker.sharedInstance saveState];
+}
+
+/// Whether a manual session update or end finds no running session while sessions can otherwise be tracked, with consent given
+/// and session tracking allowed by the behavior settings. The connection manager ignores such a call at debug level, as the
+/// automatic session paths reach it as well, so the manual call logs the warning that the health check counts. A stray end
+/// still moves the pending events and user details into requests.
+- (BOOL)isSessionMissingForManualSessionCall
+{
+    return CountlyConsentManager.sharedInstance.consentForSessions &&
+           CountlyServerConfig.sharedInstance.sessionTrackingEnabled &&
+           !CountlyConnectionManager.sharedInstance.isSessionStarted;
 }
 
 - (void)applyAutomaticSessionTracking
@@ -763,6 +793,7 @@ static dispatch_once_t onceToken;
     if (deviceID == nil || !deviceID.length)
     {
         CLY_LOG_W(@"%s omitting the call, passing nil or an empty string as the device ID is not allowed", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w601"];
         return;
     }
     
@@ -800,12 +831,14 @@ static dispatch_once_t onceToken;
     if (!CountlyCommon.sharedInstance.hasStarted)
     {
         CLY_LOG_W(@"%s omitting the device ID change, the SDK has not been started yet", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"e101"];
         return;
     }
 
     if (!deviceID.length)
     {
         CLY_LOG_W(@"%s omitting the call, passing nil or an empty string as the device ID is not allowed", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w601"];
         return;
     }
 
@@ -814,6 +847,7 @@ static dispatch_once_t onceToken;
     if ([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
     {
         CLY_LOG_D(@"%s omitting the call, the provided device ID is identical to the current one", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w602"];
         return;
     }
 
@@ -1074,6 +1108,7 @@ static dispatch_once_t onceToken;
 {
     if (key.length == 0) {
         CLY_LOG_E(@"%s omitting the call, the event key is nil or empty", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"e701" forUsageArea:@"events"];
         return;
     }
 

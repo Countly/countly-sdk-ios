@@ -11,6 +11,27 @@ import XCTest
 
 class CountlyHealthTrackerTests: CountlyBaseTestCase {
 
+    /// Answers every request through `MockURLProtocol` from the base setup on: a health check with an answer that keeps the
+    /// counters, every other request with a success, so that no answer of a real server adds or takes away counts mid test.
+    override func setUpWithError() throws {
+        MockURLProtocol.requestHandler = { request in
+            guard let url = request.url else { return (nil, nil, nil) }
+            let isHealthCheck = TestUtils.parseQueryString(url.query ?? "")["hc"] != nil
+            let body = isHealthCheck ? "{}" : "{\"result\":\"Success\"}"
+            return (Data(body.utf8), HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil), nil)
+        }
+        try super.setUpWithError()
+    }
+
+    /// The base config with every request routed through `MockURLProtocol`.
+    override func createBaseConfig() -> CountlyConfig {
+        let config = super.createBaseConfig()
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [MockURLProtocol.self]
+        config.urlSessionConfiguration = sessionConfig
+        return config
+    }
+
     // MARK: - Helper Methods
 
     /// Executes concurrent stress test with configurable parameters to detect race conditions and memory issues
@@ -140,7 +161,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
                     .logFailedNetworkRequest(withStatusCode: 500, errorResponse: error)
             },
             readerBlock: {
-                CountlyHealthTracker.sharedInstance().sendHealthCheck()
+                _ = CountlyHealthTracker.sharedInstance().healthCheckRequest()
             }
         )
     }
@@ -159,7 +180,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
                     .logFailedNetworkRequest(withStatusCode: 500, errorResponse: err)
             },
             readerBlock: {
-                CountlyHealthTracker.sharedInstance().sendHealthCheck()
+                _ = CountlyHealthTracker.sharedInstance().healthCheckRequest()
             }
         )
     }
@@ -241,14 +262,13 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
             }
         }
 
-        // Multiple readers accessing errorMessage through sendHealthCheck
-        // Capped to avoid exhausting file descriptors from network calls
+        // Multiple readers accessing errorMessage through the health check request they build
         for _ in 0..<2 {
             group.enter()
             DispatchQueue.global(qos: .userInitiated).async {
                 for _ in 0..<50 {
                     autoreleasepool {
-                        CountlyHealthTracker.sharedInstance().sendHealthCheck()
+                        _ = CountlyHealthTracker.sharedInstance().healthCheckRequest()
                     }
                 }
                 group.leave()
@@ -300,9 +320,9 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
                         CountlyHealthTracker.sharedInstance()
                             .logFailedNetworkRequest(withStatusCode: 400, errorResponse: uniqueString)
 
-                        // Immediate read to create contention (capped to avoid file descriptor exhaustion)
+                        // Immediate read to create contention
                         if i % 200 == 0 {
-                            CountlyHealthTracker.sharedInstance().sendHealthCheck()
+                            _ = CountlyHealthTracker.sharedInstance().healthCheckRequest()
                         }
                     }
                 }
@@ -330,13 +350,7 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
     /// Tests performance of synchronized operations to ensure thread safety doesn't cause significant slowdowns
     /// 10,000 write operations, 1,000 read operations with performance measurement
     /// Validates that serial queue synchronization maintains acceptable performance
-    func testLogFailedNetworkRequest_synchronizedOperationsPerformance() throws {
-        // Every `sendHealthCheck` here performs a real, failing DNS lookup wherever HTTP
-        // cannot be intercepted, and the watch simulator is slower on top of that, so 550
-        // synchronized operations do not fit the 30 second budget. The thread safety this
-        // guards is platform independent and is covered on the other four platforms.
-        try TestPlatform.skipUnlessHTTPInterceptable()
-
+    func testLogFailedNetworkRequest_synchronizedOperationsPerformance() {
         let config = createBaseConfig()
         Countly.sharedInstance().start(with: config)
 
@@ -354,11 +368,11 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
                 group.leave()
             }
 
-            // Test read performance (fewer iterations as they trigger network requests)
+            // Test read performance (fewer iterations as each builds a whole request)
             group.enter()
             DispatchQueue.global(qos: .userInitiated).async {
                 for _ in 0..<(iterations / 10) {
-                    CountlyHealthTracker.sharedInstance().sendHealthCheck()
+                    _ = CountlyHealthTracker.sharedInstance().healthCheckRequest()
                 }
                 group.leave()
             }
@@ -455,6 +469,9 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
     /// recordUsage and recordLogCode add up per feature area and method, and per code.
     func testRecordUsageAndLogCodeAccumulate() {
         let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        startWithoutHealthCheck(config)
         resetCounters(tracker)
 
         tracker.recordUsage("events", method: "record")
@@ -621,7 +638,11 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         Countly.sharedInstance().views().startView("Screen")
         Countly.sharedInstance().views().stopView(withName: "Screen")
         Countly.sharedInstance().views().stopAllViews([:])
-        Countly.sharedInstance().recordException(NSException(name: .genericException, reason: "blocked", userInfo: nil))
+        _ = Countly.sharedInstance().views().startView("")
+        Countly.sharedInstance().views().stopView(withID: "missing_view_id")
+        Countly.sharedInstance().views().addSegmentationToView(withName: "missing_view", segmentation: ["key": "value"])
+        Countly.sharedInstance().views().addSegmentationToView(withID: "missing_view_id", segmentation: ["key": "value"])
+        Countly.sharedInstance().record(NSException(name: .genericException, reason: "blocked", userInfo: nil))
         Countly.sharedInstance().recordCrashLog("blocked")
         Countly.sharedInstance().clearCrashLogs()
 
@@ -679,6 +700,9 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
     /// Methods with and without a modifier are counted as separate keys.
     func testModifierLeavesAreIndependentKeys() {
         let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        startWithoutHealthCheck(config)
         resetCounters(tracker)
 
         tracker.recordUsage("sessions", method: "begin")
@@ -743,6 +767,9 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
     /// While an automatically detected crash is reported nothing is counted, until crash reporting starts again.
     func testRecordingStopsForCrashUntilCrashReportingStartsAgain() {
         let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        startWithoutHealthCheck(config)
         resetCounters(tracker)
         defer { CountlyHealthTrackerResumeRecordingAfterCrash() }
 
@@ -878,6 +905,259 @@ class CountlyHealthTrackerTests: CountlyBaseTestCase {
         XCTAssertEqual(codes["w740"], 1)
     }
 #endif
+
+    // MARK: - Switching off, storing and reporting
+
+    /// The `metrics` parameter a health check request carries.
+    private func healthCheckMetrics(of request: URLRequest) -> [String: Any] {
+        let query = request.url?.query ?? String(data: request.httpBody ?? Data(), encoding: .utf8) ?? ""
+        return TestUtils.parseQueryString(query)["metrics"] as? [String: Any] ?? [:]
+    }
+
+    /// Runs the work of one tick of the session timer.
+    private func fireSessionTimer() {
+        Countly.sharedInstance().perform(NSSelectorFromString("onTimer:"), with: nil)
+    }
+
+    /// Stores the behavior settings the next start reads, as a stored server answer would be, and removes them when the test
+    /// ends, since halting the SDK keeps them. A test using it turns behavior settings updates off, so that no server answer
+    /// replaces them while it runs.
+    private func storeBehaviorSettings(tracking: Bool, networking: Bool) {
+        let key = "kCountlyServerConfigPersistencyKey"
+        UserDefaults.standard.set(ServerConfigBuilder().tracking(tracking).networking(networking).buildJson(), forKey: key)
+        UserDefaults.standard.synchronize()
+        addTeardownBlock {
+            UserDefaults.standard.removeObject(forKey: key)
+            UserDefaults.standard.synchronize()
+        }
+    }
+
+    /// Saving stores the run of backoffs in a row that is still going on, so an app killed right after keeps it.
+    func testSavingStoresTheBackoffRunInProgress() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        startWithoutHealthCheck(config)
+        resetCounters(tracker)
+
+        tracker.logBackoffRequest()
+        tracker.logBackoffRequest()
+        tracker.logBackoffRequest()
+        tracker.saveState()
+        tracker.hcQueue.sync {}
+
+        let state = CountlyPersistency.sharedInstance().retrieveHealthCheckTrackerState() ?? [:]
+        XCTAssertEqual(state["BReq"] as? Int, 3, "got: \(state)")
+        XCTAssertEqual(state["CBReq"] as? Int, 3, "got: \(state)")
+    }
+
+    /// The session timer does not end a run of backoffs in a row, so a run that lasts longer than one timer period is
+    /// reported whole.
+    func testSessionTimerKeepsTheBackoffRunGoing() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        startWithoutHealthCheck(config)
+        resetCounters(tracker)
+
+        tracker.logBackoffRequest()
+        tracker.logBackoffRequest()
+        fireSessionTimer()
+        tracker.logBackoffRequest()
+        tracker.logBackoffRequest()
+        tracker.saveState()
+        tracker.hcQueue.sync {}
+
+        let state = CountlyPersistency.sharedInstance().retrieveHealthCheckTrackerState() ?? [:]
+        XCTAssertEqual(state["CBReq"] as? Int, 4, "got: \(state)")
+    }
+
+    /// The automatic session update of the hybrid mode is counted only when a session is running for it to update.
+    func testAutomaticSessionUpdateIsCountedOnlyForARunningSession() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        config.enableManualSessionControlHybridMode = true
+        startWithoutHealthCheck(config)
+        resetCounters(tracker)
+
+        fireSessionTimer()
+        XCTAssertNil(counted(tracker).usage["sessions"]?["update:a"], "no session is running yet")
+
+        Countly.sharedInstance().beginSession()
+        fireSessionTimer()
+        XCTAssertEqual(counted(tracker).usage["sessions"]?["update:a"], 1)
+    }
+
+    /// The health check reports the app version the developer set through the custom metrics, as the session metrics do.
+    func testHealthCheckMetricsUseTheCustomAppVersion() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        config.customMetrics = ["_app_version": "5.2.0-beta"]
+        startWithoutHealthCheck(config)
+
+        let metrics = healthCheckMetrics(of: tracker.healthCheckRequest())
+        XCTAssertEqual(metrics["_app_version"] as? String, "5.2.0-beta", "got: \(metrics)")
+        XCTAssertEqual(metrics.count, 1, "the health check metrics hold only the app version, got: \(metrics)")
+    }
+
+    /// Without a custom app version the health check reports the app version of the app bundle.
+    func testHealthCheckMetricsUseTheBundleAppVersionByDefault() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        startWithoutHealthCheck(config)
+
+        let metrics = healthCheckMetrics(of: tracker.healthCheckRequest())
+        XCTAssertEqual(metrics["_app_version"] as? String, CountlyDeviceInfo.appVersion(), "got: \(metrics)")
+    }
+
+    /// A failed request whose answer is not UTF-8 text keeps its status code, with an empty error message.
+    func testFailedRequestWithUnreadableBodyKeepsItsStatusCode() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        resetCounters(tracker)
+
+        tracker.logFailedNetworkRequest(withStatusCode: 502, errorResponse: nil)
+
+        let snapshot = tracker.healthCheckSnapshot() ?? [:]
+        XCTAssertEqual(snapshot["sc"] as? Int, 502, "got: \(snapshot)")
+        XCTAssertEqual(snapshot["em"] as? String, "")
+    }
+
+    // MARK: - Log codes of invalid calls and dropped data
+
+    /// A device ID change before the SDK is started is ignored and reported as e101.
+    func testDeviceIDChangeBeforeStartRecordsE101() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        resetCounters(tracker)
+
+        Countly.sharedInstance().changeDeviceIDWithoutMerge("before_start")
+
+        XCTAssertEqual(counted(tracker).codes["e101"], 1)
+    }
+
+    /// An empty device ID is reported as w601, and the device ID the SDK already has as w602.
+    func testInvalidDeviceIDChangesRecordTheirCodes() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        startWithoutHealthCheck(config)
+        resetCounters(tracker)
+
+        Countly.sharedInstance().changeDeviceIDWithoutMerge("")
+        Countly.sharedInstance().changeDeviceIDWithoutMerge(Countly.sharedInstance().deviceID())
+
+        let codes = counted(tracker).codes
+        XCTAssertEqual(codes["w601"], 1, "got: \(codes)")
+        XCTAssertEqual(codes["w602"], 1, "got: \(codes)")
+    }
+
+    /// An event without a key is reported as e701, a view without a name as e710, and stopping or segmenting a view that
+    /// does not exist as e730.
+    func testInvalidEventAndViewCallsRecordTheirCodes() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        startWithoutHealthCheck(config)
+        resetCounters(tracker)
+
+        Countly.sharedInstance().recordEvent("")
+        _ = Countly.sharedInstance().views().startView("")
+        Countly.sharedInstance().views().stopView(withName: "missing_view")
+        Countly.sharedInstance().views().stopView(withID: "missing_view_id")
+        Countly.sharedInstance().views().addSegmentationToView(withName: "missing_view", segmentation: ["key": "value"])
+        Countly.sharedInstance().views().addSegmentationToView(withID: "missing_view_id", segmentation: ["key": "value"])
+
+        let codes = counted(tracker).codes
+        XCTAssertEqual(codes["e701"], 1, "got: \(codes)")
+        XCTAssertEqual(codes["e710"], 1, "got: \(codes)")
+        XCTAssertEqual(codes["e730"], 4, "got: \(codes)")
+    }
+
+    /// An internal limit set below 1 is ignored and its default kept, reported as w121 once per limit.
+    func testInvalidInternalLimitsRecordW121() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        config.sdkInternalLimits().setMaxKeyLength(0)
+        config.sdkInternalLimits().setMaxBreadcrumbCount(0)
+        startWithoutHealthCheck(config)
+
+        XCTAssertEqual(counted(tracker).codes["w121"], 2)
+    }
+
+    /// A breadcrumb over the breadcrumb limit drops the oldest one, reported as w204 for every dropped breadcrumb.
+    func testDroppedBreadcrumbsRecordW204() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        config.sdkInternalLimits().setMaxBreadcrumbCount(1)
+        startWithoutHealthCheck(config)
+        resetCounters(tracker)
+
+        Countly.sharedInstance().recordCrashLog("first")
+        Countly.sharedInstance().recordCrashLog("second")
+        Countly.sharedInstance().recordCrashLog("third")
+
+        XCTAssertEqual(counted(tracker).codes["w204"], 2)
+    }
+
+    /// An answer slower than the accepted time starts the backoff, reported as w320, while an answer in time starts none.
+    func testSlowAnswerStartingTheBackoffRecordsW320() {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        startWithoutHealthCheck(config)
+        resetCounters(tracker)
+        let recentRequest = "timestamp=\(Int64(Date().timeIntervalSince1970 * 1000))"
+
+        XCTAssertFalse(CountlyConnectionManager.sharedInstance().backoff(0, queryString: recentRequest))
+        XCTAssertNil(counted(tracker).codes["w320"], "an answer in time starts no backoff")
+
+        XCTAssertTrue(CountlyConnectionManager.sharedInstance().backoff(3600, queryString: recentRequest))
+        XCTAssertEqual(counted(tracker).codes["w320"], 1)
+    }
+
+    /// Requests older than the drop age that a full queue removes to make room are reported as w330, one per request.
+    func testOldRequestsRemovedFromAFullQueueRecordW330() throws {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        storeBehaviorSettings(tracking: true, networking: false)
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        config.disableSDKBehaviorSettingsUpdates = true
+        config.requestDropAgeHours = 1
+        config.storedRequestsLimit = 3
+        startWithoutHealthCheck(config)
+        let persistency = try XCTUnwrap(CountlyPersistency.sharedInstance())
+        Countly.sharedInstance().flushQueues()
+        resetCounters(tracker)
+        let now = Int64(Date().timeIntervalSince1970 * 1000)
+
+        persistency.add(toQueue: "timestamp=1000&old=1")
+        persistency.add(toQueue: "timestamp=1000&old=2")
+        persistency.add(toQueue: "timestamp=\(now)&fresh=1")
+        persistency.add(toQueue: "timestamp=\(now)&fresh=2")
+
+        let codes = counted(tracker).codes
+        XCTAssertEqual(codes["w330"], 2, "got: \(codes)")
+        XCTAssertEqual(persistency.remainingRequestCount(), 2, "the two old requests made room for the new one")
+    }
+
+    /// A request made while the behavior settings turned tracking off is not queued, which is reported as w505.
+    func testRequestRefusedWhileTrackingIsOffRecordsW505() throws {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        storeBehaviorSettings(tracking: false, networking: true)
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        config.disableSDKBehaviorSettingsUpdates = true
+        startWithoutHealthCheck(config)
+        let persistency = try XCTUnwrap(CountlyPersistency.sharedInstance())
+        resetCounters(tracker)
+
+        XCTAssertFalse(persistency.add(toQueue: "test=refused"))
+        XCTAssertEqual(counted(tracker).codes["w505"], 1)
+    }
 }
 
 /// Stored health counters, with every request answered by a reply without `result`, so no response clears them mid
@@ -949,5 +1229,262 @@ class CountlyHealthTrackerStoredCountersTests: CountlyBaseTestCase {
         let sent = recordedHealthChecks()
         XCTAssertTrue(didReport, "the 5 stored warnings must be added to the one logged before start, got: \(sent)")
         XCTAssertGreaterThanOrEqual(reported?["el"] as? Int ?? 0, 3, "the 2 stored errors must be added to the one logged before start")
+    }
+}
+
+/// Keeps every line the SDK logs with its level, for the tests that check what was logged and at which level.
+private final class CapturingLogger: NSObject, CountlyLoggerDelegate {
+    private let lock = NSLock()
+    private var entries: [(text: String, level: CLYInternalLogLevel)] = []
+
+    func internalLog(_ log: String, with level: CLYInternalLogLevel) {
+        lock.lock()
+        entries.append((log, level))
+        lock.unlock()
+    }
+
+    /// The logged lines that contain the text.
+    func lines(containing text: String) -> [String] {
+        lock.lock()
+        defer { lock.unlock() }
+        return entries.filter { $0.text.contains(text) }.map { $0.text }
+    }
+
+    /// The levels of the logged lines that contain the text.
+    func levels(ofLinesContaining text: String) -> [CLYInternalLogLevel] {
+        lock.lock()
+        defer { lock.unlock() }
+        return entries.filter { $0.text.contains(text) }.map { $0.level }
+    }
+}
+
+/// Health check behavior that depends on the server's answer. Every request is answered by `MockURLProtocol`: the health
+/// check with `healthCheckReply`, by default an answer without `result` so that no answer takes counters away mid test,
+/// and every other request with `requestReply`, a success by default.
+class CountlyHealthCheckAnswerTests: CountlyBaseTestCase {
+    private let lock = NSLock()
+    private var healthChecks: [[String: Any]] = []
+    private var healthCheckReply: (status: Int, body: Data) = (200, Data("{}".utf8))
+    private var requestReply: (status: Int, body: Data) = (200, Data("{\"result\":\"Success\"}".utf8))
+
+    /// Sets the replies before the base setup starts and halts the SDK, so the requests sent then are answered too, and keeps
+    /// that start from sending a health check, so that every health check a test records is its own.
+    override func setUpWithError() throws {
+        MockURLProtocol.requestHandler = { [weak self] request in
+            guard let self = self, let url = request.url else { return (nil, nil, nil) }
+            let reply = self.reply(to: request)
+            return (reply.body, HTTPURLResponse(url: url, statusCode: reply.status, httpVersion: nil, headerFields: nil), nil)
+        }
+        CountlyHealthTracker.sharedInstance().setValue(true, forKey: "healthCheckSent")
+        try super.setUpWithError()
+    }
+
+    /// The base config with every request routed through `MockURLProtocol` and sessions handled by the test.
+    override func createBaseConfig() -> CountlyConfig {
+        let config = super.createBaseConfig()
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [MockURLProtocol.self]
+        config.urlSessionConfiguration = sessionConfig
+        config.manualSessionHandling = true
+        return config
+    }
+
+    /// Keeps the `hc` parameter of a health check request and returns the reply the request gets.
+    private func reply(to request: URLRequest) -> (status: Int, body: Data) {
+        let healthCheck = TestUtils.parseQueryString(request.url?.query ?? "")["hc"] as? [String: Any]
+        lock.lock()
+        defer { lock.unlock() }
+        guard let healthCheck = healthCheck else { return requestReply }
+        healthChecks.append(healthCheck)
+        return healthCheckReply
+    }
+
+    /// Sets what the health check request is answered with from now on.
+    private func setHealthCheckReply(status: Int, body: String) {
+        lock.lock()
+        healthCheckReply = (status, Data(body.utf8))
+        lock.unlock()
+    }
+
+    /// Sets what every other request is answered with from now on.
+    private func setRequestReply(status: Int, body: Data) {
+        lock.lock()
+        requestReply = (status, body)
+        lock.unlock()
+    }
+
+    /// The `hc` parameters of the health checks that reached the server so far.
+    private func recordedHealthChecks() -> [[String: Any]] {
+        lock.lock()
+        defer { lock.unlock() }
+        return healthChecks
+    }
+
+    /// Starts the SDK with the health check marked as sent, so no health check goes out during the test.
+    private func startWithoutHealthCheck(_ config: CountlyConfig) {
+        CountlyHealthTracker.sharedInstance().setValue(true, forKey: "healthCheckSent")
+        Countly.sharedInstance().start(with: config)
+    }
+
+    /// Clears every counter of the health tracker and waits until it is done.
+    private func resetCounters() {
+        CountlyHealthTracker.sharedInstance().clearAndSave()
+        CountlyHealthTracker.sharedInstance().hcQueue.sync {}
+    }
+
+    /// The health check parameter the counters make now, read once the counting queued so far ran.
+    private func snapshot() -> [AnyHashable: Any] {
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        tracker.hcQueue.sync {}
+        return tracker.healthCheckSnapshot() ?? [:]
+    }
+
+    /// Begins a session and returns the log codes once the failed answer to its request is reported as e301 or e302.
+    private func logCodesAfterAFailedBeginSession() -> [String: Int] {
+        startWithoutHealthCheck(createBaseConfig())
+        resetCounters()
+        Countly.sharedInstance().beginSession()
+        var codes: [String: Int] = [:]
+        let recorded = TestUtils.waitUntil("the failed answer is recorded") {
+            codes = self.snapshot()["lc"] as? [String: Int] ?? [:]
+            return codes["e301"] != nil || codes["e302"] != nil
+        }
+        XCTAssertTrue(recorded, "got: \(codes)")
+        return codes
+    }
+
+    /// With disableHealthCheck no health check request is made, also when one is asked for later, while the counters keep
+    /// counting. Without the switch the start sends one.
+    func test_disabledHealthCheck_isNotSent() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        let logger = CapturingLogger()
+        let config = createBaseConfig()
+        config.disableHealthCheck = true
+        config.loggerDelegate = logger
+        Countly.sharedInstance().start(with: config)
+
+        tracker.sendHealthCheck()
+        tracker.recordLogCode("w204")
+
+        XCTAssertTrue(logger.lines(containing: "sending health check request").isEmpty, "got: \(logger.lines(containing: "health check"))")
+        XCTAssertEqual(logger.lines(containing: "healthCheckEnabled: [NO]").count, 2, "the start and the later call are both refused")
+        XCTAssertEqual((snapshot()["lc"] as? [String: Int])?["w204"], 1, "the counters keep counting")
+
+        Countly.sharedInstance().halt(true)
+        config.disableHealthCheck = false
+        Countly.sharedInstance().start(with: config)
+
+        XCTAssertEqual(logger.lines(containing: "sending health check request").count, 1, "without the switch the start sends one")
+        let reached = TestUtils.waitUntil("the health check reaches the server") { self.recordedHealthChecks().count == 1 }
+        XCTAssertTrue(reached, "got: \(recordedHealthChecks())")
+    }
+
+    /// The health check is marked as sent when it goes out, so one whose answer kept the counters is not sent again when
+    /// temporary device ID mode ends: the counters wait for the next start.
+    func test_healthCheck_isSentOncePerRun_evenWhenItsAnswerKeepsTheCounters() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        let logger = CapturingLogger()
+        let config = createBaseConfig()
+        config.loggerDelegate = logger
+        let healthChecksBefore = recordedHealthChecks().count
+        Countly.sharedInstance().start(with: config)
+
+        XCTAssertEqual(tracker.value(forKey: "healthCheckSent") as? Bool, true, "marked as sent before its answer arrives")
+        let reached = TestUtils.waitUntil("the health check of the start reaches the server") {
+            self.recordedHealthChecks().count > healthChecksBefore
+        }
+        XCTAssertTrue(reached, "got: \(recordedHealthChecks())")
+
+        Countly.sharedInstance().enableTemporaryDeviceIDMode()
+        Countly.sharedInstance().changeDeviceIDWithoutMerge("real_user_after_temp")
+
+        XCTAssertEqual(logger.lines(containing: "sending health check request").count, 1, "got: \(logger.lines(containing: "health check"))")
+        XCTAssertEqual(logger.lines(containing: "health check send skipped, healthCheckSent: [YES]").count, 1)
+    }
+
+    /// An answer to the health check that is not JSON is no error of the SDK, so it is not logged at error level, which the
+    /// health check counts.
+    func test_unreadableHealthCheckAnswer_isNotLoggedAsAnError() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        setHealthCheckReply(status: 200, body: "<html>captive portal</html>")
+        let logger = CapturingLogger()
+        let config = createBaseConfig()
+        config.loggerDelegate = logger
+        Countly.sharedInstance().start(with: config)
+
+        let unreadable = "could not parse the health check response"
+        XCTAssertTrue(TestUtils.waitUntil("the unreadable answer is handled") { !logger.levels(ofLinesContaining: unreadable).isEmpty })
+        let levels = logger.levels(ofLinesContaining: unreadable)
+        XCTAssertTrue(levels.allSatisfy { $0 == CLYInternalLogLevelDebug }, "got levels: \(levels.map { $0.rawValue })")
+    }
+
+    /// A queued request answered with a success status but without "result" is reported as e302, a malformed answer.
+    func test_successStatusWithoutResult_recordsE302() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        setRequestReply(status: 200, body: Data("{}".utf8))
+
+        let codes = logCodesAfterAFailedBeginSession()
+        XCTAssertEqual(codes["e302"], 1, "got: \(codes)")
+        XCTAssertNil(codes["e301"], "got: \(codes)")
+    }
+
+    /// A queued request answered with an error status is reported as e301.
+    func test_errorStatus_recordsE301() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        setRequestReply(status: 500, body: Data("{\"result\":\"Internal error\"}".utf8))
+
+        let codes = logCodesAfterAFailedBeginSession()
+        XCTAssertEqual(codes["e301"], 1, "got: \(codes)")
+        XCTAssertNil(codes["e302"], "got: \(codes)")
+    }
+
+    /// A failed answer whose body is not UTF-8 text keeps its status code for the health check, with an empty message.
+    func test_failedAnswerThatIsNotText_keepsItsStatusCode() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        setRequestReply(status: 500, body: Data([0xFF, 0xFE, 0xFD]))
+        startWithoutHealthCheck(createBaseConfig())
+        resetCounters()
+
+        Countly.sharedInstance().beginSession()
+
+        let recorded = TestUtils.waitUntil("the failed answer is recorded") { (self.snapshot()["sc"] as? Int) == 500 }
+        XCTAssertTrue(recorded, "got: \(snapshot())")
+        XCTAssertEqual(snapshot()["em"] as? String, "")
+    }
+
+    /// Ending a session the app began stores the counters, as the end of a session can be the end of the run.
+    func test_manualSessionEnd_storesTheCounters() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        let tracker: CountlyHealthTracker = CountlyHealthTracker.sharedInstance()
+        startWithoutHealthCheck(createBaseConfig())
+        Countly.sharedInstance().beginSession()
+        resetCounters()
+
+        tracker.recordLogCode("w204")
+        Countly.sharedInstance().endSession()
+        tracker.hcQueue.sync {}
+
+        let state = CountlyPersistency.sharedInstance().retrieveHealthCheckTrackerState() ?? [:]
+        XCTAssertEqual((state["LC"] as? [String: NSNumber])?["w204"], 1, "got: \(state)")
+    }
+
+    /// A manual session update or end without a running session is ignored with a warning, which the health check counts,
+    /// while a running session is updated and ended without one.
+    func test_manualSessionCallsWithoutSession_areCountedAsWarnings() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        startWithoutHealthCheck(createBaseConfig())
+        resetCounters()
+
+        Countly.sharedInstance().updateSession()
+        Countly.sharedInstance().endSession()
+        XCTAssertEqual(snapshot()["wl"] as? Int, 2, "got: \(snapshot())")
+
+        Countly.sharedInstance().beginSession()
+        resetCounters()
+        Countly.sharedInstance().updateSession()
+        Countly.sharedInstance().endSession()
+        XCTAssertEqual(snapshot()["wl"] as? Int, 0, "got: \(snapshot())")
     }
 }

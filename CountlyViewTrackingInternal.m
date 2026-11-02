@@ -449,6 +449,7 @@ static dispatch_once_t onceToken;
     }
     else {
         CLY_LOG_E(@"%s no view exists with the given name, it will not be stopped, name: [%@]", __FUNCTION__, viewName);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"e730" forUsageArea:@"views"];
     }
 }
 
@@ -523,6 +524,7 @@ static dispatch_once_t onceToken;
     }
     else {
         CLY_LOG_E(@"%s no view exists with the given ID, it will not be stopped, view ID: [%@]", __FUNCTION__, viewKey);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"e730" forUsageArea:@"views"];
     }
 }
 
@@ -536,6 +538,7 @@ static dispatch_once_t onceToken;
     if (!viewName || !viewName.length)
     {
         CLY_LOG_E(@"%s view name is null or empty, start view will be ignored", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"e710" forUsageArea:@"views"];
         return nil;
     }
 
@@ -800,6 +803,7 @@ static dispatch_once_t onceToken;
     }
     else {
         CLY_LOG_E(@"%s no view exists with the given name, segmentation will not be added, name: [%@]", __FUNCTION__, viewName);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"e730" forUsageArea:@"views"];
     }
 }
 
@@ -839,6 +843,7 @@ static dispatch_once_t onceToken;
     }
     else {
         CLY_LOG_E(@"%s no view exists with the given ID, segmentation will not be added, view ID: [%@]", __FUNCTION__, viewID);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"e730" forUsageArea:@"views"];
     }
 }
 
