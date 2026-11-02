@@ -87,6 +87,7 @@ static dispatch_once_t onceToken;
     if (!CountlyServerConfig.sharedInstance.trackingEnabled)
     {
         CLY_LOG_D(@"%s request is not queued, reason: SDK tracking is disabled from server config, query string length: [%lu]", __FUNCTION__, (unsigned long)queryString.length);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w505"];
         return NO;
     }
     
@@ -328,6 +329,7 @@ static dispatch_once_t onceToken;
             if (requestCountBeforeAgeFilter > self.queuedRequests.count)
             {
                 CLY_LOG_D(@"%s dropped [%lu] old age queued request(s), request drop age in hours: [%lu], remaining request count: [%lu]", __FUNCTION__, (unsigned long)(requestCountBeforeAgeFilter - self.queuedRequests.count), (unsigned long)self.requestDropAgeHours, (unsigned long)self.queuedRequests.count);
+                [CountlyHealthTracker.sharedInstance recordLogCode:@"w330" count:requestCountBeforeAgeFilter - self.queuedRequests.count];
             }
             
             self.isQueueBeingModified = NO;
@@ -519,6 +521,7 @@ static dispatch_once_t onceToken;
             if (error)
             {
                 CLY_LOG_W(@"[CountlyPersistency] writeCustomCrashLogToFile, custom crash log file can not be created, error domain: [%@], error code: [%ld], error description: [%@]", error.domain, (long)error.code, error.localizedDescription);
+                [CountlyHealthTracker.sharedInstance recordLogCode:@"w504" forUsageArea:@"crashes"];
             }
         }
     });
@@ -551,6 +554,7 @@ static dispatch_once_t onceToken;
         if (error)
         {
             CLY_LOG_W(@"%s custom crash log file can not be deleted, error domain: [%@], error code: [%ld], error description: [%@]", __FUNCTION__, error.domain, (long)error.code, error.localizedDescription);
+            [CountlyHealthTracker.sharedInstance recordLogCode:@"w504" forUsageArea:@"crashes"];
         }
     }
 }
@@ -634,6 +638,7 @@ static dispatch_once_t onceToken;
     if (!writeResult)
     {
         CLY_LOG_D(@"%s writing the request queue to the persistent storage file failed, data size: [%lu] bytes, request count: [%lu]", __FUNCTION__, (unsigned long)saveData.length, (unsigned long)queuedRequestCountForLog);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"e501"];
     }
 
     [CountlyCommon.sharedInstance finishBackgroundTask];

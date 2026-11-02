@@ -745,6 +745,7 @@ void CountlySignalHandler(int signalCode)
         if (self.customCrashLogs.count > self.crashLogLimit)
         {
             CLY_LOG_D(@"%s breadcrumb buffer is full, the oldest breadcrumb is dropped, breadcrumbCount: [%lu], limit: [%lu]", __FUNCTION__, (unsigned long)self.customCrashLogs.count, (unsigned long)self.crashLogLimit);
+            [CountlyHealthTracker.sharedInstance recordLogCode:@"w204" forUsageArea:@"crashes"];
             [self.customCrashLogs removeObjectAtIndex:0];
         }
         else

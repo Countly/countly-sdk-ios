@@ -626,6 +626,13 @@ typedef enum : NSUInteger
 @property (nonatomic) BOOL disableBackoffMechanism;
 
 /**
+ * For disabling the SDK health check.
+ * @discussion If set, the SDK does not send the health check request it otherwise sends once per start, after initialization or, when the SDK starts in temporary device ID mode, once that mode ends.
+ * @discussion The SDK keeps counting its health indicators, but they are not reported to the server.
+ */
+@property (nonatomic) BOOL disableHealthCheck;
+
+/**
  * Disable view restarting for manual view recording
  */
 @property(nonatomic) BOOL disableViewRestartForManualRecording;

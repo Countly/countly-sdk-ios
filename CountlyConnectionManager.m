@@ -315,6 +315,7 @@ static dispatch_once_t onceToken;
     if(isOldRequest)
     {
         CLY_LOG_W(@"%s dropping the request at the head of the queue, reason: request age exceeded the configured drop age, request size: [%lu] bytes", __FUNCTION__, (unsigned long)firstItemInQueue.length);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w330"];
         [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
         
         [CountlyPersistency.sharedInstance saveToFile];
@@ -479,8 +480,10 @@ static dispatch_once_t onceToken;
                     }
                 }
 
-                [CountlyHealthTracker.sharedInstance logFailedNetworkRequestWithStatusCode:((NSHTTPURLResponse*)response).statusCode errorResponse: [data cly_stringUTF8]];
-                [CountlyHealthTracker.sharedInstance recordLogCode:@"e301"];
+                NSInteger responseStatusCode = ((NSHTTPURLResponse*)response).statusCode;
+                BOOL isMalformedSuccessReply = responseStatusCode >= 200 && responseStatusCode < 300;
+                [CountlyHealthTracker.sharedInstance logFailedNetworkRequestWithStatusCode:responseStatusCode errorResponse: [data cly_stringUTF8]];
+                [CountlyHealthTracker.sharedInstance recordLogCode:isMalformedSuccessReply ? @"e302" : @"e301"];
                 [CountlyHealthTracker.sharedInstance saveState];
                 self.startTime = nil;
                 atomic_store(&self->_isProcessingQueue, NO);
@@ -566,6 +569,7 @@ static dispatch_once_t onceToken;
                 result = YES;
                 CLY_LOG_W(@"%s backoff is triggered, response time: [%ld] seconds, remaining request count: [%lu], request count threshold: [%lu], request age: [%.2f] seconds", __FUNCTION__, responseTimeSeconds, (unsigned long)remainingRequests, (unsigned long)threshold, requestAgeInSeconds);
                 [CountlyHealthTracker.sharedInstance logBackoffRequest];
+                [CountlyHealthTracker.sharedInstance recordLogCode:@"w320"];
             }
         }
     }

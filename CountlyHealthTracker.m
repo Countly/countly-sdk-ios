@@ -208,12 +208,17 @@ void CountlyHealthTrackerResumeRecordingAfterCrash(void)
 }
 
 - (void)recordLogCode:(NSString *)code {
-    if (code.length == 0 || atomic_load(&s_isRecordingStoppedForCrash)) {
+    [self recordLogCode:code count:1];
+}
+
+- (void)recordLogCode:(NSString *)code count:(NSUInteger)count {
+    if (code.length == 0 || count == 0 || atomic_load(&s_isRecordingStoppedForCrash)) {
         return;
     }
 
+    long cappedCount = (long)MIN(count, (NSUInteger)kCountlyHealthCheckCountCap);
     dispatch_async(self.hcQueue, ^{
-        [self addCount:1 toLogCode:code];
+        [self addCount:cappedCount toLogCode:code];
     });
 }
 
@@ -273,20 +278,21 @@ void CountlyHealthTrackerResumeRecordingAfterCrash(void)
 
 - (void)logFailedNetworkRequestWithStatusCode:(NSInteger)statusCode
                                 errorResponse:(NSString *)errorResponse {
-    if (statusCode <= 0 || statusCode >= 1000 || errorResponse == nil) {
+    if (statusCode <= 0 || statusCode >= 1000) {
         return;
     }
     
+    NSString *response = errorResponse ?: @"";
     dispatch_async(self.hcQueue, ^{
         self.statusCode = statusCode;
 
-        if (errorResponse.length > 1000) {
+        if (response.length > 1000) {
             // copy ensures immutability even if errorResponse was NSMutableString
-            self.errorMessage = [errorResponse substringToIndex:1000];
+            self.errorMessage = [response substringToIndex:1000];
         } else {
-            self.errorMessage = [errorResponse copy];
+            self.errorMessage = [response copy];
         }
-        CLY_LOG_D(@"%s recorded failed network request, statusCode: [%ld], errorResponseLength: [%lu], storedErrorMessageLength: [%lu]", __FUNCTION__, (long)statusCode, (unsigned long)errorResponse.length, (unsigned long)self.errorMessage.length);
+        CLY_LOG_D(@"%s recorded failed network request, statusCode: [%ld], errorResponseLength: [%lu], storedErrorMessageLength: [%lu]", __FUNCTION__, (long)statusCode, (unsigned long)response.length, (unsigned long)self.errorMessage.length);
     });
 }
 
@@ -300,10 +306,16 @@ void CountlyHealthTrackerResumeRecordingAfterCrash(void)
 
 - (void)logConsecutiveBackoffRequest {
     dispatch_async(self.hcQueue, ^{
-        self.consecutiveBackoffRequest = MAX(self.consecutiveBackoffRequest, self.countConsecutiveBackoffRequest);
-        self.countConsecutiveBackoffRequest = 0;
-        CLY_LOG_D(@"%s consecutive backoff streak closed, peakConsecutiveBackoffRequestCount: [%ld]", __FUNCTION__, self.consecutiveBackoffRequest);
+        [self closeConsecutiveBackoffRun];
     });
+}
+
+/// Ends the current run of backoffs in a row and keeps the longest run seen so far. Call on the health tracker queue, so a save
+/// that runs there stores the run it closes.
+- (void)closeConsecutiveBackoffRun {
+    self.consecutiveBackoffRequest = MAX(self.consecutiveBackoffRequest, self.countConsecutiveBackoffRequest);
+    self.countConsecutiveBackoffRequest = 0;
+    CLY_LOG_D(@"%s consecutive backoff streak closed, peakConsecutiveBackoffRequestCount: [%ld]", __FUNCTION__, self.consecutiveBackoffRequest);
 }
 
 - (void)clearAndSave {
@@ -317,25 +329,30 @@ void CountlyHealthTrackerResumeRecordingAfterCrash(void)
 - (void)saveState {
     dispatch_async(self.hcQueue, ^{
         [self loadPersistedStateIfNeeded];
-        [self logConsecutiveBackoffRequest];
+        [self closeConsecutiveBackoffRun];
 
         [CountlyPersistency.sharedInstance storeHealthCheckTrackerState:[self currentState]];
         CLY_LOG_D(@"%s counters persisted, errorCount: [%ld], warningCount: [%ld], statusCode: [%ld], errorMessageLength: [%lu], backoffRequestCount: [%ld], peakConsecutiveBackoffRequestCount: [%ld]", __FUNCTION__, self.countLogError, self.countLogWarning, (long)self.statusCode, (unsigned long)self.errorMessage.length, self.countBackoffRequest, self.consecutiveBackoffRequest);
     });
 }
 
+/// Clears the counters and their stored state, and only then restores the sent and enabled flags, so a health check the
+/// halted run tries to send while the counters are cleared still finds the flag set and does not mark the next run as sent.
 - (void)resetInstance {
     CountlyHealthTrackerResumeRecordingAfterCrash();
 
     // synchronous: halt goes on to free the shared state this block uses, and nothing on hcQueue waits for the caller
     dispatch_sync(self.hcQueue, ^{
         [self clearValues];
-        self->_healthCheckSent = NO;
-        self->_healthCheckEnabled = YES;
         self->_persistedStateLoaded = YES;
         [CountlyPersistency.sharedInstance storeHealthCheckTrackerState:@{}];
-        CLY_LOG_D(@"%s health tracker reset, healthCheckSent and healthCheckEnabled restored to their initial values", __FUNCTION__);
     });
+
+    @synchronized (self) {
+        _healthCheckSent = NO;
+        _healthCheckEnabled = YES;
+    }
+    CLY_LOG_D(@"%s health tracker reset, healthCheckSent and healthCheckEnabled restored to their initial values", __FUNCTION__);
 }
 
 - (void)clearValues {
@@ -406,9 +423,12 @@ void CountlyHealthTrackerResumeRecordingAfterCrash(void)
         return;
     }
 
-    if (!_healthCheckEnabled || _healthCheckSent) {
-        CLY_LOG_D(@"%s health check send skipped, healthCheckSent: [%@], healthCheckEnabled: [%@]", __FUNCTION__, _healthCheckSent ? @"YES" : @"NO", _healthCheckEnabled ? @"YES" : @"NO");
-        return;
+    @synchronized (self) {
+        if (!_healthCheckEnabled || _healthCheckSent) {
+            CLY_LOG_D(@"%s health check send skipped, healthCheckSent: [%@], healthCheckEnabled: [%@]", __FUNCTION__, _healthCheckSent ? @"YES" : @"NO", _healthCheckEnabled ? @"YES" : @"NO");
+            return;
+        }
+        _healthCheckSent = YES;
     }
 
     NSDictionary* healthCheck = [self healthCheckSnapshot];
@@ -417,7 +437,7 @@ void CountlyHealthTrackerResumeRecordingAfterCrash(void)
         // IMMEDIATE REQUEST to find them better in search
         if (error)
         {
-            CLY_LOG_D(@"%s health check request failed at the transport level, it will be retried later, error: [%@]", __FUNCTION__, error.localizedDescription);
+            CLY_LOG_D(@"%s health check request failed at the transport level, the counters are kept for the next start, error: [%@]", __FUNCTION__, error.localizedDescription);
             return;
         }
 
@@ -425,7 +445,7 @@ void CountlyHealthTrackerResumeRecordingAfterCrash(void)
         NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
 
         if (jsonError || ![jsonResponse isKindOfClass:NSDictionary.class]) {
-            CLY_LOG_E(@"%s could not parse the health check response, counters will not be cleared, error: [%@]", __FUNCTION__, jsonError.localizedDescription);
+            CLY_LOG_D(@"%s could not parse the health check response, counters will not be cleared, error: [%@]", __FUNCTION__, jsonError.localizedDescription);
             return;
         }
 
@@ -436,10 +456,16 @@ void CountlyHealthTrackerResumeRecordingAfterCrash(void)
 
         CLY_LOG_D(@"%s health check accepted by the server, the reported counters will be cleared", __FUNCTION__);
         [self clearSentValues:healthCheck];
-        self->_healthCheckSent = YES;
     }];
 
     [task resume];
+}
+
+- (void)disableHealthCheck {
+    @synchronized (self) {
+        _healthCheckEnabled = NO;
+    }
+    CLY_LOG_I(@"%s the health check is disabled by the configuration, the counters keep counting but are not sent", __FUNCTION__);
 }
 
 /// The health check parameter as it is sent, taken from the current counters. "fu" and "lc" are always present, empty when
@@ -467,13 +493,16 @@ void CountlyHealthTrackerResumeRecordingAfterCrash(void)
     return [self healthCheckRequestWithHealthCheck:[self healthCheckSnapshot]];
 }
 
-/// The health check request carrying the given health check parameter.
+/// The health check request carrying the given health check parameter. Its metrics hold only the app version, the one the
+/// developer set through the custom metrics when there is one, as in the metrics of a session.
 - (NSURLRequest *)healthCheckRequestWithHealthCheck:(NSDictionary *)healthCheck {
     NSString *queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
 
     // fully escaped, as the error message is a server response that can hold '&', '=' or '+'
     queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"hc", [healthCheck cly_JSONify]];
-    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"metrics", [@{CLYMetricKeyAppVersion: CountlyDeviceInfo.appVersion} cly_JSONify]];
+    NSMutableDictionary *metrics = NSMutableDictionary.new;
+    metrics[CLYMetricKeyAppVersion] = CountlyDeviceInfo.sharedInstance.customMetrics[CLYMetricKeyAppVersion] ?: CountlyDeviceInfo.appVersion;
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"metrics", [metrics cly_JSONify]];
 
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
     NSString* hcSendURL = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"%@",kCountlyEndpointI];
