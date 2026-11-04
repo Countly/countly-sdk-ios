@@ -92,6 +92,34 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
         )
     }
 
+    /**
+     * <pre>
+     * The running time sent with a crash report is measured on the monotonic clock, which a change of the system clock does not move.
+     *
+     * 1- Move the SDK's launch time 7 seconds back on the monotonic clock
+     * 2- Record a handled exception
+     * 3- Verify the crash report says the app ran for exactly 7 seconds
+     * </pre>
+     */
+    func testCrashRunningTime_isMeasuredOnTheMonotonicClock() throws {
+        MockURLProtocol.replyEmptyToEveryRequest()
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [MockURLProtocol.self]
+        config.urlSessionConfiguration = sessionConfig
+        Countly.sharedInstance().start(with: config)
+        let common = try XCTUnwrap(CountlyCommon.sharedInstance())
+        common.setValue(common.monotonicTime() - 7, forKey: "startTime")
+
+        let exception = NSException(name: NSExceptionName(rawValue: "running_time_probe"), reason: "running time probe")
+        Countly.sharedInstance().record(exception, isFatal: false, stackTrace: nil, segmentation: nil)
+
+        let request = try XCTUnwrap(TestUtils.getCurrentRQ()?.first { $0.contains("running_time_probe") }, "the crash report is queued")
+        let crash = try XCTUnwrap(TestUtils.parseQueryString(request)["crash"] as? [String: Any])
+        XCTAssertEqual(7, (crash["_run"] as? NSNumber)?.intValue)
+    }
+
     func validateCrash(
         _ stackTrace: String?, breadcrumbs: String, isFatal: Bool, changedBits: Int, customSegmentation: [String: Any],
         idx: Int, customMetrics: [String: Any], metricsToExclude: [String]

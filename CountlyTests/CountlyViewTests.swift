@@ -52,9 +52,29 @@ class CountlyViewTrackingTests: CountlyViewBaseTest {
         // Verify recorded events
         let startedEventsCount = ["View1": 2] // Expecting 2 start events for "View1"
         let endedEventsDurations = ["View1": [3, 5]] // Expecting 2 stop events with durations 3 and 5 seconds
-        
+
         // Call validateRecordedEvents to check if the events match expectations
         validateRecordedViews(startedEventsCount: startedEventsCount, endedEventsDurations: endedEventsDurations)
+    }
+
+    /**
+     * <pre>
+     * A view's duration is measured on the monotonic clock, which a change of the system clock does not move.
+     *
+     * 1- Start a view and move its start 3 seconds back on the monotonic clock
+     * 2- Stop the view
+     * 3- Verify the view reports exactly 3 seconds
+     * </pre>
+     */
+    func testViewDuration_isMeasuredOnTheMonotonicClock() throws {
+        Countly.sharedInstance().start(with: createBaseConfig())
+        let viewID = try XCTUnwrap(Countly.sharedInstance().views().startView("View1"))
+        let viewData = try XCTUnwrap((CountlyViewTrackingInternal.sharedInstance().value(forKey: "viewDataDictionary") as? NSDictionary)?[viewID] as? CountlyViewData)
+        viewData.viewStartTime = CountlyCommon.sharedInstance().monotonicTime() - 3
+
+        Countly.sharedInstance().views().stopView(withID: viewID)
+
+        validateRecordedViews(startedEventsCount: ["View1": 1], endedEventsDurations: ["View1": [3]])
     }
 
     

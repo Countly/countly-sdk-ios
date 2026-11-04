@@ -1281,6 +1281,7 @@ static dispatch_once_t onceToken;
     CountlyEvent *event = CountlyEvent.new;
     event.key = key;
     event.timestamp = CountlyCommon.sharedInstance.uniqueTimestamp;
+    event.monotonicStartTime = CountlyCommon.sharedInstance.monotonicTime;
 
     [CountlyPersistency.sharedInstance recordTimedEvent:event];
 }
@@ -1311,7 +1312,7 @@ static dispatch_once_t onceToken;
         return;
     }
 
-    NSTimeInterval duration = NSDate.date.timeIntervalSince1970 - event.timestamp;
+    NSTimeInterval duration = CountlyCommon.sharedInstance.monotonicTime - event.monotonicStartTime;
     [self recordEventInternal:key segmentation:segmentation count:count sum:sum duration:duration];
 }
 

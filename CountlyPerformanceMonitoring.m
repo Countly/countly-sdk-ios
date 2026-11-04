@@ -25,7 +25,7 @@ NSString* const kCountlyPMKeyAppInBackground        = @"app_in_background";
 
 
 @interface CountlyPerformanceMonitoring ()
-@property (nonatomic) NSMutableDictionary* startedCustomTraces;
+@property (nonatomic) NSMutableDictionary* startedCustomTraces; // trace name to the monotonicTime of CountlyCommon at its start
 @property (nonatomic) BOOL hasAlreadyRecordedAppStartDurationTrace;
 @end
 
@@ -300,8 +300,7 @@ BOOL enableForegroundBackgroundTracking;
             return;
         }
 
-        NSNumber* startTime = @((long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000));
-        self.startedCustomTraces[traceName] = startTime;
+        self.startedCustomTraces[traceName] = @(CountlyCommon.sharedInstance.monotonicTime);
         runningTraceCount = self.startedCustomTraces.count;
     }
 
@@ -324,15 +323,15 @@ BOOL enableForegroundBackgroundTracking;
         return;
     }
 
-    NSNumber* startTime = nil;
+    NSNumber* monotonicStartTime = nil;
 
     @synchronized (self.startedCustomTraces)
     {
-        startTime = self.startedCustomTraces[traceName];
+        monotonicStartTime = self.startedCustomTraces[traceName];
         [self.startedCustomTraces removeObjectForKey:traceName];
     }
 
-    if (!startTime)
+    if (!monotonicStartTime)
     {
         CLY_LOG_W(@"%s custom trace end is a no-op, no running trace with this name, traceName: [%@]", __FUNCTION__, traceName);
         return;
@@ -342,22 +341,23 @@ BOOL enableForegroundBackgroundTracking;
     NSDictionary* metricsTruncated = [metrics cly_truncated:@"Custom trace metric"];
     metrics = [metricsTruncated cly_limited:@"Custom trace metric"];
 
-    NSNumber* endTime = @((long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000));
+    long long duration = (long long)((CountlyCommon.sharedInstance.monotonicTime - monotonicStartTime.doubleValue) * 1000);
+    long long endTime = (long long)(CountlyCommon.sharedInstance.uniqueTimestamp * 1000);
 
     NSMutableDictionary* mutableMetrics = metrics.mutableCopy;
     if (!mutableMetrics)
         mutableMetrics = NSMutableDictionary.new;
 
-    long long duration = endTime.longLongValue - startTime.longLongValue;
     mutableMetrics[kCountlyPMKeyDuration] = @(duration);
 
+    // the start is derived from the end and the duration, so a change of the system clock while the trace ran cannot make the three disagree
     NSDictionary* trace =
     @{
         kCountlyPMKeyType: kCountlyPMKeyDevice,
         kCountlyPMKeyName: traceName,
         kCountlyPMKeyAPMMetrics: mutableMetrics,
-        kCountlyPMKeyStartTime: startTime,
-        kCountlyPMKeyEndTime: endTime,
+        kCountlyPMKeyStartTime: @(endTime - duration),
+        kCountlyPMKeyEndTime: @(endTime),
     };
 
     if (duration < 0)
@@ -384,23 +384,23 @@ BOOL enableForegroundBackgroundTracking;
         return;
     }
 
-    NSNumber* startTime = nil;
+    NSNumber* monotonicStartTime = nil;
     NSUInteger runningTraceCount = 0;
 
     @synchronized (self.startedCustomTraces)
     {
-        startTime = self.startedCustomTraces[traceName];
+        monotonicStartTime = self.startedCustomTraces[traceName];
         [self.startedCustomTraces removeObjectForKey:traceName];
         runningTraceCount = self.startedCustomTraces.count;
     }
 
-    if (!startTime)
+    if (!monotonicStartTime)
     {
         CLY_LOG_D(@"%s custom trace cancellation is a no-op, no running trace with this name, traceName: [%@]", __FUNCTION__, traceName);
         return;
     }
 
-    CLY_LOG_D(@"%s custom trace cancelled, its duration is discarded, traceName: [%@], startTime: [%lld], runningTraceCount: [%lu]", __FUNCTION__, traceName, startTime.longLongValue, (unsigned long)runningTraceCount);
+    CLY_LOG_D(@"%s custom trace cancelled, its duration is discarded, traceName: [%@], runningTraceCount: [%lu]", __FUNCTION__, traceName, (unsigned long)runningTraceCount);
 }
 
 - (void)clearAllCustomTraces
