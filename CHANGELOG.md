@@ -1,7 +1,11 @@
 ## XX.XX.XX
 * Added SDK method usage and log codes to the health check.
 * Added "disableHealthCheck" init config parameter to disable the SDK health check.
+* Improved internal logging.
 
+* Mitigated an issue where a health check the server refused was treated as delivered.
+* Mitigated an issue where the health check sent the app version without the metrics consent.
+* Mitigated an issue where an event recorded with a negative duration kept that duration. The duration is now ignored.
 * Mitigated an issue where orientation events were not recorded on iOS 27 in apps that use the UIScene lifecycle.
 * Mitigated an issue where the orientation was not recorded at start.
 * Mitigated an issue where a crash the SDK reported was not passed on to the crash handler it replaced.

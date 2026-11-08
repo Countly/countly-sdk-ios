@@ -161,13 +161,25 @@ void CountlyHealthTrackerResumeRecordingAfterCrash(void)
     CLY_LOG_D(@"%s restored persisted counters, errorCount: [%ld], warningCount: [%ld], statusCode: [%ld], errorMessageLength: [%lu], backoffRequestCount: [%ld], consecutiveBackoffRequestCount: [%ld]", __FUNCTION__, self.countLogError, self.countLogWarning, (long)self.statusCode, (unsigned long)self.errorMessage.length, self.countBackoffRequest, self.consecutiveBackoffRequest);
 }
 
+/// Counts one warning log line. Ignored while an automatically detected crash is being reported, as that code may run in a
+/// signal handler, where queuing work can deadlock.
 - (void)logWarning {
+    if (atomic_load(&s_isRecordingStoppedForCrash)) {
+        return;
+    }
+
     dispatch_async(self.hcQueue, ^{
         self.countLogWarning++;
     });
 }
 
+/// Counts one error log line. Ignored while an automatically detected crash is being reported, as that code may run in a
+/// signal handler, where queuing work can deadlock.
 - (void)logError {
+    if (atomic_load(&s_isRecordingStoppedForCrash)) {
+        return;
+    }
+
     dispatch_async(self.hcQueue, ^{
         self.countLogError++;
     });
@@ -296,26 +308,33 @@ void CountlyHealthTrackerResumeRecordingAfterCrash(void)
     });
 }
 
+/// Counts a backoff of the request queue and extends the current run of backoffs in a row. The longest run ("cbom") is raised
+/// right away, so no save or later call has to end the run to keep it. Records log code w320, and w321 when the backoff
+/// continues a run. The run itself is kept in memory only, so a restart ends it.
 - (void)logBackoffRequest {
+    BOOL recordsLogCodes = !atomic_load(&s_isRecordingStoppedForCrash);
     dispatch_async(self.hcQueue, ^{
+        BOOL continuesRun = self.countConsecutiveBackoffRequest > 0;
         self.countBackoffRequest++;
         self.countConsecutiveBackoffRequest++;
-        CLY_LOG_D(@"%s recorded a backed off request, backoffRequestCount: [%ld], currentConsecutiveBackoffRequestCount: [%ld]", __FUNCTION__, self.countBackoffRequest, self.countConsecutiveBackoffRequest);
+        self.consecutiveBackoffRequest = MAX(self.consecutiveBackoffRequest, self.countConsecutiveBackoffRequest);
+
+        if (recordsLogCodes) {
+            [self addCount:1 toLogCode:@"w320"];
+            if (continuesRun) {
+                [self addCount:1 toLogCode:@"w321"];
+            }
+        }
+        CLY_LOG_D(@"%s recorded a backed off request, backoffRequestCount: [%ld], currentConsecutiveBackoffRequestCount: [%ld], peakConsecutiveBackoffRequestCount: [%ld]", __FUNCTION__, self.countBackoffRequest, self.countConsecutiveBackoffRequest, self.consecutiveBackoffRequest);
     });
 }
 
+/// Ends the current run of backoffs in a row, when a queued request was answered in time. The longest run is already kept by
+/// logBackoffRequest.
 - (void)logConsecutiveBackoffRequest {
     dispatch_async(self.hcQueue, ^{
-        [self closeConsecutiveBackoffRun];
+        self.countConsecutiveBackoffRequest = 0;
     });
-}
-
-/// Ends the current run of backoffs in a row and keeps the longest run seen so far. Call on the health tracker queue, so a save
-/// that runs there stores the run it closes.
-- (void)closeConsecutiveBackoffRun {
-    self.consecutiveBackoffRequest = MAX(self.consecutiveBackoffRequest, self.countConsecutiveBackoffRequest);
-    self.countConsecutiveBackoffRequest = 0;
-    CLY_LOG_D(@"%s consecutive backoff streak closed, peakConsecutiveBackoffRequestCount: [%ld]", __FUNCTION__, self.consecutiveBackoffRequest);
 }
 
 - (void)clearAndSave {
@@ -329,7 +348,6 @@ void CountlyHealthTrackerResumeRecordingAfterCrash(void)
 - (void)saveState {
     dispatch_async(self.hcQueue, ^{
         [self loadPersistedStateIfNeeded];
-        [self closeConsecutiveBackoffRun];
 
         [CountlyPersistency.sharedInstance storeHealthCheckTrackerState:[self currentState]];
         CLY_LOG_D(@"%s counters persisted, errorCount: [%ld], warningCount: [%ld], statusCode: [%ld], errorMessageLength: [%lu], backoffRequestCount: [%ld], peakConsecutiveBackoffRequestCount: [%ld]", __FUNCTION__, self.countLogError, self.countLogWarning, (long)self.statusCode, (unsigned long)self.errorMessage.length, self.countBackoffRequest, self.consecutiveBackoffRequest);
@@ -441,6 +459,13 @@ void CountlyHealthTrackerResumeRecordingAfterCrash(void)
             return;
         }
 
+        NSInteger statusCode = [response isKindOfClass:NSHTTPURLResponse.class] ? ((NSHTTPURLResponse *)response).statusCode : 0;
+        if (statusCode < 200 || statusCode >= 300)
+        {
+            CLY_LOG_D(@"%s health check was not accepted by the server, the counters are kept for the next start, statusCode: [%ld]", __FUNCTION__, (long)statusCode);
+            return;
+        }
+
         NSError *jsonError;
         NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
 
@@ -494,15 +519,19 @@ void CountlyHealthTrackerResumeRecordingAfterCrash(void)
 }
 
 /// The health check request carrying the given health check parameter. Its metrics hold only the app version, the one the
-/// developer set through the custom metrics when there is one, as in the metrics of a session.
+/// developer set through the custom metrics when there is one, as in the metrics of a session. The metrics are left out while
+/// consent is required and the metrics consent is not given; the health check itself needs no consent.
 - (NSURLRequest *)healthCheckRequestWithHealthCheck:(NSDictionary *)healthCheck {
     NSString *queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
 
     // fully escaped, as the error message is a server response that can hold '&', '=' or '+'
     queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"hc", [healthCheck cly_JSONify]];
-    NSMutableDictionary *metrics = NSMutableDictionary.new;
-    metrics[CLYMetricKeyAppVersion] = CountlyDeviceInfo.sharedInstance.customMetrics[CLYMetricKeyAppVersion] ?: CountlyDeviceInfo.appVersion;
-    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"metrics", [metrics cly_JSONify]];
+    if (CountlyConsentManager.sharedInstance.consentForMetrics)
+    {
+        NSMutableDictionary *metrics = NSMutableDictionary.new;
+        metrics[CLYMetricKeyAppVersion] = CountlyDeviceInfo.sharedInstance.customMetrics[CLYMetricKeyAppVersion] ?: CountlyDeviceInfo.appVersion;
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"metrics", [metrics cly_JSONify]];
+    }
 
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
     NSString* hcSendURL = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"%@",kCountlyEndpointI];

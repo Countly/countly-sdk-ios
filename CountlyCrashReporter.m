@@ -437,14 +437,16 @@ static void CountlyForgetReplacedCrashHandlers(void)
     NSData* crashData = [self.crashReporter loadPendingCrashReportDataAndReturnError:&error];
     if (!crashData)
     {
-        CLY_LOG_E(@"%s pending crash report data could not be loaded from disk, error: [%@]", __FUNCTION__, error.localizedDescription);
+        CLY_LOG_W(@"%s pending crash report data could not be loaded from disk, error: [%@]", __FUNCTION__, error.localizedDescription);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w504"];
         return nil;
     }
 
     PLCrashReport *report = [PLCrashReport.alloc initWithData:crashData error:&error];
     if (!report)
     {
-        CLY_LOG_E(@"%s pending crash report could not be parsed from the loaded data, error: [%@]", __FUNCTION__, error.localizedDescription);
+        CLY_LOG_W(@"%s pending crash report could not be parsed from the loaded data, error: [%@]", __FUNCTION__, error.localizedDescription);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w504"];
         return nil;
     }
 
@@ -745,7 +747,6 @@ void CountlySignalHandler(int signalCode)
         if (self.customCrashLogs.count > self.crashLogLimit)
         {
             CLY_LOG_D(@"%s breadcrumb buffer is full, the oldest breadcrumb is dropped, breadcrumbCount: [%lu], limit: [%lu]", __FUNCTION__, (unsigned long)self.customCrashLogs.count, (unsigned long)self.crashLogLimit);
-            [CountlyHealthTracker.sharedInstance recordLogCode:@"w204" forUsageArea:@"crashes"];
             [self.customCrashLogs removeObjectAtIndex:0];
         }
         else

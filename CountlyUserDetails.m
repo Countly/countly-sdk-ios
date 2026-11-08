@@ -197,7 +197,8 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
 {
     if (key == nil || value == nil)
     {
-        CLY_LOG_E(@"%s call will be ignored as key or value is nil, keyProvided: [%@]", __FUNCTION__, (key != nil) ? @"YES" : @"NO");
+        CLY_LOG_W(@"%s call will be ignored as key or value is nil, keyProvided: [%@]", __FUNCTION__, (key != nil) ? @"YES" : @"NO");
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
     if (![CountlyServerConfig.sharedInstance shouldRecordUserProperty:key]) {
@@ -207,6 +208,7 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
     if (![self isValidDataType:value]) {
         CLY_LOG_W(@"%s custom property value type is not supported, key: [%@], type: [%@], omitting call",
                   __FUNCTION__, key, NSStringFromClass([value class]));
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         CLY_LOG_D(@"%s rejected custom property value detail, key: [%@], value: [%@]", __FUNCTION__, key, value);
         return;
     }
@@ -250,7 +252,8 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
 
     if (key == nil)
     {
-        CLY_LOG_E(@"%s unset call will be ignored as key is nil", __FUNCTION__);
+        CLY_LOG_W(@"%s unset call will be ignored as key is nil", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 
@@ -368,6 +371,7 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
     if (!CountlyCommon.sharedInstance.hasStarted)
     {
         CLY_LOG_W(@"%s user details save will be ignored as SDK is not initialized yet", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w101"];
         return;
     }
 
@@ -414,6 +418,7 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
     if (value == nil)
     {
         CLY_LOG_W(@"%s modification will be ignored as value is nil, modifier: [%@], key: [%@]", __FUNCTION__, mod, key);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
     if (![CountlyServerConfig.sharedInstance shouldRecordUserProperty:key]) {
@@ -423,6 +428,7 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
     if (![self isValidDataType:value]) {
         CLY_LOG_W(@"%s modifier value type is not supported, modifier: [%@], key: [%@], type: [%@], omitting call",
                   __FUNCTION__, mod, key, NSStringFromClass([value class]));
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         CLY_LOG_D(@"%s rejected modifier value detail, modifier: [%@], key: [%@], value: [%@]", __FUNCTION__, mod, key, value);
         return;
     }
@@ -467,6 +473,7 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
 - (void)setPropertiesInternal:(NSDictionary<NSString *, id> *)data {
     if (data.count == 0) {
         CLY_LOG_W(@"%s call will be ignored as no data was provided", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 
@@ -577,6 +584,7 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
             // drop the path with a warning if the file isn't readable.
             if (path.length > 0 && ![[NSFileManager defaultManager] isReadableFileAtPath:path]) {
                 CLY_LOG_W(@"%s provided picture path file can not be opened, pathLength: [%lu], value will be dropped", __FUNCTION__, (unsigned long)path.length);
+                [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
                 CLY_LOG_D(@"%s unreadable picture path value detail, path: [%@]", __FUNCTION__, path);
                 self.pictureLocalPath = nil;
             } else {
@@ -595,6 +603,7 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
                 parsed = [formatter numberFromString:(NSString *)value];
                 if (!parsed) {
                     CLY_LOG_W(@"%s provided byear value can not be parsed as a number, valueLength: [%lu]", __FUNCTION__, (unsigned long)((NSString *)value).length);
+                    [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
                     CLY_LOG_D(@"%s unparsable byear value detail, value: [%@]", __FUNCTION__, value);
                     return NO;
                 }
@@ -666,7 +675,8 @@ static const NSUInteger kCountlyUDNamedFieldsCount = sizeof(kCountlyUDNamedField
 // Those can be either custom user properties or predefined user properties
 - (void)setProperties:(NSDictionary<NSString *,  NSObject *> *)data {
     if (data == nil) {
-        CLY_LOG_E(@"%s call will be ignored as provided data is nil", __FUNCTION__);
+        CLY_LOG_W(@"%s call will be ignored as provided data is nil", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 
