@@ -32,16 +32,18 @@ jobs:
       matrix:
         env:
           [
-            { os_version: 14, sdk: "macosx14.5", xcode: "15.4" },
-            { os_version: 14, sdk: "iphoneos17.5", xcode: "15.4" },
-            { os_version: 14, sdk: "appletvos17.5", xcode: "15.4" },
-            { os_version: 14, sdk: "watchos10.5", xcode: "15.4" },
-            { os_version: 14, sdk: "xros1.2", xcode: "15.4" },
-            { os_version: 14, sdk: "iphoneos17.2", xcode: "15.2" },
-            { os_version: 14, sdk: "macosx14.2", xcode: "15.2" },
-            { os_version: 14, sdk: "appletvos17.2", xcode: "15.2" },
-            { os_version: 14, sdk: "watchos10.2", xcode: "15.2" },
-            { os_version: 14, sdk: "xros1.0", xcode: "15.2" },
+            # GitHub retired the macos-14 image, and with it Xcode 15; Xcode 16.0 and 16.2 on
+            # macos-15 are the oldest toolchains a hosted runner still has.
+            { os_version: 15, sdk: "macosx15.2", xcode: "16.2" },
+            { os_version: 15, sdk: "iphoneos18.2", xcode: "16.2" },
+            { os_version: 15, sdk: "appletvos18.2", xcode: "16.2" },
+            { os_version: 15, sdk: "watchos11.2", xcode: "16.2" },
+            { os_version: 15, sdk: "xros2.2", xcode: "16.2" },
+            { os_version: 15, sdk: "macosx15.0", xcode: "16.0" },
+            { os_version: 15, sdk: "iphoneos18.0", xcode: "16.0" },
+            { os_version: 15, sdk: "appletvos18.0", xcode: "16.0" },
+            { os_version: 15, sdk: "watchos11.0", xcode: "16.0" },
+            { os_version: 15, sdk: "xros2.0", xcode: "16.0" },
             { os_version: 15, sdk: "macosx15.5", xcode: "16.4" },
             { os_version: 15, sdk: "iphoneos18.5", xcode: "16.4" },
             { os_version: 15, sdk: "appletvos18.5", xcode: "16.4" },
