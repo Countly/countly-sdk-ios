@@ -5,14 +5,21 @@
 // Please visit www.count.ly for more information.
 
 #import "CountlyCommon.h"
+#import <dlfcn.h>
+#import <objc/message.h>
 
 @interface Countly ()
 {
     NSTimer* timer;
     BOOL isSuspended;
     CountlyConfig* _startConfig;
+    NSMutableArray<NSURL *>* _pendingDeepLinks;
+    BOOL _isFetchingAppleAdsToken;
 }
 @end
+
+// Reads the AdServices token; replaced by tests, as the simulator has no token.
+static CLYAppleAdsTokenProvider s_appleAdsTokenProvider = nil;
 
 long long appLoadStartTime;
 // It holds the event id of previous recorded custom event.
@@ -349,6 +356,17 @@ static dispatch_once_t onceToken;
     
     if (config.indirectAttribution)
         [self recordIndirectAttribution:config.indirectAttribution];
+
+    [self sendAppleAdsAttributionIfNeeded];
+
+    NSArray<NSURL *>* pendingDeepLinks = nil;
+    @synchronized (self)
+    {
+        pendingDeepLinks = _pendingDeepLinks.copy;
+        _pendingDeepLinks = nil;
+    }
+    for (NSURL* url in pendingDeepLinks)
+        [self recordDeepLink:url];
     
     [CountlyHealthTracker.sharedInstance sendHealthCheck];
 
@@ -1533,6 +1551,182 @@ static dispatch_once_t onceToken;
     }
 
     [CountlyConnectionManager.sharedInstance sendDirectAttributionWithCampaignID:campaignID andCampaignUserID:campaignUserID];
+}
+
+- (void)recordDeepLink:(NSURL *)url
+{
+    CLY_LOG_I(@"%s recording deep link, url: [%@]", __FUNCTION__, url);
+
+    if (![url isKindOfClass:NSURL.class] || !url.absoluteString.length)
+    {
+        CLY_LOG_E(@"%s omitting the call, url must be a non empty NSURL, url: [%@]", __FUNCTION__, url);
+        return;
+    }
+
+    if (!CountlyCommon.sharedInstance.hasStarted)
+    {
+        CLY_LOG_W(@"%s the SDK is not started yet, the deep link will be recorded when it starts", __FUNCTION__);
+        @synchronized (self)
+        {
+            if (!_pendingDeepLinks)
+                _pendingDeepLinks = NSMutableArray.new;
+            [_pendingDeepLinks addObject:url];
+        }
+        return;
+    }
+
+    if (CountlyConsentManager.sharedInstance.consentForAttribution)
+    {
+        [CountlyConnectionManager.sharedInstance sendAttributionSignalWithType:@"deeplink" value:url.absoluteString];
+    }
+    else
+    {
+        CLY_LOG_V(@"%s no consent given for attribution, the deep link will not be sent", __FUNCTION__);
+    }
+
+    CLYDeepLinkCallback callback = _startConfig.deepLinkCallback;
+    if (!callback)
+        return;
+
+    NSString* deepLinkPath = [Countly deepLinkPathForURL:url];
+    CLY_LOG_D(@"%s calling the deep link callback, deepLinkPath: [%@]", __FUNCTION__, deepLinkPath);
+    if (NSThread.isMainThread)
+    {
+        callback(deepLinkPath, url);
+    }
+    else
+    {
+        dispatch_async(dispatch_get_main_queue(), ^{ callback(deepLinkPath, url); });
+    }
+}
+
++ (NSString *)deepLinkPathForURL:(NSURL *)url
+{
+    NSURLComponents* components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
+    if (!components)
+        return nil;
+
+    NSString* dl = nil;
+    for (NSURLQueryItem* item in components.queryItems)
+    {
+        if ([item.name isEqualToString:@"dl"] && item.value.length)
+        {
+            dl = item.value;
+            break;
+        }
+    }
+
+    // A Countly smart link, as the server reads it: /at/<code>[/<path>] or /at/<app id>/<code>[/<path>]
+    NSMutableArray<NSString *>* segments = NSMutableArray.new;
+    for (NSString* segment in [components.path componentsSeparatedByString:@"/"])
+    {
+        if (segment.length)
+            [segments addObject:segment];
+    }
+
+    NSUInteger atIndex = [segments indexOfObject:@"at"];
+    if (atIndex == NSNotFound || atIndex + 1 >= segments.count)
+        return dl;
+
+    NSUInteger codeIndex = atIndex + 1;
+    NSRegularExpression* appIDRegex = [NSRegularExpression regularExpressionWithPattern:@"^[a-f0-9]{24}$" options:0 error:nil];
+    NSString* first = segments[codeIndex];
+    if (codeIndex + 1 < segments.count && [appIDRegex numberOfMatchesInString:first options:0 range:NSMakeRange(0, first.length)])
+        codeIndex++;
+
+    NSString* code = segments[codeIndex];
+    NSRegularExpression* codeRegex = [NSRegularExpression regularExpressionWithPattern:@"^[A-Za-z0-9_-]{1,128}$" options:0 error:nil];
+    if (![codeRegex numberOfMatchesInString:code options:0 range:NSMakeRange(0, code.length)])
+        return dl;
+
+    NSArray<NSString *>* pathSegments = [segments subarrayWithRange:NSMakeRange(codeIndex + 1, segments.count - codeIndex - 1)];
+    if (!pathSegments.count)
+        return dl;
+
+    return [@"/" stringByAppendingString:[pathSegments componentsJoinedByString:@"/"]];
+}
+
++ (void)setAppleAdsTokenProvider:(CLYAppleAdsTokenProvider)provider
+{
+    s_appleAdsTokenProvider = [provider copy];
+}
+
++ (NSString *)appleAdsAttributionToken:(NSError **)error
+{
+    if (s_appleAdsTokenProvider)
+        return s_appleAdsTokenProvider(error);
+
+#if TARGET_OS_IOS
+    // Looked up at runtime so apps do not have to link AdServices (iOS 14.3+)
+    if (@available(iOS 14.3, *))
+    {
+        Class attributionClass = NSClassFromString(@"AAAttribution");
+        if (!attributionClass)
+        {
+            dlopen("/System/Library/Frameworks/AdServices.framework/AdServices", RTLD_LAZY);
+            attributionClass = NSClassFromString(@"AAAttribution");
+        }
+
+        SEL selector = NSSelectorFromString(@"attributionTokenWithError:");
+        if (attributionClass && [attributionClass respondsToSelector:selector])
+        {
+            NSString* (*attributionToken)(id, SEL, NSError**) = (NSString* (*)(id, SEL, NSError**))objc_msgSend;
+            return attributionToken(attributionClass, selector, error);
+        }
+    }
+#endif
+    return nil;
+}
+
+- (void)sendAppleAdsAttributionIfNeeded
+{
+#if TARGET_OS_IOS
+    if (!CountlyCommon.sharedInstance.hasStarted || !_startConfig || _startConfig.disableAppleAdsAttribution)
+        return;
+
+    if (!CountlyConsentManager.sharedInstance.consentForAttribution)
+    {
+        CLY_LOG_V(@"%s no consent given for attribution, the Apple Ads attribution token will not be sent", __FUNCTION__);
+        return;
+    }
+
+    if (CountlyPersistency.sharedInstance.retrieveAppleAdsAttributionSent)
+    {
+        CLY_LOG_V(@"%s the Apple Ads attribution token was sent before", __FUNCTION__);
+        return;
+    }
+
+    @synchronized (self)
+    {
+        if (_isFetchingAppleAdsToken)
+            return;
+        _isFetchingAppleAdsToken = YES;
+    }
+
+    // Apple advises against reading the token on the main thread
+    dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
+        NSError* error = nil;
+        NSString* token = [Countly appleAdsAttributionToken:&error];
+
+        @synchronized (self)
+        {
+            self->_isFetchingAppleAdsToken = NO;
+        }
+
+        if (!token.length)
+        {
+            CLY_LOG_D(@"%s the Apple Ads attribution token is not available, it will be read again on the next start, error: [%@]", __FUNCTION__, error);
+            return;
+        }
+
+        // the SDK may have been halted or the consent cancelled while the token was read
+        if (self != s_sharedCountly || !CountlyCommon.sharedInstance.hasStarted || !CountlyConsentManager.sharedInstance.consentForAttribution || CountlyPersistency.sharedInstance.retrieveAppleAdsAttributionSent)
+            return;
+
+        [CountlyPersistency.sharedInstance storeAppleAdsAttributionSent:YES];
+        [CountlyConnectionManager.sharedInstance sendAttributionSignalWithType:@"apple_ads" value:token];
+    });
+#endif
 }
 
 - (void)recordIndirectAttribution:(NSDictionary<NSString *, NSString *> *)attribution

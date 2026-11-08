@@ -443,6 +443,10 @@ static dispatch_once_t onceToken;
     if (consentForAttribution)
     {
         CLY_LOG_D(@"%s consent granted, feature: [%@], attribution can be recorded", __FUNCTION__, CLYConsentAttribution);
+
+        // at start the SDK sends it itself once the configuration is in place
+        if (CountlyCommon.sharedInstance.hasFinishedInit)
+            [Countly.sharedInstance sendAppleAdsAttributionIfNeeded];
     }
     else
     {

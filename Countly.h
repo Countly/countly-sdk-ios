@@ -630,6 +630,17 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)recordIndirectAttribution:(NSDictionary<NSString *, NSString *> *)attribution;
 
+/**
+ * Records a deep link that opened the app, such as a Universal Link or a Countly smart link.
+ * @discussion Call it with the URL the app is opened with: @c userActivity.webpageURL in @c application:continueUserActivity:restorationHandler: or @c scene:continueUserActivity:, the user activities in @c scene:willConnectToSession:options:, @c onOpenURL / @c onContinueUserActivity in SwiftUI, or @c application:openURL:options: for custom URL schemes.
+ * @discussion The full URL is sent to the server as an attribution signal, where a Countly smart link (@c https://<host>/at/<app id>/<code>[/<path>]) counts as a click of its campaign and its UTM parameters name the campaign.
+ * @discussion Then the @c deepLinkCallback on the initial configuration is called with the path to route to.
+ * @discussion A deep link recorded before the SDK is started is processed when it starts.
+ * @discussion The URL is not sent if consent for @c CLYConsentAttribution is not given, while @c requiresConsent flag is set on initial configuration. The @c deepLinkCallback is still called.
+ * @param url The URL that opened the app
+ */
+- (void)recordDeepLink:(NSURL *)url;
+
 #pragma mark - Remote Config
 
 - (CountlyRemoteConfig *) remoteConfig;

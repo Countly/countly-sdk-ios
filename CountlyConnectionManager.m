@@ -60,6 +60,7 @@ NSString* const kCountlyQSKeyADID             = @"adid";
 NSString* const kCountlyQSKeyCampaignID       = @"campaign_id";
 NSString* const kCountlyQSKeyCampaignUser     = @"campaign_user";
 NSString* const kCountlyQSKeyAttributionData  = @"attribution_data";
+NSString* const kCountlyQSKeyAttribution      = @"attribution";
 
 NSString* const kCountlyQSKeyMetrics          = @"metrics";
 NSString* const kCountlyQSKeyEvents           = @"events";
@@ -1009,11 +1010,11 @@ static dispatch_once_t onceToken;
 - (void)sendDirectAttributionWithCampaignID:(NSString *)campaignID andCampaignUserID:(NSString *)campaignUserID
 {
     NSMutableString* queryString = [self queryEssentials].mutableCopy;
-    [queryString appendFormat:@"&%@=%@", kCountlyQSKeyCampaignID, campaignID];
+    [queryString appendFormat:@"&%@=%@", kCountlyQSKeyCampaignID, campaignID.cly_URLEscaped];
 
     if (campaignUserID.length)
     {
-        [queryString appendFormat:@"&%@=%@", kCountlyQSKeyCampaignUser, campaignUserID];
+        [queryString appendFormat:@"&%@=%@", kCountlyQSKeyCampaignUser, campaignUserID.cly_URLEscaped];
     }
 
     CLY_LOG_I(@"%s direct attribution request is being queued, campaign ID: [%@], campaign user ID provided: [%@]", __FUNCTION__, campaignID, campaignUserID.length ? @"YES" : @"NO");
@@ -1027,6 +1028,19 @@ static dispatch_once_t onceToken;
 {
     NSMutableString* queryString = [self queryEssentials].mutableCopy;
     [queryString appendFormat:@"&%@=%@", kCountlyQSKeyAttributionData, [attributionData cly_URLEscaped]];
+
+    [CountlyPersistency.sharedInstance addToQueue:queryString.copy];
+
+    [self proceedOnQueue];
+}
+
+- (void)sendAttributionSignalWithType:(NSString *)type value:(NSString *)value
+{
+    NSDictionary* signal = @{@"type": type, @"value": value};
+    NSMutableString* queryString = [self queryEssentials].mutableCopy;
+    [queryString appendFormat:@"&%@=%@", kCountlyQSKeyAttribution, [signal cly_JSONify]];
+
+    CLY_LOG_I(@"%s attribution signal request is being queued, type: [%@], value length: [%lu]", __FUNCTION__, type, (unsigned long)value.length);
 
     [CountlyPersistency.sharedInstance addToQueue:queryString.copy];
 

@@ -66,6 +66,8 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 - (void)sendDirectAttributionWithCampaignID:(NSString *)campaignID andCampaignUserID:(nullable NSString *)campaignUserID;
 - (void)sendAttributionData:(NSString *)attributionData;
 - (void)sendIndirectAttribution:(NSDictionary *)attribution;
+/// Queues a raw attribution signal as `attribution={"type":"<type>","value":"<value>"}`, which the server parses.
+- (void)sendAttributionSignalWithType:(NSString *)type value:(NSString *)value;
 - (void)sendConsents:(NSString *)consents;
 - (void)sendPerformanceMonitoringTrace:(NSString *)trace;
 
