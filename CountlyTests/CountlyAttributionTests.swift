@@ -19,10 +19,29 @@ private final class OfflineURLProtocol: URLProtocol {
     override func stopLoading() {}
 }
 
+/// Counts token reads, which happen on a background queue.
+private final class ReadCounter {
+    private let lock = NSLock()
+    private var reads = 0
+    var count: Int {
+        lock.lock()
+        defer { lock.unlock() }
+        return reads
+    }
+    func increment() {
+        lock.lock()
+        reads += 1
+        lock.unlock()
+    }
+}
+
 class CountlyAttributionTests: CountlyBaseTestCase {
 
+    let appID = "0123456789abcdef01234567"
     // A Countly smart link: /at/<app id>/<campaign code>/<deep-link path>
-    let smartLink = "https://links.example.com/at/0123456789abcdef01234567/summer_sale/products/42?utm_source=newsletter&cly_clk=abc"
+    var smartLink: String {
+        "https://links.example.com/at/\(appID)/summer_sale/products/42?utm_source=newsletter&cly_clk=abc"
+    }
 
     override func setUpWithError() throws {
         try super.setUpWithError()
@@ -30,20 +49,34 @@ class CountlyAttributionTests: CountlyBaseTestCase {
     }
 
     override func tearDownWithError() throws {
-        Countly.setAppleAdsTokenProvider(nil)
         Countly.sharedInstance().halt(true)
+        Countly.setAppleAdsTokenProvider(TestUtils.noAppleAdsToken)
         try super.tearDownWithError()
     }
 
     func offlineConfig() -> CountlyConfig {
         let config = createBaseConfig()
         config.manualSessionHandling = true
-        // the simulator has no Apple Ads token; tests that need one set a provider
-        config.disableAppleAdsAttribution = true
         let sessionConfig = URLSessionConfiguration.default
         sessionConfig.protocolClasses = [OfflineURLProtocol.self]
         config.urlSessionConfiguration = sessionConfig
         return config
+    }
+
+    /// Starts with Apple Ads attribution on and a token provider that counts its reads.
+    func startWithAppleAds(_ config: CountlyConfig, token: @escaping () -> String?) -> ReadCounter {
+        let counter = ReadCounter()
+        Countly.setAppleAdsTokenProvider { error in
+            counter.increment()
+            let value = token()
+            if value == nil {
+                error?.pointee = NSError(domain: "AAAttributionErrorDomain", code: 3)
+            }
+            return value
+        }
+        config.disableAppleAdsAttribution = false
+        Countly.sharedInstance().start(with: config)
+        return counter
     }
 
     /// The queued requests that carry the given parameter, parsed.
@@ -59,34 +92,90 @@ class CountlyAttributionTests: CountlyBaseTestCase {
             .filter { $0["type"] as? String == type }
     }
 
-    // MARK: - Direct attribution
+    func appleAdsTokens() -> [String] {
+        return attributionSignals(ofType: "apple_ads").compactMap { $0["value"] as? String }
+    }
+
+    func waitForAppleAdsToken() -> Bool {
+        return TestUtils.waitUntil("apple ads token queued", timeout: TestUtils.asyncTimeout) {
+            !self.appleAdsTokens().isEmpty
+        }
+    }
+
+    /// Pumps the run loop, so a token read or a main thread hop that would happen does.
+    func settle(_ seconds: TimeInterval = 1.0) {
+        TestUtils.waitUntil("settle", timeout: seconds) { false }
+    }
+
+    // MARK: - Direct and indirect attribution
 
     /**
-     * A campaign id and campaign user with "&", "=" and "+" reach the server whole.
+     * A campaign id and campaign user with "&", "=", "+" and spaces reach the server whole.
      * Before the fix the values were not escaped and "&" split the request.
      */
     func test_directAttribution_escapesCampaignIDAndCampaignUser() throws {
         Countly.sharedInstance().start(with: offlineConfig())
 
-        Countly.sharedInstance().recordDirectAttribution(withCampaignType: "countly", andCampaignData: "{\"cid\":\"spring&sale=1+2\",\"cuid\":\"user&id=7\"}")
+        let data = "{\"cid\":\"spring sale&x=1+2\",\"cuid\":\"user &id=7\"}"
+        Countly.sharedInstance().recordDirectAttribution(withCampaignType: "countly", andCampaignData: data)
 
         let requests = queuedRequests(with: "campaign_id")
         XCTAssertEqual(requests.count, 1)
-        XCTAssertEqual(requests.first?["campaign_id"] as? String, "spring&sale=1+2")
-        XCTAssertEqual(requests.first?["campaign_user"] as? String, "user&id=7")
-        XCTAssertNil(requests.first?["sale"], "the campaign id must not split into another parameter")
+        XCTAssertEqual(requests.first?["campaign_id"] as? String, "spring sale&x=1+2")
+        XCTAssertEqual(requests.first?["campaign_user"] as? String, "user &id=7")
+        XCTAssertNil(requests.first?["x"], "the campaign id must not split into another parameter")
         XCTAssertNil(requests.first?["id"], "the campaign user must not split into another parameter")
+        let raw = TestUtils.getCurrentRQ()?.first { $0.contains("campaign_id=") } ?? ""
+        XCTAssertFalse(raw.contains(" "), "spaces are percent encoded")
     }
 
     func test_directAttribution_withoutCampaignUser_sendsCampaignIDOnly() throws {
         Countly.sharedInstance().start(with: offlineConfig())
 
-        Countly.sharedInstance().recordDirectAttribution(withCampaignType: "countly", andCampaignData: "{\"cid\":\"plain_campaign\"}")
+        let data = "{\"cid\":\"plain_campaign\"}"
+        Countly.sharedInstance().recordDirectAttribution(withCampaignType: "countly", andCampaignData: data)
 
         let requests = queuedRequests(with: "campaign_id")
         XCTAssertEqual(requests.count, 1)
         XCTAssertEqual(requests.first?["campaign_id"] as? String, "plain_campaign")
         XCTAssertNil(requests.first?["campaign_user"])
+    }
+
+    func test_directAttribution_specialTestType_sendsTheRawData() throws {
+        Countly.sharedInstance().start(with: offlineConfig())
+
+        Countly.sharedInstance().recordDirectAttribution(withCampaignType: "_special_test", andCampaignData: "raw&data")
+
+        let requests = queuedRequests(with: "attribution_data")
+        XCTAssertEqual(requests.count, 1)
+        XCTAssertEqual(requests.first?["attribution_data"] as? String, "raw&data")
+        XCTAssertTrue(queuedRequests(with: "campaign_id").isEmpty)
+    }
+
+    func test_indirectAttribution_sendsTheAidParameter() throws {
+        Countly.sharedInstance().start(with: offlineConfig())
+
+        Countly.sharedInstance().recordIndirectAttribution(["idfa": "idfa&value"])
+
+        let requests = queuedRequests(with: "aid")
+        XCTAssertEqual(requests.count, 1)
+        let aid = requests.first?["aid"] as? [String: Any]
+        XCTAssertEqual(aid?["idfa"] as? String, "idfa&value")
+        XCTAssertEqual(aid?.count, 1)
+    }
+
+    func test_directAndIndirectAttribution_withoutConsent_areNotSent() throws {
+        let config = offlineConfig()
+        config.requiresConsent = true
+        config.consents = [CLYConsent.sessions]
+        Countly.sharedInstance().start(with: config)
+
+        let data = "{\"cid\":\"c\"}"
+        Countly.sharedInstance().recordDirectAttribution(withCampaignType: "countly", andCampaignData: data)
+        Countly.sharedInstance().recordIndirectAttribution(["idfa": "idfa"])
+
+        XCTAssertTrue(queuedRequests(with: "campaign_id").isEmpty)
+        XCTAssertTrue(queuedRequests(with: "aid").isEmpty)
     }
 
     // MARK: - Deep links
@@ -116,14 +205,32 @@ class CountlyAttributionTests: CountlyBaseTestCase {
         XCTAssertEqual(signals.first?.count, 2, "the signal carries only type and value")
     }
 
+    func test_recordDeepLink_smartLinkWithoutPath_callbackGetsTheDlParameter() throws {
+        let link = "https://links.example.com/at/\(appID)/summer_sale?dl=%2Fcart%3Fitem%3D3&utm_source=qr"
+        let config = offlineConfig()
+        let called = expectation(description: "deep link callback")
+        config.deepLinkCallback = { path, url in
+            XCTAssertEqual(path, "/cart?item=3")
+            XCTAssertEqual(url.absoluteString, link)
+            called.fulfill()
+        }
+        Countly.sharedInstance().start(with: config)
+
+        Countly.sharedInstance().recordDeepLink(URL(string: link)!)
+
+        wait(for: [called], timeout: TestUtils.asyncTimeout)
+        XCTAssertEqual(attributionSignals(ofType: "deeplink").first?["value"] as? String, link)
+    }
+
     func test_recordDeepLink_eachCallSendsTheLink() throws {
         Countly.sharedInstance().start(with: offlineConfig())
+        let other = "https://example.com/products/7?utm_campaign=retarget"
 
         Countly.sharedInstance().recordDeepLink(URL(string: smartLink)!)
-        Countly.sharedInstance().recordDeepLink(URL(string: "https://example.com/products/7?utm_campaign=retarget")!)
+        Countly.sharedInstance().recordDeepLink(URL(string: other)!)
 
         let values = attributionSignals(ofType: "deeplink").compactMap { $0["value"] as? String }
-        XCTAssertEqual(values, [smartLink, "https://example.com/products/7?utm_campaign=retarget"])
+        XCTAssertEqual(values, [smartLink, other])
     }
 
     func test_recordDeepLink_withoutConsent_isNotSentButTheCallbackIsCalled() throws {
@@ -143,15 +250,19 @@ class CountlyAttributionTests: CountlyBaseTestCase {
         XCTAssertTrue(attributionSignals(ofType: "deeplink").isEmpty)
     }
 
-    func test_recordDeepLink_withAttributionConsent_isSent() throws {
+    func test_recordDeepLink_afterConsentIsGiven_isSent() throws {
         let config = offlineConfig()
         config.requiresConsent = true
-        config.consents = [CLYConsent.attribution]
+        config.consents = [CLYConsent.sessions]
         Countly.sharedInstance().start(with: config)
 
         Countly.sharedInstance().recordDeepLink(URL(string: smartLink)!)
+        XCTAssertTrue(attributionSignals(ofType: "deeplink").isEmpty)
 
-        XCTAssertEqual(attributionSignals(ofType: "deeplink").count, 1)
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.attribution])
+        Countly.sharedInstance().recordDeepLink(URL(string: smartLink)!)
+
+        XCTAssertEqual(attributionSignals(ofType: "deeplink").count, 1, "only the link opened after the consent")
     }
 
     func test_recordDeepLink_beforeStart_isRecordedWhenTheSDKStarts() throws {
@@ -170,7 +281,6 @@ class CountlyAttributionTests: CountlyBaseTestCase {
     }
 
     func test_deepLinkPath_followsTheServersSmartLinkFormat() throws {
-        let appID = "0123456789abcdef01234567"
         let cases: [(String, String?)] = [
             // smart link with the app id: the path after the campaign code
             ("https://h.com/at/\(appID)/code/a/b?x=1", "/a/b"),
@@ -188,7 +298,7 @@ class CountlyAttributionTests: CountlyBaseTestCase {
             ("https://example.com/products/7", nil),
             ("myapp://open?dl=/settings", "/settings"),
             // a code the server does not accept is not a smart link
-            ("https://h.com/at/bad.code/x", nil),
+            ("https://h.com/at/bad.code/x", nil)
         ]
 
         for (link, expected) in cases {
@@ -200,92 +310,87 @@ class CountlyAttributionTests: CountlyBaseTestCase {
 
     #if os(iOS)
     func test_appleAds_sendsTheTokenOncePerInstall() throws {
-        var reads = 0
         let token = "eyJ0b2tlbiI6IjEyMyJ9+/=&x"
-        Countly.setAppleAdsTokenProvider { _ in
-            reads += 1
-            return token
-        }
-
         let config = offlineConfig()
-        config.disableAppleAdsAttribution = false
-        Countly.sharedInstance().start(with: config)
+        let reads = startWithAppleAds(config) { token }
 
-        XCTAssertTrue(TestUtils.waitUntil("apple ads token queued") { !self.attributionSignals(ofType: "apple_ads").isEmpty })
-        let signals = attributionSignals(ofType: "apple_ads")
-        XCTAssertEqual(signals.count, 1)
-        XCTAssertEqual(signals.first?["value"] as? String, token)
-        XCTAssertEqual(reads, 1)
+        XCTAssertTrue(waitForAppleAdsToken())
+        XCTAssertEqual(appleAdsTokens(), [token])
+        XCTAssertEqual(attributionSignals(ofType: "apple_ads").first?.count, 2, "only type and value")
+        XCTAssertEqual(reads.count, 1)
 
         // a later start, keeping the storage, does not read or send it again
         Countly.sharedInstance().halt(false)
-        Countly.sharedInstance().start(with: config)
-        TestUtils.waitUntil("no second token", timeout: 1.0) { false }
-        XCTAssertEqual(attributionSignals(ofType: "apple_ads").count, 1)
-        XCTAssertEqual(reads, 1)
+        let readsAfterRestart = startWithAppleAds(config) { token }
+        settle()
+        XCTAssertEqual(appleAdsTokens(), [token])
+        XCTAssertEqual(readsAfterRestart.count, 0)
     }
 
-    func test_appleAds_tokenNotAvailable_isReadAgainOnTheNextStart() throws {
-        var reads = 0
-        Countly.setAppleAdsTokenProvider { error in
-            reads += 1
-            error?.pointee = NSError(domain: "AAAttributionErrorDomain", code: 3)
-            return nil
-        }
-
+    func test_appleAds_tokenNotAvailable_sendsNothingAndIsReadAgainOnTheNextStart() throws {
         let config = offlineConfig()
-        config.disableAppleAdsAttribution = false
-        Countly.sharedInstance().start(with: config)
-        XCTAssertTrue(TestUtils.waitUntil("token read") { reads == 1 })
+        let reads = startWithAppleAds(config) { nil }
+        XCTAssertTrue(TestUtils.waitUntil("token read", timeout: TestUtils.asyncTimeout) { reads.count == 1 })
+        settle()
+        XCTAssertTrue(appleAdsTokens().isEmpty)
 
         Countly.sharedInstance().halt(false)
-        Countly.setAppleAdsTokenProvider { _ in
-            reads += 1
-            return "later_token"
-        }
-        Countly.sharedInstance().start(with: config)
+        let readsAfterRestart = startWithAppleAds(config) { "later_token" }
 
-        XCTAssertTrue(TestUtils.waitUntil("apple ads token queued") { !self.attributionSignals(ofType: "apple_ads").isEmpty })
-        XCTAssertEqual(reads, 2)
-        XCTAssertEqual(attributionSignals(ofType: "apple_ads").first?["value"] as? String, "later_token")
+        XCTAssertTrue(waitForAppleAdsToken())
+        XCTAssertEqual(readsAfterRestart.count, 1)
+        XCTAssertEqual(appleAdsTokens(), ["later_token"])
     }
 
-    func test_appleAds_waitsForAttributionConsent() throws {
-        var reads = 0
-        Countly.setAppleAdsTokenProvider { _ in
-            reads += 1
-            return "consented_token"
-        }
-
+    #if targetEnvironment(simulator)
+    /// The real AdServices lookup: the simulator has no token, so nothing is sent.
+    func test_appleAds_unsupportedDevice_sendsNothing() throws {
+        Countly.setAppleAdsTokenProvider(nil)
         let config = offlineConfig()
         config.disableAppleAdsAttribution = false
-        config.requiresConsent = true
-        config.consents = [CLYConsent.sessions]
         Countly.sharedInstance().start(with: config)
 
-        TestUtils.waitUntil("no token without consent", timeout: 1.0) { false }
-        XCTAssertEqual(reads, 0)
-        XCTAssertTrue(attributionSignals(ofType: "apple_ads").isEmpty)
+        settle(3.0)
+        XCTAssertTrue(appleAdsTokens().isEmpty)
+    }
+    #endif
+
+    func test_appleAds_waitsForAttributionConsent() throws {
+        let config = offlineConfig()
+        config.requiresConsent = true
+        config.consents = [CLYConsent.sessions]
+        let reads = startWithAppleAds(config) { "consented_token" }
+
+        settle()
+        XCTAssertEqual(reads.count, 0)
+        XCTAssertTrue(appleAdsTokens().isEmpty)
 
         Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.attribution])
 
-        XCTAssertTrue(TestUtils.waitUntil("apple ads token queued") { !self.attributionSignals(ofType: "apple_ads").isEmpty })
-        XCTAssertEqual(attributionSignals(ofType: "apple_ads").first?["value"] as? String, "consented_token")
-        XCTAssertEqual(reads, 1)
+        XCTAssertTrue(waitForAppleAdsToken())
+        XCTAssertEqual(appleAdsTokens(), ["consented_token"])
+        XCTAssertEqual(reads.count, 1)
+
+        // giving the consent again does not send it again
+        Countly.sharedInstance().cancelConsent(forFeatures: [CLYConsent.attribution])
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.attribution])
+        settle()
+        XCTAssertEqual(appleAdsTokens(), ["consented_token"])
     }
 
     func test_appleAds_disabled_neverReadsTheToken() throws {
-        var reads = 0
+        let counter = ReadCounter()
         Countly.setAppleAdsTokenProvider { _ in
-            reads += 1
+            counter.increment()
             return "unused"
         }
+        let config = offlineConfig()
+        config.disableAppleAdsAttribution = true
+        Countly.sharedInstance().start(with: config)
 
-        Countly.sharedInstance().start(with: offlineConfig())
-
-        TestUtils.waitUntil("no token when disabled", timeout: 1.0) { false }
-        XCTAssertEqual(reads, 0)
-        XCTAssertTrue(attributionSignals(ofType: "apple_ads").isEmpty)
+        settle()
+        XCTAssertEqual(counter.count, 0)
+        XCTAssertTrue(appleAdsTokens().isEmpty)
     }
     #endif
 }

@@ -1653,9 +1653,6 @@ static dispatch_once_t onceToken;
 
 + (NSString *)appleAdsAttributionToken:(NSError **)error
 {
-    if (s_appleAdsTokenProvider)
-        return s_appleAdsTokenProvider(error);
-
 #if TARGET_OS_IOS
     // Looked up at runtime so apps do not have to link AdServices (iOS 14.3+)
     if (@available(iOS 14.3, *))
@@ -1703,28 +1700,37 @@ static dispatch_once_t onceToken;
         _isFetchingAppleAdsToken = YES;
     }
 
+    // taken now, so a lookup still running after a restart reads the provider of the start that began it
+    CLYAppleAdsTokenProvider provider = s_appleAdsTokenProvider;
+
     // Apple advises against reading the token on the main thread
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0), ^{
         NSError* error = nil;
-        NSString* token = [Countly appleAdsAttributionToken:&error];
+        NSString* token = provider ? provider(&error) : [Countly appleAdsAttributionToken:&error];
 
-        @synchronized (self)
-        {
-            self->_isFetchingAppleAdsToken = NO;
-        }
+        // queued on the main thread, where start and halt run, so a halt cannot reset the queue under it
+        dispatch_async(dispatch_get_main_queue(), ^{
+            @synchronized (self)
+            {
+                self->_isFetchingAppleAdsToken = NO;
+            }
 
-        if (!token.length)
-        {
-            CLY_LOG_D(@"%s the Apple Ads attribution token is not available, it will be read again on the next start, error: [%@]", __FUNCTION__, error);
-            return;
-        }
+            if (!token.length)
+            {
+                CLY_LOG_D(@"%s the Apple Ads attribution token is not available, it will be read again on the next start, error: [%@]", __FUNCTION__, error);
+                return;
+            }
 
-        // the SDK may have been halted or the consent cancelled while the token was read
-        if (self != s_sharedCountly || !CountlyCommon.sharedInstance.hasStarted || !CountlyConsentManager.sharedInstance.consentForAttribution || CountlyPersistency.sharedInstance.retrieveAppleAdsAttributionSent)
-            return;
+            // the SDK may have been halted or the consent cancelled while the token was read
+            if (self != s_sharedCountly || !CountlyCommon.sharedInstance.hasStarted || !CountlyCommon.sharedInstance.hasFinishedInit || !CountlyConsentManager.sharedInstance.consentForAttribution || CountlyPersistency.sharedInstance.retrieveAppleAdsAttributionSent)
+            {
+                CLY_LOG_D(@"%s the Apple Ads attribution token is dropped, reason: the SDK was halted, the consent was cancelled or the token was sent already", __FUNCTION__);
+                return;
+            }
 
-        [CountlyPersistency.sharedInstance storeAppleAdsAttributionSent:YES];
-        [CountlyConnectionManager.sharedInstance sendAttributionSignalWithType:@"apple_ads" value:token];
+            [CountlyPersistency.sharedInstance storeAppleAdsAttributionSent:YES];
+            [CountlyConnectionManager.sharedInstance sendAttributionSignalWithType:@"apple_ads" value:token];
+        });
     });
 #endif
 }
