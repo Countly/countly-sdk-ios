@@ -20,7 +20,7 @@ private final class OfflineURLProtocol: URLProtocol {
 }
 
 /// Counts token reads, which happen on a background queue.
-private final class ReadCounter {
+final class AttributionReadCounter {
     private let lock = NSLock()
     private var reads = 0
     var count: Int {
@@ -35,7 +35,8 @@ private final class ReadCounter {
     }
 }
 
-class CountlyAttributionTests: CountlyBaseTestCase {
+/// Helpers shared by the attribution test classes; it holds no tests.
+class CountlyAttributionTestCase: CountlyBaseTestCase {
 
     let appID = "0123456789abcdef01234567"
     // A Countly smart link: /at/<app id>/<campaign code>/<deep-link path>
@@ -64,8 +65,8 @@ class CountlyAttributionTests: CountlyBaseTestCase {
     }
 
     /// Starts with Apple Ads attribution on and a token provider that counts its reads.
-    func startWithAppleAds(_ config: CountlyConfig, token: @escaping () -> String?) -> ReadCounter {
-        let counter = ReadCounter()
+    func startWithAppleAds(_ config: CountlyConfig, token: @escaping () -> String?) -> AttributionReadCounter {
+        let counter = AttributionReadCounter()
         Countly.setAppleAdsTokenProvider { error in
             counter.increment()
             let value = token()
@@ -107,6 +108,10 @@ class CountlyAttributionTests: CountlyBaseTestCase {
         TestUtils.waitUntil("settle", timeout: seconds) { false }
     }
 
+}
+
+class CountlyAttributionTests: CountlyAttributionTestCase {
+
     // MARK: - Direct and indirect attribution
 
     /**
@@ -127,6 +132,7 @@ class CountlyAttributionTests: CountlyBaseTestCase {
         XCTAssertNil(requests.first?["id"], "the campaign user must not split into another parameter")
         let raw = TestUtils.getCurrentRQ()?.first { $0.contains("campaign_id=") } ?? ""
         XCTAssertFalse(raw.contains(" "), "spaces are percent encoded")
+        XCTAssertTrue(raw.contains("1%2B2"), "a plus is percent encoded, or the server reads it as a space")
     }
 
     func test_directAttribution_withoutCampaignUser_sendsCampaignIDOnly() throws {
@@ -306,9 +312,11 @@ class CountlyAttributionTests: CountlyBaseTestCase {
         }
     }
 
-    // MARK: - Apple Ads
+}
 
-    #if os(iOS)
+#if os(iOS)
+class CountlyAppleAdsAttributionTests: CountlyAttributionTestCase {
+
     func test_appleAds_sendsTheTokenOncePerInstall() throws {
         let token = "eyJ0b2tlbiI6IjEyMyJ9+/=&x"
         let config = offlineConfig()
@@ -379,7 +387,7 @@ class CountlyAttributionTests: CountlyBaseTestCase {
     }
 
     func test_appleAds_disabled_neverReadsTheToken() throws {
-        let counter = ReadCounter()
+        let counter = AttributionReadCounter()
         Countly.setAppleAdsTokenProvider { _ in
             counter.increment()
             return "unused"
@@ -392,5 +400,5 @@ class CountlyAttributionTests: CountlyBaseTestCase {
         XCTAssertEqual(counter.count, 0)
         XCTAssertTrue(appleAdsTokens().isEmpty)
     }
-    #endif
 }
+#endif
