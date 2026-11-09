@@ -203,6 +203,7 @@ static dispatch_once_t onceToken;
     if (skippedHeaderCount)
     {
         CLY_LOG_W(@"%s some custom network request headers are skipped, reason: nil or empty key or nil value, skipped header count: [%lu]", __FUNCTION__, (unsigned long)skippedHeaderCount);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
     }
 
     // Apply updated headers
@@ -480,9 +481,7 @@ static dispatch_once_t onceToken;
                 }
 
                 NSInteger responseStatusCode = ((NSHTTPURLResponse*)response).statusCode;
-                BOOL isMalformedSuccessReply = responseStatusCode >= 200 && responseStatusCode < 300;
                 [CountlyHealthTracker.sharedInstance logFailedNetworkRequestWithStatusCode:responseStatusCode errorResponse: [data cly_stringUTF8]];
-                [CountlyHealthTracker.sharedInstance recordLogCode:isMalformedSuccessReply ? @"e302" : @"e301"];
                 [CountlyHealthTracker.sharedInstance saveState];
                 self.startTime = nil;
                 atomic_store(&self->_isProcessingQueue, NO);
@@ -568,7 +567,6 @@ static dispatch_once_t onceToken;
                 result = YES;
                 CLY_LOG_W(@"%s backoff is triggered, response time: [%ld] seconds, remaining request count: [%lu], request count threshold: [%lu], request age: [%.2f] seconds", __FUNCTION__, responseTimeSeconds, (unsigned long)remainingRequests, (unsigned long)threshold, requestAgeInSeconds);
                 [CountlyHealthTracker.sharedInstance logBackoffRequest];
-                [CountlyHealthTracker.sharedInstance recordLogCode:@"w320"];
             }
         }
     }
@@ -1111,6 +1109,7 @@ static dispatch_once_t onceToken;
         if (mutableRequestParameters[reservedKey])
         {
             CLY_LOG_W(@"%s a reserved query string key is detected in the direct request parameters and it will be removed, key: [%@]", __FUNCTION__, reservedKey);
+            [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
             [mutableRequestParameters removeObjectForKey:reservedKey];
         }
     }
@@ -1234,6 +1233,7 @@ static dispatch_once_t onceToken;
     if (fileExtIndex == NSNotFound)
     {
         CLY_LOG_W(@"%s picture upload is skipped, reason: unsupported file extension, extension: [%@]", __FUNCTION__, fileExt);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return nil;
     }
 
@@ -1242,6 +1242,7 @@ static dispatch_once_t onceToken;
     if (!imageData)
     {
         CLY_LOG_W(@"%s picture upload is skipped, reason: local picture data can not be read, extension: [%@]", __FUNCTION__, fileExt);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return nil;
     }
 
@@ -1313,14 +1314,14 @@ static dispatch_once_t onceToken;
 
         if (error)
         {
-            CLY_LOG_E(@"%s server reply is not a valid JSON, the request is considered failed, response size: [%ld] bytes, error description: [%@]", __FUNCTION__, (long)data.length, error.localizedDescription);
+            CLY_LOG_D(@"%s server reply is not a valid JSON, the request is considered failed, response size: [%ld] bytes, error description: [%@]", __FUNCTION__, (long)data.length, error.localizedDescription);
             return NO;
         }
 
         // a proxy or a misconfigured host can answer a list, which has no result field to read
         if (![serverReply isKindOfClass:NSDictionary.class])
         {
-            CLY_LOG_E(@"%s server reply is not a JSON object, the request is considered failed, response size: [%ld] bytes, replyType: [%@]", __FUNCTION__, (long)data.length, NSStringFromClass([serverReply class]));
+            CLY_LOG_D(@"%s server reply is not a JSON object, the request is considered failed, response size: [%ld] bytes, replyType: [%@]", __FUNCTION__, (long)data.length, NSStringFromClass([serverReply class]));
             return NO;
         }
         
@@ -1333,7 +1334,7 @@ static dispatch_once_t onceToken;
             return YES;
         }
 
-        CLY_LOG_E(@"%s server reply does not contain the result field, the request is considered failed, response size: [%ld] bytes", __FUNCTION__, (long)data.length);
+        CLY_LOG_D(@"%s server reply does not contain the result field, the request is considered failed, response size: [%ld] bytes", __FUNCTION__, (long)data.length);
         
         return NO;
         

@@ -443,6 +443,8 @@ static dispatch_once_t onceToken;
 
     // a buffer that never reaches the batch size would otherwise sit in memory for the whole run
     [CountlyCommon.sharedInstance scheduleSdkLogsFlush];
+
+    [CountlyHealthTracker.sharedInstance saveState];
 }
 
 - (void)suspend
@@ -582,6 +584,7 @@ static dispatch_once_t onceToken;
     if (!newHost.length)
     {
         CLY_LOG_E(@"%s omitting the call, the provided host is nil or empty", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"e102"];
         return;
     }
     
@@ -602,6 +605,7 @@ static dispatch_once_t onceToken;
     if (!newAppKey.length)
     {
         CLY_LOG_E(@"%s omitting the call, the provided app key is nil or empty", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"e103"];
         return;
     }
     
@@ -662,6 +666,7 @@ static dispatch_once_t onceToken;
     // Ignore nil or empty dictionary
     if (customHeaderValues == nil || customHeaderValues.count == 0) {
         CLY_LOG_W(@"%s omitting the call, no custom network request header is provided", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
     
@@ -683,6 +688,13 @@ static dispatch_once_t onceToken;
         return;
     }
 
+    if ([self isSessionRunningForManualSessionBegin])
+    {
+        CLY_LOG_W(@"%s the session begin will be ignored, a session is already running", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w760" forUsageArea:@"sessions"];
+        return;
+    }
+
     [CountlyConnectionManager.sharedInstance beginSession];
 }
 
@@ -699,7 +711,10 @@ static dispatch_once_t onceToken;
     }
 
     if ([self isSessionMissingForManualSessionCall])
+    {
         CLY_LOG_W(@"%s the session update will be ignored, no session is running", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w760" forUsageArea:@"sessions"];
+    }
 
     [CountlyConnectionManager.sharedInstance updateSession];
 }
@@ -717,7 +732,10 @@ static dispatch_once_t onceToken;
     }
 
     if ([self isSessionMissingForManualSessionCall])
+    {
         CLY_LOG_W(@"%s the session end will be ignored, no session is running", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w760" forUsageArea:@"sessions"];
+    }
 
     [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
     [CountlyConnectionManager.sharedInstance endSession];
@@ -733,6 +751,15 @@ static dispatch_once_t onceToken;
     return CountlyConsentManager.sharedInstance.consentForSessions &&
            CountlyServerConfig.sharedInstance.sessionTrackingEnabled &&
            !CountlyConnectionManager.sharedInstance.isSessionStarted;
+}
+
+/// Whether a manual session begin finds a session already running while sessions can otherwise be tracked, with consent given
+/// and session tracking allowed by the behavior settings. Such a begin is out of order and ignored.
+- (BOOL)isSessionRunningForManualSessionBegin
+{
+    return CountlyConsentManager.sharedInstance.consentForSessions &&
+           CountlyServerConfig.sharedInstance.sessionTrackingEnabled &&
+           CountlyConnectionManager.sharedInstance.isSessionStarted;
 }
 
 - (void)applyAutomaticSessionTracking
@@ -831,7 +858,7 @@ static dispatch_once_t onceToken;
     if (!CountlyCommon.sharedInstance.hasStarted)
     {
         CLY_LOG_W(@"%s omitting the device ID change, the SDK has not been started yet", __FUNCTION__);
-        [CountlyHealthTracker.sharedInstance recordLogCode:@"e101"];
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w101"];
         return;
     }
 
@@ -847,7 +874,6 @@ static dispatch_once_t onceToken;
     if ([deviceID isEqualToString:CountlyDeviceInfo.sharedInstance.deviceID])
     {
         CLY_LOG_D(@"%s omitting the call, the provided device ID is identical to the current one", __FUNCTION__);
-        [CountlyHealthTracker.sharedInstance recordLogCode:@"w602"];
         return;
     }
 
@@ -874,6 +900,7 @@ static dispatch_once_t onceToken;
     if ([deviceID isEqualToString:CLYTemporaryDeviceID] && onServer)
     {
         CLY_LOG_W(@"%s 'CLYTemporaryDeviceID' cannot be set with the onServer option, onServer is overridden as NO", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         onServer = NO;
     }
 
@@ -927,7 +954,8 @@ static dispatch_once_t onceToken;
 
     if (!featureName.length)
     {
-        CLY_LOG_E(@"%s omitting the call, the provided feature name is empty", __FUNCTION__);
+        CLY_LOG_W(@"%s omitting the call, the provided feature name is empty", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w402"];
         return;
     }
 
@@ -951,7 +979,8 @@ static dispatch_once_t onceToken;
 
     if (!featureName.length)
     {
-        CLY_LOG_E(@"%s omitting the call, the feature name to cancel consent for is empty", __FUNCTION__);
+        CLY_LOG_W(@"%s omitting the call, the feature name to cancel consent for is empty", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w402"];
         return;
     }
 
@@ -1107,9 +1136,22 @@ static dispatch_once_t onceToken;
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration ID:(NSString *)ID timestamp:(NSTimeInterval)timestamp
 {
     if (key.length == 0) {
-        CLY_LOG_E(@"%s omitting the call, the event key is nil or empty", __FUNCTION__);
-        [CountlyHealthTracker.sharedInstance recordLogCode:@"e701" forUsageArea:@"events"];
+        CLY_LOG_W(@"%s omitting the call, the event key is nil or empty", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w701" forUsageArea:@"events"];
         return;
+    }
+
+    if (count < 1)
+    {
+        CLY_LOG_W(@"%s the event count is below 1, the default count 1 is used, key: [%@]", __FUNCTION__, key);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w750" forUsageArea:@"events"];
+    }
+
+    if (duration < 0)
+    {
+        CLY_LOG_W(@"%s the event duration is negative, it is ignored, key: [%@], duration: [%f]", __FUNCTION__, key, duration);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w750" forUsageArea:@"events"];
+        duration = 0;
     }
 
     CountlyEvent *event = CountlyEvent.new;
@@ -1489,13 +1531,15 @@ static dispatch_once_t onceToken;
 
     if (!campaignType.length)
     {
-        CLY_LOG_E(@"%s omitting the call, campaignType must be a non zero length string, campaignType: [%@]", __FUNCTION__, campaignType);
+        CLY_LOG_W(@"%s omitting the call, campaignType must be a non zero length string, campaignType: [%@]", __FUNCTION__, campaignType);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 
     if (!campaignData.length)
     {
-        CLY_LOG_E(@"%s omitting the call, campaignData must be a non zero length string, campaignType: [%@]", __FUNCTION__, campaignType);
+        CLY_LOG_W(@"%s omitting the call, campaignData must be a non zero length string, campaignType: [%@]", __FUNCTION__, campaignType);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 
@@ -1508,6 +1552,7 @@ static dispatch_once_t onceToken;
     if (![campaignType isEqualToString:@"countly"])
     {
         CLY_LOG_W(@"%s omitting the call, direct attribution is only supported for the 'countly' campaign type, campaignType: [%@]", __FUNCTION__, campaignType);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 
@@ -1515,14 +1560,16 @@ static dispatch_once_t onceToken;
     NSDictionary* campaignDataDictionary = [NSJSONSerialization JSONObjectWithData:[campaignData cly_dataUTF8] options:0 error:&error];
     if (error)
     {
-        CLY_LOG_E(@"%s omitting the call, the campaign data is not valid JSON, error: [%@]", __FUNCTION__, error.localizedDescription);
+        CLY_LOG_W(@"%s omitting the call, the campaign data is not valid JSON, error: [%@]", __FUNCTION__, error.localizedDescription);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 
     NSString* campaignID = campaignDataDictionary[@"cid"];
     if (!campaignID.length)
     {
-        CLY_LOG_E(@"%s omitting the call, the campaign ID in the campaign data is missing or empty", __FUNCTION__);
+        CLY_LOG_W(@"%s omitting the call, the campaign ID in the campaign data is missing or empty", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 

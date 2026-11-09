@@ -274,7 +274,8 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
             [self replaceBehaviorSettings:persistentBehaviorSettings withConfig:parsed];
             CLY_LOG_D(@"%s cache was empty, falling back to developer supplied behavior settings, keyCount: [%lu]", __FUNCTION__, (unsigned long)persistentBehaviorSettings.count);
         } else {
-            CLY_LOG_E(@"%s could not parse developer supplied sdkBehaviorSettings, they will be ignored, error: [%@]", __FUNCTION__, error.localizedDescription);
+            CLY_LOG_W(@"%s could not parse developer supplied sdkBehaviorSettings, they will be ignored, error: [%@]", __FUNCTION__, error.localizedDescription);
+            [CountlyHealthTracker.sharedInstance recordLogCode:@"w121"];
         }
     }
 
@@ -388,18 +389,21 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     // c must exist, other top level keys, like lg, are independent of it and handled on their own
     if(!newConfig[kRConfig]) {
         CLY_LOG_W(@"%s incoming behavior settings will be ignored, config section is missing, entryCount: [%lu]", __FUNCTION__, (unsigned long)newConfig.count);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w121"];
         return;
     }
 
     if (!CountlyIsBehaviorSettingsNumber(newConfig[kRVersion]) || !CountlyIsBehaviorSettingsNumber(newConfig[kRTimestamp]))
     {
         CLY_LOG_W(@"%s incoming behavior settings will be ignored, version or timestamp entry is missing or not a number", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w121"];
         return;
     }
 
     // an empty c is a valid answer, the server sends one when nothing is configured
     if(!([newConfig[kRConfig] isKindOfClass:[NSDictionary class]])){
         CLY_LOG_W(@"%s incoming behavior settings will be ignored, config section is not a dictionary", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w121"];
         return;
     }
             
@@ -439,6 +443,7 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     else
     {
         CLY_LOG_W(@"%s dropping behavior setting, a boolean was expected, key: [%@], receivedType: [%@]", __FUNCTION__, key, [value class]);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w121"];
         [dictionary removeObjectForKey:key];
     }
 }
@@ -501,12 +506,14 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
         else
         {
             CLY_LOG_W(@"%s dropping behavior setting, value is below the accepted minimum, key: [%@], value: [%ld], minValue: [%ld]", __FUNCTION__, key, (long)intVal, (long)minValue);
+            [CountlyHealthTracker.sharedInstance recordLogCode:@"w121"];
             [dictionary removeObjectForKey:key];
         }
     }
     else
     {
         CLY_LOG_W(@"%s dropping behavior setting, an integer was expected, key: [%@], receivedType: [%@]", __FUNCTION__, key, [value class]);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w121"];
         [dictionary removeObjectForKey:key];
     }
 }
@@ -528,12 +535,14 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
         else
         {
             CLY_LOG_W(@"%s dropping behavior setting, value is out of the accepted range, key: [%@], value: [%.4f], acceptedRange: [0.0 - 1.0]", __FUNCTION__, key, dblVal);
+            [CountlyHealthTracker.sharedInstance recordLogCode:@"w121"];
             [dictionary removeObjectForKey:key];
         }
     }
     else
     {
         CLY_LOG_W(@"%s dropping behavior setting, a double was expected, key: [%@], receivedType: [%@]", __FUNCTION__, key, [value class]);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w121"];
         [dictionary removeObjectForKey:key];
     }
 }
@@ -560,12 +569,14 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     else
     {
         CLY_LOG_W(@"%s config section is not a dictionary, falling back to SDK defaults, receivedType: [%@]", __FUNCTION__, [serverConfig[kRConfig] class]);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w121"];
         return;
     }
 
     if (!CountlyIsBehaviorSettingsNumber(serverConfig[kRVersion]) || !CountlyIsBehaviorSettingsNumber(serverConfig[kRTimestamp]))
     {
         CLY_LOG_W(@"%s version or timestamp is missing in the behavior settings or not a number, falling back to SDK defaults", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w121"];
         return;
     }
 

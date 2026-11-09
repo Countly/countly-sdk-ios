@@ -243,7 +243,8 @@ BOOL enableForegroundBackgroundTracking;
 
     if (!traceName.length)
     {
-        CLY_LOG_E(@"%s network trace is dropped, trace name is empty or nil", __FUNCTION__);
+        CLY_LOG_W(@"%s network trace is dropped, trace name is empty or nil", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 
@@ -286,7 +287,8 @@ BOOL enableForegroundBackgroundTracking;
 
     if (!traceName.length)
     {
-        CLY_LOG_E(@"%s custom trace start is dropped, trace name is empty or nil", __FUNCTION__);
+        CLY_LOG_W(@"%s custom trace start is dropped, trace name is empty or nil", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 
@@ -319,7 +321,8 @@ BOOL enableForegroundBackgroundTracking;
 
     if (!traceName.length)
     {
-        CLY_LOG_E(@"%s custom trace end is dropped, trace name is empty or nil", __FUNCTION__);
+        CLY_LOG_W(@"%s custom trace end is dropped, trace name is empty or nil", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 
@@ -380,7 +383,8 @@ BOOL enableForegroundBackgroundTracking;
 
     if (!traceName.length)
     {
-        CLY_LOG_E(@"%s custom trace cancellation is dropped, trace name is empty or nil", __FUNCTION__);
+        CLY_LOG_W(@"%s custom trace cancellation is dropped, trace name is empty or nil", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 

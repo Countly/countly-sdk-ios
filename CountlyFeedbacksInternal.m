@@ -270,7 +270,8 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
     if (!widgetID.length)
     {
-        CLY_LOG_E(@"%s rating widget presentation is dropped, widget ID is empty or nil", __FUNCTION__);
+        CLY_LOG_W(@"%s rating widget presentation is dropped, widget ID is empty or nil", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 
@@ -438,7 +439,8 @@ const CGFloat kCountlyStarRatingButtonSize = 40.0;
 
     if (!widgetID.length)
     {
-        CLY_LOG_E(@"%s rating widget result is dropped, widget ID is empty or nil", __FUNCTION__);
+        CLY_LOG_W(@"%s rating widget result is dropped, widget ID is empty or nil", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 
