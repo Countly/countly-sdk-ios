@@ -1775,8 +1775,14 @@ static dispatch_once_t onceToken;
                 return;
             }
 
+            // marked as sent only once it is queued, so a refused request is read and sent again on the next start
+            if (![CountlyConnectionManager.sharedInstance sendAttributionSignalWithType:@"apple_ads" value:token])
+            {
+                CLY_LOG_D(@"%s the Apple Ads attribution token was not queued, it will be read again on the next start", __FUNCTION__);
+                return;
+            }
+
             [CountlyPersistency.sharedInstance storeAppleAdsAttributionSent:YES];
-            [CountlyConnectionManager.sharedInstance sendAttributionSignalWithType:@"apple_ads" value:token];
         });
     });
 #endif

@@ -1032,7 +1032,7 @@ static dispatch_once_t onceToken;
     [self proceedOnQueue];
 }
 
-- (void)sendAttributionSignalWithType:(NSString *)type value:(NSString *)value
+- (BOOL)sendAttributionSignalWithType:(NSString *)type value:(NSString *)value
 {
     NSDictionary* signal = @{@"type": type, @"value": value};
     NSMutableString* queryString = [self queryEssentials].mutableCopy;
@@ -1040,9 +1040,11 @@ static dispatch_once_t onceToken;
 
     CLY_LOG_I(@"%s attribution signal request is being queued, type: [%@], value length: [%lu]", __FUNCTION__, type, (unsigned long)value.length);
 
-    [CountlyPersistency.sharedInstance addToQueue:queryString.copy];
+    if (![CountlyPersistency.sharedInstance addToQueue:queryString.copy])
+        return NO;
 
     [self proceedOnQueue];
+    return YES;
 }
 
 - (void)sendIndirectAttribution:(NSDictionary *)attribution

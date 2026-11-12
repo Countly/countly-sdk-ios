@@ -67,7 +67,8 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 - (void)sendAttributionData:(NSString *)attributionData;
 - (void)sendIndirectAttribution:(NSDictionary *)attribution;
 /// Queues a raw attribution signal as `attribution={"type":"<type>","value":"<value>"}`, which the server parses.
-- (void)sendAttributionSignalWithType:(NSString *)type value:(NSString *)value;
+/// Returns NO when the request queue refused it, for example while the behavior settings turn tracking off.
+- (BOOL)sendAttributionSignalWithType:(NSString *)type value:(NSString *)value;
 - (void)sendConsents:(NSString *)consents;
 - (void)sendPerformanceMonitoringTrace:(NSString *)trace;
 

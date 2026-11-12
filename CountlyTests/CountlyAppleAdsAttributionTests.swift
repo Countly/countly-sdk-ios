@@ -46,6 +46,32 @@ class CountlyAppleAdsAttributionTests: CountlyAttributionTestCase {
         XCTAssertEqual(appleAdsTokens(), ["later_token"])
     }
 
+    /// Behavior settings that turn tracking off make the queue refuse the request; the token is then
+    /// not marked as sent, so it goes out on a later start once tracking is on again.
+    func test_appleAds_requestRefusedByTheQueue_isNotMarkedSentAndGoesOutLater() throws {
+        defer { CountlyServerConfig.sharedInstance()?.setValue(true, forKey: "trackingEnabled") }
+        let config = offlineConfig()
+        // no behavior settings fetch that could put tracking back on while the token is read
+        config.disableSDKBehaviorSettingsUpdates = true
+        let reads = startWithAppleAds(config) { "refused_token" }
+        // before the token read hops back to the main thread to queue it
+        CountlyServerConfig.sharedInstance()?.setValue(false, forKey: "trackingEnabled")
+
+        XCTAssertTrue(TestUtils.waitUntil("token read", timeout: TestUtils.asyncTimeout) { reads.count == 1 })
+        settle()
+        XCTAssertTrue(appleAdsTokens().isEmpty)
+        XCTAssertFalse(CountlyPersistency.sharedInstance().retrieveAppleAdsAttributionSent())
+
+        Countly.sharedInstance().halt(false)
+        CountlyServerConfig.sharedInstance()?.setValue(true, forKey: "trackingEnabled")
+        let readsAfterRestart = startWithAppleAds(config) { "refused_token" }
+
+        XCTAssertTrue(waitForAppleAdsToken())
+        XCTAssertEqual(readsAfterRestart.count, 1)
+        XCTAssertEqual(appleAdsTokens(), ["refused_token"])
+        XCTAssertTrue(CountlyPersistency.sharedInstance().retrieveAppleAdsAttributionSent())
+    }
+
     #if targetEnvironment(simulator)
     /// The real AdServices lookup: the simulator has no token, so nothing is sent.
     func test_appleAds_unsupportedDevice_sendsNothing() throws {
