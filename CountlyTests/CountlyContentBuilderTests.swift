@@ -15,7 +15,8 @@ class CountlyContentBuilderTests: CountlyBaseTestCase {
     override func setUp() {
         super.setUp()
         Countly.sharedInstance().halt(true)
-        MockURLProtocol.requestHandler = nil
+        // Not nil: a request still in flight from an earlier test would hit XCTFail and fail this one.
+        MockURLProtocol.replyEmptyToEveryRequest()
     }
 
     override func tearDown() {
@@ -26,7 +27,7 @@ class CountlyContentBuilderTests: CountlyBaseTestCase {
         CountlyContentBuilderInternal.sharedInstance().disableZoom = false
         CountlyContentBuilderInternal.sharedInstance().contentURLHandler = nil
         Countly.sharedInstance().halt(true)
-        MockURLProtocol.requestHandler = nil
+        MockURLProtocol.replyEmptyToEveryRequest()
         super.tearDown()
     }
 
