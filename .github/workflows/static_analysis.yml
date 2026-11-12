@@ -1,0 +1,35 @@
+name: Static analysis
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - staging
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  clang-analyzer:
+    name: Clang Static Analyzer
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      # Report-only: the findings go to the job summary and never fail the job, only a failed analysis does.
+      - name: Analyze the SDK
+        run: |
+          xcodebuild analyze -project Countly.xcodeproj -scheme Countly -configuration Debug -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath "$RUNNER_TEMP/derived" \
+            CLANG_ANALYZER_OUTPUT=sarif CLANG_ANALYZER_OUTPUT_DIR="$RUNNER_TEMP/analyzer"
+
+      - name: Summarize the findings
+        run: |
+          # Xcode names each source file's SARIF report .plist.
+          find "$RUNNER_TEMP/analyzer" -name '*.plist' -exec sh -c 'for f; do mv "$f" "${f%.plist}.sarif"; done' sh {} +
+          python3 .github/scripts/sarif_summary.py "Clang Static Analyzer" "$RUNNER_TEMP/analyzer" >> "$GITHUB_STEP_SUMMARY"
