@@ -151,7 +151,8 @@ static dispatch_once_t onceToken;
     }
     if (!completionHandler)
     {
-        CLY_LOG_E(@"%s remote config fetch is aborted, reason: [completionHandler is not provided]", __FUNCTION__);
+        CLY_LOG_W(@"%s remote config fetch is aborted, reason: [completionHandler is not provided]", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 
@@ -504,7 +505,8 @@ static dispatch_once_t onceToken;
     }
     if (!completionHandler)
     {
-        CLY_LOG_E(@"%s variants request is aborted, reason: [completionHandler is not provided]", __FUNCTION__);
+        CLY_LOG_W(@"%s variants request is aborted, reason: [completionHandler is not provided]", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 
@@ -611,17 +613,20 @@ static dispatch_once_t onceToken;
     }
     if (!completionHandler)
     {
-        CLY_LOG_E(@"%s variant enrollment request is aborted, reason: [completionHandler is not provided]", __FUNCTION__);
+        CLY_LOG_W(@"%s variant enrollment request is aborted, reason: [completionHandler is not provided]", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 
     if (!key) {
-        CLY_LOG_E(@"%s variant enrollment request is aborted, reason: [key is not valid], key: [%@]", __FUNCTION__, key);
+        CLY_LOG_W(@"%s variant enrollment request is aborted, reason: [key is not valid], key: [%@]", __FUNCTION__, key);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 
     if (!variantName) {
-        CLY_LOG_E(@"%s variant enrollment request is aborted, reason: [variantName is not valid], key: [%@], variantName: [%@]", __FUNCTION__, key, variantName);
+        CLY_LOG_W(@"%s variant enrollment request is aborted, reason: [variantName is not valid], key: [%@], variantName: [%@]", __FUNCTION__, key, variantName);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 
@@ -759,7 +764,8 @@ static dispatch_once_t onceToken;
     }
     if (!completionHandler)
     {
-        CLY_LOG_E(@"%s experiments request is aborted, reason: [completionHandler is not provided]", __FUNCTION__);
+        CLY_LOG_W(@"%s experiments request is aborted, reason: [completionHandler is not provided]", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 

@@ -98,9 +98,12 @@ static dispatch_once_t onceToken;
 
     if (!features.count)
     {
-        CLY_LOG_E(@"%s feature list is empty, there is no consent to give", __FUNCTION__);
+        CLY_LOG_W(@"%s feature list is empty, there is no consent to give", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w402"];
         return;
     }
+
+    [self recordUnknownFeatures:features];
 
     //NOTE: Due to some legacy Countly Server location info problems, giving consent for location should be the first.
     //NOTE: Otherwise, if location consent is given after sessions consent, begin_session request will be sent with an empty string as location.
@@ -179,6 +182,15 @@ static dispatch_once_t onceToken;
         return;
     }
 
+    if (!features.count)
+    {
+        CLY_LOG_W(@"%s feature list is empty, there is no consent to cancel", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w402"];
+        return;
+    }
+
+    [self recordUnknownFeatures:features];
+
     if ([features containsObject:CLYConsentSessions] && self.consentForSessions)
     {
         [CountlyConnectionManager.sharedInstance endSession];
@@ -252,6 +264,21 @@ static dispatch_once_t onceToken;
     [CountlyConnectionManager.sharedInstance sendConsents:[consents cly_JSONify]];
 }
 
+
+/// Logs a warning and records log code w402 for every name in a consent call that is not a feature the SDK knows. Those names
+/// are ignored, the known names in the same call still apply.
+- (void)recordUnknownFeatures:(NSArray *)features
+{
+    NSArray* allFeatures = [self allFeatures];
+    for (id feature in features)
+    {
+        if (![allFeatures containsObject:feature])
+        {
+            CLY_LOG_W(@"%s the consent feature is not known and will be ignored, feature: [%@]", __FUNCTION__, feature);
+            [CountlyHealthTracker.sharedInstance recordLogCode:@"w402"];
+        }
+    }
+}
 
 - (NSArray *)allFeatures
 {

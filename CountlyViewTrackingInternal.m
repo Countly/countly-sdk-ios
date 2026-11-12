@@ -158,6 +158,7 @@ static dispatch_once_t onceToken;
     if (mutableSegmentation.count != segmentation.count)
     {
         CLY_LOG_W(@"%s reserved keys will be dropped while setting global view segmentation, droppedKeyCount: [%lu], keptKeyCount: [%lu]", __FUNCTION__, (unsigned long)(segmentation.count - mutableSegmentation.count), (unsigned long)mutableSegmentation.count);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700" forUsageArea:@"views"];
     }
     NSDictionary *filteredSegmentation = mutableSegmentation.cly_filterSupportedDataTypes;
     self.viewSegmentation = filteredSegmentation.mutableCopy;
@@ -177,6 +178,7 @@ static dispatch_once_t onceToken;
     if (mutableSegmentation.count != segmentation.count)
     {
         CLY_LOG_W(@"%s reserved keys will be dropped while updating global view segmentation, droppedKeyCount: [%lu], keptKeyCount: [%lu]", __FUNCTION__, (unsigned long)(segmentation.count - mutableSegmentation.count), (unsigned long)mutableSegmentation.count);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700" forUsageArea:@"views"];
     }
     NSDictionary *filteredSegmentation = mutableSegmentation.cly_filterSupportedDataTypes;
     [self.viewSegmentation addEntriesFromDictionary:filteredSegmentation];
@@ -423,7 +425,8 @@ static dispatch_once_t onceToken;
 {
     if (!viewName || !viewName.length)
     {
-        CLY_LOG_E(@"%s view name is null or empty, stop view by name will be ignored", __FUNCTION__);
+        CLY_LOG_W(@"%s view name is null or empty, stop view by name will be ignored", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700" forUsageArea:@"views"];
         return;
     }
 
@@ -448,8 +451,8 @@ static dispatch_once_t onceToken;
         [self stopViewWithIDInternal:viewID customSegmentation:customSegmentation];
     }
     else {
-        CLY_LOG_E(@"%s no view exists with the given name, it will not be stopped, name: [%@]", __FUNCTION__, viewName);
-        [CountlyHealthTracker.sharedInstance recordLogCode:@"e730" forUsageArea:@"views"];
+        CLY_LOG_W(@"%s no view exists with the given name, it will not be stopped, name: [%@]", __FUNCTION__, viewName);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w730" forUsageArea:@"views"];
     }
 }
 
@@ -461,7 +464,8 @@ static dispatch_once_t onceToken;
 - (void)stopViewWithIDInternal:(NSString *) viewKey customSegmentation:(NSDictionary *)customSegmentation autoPaused:(BOOL) autoPaused{
     if (!viewKey || !viewKey.length)
     {
-        CLY_LOG_E(@"%s view ID is null or empty, stop view by ID will be ignored", __FUNCTION__);
+        CLY_LOG_W(@"%s view ID is null or empty, stop view by ID will be ignored", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700" forUsageArea:@"views"];
         return;
     }
 
@@ -501,6 +505,7 @@ static dispatch_once_t onceToken;
             if (mutableCustomSegmentation.count != customSegmentation.count)
             {
                 CLY_LOG_W(@"%s reserved keys will be dropped from the segmentation of the view being stopped, droppedKeyCount: [%lu], view ID: [%@]", __FUNCTION__, (unsigned long)(customSegmentation.count - mutableCustomSegmentation.count), viewKey);
+                [CountlyHealthTracker.sharedInstance recordLogCode:@"w700" forUsageArea:@"views"];
             }
             NSDictionary *filteredSegmentation = mutableCustomSegmentation.cly_filterSupportedDataTypes;
             [segmentation addEntriesFromDictionary:filteredSegmentation];
@@ -523,8 +528,8 @@ static dispatch_once_t onceToken;
         }
     }
     else {
-        CLY_LOG_E(@"%s no view exists with the given ID, it will not be stopped, view ID: [%@]", __FUNCTION__, viewKey);
-        [CountlyHealthTracker.sharedInstance recordLogCode:@"e730" forUsageArea:@"views"];
+        CLY_LOG_W(@"%s no view exists with the given ID, it will not be stopped, view ID: [%@]", __FUNCTION__, viewKey);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w730" forUsageArea:@"views"];
     }
 }
 
@@ -537,8 +542,8 @@ static dispatch_once_t onceToken;
 {
     if (!viewName || !viewName.length)
     {
-        CLY_LOG_E(@"%s view name is null or empty, start view will be ignored", __FUNCTION__);
-        [CountlyHealthTracker.sharedInstance recordLogCode:@"e710" forUsageArea:@"views"];
+        CLY_LOG_W(@"%s view name is null or empty, start view will be ignored", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w710" forUsageArea:@"views"];
         return nil;
     }
 
@@ -574,6 +579,7 @@ static dispatch_once_t onceToken;
         if (mutableCustomSegmentation.count != customSegmentation.count)
         {
             CLY_LOG_W(@"%s reserved keys will be dropped from the segmentation of the view being started, droppedKeyCount: [%lu], name: [%@]", __FUNCTION__, (unsigned long)(customSegmentation.count - mutableCustomSegmentation.count), viewName);
+            [CountlyHealthTracker.sharedInstance recordLogCode:@"w700" forUsageArea:@"views"];
         }
         NSDictionary *filteredSegmentation = mutableCustomSegmentation.cly_filterSupportedDataTypes;
         [segmentation addEntriesFromDictionary:filteredSegmentation];
@@ -615,7 +621,8 @@ static dispatch_once_t onceToken;
 {
     if (!viewID || !viewID.length)
     {
-        CLY_LOG_E(@"%s view ID is null or empty, pause view will be ignored", __FUNCTION__);
+        CLY_LOG_W(@"%s view ID is null or empty, pause view will be ignored", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700" forUsageArea:@"views"];
         return;
     }
 
@@ -640,7 +647,8 @@ static dispatch_once_t onceToken;
         [self pauseViewInternal:viewData];
     }
     else {
-        CLY_LOG_E(@"%s no view exists with the given ID, it will not be paused, view ID: [%@]", __FUNCTION__, viewID);
+        CLY_LOG_W(@"%s no view exists with the given ID, it will not be paused, view ID: [%@]", __FUNCTION__, viewID);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w730" forUsageArea:@"views"];
     }
 }
 
@@ -648,7 +656,8 @@ static dispatch_once_t onceToken;
 {
     if (!viewID || !viewID.length)
     {
-        CLY_LOG_E(@"%s view ID is null or empty, resume view will be ignored", __FUNCTION__);
+        CLY_LOG_W(@"%s view ID is null or empty, resume view will be ignored", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700" forUsageArea:@"views"];
         return;
     }
 
@@ -674,7 +683,8 @@ static dispatch_once_t onceToken;
     }
 
     else {
-        CLY_LOG_E(@"%s no view exists with the given ID, it will not be resumed, view ID: [%@]", __FUNCTION__, viewID);
+        CLY_LOG_W(@"%s no view exists with the given ID, it will not be resumed, view ID: [%@]", __FUNCTION__, viewID);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w730" forUsageArea:@"views"];
     }
 }
 
@@ -782,7 +792,8 @@ static dispatch_once_t onceToken;
 {
     if (!viewName || !viewName.length)
     {
-        CLY_LOG_E(@"%s view name is null or empty, adding segmentation to view will be ignored", __FUNCTION__);
+        CLY_LOG_W(@"%s view name is null or empty, adding segmentation to view will be ignored", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700" forUsageArea:@"views"];
         return;
     }
 
@@ -802,15 +813,16 @@ static dispatch_once_t onceToken;
         [self addSegmentationToViewWithIDInternal:viewID segmentation:segmentation];
     }
     else {
-        CLY_LOG_E(@"%s no view exists with the given name, segmentation will not be added, name: [%@]", __FUNCTION__, viewName);
-        [CountlyHealthTracker.sharedInstance recordLogCode:@"e730" forUsageArea:@"views"];
+        CLY_LOG_W(@"%s no view exists with the given name, segmentation will not be added, name: [%@]", __FUNCTION__, viewName);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w730" forUsageArea:@"views"];
     }
 }
 
 - (void)addSegmentationToViewWithIDInternal:(NSString *) viewID segmentation:(NSDictionary *)segmentation{
     if (!viewID || !viewID.length)
     {
-        CLY_LOG_E(@"%s view ID is null or empty, adding segmentation by view ID will be ignored", __FUNCTION__);
+        CLY_LOG_W(@"%s view ID is null or empty, adding segmentation by view ID will be ignored", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700" forUsageArea:@"views"];
         return;
     }
 
@@ -829,6 +841,7 @@ static dispatch_once_t onceToken;
         if (mutableSegmentation.count != segmentation.count)
         {
             CLY_LOG_W(@"%s reserved keys will be dropped while adding segmentation to a view, droppedKeyCount: [%lu], view ID: [%@]", __FUNCTION__, (unsigned long)(segmentation.count - mutableSegmentation.count), viewID);
+            [CountlyHealthTracker.sharedInstance recordLogCode:@"w700" forUsageArea:@"views"];
         }
         NSDictionary *filteredSegmentation = mutableSegmentation.cly_filterSupportedDataTypes;
         CLY_LOG_D(@"%s segmentation will be added to view, view ID: [%@], name: [%@], key count: [%lu]", __FUNCTION__, viewID, viewData.viewName, (unsigned long)filteredSegmentation.count);
@@ -842,8 +855,8 @@ static dispatch_once_t onceToken;
         [self.viewDataDictionary setObject:viewData forKey:viewID];
     }
     else {
-        CLY_LOG_E(@"%s no view exists with the given ID, segmentation will not be added, view ID: [%@]", __FUNCTION__, viewID);
-        [CountlyHealthTracker.sharedInstance recordLogCode:@"e730" forUsageArea:@"views"];
+        CLY_LOG_W(@"%s no view exists with the given ID, segmentation will not be added, view ID: [%@]", __FUNCTION__, viewID);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w730" forUsageArea:@"views"];
     }
 }
 

@@ -1788,7 +1788,7 @@ NSString* CountlyJSONFromObject(id object)
 {
     if (self.length > CountlyCommon.sharedInstance.maxKeyLength)
     {
-        CLY_LOG_D(@"%s key exceeds the SDK key length limit and will be truncated, target: [%@], key: [%@], keyLength: [%lu], truncatedTo: [%lu]", __FUNCTION__, explanation, self, (unsigned long)self.length, (unsigned long)CountlyCommon.sharedInstance.maxKeyLength);
+        CLY_LOG_W(@"%s key exceeds the SDK key length limit and will be truncated, target: [%@], key: [%@], keyLength: [%lu], truncatedTo: [%lu]", __FUNCTION__, explanation, self, (unsigned long)self.length, (unsigned long)CountlyCommon.sharedInstance.maxKeyLength);
         [CountlyHealthTracker.sharedInstance recordLogCode:@"w201"];
         return [self substringToIndex:CountlyCommon.sharedInstance.maxKeyLength];
     }
@@ -1801,7 +1801,7 @@ NSString* CountlyJSONFromObject(id object)
     NSUInteger limit = CountlyCommon.sharedInstance.maxValueLengthPicture;
     if (self.length > limit)
     {
-        CLY_LOG_D(@"%s value exceeds the SDK picture value limit and will be truncated, target: [%@], valueLength: [%lu], truncatedTo: [%lu]", __FUNCTION__, explanation, (unsigned long)self.length, (unsigned long)limit);
+        CLY_LOG_W(@"%s value exceeds the SDK picture value limit and will be truncated, target: [%@], valueLength: [%lu], truncatedTo: [%lu]", __FUNCTION__, explanation, (unsigned long)self.length, (unsigned long)limit);
         CLY_LOG_D(@"%s truncated picture value detail, target: [%@], fullValue: [%@]", __FUNCTION__, explanation, self);
         [CountlyHealthTracker.sharedInstance recordLogCode:@"w202"];
         return [self substringToIndex:limit];
@@ -1813,7 +1813,7 @@ NSString* CountlyJSONFromObject(id object)
 {
     if (self.length > CountlyCommon.sharedInstance.maxValueLength)
     {
-        CLY_LOG_D(@"%s value exceeds the SDK value length limit and will be truncated, target: [%@], valueLength: [%lu], truncatedTo: [%lu]", __FUNCTION__, explanation, (unsigned long)self.length, (unsigned long)CountlyCommon.sharedInstance.maxValueLength);
+        CLY_LOG_W(@"%s value exceeds the SDK value length limit and will be truncated, target: [%@], valueLength: [%lu], truncatedTo: [%lu]", __FUNCTION__, explanation, (unsigned long)self.length, (unsigned long)CountlyCommon.sharedInstance.maxValueLength);
         CLY_LOG_D(@"%s truncated value detail, target: [%@], fullValue: [%@]", __FUNCTION__, explanation, self);
         [CountlyHealthTracker.sharedInstance recordLogCode:@"w202"];
         return [self substringToIndex:CountlyCommon.sharedInstance.maxValueLength];
@@ -1836,7 +1836,8 @@ NSString* CountlyJSONFromObject(id object)
         if (CountlyIsSupportedNumber(obj) || [obj isKindOfClass:[NSString class]]) {
             [filteredArray addObject:obj];
         } else {
-            CLY_LOG_D(@"%s dropping array element with an unsupported type, only NSNumber and NSString are allowed, receivedType: [%@]", __FUNCTION__, [obj class]);
+            CLY_LOG_W(@"%s dropping array element with an unsupported type, only NSNumber and NSString are allowed, receivedType: [%@]", __FUNCTION__, [obj class]);
+            [CountlyHealthTracker.sharedInstance recordLogCode:@"w206"];
         }
     }
     return filteredArray.copy;
@@ -1884,7 +1885,7 @@ NSString* CountlyJSONFromObject(id object)
     NSMutableArray* excessKeys = allKeys.mutableCopy;
     [excessKeys removeObjectsInRange:(NSRange){0, CountlyCommon.sharedInstance.maxSegmentationValues}];
 
-    CLY_LOG_D(@"%s segmentation exceeds the SDK segmentation value limit and will be trimmed, target: [%@], keyCount: [%lu], trimmedTo: [%lu], droppedKeyCount: [%lu], droppedKeys: [%@]", __FUNCTION__, explanation, (unsigned long)allKeys.count, (unsigned long)CountlyCommon.sharedInstance.maxSegmentationValues, (unsigned long)excessKeys.count, excessKeys);
+    CLY_LOG_W(@"%s segmentation exceeds the SDK segmentation value limit and will be trimmed, target: [%@], keyCount: [%lu], trimmedTo: [%lu], droppedKeyCount: [%lu], droppedKeys: [%@]", __FUNCTION__, explanation, (unsigned long)allKeys.count, (unsigned long)CountlyCommon.sharedInstance.maxSegmentationValues, (unsigned long)excessKeys.count, excessKeys);
     [CountlyHealthTracker.sharedInstance recordLogCode:@"w203"];
 
     NSMutableDictionary* limitedDict = self.mutableCopy;
@@ -1905,7 +1906,8 @@ NSString* CountlyJSONFromObject(id object)
             ([value isKindOfClass:[NSArray class]] && (value = [(NSArray *)value cly_filterSupportedDataTypes]))) {
             [filteredDictionary setObject:value forKey:key];
         } else {
-            CLY_LOG_D(@"%s dropping dictionary entry with an unsupported value type, key: [%@], receivedType: [%@]", __FUNCTION__, key, [value class]);
+            CLY_LOG_W(@"%s dropping dictionary entry with an unsupported value type, key: [%@], receivedType: [%@]", __FUNCTION__, key, [value class]);
+            [CountlyHealthTracker.sharedInstance recordLogCode:@"w206"];
         }
     }
     

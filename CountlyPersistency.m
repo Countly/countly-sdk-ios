@@ -81,13 +81,12 @@ static dispatch_once_t onceToken;
 
 - (BOOL)addToQueue:(NSString *)queryString
 {
-    // NOTE: reachable from CountlySignalHandler through CountlyConnectionManager sendCrashReport,
-    // so every log here and in removeOldAgeRequestsFromQueue stays at Debug or lower, even the
-    // request dropping ones. CountlyInternalLog re-enters CountlyHealthTracker, which uses
-    // dispatch_once and dispatch_async, and neither is async-signal-safe.
+    // NOTE: reachable from CountlySignalHandler through CountlyConnectionManager sendCrashReport. The warnings here and in
+    // removeOldAgeRequestsFromQueue are safe there only because CountlyExceptionHandler stops the health tracker and the log
+    // capture first, so CountlyInternalLog queues no work for them while an automatic crash is reported.
     if (!CountlyServerConfig.sharedInstance.trackingEnabled)
     {
-        CLY_LOG_D(@"%s request is not queued, reason: SDK tracking is disabled from server config, query string length: [%lu]", __FUNCTION__, (unsigned long)queryString.length);
+        CLY_LOG_W(@"%s request is not queued, reason: SDK tracking is disabled from server config, query string length: [%lu]", __FUNCTION__, (unsigned long)queryString.length);
         [CountlyHealthTracker.sharedInstance recordLogCode:@"w505"];
         return NO;
     }
@@ -120,8 +119,8 @@ static dispatch_once_t onceToken;
                 // for example if exceeded count is 136 and our limit is 100 we should remove 100 items
                 // in other case if exceeded count is 36 and out limit is 100 we can only remove 36 items because we have that amount
                 NSUInteger gonnaRemoveSize = MIN(exceededSize, kCountlyRequestRemovalLoopLimit) + 1;
-                CLY_LOG_D(@"%s request queue size: [%lu] exceeded the limit: [%lu], the first [%lu] request(s) will be dropped", __FUNCTION__, (unsigned long)self.queuedRequests.count, (unsigned long)self.storedRequestsLimit, (unsigned long)gonnaRemoveSize);
-                [CountlyHealthTracker.sharedInstance recordLogCode:@"w310"];
+                CLY_LOG_W(@"%s request queue size: [%lu] exceeded the limit: [%lu], the first [%lu] request(s) will be dropped", __FUNCTION__, (unsigned long)self.queuedRequests.count, (unsigned long)self.storedRequestsLimit, (unsigned long)gonnaRemoveSize);
+                [CountlyHealthTracker.sharedInstance recordLogCode:@"w310" count:gonnaRemoveSize];
                 NSRange itemsToRemove = NSMakeRange(0, gonnaRemoveSize);
                 [self.queuedRequests removeObjectsInRange:itemsToRemove];
             }
@@ -329,7 +328,7 @@ static dispatch_once_t onceToken;
             
             if (requestCountBeforeAgeFilter > self.queuedRequests.count)
             {
-                CLY_LOG_D(@"%s dropped [%lu] old age queued request(s), request drop age in hours: [%lu], remaining request count: [%lu]", __FUNCTION__, (unsigned long)(requestCountBeforeAgeFilter - self.queuedRequests.count), (unsigned long)self.requestDropAgeHours, (unsigned long)self.queuedRequests.count);
+                CLY_LOG_W(@"%s dropped [%lu] old age queued request(s), request drop age in hours: [%lu], remaining request count: [%lu]", __FUNCTION__, (unsigned long)(requestCountBeforeAgeFilter - self.queuedRequests.count), (unsigned long)self.requestDropAgeHours, (unsigned long)self.queuedRequests.count);
                 [CountlyHealthTracker.sharedInstance recordLogCode:@"w330" count:requestCountBeforeAgeFilter - self.queuedRequests.count];
             }
             
@@ -587,6 +586,7 @@ static dispatch_once_t onceToken;
             if (error)
             {
                 CLY_LOG_E(@"[CountlyPersistency] storageDirectoryURL, storage directory can not be created, error domain: [%@], error code: [%ld], error description: [%@]", error.domain, (long)error.code, error.localizedDescription);
+                [CountlyHealthTracker.sharedInstance recordLogCode:@"e501"];
             }
         }
     });
@@ -638,7 +638,7 @@ static dispatch_once_t onceToken;
 
     if (!writeResult)
     {
-        CLY_LOG_D(@"%s writing the request queue to the persistent storage file failed, data size: [%lu] bytes, request count: [%lu]", __FUNCTION__, (unsigned long)saveData.length, (unsigned long)queuedRequestCountForLog);
+        CLY_LOG_E(@"%s writing the request queue to the persistent storage file failed, data size: [%lu] bytes, request count: [%lu]", __FUNCTION__, (unsigned long)saveData.length, (unsigned long)queuedRequestCountForLog);
         [CountlyHealthTracker.sharedInstance recordLogCode:@"e501"];
     }
 

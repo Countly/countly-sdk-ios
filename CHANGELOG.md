@@ -4,8 +4,12 @@
 * Added Apple Ads attribution. On iOS the SDK reads the AdServices attribution token once per install, without an App Tracking Transparency prompt, and sends it to the server, which resolves the Apple Ads campaign with Apple. It needs the attribution consent and can be turned off with the "disableAppleAdsAttribution" init config parameter.
 * Added a new method "recordDeepLink:" that reports a Universal Link or another deep link that opened the app, so that a Countly smart link counts as a click of its campaign and the campaign parameters of the link are attributed.
 * Added "deepLinkCallback" init config parameter, called for each recorded deep link with the path the app should open: the path after the campaign code of a Countly smart link, or the "dl" parameter of the link.
+* Improved internal logging.
 
 * Mitigated an issue where a campaign ID or campaign user ID of direct attribution containing characters such as "&" broke the request, as they were not URL encoded.
+* Mitigated an issue where a health check the server refused was treated as delivered.
+* Mitigated an issue where the health check sent the app version without the metrics consent.
+* Mitigated an issue where an event recorded with a negative duration kept that duration. The duration is now ignored.
 * Mitigated an issue where orientation events were not recorded on iOS 27 in apps that use the UIScene lifecycle.
 * Mitigated an issue where the orientation was not recorded at start.
 * Mitigated an issue where a crash the SDK reported was not passed on to the crash handler it replaced.
