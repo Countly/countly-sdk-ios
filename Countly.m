@@ -1782,6 +1782,9 @@ static dispatch_once_t onceToken;
                 return;
             }
 
+            // the queue lives in memory until it is saved, so it is saved before the flag: if the app is killed
+            // before the request goes out, the request is still there on the next launch instead of being lost
+            [CountlyPersistency.sharedInstance saveToFileSync];
             [CountlyPersistency.sharedInstance storeAppleAdsAttributionSent:YES];
         });
     });

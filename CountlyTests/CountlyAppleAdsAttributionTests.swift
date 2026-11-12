@@ -72,6 +72,34 @@ class CountlyAppleAdsAttributionTests: CountlyAttributionTestCase {
         XCTAssertTrue(CountlyPersistency.sharedInstance().retrieveAppleAdsAttributionSent())
     }
 
+    /// The sent flag is stored for good, so the request it stands for is saved to the queue file first.
+    /// Networking is off, so nothing else saves the queue; without the save, a kill before the request
+    /// goes out loses the token while the flag stops it from ever being read again.
+    func test_appleAds_queuedRequestIsSavedBeforeItIsMarkedSent() throws {
+        defer { CountlyServerConfig.sharedInstance()?.setValue(true, forKey: "networkingEnabled") }
+        let config = offlineConfig()
+        config.disableSDKBehaviorSettingsUpdates = true
+        // read after the save that start schedules has finished
+        _ = startWithAppleAds(config) {
+            Thread.sleep(forTimeInterval: 0.3)
+            return "durable_token"
+        }
+        CountlyServerConfig.sharedInstance()?.setValue(false, forKey: "networkingEnabled")
+
+        XCTAssertTrue(TestUtils.waitUntil("marked sent", timeout: TestUtils.asyncTimeout) {
+            CountlyPersistency.sharedInstance().retrieveAppleAdsAttributionSent()
+        })
+        XCTAssertTrue(try savedRequests().contains { $0.contains("durable_token") })
+    }
+
+    private func savedRequests() throws -> [String] {
+        let url = try XCTUnwrap(CountlyPersistency.sharedInstance().value(forKey: "storageFileURL") as? URL)
+        let data = try Data(contentsOf: url)
+        let classes = [NSDictionary.self, NSArray.self, NSString.self, NSNumber.self]
+        let saved = try NSKeyedUnarchiver.unarchivedObject(ofClasses: classes, from: data) as? NSDictionary
+        return saved?["kCountlyQueuedRequestsPersistencyKey"] as? [String] ?? []
+    }
+
     #if targetEnvironment(simulator)
     /// The real AdServices lookup: the simulator has no token, so nothing is sent.
     func test_appleAds_unsupportedDevice_sendsNothing() throws {
