@@ -1,8 +1,9 @@
 name: Public API
 
 # Fails when the public API of the Countly or CountlyNotificationService module on a supported platform differs from
-# its file in api/<platform>/. A deliberate API change is recorded with `bash .github/scripts/public-api.sh update` on
-# the Xcode selected below, or with the files this workflow uploads when the check fails, and needs a CHANGELOG.md line.
+# its file in api/<platform>/, or when the requests the SDK sends in the request scenarios differ from api/requests/. A
+# deliberate API change is recorded with `bash .github/scripts/public-api.sh update` on the Xcode selected below, or with
+# the files this workflow uploads when the check fails, and needs a CHANGELOG.md line.
 on:
   push:
     branches: [master, staging]
@@ -43,3 +44,19 @@ jobs:
           name: public-api
           path: ${{ runner.temp }}/public-api
           if-no-files-found: ignore
+
+  # The simulator test job in build.yml is advisory; this one runs only the request scenarios, on macOS, and blocks.
+  requests:
+    name: The SDK sends the requests the api/requests/ files record
+    runs-on: xcode-27
+    steps:
+      - name: Checkout SDK code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_27.0.app
+
+      - name: Run the request scenario tests on macOS
+        run: xcodebuild -quiet test -project Countly.xcodeproj -scheme CountlyTests -destination 'platform=macOS' -only-testing:CountlyTests/CountlyRequestScenarioTests CODE_SIGNING_ALLOWED=NO

@@ -1,0 +1,167 @@
+[
+  {
+    "params" : {
+      "app_key" : "parity-app-key",
+      "av" : "<masked>",
+      "begin_session" : "1",
+      "device_id" : "parity-device-001",
+      "dow" : "<masked>",
+      "hour" : "<masked>",
+      "metrics" : {
+        "_app_version" : "<masked>",
+        "_density" : "<masked>",
+        "_device" : "<masked>",
+        "_device_type" : "<masked>",
+        "_locale" : "<masked>",
+        "_os" : "<masked>",
+        "_os_version" : "<masked>",
+        "_resolution" : "<masked>"
+      },
+      "rr" : "<masked>",
+      "sdk_name" : "objc-native-ios",
+      "sdk_version" : "<masked>",
+      "t" : "0",
+      "timestamp" : "<masked>",
+      "tz" : "<masked>"
+    },
+    "path" : "/i"
+  },
+  {
+    "params" : {
+      "app_key" : "parity-app-key",
+      "av" : "<masked>",
+      "device_id" : "parity-device-002",
+      "dow" : "<masked>",
+      "hour" : "<masked>",
+      "old_device_id" : "parity-device-001",
+      "rr" : "<masked>",
+      "sdk_name" : "objc-native-ios",
+      "sdk_version" : "<masked>",
+      "t" : "0",
+      "timestamp" : "<masked>",
+      "tz" : "<masked>"
+    },
+    "path" : "/i"
+  },
+  {
+    "params" : {
+      "app_key" : "parity-app-key",
+      "av" : "<masked>",
+      "device_id" : "parity-device-002",
+      "dow" : "<masked>",
+      "events" : [
+        {
+          "count" : 1,
+          "cvid" : "<masked>",
+          "dow" : "<masked>",
+          "dur" : 0,
+          "hour" : "<masked>",
+          "id" : "<masked>",
+          "key" : "after_merge",
+          "peid" : "<masked>",
+          "sum" : 0,
+          "timestamp" : "<masked>"
+        }
+      ],
+      "hour" : "<masked>",
+      "rr" : "<masked>",
+      "sdk_name" : "objc-native-ios",
+      "sdk_version" : "<masked>",
+      "t" : "0",
+      "timestamp" : "<masked>",
+      "tz" : "<masked>"
+    },
+    "path" : "/i"
+  },
+  {
+    "params" : {
+      "app_key" : "parity-app-key",
+      "av" : "<masked>",
+      "device_id" : "parity-device-003",
+      "dow" : "<masked>",
+      "events" : [
+        {
+          "count" : 1,
+          "cvid" : "<masked>",
+          "dow" : "<masked>",
+          "dur" : 0,
+          "hour" : "<masked>",
+          "id" : "<masked>",
+          "key" : "after_new_id",
+          "peid" : "<masked>",
+          "sum" : 0,
+          "timestamp" : "<masked>"
+        }
+      ],
+      "hour" : "<masked>",
+      "rr" : "<masked>",
+      "sdk_name" : "objc-native-ios",
+      "sdk_version" : "<masked>",
+      "t" : "0",
+      "timestamp" : "<masked>",
+      "tz" : "<masked>"
+    },
+    "path" : "/i"
+  },
+  {
+    "params" : {
+      "app_key" : "parity-app-key",
+      "av" : "<masked>",
+      "device_id" : "parity-device-003",
+      "dow" : "<masked>",
+      "end_session" : "1",
+      "hour" : "<masked>",
+      "rr" : "<masked>",
+      "sdk_name" : "objc-native-ios",
+      "sdk_version" : "<masked>",
+      "session_duration" : "<masked>",
+      "t" : "0",
+      "timestamp" : "<masked>",
+      "tz" : "<masked>"
+    },
+    "path" : "/i"
+  },
+  {
+    "params" : {
+      "app_key" : "parity-app-key",
+      "av" : "<masked>",
+      "device_id" : "parity-device-001",
+      "dow" : "<masked>",
+      "hour" : "<masked>",
+      "method" : "sc",
+      "sdk_name" : "objc-native-ios",
+      "sdk_version" : "<masked>",
+      "t" : "0",
+      "timestamp" : "<masked>",
+      "tz" : "<masked>"
+    },
+    "path" : "/o/sdk"
+  },
+  {
+    "params" : {
+      "app_key" : "parity-app-key",
+      "device_id" : "parity-device-001",
+      "dow" : "<masked>",
+      "hc" : {
+        "bom" : "<masked>",
+        "cbom" : "<masked>",
+        "el" : "<masked>",
+        "em" : "<masked>",
+        "fu" : "<masked>",
+        "lc" : "<masked>",
+        "sc" : "<masked>",
+        "wl" : "<masked>"
+      },
+      "hour" : "<masked>",
+      "metrics" : {
+        "_app_version" : "<masked>"
+      },
+      "sdk_name" : "objc-native-ios",
+      "sdk_version" : "<masked>",
+      "t" : "0",
+      "timestamp" : "<masked>",
+      "tz" : "<masked>"
+    },
+    "path" : "/i"
+  }
+]
