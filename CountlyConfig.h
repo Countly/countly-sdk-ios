@@ -472,6 +472,8 @@ typedef enum : NSUInteger
  * @discussion The token is sent only with consent for @c CLYConsentAttribution, and is read again on later starts until it has been sent once.
  * @discussion If set, the token is not read or sent.
  * @discussion Apple's aggregate install reports (AdAttributionKit and SKAdNetwork) need no SDK code: add @c AttributionCopyEndpoint (AdAttributionKit) and @c NSAdvertisingAttributionReportEndpoint (SKAdNetwork) to the app's Info.plist with an @c https URL on a registrable domain you own, for example @c https://example.com. Apple posts the report copies to @c /.well-known/appattribution/report-attribution/ and @c /.well-known/skadnetwork/report-attribution/ of that domain, ignoring any subdomain, so forward those two paths to your Countly server's same paths, or point a domain used only for this at the Countly server.
+ * @discussion To also get copies of AdAttributionKit re-engagement reports (iOS 18 and later), add @c EligibleForAdAttributionKitReengagementPostbackCopies to the Info.plist as a Boolean set to @c YES.
+ * @discussion Apple starts a report's conversion window only once the app sets a conversion value, so call AdAttributionKit's @c Postback.updateConversionValue (or SKAdNetwork's @c updatePostbackConversionValue) at least once, ideally at first launch, with values that mean something to you. The SDK sets no conversion values; Countly reports the values the app sets.
  */
 @property (nonatomic) BOOL disableAppleAdsAttribution;
 

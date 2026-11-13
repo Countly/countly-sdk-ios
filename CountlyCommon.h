@@ -66,6 +66,7 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString* const kCountlyErrorDomain;
 
 extern NSString* const kCountlyReservedEventOrientation;
+extern NSString* const kCountlyReservedEventAdRevenue;
 extern NSString* const kCountlyVisibility;
 
 NS_ERROR_ENUM(kCountlyErrorDomain)

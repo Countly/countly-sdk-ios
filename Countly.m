@@ -21,6 +21,13 @@
 // Reads the AdServices token; replaced by tests, as the simulator has no token.
 static CLYAppleAdsTokenProvider s_appleAdsTokenProvider = nil;
 
+NSString* const kCountlyReservedEventAdRevenue = @"[CLY]_ad_revenue";
+NSString* const kCountlyAdRevenueKeyNetwork   = @"network";
+NSString* const kCountlyAdRevenueKeyPlacement = @"placement";
+NSString* const kCountlyAdRevenueKeyFormat    = @"format";
+NSString* const kCountlyAdRevenueKeyCurrency  = @"currency";
+NSString* const kCountlyAdRevenueKeyPrecision = @"precision";
+
 long long appLoadStartTime;
 // It holds the event id of previous recorded custom event.
 static NSString* previousEventID;
@@ -1153,6 +1160,13 @@ static dispatch_once_t onceToken;
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration ID:(NSString *)ID timestamp:(NSTimeInterval)timestamp
 {
+    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration ID:ID timestamp:timestamp reserved:[self isReservedEvent:key] != nil];
+}
+
+/// @c reserved is passed by internal events that are not in @c isReservedEvent:, so an app recording the same key through
+/// @c recordEvent is treated as it always was.
+- (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration ID:(NSString *)ID timestamp:(NSTimeInterval)timestamp reserved:(BOOL)reserved
+{
     if (key.length == 0) {
         CLY_LOG_W(@"%s omitting the call, the event key is nil or empty", __FUNCTION__);
         [CountlyHealthTracker.sharedInstance recordLogCode:@"w701" forUsageArea:@"events"];
@@ -1188,8 +1202,7 @@ static dispatch_once_t onceToken;
         event.CVID = CountlyViewTrackingInternal.sharedInstance.currentViewID ?: @"";
     }
 
-    // Check if the event is a reserved event
-    BOOL isReservedEvent = [self isReservedEvent:key] != nil;
+    BOOL isReservedEvent = reserved;
 
     NSMutableDictionary *filteredSegmentations = segmentation.cly_filterSupportedDataTypes;
     if(filteredSegmentations == nil)
@@ -1598,6 +1611,43 @@ static dispatch_once_t onceToken;
     }
 
     [CountlyConnectionManager.sharedInstance sendDirectAttributionWithCampaignID:campaignID andCampaignUserID:campaignUserID];
+}
+
+- (void)recordAdRevenue:(double)amount
+{
+    [self recordAdRevenue:amount network:nil placement:nil format:nil currency:nil precision:nil];
+}
+
+- (void)recordAdRevenue:(double)amount network:(NSString *)network placement:(NSString *)placement format:(NSString *)format currency:(NSString *)currency precision:(NSString *)precision
+{
+    CLY_LOG_I(@"%s recording ad revenue, amount: [%f], network: [%@], placement: [%@], format: [%@], currency: [%@], precision: [%@]", __FUNCTION__, amount, network, placement, format, currency, precision);
+
+    if (!CountlyConsentManager.sharedInstance.consentForEvents)
+    {
+        CLY_LOG_V(@"%s no consent given for events, the ad revenue will not be recorded", __FUNCTION__);
+        return;
+    }
+
+    if (isnan(amount) || isinf(amount) || amount < 0)
+    {
+        CLY_LOG_W(@"%s the ad revenue amount is negative, not a number or infinite, it will not be recorded, amount: [%f]", __FUNCTION__, amount);
+        return;
+    }
+
+    NSMutableDictionary* segmentation = NSMutableDictionary.new;
+    void (^add)(NSString*, NSString*) = ^(NSString* key, NSString* value)
+    {
+        if ([value isKindOfClass:NSString.class] && value.length)
+            segmentation[key] = value;
+    };
+    add(kCountlyAdRevenueKeyNetwork, network);
+    add(kCountlyAdRevenueKeyPlacement, placement);
+    add(kCountlyAdRevenueKeyFormat, format);
+    add(kCountlyAdRevenueKeyCurrency, currency);
+    add(kCountlyAdRevenueKeyPrecision, precision);
+
+    // an internal event: the behavior settings filter only the app's own events, and it does not join the previous event chain
+    [self recordEvent:kCountlyReservedEventAdRevenue segmentation:segmentation count:1 sum:amount duration:0 ID:nil timestamp:CountlyCommon.sharedInstance.uniqueTimestamp reserved:YES];
 }
 
 - (void)recordDeepLink:(NSURL *)url

@@ -641,6 +641,31 @@ NS_ASSUME_NONNULL_BEGIN
  */
 - (void)recordDeepLink:(NSURL *)url;
 
+/**
+ * Records the revenue of one paid ad impression, as the internal @c [CLY]_ad_revenue event.
+ * @discussion Call it from your ad mediation SDK's paid impression callback, for example AppLovin MAX @c didPayRevenueForAd:, Google AdMob @c paidEventHandler or ironSource / Unity LevelPlay @c impressionDataDidSucceed:, once per callback.
+ * @discussion The amount is the event's sum. Send it in the currency the app uses for purchases: the SDK and the server convert no currency. AdMob reports micros, so divide its value by 1,000,000 first.
+ * @discussion The other values are optional and sent only when given. @c currency is kept for reference only.
+ * @discussion Countly attribution counts the event as ad revenue of the user's campaign. It needs a Countly server with attribution phase 2; an older server drops the event.
+ * @discussion Calls to this method will be ignored if:
+ * @discussion - Consent for @c CLYConsentEvents is not given, while @c requiresConsent flag is set on initial configuration.
+ * @discussion - The amount is negative, not a number or infinite.
+ * @param amount Revenue of the impression
+ * @param network Ad network that served the impression, such as @c "AppLovin" or @c "AdMob"
+ * @param placement Ad placement or ad unit in the app
+ * @param format Ad format, such as @c "banner", @c "interstitial" or @c "rewarded"
+ * @param currency ISO 4217 code of the currency the network reported the revenue in
+ * @param precision Precision of the revenue as the network reports it, such as AdMob's precision type
+ */
+- (void)recordAdRevenue:(double)amount network:(NSString * _Nullable)network placement:(NSString * _Nullable)placement format:(NSString * _Nullable)format currency:(NSString * _Nullable)currency precision:(NSString * _Nullable)precision NS_SWIFT_NAME(recordAdRevenue(_:network:placement:format:currency:precision:));
+
+/**
+ * Records the revenue of one paid ad impression with no details, as the internal @c [CLY]_ad_revenue event.
+ * @discussion Same as @c recordAdRevenue:network:placement:format:currency:precision: with no optional values.
+ * @param amount Revenue of the impression, in the currency the app uses for purchases
+ */
+- (void)recordAdRevenue:(double)amount;
+
 #pragma mark - Remote Config
 
 - (CountlyRemoteConfig *) remoteConfig;
