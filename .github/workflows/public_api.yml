@@ -1,0 +1,111 @@
+name: Public API changes
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: Breaking changes
+    outputs:
+      report: ${{ steps.report.outputs.report }}
+    runs-on: macos-26
+    steps:
+      - name: Checkout SDK code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Set up Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_26.2.app
+
+      # The first parent of the pull request's merge commit is the base branch it merges into.
+      # The public headers declare some API for one platform only, so every platform is compared.
+      - name: Compare the public API with the base branch
+        run: |
+          git worktree add "$RUNNER_TEMP/base" HEAD^1
+          : > "$RUNNER_TEMP/breaking.txt"
+          : > "$RUNNER_TEMP/added.txt"
+
+          # Builds the framework from tree $1 into $2 with SDK $3 and destination $4, then writes the public API for target $5 to $2/api.json.
+          dump() {
+            mkdir -p "$2"
+            if ! xcodebuild -project "$1/Countly.xcodeproj" -scheme Countly -configuration Release -sdk "$3" \
+                -destination "$4" -derivedDataPath "$2/derived" CONFIGURATION_BUILD_DIR="$2/products" \
+                CODE_SIGNING_ALLOWED=NO build > "$2/build.log" 2>&1; then
+              cat "$2/build.log"
+              return 1
+            fi
+            xcrun --sdk "$3" swift-api-digester -dump-sdk -module Countly -o "$2/api.json" -abort-on-module-fail \
+              -avoid-tool-args -avoid-location -F "$2/products" -target "$5" -sdk "$(xcrun --sdk "$3" --show-sdk-path)"
+          }
+
+          for platform in ios macos tvos watchos; do
+            case "$platform" in
+              ios) sdk=iphonesimulator destination="generic/platform=iOS Simulator" target=arm64-apple-ios15.0-simulator ;;
+              macos) sdk=macosx destination="generic/platform=macOS" target=arm64-apple-macos12.0 ;;
+              tvos) sdk=appletvsimulator destination="generic/platform=tvOS Simulator" target=arm64-apple-tvos15.0-simulator ;;
+              watchos) sdk=watchsimulator destination="generic/platform=watchOS Simulator" target=arm64-apple-watchos9.0-simulator ;;
+            esac
+            dump "$RUNNER_TEMP/base" "$RUNNER_TEMP/$platform/base" "$sdk" "$destination" "$target"
+            dump "$GITHUB_WORKSPACE" "$RUNNER_TEMP/$platform/head" "$sdk" "$destination" "$target"
+            xcrun swift-api-digester -diagnose-sdk -input-paths "$RUNNER_TEMP/$platform/base/api.json" \
+              -input-paths "$RUNNER_TEMP/$platform/head/api.json" -o "$RUNNER_TEMP/$platform/diagnose.txt"
+            grep -v -e '^/\*' -e '^$' "$RUNNER_TEMP/$platform/diagnose.txt" >> "$RUNNER_TEMP/breaking.txt" || true
+            xcrun swift-api-digester -diagnose-sdk -input-paths "$RUNNER_TEMP/$platform/head/api.json" \
+              -input-paths "$RUNNER_TEMP/$platform/base/api.json" -o "$RUNNER_TEMP/$platform/reverse.txt"
+            # Compared the other way round, a declaration only the head has is one the digester calls removed.
+            awk '/^\/\*/ { removed = ($0 == "/* Removed Decls */"); next } removed && NF { sub(/ has been removed$/, ""); print }' \
+              "$RUNNER_TEMP/$platform/reverse.txt" >> "$RUNNER_TEMP/added.txt"
+          done
+          sort -u -o "$RUNNER_TEMP/breaking.txt" "$RUNNER_TEMP/breaking.txt"
+          sort -u -o "$RUNNER_TEMP/added.txt" "$RUNNER_TEMP/added.txt"
+
+      - name: Report the public API changes
+        id: report
+        run: bash .github/scripts/public_api_report.sh "$RUNNER_TEMP/breaking.txt" "$RUNNER_TEMP/added.txt"
+
+      - name: Require a CHANGELOG entry for breaking changes
+        run: |
+          if [ ! -s "$RUNNER_TEMP/breaking.txt" ]; then
+            exit 0
+          fi
+          if git diff --quiet HEAD^1 HEAD -- CHANGELOG.md; then
+            echo "::error title=Breaking API change::This pull request breaks the public API without a CHANGELOG.md entry. The job summary lists each break."
+            exit 1
+          fi
+          echo "::warning title=Breaking API change::This pull request breaks the public API. Check that CHANGELOG.md marks it as a breaking change."
+
+  comment:
+    name: Comment the public API changes
+    needs: api
+    # A fork's or Dependabot's pull request only gets a read-only token, so its report stays in the job summary.
+    if: >-
+      always() && needs.api.outputs.report != '' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Post or update the comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          REPORT: ${{ needs.api.outputs.report }}
+        run: |
+          id=$(gh api --paginate "repos/$REPO/issues/$PR/comments" --jq \
+            '.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- countly-public-api -->"))) | .id' | tail -n 1)
+          if [ -n "$id" ]; then
+            gh api --method PATCH "repos/$REPO/issues/comments/$id" -f "body=$REPORT" > /dev/null
+          elif ! grep -qx 'No public API change.' <<< "$REPORT"; then
+            gh api --method POST "repos/$REPO/issues/$PR/comments" -f "body=$REPORT" > /dev/null
+          fi
