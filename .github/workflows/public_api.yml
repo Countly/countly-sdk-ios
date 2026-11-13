@@ -1,4 +1,4 @@
-name: Public API
+name: Public API changes
 
 on:
   pull_request:
@@ -13,6 +13,8 @@ concurrency:
 jobs:
   api:
     name: Breaking changes
+    outputs:
+      report: ${{ steps.report.outputs.report }}
     runs-on: macos-26
     steps:
       - name: Checkout SDK code
@@ -30,6 +32,7 @@ jobs:
         run: |
           git worktree add "$RUNNER_TEMP/base" HEAD^1
           : > "$RUNNER_TEMP/breaking.txt"
+          : > "$RUNNER_TEMP/added.txt"
 
           # Builds the framework from tree $1 into $2 with SDK $3 and destination $4, then writes the public API for target $5 to $2/api.json.
           dump() {
@@ -56,23 +59,53 @@ jobs:
             xcrun swift-api-digester -diagnose-sdk -input-paths "$RUNNER_TEMP/$platform/base/api.json" \
               -input-paths "$RUNNER_TEMP/$platform/head/api.json" -o "$RUNNER_TEMP/$platform/diagnose.txt"
             grep -v -e '^/\*' -e '^$' "$RUNNER_TEMP/$platform/diagnose.txt" >> "$RUNNER_TEMP/breaking.txt" || true
+            xcrun swift-api-digester -diagnose-sdk -input-paths "$RUNNER_TEMP/$platform/head/api.json" \
+              -input-paths "$RUNNER_TEMP/$platform/base/api.json" -o "$RUNNER_TEMP/$platform/reverse.txt"
+            # Compared the other way round, a declaration only the head has is one the digester calls removed.
+            awk '/^\/\*/ { removed = ($0 == "/* Removed Decls */"); next } removed && NF { sub(/ has been removed$/, ""); print }' \
+              "$RUNNER_TEMP/$platform/reverse.txt" >> "$RUNNER_TEMP/added.txt"
           done
           sort -u -o "$RUNNER_TEMP/breaking.txt" "$RUNNER_TEMP/breaking.txt"
+          sort -u -o "$RUNNER_TEMP/added.txt" "$RUNNER_TEMP/added.txt"
+
+      - name: Report the public API changes
+        id: report
+        run: bash .github/scripts/public_api_report.sh "$RUNNER_TEMP/breaking.txt" "$RUNNER_TEMP/added.txt"
 
       - name: Require a CHANGELOG entry for breaking changes
         run: |
           if [ ! -s "$RUNNER_TEMP/breaking.txt" ]; then
-            echo "No breaking change to the public API." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          {
-            echo "### Breaking changes to the public API"
-            echo '```'
-            cat "$RUNNER_TEMP/breaking.txt"
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
           if git diff --quiet HEAD^1 HEAD -- CHANGELOG.md; then
             echo "::error title=Breaking API change::This pull request breaks the public API without a CHANGELOG.md entry. The job summary lists each break."
             exit 1
           fi
           echo "::warning title=Breaking API change::This pull request breaks the public API. Check that CHANGELOG.md marks it as a breaking change."
+
+  comment:
+    name: Comment the public API changes
+    needs: api
+    # A fork's or Dependabot's pull request only gets a read-only token, so its report stays in the job summary.
+    if: >-
+      always() && needs.api.outputs.report != '' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Post or update the comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          REPORT: ${{ needs.api.outputs.report }}
+        run: |
+          id=$(gh api --paginate "repos/$REPO/issues/$PR/comments" --jq \
+            '.[] | select(.user.login == "github-actions[bot]" and (.body | startswith("<!-- countly-public-api -->"))) | .id' | tail -n 1)
+          if [ -n "$id" ]; then
+            gh api --method PATCH "repos/$REPO/issues/comments/$id" -f "body=$REPORT" > /dev/null
+          elif ! grep -qx 'No public API change.' <<< "$REPORT"; then
+            gh api --method POST "repos/$REPO/issues/$PR/comments" -f "body=$REPORT" > /dev/null
+          fi
