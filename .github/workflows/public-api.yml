@@ -1,0 +1,45 @@
+name: Public API
+
+# Fails when the public API of the Countly or CountlyNotificationService module on a supported platform differs from
+# its file in api/<platform>/. A deliberate API change is recorded with `bash .github/scripts/public-api.sh update` on
+# the Xcode selected below, or with the files this workflow uploads when the check fails, and needs a CHANGELOG.md line.
+on:
+  push:
+    branches: [master, staging]
+  pull_request:
+    branches: [master, staging]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # to check out the code
+
+jobs:
+  public-api:
+    name: The public API on every platform is the one the api/ files record
+    # The api/ files are written with Xcode 27.0, which GitHub ships only on its xcode-27 preview image.
+    runs-on: xcode-27
+    steps:
+      - name: Checkout SDK code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Xcode
+        run: sudo xcode-select -switch /Applications/Xcode_27.0.app
+
+      - name: Compare the public API on every platform with the api/ files
+        env:
+          PUBLIC_API_OUT: ${{ runner.temp }}/public-api
+        run: bash .github/scripts/public-api.sh check
+
+      - name: Upload the API files this Xcode wrote
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: public-api
+          path: ${{ runner.temp }}/public-api
+          if-no-files-found: ignore
