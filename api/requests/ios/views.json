@@ -1,0 +1,157 @@
+[
+  {
+    "params" : {
+      "app_key" : "parity-app-key",
+      "av" : "<masked>",
+      "begin_session" : "1",
+      "device_id" : "parity-device-001",
+      "dow" : "<masked>",
+      "hour" : "<masked>",
+      "metrics" : {
+        "_app_version" : "<masked>",
+        "_density" : "<masked>",
+        "_device" : "<masked>",
+        "_device_type" : "<masked>",
+        "_locale" : "<masked>",
+        "_os" : "<masked>",
+        "_os_version" : "<masked>",
+        "_resolution" : "<masked>"
+      },
+      "rr" : "<masked>",
+      "sdk_name" : "objc-native-ios",
+      "sdk_version" : "<masked>",
+      "t" : "0",
+      "timestamp" : "<masked>",
+      "tz" : "<masked>"
+    },
+    "path" : "/i"
+  },
+  {
+    "params" : {
+      "app_key" : "parity-app-key",
+      "av" : "<masked>",
+      "device_id" : "parity-device-001",
+      "dow" : "<masked>",
+      "events" : [
+        {
+          "count" : 1,
+          "dow" : "<masked>",
+          "dur" : "<masked>",
+          "hour" : "<masked>",
+          "id" : "<masked>",
+          "key" : "[CLY]_view",
+          "pvid" : "<masked>",
+          "segmentation" : {
+            "name" : "Home",
+            "segment" : "iOS",
+            "source" : "scenario",
+            "start" : 1,
+            "visit" : 1
+          },
+          "sum" : 0,
+          "timestamp" : "<masked>"
+        },
+        {
+          "count" : 1,
+          "dow" : "<masked>",
+          "dur" : "<masked>",
+          "hour" : "<masked>",
+          "id" : "<masked>",
+          "key" : "[CLY]_view",
+          "pvid" : "<masked>",
+          "segmentation" : {
+            "name" : "Home",
+            "segment" : "iOS"
+          },
+          "sum" : 0,
+          "timestamp" : "<masked>"
+        },
+        {
+          "count" : 1,
+          "dow" : "<masked>",
+          "dur" : "<masked>",
+          "hour" : "<masked>",
+          "id" : "<masked>",
+          "key" : "[CLY]_view",
+          "pvid" : "<masked>",
+          "segmentation" : {
+            "name" : "Settings",
+            "segment" : "iOS",
+            "visit" : 1
+          },
+          "sum" : 0,
+          "timestamp" : "<masked>"
+        }
+      ],
+      "hour" : "<masked>",
+      "rr" : "<masked>",
+      "sdk_name" : "objc-native-ios",
+      "sdk_version" : "<masked>",
+      "t" : "0",
+      "timestamp" : "<masked>",
+      "tz" : "<masked>"
+    },
+    "path" : "/i"
+  },
+  {
+    "params" : {
+      "app_key" : "parity-app-key",
+      "av" : "<masked>",
+      "device_id" : "parity-device-001",
+      "dow" : "<masked>",
+      "end_session" : "1",
+      "hour" : "<masked>",
+      "rr" : "<masked>",
+      "sdk_name" : "objc-native-ios",
+      "sdk_version" : "<masked>",
+      "session_duration" : "<masked>",
+      "t" : "0",
+      "timestamp" : "<masked>",
+      "tz" : "<masked>"
+    },
+    "path" : "/i"
+  },
+  {
+    "params" : {
+      "app_key" : "parity-app-key",
+      "av" : "<masked>",
+      "device_id" : "parity-device-001",
+      "dow" : "<masked>",
+      "hour" : "<masked>",
+      "method" : "sc",
+      "sdk_name" : "objc-native-ios",
+      "sdk_version" : "<masked>",
+      "t" : "0",
+      "timestamp" : "<masked>",
+      "tz" : "<masked>"
+    },
+    "path" : "/o/sdk"
+  },
+  {
+    "params" : {
+      "app_key" : "parity-app-key",
+      "device_id" : "parity-device-001",
+      "dow" : "<masked>",
+      "hc" : {
+        "bom" : "<masked>",
+        "cbom" : "<masked>",
+        "el" : "<masked>",
+        "em" : "<masked>",
+        "fu" : "<masked>",
+        "lc" : "<masked>",
+        "sc" : "<masked>",
+        "wl" : "<masked>"
+      },
+      "hour" : "<masked>",
+      "metrics" : {
+        "_app_version" : "<masked>"
+      },
+      "sdk_name" : "objc-native-ios",
+      "sdk_version" : "<masked>",
+      "t" : "0",
+      "timestamp" : "<masked>",
+      "tz" : "<masked>"
+    },
+    "path" : "/i"
+  }
+]

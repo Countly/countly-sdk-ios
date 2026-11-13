@@ -63,7 +63,7 @@ jobs:
     steps:
       # To check the github context
       - name: Checkout SDK code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up Xcode
         run: sudo xcode-select -switch /Applications/Xcode_${{ matrix.env.xcode }}.app
@@ -94,7 +94,7 @@ jobs:
           ]
     steps:
       - name: Checkout SDK code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
       - name: Set up Xcode
         run: sudo xcode-select -switch /Applications/Xcode_${{ matrix.env.xcode }}.app
@@ -183,12 +183,26 @@ jobs:
             -scheme CountlyTests \
             -destination '${{ steps.destination.outputs.destination }}' \
             -resultBundlePath TestResults.xcresult \
+            -enableCodeCoverage YES \
             CODE_SIGNING_ALLOWED=NO
+
+      - name: Write the coverage summary
+        run: |
+          xcrun xccov view --report --json TestResults.xcresult > "$RUNNER_TEMP/coverage.json"
+          python3 - "$RUNNER_TEMP/coverage.json" >> "$GITHUB_STEP_SUMMARY" <<'PYEOF'
+          import json, sys
+
+          report = json.load(open(sys.argv[1]))
+          print("### Unit test coverage\n\n| Target | Line coverage | Lines |\n|---|---|---|")
+          for target in report["targets"]:
+              if not target["name"].endswith(".xctest"):
+                  print(f"| {target['name']} | {100 * target['lineCoverage']:.2f}% | {target['coveredLines']}/{target['executableLines']} |")
+          PYEOF
 
       # Only on failure: a green run's result bundle is tens of MB nobody opens.
       - name: Upload test results
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: test-results-${{ matrix.env.sdk }}-xcode${{ matrix.env.xcode }}
           path: TestResults.xcresult

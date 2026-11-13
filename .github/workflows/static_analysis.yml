@@ -1,0 +1,52 @@
+name: Static analysis
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - staging
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  clang-analyzer:
+    name: Clang Static Analyzer
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+
+      # On pull requests the base branch is analyzed too, so that only findings it lacks can fail the job.
+      - name: Analyze the SDK
+        run: |
+          # Runs the Clang Static Analyzer on the checkout in $1, writing one SARIF report per source file under $2.
+          analyze() {
+            xcodebuild analyze -project "$1/Countly.xcodeproj" -scheme Countly -configuration Debug -sdk iphonesimulator \
+              -destination 'generic/platform=iOS Simulator' -derivedDataPath "$2-derived" \
+              CLANG_ANALYZER_OUTPUT=sarif CLANG_ANALYZER_OUTPUT_DIR="$2"
+            # Xcode names each SARIF report .plist.
+            find "$2" -name '*.plist' -exec sh -c 'for f; do mv "$f" "${f%.plist}.sarif"; done' sh {} +
+          }
+          analyze "$GITHUB_WORKSPACE" "$RUNNER_TEMP/analyzer"
+          if [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            # The first parent of the pull request's merge commit is the base branch it merges into.
+            git worktree add "$RUNNER_TEMP/base" HEAD^1
+            analyze "$RUNNER_TEMP/base" "$RUNNER_TEMP/analyzer-base"
+          fi
+
+      # Every finding goes to the job summary; a new one at warning or error level fails the job.
+      - name: Summarize the findings
+        run: |
+          # The default shell has no pipefail, and without it tee would hide the summary's exit code.
+          set -o pipefail
+          base=()
+          if [ -d "$RUNNER_TEMP/analyzer-base" ]; then
+            base=(--base "$RUNNER_TEMP/analyzer-base" --base-root "$RUNNER_TEMP/base")
+          fi
+          python3 .github/scripts/sarif_summary.py "Clang Static Analyzer" "$RUNNER_TEMP/analyzer" "${base[@]}" | tee -a "$GITHUB_STEP_SUMMARY"

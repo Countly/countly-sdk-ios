@@ -1,0 +1,90 @@
+[
+  {
+    "params" : {
+      "app_key" : "parity-app-key",
+      "av" : "<masked>",
+      "crash" : {
+        "_app_build" : "<masked>",
+        "_app_version" : "<masked>",
+        "_architecture" : "unknown",
+        "_background" : "<masked>",
+        "_bat" : "<masked>",
+        "_binary_images" : "<masked>",
+        "_build_uuid" : "<masked>",
+        "_custom" : {
+          "tier" : "gold"
+        },
+        "_device" : "<masked>",
+        "_disk_current" : "<masked>",
+        "_disk_total" : "<masked>",
+        "_error" : "<masked>",
+        "_executable_name" : "<masked>",
+        "_logs" : "breadcrumb one",
+        "_name" : "parity crash",
+        "_nonfatal" : 1,
+        "_online" : "<masked>",
+        "_os" : "<masked>",
+        "_os_version" : "<masked>",
+        "_ram_current" : "<masked>",
+        "_ram_total" : "<masked>",
+        "_resolution" : "<masked>",
+        "_root" : "<masked>",
+        "_run" : "<masked>",
+        "_type" : "ParityCrash"
+      },
+      "device_id" : "parity-device-001",
+      "dow" : "<masked>",
+      "hour" : "<masked>",
+      "rr" : "<masked>",
+      "sdk_name" : "objc-native-ios",
+      "sdk_version" : "<masked>",
+      "t" : "0",
+      "timestamp" : "<masked>",
+      "tz" : "<masked>"
+    },
+    "path" : "/i"
+  },
+  {
+    "params" : {
+      "app_key" : "parity-app-key",
+      "av" : "<masked>",
+      "device_id" : "parity-device-001",
+      "dow" : "<masked>",
+      "hour" : "<masked>",
+      "method" : "sc",
+      "sdk_name" : "objc-native-ios",
+      "sdk_version" : "<masked>",
+      "t" : "0",
+      "timestamp" : "<masked>",
+      "tz" : "<masked>"
+    },
+    "path" : "/o/sdk"
+  },
+  {
+    "params" : {
+      "app_key" : "parity-app-key",
+      "device_id" : "parity-device-001",
+      "dow" : "<masked>",
+      "hc" : {
+        "bom" : "<masked>",
+        "cbom" : "<masked>",
+        "el" : "<masked>",
+        "em" : "<masked>",
+        "fu" : "<masked>",
+        "lc" : "<masked>",
+        "sc" : "<masked>",
+        "wl" : "<masked>"
+      },
+      "hour" : "<masked>",
+      "metrics" : {
+        "_app_version" : "<masked>"
+      },
+      "sdk_name" : "objc-native-ios",
+      "sdk_version" : "<masked>",
+      "t" : "0",
+      "timestamp" : "<masked>",
+      "tz" : "<masked>"
+    },
+    "path" : "/i"
+  }
+]
