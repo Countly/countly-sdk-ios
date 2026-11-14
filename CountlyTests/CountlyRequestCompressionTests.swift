@@ -9,8 +9,9 @@ import XCTest
 @testable import Countly
 
 /// Request compression, checked on the requests a mocked server receives: the behavior settings request asks for
-/// "gzip", the server's "gzip": true answer turns compression on for request bodies of at least 1 KB, which then go to
-/// the endpoint with "content_encoding=gzip" and a gzip body, and a refused compressed request turns it off for the run.
+/// "gzip", the server's "gzip": true answer turns compression on for request bodies of at least 1 KB, which then go
+/// to the endpoint with "content_encoding=gzip" and a gzip body, and a refused compressed request turns it off for
+/// the run.
 class CountlyRequestCompressionTests: CountlyBaseTestCase {
 
     private static let bigValue = String(repeating: "a", count: 2000)
@@ -45,10 +46,15 @@ class CountlyRequestCompressionTests: CountlyBaseTestCase {
             return received.filter { $0.body.contains(marker) }
         }
 
-        func handle(_ request: URLRequest) -> (Data?, URLResponse?, Error?) {
+        func handle(_ request: URLRequest) -> Reply {
             let raw = CountlyRequestCompressionTests.bodyData(of: request)
             let compressed = request.url?.query == "content_encoding=gzip"
-            let body = compressed ? (CountlyRequestCompressionTests.gunzip(raw) ?? "") : (String(data: raw, encoding: .utf8) ?? "")
+            let body: String
+            if compressed {
+                body = CountlyRequestCompressionTests.gunzip(raw) ?? ""
+            } else {
+                body = String(data: raw, encoding: .utf8) ?? ""
+            }
             let entry = Received(url: request.url!, raw: raw, compressed: compressed, body: body)
 
             lock.lock()
@@ -61,14 +67,20 @@ class CountlyRequestCompressionTests: CountlyBaseTestCase {
 
             if body.contains("method=sc") {
                 let gzip = readsGzip && body.contains("gzip=1") ? ",\"gzip\":true" : ""
-                let answer = "{\"v\":2,\"t\":\(Int(Date().timeIntervalSince1970 * 1000)),\"c\":{}\(gzip)}"
-                return (answer.data(using: .utf8), HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil), nil)
+                let timestamp = Int(Date().timeIntervalSince1970 * 1000)
+                return Reply(status: 200, body: "{\"v\":2,\"t\":\(timestamp),\"c\":{}\(gzip)}")
             }
             if refuse {
-                return ("{\"result\":\"Missing parameter\"}".data(using: .utf8), HTTPURLResponse(url: request.url!, statusCode: 400, httpVersion: nil, headerFields: nil), nil)
+                return Reply(status: 400, body: "{\"result\":\"Missing parameter\"}")
             }
-            return ("{\"result\":\"Success\"}".data(using: .utf8), HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil), nil)
+            return Reply(status: 200, body: "{\"result\":\"Success\"}")
         }
+    }
+
+    /// The status and JSON body the mocked server answers a request with.
+    struct Reply {
+        let status: Int
+        let body: String
     }
 
     override func tearDownWithError() throws {
@@ -98,7 +110,7 @@ class CountlyRequestCompressionTests: CountlyBaseTestCase {
     func test_compressionOn_serverReadsGzip_bigRequestIsCompressed() throws {
         try TestPlatform.skipUnlessHTTPInterceptable()
         let server = start(Server(readsGzip: true), compression: true)
-        XCTAssertTrue(TestUtils.waitUntil("compression active") { CountlyConnectionManager.sharedInstance().gzipAcceptingHost != nil })
+        XCTAssertTrue(waitUntilServerSaysGzip())
         XCTAssertTrue(server.matching("method=sc")[0].body.contains("gzip=1"))
 
         addDirectRequest("big_compressed", CountlyRequestCompressionTests.bigValue)
@@ -117,7 +129,7 @@ class CountlyRequestCompressionTests: CountlyBaseTestCase {
     func test_compressionOn_smallRequestStaysPlain() throws {
         try TestPlatform.skipUnlessHTTPInterceptable()
         let server = start(Server(readsGzip: true), compression: true)
-        XCTAssertTrue(TestUtils.waitUntil("compression active") { CountlyConnectionManager.sharedInstance().gzipAcceptingHost != nil })
+        XCTAssertTrue(waitUntilServerSaysGzip())
 
         addDirectRequest("small_plain", "x")
 
@@ -147,11 +159,13 @@ class CountlyRequestCompressionTests: CountlyBaseTestCase {
         let server = Server(readsGzip: true)
         server.refuseNextCompressed = true
         _ = start(server, compression: true)
-        XCTAssertTrue(TestUtils.waitUntil("compression active") { CountlyConnectionManager.sharedInstance().gzipAcceptingHost != nil })
+        XCTAssertTrue(waitUntilServerSaysGzip())
 
         addDirectRequest("big_refused", CountlyRequestCompressionTests.bigValue)
 
-        XCTAssertTrue(TestUtils.waitUntil("refusal blocks compression") { CountlyConnectionManager.sharedInstance().requestCompressionBlocked })
+        XCTAssertTrue(TestUtils.waitUntil("refusal blocks compression") {
+            CountlyConnectionManager.sharedInstance().requestCompressionBlocked
+        })
         XCTAssertTrue(server.matching("big_refused")[0].compressed)
 
         Countly.sharedInstance().attemptToSendStoredRequests()
@@ -166,7 +180,7 @@ class CountlyRequestCompressionTests: CountlyBaseTestCase {
     func test_gzipAnswer_isNotStored() throws {
         try TestPlatform.skipUnlessHTTPInterceptable()
         _ = start(Server(readsGzip: true), compression: true)
-        XCTAssertTrue(TestUtils.waitUntil("compression active") { CountlyConnectionManager.sharedInstance().gzipAcceptingHost != nil })
+        XCTAssertTrue(waitUntilServerSaysGzip())
 
         let stored = try XCTUnwrap(CountlyPersistency.sharedInstance().retrieveServerConfig())
         XCTAssertNil(stored["gzip"])
@@ -176,7 +190,7 @@ class CountlyRequestCompressionTests: CountlyBaseTestCase {
     func test_setNewHost_newServerGetsPlainRequests() throws {
         try TestPlatform.skipUnlessHTTPInterceptable()
         let server = start(Server(readsGzip: true), compression: true)
-        XCTAssertTrue(TestUtils.waitUntil("compression active") { CountlyConnectionManager.sharedInstance().gzipAcceptingHost != nil })
+        XCTAssertTrue(waitUntilServerSaysGzip())
 
         server.readsGzip = false
         Countly.sharedInstance().setNewHost("https://other-gzip.count.ly")
@@ -206,7 +220,12 @@ class CountlyRequestCompressionTests: CountlyBaseTestCase {
     // MARK: - Helpers
 
     private func start(_ server: Server, compression: Bool) -> Server {
-        MockURLProtocol.requestHandler = { request in server.handle(request) }
+        MockURLProtocol.requestHandler = { request in
+            let reply = server.handle(request)
+            let response = HTTPURLResponse(url: request.url!, statusCode: reply.status,
+                                           httpVersion: nil, headerFields: nil)
+            return (reply.body.data(using: .utf8), response, nil)
+        }
         let config = createBaseConfig()
         config.alwaysUsePOST = true
         config.manualSessionHandling = true
@@ -216,6 +235,12 @@ class CountlyRequestCompressionTests: CountlyBaseTestCase {
         config.urlSessionConfiguration = sessionConfig
         Countly.sharedInstance().start(with: config)
         return server
+    }
+
+    private func waitUntilServerSaysGzip() -> Bool {
+        return TestUtils.waitUntil("compression active") {
+            CountlyConnectionManager.sharedInstance().gzipAcceptingHost != nil
+        }
     }
 
     private func addDirectRequest(_ marker: String, _ payload: String) {
