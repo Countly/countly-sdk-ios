@@ -66,6 +66,7 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString* const kCountlyErrorDomain;
 
 extern NSString* const kCountlyReservedEventOrientation;
+extern NSString* const kCountlyReservedEventAdRevenue;
 extern NSString* const kCountlyVisibility;
 
 NS_ERROR_ENUM(kCountlyErrorDomain)
@@ -267,6 +268,18 @@ void CountlyRunOnMainThread(dispatch_block_t block);
 @interface Countly (AutomaticSessionTracking)
 /// Ends a session the SDK started once automatic session tracking is off, and starts one in the foreground once it is on. Main thread only.
 - (void)applyAutomaticSessionTracking;
+@end
+
+typedef NSString* _Nullable (^CLYAppleAdsTokenProvider)(NSError* _Nullable * _Nullable error);
+
+@interface Countly (Attribution)
+/// Replaces the AdServices token lookup, for tests; nil puts the real lookup back.
++ (void)setAppleAdsTokenProvider:(nullable CLYAppleAdsTokenProvider)provider;
+/// Reads the AdServices attribution token and sends it once per install, when Apple Ads attribution is on, the SDK has started and attribution consent is given.
+- (void)sendAppleAdsAttributionIfNeeded;
+- (void)sendDeepLinksAwaitingConsent;
+/// The path a deep link routes to: for a Countly smart link the path after the campaign code, else (or when it has none) its 'dl' parameter; nil when there is none.
++ (nullable NSString *)deepLinkPathForURL:(NSURL *)url;
 @end
 
 @interface CountlyUserDetails (ClearUserDetails)

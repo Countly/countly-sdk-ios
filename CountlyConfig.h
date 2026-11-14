@@ -119,6 +119,13 @@ extern CLYRequestResult const CLYResponseNetworkIssue;
 extern CLYRequestResult const CLYResponseSuccess;
 extern CLYRequestResult const CLYResponseError;
 
+/**
+ * Callback for a deep link recorded with @c recordDeepLink:.
+ * @param deepLinkPath For a Countly smart link (@c https://<host>/at/<app id>/<code>[/<path>] or @c /at/<code>[/<path>]), the path after the campaign code, such as @c /products/42, or the value of its @c dl parameter when the link has no path. For any other link, the value of its @c dl parameter. @c nil when there is none.
+ * @param url The full URL that opened the app.
+ */
+typedef void (^CLYDeepLinkCallback)(NSString * _Nullable deepLinkPath, NSURL * url);
+
 typedef void (^RCVariantCallback)(CLYRequestResult response, NSError *_Nullable error);
 
 typedef void (^RCDownloadCallback)(CLYRequestResult response, NSError *_Nullable error, BOOL fullValueUpdate, NSDictionary<NSString *, CountlyRCData *>* downloadedValues);
@@ -451,6 +458,24 @@ typedef enum : NSUInteger
  * @discussion Keys could be a predefined CLYAttributionKey or any non-zero length valid string.
  */
 @property (nonatomic, copy) NSDictionary<NSString *, NSString *> * indirectAttribution;
+
+/**
+ * For receiving the deep links recorded with @c recordDeepLink:, such as a Countly smart link that opened the app.
+ * @discussion The callback gets the path to route to (see @c CLYDeepLinkCallback) and the full URL, on the main thread.
+ * @discussion It is called also when consent for @c CLYConsentAttribution is not given; only the report to the server needs the consent.
+ */
+@property (nonatomic, copy, nullable) CLYDeepLinkCallback deepLinkCallback;
+
+/**
+ * For disabling Apple Ads attribution.
+ * @discussion By default, on iOS the SDK reads the AdServices attribution token (@c AAAttribution.attributionToken, no App Tracking Transparency prompt needed) once per install and sends it to the server, which resolves the Apple Ads campaign with Apple.
+ * @discussion The token is read and sent only with consent for @c CLYConsentAttribution: when the consent is given later, it is read and sent then, after the consent request. It is read again on later starts until it has been sent once.
+ * @discussion If set, the token is not read or sent.
+ * @discussion Apple's aggregate install reports (AdAttributionKit and SKAdNetwork) need no SDK code: add @c AttributionCopyEndpoint (AdAttributionKit) and @c NSAdvertisingAttributionReportEndpoint (SKAdNetwork) to the app's Info.plist with an @c https URL on a registrable domain you own, for example @c https://example.com. Apple posts the report copies to @c /.well-known/appattribution/report-attribution/ and @c /.well-known/skadnetwork/report-attribution/ of that domain, ignoring any subdomain, so forward those two paths to your Countly server's same paths, or point a domain used only for this at the Countly server.
+ * @discussion To also get copies of AdAttributionKit re-engagement reports (iOS 18 and later), add @c EligibleForAdAttributionKitReengagementPostbackCopies to the Info.plist as a Boolean set to @c YES.
+ * @discussion Apple starts a report's conversion window only once the app sets a conversion value, so call AdAttributionKit's @c Postback.updateConversionValue (or SKAdNetwork's @c updatePostbackConversionValue) at least once, ideally at first launch, with values that mean something to you. The SDK sets no conversion values; Countly reports the values the app sets.
+ */
+@property (nonatomic) BOOL disableAppleAdsAttribution;
 
 #pragma mark -
 

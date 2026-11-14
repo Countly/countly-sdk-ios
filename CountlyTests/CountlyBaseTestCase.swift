@@ -24,6 +24,9 @@ class CountlyBaseTestCase: XCTestCase {
             TestAppActivation.installIfNeeded()
             TestAppActivation.isActive = true
         #endif
+        // No test reads the device's real Apple Ads token: a phone has one, and the request it
+        // would add breaks every test that counts requests. Tests that need one set their own.
+        Countly.setAppleAdsTokenProvider(TestUtils.noAppleAdsToken)
         cleanupState()
     }
 

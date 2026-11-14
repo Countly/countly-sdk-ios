@@ -61,6 +61,9 @@
 - (BOOL)retrieveNotificationPermission;
 - (void)storeNotificationPermission:(BOOL)allowed;
 
+- (BOOL)retrieveAppleAdsAttributionSent;
+- (void)storeAppleAdsAttributionSent:(BOOL)sent;
+
 - (BOOL)retrieveIsCustomDeviceID;
 - (void)storeIsCustomDeviceID:(BOOL)isCustomDeviceID;
 
