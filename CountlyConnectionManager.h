@@ -29,6 +29,8 @@ extern NSString* const kCountlyRCKeyKeys;
 extern NSString* const kCountlyQSKeyTimestamp;
 
 extern const NSInteger kCountlyGETRequestMaxLength;
+extern const NSUInteger kCountlyRequestCompressionMinBytes;
+extern NSString* const kCountlyRequestCompressionMarker;
 
 @interface CountlyConnectionManager : NSObject <NSURLSessionDelegate, Resettable>
 
@@ -38,6 +40,10 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 @property (nonatomic, nullable) NSArray* pinnedCertificates;
 @property (nonatomic, nullable) NSString* secretSalt;
 @property (nonatomic) BOOL alwaysUsePOST;
+@property (nonatomic) BOOL requestCompressionEnabled;
+/// The server URL whose last SDK behavior settings answer said it reads gzip request bodies, nil when none did.
+@property (atomic, nullable) NSString* gzipAcceptingHost;
+@property (atomic) BOOL requestCompressionBlocked;
 @property (nonatomic, nullable) NSURLSessionConfiguration* URLSessionConfiguration;
 
 @property (nonatomic) BOOL isTerminating;
@@ -79,6 +85,14 @@ extern const NSInteger kCountlyGETRequestMaxLength;
 
 - (NSString *)queryEssentials;
 - (NSString *)appendChecksum:(NSString *)queryString;
+
+/// Compresses the body of a POST request in place and marks its URL, when request compression may be used now and the body is at least kCountlyRequestCompressionMinBytes and gets smaller.
+/// @return YES when the request was compressed
+- (BOOL)compressRequestIfAllowed:(NSMutableURLRequest *)request;
+/// Tells whether a request carries the request compression marker in its URL.
++ (BOOL)isCompressedRequest:(nullable NSURLRequest *)request;
+/// Stops request compression until the SDK starts again, after a compressed request was answered without being accepted.
+- (void)blockRequestCompression;
 
 - (BOOL)isSessionStarted;
 /// Whether the running session was started by the SDK's automatic session tracking rather than by the app.

@@ -1476,8 +1476,25 @@ void CountlyRunOnMainThread(dispatch_block_t block)
 
 - (NSURLSessionDataTask *)immediateDataTaskWithRequest:(NSURLRequest *)request completionHandler:(void (^)(NSData *, NSURLResponse *, NSError *))completionHandler
 {
+    NSURLRequest* sentRequest = request;
+    void (^handler)(NSData *, NSURLResponse *, NSError *) = completionHandler;
+    NSMutableURLRequest* compressedRequest = CountlyConnectionManager.sharedInstance.requestCompressionEnabled ? request.mutableCopy : nil;
+    if (compressedRequest && [CountlyConnectionManager.sharedInstance compressRequestIfAllowed:compressedRequest])
+    {
+        sentRequest = compressedRequest;
+        handler = ^(NSData *data, NSURLResponse *response, NSError *error)
+        {
+            NSInteger code = [response isKindOfClass:NSHTTPURLResponse.class] ? ((NSHTTPURLResponse *)response).statusCode : 0;
+            if (!error && response && (code < 200 || code >= 300))
+                [CountlyConnectionManager.sharedInstance blockRequestCompression];
+
+            if (completionHandler)
+                completionHandler(data, response, error);
+        };
+    }
+
     @synchronized (self) {
-        return [self.ImmediateURLSession dataTaskWithRequest:request completionHandler:completionHandler];
+        return [self.ImmediateURLSession dataTaskWithRequest:sentRequest completionHandler:handler];
     }
 }
 
@@ -1916,9 +1933,56 @@ NSString* CountlyJSONFromObject(id object)
 
 @end
 
+/// CRC-32 (IEEE 802.3, the one gzip uses) of the given bytes.
+static uint32_t CountlyCRC32(const uint8_t *bytes, NSUInteger length)
+{
+    static uint32_t table[256];
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        for (uint32_t i = 0; i < 256; i++)
+        {
+            uint32_t c = i;
+            for (int k = 0; k < 8; k++)
+                c = (c & 1) ? (0xEDB88320u ^ (c >> 1)) : (c >> 1);
+            table[i] = c;
+        }
+    });
+
+    uint32_t crc = 0xFFFFFFFFu;
+    for (NSUInteger i = 0; i < length; i++)
+        crc = table[(crc ^ bytes[i]) & 0xFF] ^ (crc >> 8);
+
+    return crc ^ 0xFFFFFFFFu;
+}
+
 @implementation NSData (Countly)
 - (NSString *)cly_stringUTF8
 {
     return [NSString.alloc initWithData:self encoding:NSUTF8StringEncoding];
+}
+
+- (NSData *)cly_gzipCompressed
+{
+    NSError* error = nil;
+    NSData* deflated = [self compressedDataUsingAlgorithm:NSDataCompressionAlgorithmZlib error:&error];
+    if (!deflated)
+    {
+        CLY_LOG_D(@"%s compressing failed, the body is sent uncompressed, error: [%@]", __FUNCTION__, error.localizedDescription);
+        return nil;
+    }
+
+    static const uint8_t header[10] = {0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff};
+    uint32_t crc = CountlyCRC32(self.bytes, self.length);
+    uint32_t size = (uint32_t)self.length;
+    uint8_t trailer[8] = {
+        crc & 0xff, (crc >> 8) & 0xff, (crc >> 16) & 0xff, (crc >> 24) & 0xff,
+        size & 0xff, (size >> 8) & 0xff, (size >> 16) & 0xff, (size >> 24) & 0xff
+    };
+
+    NSMutableData* gzip = [NSMutableData dataWithCapacity:sizeof(header) + deflated.length + sizeof(trailer)];
+    [gzip appendBytes:header length:sizeof(header)];
+    [gzip appendData:deflated];
+    [gzip appendBytes:trailer length:sizeof(trailer)];
+    return gzip;
 }
 @end

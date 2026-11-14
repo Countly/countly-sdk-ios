@@ -89,6 +89,7 @@
 		962485BA2D9E971800FA3C20 /* TestUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 962485B92D9E971400FA3C20 /* TestUtils.swift */; };
 		96329DE02D9426F300BFD641 /* CountlyServerConfigTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96329DDF2D9426F300BFD641 /* CountlyServerConfigTests.swift */; };
 		96329DE22D9426F300BFD6A2 /* CountlySDKLogsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96329DE12D9426F300BFD6A1 /* CountlySDKLogsTests.swift */; };
+		C0A7E5102EC50000000000A2 /* CountlyRequestCompressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0A7E5102EC50000000000A1 /* CountlyRequestCompressionTests.swift */; };
 		ABCDE001000000000000ABCD /* CountlyServerConfigValidationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABCDE002000000000000ABCD /* CountlyServerConfigValidationTests.swift */; };
 		96329DE22D94299D00BFD641 /* ServerConfigBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96329DE12D94299D00BFD641 /* ServerConfigBuilder.swift */; };
 		96329DE42D952F1500BFD641 /* MockURLProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96329DE32D952F1500BFD641 /* MockURLProtocol.swift */; };
@@ -224,6 +225,7 @@
 		962485B92D9E971400FA3C20 /* TestUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestUtils.swift; sourceTree = "<group>"; };
 		96329DDF2D9426F300BFD641 /* CountlyServerConfigTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyServerConfigTests.swift; sourceTree = "<group>"; };
 		96329DE12D9426F300BFD6A1 /* CountlySDKLogsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlySDKLogsTests.swift; sourceTree = "<group>"; };
+		C0A7E5102EC50000000000A1 /* CountlyRequestCompressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyRequestCompressionTests.swift; sourceTree = "<group>"; };
 		ABCDE002000000000000ABCD /* CountlyServerConfigValidationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyServerConfigValidationTests.swift; sourceTree = "<group>"; };
 		96329DE12D94299D00BFD641 /* ServerConfigBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerConfigBuilder.swift; sourceTree = "<group>"; };
 		96329DE32D952F1500BFD641 /* MockURLProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockURLProtocol.swift; sourceTree = "<group>"; };
@@ -292,6 +294,7 @@
 				96329DE12D94299D00BFD641 /* ServerConfigBuilder.swift */,
 				96329DDF2D9426F300BFD641 /* CountlyServerConfigTests.swift */,
 				96329DE12D9426F300BFD6A1 /* CountlySDKLogsTests.swift */,
+				C0A7E5102EC50000000000A1 /* CountlyRequestCompressionTests.swift */,
 				9EDE46466C384B6198600E66 /* CountlyConnectionTestTests.swift */,
 				ABCDE002000000000000ABCD /* CountlyServerConfigValidationTests.swift */,
 				1A5C4C962B35B0850032EE1F /* CountlyTests.swift */,
@@ -600,6 +603,7 @@
 				96329DE42D952F1500BFD641 /* MockURLProtocol.swift in Sources */,
 				96329DE02D9426F300BFD641 /* CountlyServerConfigTests.swift in Sources */,
 				96329DE22D9426F300BFD6A2 /* CountlySDKLogsTests.swift in Sources */,
+				C0A7E5102EC50000000000A2 /* CountlyRequestCompressionTests.swift in Sources */,
 				DA78BF04FF874F7794E91EBF /* CountlyConnectionTestTests.swift in Sources */,
 				ABCDE001000000000000ABCD /* CountlyServerConfigValidationTests.swift in Sources */,
 				3966DBCF2C11EE270002ED97 /* CountlyDeviceIDTests.swift in Sources */,
