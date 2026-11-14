@@ -23,6 +23,7 @@ NSString* const kCountlyStoredNSUUIDKey = @"kCountlyStoredNSUUIDKey";
 NSString* const kCountlyWatchParentDeviceIDKey = @"kCountlyWatchParentDeviceIDKey";
 NSString* const kCountlyStarRatingStatusKey = @"kCountlyStarRatingStatusKey";
 NSString* const kCountlyNotificationPermissionKey = @"kCountlyNotificationPermissionKey";
+NSString* const kCountlyAppleAdsAttributionSentKey = @"kCountlyAppleAdsAttributionSentKey";
 NSString* const kCountlyIsCustomDeviceIDKey = @"kCountlyIsCustomDeviceIDKey";
 NSString* const kCountlyRemoteConfigKey = @"kCountlyRemoteConfigKey";
 NSString* const kCountlyServerConfigPersistencyKey = @"kCountlyServerConfigPersistencyKey";
@@ -705,6 +706,17 @@ static dispatch_once_t onceToken;
 - (void)storeStarRatingStatus:(NSDictionary *)status
 {
     [NSUserDefaults.standardUserDefaults setObject:status forKey:kCountlyStarRatingStatusKey];
+    [NSUserDefaults.standardUserDefaults synchronize];
+}
+
+- (BOOL)retrieveAppleAdsAttributionSent
+{
+    return [NSUserDefaults.standardUserDefaults boolForKey:kCountlyAppleAdsAttributionSentKey];
+}
+
+- (void)storeAppleAdsAttributionSent:(BOOL)sent
+{
+    [NSUserDefaults.standardUserDefaults setBool:sent forKey:kCountlyAppleAdsAttributionSentKey];
     [NSUserDefaults.standardUserDefaults synchronize];
 }
 

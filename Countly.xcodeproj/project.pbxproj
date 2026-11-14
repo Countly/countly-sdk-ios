@@ -51,6 +51,9 @@
 		39924ED62BEBD20F00139F91 /* CountlyCrashData.m in Sources */ = {isa = PBXBuildFile; fileRef = 39924ED52BEBD20F00139F91 /* CountlyCrashData.m */; };
 		39924ED82BEBD22100139F91 /* CountlyCrashData.h in Headers */ = {isa = PBXBuildFile; fileRef = 39924ED72BEBD22100139F91 /* CountlyCrashData.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		399B46502C52813700AD384E /* CountlyLocationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 399B464F2C52813700AD384E /* CountlyLocationTests.swift */; };
+		A77B1E0A2F00000100C0FFEE /* CountlyAttributionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77B1E0B2F00000100C0FFEE /* CountlyAttributionTests.swift */; };
+		A77B1E0C2F00000100C0FFEE /* CountlyAppleAdsAttributionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77B1E0D2F00000100C0FFEE /* CountlyAppleAdsAttributionTests.swift */; };
+		A77B1E0E2F00000100C0FFEE /* CountlyAdRevenueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A77B1E0F2F00000100C0FFEE /* CountlyAdRevenueTests.swift */; };
 		39BDF7572CC7CA870066DE7C /* CountlyFeedbacks.h in Headers */ = {isa = PBXBuildFile; fileRef = 39BDF7562CC7CA870066DE7C /* CountlyFeedbacks.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		39BDF7592CC7CA920066DE7C /* CountlyFeedbacks.m in Sources */ = {isa = PBXBuildFile; fileRef = 39BDF7582CC7CA920066DE7C /* CountlyFeedbacks.m */; };
 		39EE1F102C8B341E0016D1BF /* CountlyExperimentalConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 3903429B2C8051B400238C96 /* CountlyExperimentalConfig.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -183,6 +186,9 @@
 		39924ED52BEBD20F00139F91 /* CountlyCrashData.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyCrashData.m; sourceTree = "<group>"; };
 		39924ED72BEBD22100139F91 /* CountlyCrashData.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyCrashData.h; sourceTree = "<group>"; };
 		399B464F2C52813700AD384E /* CountlyLocationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyLocationTests.swift; sourceTree = "<group>"; };
+		A77B1E0B2F00000100C0FFEE /* CountlyAttributionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyAttributionTests.swift; sourceTree = "<group>"; };
+		A77B1E0D2F00000100C0FFEE /* CountlyAppleAdsAttributionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyAppleAdsAttributionTests.swift; sourceTree = "<group>"; };
+		A77B1E0F2F00000100C0FFEE /* CountlyAdRevenueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountlyAdRevenueTests.swift; sourceTree = "<group>"; };
 		39BDF7562CC7CA870066DE7C /* CountlyFeedbacks.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CountlyFeedbacks.h; sourceTree = "<group>"; };
 		39BDF7582CC7CA920066DE7C /* CountlyFeedbacks.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CountlyFeedbacks.m; sourceTree = "<group>"; };
 		3B20A9822245225A00E3D7AE /* Countly.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Countly.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -312,6 +318,9 @@
 				3966DBCE2C11EE270002ED97 /* CountlyDeviceIDTests.swift */,
 				3964A3E62C2AF8E90091E677 /* CountlySegmentationTests.swift */,
 				399B464F2C52813700AD384E /* CountlyLocationTests.swift */,
+				A77B1E0B2F00000100C0FFEE /* CountlyAttributionTests.swift */,
+				A77B1E0D2F00000100C0FFEE /* CountlyAppleAdsAttributionTests.swift */,
+				A77B1E0F2F00000100C0FFEE /* CountlyAdRevenueTests.swift */,
 				3969D0222CB80848000F8A32 /* CountlyViewTests.swift */,
 				FBBA9346A020D9BF7DC8C224 /* CountlyRequestScenarioTests.swift */,
 				6B81507954AACF61B41133AA /* CountlyQueueFlushRunnablesTests.swift */,
@@ -588,6 +597,9 @@
 				3969D0232CB80848000F8A32 /* CountlyViewTests.swift in Sources */,
 				F162C4D1951D5F7D0D8EA87A /* CountlyRequestScenarioTests.swift in Sources */,
 				399B46502C52813700AD384E /* CountlyLocationTests.swift in Sources */,
+				A77B1E0A2F00000100C0FFEE /* CountlyAttributionTests.swift in Sources */,
+				A77B1E0C2F00000100C0FFEE /* CountlyAppleAdsAttributionTests.swift in Sources */,
+				A77B1E0E2F00000100C0FFEE /* CountlyAdRevenueTests.swift in Sources */,
 				1A50D7052B3C5AA3009C6938 /* CountlyBaseTestCase.swift in Sources */,
 				3979E47D2C0760E900FA1CA4 /* CountlyUserProfileTests.swift in Sources */,
 				968426812BF2302C007B303E /* CountlyConnectionManagerTests.swift in Sources */,

@@ -16,6 +16,9 @@ class TestUtils {
     static let SDK_VERSION = "26.8.0"
     static let SDK_NAME = "objc-native-ios"
 
+    /// Apple Ads token provider for tests that do not need one: no token, so no request.
+    static let noAppleAdsToken: CLYAppleAdsTokenProvider = { _ in nil }
+
     static func cleanup() {
         let config = createBaseConfig()
         config.requiresConsent = false
