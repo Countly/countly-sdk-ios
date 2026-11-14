@@ -86,15 +86,16 @@ class CountlyAdRevenueTests: CountlyAttributionTestCase {
     /// The behavior settings that drop the app's own events do not drop this internal event,
     /// as with the other internal events.
     func test_adRevenue_isNotDroppedByTheCustomEventBehaviorSettings() throws {
+        let config = offlineConfig()
+        config.disableSDKBehaviorSettingsUpdates = true
+        Countly.sharedInstance().start(with: config)
+        // nil until the SDK has started
         let serverConfig = try XCTUnwrap(CountlyServerConfig.sharedInstance())
         defer {
             serverConfig.setValue(true, forKey: "customEventTrackingEnabled")
             serverConfig.setValue(NSSet(), forKey: "eventFilterSet")
             serverConfig.setValue(false, forKey: "eventFilterIsWhitelist")
         }
-        let config = offlineConfig()
-        config.disableSDKBehaviorSettingsUpdates = true
-        Countly.sharedInstance().start(with: config)
 
         serverConfig.setValue(false, forKey: "customEventTrackingEnabled")
         Countly.sharedInstance().recordAdRevenue(0.25)
