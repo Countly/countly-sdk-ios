@@ -277,6 +277,7 @@ typedef NSString* _Nullable (^CLYAppleAdsTokenProvider)(NSError* _Nullable * _Nu
 + (void)setAppleAdsTokenProvider:(nullable CLYAppleAdsTokenProvider)provider;
 /// Reads the AdServices attribution token and sends it once per install, when Apple Ads attribution is on, the SDK has started and attribution consent is given.
 - (void)sendAppleAdsAttributionIfNeeded;
+- (void)sendDeepLinksAwaitingConsent;
 /// The path a deep link routes to: for a Countly smart link the path after the campaign code, else (or when it has none) its 'dl' parameter; nil when there is none.
 + (nullable NSString *)deepLinkPathForURL:(NSURL *)url;
 @end

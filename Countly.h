@@ -160,6 +160,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Returns current device ID being used for tracking.
  * @discussion Device ID can be used for handling data export and/or removal requests as part of data privacy compliance.
+ * @discussion For subscription revenue from RevenueCat webhooks, Countly matches RevenueCat's app user ID to this device ID, so pass it as the app user ID to RevenueCat's SDK (@c Purchases.configure(withAPIKey:appUserID:) or @c Purchases.shared.logIn), and log in to RevenueCat again with the new value after changing the device ID.
  */
 - (NSString *)deviceID;
 
@@ -636,7 +637,8 @@ NS_ASSUME_NONNULL_BEGIN
  * @discussion The full URL is sent to the server as an attribution signal, where a Countly smart link (@c https://<host>/at/<app id>/<code>[/<path>]) counts as a click of its campaign and its UTM parameters name the campaign.
  * @discussion Then the @c deepLinkCallback on the initial configuration is called with the path to route to.
  * @discussion A deep link recorded before the SDK is started is processed when it starts.
- * @discussion The URL is not sent if consent for @c CLYConsentAttribution is not given, while @c requiresConsent flag is set on initial configuration. The @c deepLinkCallback is still called.
+ * @discussion If consent for @c CLYConsentAttribution is not given, while @c requiresConsent flag is set on initial configuration, the URL is held in memory (the last 10 of them) and sent once that consent is given; it is lost if the SDK is halted or the app ends first. The @c deepLinkCallback is still called at once.
+ * @discussion A project with the attribution setting "Require consent" on stores a campaign only for a user whose @c CLYConsentAttribution consent the server knows. The SDK tells the server only while @c requiresConsent is set, so such an app sets @c requiresConsent and gives @c CLYConsentAttribution when the user agrees.
  * @param url The URL that opened the app
  */
 - (void)recordDeepLink:(NSURL *)url;

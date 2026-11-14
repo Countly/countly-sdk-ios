@@ -14,6 +14,7 @@
     BOOL isSuspended;
     CountlyConfig* _startConfig;
     NSMutableArray<NSURL *>* _pendingDeepLinks;
+    NSMutableArray<NSURL *>* _deepLinksAwaitingConsent;
     BOOL _isFetchingAppleAdsToken;
 }
 @end
@@ -22,6 +23,8 @@
 static CLYAppleAdsTokenProvider s_appleAdsTokenProvider = nil;
 
 NSString* const kCountlyReservedEventAdRevenue = @"[CLY]_ad_revenue";
+/// The most deep links held in memory while the attribution consent is not given; the oldest is dropped beyond it
+const NSUInteger kCountlyMaxDeepLinksAwaitingConsent = 10;
 NSString* const kCountlyAdRevenueKeyNetwork   = @"network";
 NSString* const kCountlyAdRevenueKeyPlacement = @"placement";
 NSString* const kCountlyAdRevenueKeyFormat    = @"format";
@@ -1678,7 +1681,17 @@ static dispatch_once_t onceToken;
     }
     else
     {
-        CLY_LOG_V(@"%s no consent given for attribution, the deep link will not be sent", __FUNCTION__);
+        // held in memory only, and sent if the consent is given before the SDK is halted or the app ends,
+        // as the server stores nothing that reaches it before the consent
+        CLY_LOG_V(@"%s no consent given for attribution, the deep link is held until the consent is given", __FUNCTION__);
+        @synchronized (self)
+        {
+            if (!_deepLinksAwaitingConsent)
+                _deepLinksAwaitingConsent = NSMutableArray.new;
+            [_deepLinksAwaitingConsent addObject:url];
+            if (_deepLinksAwaitingConsent.count > kCountlyMaxDeepLinksAwaitingConsent)
+                [_deepLinksAwaitingConsent removeObjectAtIndex:0];
+        }
     }
 
     CLYDeepLinkCallback callback = _startConfig.deepLinkCallback;
@@ -1694,6 +1707,25 @@ static dispatch_once_t onceToken;
     else
     {
         dispatch_async(dispatch_get_main_queue(), ^{ callback(deepLinkPath, url); });
+    }
+}
+
+- (void)sendDeepLinksAwaitingConsent
+{
+    if (!CountlyConsentManager.sharedInstance.consentForAttribution)
+        return;
+
+    NSArray<NSURL *>* links = nil;
+    @synchronized (self)
+    {
+        links = _deepLinksAwaitingConsent.copy;
+        _deepLinksAwaitingConsent = nil;
+    }
+
+    for (NSURL* url in links)
+    {
+        CLY_LOG_D(@"%s sending a deep link recorded before the attribution consent, url: [%@]", __FUNCTION__, url);
+        [CountlyConnectionManager.sharedInstance sendAttributionSignalWithType:@"deeplink" value:url.absoluteString];
     }
 }
 

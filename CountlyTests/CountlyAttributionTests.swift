@@ -239,7 +239,7 @@ class CountlyAttributionTests: CountlyAttributionTestCase {
         XCTAssertEqual(values, [smartLink, other])
     }
 
-    func test_recordDeepLink_withoutConsent_isNotSentButTheCallbackIsCalled() throws {
+    func test_recordDeepLink_withoutConsent_isHeldButTheCallbackIsCalled() throws {
         let config = offlineConfig()
         config.requiresConsent = true
         config.consents = [CLYConsent.sessions]
@@ -268,7 +268,8 @@ class CountlyAttributionTests: CountlyAttributionTestCase {
         Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.attribution])
         Countly.sharedInstance().recordDeepLink(URL(string: smartLink)!)
 
-        XCTAssertEqual(attributionSignals(ofType: "deeplink").count, 1, "only the link opened after the consent")
+        XCTAssertEqual(attributionSignals(ofType: "deeplink").count, 2,
+                       "the held link, then the one opened after the consent")
     }
 
     func test_recordDeepLink_beforeStart_isRecordedWhenTheSDKStarts() throws {
@@ -310,5 +311,67 @@ class CountlyAttributionTests: CountlyAttributionTestCase {
         for (link, expected) in cases {
             XCTAssertEqual(Countly.deepLinkPath(for: URL(string: link)!), expected, link)
         }
+    }
+}
+
+/// A deep link recorded before the attribution consent is held in memory and sent once the consent is given,
+/// after the consent request, since the server stores no campaign for a user whose consent it does not know.
+class CountlyDeepLinkConsentTests: CountlyAttributionTestCase {
+
+    private func consentRequiredConfig() -> CountlyConfig {
+        let config = offlineConfig()
+        config.requiresConsent = true
+        config.consents = [CLYConsent.sessions]
+        return config
+    }
+
+    private func link(_ index: Int) -> URL {
+        return URL(string: "https://links.example.com/at/\(appID)/summer_sale/item/\(index)")!
+    }
+
+    func test_heldDeepLink_goesOutAfterTheConsentRequest() throws {
+        Countly.sharedInstance().start(with: consentRequiredConfig())
+        Countly.sharedInstance().recordDeepLink(link(1))
+
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.attribution])
+
+        let requests = (TestUtils.getCurrentRQ() ?? []).map { TestUtils.parseQueryString($0) }
+        let consentIndex = requests.lastIndex {
+            (($0["consent"] as? [String: Any])?["attribution"] as? Bool) == true
+        }
+        let linkIndex = requests.firstIndex {
+            (($0["attribution"] as? [String: Any])?["type"] as? String) == "deeplink"
+        }
+        let consentAt = try XCTUnwrap(consentIndex, "the consent request")
+        let linkAt = try XCTUnwrap(linkIndex, "the held link")
+        XCTAssertLessThan(consentAt, linkAt)
+        XCTAssertEqual(attributionSignals(ofType: "deeplink").first?["value"] as? String, link(1).absoluteString)
+
+        // sent once: giving the consent again sends nothing more
+        Countly.sharedInstance().cancelConsent(forFeatures: [CLYConsent.attribution])
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.attribution])
+        XCTAssertEqual(attributionSignals(ofType: "deeplink").count, 1)
+    }
+
+    func test_heldDeepLinks_keepTheLastTen() throws {
+        Countly.sharedInstance().start(with: consentRequiredConfig())
+        (1...12).forEach { Countly.sharedInstance().recordDeepLink(link($0)) }
+
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.attribution])
+
+        let sent = attributionSignals(ofType: "deeplink").compactMap { $0["value"] as? String }
+        XCTAssertEqual(sent, (3...12).map { link($0).absoluteString })
+    }
+
+    func test_heldDeepLinks_areDroppedWhenTheSDKIsHalted() throws {
+        let config = consentRequiredConfig()
+        Countly.sharedInstance().start(with: config)
+        Countly.sharedInstance().recordDeepLink(link(1))
+
+        Countly.sharedInstance().halt(false)
+        Countly.sharedInstance().start(with: config)
+        Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.attribution])
+
+        XCTAssertTrue(attributionSignals(ofType: "deeplink").isEmpty)
     }
 }
