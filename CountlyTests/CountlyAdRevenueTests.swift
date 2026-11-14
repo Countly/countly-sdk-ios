@@ -10,7 +10,8 @@ import XCTest
 
 /// recordAdRevenue records one internal [CLY]_ad_revenue event per paid impression:
 /// {"key": "[CLY]_ad_revenue", "count": 1, "sum": <amount>,
-///  "segmentation": {network, placement, format, currency, precision}}, each segment only when given. Events stay in the event queue, where the tests read them.
+///  "segmentation": {network, placement, format, currency, precision}}, each segment only when given.
+/// Events stay in the event queue, where the tests read them.
 class CountlyAdRevenueTests: CountlyAttributionTestCase {
 
     private let adRevenueKey = "[CLY]_ad_revenue"
