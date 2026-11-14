@@ -176,6 +176,7 @@ static dispatch_once_t onceToken;
     CountlyConnectionManager.sharedInstance.appKey = config.appKey;
     CountlyConnectionManager.sharedInstance.host = config.host;
     CountlyConnectionManager.sharedInstance.alwaysUsePOST = config.alwaysUsePOST;
+    CountlyConnectionManager.sharedInstance.requestCompressionEnabled = config.enableRequestCompression;
     CountlyConnectionManager.sharedInstance.pinnedCertificates = config.pinnedCertificates;
     CountlyConnectionManager.sharedInstance.secretSalt = config.secretSalt;
     CountlyConnectionManager.sharedInstance.URLSessionConfiguration = config.URLSessionConfiguration;

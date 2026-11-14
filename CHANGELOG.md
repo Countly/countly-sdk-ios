@@ -1,6 +1,7 @@
 ## XX.XX.XX
 * Added SDK method usage and log codes to the health check.
 * Added "disableHealthCheck" init config parameter to disable the SDK health check.
+* Added "enableRequestCompression" init config parameter. Request bodies of at least 1 KB are then sent gzip-compressed, once the server's SDK behavior settings answer says it reads them.
 * Improved internal logging.
 
 * Mitigated an issue where a health check the server refused was treated as delivered.

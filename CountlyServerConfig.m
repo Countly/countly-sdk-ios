@@ -139,6 +139,8 @@ NSString *const kRLGLevels = @"l";
 NSString *const kRLGBatchSize = @"b";
 // connection test key, a top level sibling of c, read from a live response and never stored
 NSString *const kRConnectionTest = @"ct";
+// request compression key, a top level sibling of c, read from a live response and never stored
+NSString *const kRGzip = @"gzip";
 
 static CountlyServerConfig *s_sharedInstance = nil;
 static dispatch_once_t onceToken;
@@ -446,6 +448,18 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
         [CountlyHealthTracker.sharedInstance recordLogCode:@"w121"];
         [dictionary removeObjectForKey:key];
     }
+}
+
+/// Reads and removes the top level 'gzip' flag from a live response, so it is never cached.
+/// Only a JSON true says that the server reads gzip request bodies.
+- (BOOL)extractGzipFlag:(NSMutableDictionary *)serverConfigResponse
+{
+    id value = serverConfigResponse[kRGzip];
+    if (!value)
+        return NO;
+
+    [serverConfigResponse removeObjectForKey:kRGzip];
+    return value == (__bridge id)kCFBooleanTrue;
 }
 
 /// Reads and removes the top level 'ct' flag from a live response, so it can never be cached and re-arm from storage.
@@ -965,6 +979,7 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     NSUInteger requestedDeviceIDType = CountlyDeviceInfo.sharedInstance.deviceIDTypeValue;
     NSUInteger requestedDeviceIDChangeCount = CountlyCommon.sharedInstance.deviceIDChangeWithoutMergeCount;
     NSUInteger requestedDeviceIDMergeCount = CountlyCommon.sharedInstance.deviceIDMergeCount;
+    NSString *requestedHost = CountlyConnectionManager.sharedInstance.host;
     id handler = ^(NSData *data, NSURLResponse *response, NSError *error) {
         if (self != s_sharedInstance)
         {
@@ -986,6 +1001,12 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
 
         // read only here, from a live response, and removed before anything below sees the response so it is never cached
         BOOL connectionTestArmed = [self extractConnectionTestFlag:serverConfigResponse];
+        BOOL gzipAccepted = [self extractGzipFlag:serverConfigResponse];
+        if (!error && CountlyConnectionManager.sharedInstance.requestCompressionEnabled && [response isKindOfClass:NSHTTPURLResponse.class] && ((NSHTTPURLResponse *)response).statusCode == 200)
+        {
+            CountlyConnectionManager.sharedInstance.gzipAcceptingHost = gzipAccepted ? requestedHost : nil;
+            CLY_LOG_D(@"[CountlyServerConfig] fetchServerConfig response, the server %@ compressed request bodies", gzipAccepted ? @"reads" : @"does not say it reads");
+        }
 
         if (!error)
         {
@@ -1045,6 +1066,9 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyQSKeyMethod, kCountlySCKeySC];
 
     queryString = [queryString stringByAppendingFormat:@"&%@=%@", kCountlyAppVersionKey, CountlyDeviceInfo.appVersion];
+
+    if (CountlyConnectionManager.sharedInstance.requestCompressionEnabled)
+        queryString = [queryString stringByAppendingFormat:@"&%@=1", kRGzip];
 
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
 
