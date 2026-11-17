@@ -1005,6 +1005,8 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
         if (!error && CountlyConnectionManager.sharedInstance.requestCompressionEnabled && [response isKindOfClass:NSHTTPURLResponse.class] && ((NSHTTPURLResponse *)response).statusCode == 200)
         {
             CountlyConnectionManager.sharedInstance.gzipAcceptingHost = gzipAccepted ? requestedHost : nil;
+            if (gzipAccepted)
+                [CountlyConnectionManager.sharedInstance unblockRequestCompression];
             CLY_LOG_D(@"[CountlyServerConfig] fetchServerConfig response, the server %@ compressed request bodies", gzipAccepted ? @"reads" : @"does not say it reads");
         }
 

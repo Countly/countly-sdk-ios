@@ -1485,7 +1485,8 @@ void CountlyRunOnMainThread(dispatch_block_t block)
         handler = ^(NSData *data, NSURLResponse *response, NSError *error)
         {
             NSInteger code = [response isKindOfClass:NSHTTPURLResponse.class] ? ((NSHTTPURLResponse *)response).statusCode : 0;
-            if (!error && response && (code < 200 || code >= 300))
+            BOOL isAccepted = code >= 200 && code < 300 && data.length > 0 && [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] != nil;
+            if (!error && response && !isAccepted)
                 [CountlyConnectionManager.sharedInstance blockRequestCompression];
 
             if (completionHandler)

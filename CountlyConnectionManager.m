@@ -95,6 +95,8 @@ NSString* const kCountlyEndpointSurveys = @"/surveys";
 
 const NSInteger kCountlyGETRequestMaxLength = 2048;
 const NSUInteger kCountlyRequestCompressionMinBytes = 1024;
+// the server refuses a compressed body that is larger than this once decoded
+const NSUInteger kCountlyRequestCompressionMaxBytes = 1024 * 1024;
 NSString* const kCountlyRequestCompressionMarker = @"content_encoding=gzip";
 // how long a crashing app waits for the immediate crash report before queueing it for the next start
 static const NSTimeInterval kCountlyCrashReportSendTimeout = 5.0;
@@ -1308,7 +1310,10 @@ static dispatch_once_t onceToken;
     if (!self.requestCompressionEnabled || self.requestCompressionBlocked || !acceptingHost || ![acceptingHost isEqualToString:self.host])
         return NO;
 
-    if (![request.HTTPMethod isEqualToString:@"POST"] || request.HTTPBody.length < kCountlyRequestCompressionMinBytes || request.URL.query.length > 0)
+    if (![request.HTTPMethod isEqualToString:@"POST"] || request.URL.query.length > 0)
+        return NO;
+
+    if (request.HTTPBody.length < kCountlyRequestCompressionMinBytes || request.HTTPBody.length > kCountlyRequestCompressionMaxBytes)
         return NO;
 
     if ([[request valueForHTTPHeaderField:@"Content-Type"] hasPrefix:@"multipart/form-data"])
@@ -1341,7 +1346,16 @@ static dispatch_once_t onceToken;
         return;
 
     self.requestCompressionBlocked = YES;
-    CLY_LOG_I(@"%s a compressed request was refused, requests are sent uncompressed until the SDK starts again", __FUNCTION__);
+    CLY_LOG_I(@"%s a compressed request was refused, requests are sent uncompressed until a behavior settings answer says that the server reads compressed bodies, or the SDK starts again", __FUNCTION__);
+}
+
+- (void)unblockRequestCompression
+{
+    if (!self.requestCompressionBlocked)
+        return;
+
+    self.requestCompressionBlocked = NO;
+    CLY_LOG_I(@"%s a behavior settings answer says that the server reads compressed bodies, requests are compressed again", __FUNCTION__);
 }
 
 - (NSString *)appendRemainingRequest:(NSString *)queryString
