@@ -13,6 +13,7 @@
 * Mitigated issues where health check data could be lost.
 * Mitigated an issue where the health check did not use the app version set through custom metrics.
 * Mitigated an issue where the SDK could crash at start when the app bundle has no version string.
+* Mitigated an issue where a crash filter callback set at an earlier start stayed in use after the SDK was halted and started again without one.
 * Mitigated an issue where a change of the system clock made durations negative, too short or too long: sessions, views, timed events, APM custom traces, foreground and background time, and the running time in crash reports. Timestamps still follow the system clock.
 
 ## 26.8.0
