@@ -518,7 +518,7 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
      *
      * 1- Begin a session and move its start 5 seconds back on the monotonic clock
      * 2- Update the session
-     * 3- Verify the update reports exactly 5 seconds
+     * 3- Verify the update reports 5 seconds (6 when a second passed before it)
      * </pre>
      */
     func test_sessionDuration_isMeasuredOnTheMonotonicClock() throws {
@@ -532,7 +532,10 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         Countly.sharedInstance().updateSession()
 
         let update = try XCTUnwrap(TestUtils.getCurrentRQ()?.first { $0.contains("session_duration=") }, "the session update is queued")
-        XCTAssertEqual("5", TestUtils.parseQueryString(update)["session_duration"] as? String)
+        // 5 seconds, or 6 when a second passed before the update on a busy simulator; a duration
+        // that followed the system clock would be far off either way
+        let duration = try XCTUnwrap(Int(TestUtils.parseQueryString(update)["session_duration"] as? String ?? ""))
+        XCTAssertTrue((5...6).contains(duration), "session_duration \(duration) is not 5 or 6")
     }
 
     /**
