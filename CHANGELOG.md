@@ -4,6 +4,7 @@
 * Improved internal logging.
 
 * Mitigated an issue where a health check the server refused was treated as delivered.
+* Mitigated an issue where a crash filter callback set at an earlier start kept filtering crash reports after the SDK was halted and started again without one.
 * Mitigated an issue where the health check sent the app version without the metrics consent.
 * Mitigated an issue where an event recorded with a negative duration kept that duration. The duration is now ignored.
 * Mitigated an issue where orientation events were not recorded on iOS 27 in apps that use the UIScene lifecycle.
