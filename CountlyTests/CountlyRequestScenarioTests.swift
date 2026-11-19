@@ -30,6 +30,11 @@ final class CountlyRequestScenarioTests: CountlyBaseTestCase {
         try super.setUpWithError()
         // MockURLProtocol sees what the SDK sends everywhere but on watchOS
         try TestPlatform.skipUnlessHTTPInterceptable()
+        #if !targetEnvironment(simulator) && !os(macOS) && !targetEnvironment(macCatalyst)
+        // the records are read from api/requests/ in the source tree (recordURL), a path on the Mac that built the
+        // tests: a simulator or a Mac reaches it, a physical device does not, so every record would read as missing
+        throw XCTSkip("the request records are in the source tree, which a physical device cannot read; the simulator runs check them")
+        #endif
     }
 
     func testParity() throws {

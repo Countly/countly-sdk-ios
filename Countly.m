@@ -243,9 +243,8 @@ static dispatch_once_t onceToken;
 #endif
 #endif
     
-    if(config.crashes.crashFilterCallback) {
-        [CountlyCrashReporter.sharedInstance setCrashFilterCallback:config.crashes.crashFilterCallback];
-    }
+    // assigned like the other crash settings, so a start without a filter callback clears the one an earlier start set
+    [CountlyCrashReporter.sharedInstance setCrashFilterCallback:config.crashes.crashFilterCallback];
     
     CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
     CountlyCrashReporter.sharedInstance.crashLogLimit = config.sdkInternalLimits.getMaxBreadcrumbCount;
