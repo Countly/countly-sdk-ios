@@ -621,6 +621,13 @@ typedef enum : NSUInteger
 @property(nonatomic) BOOL disableSDKBehaviorSettingsUpdates;
 
 /**
+ * For compressing request bodies between 1 KB and 1 MB with gzip before sending them.
+ * @discussion The SDK compresses only after the server's SDK behavior settings answer said that the server reads compressed bodies, so older servers keep getting plain requests. It needs the SDK behavior settings updates to be on.
+ * @discussion A compressed request that the server, or something in front of it, answers without accepting stops compression until the next SDK behavior settings answer says again that the server reads compressed bodies, or until the SDK is started again.
+ */
+@property(nonatomic) BOOL enableRequestCompression;
+
+/**
  * Will disable back off mechanism
  */
 @property (nonatomic) BOOL disableBackoffMechanism;

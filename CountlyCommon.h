@@ -252,6 +252,8 @@ void CountlyRunOnMainThread(dispatch_block_t block);
 
 @interface NSData (Countly)
 - (NSString *)cly_stringUTF8;
+/// The data in gzip format (RFC 1952), or nil when compressing fails.
+- (nullable NSData *)cly_gzipCompressed;
 @end
 
 @interface Countly (RecordReservedEvent)
