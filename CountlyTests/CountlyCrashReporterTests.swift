@@ -94,6 +94,41 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
 
     /**
      * <pre>
+     * A crash filter set at an earlier start does not filter the crashes of a later start that has none.
+     *
+     * 1- Start with a crash filter that drops every crash and record a handled exception: nothing is queued
+     * 2- Halt, remove the crash filter from the configuration, start again and record a handled exception
+     * 3- Verify that this crash is queued
+     * </pre>
+     */
+    func testCrashFilterCallback_doesNotOutliveAStartWithoutOne() throws {
+        let filteredConfig = createBaseConfig()
+        filteredConfig.manualSessionHandling = true
+        filteredConfig.crashes().crashFilterCallback = { _ in true }
+
+        let first = Countly()
+        localCountlyInstances.append(first)
+        first.start(with: filteredConfig)
+        let dropped = NSException(name: NSExceptionName(rawValue: "dropped"), reason: "Dropped by the filter")
+        first.record(dropped, isFatal: false, stackTrace: nil, segmentation: nil)
+        XCTAssertEqual(0, CountlyPersistency.sharedInstance().remainingRequestCount())
+        first.halt(true)
+
+        let plainConfig = createBaseConfig()
+        plainConfig.manualSessionHandling = true
+        // every configuration shares one crashes object, so the filter of the first start is removed from it
+        plainConfig.crashes().crashFilterCallback = nil
+
+        let second = Countly()
+        localCountlyInstances.append(second)
+        second.start(with: plainConfig)
+        let kept = NSException(name: NSExceptionName(rawValue: "kept"), reason: "Not filtered")
+        second.record(kept, isFatal: false, stackTrace: nil, segmentation: nil)
+        XCTAssertEqual(1, CountlyPersistency.sharedInstance().remainingRequestCount())
+    }
+
+    /**
+     * <pre>
      * The running time sent with a crash report is measured on the monotonic clock, which a change of the system clock does not move.
      *
      * 1- Move the SDK's launch time 7 seconds back on the monotonic clock

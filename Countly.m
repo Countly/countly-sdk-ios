@@ -243,10 +243,8 @@ static dispatch_once_t onceToken;
 #endif
 #endif
     
-    if(config.crashes.crashFilterCallback) {
-        [CountlyCrashReporter.sharedInstance setCrashFilterCallback:config.crashes.crashFilterCallback];
-    }
-    
+    CountlyCrashReporter.sharedInstance.crashFilterCallback = config.crashes.crashFilterCallback;
+
     CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
     CountlyCrashReporter.sharedInstance.crashLogLimit = config.sdkInternalLimits.getMaxBreadcrumbCount;
     CountlyCrashReporter.sharedInstance.crashFilter = config.crashFilter;
