@@ -1,9 +1,11 @@
 ## XX.XX.XX
 * Added SDK method usage and log codes to the health check.
 * Added "disableHealthCheck" init config parameter to disable the SDK health check.
+* Added "enableRequestCompression" init config parameter. Request bodies between 1 KB and 1 MB are then sent gzip-compressed, once the server's SDK behavior settings answer says it reads them.
 * Improved internal logging.
 
 * Mitigated an issue where a health check the server refused was treated as delivered.
+* Mitigated an issue where a crash filter callback set at an earlier start kept filtering crash reports after the SDK was halted and started again without one.
 * Mitigated an issue where the health check sent the app version without the metrics consent.
 * Mitigated an issue where an event recorded with a negative duration kept that duration. The duration is now ignored.
 * Mitigated an issue where orientation events were not recorded on iOS 27 in apps that use the UIScene lifecycle.
