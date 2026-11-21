@@ -97,7 +97,7 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
      * A crash filter set at an earlier start does not filter the crashes of a later start that has none.
      *
      * 1- Start with a crash filter that drops every crash and record a handled exception: nothing is queued
-     * 2- Halt, start again without a crash filter and record a handled exception
+     * 2- Halt, remove the crash filter from the configuration, start again and record a handled exception
      * 3- Verify that this crash is queued
      * </pre>
      */
@@ -116,6 +116,8 @@ class CountlyCrashReporterTests: CountlyBaseTestCase {
 
         let plainConfig = createBaseConfig()
         plainConfig.manualSessionHandling = true
+        // every configuration shares one crashes object, so the filter of the first start is removed from it
+        plainConfig.crashes().crashFilterCallback = nil
 
         let second = Countly()
         localCountlyInstances.append(second)

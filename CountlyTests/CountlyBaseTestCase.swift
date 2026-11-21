@@ -57,6 +57,8 @@ class CountlyBaseTestCase: XCTestCase {
         // them through its own server config, so resetting beforehand would fight the test
         // itself. Cleaning up afterwards leaves the next test unaffected either way.
         resetSharedSDKLimits()
+        // every configuration shares the crashes object too, so a crash filter a test sets is removed after it
+        CountlyConfig().crashes().crashFilterCallback = nil
     }
     
     func cleanupState() {
