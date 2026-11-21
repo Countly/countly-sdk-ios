@@ -253,7 +253,8 @@ final class CountlyRequestScenarioTests: CountlyBaseTestCase {
             return record
         }
         let bundle = Bundle(for: CountlyRequestScenarioTests.self)
-        guard let copy = bundle.url(forResource: name, withExtension: "json", subdirectory: "requests/\(platform)") else {
+        let folder = "requests/\(platform)"
+        guard let copy = bundle.url(forResource: name, withExtension: "json", subdirectory: folder) else {
             return nil
         }
         return try? String(contentsOf: copy, encoding: .utf8)
