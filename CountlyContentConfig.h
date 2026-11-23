@@ -116,6 +116,17 @@ typedef BOOL (^ContentURLHandler)(NSURL *url);
  */
 - (void)setContentURLHandler:(nullable ContentURLHandler)handler;
 - (nullable ContentURLHandler)getContentURLHandler;
+
+/**
+ * This is an experimental feature and it can have breaking changes.
+ * Stops the SDK from asking the server for the content triggers of the app's journeys and campaigns, and from
+ * following them. By default, when the app records something that starts a journey or a campaign with content, the
+ * SDK sends what it holds and asks for that content right away, instead of waiting for the content zone timer. With
+ * this call, content comes only through the content zone timer and the app's own calls, and the deprecated journey
+ * trigger events and views of the SDK behavior settings apply instead. This is a one-way switch.
+ */
+- (void)disableAutoContentTriggers;
+- (BOOL)getDisableAutoContentTriggers;
 #endif
 
 NS_ASSUME_NONNULL_END

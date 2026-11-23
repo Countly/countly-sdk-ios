@@ -11,6 +11,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         // every other test relies on (requests stay in the RQ for index-based inspection).
         var drainQueue = false
         var sentRequests: [String] = []
+        var scRequests: [String] = []
     }
 
     /// Local Countly instances created during tests.
@@ -957,7 +958,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         }
     }
 
-    private func setupTestAllFeatures(_ serverConfig: [String: Any], drainQueue: Bool = false, answerAfterStart: Bool = false) -> CountTracker {
+    private func setupTestAllFeatures(_ serverConfig: [String: Any], drainQueue: Bool = false, answerAfterStart: Bool = false, configure: ((CountlyConfig) -> Void)? = nil) -> CountTracker {
         let tracker = CountTracker()
         tracker.drainQueue = drainQueue
         let startReturned = DispatchSemaphore(value: 0)
@@ -978,6 +979,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
                 tracker.counts[3] += 1
             } else if requestString.contains("method=sc") {
                 tracker.counts[4] += 1
+                tracker.scRequests.append(requestString)
                 if answerAfterStart {
                     _ = startReturned.wait(timeout: .now() + TestUtils.asyncTimeout)
                 }
@@ -1015,6 +1017,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         let countlyConfig = TestUtils.createBaseConfig()
         countlyConfig.manualSessionHandling = true
         countlyConfig.urlSessionConfiguration = config;
+        configure?(countlyConfig)
 
         Countly.sharedInstance().start(with: countlyConfig)
         startReturned.signal()
@@ -1572,7 +1575,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      * Verifies that:
      * 1. Regular events stay in event queue (high threshold)
      * 2. JTE event forces immediate flush of all events to RQ
-     * 3. Flushed request contains callback_id (for JTE callback)
+     * 3. The flush happens in a content trigger round, so the request carries no callback
      */
     func test_journeyTriggerEvents_triggersEventFlush() {
         let sc = ServerConfigBuilder()
@@ -1587,16 +1590,17 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count)
         XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count)
 
-        // Record JTE event - should force flush all events to RQ
+        // Record JTE event - its content trigger round flushes all events to RQ on the main queue
         Countly.sharedInstance().recordEvent("jte_event")
+        TestUtils.sleep(0.5) {}
         XCTAssertEqual(1, TestUtils.getCurrentRQ()?.count)
         XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
 
-        // Verify the flushed request contains both events and has callback_id
+        // Verify the flushed request contains both events
         let rq = TestUtils.getCurrentRQ()!
         XCTAssertTrue(rq[0].contains("regular_event"))
         XCTAssertTrue(rq[0].contains("jte_event"))
-        XCTAssertTrue(rq[0].contains("callback_id"))
+        XCTAssertFalse(rq[0].contains("callback_id"))
     }
 
     /**
@@ -1619,6 +1623,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
 
         // Record JTE event - should flush ALL events
         Countly.sharedInstance().recordEvent("journey_event")
+        TestUtils.sleep(0.5) {}
         XCTAssertEqual(1, TestUtils.getCurrentRQ()?.count)
         XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
 
@@ -1647,6 +1652,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
 
         // Record a non-blacklisted JTE - should trigger flush
         Countly.sharedInstance().recordEvent("allowed_jte")
+        TestUtils.sleep(0.5) {}
         XCTAssertEqual(1, TestUtils.getCurrentRQ()?.count)
         XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
     }
@@ -2067,7 +2073,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      * Tests that recording a view whose name is a journey trigger view force-flushes the event queue.
      * Verifies that:
      * 1. Regular events and non-matching views stay in the event queue (high threshold)
-     * 2. A matching view flushes all queued events to the request queue with a callback_id
+     * 2. A matching view flushes all queued events to the request queue in a content trigger round
      */
     func test_jtv_triggersEventFlushForMatchingView() {
         setServerConfig(ServerConfigBuilder()
@@ -2087,6 +2093,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         XCTAssertEqual(2, TestUtils.getCurrentEQ()?.count)
 
         Countly.sharedInstance().views().startView("jtv_view")
+        TestUtils.sleep(0.5) {}
         XCTAssertEqual(1, TestUtils.getCurrentRQ()?.count, "a journey trigger view should flush the event queue")
         XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
 
@@ -2094,7 +2101,7 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         XCTAssertTrue(request.contains("regular_event"))
         XCTAssertTrue(request.contains("other_view"))
         XCTAssertTrue(request.contains("jtv_view"))
-        XCTAssertTrue(request.contains("callback_id"))
+        XCTAssertFalse(request.contains("callback_id"))
     }
 
     /**
@@ -2112,13 +2119,13 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count)
 
         Countly.sharedInstance().recordEvent(longKey)
+        TestUtils.sleep(0.5) {}
         XCTAssertEqual(1, TestUtils.getCurrentRQ()?.count, "the full key is a journey trigger event")
         XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
 
         let request = TestUtils.getCurrentRQ()![0]
         XCTAssertTrue(request.contains(String(repeating: "k", count: 128)))
         XCTAssertFalse(request.contains(longKey))
-        XCTAssertTrue(request.contains("callback_id"))
     }
 
     /**
@@ -2137,12 +2144,171 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
         Countly.sharedInstance().start(with: config)
 
         Countly.sharedInstance().views().startView(cutName)
+        TestUtils.sleep(0.5) {}
         XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count, "the cut name is not the listed name")
 
         Countly.sharedInstance().views().startView(longName)
+        TestUtils.sleep(0.5) {}
         XCTAssertEqual(1, TestUtils.getCurrentRQ()?.count, "the full view name is a journey trigger view")
-        XCTAssertTrue(TestUtils.getCurrentRQ()![0].contains("callback_id"))
     }
+
+    // MARK: - Content triggers (jt)
+
+    /// The behavior settings answer, with the content triggers next to "c" when given
+    private func behaviorSettings(_ builder: ServerConfigBuilder, contentTriggers: [String: Any]?) -> [String: Any] {
+        var json = builder.buildJson()
+        if let contentTriggers {
+            json["jt"] = contentTriggers
+        }
+        return json
+    }
+
+    #if os(iOS) || os(visionOS)
+    /**
+     * Tests that the behavior settings request asks for the content triggers with jt=1, and that the answer's content
+     * triggers are stored with the settings.
+     */
+    func test_contentTriggers_askedForAndStored() {
+        let tracker = setupTestAllFeatures(behaviorSettings(ServerConfigBuilder(), contentTriggers: ["e": ["purchase"], "v": ["Checkout"]]))
+
+        XCTAssertTrue(tracker.scRequests.first?.contains("jt=1") ?? false)
+        XCTAssertNotNil(retrieveServerConfig()["jt"])
+        XCTAssertTrue(CountlyServerConfig.sharedInstance()!.hasContentTriggers())
+        XCTAssertTrue(CountlyServerConfig.sharedInstance()!.contentTriggerKeys().contains("purchase"))
+        XCTAssertTrue(CountlyServerConfig.sharedInstance()!.contentTriggerViews().contains("Checkout"))
+        XCTAssertTrue(CountlyServerConfig.sharedInstance()!.contentTriggerProperties().isEmpty)
+    }
+
+    /**
+     * Tests that a listed event, while the app wants the content zone, sends the queued requests and then asks for
+     * content 3 times, 1 second apart, when the server has no content.
+     */
+    func test_contentTriggers_listedEvent_sendsTheQueueThenAsksForContent() {
+        let tracker = setupTestAllFeatures(behaviorSettings(ServerConfigBuilder().eventQueueSize(100), contentTriggers: ["e": ["purchase"]]), drainQueue: true)
+        Countly.sharedInstance().content().enterContentZone()
+        TestUtils.sleep(1) {}
+        let contentRequests = tracker.counts[3]
+
+        Countly.sharedInstance().recordEvent("browse")
+        Countly.sharedInstance().recordEvent("purchase")
+        TestUtils.sleep(5) {}
+
+        XCTAssertEqual(contentRequests + 3, tracker.counts[3])
+        XCTAssertTrue(tracker.sentRequests.contains { $0.contains("browse") && $0.contains("purchase") })
+        XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count)
+    }
+
+    /**
+     * Tests that content triggers apply only while the app wants the content zone.
+     */
+    func test_contentTriggers_zoneNotWanted_asksForNothing() {
+        let tracker = setupTestAllFeatures(behaviorSettings(ServerConfigBuilder().eventQueueSize(100), contentTriggers: ["e": ["purchase"]]), drainQueue: true)
+
+        Countly.sharedInstance().recordEvent("purchase")
+        TestUtils.sleep(3) {}
+
+        XCTAssertEqual(0, tracker.counts[3])
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count)
+    }
+
+    /**
+     * Tests that an answer with content triggers, even an empty one, makes the SDK ignore the journey trigger events.
+     */
+    func test_contentTriggers_emptyAnswer_journeyTriggerEventsIgnored() {
+        let tracker = setupTestAllFeatures(behaviorSettings(ServerConfigBuilder().journeyTriggerEvents(["purchase"]).eventQueueSize(100), contentTriggers: [:]), drainQueue: true)
+        Countly.sharedInstance().content().enterContentZone()
+        TestUtils.sleep(1) {}
+        let contentRequests = tracker.counts[3]
+
+        Countly.sharedInstance().recordEvent("purchase")
+        TestUtils.sleep(3) {}
+
+        XCTAssertEqual(contentRequests, tracker.counts[3])
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count)
+    }
+
+    /**
+     * Tests that without content triggers (an older server), a journey trigger event sends the queue and asks for
+     * content, also while the app doesn't want the content zone.
+     */
+    func test_journeyTriggerEvents_withoutContentTriggers_askForContent() {
+        let tracker = setupTestAllFeatures(ServerConfigBuilder().journeyTriggerEvents(["purchase"]).eventQueueSize(100).buildJson(), drainQueue: true)
+
+        Countly.sharedInstance().recordEvent("purchase")
+        TestUtils.sleep(5) {}
+
+        XCTAssertEqual(3, tracker.counts[3])
+        XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count)
+    }
+
+    /**
+     * Tests that the same trigger inside its gap neither sends the queue nor asks for content.
+     */
+    func test_contentTriggers_sameTriggerInsideItsGap_startsNoSecondRound() {
+        let tracker = setupTestAllFeatures(behaviorSettings(ServerConfigBuilder().eventQueueSize(100), contentTriggers: ["e": ["purchase"]]), drainQueue: true)
+        Countly.sharedInstance().content().enterContentZone()
+        TestUtils.sleep(1) {}
+        let contentRequests = tracker.counts[3]
+
+        Countly.sharedInstance().recordEvent("purchase")
+        TestUtils.sleep(5) {}
+        XCTAssertEqual(contentRequests + 3, tracker.counts[3])
+
+        Countly.sharedInstance().recordEvent("purchase")
+        TestUtils.sleep(3) {}
+        XCTAssertEqual(contentRequests + 3, tracker.counts[3])
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count)
+    }
+
+    /**
+     * Tests that a listed view starts a round when it starts and again when it ends, each with its own gap.
+     */
+    func test_contentTriggers_viewStartAndEnd_eachStartsARound() {
+        let tracker = setupTestAllFeatures(behaviorSettings(ServerConfigBuilder().eventQueueSize(100), contentTriggers: ["v": ["Checkout"]]), drainQueue: true)
+        Countly.sharedInstance().content().enterContentZone()
+        TestUtils.sleep(1) {}
+        let contentRequests = tracker.counts[3]
+
+        Countly.sharedInstance().views().startView("Checkout")
+        TestUtils.sleep(5) {}
+        XCTAssertEqual(contentRequests + 3, tracker.counts[3])
+
+        Countly.sharedInstance().views().stopView(withName: "Checkout")
+        TestUtils.sleep(5) {}
+        XCTAssertEqual(contentRequests + 6, tracker.counts[3])
+    }
+
+    /**
+     * Tests that on a first start, without stored behavior settings, the first answer's "ecz" enters the content zone.
+     */
+    func test_ecz_firstStart_firstAnswerEntersTheZone() {
+        let tracker = setupTestAllFeatures(ServerConfigBuilder().contentZone(true).buildJson())
+
+        TestUtils.sleep(2) {}
+        XCTAssertGreaterThanOrEqual(tracker.counts[3], 1)
+    }
+    #endif
+
+    #if os(iOS)
+    /**
+     * Tests that with disableAutoContentTriggers the SDK neither asks for the content triggers nor follows them.
+     */
+    func test_contentTriggers_disableAutoContentTriggers_neitherAsksNorFollows() {
+        let tracker = setupTestAllFeatures(behaviorSettings(ServerConfigBuilder().eventQueueSize(100), contentTriggers: ["e": ["purchase"]]), drainQueue: true, configure: { $0.content.disableAutoContentTriggers() })
+
+        XCTAssertFalse(tracker.scRequests.first?.contains("jt=1") ?? true)
+        XCTAssertFalse(CountlyServerConfig.sharedInstance()!.hasContentTriggers())
+
+        Countly.sharedInstance().content().enterContentZone()
+        TestUtils.sleep(1) {}
+        let contentRequests = tracker.counts[3]
+
+        Countly.sharedInstance().recordEvent("purchase")
+        TestUtils.sleep(3) {}
+        XCTAssertEqual(contentRequests, tracker.counts[3])
+        XCTAssertEqual(1, TestUtils.getCurrentEQ()?.count)
+    }
+    #endif
 
     /**
      * Tests that the four new keys are parsed from a provided configuration and that

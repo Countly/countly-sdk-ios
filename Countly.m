@@ -362,6 +362,12 @@ static dispatch_once_t onceToken;
     [CountlyServerConfig.sharedInstance applyConsentRequirement];
     [CountlyServerConfig.sharedInstance applyAutomaticTrackingState];
     [CountlyServerConfig.sharedInstance applyLocationTrackingState];
+
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+    // "ecz" decides only the entry at start; a later behavior settings answer neither enters nor exits the content zone
+    if (CountlyServerConfig.sharedInstance.enterContentZone)
+        [CountlyContentBuilderInternal.sharedInstance enterContentZone:@[]];
+#endif
 }
 
 - (CountlyConfig *) checkAndFixInternalLimitsConfig:(CountlyConfig *)config
@@ -889,6 +895,12 @@ static dispatch_once_t onceToken;
 
         [CountlyServerConfig.sharedInstance fetchServerConfig:_startConfig];
 
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+        // a start that began in temporary device ID mode finishes only now, so "ecz" decides the content zone entry now
+        if (CountlyServerConfig.sharedInstance.enterContentZone)
+            [CountlyContentBuilderInternal.sharedInstance enterContentZone:@[]];
+#endif
+
         [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfigAutomatically];
 
         [CountlyHealthTracker.sharedInstance sendHealthCheck];
@@ -1207,12 +1219,10 @@ static dispatch_once_t onceToken;
         }
         event.key = key;
         event.segmentation = [self processSegmentation:filteredSegmentations eventKey:key];
-        CLYRequestCallback callback = nil;
-        if ([CountlyServerConfig.sharedInstance isJourneyTriggerEvent:keyAsGiven])
-        {
-            callback = [self journeyTriggerCallback];
-        }
-        [CountlyPersistency.sharedInstance recordEvent:event callback:callback];
+        [CountlyPersistency.sharedInstance recordEvent:event];
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+        [CountlyContentBuilderInternal.sharedInstance onContentTriggerWithKey:keyAsGiven viewName:nil viewEnd:NO properties:nil customEvent:YES];
+#endif
 #if __has_include(<os/lock.h>)
         os_unfair_lock_unlock(&previousEventLock);
 #endif
@@ -1221,35 +1231,21 @@ static dispatch_once_t onceToken;
     {
         event.key = key;
         event.segmentation = [self processSegmentation:filteredSegmentations eventKey:key];
-        CLYRequestCallback callback = nil;
-        // Journey trigger views mirror the journey trigger events behavior. The view name is matched as the app
-        // passed it, before the internal limits cut it, like the event key of a journey trigger event.
+        [CountlyPersistency.sharedInstance recordEvent:event];
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
         if ([key isEqualToString:kCountlyReservedEventView])
         {
+            // the view name is matched as the app passed it, before the internal limits cut it
             NSString* viewName = [CountlyViewTrackingInternal.sharedInstance viewNameAsGivenForViewID:event.ID] ?: event.segmentation[kCountlyVTKeyName];
-            if ([viewName isKindOfClass:NSString.class] && [CountlyServerConfig.sharedInstance isJourneyTriggerView:viewName])
-            {
-                callback = [self journeyTriggerCallback];
-            }
+            if ([viewName isKindOfClass:NSString.class])
+                [CountlyContentBuilderInternal.sharedInstance onContentTriggerWithKey:key viewName:viewName viewEnd:event.segmentation[kCountlyVTKeyVisit] == nil properties:nil customEvent:NO];
         }
-        [CountlyPersistency.sharedInstance recordEvent:event callback:callback];
-    }
-}
-
-// Callback used for both journey trigger kinds: recording an event with a callback force-flushes the event
-// queue, and the content zone is refreshed once that request succeeds.
-- (CLYRequestCallback)journeyTriggerCallback
-{
-    return ^(NSString *response, BOOL success) {
-        if (success)
+        else
         {
-#if (TARGET_OS_IOS || TARGET_OS_VISION)
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [CountlyContentBuilderInternal.sharedInstance refreshContentZoneJTE];
-            });
-#endif
+            [CountlyContentBuilderInternal.sharedInstance onContentTriggerWithKey:key viewName:nil viewEnd:NO properties:nil customEvent:NO];
         }
-    };
+#endif
+    }
 }
 
 - (NSDictionary *)processSegmentation:(NSMutableDictionary *)segmentation eventKey:(NSString *)eventKey {

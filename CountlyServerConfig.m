@@ -72,6 +72,13 @@
 // atomic: replaced by a settings response on its own thread while events and views read them on theirs
 @property (atomic) NSSet<NSString *> *journeyTriggerEvents;
 @property (atomic) NSSet<NSString *> *journeyTriggerViews;
+@property (atomic) NSSet<NSString *> *contentTriggerKeys;
+@property (atomic) NSSet<NSString *> *contentTriggerViews;
+@property (atomic) NSSet<NSString *> *contentTriggerProperties;
+@property (atomic) BOOL hasContentTriggers;
+@property (nonatomic) BOOL autoContentTriggersDisabled;
+// whether behavior settings were stored or provided at start: on a first start, without them, the first answer decides "ecz"
+@property (nonatomic) BOOL behaviorSettingsStoredAtStart;
 
 @property (nonatomic) NSInteger version;
 @property (nonatomic) long long timestamp;
@@ -141,6 +148,8 @@ NSString *const kRLGBatchSize = @"b";
 NSString *const kRConnectionTest = @"ct";
 // request compression key, a top level sibling of c, read from a live response and never stored
 NSString *const kRGzip = @"gzip";
+// content triggers key, a top level sibling of c, the same for every user of the app, so stored with c
+NSString *const kRContentTriggers = @"jt";
 
 static CountlyServerConfig *s_sharedInstance = nil;
 static dispatch_once_t onceToken;
@@ -250,6 +259,9 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     _startConfig = config;
     [self rememberDeveloperValues:config];
     _isBackoffDisabledByDeveloper = config.disableBackoffMechanism;
+#if (TARGET_OS_IOS)
+    self.autoContentTriggersDisabled = config.content.getDisableAutoContentTriggers;
+#endif
 
     // Seed the automatic tracking flags from the developer config: it is the lowest-precedence layer.
     // The SBS layers override them below (provided -> stored here, server in fetchServerConfig), giving
@@ -281,6 +293,7 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
         }
     }
 
+    self.behaviorSettingsStoredAtStart = persistentBehaviorSettings[kRConfig] != nil;
     [self populateServerConfig:persistentBehaviorSettings withConfig:config];
     [CountlyPersistency.sharedInstance storeServerConfig:persistentBehaviorSettings];
 }
@@ -428,6 +441,12 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     }];
 
     baseConfig[kRConfig] = cReplacement;
+
+    id contentTriggers = newConfig[kRContentTriggers];
+    if (contentTriggers && contentTriggers != NSNull.null)
+        baseConfig[kRContentTriggers] = CountlyBehaviorSettingWithoutNulls(contentTriggers);
+    else
+        [baseConfig removeObjectForKey:kRContentTriggers];
     CLY_LOG_D(@"%s incoming behavior settings replaced the stored ones, keyCount: [%lu]", __FUNCTION__, (unsigned long)cReplacement.count);
 }
 
@@ -568,6 +587,8 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     }
 
     _requestTimeoutDuration = config.requestTimeoutDuration;
+
+    [self readContentTriggers:serverConfig[kRContentTriggers]];
 
     if (!serverConfig[kRConfig])
     {
@@ -762,24 +783,7 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     // would leave the previous server interval in config.content; the content builder takes the resolved value
     NSUInteger zoneTimerInterval = _contentZoneInterval ?: [self developerValueForKey:kRContentZoneInterval orCurrent:@(config.content.getZoneTimerInterval)].unsignedIntegerValue;
     [config.content setZoneTimerInterval:zoneTimerInterval];
-    CountlyContentBuilderInternal.sharedInstance.zoneTimerInterval = zoneTimerInterval ?: kCountlyDefaultZoneTimerInterval;
-#endif
-#if (TARGET_OS_IOS || TARGET_OS_VISION)
-    // clearContentState, not exitContentZone: this runs on every config apply, and exitContentZone
-    // would pull displayed content off screen.
-    if (!_enterContentZone)
-    {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [CountlyContentBuilderInternal.sharedInstance clearContentState];
-        });
-    }
-    else
-    {
-        dispatch_async(dispatch_get_main_queue(), ^{
-            [CountlyContentBuilderInternal.sharedInstance clearContentState];
-            [CountlyContentBuilderInternal.sharedInstance enterContentZone:@[]];
-        });
-    }
+    [CountlyContentBuilderInternal.sharedInstance updateZoneTimerInterval:zoneTimerInterval ?: kCountlyDefaultZoneTimerInterval];
 #endif
     CountlyCrashReporter.sharedInstance.crashLogLimit = config.sdkInternalLimits.getMaxBreadcrumbCount;
 
@@ -956,6 +960,7 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     if (_serverConfigUpdatesDisabled) {
         CLY_LOG_D(@"%s fetch aborted, behavior settings updates are disabled", __FUNCTION__);
         [CountlyCommon.sharedInstance decideLogGatheringOffIfUndecided:@"behavior settings updates are disabled, no directive can ever arrive"];
+        [self behaviorSettingsSettled:NO];
         return;
     }
 
@@ -963,6 +968,7 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
     {
         CLY_LOG_D(@"%s fetch aborted, sdk is in temporary device ID mode", __FUNCTION__);
         [CountlyCommon.sharedInstance decideLogGatheringOffIfUndecided:@"temporary device ID mode, no server response this run"];
+        [self behaviorSettingsSettled:NO];
         return;
     }
 
@@ -1037,6 +1043,8 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
             CLY_LOG_D(@"[CountlyServerConfig] fetchServerConfig response, no config section in the response, previously stored behavior settings will be kept");
         }
 
+        [self behaviorSettingsSettled:!error && serverConfigResponse[kRConfig] != nil];
+
         if (error)
         {
             // a failed fetch decides against gathering only while nothing has been decided yet, a
@@ -1071,6 +1079,11 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
 
     if (CountlyConnectionManager.sharedInstance.requestCompressionEnabled)
         queryString = [queryString stringByAppendingFormat:@"&%@=1", kRGzip];
+
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+    if (!self.autoContentTriggersDisabled)
+        queryString = [queryString stringByAppendingFormat:@"&%@=1", kRContentTriggers];
+#endif
 
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
 
@@ -1509,6 +1522,63 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
 - (BOOL)isJourneyTriggerView:(NSString *)viewName
 {
     return [self.journeyTriggerViews containsObject:viewName];
+}
+
+/// Reads the content triggers ("jt") that come next to the settings ("c"): event keys ("e"), view names ("v") and user
+/// properties ("p") whose recording makes the SDK send the queued requests and ask for content right away. Without them,
+/// with an invalid value or with disableAutoContentTriggers, the SDK has no content triggers, and the journey trigger
+/// events and views apply.
+- (void)readContentTriggers:(id)value
+{
+    if (self.autoContentTriggersDisabled || !value || value == NSNull.null)
+    {
+        self.hasContentTriggers = NO;
+        return;
+    }
+
+    if (![value isKindOfClass:NSDictionary.class])
+    {
+        CLY_LOG_W(@"%s content triggers (jt) must be a dictionary, ignoring them, receivedType: [%@]", __FUNCTION__, [value class]);
+        self.hasContentTriggers = NO;
+        return;
+    }
+
+    self.contentTriggerKeys = [self contentTriggerList:value[@"e"] name:@"e"];
+    self.contentTriggerViews = [self contentTriggerList:value[@"v"] name:@"v"];
+    self.contentTriggerProperties = [self contentTriggerList:value[@"p"] name:@"p"];
+    self.hasContentTriggers = YES;
+    CLY_LOG_D(@"%s content triggers read, keyCount: [%lu], viewCount: [%lu], propertyCount: [%lu]", __FUNCTION__, (unsigned long)self.contentTriggerKeys.count, (unsigned long)self.contentTriggerViews.count, (unsigned long)self.contentTriggerProperties.count);
+}
+
+/// The non-empty strings of one content trigger list. A list the server leaves out is an empty one, and a list that is
+/// not an array is ignored with a warning.
+- (NSSet<NSString *> *)contentTriggerList:(id)list name:(NSString *)name
+{
+    if (!list || list == NSNull.null)
+        return NSSet.set;
+
+    if (![list isKindOfClass:NSArray.class])
+    {
+        CLY_LOG_W(@"%s content triggers (jt) list [%@] must be an array, ignoring it", __FUNCTION__, name);
+        return NSSet.set;
+    }
+
+    NSMutableSet<NSString *> *values = NSMutableSet.new;
+    for (id item in (NSArray *)list)
+    {
+        if ([item isKindOfClass:NSString.class] && [(NSString *)item length])
+            [values addObject:item];
+    }
+    return values.copy;
+}
+
+/// Tells the content zone that the behavior settings answer of this run arrived, or that none will arrive. On a first
+/// start, when no settings were stored or provided at start, the first answer's "ecz" decides the content zone entry.
+- (void)behaviorSettingsSettled:(BOOL)answered
+{
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+    [CountlyContentBuilderInternal.sharedInstance behaviorSettingsSettled:answered enterContentZone:answered && !self.behaviorSettingsStoredAtStart && self.enterContentZone];
+#endif
 }
 
 @end

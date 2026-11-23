@@ -1,4 +1,8 @@
 ## XX.XX.XX
+* ! Minor breaking change ! The journey trigger events and views of the SDK behavior settings now ask for content directly, the same way as content triggers: the "refresh content zone" setting no longer blocks them, they no longer stop the content zone timers or enter the content zone, the same trigger asks again only after 10 seconds, and the end of a listed view counts like its start. The SDK ignores them when the server sends content triggers.
+* ! Minor breaking change ! The "enter content zone" setting of the SDK behavior settings now only decides whether the SDK enters the content zone at start: with the settings stored at start, with the first settings answer on a first start, or when temporary device ID mode ends. A later change of the setting takes effect at the next start, and turning it off no longer stops a content zone that the app entered.
+
+* Added content triggers. When the app records something that starts a journey or a campaign with content (an event, the start or end of a view, a new session, a user property, a recorded exception or a consent change), the SDK sends the queued requests and asks for that content right away, instead of waiting for the content zone timer. The server lists these triggers in its SDK behavior settings answer, and they apply while the content zone is entered. Call "disableAutoContentTriggers" on the content config to turn them off.
 * Added SDK method usage and log codes to the health check.
 * Added "disableHealthCheck" init config parameter to disable the SDK health check.
 * Added "enableRequestCompression" init config parameter. Request bodies between 1 KB and 1 MB are then sent gzip-compressed, once the server's SDK behavior settings answer says it reads them.

@@ -147,6 +147,9 @@ static dispatch_once_t onceToken;
         self.consentForMetrics = YES;
 
     [self sendConsents];
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+    [CountlyContentBuilderInternal.sharedInstance onContentTriggerWithKey:kCountlyContentTriggerKeyConsent viewName:nil viewEnd:NO properties:nil customEvent:NO];
+#endif
 
     [CountlyCommon.sharedInstance redecideSdkLogLinesConsent];
 }
@@ -234,7 +237,12 @@ static dispatch_once_t onceToken;
         self.consentForMetrics = NO;
 
     if (!shouldSkipSendingConsentsRequest)
+    {
         [self sendConsents];
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+        [CountlyContentBuilderInternal.sharedInstance onContentTriggerWithKey:kCountlyContentTriggerKeyConsent viewName:nil viewEnd:NO properties:nil customEvent:NO];
+#endif
+    }
 
     [CountlyCommon.sharedInstance redecideSdkLogLinesConsent];
 }

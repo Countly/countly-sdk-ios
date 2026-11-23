@@ -708,6 +708,10 @@ static dispatch_once_t onceToken;
     [CountlyCommon.sharedInstance recordOrientation];
     
     [self proceedOnQueue];
+
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+    [CountlyContentBuilderInternal.sharedInstance onContentTriggerWithKey:kCountlyContentTriggerKeySession viewName:nil viewEnd:NO properties:nil customEvent:NO];
+#endif
 }
 
 - (void)updateSession
@@ -865,6 +869,39 @@ static dispatch_once_t onceToken;
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
     [self proceedOnQueue];
+
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+    NSArray<NSString *> *sentProperties = [self userPropertyNamesInUserDetails:userDetails];
+    if (sentProperties.count)
+        [CountlyContentBuilderInternal.sharedInstance onContentTriggerWithKey:kCountlyContentTriggerKeyUserProperties viewName:nil viewEnd:NO properties:sentProperties customEvent:NO];
+#endif
+}
+
+/// The user properties a user details request sends, as content triggers name them: a user detail ("email"), or
+/// "custom." and the key of a custom property. The local picture path counts as the picture.
+- (NSArray<NSString *> *)userPropertyNamesInUserDetails:(NSString *)userDetails
+{
+    id parsed = [NSJSONSerialization JSONObjectWithData:[userDetails cly_dataUTF8] options:0 error:nil];
+    if (![parsed isKindOfClass:NSDictionary.class])
+        return @[];
+
+    NSMutableArray<NSString *> *names = NSMutableArray.new;
+    [(NSDictionary *)parsed enumerateKeysAndObjectsUsingBlock:^(NSString *key, id value, BOOL *stop) {
+        if ([key isEqualToString:@"custom"] && [value isKindOfClass:NSDictionary.class])
+        {
+            for (NSString *customKey in (NSDictionary *)value)
+                [names addObject:[@"custom." stringByAppendingString:customKey]];
+        }
+        else if ([key isEqualToString:kCountlyLocalPicturePath])
+        {
+            [names addObject:@"picture"];
+        }
+        else
+        {
+            [names addObject:key];
+        }
+    }];
+    return names;
 }
 
 - (void)sendCrashReport:(NSString *)report immediately:(BOOL)immediately;
