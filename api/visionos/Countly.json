@@ -14982,6 +14982,59 @@
             "funcSelfKind": "NonMutating"
           },
           {
+            "kind": "Function",
+            "name": "disableAutoContentTriggers",
+            "printedName": "disableAutoContentTriggers()",
+            "children": [
+              {
+                "kind": "TypeNameAlias",
+                "name": "Void",
+                "printedName": "Swift.Void",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Void",
+                    "printedName": "()"
+                  }
+                ]
+              }
+            ],
+            "declKind": "Func",
+            "usr": "c:objc(cs)CountlyContentConfig(im)disableAutoContentTriggers",
+            "moduleName": "Countly",
+            "isOpen": true,
+            "objc_name": "disableAutoContentTriggers",
+            "declAttributes": [
+              "ObjC",
+              "Dynamic"
+            ],
+            "funcSelfKind": "NonMutating"
+          },
+          {
+            "kind": "Function",
+            "name": "getDisableAutoContentTriggers",
+            "printedName": "getDisableAutoContentTriggers()",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Bool",
+                "printedName": "Swift.Bool",
+                "usr": "s:Sb"
+              }
+            ],
+            "declKind": "Func",
+            "usr": "c:objc(cs)CountlyContentConfig(im)getDisableAutoContentTriggers",
+            "moduleName": "Countly",
+            "isOpen": true,
+            "objc_name": "getDisableAutoContentTriggers",
+            "declAttributes": [
+              "DiscardableResult",
+              "ObjC",
+              "Dynamic"
+            ],
+            "funcSelfKind": "NonMutating"
+          },
+          {
             "kind": "Constructor",
             "name": "init",
             "printedName": "init()",
