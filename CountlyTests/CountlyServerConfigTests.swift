@@ -2294,6 +2294,8 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
      * Tests that with disableAutoContentTriggers the SDK neither asks for the content triggers nor follows them.
      */
     func test_contentTriggers_disableAutoContentTriggers_neitherAsksNorFollows() {
+        // every CountlyConfig in the process shares one content config, so the one-way switch is turned off again for the next tests
+        defer { CountlyConfig().content().setValue(false, forKey: "autoContentTriggersDisabled") }
         let tracker = setupTestAllFeatures(behaviorSettings(ServerConfigBuilder().eventQueueSize(100), contentTriggers: ["e": ["purchase"]]), drainQueue: true, configure: { $0.content().disableAutoContentTriggers() })
 
         XCTAssertFalse(tracker.scRequests.first?.contains("jt=1") ?? true)
