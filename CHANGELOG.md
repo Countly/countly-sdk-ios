@@ -1,34 +1,18 @@
 ## 26.8.1
-* ! Minor breaking change ! The journey trigger events and views of the SDK behavior settings now ask for content directly, the same way as content triggers:
-  * The "refresh content zone" setting no longer blocks them, and they no longer stop the content zone timers or enter the content zone.
-  * The same trigger asks again only after 10 seconds, and the end of a listed view counts like its start.
-  * The SDK ignores them when the server sends content triggers.
-* ! Minor breaking change ! The "enter content zone" setting of the SDK behavior settings now only decides whether the SDK enters the content zone at start:
-  * The settings stored at start decide; on a first start the first settings answer decides, and the end of temporary device ID mode counts as the start.
-  * A later change of the setting takes effect at the next start, and turning it off no longer stops a content zone that the app entered.
+* Added content triggers. While the content zone is entered, an event, view, session, user property, recorded exception or consent change that starts a journey or campaign with content now requests that content immediately. Turn them off with "disableAutoContentTriggers" on the content config.
+* Added "disableHealthCheck" to the init config for turning off the SDK health check.
+* Added "enableRequestCompression" to the init config for sending requests gzip-compressed to servers that support it.
+* Improved journey triggers set in SDK behavior settings. Their events and views now request content immediately, the same way as content triggers.
 
-* Added content triggers. When the app records something that starts a journey or a campaign with content, the SDK sends the queued requests and asks for that content right away, instead of waiting for the content zone timer:
-  * The triggers are events, the start or the end of a view, a new session, a user property, a recorded exception and a consent change.
-  * The server lists them in its SDK behavior settings answer, and they apply while the content zone is entered.
-  * Call "disableAutoContentTriggers" on the content config to turn them off.
-* Added SDK method usage and log codes to the health check.
-* Added "disableHealthCheck" init config parameter to disable the SDK health check.
-* Added "enableRequestCompression" init config parameter. Request bodies between 1 KB and 1 MB are then sent gzip-compressed, once the server's SDK behavior settings answer says it reads them.
-* Improved internal logging.
-
-* Mitigated an issue where a health check the server refused was treated as delivered.
-* Mitigated an issue where a journey trigger event or view whose key or name is longer than the key length limit never matched, because the SDK compared it after cutting it to the limit.
-* Mitigated an issue where a crash filter callback set at an earlier start kept filtering crash reports after the SDK was halted and started again without one.
+* Mitigated an issue where crashes were not passed on to crash reporting tools started before the SDK.
+* Mitigated an issue where the "enter content zone" SDK behavior setting could exit a content zone the app entered. The setting now applies only when the SDK starts.
+* Mitigated an issue where journey trigger events and views with keys longer than the key length limit never matched.
+* Mitigated an issue where changing the device clock distorted the durations of sessions, views, timed events and traces.
+* Mitigated an issue where events recorded with a negative duration kept it.
+* Mitigated an issue where the orientation was not recorded at start, and not at all on iOS 27 in apps that use the UIScene lifecycle.
 * Mitigated an issue where the health check sent the app version without the metrics consent.
-* Mitigated an issue where an event recorded with a negative duration kept that duration. The duration is now ignored.
-* Mitigated an issue where orientation events were not recorded on iOS 27 in apps that use the UIScene lifecycle.
-* Mitigated an issue where the orientation was not recorded at start.
-* Mitigated an issue where a crash the SDK reported was not passed on to the crash handler it replaced.
-* Mitigated an issue where building the SDK produced nullability warnings.
-* Mitigated issues where health check data could be lost.
-* Mitigated an issue where the health check did not use the app version set through custom metrics.
 * Mitigated an issue where the SDK could crash at start when the app bundle has no version string.
-* Mitigated an issue where a change of the system clock made durations negative, too short or too long: sessions, views, timed events, APM custom traces, foreground and background time, and the running time in crash reports. Timestamps still follow the system clock.
+* Mitigated an issue where building the SDK produced nullability warnings.
 
 ## 26.8.0
 * ! Minor breaking change ! Raised the minimum supported deployment targets to iOS 15, tvOS 15, watchOS 9 and macOS 12 (previously iOS 12, tvOS 12, watchOS 4 and macOS 10.14, and iOS 10 and tvOS 10 for "Countly-PL") for compatibility with Xcode 27. Apps targeting older versions are no longer supported and can keep using 26.1.4.
