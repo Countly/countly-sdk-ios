@@ -1,4 +1,4 @@
-## XX.XX.XX
+## 26.8.1
 * ! Minor breaking change ! The journey trigger events and views of the SDK behavior settings now ask for content directly, the same way as content triggers:
   * The "refresh content zone" setting no longer blocks them, and they no longer stop the content zone timers or enter the content zone.
   * The same trigger asks again only after 10 seconds, and the end of a listed view counts like its start.
