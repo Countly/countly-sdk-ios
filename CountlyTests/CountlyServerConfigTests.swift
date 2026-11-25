@@ -2098,6 +2098,53 @@ class CountlyServerConfigTests: CountlyBaseTestCase {
     }
 
     /**
+     * Tests that a journey trigger event is matched with the key the app passed, before the key length limit cuts it.
+     * A key of 140 characters is sent cut to the default limit of 128, and it still flushes the event queue.
+     */
+    func test_journeyTriggerEvents_keyMatchedBeforeTheLengthLimit() {
+        let longKey = String(repeating: "k", count: 140)
+        let sc = ServerConfigBuilder()
+            .journeyTriggerEvents([longKey])
+            .eventQueueSize(100)
+        let _ = setupTestAllFeatures(sc.buildJson())
+
+        Countly.sharedInstance().recordEvent("regular_event")
+        XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count)
+
+        Countly.sharedInstance().recordEvent(longKey)
+        XCTAssertEqual(1, TestUtils.getCurrentRQ()?.count, "the full key is a journey trigger event")
+        XCTAssertEqual(0, TestUtils.getCurrentEQ()?.count)
+
+        let request = TestUtils.getCurrentRQ()![0]
+        XCTAssertTrue(request.contains(String(repeating: "k", count: 128)))
+        XCTAssertFalse(request.contains(longKey))
+        XCTAssertTrue(request.contains("callback_id"))
+    }
+
+    /**
+     * Tests that a journey trigger view is matched with the view name the app passed, before the key length limit cuts
+     * it, and that the cut name alone doesn't match.
+     */
+    func test_jtv_viewNameMatchedBeforeTheLengthLimit() {
+        let longName = String(repeating: "v", count: 140)
+        let cutName = String(repeating: "v", count: 128)
+        setServerConfig(ServerConfigBuilder()
+            .journeyTriggerViews([longName])
+            .eventQueueSize(100)
+            .buildJson())
+        let config = TestUtils.createBaseConfig()
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+
+        Countly.sharedInstance().views().startView(cutName)
+        XCTAssertEqual(0, TestUtils.getCurrentRQ()?.count, "the cut name is not the listed name")
+
+        Countly.sharedInstance().views().startView(longName)
+        XCTAssertEqual(1, TestUtils.getCurrentRQ()?.count, "the full view name is a journey trigger view")
+        XCTAssertTrue(TestUtils.getCurrentRQ()![0].contains("callback_id"))
+    }
+
+    /**
      * Tests that the four new keys are parsed from a provided configuration and that
      * an invalid jtv type is ignored, keeping the default empty set.
      */

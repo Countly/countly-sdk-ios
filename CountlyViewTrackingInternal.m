@@ -232,6 +232,15 @@ static dispatch_once_t onceToken;
     
 }
 
+- (NSString *)viewNameAsGivenForViewID:(NSString *)viewID
+{
+    if (!viewID.length)
+        return nil;
+
+    CountlyViewData* viewData = self.viewDataDictionary[viewID];
+    return viewData.viewNameAsGiven ?: viewData.viewName;
+}
+
 - (void)stopViewWithID:(NSString *)viewID segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_I(@"%s stop view by ID requested, view ID: [%@], segmentation key count: [%lu], segmentation keys: [%@]", __FUNCTION__, viewID, (unsigned long)segmentation.count, segmentation.allKeys);
@@ -562,6 +571,7 @@ static dispatch_once_t onceToken;
     [self stopAutoStoppedView];
 
     viewName = viewName.copy;
+    NSString* viewNameAsGiven = viewName;
 
     viewName = [viewName cly_truncatedKey:@"View name"];
     
@@ -605,6 +615,7 @@ static dispatch_once_t onceToken;
     self.currentViewName = viewName;
     
     CountlyViewData *viewData = [[CountlyViewData alloc] initWithID:self.currentViewID viewName:viewName];
+    viewData.viewNameAsGiven = viewNameAsGiven;
     viewData.startSegmentation = customSegmentation.mutableCopy;
     viewData.isAutoStoppedView = isAutoStoppedView;
     self.viewDataDictionary[self.currentViewID] = viewData;

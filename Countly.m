@@ -1140,6 +1140,8 @@ static dispatch_once_t onceToken;
         return;
     }
 
+    NSString* keyAsGiven = key;
+
     if (count < 1)
     {
         CLY_LOG_W(@"%s the event count is below 1, the default count 1 is used, key: [%@]", __FUNCTION__, key);
@@ -1206,7 +1208,7 @@ static dispatch_once_t onceToken;
         event.key = key;
         event.segmentation = [self processSegmentation:filteredSegmentations eventKey:key];
         CLYRequestCallback callback = nil;
-        if ([CountlyServerConfig.sharedInstance isJourneyTriggerEvent:key])
+        if ([CountlyServerConfig.sharedInstance isJourneyTriggerEvent:keyAsGiven])
         {
             callback = [self journeyTriggerCallback];
         }
@@ -1220,11 +1222,11 @@ static dispatch_once_t onceToken;
         event.key = key;
         event.segmentation = [self processSegmentation:filteredSegmentations eventKey:key];
         CLYRequestCallback callback = nil;
-        // Journey trigger views mirror the journey trigger events behavior. The 'name' segmentation value is
-        // matched as sent (after truncation and filtering), same as the wire format.
+        // Journey trigger views mirror the journey trigger events behavior. The view name is matched as the app
+        // passed it, before the internal limits cut it, like the event key of a journey trigger event.
         if ([key isEqualToString:kCountlyReservedEventView])
         {
-            NSString* viewName = event.segmentation[kCountlyVTKeyName];
+            NSString* viewName = [CountlyViewTrackingInternal.sharedInstance viewNameAsGivenForViewID:event.ID] ?: event.segmentation[kCountlyVTKeyName];
             if ([viewName isKindOfClass:NSString.class] && [CountlyServerConfig.sharedInstance isJourneyTriggerView:viewName])
             {
                 callback = [self journeyTriggerCallback];
