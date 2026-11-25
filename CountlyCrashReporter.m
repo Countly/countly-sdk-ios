@@ -657,6 +657,12 @@ void CountlyExceptionHandler(NSException *exception, bool isFatal, bool isAutoDe
             [CountlyPersistency.sharedInstance recordAutomaticCrashReport];
 
         [CountlyConnectionManager.sharedInstance sendCrashReport:[crashReport cly_JSONify] immediately:isAutoDetect];
+
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+        // only an error the running app records is a content trigger; an automatically detected crash ends the app
+        if (!isAutoDetect)
+            [CountlyContentBuilderInternal.sharedInstance onContentTriggerWithKey:kCountlyContentTriggerKeyCrash viewName:nil viewEnd:NO properties:nil customEvent:NO];
+#endif
     }
 
     if (isAutoDetect)

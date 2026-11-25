@@ -16,6 +16,7 @@
 @property (nonatomic) BOOL zoomDisabled;
 @property (nonatomic) BOOL rotationDisabled;
 @property (nonatomic, copy) ContentURLHandler contentURLHandler;
+@property (nonatomic) BOOL autoContentTriggersDisabled;
 #endif
 @end
 
@@ -120,6 +121,16 @@
 - (ContentURLHandler)getContentURLHandler
 {
     return _contentURLHandler;
+}
+
+- (void)disableAutoContentTriggers
+{
+    _autoContentTriggersDisabled = YES;
+}
+
+- (BOOL)getDisableAutoContentTriggers
+{
+    return _autoContentTriggersDisabled;
 }
 #endif
 

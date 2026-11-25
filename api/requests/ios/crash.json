@@ -51,6 +51,7 @@
       "device_id" : "parity-device-001",
       "dow" : "<masked>",
       "hour" : "<masked>",
+      "jt" : "1",
       "method" : "sc",
       "sdk_name" : "objc-native-ios",
       "sdk_version" : "<masked>",

@@ -10,6 +10,12 @@
 #endif
 #import "CountlyCommon.h"
 NS_ASSUME_NONNULL_BEGIN
+
+extern NSString* const kCountlyContentTriggerKeySession;
+extern NSString* const kCountlyContentTriggerKeyUserProperties;
+extern NSString* const kCountlyContentTriggerKeyCrash;
+extern NSString* const kCountlyContentTriggerKeyConsent;
+
 @interface CountlyContentBuilderInternal: NSObject
 #if (TARGET_OS_IOS || TARGET_OS_VISION)
 @property (nonatomic, strong) NSArray<NSString *> *currentTags;
@@ -32,7 +38,34 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)resetInstance;
 - (void)changeContent:(NSArray<NSString *> *)tags;
 - (void)refreshContentZone;
-- (void)refreshContentZoneJTE;
+
+/**
+ * Checks whether something the SDK recorded is a content trigger and, when it is, sends the queued requests and asks
+ * for content right away instead of waiting for the content zone timer. Can be called on any thread.
+ *
+ * @param key the event key as the app passed it, or one of the kCountlyContentTriggerKey keys
+ * @param viewName the view name as the app passed it, for a view event
+ * @param viewEnd NO for the event recorded when a view starts, YES for the one recorded when it ends
+ * @param properties the user properties a user details request sends, for kCountlyContentTriggerKeyUserProperties
+ * @param customEvent YES for an event of the app, NO for one the SDK records itself
+ */
+- (void)onContentTriggerWithKey:(NSString *)key viewName:(nullable NSString *)viewName viewEnd:(BOOL)viewEnd properties:(nullable NSArray<NSString *> *)properties customEvent:(BOOL)customEvent;
+
+/**
+ * Called when the behavior settings answer of this run arrived, or when none will arrive. What was recorded before it
+ * and the settings in use did not list is checked again, so that content for a first session is still asked for.
+ *
+ * @param answered YES when an answer arrived and was applied
+ * @param enterContentZone YES when the answer of a first start has "ecz" on, so the SDK enters the content zone now
+ */
+- (void)behaviorSettingsSettled:(BOOL)answered enterContentZone:(BOOL)enterContentZone;
+
+/**
+ * Sets the zone timer interval, and restarts the zone timer with it when the content zone is entered.
+ *
+ * @param zoneTimerInterval the interval in seconds
+ */
+- (void)updateZoneTimerInterval:(NSTimeInterval)zoneTimerInterval;
 - (void)previewContent:(NSString *)contentId;
 
 /**
