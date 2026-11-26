@@ -3,18 +3,52 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to announce
+        required: true
 permissions:
   contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      RELEASE_URL: ${{ github.event.release.html_url || format('{0}/{1}/releases/tag/{2}', github.server_url, github.repository, inputs.tag) }}
     steps:
       # To check the github context
       - name: Dump Github context
         env:
           GITHUB_CONTEXT: ${{ toJSON(github) }}
         run: echo "$GITHUB_CONTEXT"
+      - name: Check out the released tag
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ env.TAG }}
+          persist-credentials: false
+      # The notice carries the CHANGELOG.md section of the tag, so it keeps the changelog format whatever is typed into the release form.
+      - name: Read the changelog section of the tag
+        id: notes
+        env:
+          RELEASE_BODY: ${{ github.event.release.body }}
+        run: |
+          notes=$(tr -d '\r' < CHANGELOG.md | awk -v header="## ${TAG}" '
+            $0 == header { found = 1; next }
+            found && /^## / { exit }
+            found && /^[[:space:]]*$/ { if (started) blanks++; next }
+            found { for (; blanks > 0; blanks--) print ""; print; started = 1 }
+          ')
+          if [ -z "${notes}" ]; then
+            echo "::warning::CHANGELOG.md has no \"## ${TAG}\" section, sending the release body instead."
+            notes=$(printf '%s' "${RELEASE_BODY}" | tr -d '\r')
+          fi
+          delimiter="NOTES_$(openssl rand -hex 8)"
+          {
+            echo "body<<${delimiter}"
+            printf '%s\n' "${notes}"
+            echo "${delimiter}"
+          } >> "${GITHUB_OUTPUT}"
       - name: Send custom JSON data to Slack workflow
         id: slack
         uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844 # v1.23.0
@@ -23,10 +57,10 @@ jobs:
           payload: |
             {
               "repository": "${{ github.repository }}",
-              "tag_name": "${{ github.event.release.tag_name }}",
+              "tag_name": "${{ env.TAG }}",
               "actor": "${{ github.actor }}",
-              "body": ${{ toJSON(github.event.release.body) }},
-              "html_url": "${{ github.event.release.html_url }}"
+              "body": ${{ toJSON(steps.notes.outputs.body) }},
+              "html_url": "${{ env.RELEASE_URL }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_RELEASE }}
@@ -35,8 +69,8 @@ jobs:
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
           nodetail: true
-          title: New ${{ github.repository }} version ${{ github.event.release.tag_name }} published by ${{ github.actor }}
+          title: New ${{ github.repository }} version ${{ env.TAG }} published by ${{ github.actor }}
           description: |
-            Release URL: ${{ github.event.release.html_url }}
-            Click [here](https://github.com/Countly/countly-server/blob/master/CHANGELOG.md) to view the change log.
-            `${{ github.event.release.body }}`
+            Release URL: ${{ env.RELEASE_URL }}
+            Click [here](${{ github.server_url }}/${{ github.repository }}/blob/master/CHANGELOG.md) to view the change log.
+            `${{ steps.notes.outputs.body }}`
