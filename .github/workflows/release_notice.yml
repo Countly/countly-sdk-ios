@@ -3,18 +3,71 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to announce
+        required: true
 permissions:
   contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      RELEASE_URL: ${{ github.event.release.html_url || format('{0}/{1}/releases/tag/{2}', github.server_url, github.repository, inputs.tag) }}
     steps:
       # To check the github context
       - name: Dump Github context
         env:
           GITHUB_CONTEXT: ${{ toJSON(github) }}
         run: echo "$GITHUB_CONTEXT"
+      - name: Check out the released tag
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ env.TAG }}
+          persist-credentials: false
+      # The notice carries the CHANGELOG.md section of the tag, so it keeps the changelog format whatever is typed into the release form.
+      - name: Read the changelog section of the tag
+        id: notes
+        shell: python
+        env:
+          RELEASE_BODY: ${{ github.event.release.body }}
+          CHANGELOG_URL: ${{ github.server_url }}/${{ github.repository }}/blob/${{ env.TAG }}/CHANGELOG.md
+        run: |
+          import os, re, secrets
+
+          # Slack caps a message text block at 3000 characters; the rest is room for the Slack workflow's own text.
+          SLACK_LIMIT = 2800
+
+
+          def clip(notes, limit, tail):
+              """The notes cut after the last whole line that fits in limit characters together with tail, which then ends them; notes that fit are returned unchanged."""
+              if len(notes) <= limit:
+                  return notes
+              kept = []
+              size = len(tail)
+              for line in notes.split("\n"):
+                  if size + len(line) + 1 > limit:
+                      break
+                  kept.append(line)
+                  size += len(line) + 1
+              return "\n".join(kept).rstrip() + "\n" + tail
+
+
+          tag = os.environ["TAG"]
+          with open("CHANGELOG.md", encoding="utf-8") as handle:
+              changelog = handle.read().replace("\r\n", "\n")
+          match = re.search(rf"^## {re.escape(tag)}[ \t]*$(.*?)(?=^## |\Z)", changelog, re.MULTILINE | re.DOTALL)
+          notes = match.group(1).strip() if match else ""
+          if not notes:
+              print(f'::warning::CHANGELOG.md has no "## {tag}" section, sending the release body instead.')
+              notes = os.environ.get("RELEASE_BODY", "").replace("\r\n", "\n").strip()
+          values = {"body": notes, "slack_body": clip(notes, SLACK_LIMIT, f"...\nFull changelog: {os.environ['CHANGELOG_URL']}")}
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              for key, value in values.items():
+                  delimiter = f"EOF_{secrets.token_hex(16)}"
+                  handle.write(f"{key}<<{delimiter}\n{value}\n{delimiter}\n")
       - name: Send custom JSON data to Slack workflow
         id: slack
         uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844 # v1.23.0
@@ -23,10 +76,10 @@ jobs:
           payload: |
             {
               "repository": "${{ github.repository }}",
-              "tag_name": "${{ github.event.release.tag_name }}",
+              "tag_name": "${{ env.TAG }}",
               "actor": "${{ github.actor }}",
-              "body": ${{ toJSON(github.event.release.body) }},
-              "html_url": "${{ github.event.release.html_url }}"
+              "body": ${{ toJSON(steps.notes.outputs.slack_body) }},
+              "html_url": "${{ env.RELEASE_URL }}"
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_RELEASE }}
@@ -35,8 +88,8 @@ jobs:
         with:
           webhook: ${{ secrets.DISCORD_WEBHOOK_URL }}
           nodetail: true
-          title: New ${{ github.repository }} version ${{ github.event.release.tag_name }} published by ${{ github.actor }}
+          title: New ${{ github.repository }} version ${{ env.TAG }} published by ${{ github.actor }}
           description: |
-            Release URL: ${{ github.event.release.html_url }}
-            Click [here](https://github.com/Countly/countly-server/blob/master/CHANGELOG.md) to view the change log.
-            `${{ github.event.release.body }}`
+            Release URL: ${{ env.RELEASE_URL }}
+            Click [here](${{ github.server_url }}/${{ github.repository }}/blob/master/CHANGELOG.md) to view the change log.
+            `${{ steps.notes.outputs.body }}`

@@ -1,24 +1,26 @@
 ## XX.XX.XX
-* Added SDK method usage and log codes to the health check.
-* Added "disableHealthCheck" init config parameter to disable the SDK health check.
 * Added Apple Ads attribution. On iOS the SDK reads the AdServices attribution token once per install, without an App Tracking Transparency prompt, and sends it to the server, which resolves the Apple Ads campaign with Apple. It needs the attribution consent and can be turned off with the "disableAppleAdsAttribution" init config parameter.
 * Added a new method "recordDeepLink:" that reports a Universal Link or another deep link that opened the app, so that a Countly smart link counts as a click of its campaign and the campaign parameters of the link are attributed. A link recorded before the attribution consent is held in memory and sent once that consent is given.
-* Added "deepLinkCallback" init config parameter, called for each recorded deep link with the path the app should open: the path after the campaign code of a Countly smart link, or the "dl" parameter of the link.
+* Added "deepLinkCallback" init config parameter, called for each recorded deep link with the path the app should open: the path after the campaign code of a Countly smart link, percent encoded as in the link, or the "dl" parameter of the link.
 * Added a new method "recordAdRevenue:network:placement:format:currency:precision:" that records the revenue of one paid ad impression from an ad mediation SDK callback, so that attribution counts ad revenue in a campaign's revenue and ROAS. It needs the events consent and a server with attribution phase 2.
-* Improved internal logging.
 
 * Mitigated an issue where a campaign ID or campaign user ID of direct attribution containing characters such as "&" broke the request, as they were not URL encoded.
-* Mitigated an issue where a health check the server refused was treated as delivered.
+
+## 26.8.1
+* Added content triggers. While the content zone is entered, an event, view, session, user property, recorded exception or consent change that starts a journey or campaign with content now requests that content immediately. Turn them off with "disableAutoContentTriggers" on the content config.
+* Added "disableHealthCheck" to the init config for turning off the SDK health check.
+* Added "enableRequestCompression" to the init config for sending requests gzip-compressed to servers that support it.
+* Improved journey triggers set in SDK behavior settings. Their events and views now request content immediately, the same way as content triggers.
+
+* Mitigated an issue where crashes were not passed on to crash reporting tools started before the SDK.
+* Mitigated an issue where the "enter content zone" SDK behavior setting could exit a content zone the app entered. The setting now applies only when the SDK starts.
+* Mitigated an issue where journey trigger events and views with keys longer than the key length limit never matched.
+* Mitigated an issue where changing the device clock distorted the durations of sessions, views, timed events and traces.
+* Mitigated an issue where events recorded with a negative duration kept it.
+* Mitigated an issue where the orientation was not recorded at start, and not at all on iOS 27 in apps that use the UIScene lifecycle.
 * Mitigated an issue where the health check sent the app version without the metrics consent.
-* Mitigated an issue where an event recorded with a negative duration kept that duration. The duration is now ignored.
-* Mitigated an issue where orientation events were not recorded on iOS 27 in apps that use the UIScene lifecycle.
-* Mitigated an issue where the orientation was not recorded at start.
-* Mitigated an issue where a crash the SDK reported was not passed on to the crash handler it replaced.
-* Mitigated an issue where building the SDK produced nullability warnings.
-* Mitigated issues where health check data could be lost.
-* Mitigated an issue where the health check did not use the app version set through custom metrics.
 * Mitigated an issue where the SDK could crash at start when the app bundle has no version string.
-* Mitigated an issue where a change of the system clock made durations negative, too short or too long: sessions, views, timed events, APM custom traces, foreground and background time, and the running time in crash reports. Timestamps still follow the system clock.
+* Mitigated an issue where building the SDK produced nullability warnings.
 
 ## 26.8.0
 * ! Minor breaking change ! Raised the minimum supported deployment targets to iOS 15, tvOS 15, watchOS 9 and macOS 12 (previously iOS 12, tvOS 12, watchOS 4 and macOS 10.14, and iOS 10 and tvOS 10 for "Countly-PL") for compatibility with Xcode 27. Apps targeting older versions are no longer supported and can keep using 26.1.4.

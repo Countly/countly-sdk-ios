@@ -14,7 +14,8 @@ import XCTest
 /// values that change from run to run masked. The scenarios make the calls the other Countly SDKs make in their own
 /// request tests. Each platform has its own records, because the SDK sends that platform's details. A deliberate change:
 /// run this class again with `TEST_RUNNER_COUNTLY_UPDATE_REQUESTS=1` on each platform that has records, which writes
-/// them, check the difference and add a line to CHANGELOG.md.
+/// them, check the difference and add a line to CHANGELOG.md. The test bundle carries a copy of `api/requests/`, which
+/// the tests read where the source tree is out of reach, as on a physical device.
 final class CountlyRequestScenarioTests: CountlyBaseTestCase {
     private static let mask = "<masked>"
     private static let maskedParams: Set<String> = ["timestamp", "hour", "dow", "tz", "sdk_version", "av", "rr", "checksum", "checksum256", "session_duration"]
@@ -150,7 +151,7 @@ final class CountlyRequestScenarioTests: CountlyBaseTestCase {
             return
         }
         let path = "api/requests/\(Self.platform)/\(name).json"
-        guard let committed = try? String(contentsOf: file, encoding: .utf8) else {
+        guard let committed = Self.committedRecord(name) else {
             XCTFail("no \(path), run this class with TEST_RUNNER_COUNTLY_UPDATE_REQUESTS=1")
             return
         }
@@ -243,6 +244,20 @@ final class CountlyRequestScenarioTests: CountlyBaseTestCase {
     /// The record file of a scenario on this platform, in api/requests/ next to the CountlyTests folder.
     private static func recordURL(_ name: String) -> URL {
         return URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("api/requests/\(platform)/\(name).json")
+    }
+
+    /// The committed record of a scenario on this platform: from api/requests/ in the source tree, or from the copy in
+    /// the test bundle where the source tree is out of reach, as on a physical device.
+    private static func committedRecord(_ name: String) -> String? {
+        if let record = try? String(contentsOf: recordURL(name), encoding: .utf8) {
+            return record
+        }
+        let bundle = Bundle(for: CountlyRequestScenarioTests.self)
+        let folder = "requests/\(platform)"
+        guard let copy = bundle.url(forResource: name, withExtension: "json", subdirectory: folder) else {
+            return nil
+        }
+        return try? String(contentsOf: copy, encoding: .utf8)
     }
 
     /// The record of the sent requests: each with its path and its parameters, the values that change from run to run

@@ -149,6 +149,9 @@ static dispatch_once_t onceToken;
         self.consentForMetrics = YES;
 
     [self sendConsents];
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+    [CountlyContentBuilderInternal.sharedInstance onContentTriggerWithKey:kCountlyContentTriggerKeyConsent viewName:nil viewEnd:NO properties:nil customEvent:NO];
+#endif
 
     // after the consent request, so the server knows the consent when the signals reach it;
     // at start the SDK sends them itself once the configuration is in place
@@ -244,7 +247,12 @@ static dispatch_once_t onceToken;
         self.consentForMetrics = NO;
 
     if (!shouldSkipSendingConsentsRequest)
+    {
         [self sendConsents];
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+        [CountlyContentBuilderInternal.sharedInstance onContentTriggerWithKey:kCountlyContentTriggerKeyConsent viewName:nil viewEnd:NO properties:nil customEvent:NO];
+#endif
+    }
 
     [CountlyCommon.sharedInstance redecideSdkLogLinesConsent];
 }

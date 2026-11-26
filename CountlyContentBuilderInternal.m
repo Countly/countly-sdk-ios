@@ -11,6 +11,29 @@ NSString* const kCountlyEndpointContent = @"/o/sdk/content";
 NSString* const kCountlyCBFetchContent  = @"queue";
 NSString* const kCountlyCBKeyCampaignID = @"campaign_id";
 NSString* const kCountlyCBSurveyAnswerKeyPrefix = @"answ-";
+NSString* const kCountlyContentTriggerKeySession = @"[CLY]_session";
+NSString* const kCountlyContentTriggerKeyUserProperties = @"[CLY]_property_update";
+NSString* const kCountlyContentTriggerKeyCrash = @"[CLY]_crash";
+NSString* const kCountlyContentTriggerKeyConsent = @"[CLY]_consent";
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+static const NSTimeInterval kCountlyCTQueueCheckInterval = 0.5;
+static const NSUInteger kCountlyCTQueueChecks = 5;
+static const NSTimeInterval kCountlyCTContentRetryInterval = 1.0;
+static const NSUInteger kCountlyCTContentRequests = 3;
+static const NSUInteger kCountlyCTEarlyTriggerLimit = 50;
+static const long long kCountlyCTGapSpecificMs = 10000;
+static const long long kCountlyCTGapNonSpecificMs = 60000;
+
+/// Whether a stored content trigger time, in milliseconds, is inside the given gap. A time in the future is not.
+static BOOL CountlyContentTriggerInGap(id time, long long now, long long gap)
+{
+    if (![time isKindOfClass:NSNumber.class])
+        return NO;
+
+    long long timeMs = [time longLongValue];
+    return now >= timeMs && now - timeMs < gap;
+}
+#endif
 #if (TARGET_OS_IOS || TARGET_OS_VISION)
 static const NSTimeInterval kCountlyCBDefaultZoneTimerInterval = 30.0;
 #endif
@@ -26,6 +49,15 @@ static const NSTimeInterval kCountlyCBDefaultZoneTimerInterval = 30.0;
     BOOL _isRequestQueueLocked;
     BOOL _isCurrentlyContentShown;
     BOOL _refreshRunnablePending;
+    BOOL _contentZoneWanted;
+    BOOL _contentZoneExited;
+    BOOL _behaviorSettingsSettled;
+    // content trigger rounds, main queue only
+    BOOL _triggerRoundRunning;
+    BOOL _triggerRoundPending;
+    NSUInteger _contentTriggerChain;
+    NSUInteger _triggerGeneration;
+    NSMutableArray<NSDictionary *> *_earlyTriggers;
     // Bumped per presentation claim, so a deferred teardown can tell if a newer one took the slot.
     NSUInteger _presentationSequence;
     NSTimer *_requestTimer;
@@ -57,6 +89,7 @@ static const NSTimeInterval kCountlyCBDefaultZoneTimerInterval = 30.0;
         _isCurrentlyContentShown = NO;
         _contentQueue = dispatch_queue_create("ly.countly.content.queue", DISPATCH_QUEUE_SERIAL);
         _contentInitialDelay = 4;
+        _earlyTriggers = NSMutableArray.new;
     }
     
     return self;
@@ -186,6 +219,9 @@ static const NSTimeInterval kCountlyCBDefaultZoneTimerInterval = 30.0;
         CLY_LOG_V(@"%s no consent given for content, skipping the content zone enter", __FUNCTION__);
         return;
     }
+
+    [self writeFlag:&_contentZoneWanted value:YES];
+    [self writeFlag:&_contentZoneExited value:NO];
     
     if(_requestTimer != nil) {
         CLY_LOG_W(@"%s already entered the content zone, please exit from the content zone first to start again", __FUNCTION__);
@@ -214,6 +250,8 @@ static const NSTimeInterval kCountlyCBDefaultZoneTimerInterval = 30.0;
 
 - (void)exitContentZone {
     CLY_LOG_I(@"%s exiting the content zone and taking the content off screen", __FUNCTION__);
+    [self writeFlag:&_contentZoneWanted value:NO];
+    [self writeFlag:&_contentZoneExited value:YES];
     [self clearContentState];
     // Also takes the content off screen. Internal cycles use clearContentState instead.
     [self closeShownContent];
@@ -307,38 +345,307 @@ static const NSTimeInterval kCountlyCBDefaultZoneTimerInterval = 30.0;
     [CountlyConnectionManager.sharedInstance attemptToSendStoredRequests];
 }
 
-- (void)refreshContentZoneJTE {
-    if (![CountlyServerConfig.sharedInstance refreshContentZoneEnabled])
-    {
-        CLY_LOG_D(@"%s the content zone refresh is disabled by the server config, skipping the JTE content refresh", __FUNCTION__);
-        return;
-    }
-    if([self isContentShownThreadSafe]){
-        CLY_LOG_D(@"%s a content is already shown, skipping the JTE content refresh", __FUNCTION__);
-        return;
-    }
+#pragma mark - Content triggers
 
-    // State only: a journey trigger must never pull content off screen
-    [self clearContentState];
-    [self fetchContentsForJourneyWithMaxAttempts:3 currentAttempt:1];
+- (void)onContentTriggerWithKey:(NSString *)key viewName:(NSString *)viewName viewEnd:(BOOL)viewEnd properties:(NSArray<NSString *> *)properties customEvent:(BOOL)customEvent
+{
+    if (!key.length)
+        return;
+
+    NSMutableDictionary *trigger = NSMutableDictionary.new;
+    trigger[@"k"] = key;
+    trigger[@"n"] = viewName;
+    trigger[@"end"] = @(viewEnd);
+    trigger[@"p"] = properties;
+    trigger[@"c"] = @(customEvent);
+    NSDictionary *recorded = trigger.copy;
+
+    // once the settings of this run are in, what matches nothing is dropped here, so the main queue only gets triggers
+    if ([self readFlag:&_behaviorSettingsSettled] && ![self contentTriggerMatch:recorded])
+        return;
+
+    dispatch_async(dispatch_get_main_queue(), ^{
+        [self handleContentTrigger:recorded];
+    });
 }
 
-- (void)fetchContentsForJourneyWithMaxAttempts:(NSInteger)maxAttempts currentAttempt:(NSInteger)currentAttempt {
-    CLY_LOG_D(@"%s JTE content fetch starting, attempt: [%ld], maxAttempts: [%ld]", __FUNCTION__, (long)currentAttempt, (long)maxAttempts);
+- (void)behaviorSettingsSettled:(BOOL)answered enterContentZone:(BOOL)enterContentZone
+{
+    dispatch_async(dispatch_get_main_queue(), ^{
+        NSArray<NSDictionary *> *early = self->_earlyTriggers.copy;
+        [self->_earlyTriggers removeAllObjects];
+        if ([self readFlag:&self->_behaviorSettingsSettled])
+            return;
 
-    [self fetchContents:^{
-        if (currentAttempt < maxAttempts) {
-            CLY_LOG_D(@"%s retrying the JTE content fetch in [1] second, reason: [the content fetch failed or returned no content], nextAttempt: [%ld], maxAttempts: [%ld]", __FUNCTION__, (long)(currentAttempt + 1), (long)maxAttempts);
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-                [self fetchContentsForJourneyWithMaxAttempts:maxAttempts currentAttempt:currentAttempt + 1];
-            });
-        } else {
-            CLY_LOG_D(@"%s the JTE content fetch exhausted every attempt, reason: [the content fetch failed or returned no content], maxAttempts: [%ld], re-entering the content zone", __FUNCTION__, (long)maxAttempts);
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [self enterContentZone];
-            });
+        [self writeFlag:&self->_behaviorSettingsSettled value:YES];
+        if (!answered)
+            return;
+
+        if (enterContentZone && ![self readFlag:&self->_contentZoneWanted] && ![self readFlag:&self->_contentZoneExited])
+        {
+            CLY_LOG_D(@"%s no behavior settings were stored at start, and the first answer has 'ecz' on, entering the content zone", __FUNCTION__);
+            [self enterContentZone:@[]];
         }
+
+        for (NSDictionary *trigger in early)
+        {
+            if ([self contentTriggerMatch:trigger])
+            {
+                CLY_LOG_D(@"%s [%@] was recorded before the behavior settings arrived", __FUNCTION__, trigger[@"k"]);
+                [self handleContentTrigger:trigger];
+                return;
+            }
+        }
+    });
+}
+
+- (void)updateZoneTimerInterval:(NSTimeInterval)zoneTimerInterval
+{
+    self.zoneTimerInterval = zoneTimerInterval;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (!self->_requestTimer || self->_requestTimer.timeInterval == zoneTimerInterval)
+            return;
+
+        CLY_LOG_D(@"%s the zone timer interval changed, restarting the zone timer, interval: [%.1f] seconds", __FUNCTION__, zoneTimerInterval);
+        [self->_requestTimer invalidate];
+        self->_requestTimer = [NSTimer scheduledTimerWithTimeInterval:zoneTimerInterval target:self selector:@selector(fetchContents) userInfo:nil repeats:YES];
+    });
+}
+
+/// Whether what was recorded is a content trigger: the gap keys it keeps its gap for, under "keys", and the gap in
+/// milliseconds, under "gap", or nil when it is not one. When the behavior settings carry content triggers, only they
+/// decide, and only while the content zone is wanted. Otherwise a custom event key in the journey trigger events and a
+/// view name in the journey trigger views decide, also while the content zone is not wanted.
+- (NSDictionary *)contentTriggerMatch:(NSDictionary *)trigger
+{
+    CountlyServerConfig *settings = CountlyServerConfig.sharedInstance;
+    NSString *key = trigger[@"k"];
+    NSString *viewName = trigger[@"n"];
+    BOOL isView = [key isEqualToString:kCountlyReservedEventView];
+    NSString *viewSuffix = isView && [trigger[@"end"] boolValue] ? @":end" : @"";
+
+    if (settings.hasContentTriggers)
+    {
+        if (![self readFlag:&_contentZoneWanted])
+            return nil;
+
+        if (isView && viewName && [settings.contentTriggerViews containsObject:viewName])
+            return @{@"keys": @[[NSString stringWithFormat:@"v:%@%@", viewName, viewSuffix]], @"gap": @(kCountlyCTGapSpecificMs)};
+
+        if ([key isEqualToString:kCountlyContentTriggerKeyUserProperties])
+        {
+            NSMutableArray<NSString *> *gapKeys = NSMutableArray.new;
+            for (NSString *property in (NSArray *)trigger[@"p"])
+            {
+                if ([settings.contentTriggerProperties containsObject:property])
+                    [gapKeys addObject:[@"p:" stringByAppendingString:property]];
+            }
+            if (gapKeys.count)
+                return @{@"keys": gapKeys, @"gap": @(kCountlyCTGapSpecificMs)};
+        }
+
+        if (![settings.contentTriggerKeys containsObject:key])
+            return nil;
+
+        BOOL nonSpecific = isView || [key isEqualToString:kCountlyContentTriggerKeyUserProperties] || [key isEqualToString:kCountlyContentTriggerKeyCrash];
+        return @{@"keys": @[[key stringByAppendingString:viewSuffix]], @"gap": @(nonSpecific ? kCountlyCTGapNonSpecificMs : kCountlyCTGapSpecificMs)};
+    }
+
+    if (isView)
+    {
+        if (viewName && [settings isJourneyTriggerView:viewName])
+            return @{@"keys": @[[NSString stringWithFormat:@"v:%@%@", viewName, viewSuffix]], @"gap": @(kCountlyCTGapSpecificMs)};
+        return nil;
+    }
+
+    if ([trigger[@"c"] boolValue] && [settings isJourneyTriggerEvent:key])
+        return @{@"keys": @[key], @"gap": @(kCountlyCTGapSpecificMs)};
+
+    return nil;
+}
+
+/// Main queue only. Starts a content trigger round for what was recorded when it is a content trigger, content can be
+/// shown, and the same trigger is outside its gap. A trigger during a running round only makes one more round follow it.
+- (void)handleContentTrigger:(NSDictionary *)trigger
+{
+    NSDictionary *match = [self contentTriggerMatch:trigger];
+    if (!match)
+    {
+        [self rememberEarlyTrigger:trigger];
+        return;
+    }
+
+    if ([self readFlag:&_contentZoneExited] || !CountlyConsentManager.sharedInstance.consentForContent || CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+    {
+        CLY_LOG_D(@"%s [%@] is a content trigger, but content can not be shown now, so it is not asked for", __FUNCTION__, trigger[@"k"]);
+        return;
+    }
+
+    if (![self claimContentTriggerGap:match])
+    {
+        CLY_LOG_D(@"%s [%@] started a round less than [%lld] seconds ago", __FUNCTION__, trigger[@"k"], [match[@"gap"] longLongValue] / 1000);
+        return;
+    }
+
+    if (_triggerRoundRunning)
+    {
+        CLY_LOG_D(@"%s [%@] matched while a round is running, one more round follows it", __FUNCTION__, trigger[@"k"]);
+        _triggerRoundPending = YES;
+        return;
+    }
+
+    CLY_LOG_D(@"%s [%@] matched, sending the queued requests and asking for content", __FUNCTION__, trigger[@"k"]);
+    [self startContentTriggerRound];
+}
+
+/// Main queue only. Keeps what was recorded before the behavior settings answer of this run arrived.
+- (void)rememberEarlyTrigger:(NSDictionary *)trigger
+{
+    if ([self readFlag:&_behaviorSettingsSettled] || _earlyTriggers.count >= kCountlyCTEarlyTriggerLimit || [_earlyTriggers containsObject:trigger])
+        return;
+
+    [_earlyTriggers addObject:trigger];
+}
+
+/// Whether a matched trigger may start a round now. When it may, the time of the round is stored, so the gap holds
+/// after a restart. Times older than the longest gap are dropped.
+- (BOOL)claimContentTriggerGap:(NSDictionary *)match
+{
+    long long now = (long long)(NSDate.date.timeIntervalSince1970 * 1000);
+    long long gap = [match[@"gap"] longLongValue];
+    NSDictionary *stored = [CountlyPersistency.sharedInstance retrieveContentTriggerGaps];
+
+    BOOL allInGap = YES;
+    for (NSString *gapKey in (NSArray *)match[@"keys"])
+    {
+        if (!CountlyContentTriggerInGap(stored[gapKey], now, gap))
+        {
+            allInGap = NO;
+            break;
+        }
+    }
+    if (allInGap)
+        return NO;
+
+    NSMutableDictionary *kept = NSMutableDictionary.new;
+    [stored enumerateKeysAndObjectsUsingBlock:^(id gapKey, id time, BOOL *stop) {
+        if (CountlyContentTriggerInGap(time, now, kCountlyCTGapNonSpecificMs))
+            kept[gapKey] = time;
+    }];
+    for (NSString *gapKey in (NSArray *)match[@"keys"])
+        kept[gapKey] = @(now);
+
+    [CountlyPersistency.sharedInstance storeContentTriggerGaps:kept];
+    return YES;
+}
+
+/// Main queue only. Moves the recorded events into the request queue, sends the queue, and asks for content once the
+/// requests queued until now are sent.
+- (void)startContentTriggerRound
+{
+    _triggerRoundRunning = YES;
+    _triggerRoundPending = NO;
+
+    [CountlyConnectionManager.sharedInstance sendEvents];
+
+    NSString *lastQueued = [CountlyPersistency.sharedInstance lastItemInQueue];
+    if (!lastQueued)
+    {
+        [self requestTriggeredContent:++_contentTriggerChain attempt:1];
+        [self endContentTriggerRound];
+        return;
+    }
+
+    NSUInteger remaining = [CountlyPersistency.sharedInstance queuedRequestCountUpToItem:lastQueued];
+    NSUInteger generation = _triggerGeneration;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kCountlyCTQueueCheckInterval * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [self waitForTriggerQueue:lastQueued previousRemaining:remaining checksWithoutProgress:0 generation:generation];
+    });
+}
+
+/// Main queue only. Checks every kCountlyCTQueueCheckInterval whether the requests queued when the round started are
+/// sent, and asks for content once they are. When none of them is sent for kCountlyCTQueueChecks checks in a row (a
+/// request on its way, the backoff mechanism or a failed request holds them back), or temporary device ID mode starts,
+/// the round ends without asking for content, and the content zone timer picks the content up.
+- (void)waitForTriggerQueue:(NSString *)lastQueued previousRemaining:(NSUInteger)previousRemaining checksWithoutProgress:(NSUInteger)checksWithoutProgress generation:(NSUInteger)generation
+{
+    if (generation != _triggerGeneration)
+        return;
+
+    if (CountlyDeviceInfo.sharedInstance.isDeviceIDTemporary)
+    {
+        CLY_LOG_D(@"%s temporary device ID mode started, the round ends without a content request", __FUNCTION__);
+        [self endContentTriggerRound];
+        return;
+    }
+
+    NSUInteger remaining = [CountlyPersistency.sharedInstance queuedRequestCountUpToItem:lastQueued];
+    if (remaining == 0)
+    {
+        [self requestTriggeredContent:++_contentTriggerChain attempt:1];
+        [self endContentTriggerRound];
+        return;
+    }
+
+    NSUInteger withoutProgress = remaining < previousRemaining ? 0 : checksWithoutProgress + 1;
+    if (withoutProgress >= kCountlyCTQueueChecks)
+    {
+        CLY_LOG_D(@"%s the queued requests could not be sent in time, the round ends without a content request", __FUNCTION__);
+        [self endContentTriggerRound];
+        return;
+    }
+
+    [CountlyConnectionManager.sharedInstance proceedOnQueue];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kCountlyCTQueueCheckInterval * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [self waitForTriggerQueue:lastQueued previousRemaining:remaining checksWithoutProgress:withoutProgress generation:generation];
+    });
+}
+
+/// Main queue only. Sends the content request of a round. When it brings no content, it is sent again
+/// kCountlyCTContentRetryInterval later, up to kCountlyCTContentRequests requests, because the server may still be
+/// processing what triggered it. A newer round's content request stops the remaining ones of an older round.
+- (void)requestTriggeredContent:(NSUInteger)chain attempt:(NSUInteger)attempt
+{
+    if (chain != _contentTriggerChain)
+        return;
+
+    if ([self isContentShownThreadSafe])
+    {
+        CLY_LOG_D(@"%s content is already shown, no content request is sent", __FUNCTION__);
+        return;
+    }
+
+    BOOL zoneNeeded = CountlyServerConfig.sharedInstance.hasContentTriggers;
+    if ([self readFlag:&_contentZoneExited] || (zoneNeeded && ![self readFlag:&_contentZoneWanted]))
+    {
+        CLY_LOG_D(@"%s the content zone is not wanted now, no content request is sent", __FUNCTION__);
+        return;
+    }
+
+    CLY_LOG_D(@"%s sending content request [%lu] of [%lu]", __FUNCTION__, (unsigned long)attempt, (unsigned long)kCountlyCTContentRequests);
+    [self fetchContents:^{
+        if (attempt >= kCountlyCTContentRequests)
+            return;
+
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kCountlyCTContentRetryInterval * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+            [self requestTriggeredContent:chain attempt:attempt + 1];
+        });
     } contentId:nil];
+}
+
+/// Main queue only. Ends the queue part of a round, and starts the round a trigger during it asked for.
+- (void)endContentTriggerRound
+{
+    _triggerRoundRunning = NO;
+    if (!_triggerRoundPending)
+        return;
+
+    _triggerRoundPending = NO;
+    NSUInteger generation = _triggerGeneration;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (generation == self->_triggerGeneration)
+            [self startContentTriggerRound];
+    });
 }
 
 #pragma mark - Private Methods
@@ -361,6 +668,15 @@ static const NSTimeInterval kCountlyCBDefaultZoneTimerInterval = 30.0;
     // overlay with nothing left holding a reference to it.
     [self closeShownContent];
     [self writeFlag:&_refreshRunnablePending value:NO];
+    [self writeFlag:&_contentZoneWanted value:NO];
+    [self writeFlag:&_contentZoneExited value:NO];
+    [self writeFlag:&_behaviorSettingsSettled value:NO];
+    // a round of the halted run must not go on, nor start one for the next run
+    _triggerGeneration++;
+    _contentTriggerChain++;
+    _triggerRoundRunning = NO;
+    _triggerRoundPending = NO;
+    [_earlyTriggers removeAllObjects];
     self.contentSegmentation = nil;
     // the singleton outlives halt, and a next start that applies no behavior settings never sets the interval
     self.zoneTimerInterval = kCountlyCBDefaultZoneTimerInterval;

@@ -25,6 +25,8 @@
 - (BOOL)queueContainsSdkLogs;
 - (void)flushQueue;
 - (NSUInteger)remainingRequestCount;
+- (nullable NSString *)lastItemInQueue;
+- (NSUInteger)queuedRequestCountUpToItem:(NSString *)queryString;
 - (void)replaceAllTemporaryDeviceIDsInQueueWithDeviceID:(NSString *)deviceID;
 - (void)replaceAllAppKeysInQueueWithCurrentAppKey;
 - (void)removeDifferentAppKeysFromQueue;
@@ -72,6 +74,9 @@
 
 - (NSMutableDictionary *)retrieveServerConfig;
 - (void)storeServerConfig:(NSMutableDictionary *)serverConfig;
+
+- (NSDictionary *)retrieveContentTriggerGaps;
+- (void)storeContentTriggerGaps:(NSDictionary *)gaps;
 
 - (NSDictionary *)retrieveHealthCheckTrackerState;
 - (void)storeHealthCheckTrackerState:(NSDictionary *)healthCheckTrackerState;

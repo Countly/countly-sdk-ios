@@ -50,6 +50,12 @@ extern NSString* const kCountlyVTKeyName;
 - (void)resetFirstView;
 
 - (void)addSegmentationToViewWithID:(NSString *)viewID segmentation:(NSDictionary *)segmentation;
+/**
+ * Returns the name of a running view as the app passed it, before the internal limits cut it.
+ * @param viewID The ID of the view
+ * @return The name, or nil for an unknown view
+ */
+- (NSString *)viewNameAsGivenForViewID:(NSString *)viewID;
 - (void)addSegmentationToViewWithName:(NSString *)viewName segmentation:(NSDictionary *)segmentation;
 
 #if (TARGET_OS_IOS || TARGET_OS_TV)

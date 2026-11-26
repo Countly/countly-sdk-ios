@@ -27,6 +27,7 @@ NSString* const kCountlyAppleAdsAttributionSentKey = @"kCountlyAppleAdsAttributi
 NSString* const kCountlyIsCustomDeviceIDKey = @"kCountlyIsCustomDeviceIDKey";
 NSString* const kCountlyRemoteConfigKey = @"kCountlyRemoteConfigKey";
 NSString* const kCountlyServerConfigPersistencyKey = @"kCountlyServerConfigPersistencyKey";
+NSString* const kCountlyContentTriggerGapsPersistencyKey = @"kCountlyContentTriggerGapsPersistencyKey";
 NSString* const kCountlyPLCrashCaptureSuppressedSinceKey = @"kCountlyPLCrashCaptureSuppressedSinceKey";
 
 
@@ -182,6 +183,24 @@ static dispatch_once_t onceToken;
     @synchronized (self)
     {
         return [self.queuedRequests count];
+    }
+}
+
+- (NSString *)lastItemInQueue
+{
+    @synchronized (self)
+    {
+        return self.queuedRequests.lastObject;
+    }
+}
+
+/// How many queued requests there are up to and including the given one, 0 when it is not queued any more
+- (NSUInteger)queuedRequestCountUpToItem:(NSString *)queryString
+{
+    @synchronized (self)
+    {
+        NSUInteger index = [self.queuedRequests indexOfObject:queryString];
+        return index == NSNotFound ? 0 : index + 1;
     }
 }
 
@@ -439,6 +458,7 @@ static dispatch_once_t onceToken;
     {
         [self flushQueue];
         [self saveToFile];
+        [NSUserDefaults.standardUserDefaults removeObjectForKey:kCountlyContentTriggerGapsPersistencyKey];
     }
     else
     {
@@ -781,6 +801,18 @@ static dispatch_once_t onceToken;
     [NSUserDefaults.standardUserDefaults synchronize];
 
     CLY_LOG_D(@"%s server config is stored, key count: [%lu]", __FUNCTION__, (unsigned long)serverConfig.count);
+}
+
+/// When each content trigger last started a round, in milliseconds by gap key, so that its gap holds after a restart
+- (NSDictionary *)retrieveContentTriggerGaps
+{
+    NSDictionary* gaps = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyContentTriggerGapsPersistencyKey];
+    return [gaps isKindOfClass:NSDictionary.class] ? gaps : NSDictionary.new;
+}
+
+- (void)storeContentTriggerGaps:(NSDictionary *)gaps
+{
+    [NSUserDefaults.standardUserDefaults setObject:gaps forKey:kCountlyContentTriggerGapsPersistencyKey];
 }
 
 - (NSDictionary *)retrieveHealthCheckTrackerState
