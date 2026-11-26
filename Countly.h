@@ -646,7 +646,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * Records the revenue of one paid ad impression, as the internal @c [CLY]_ad_revenue event.
  * @discussion Call it from your ad mediation SDK's paid impression callback, for example AppLovin MAX @c didPayRevenueForAd:, Google AdMob @c paidEventHandler or ironSource / Unity LevelPlay @c impressionDataDidSucceed:, once per callback.
- * @discussion The amount is the event's sum. Send it in the currency the app uses for purchases: the SDK and the server convert no currency. AdMob reports micros, so divide its value by 1,000,000 first.
+ * @discussion The amount is the event's sum. Send it in the currency the app uses for purchases: the SDK and the server convert no currency. On iOS, AdMob's @c GADAdValue.value is already an amount in its @c currencyCode, so pass @c adValue.value.doubleValue without dividing it (only AdMob's Android SDK reports micros).
  * @discussion The other values are optional and sent only when given. @c currency is kept for reference only.
  * @discussion Countly attribution counts the event as ad revenue of the user's campaign. It needs a Countly server with attribution phase 2; an older server drops the event.
  * @discussion Calls to this method will be ignored if:

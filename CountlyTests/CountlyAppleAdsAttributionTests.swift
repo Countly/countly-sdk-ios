@@ -136,6 +136,39 @@ class CountlyAppleAdsAttributionTests: CountlyAttributionTestCase {
         XCTAssertEqual(appleAdsTokens(), ["consented_token"])
     }
 
+    /// The deep link callback of a link recorded before start runs during start; the attribution consent it gives
+    /// sends the token in the same start.
+    func test_appleAds_consentGivenByTheCallbackOfADeepLinkRecordedBeforeStart_sendsTheToken() throws {
+        Countly.sharedInstance().recordDeepLink(URL(string: smartLink)!)
+        let config = offlineConfig()
+        config.requiresConsent = true
+        config.consents = [CLYConsent.sessions]
+        config.deepLinkCallback = { _, _ in
+            Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.attribution])
+        }
+        let reads = startWithAppleAds(config) { "callback_token" }
+
+        XCTAssertTrue(waitForAppleAdsToken())
+        XCTAssertEqual(appleAdsTokens(), ["callback_token"])
+        XCTAssertEqual(reads.count, 1)
+    }
+
+    /// Behavior settings that stop requiring consent send the token that waited for the consent.
+    func test_appleAds_consentRequirementLiftedByBehaviorSettings_sendsTheToken() throws {
+        let (config, release) = consentLiftedByBehaviorSettingsConfig()
+        defer { MockURLProtocol.replyEmptyToEveryRequest() }
+        let reads = startWithAppleAds(config) { "lifted_token" }
+        XCTAssertTrue(CountlyConsentManager.sharedInstance().requiresConsent, "the built in behavior settings require consent")
+        settle()
+        XCTAssertEqual(reads.count, 0)
+
+        release.signal()
+
+        XCTAssertTrue(waitForAppleAdsToken())
+        XCTAssertEqual(appleAdsTokens(), ["lifted_token"])
+        XCTAssertEqual(reads.count, 1)
+    }
+
     func test_appleAds_disabled_neverReadsTheToken() throws {
         let counter = AttributionReadCounter()
         Countly.setAppleAdsTokenProvider { _ in

@@ -64,6 +64,28 @@ class CountlyAttributionTestCase: CountlyBaseTestCase {
         return config
     }
 
+    /// Requires consent only through built in behavior settings, and holds the live behavior settings answer, which
+    /// lifts that requirement, until the returned semaphore is signalled. Every other request fails, so it stays queued.
+    func consentLiftedByBehaviorSettingsConfig() -> (CountlyConfig, DispatchSemaphore) {
+        let release = DispatchSemaphore(value: 0)
+        let answer = ServerConfigBuilder().consentRequired(false).build()
+        MockURLProtocol.requestHandler = { request in
+            if request.url?.absoluteString.contains("method=sc") == true {
+                _ = release.wait(timeout: .now() + 10)
+                return (answer.data(using: .utf8), HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil), nil)
+            }
+            return (#"{"result":"fail"}"#.data(using: .utf8), HTTPURLResponse(url: request.url!, statusCode: 400, httpVersion: nil, headerFields: nil), nil)
+        }
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        let sessionConfig = URLSessionConfiguration.ephemeral
+        sessionConfig.protocolClasses = [MockURLProtocol.self]
+        config.urlSessionConfiguration = sessionConfig
+        config.requiresConsent = false
+        config.sdkBehaviorSettings = ServerConfigBuilder().consentRequired(true).build()
+        return (config, release)
+    }
+
     /// Starts with Apple Ads attribution on and a token provider that counts its reads.
     func startWithAppleAds(_ config: CountlyConfig, token: @escaping () -> String?) -> AttributionReadCounter {
         let counter = AttributionReadCounter()
@@ -305,7 +327,12 @@ class CountlyAttributionTests: CountlyAttributionTestCase {
             ("https://example.com/products/7", nil),
             ("myapp://open?dl=/settings", "/settings"),
             // a code the server does not accept is not a smart link
-            ("https://h.com/at/bad.code/x", nil)
+            ("https://h.com/at/bad.code/x", nil),
+            // the path stays percent encoded, as the server's redirect passes it on: an encoded "/" is not split
+            ("https://h.com/at/code/products/a%2Fb", "/products/a%2Fb"),
+            ("https://h.com/at/code/search/a%20b?x=1", "/search/a%20b"),
+            // empty segments and a trailing "/" are dropped, as the server drops them
+            ("https://h.com/at/code/products//42/", "/products/42")
         ]
 
         for (link, expected) in cases {
@@ -361,6 +388,42 @@ class CountlyDeepLinkConsentTests: CountlyAttributionTestCase {
 
         let sent = attributionSignals(ofType: "deeplink").compactMap { $0["value"] as? String }
         XCTAssertEqual(sent, (3...12).map { link($0).absoluteString })
+    }
+
+    /// A link recorded before start is replayed at start; a callback that gives the attribution consent for it
+    /// sends it then, not only on a later consent change.
+    func test_deepLinkRecordedBeforeStart_whoseCallbackGivesTheConsent_isSent() throws {
+        Countly.sharedInstance().recordDeepLink(link(1))
+        let config = consentRequiredConfig()
+        let called = expectation(description: "deep link callback")
+        config.deepLinkCallback = { _, _ in
+            Countly.sharedInstance().giveConsent(forFeatures: [CLYConsent.attribution])
+            called.fulfill()
+        }
+        Countly.sharedInstance().start(with: config)
+
+        wait(for: [called], timeout: TestUtils.asyncTimeout)
+        let sent = attributionSignals(ofType: "deeplink").compactMap { $0["value"] as? String }
+        XCTAssertEqual(sent, [link(1).absoluteString])
+    }
+
+    /// Behavior settings that stop requiring consent send the links held while they required it.
+    func test_heldDeepLink_goesOutWhenTheBehaviorSettingsLiftTheConsentRequirement() throws {
+        let (config, release) = consentLiftedByBehaviorSettingsConfig()
+        defer { MockURLProtocol.replyEmptyToEveryRequest() }
+        Countly.sharedInstance().start(with: config)
+        XCTAssertTrue(CountlyConsentManager.sharedInstance().requiresConsent, "the built in behavior settings require consent")
+        Countly.sharedInstance().recordDeepLink(link(1))
+        XCTAssertTrue(attributionSignals(ofType: "deeplink").isEmpty)
+
+        release.signal()
+
+        XCTAssertTrue(TestUtils.waitUntil("the held link is queued", timeout: TestUtils.asyncTimeout) {
+            !self.attributionSignals(ofType: "deeplink").isEmpty
+        })
+        XCTAssertFalse(CountlyConsentManager.sharedInstance().requiresConsent)
+        let sent = attributionSignals(ofType: "deeplink").compactMap { $0["value"] as? String }
+        XCTAssertEqual(sent, [link(1).absoluteString])
     }
 
     func test_heldDeepLinks_areDroppedWhenTheSDKIsHalted() throws {

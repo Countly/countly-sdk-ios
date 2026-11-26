@@ -121,7 +121,7 @@ extern CLYRequestResult const CLYResponseError;
 
 /**
  * Callback for a deep link recorded with @c recordDeepLink:.
- * @param deepLinkPath For a Countly smart link (@c https://<host>/at/<app id>/<code>[/<path>] or @c /at/<code>[/<path>]), the path after the campaign code, such as @c /products/42, or the value of its @c dl parameter when the link has no path. For any other link, the value of its @c dl parameter. @c nil when there is none.
+ * @param deepLinkPath For a Countly smart link (@c https://<host>/at/<app id>/<code>[/<path>] or @c /at/<code>[/<path>]), the path after the campaign code, such as @c /products/42, percent encoded as in the link and without empty segments, as the server passes it on; or the value of its @c dl parameter when the link has no path. For any other link, the value of its @c dl parameter. @c nil when there is none.
  * @param url The full URL that opened the app.
  */
 typedef void (^CLYDeepLinkCallback)(NSString * _Nullable deepLinkPath, NSURL * url);

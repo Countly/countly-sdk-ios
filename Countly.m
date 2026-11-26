@@ -366,17 +366,6 @@ static dispatch_once_t onceToken;
     if (config.indirectAttribution)
         [self recordIndirectAttribution:config.indirectAttribution];
 
-    [self sendAppleAdsAttributionIfNeeded];
-
-    NSArray<NSURL *>* pendingDeepLinks = nil;
-    @synchronized (self)
-    {
-        pendingDeepLinks = _pendingDeepLinks.copy;
-        _pendingDeepLinks = nil;
-    }
-    for (NSURL* url in pendingDeepLinks)
-        [self recordDeepLink:url];
-    
     [CountlyHealthTracker.sharedInstance sendHealthCheck];
 
     CountlyCommon.sharedInstance.hasFinishedInit = YES;
@@ -390,6 +379,19 @@ static dispatch_once_t onceToken;
     [CountlyServerConfig.sharedInstance applyConsentRequirement];
     [CountlyServerConfig.sharedInstance applyAutomaticTrackingState];
     [CountlyServerConfig.sharedInstance applyLocationTrackingState];
+
+    // after init has finished and the consent requirement is settled, so an attribution consent given meanwhile,
+    // also from the deep link callback of a link replayed here, sends the held links and the Apple Ads token itself
+    [self sendAppleAdsAttributionIfNeeded];
+
+    NSArray<NSURL *>* pendingDeepLinks = nil;
+    @synchronized (self)
+    {
+        pendingDeepLinks = _pendingDeepLinks.copy;
+        _pendingDeepLinks = nil;
+    }
+    for (NSURL* url in pendingDeepLinks)
+        [self recordDeepLink:url];
 
 #if (TARGET_OS_IOS || TARGET_OS_VISION)
     // "ecz" decides only the entry at start; a later behavior settings answer neither enters nor exits the content zone
@@ -1742,9 +1744,11 @@ static dispatch_once_t onceToken;
         }
     }
 
-    // A Countly smart link, as the server reads it: /at/<code>[/<path>] or /at/<app id>/<code>[/<path>]
+    // A Countly smart link, as the server reads it: /at/<code>[/<path>] or /at/<app id>/<code>[/<path>].
+    // The path stays percent encoded, as the server's redirect passes it on as 'dl', so an encoded "/" inside a
+    // segment is not split into two; empty segments are dropped, as the server drops them
     NSMutableArray<NSString *>* segments = NSMutableArray.new;
-    for (NSString* segment in [components.path componentsSeparatedByString:@"/"])
+    for (NSString* segment in [components.percentEncodedPath componentsSeparatedByString:@"/"])
     {
         if (segment.length)
             [segments addObject:segment];
