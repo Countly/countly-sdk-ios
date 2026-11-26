@@ -1,3 +1,11 @@
+## XX.XX.XX
+* Added Apple Ads attribution. On iOS the SDK reads the AdServices attribution token once per install, without an App Tracking Transparency prompt, and sends it to the server, which resolves the Apple Ads campaign with Apple. It needs the attribution consent and can be turned off with the "disableAppleAdsAttribution" init config parameter.
+* Added a new method "recordDeepLink:" that reports a Universal Link or another deep link that opened the app, so that a Countly smart link counts as a click of its campaign and the campaign parameters of the link are attributed. A link recorded before the attribution consent is held in memory and sent once that consent is given.
+* Added "deepLinkCallback" init config parameter, called for each recorded deep link with the path the app should open: the path after the campaign code of a Countly smart link, percent encoded as in the link, or the "dl" parameter of the link.
+* Added a new method "recordAdRevenue:network:placement:format:currency:precision:" that records the revenue of one paid ad impression from an ad mediation SDK callback, so that attribution counts ad revenue in a campaign's revenue and ROAS. It needs the events consent and a server with attribution phase 2.
+
+* Mitigated an issue where a campaign ID or campaign user ID of direct attribution containing characters such as "&" broke the request, as they were not URL encoded.
+
 ## 26.8.1
 * Added content triggers. While the content zone is entered, an event, view, session, user property, recorded exception or consent change that starts a journey or campaign with content now requests that content immediately. Turn them off with "disableAutoContentTriggers" on the content config.
 * Added "disableHealthCheck" to the init config for turning off the SDK health check.

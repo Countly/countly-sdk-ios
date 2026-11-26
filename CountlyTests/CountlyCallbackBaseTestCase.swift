@@ -26,6 +26,9 @@ class CountlyCallbackBaseTestCase: XCTestCase {
         // All cleanup logic now handled inside Countly.halt(true)
         Countly.sharedInstance().halt(true)
 
+        // see CountlyBaseTestCase: no test reads the device's real Apple Ads token
+        Countly.setAppleAdsTokenProvider(TestUtils.noAppleAdsToken)
+
         // Configure MockURLProtocol to return valid JSON by default
         MockURLProtocol.requestHandler = createSuccessHandler()
 

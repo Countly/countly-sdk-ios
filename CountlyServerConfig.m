@@ -850,6 +850,14 @@ static const NSUInteger kCountlyDefaultZoneTimerInterval = 30;
         });
 #endif
 #endif
+        // the deep links held for the attribution consent and the Apple Ads token go out as giving that consent sends
+        // them; before init has finished, start sends them itself once the requirement is settled
+        CountlyRunOnMainThread(^{
+            if (!CountlyCommon.sharedInstance.hasFinishedInit)
+                return;
+            [Countly.sharedInstance sendAppleAdsAttributionIfNeeded];
+            [Countly.sharedInstance sendDeepLinksAwaitingConsent];
+        });
     }
     if (wasTurnedOn)
     {

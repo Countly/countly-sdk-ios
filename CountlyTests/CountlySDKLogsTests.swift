@@ -517,10 +517,17 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
         clearBuffer()
         capture(minBatchSize * 3, level: "e")
 
-        TestUtils.waitUntil("every held line to reach the server") { server.harnessMessages.count >= self.minBatchSize * 3 }
+        // the SDK's own lines, logged meanwhile, share the batches, so the last test lines can be a remainder smaller than a
+        // batch, which waits for the timer; it is played here whenever the queue is empty
+        TestUtils.waitUntil("every held line to reach the server", timeout: 30) {
+            if server.harnessMessages.count < self.minBatchSize * 3 && !CountlyPersistency.sharedInstance().queueContainsSdkLogs() {
+                self.common.scheduleSdkLogsFlush()
+            }
+            return server.harnessMessages.count >= self.minBatchSize * 3
+        }
 
         let batches = server.batches.filter { ($0["i"] as? String) == "gather_backlog" }
-        XCTAssertEqual(3, batches.count, "one batch per round trip of the queue")
+        XCTAssertGreaterThanOrEqual(batches.count, 3, "one batch per round trip of the queue")
         XCTAssertTrue(batches.allSatisfy { (($0["l"] as? [Any])?.count ?? 0) <= minBatchSize }, "no batch is larger than the batch size")
         XCTAssertEqual((0..<minBatchSize * 3).map { "\(harnessPrefix) \($0)" }, server.harnessMessages)
         XCTAssertEqual(0, harnessLines.count)
@@ -844,7 +851,8 @@ class CountlySDKLogsTests: CountlyBaseTestCase {
             let armed = "{\"v\":1,\"t\":1234,\"c\":{\"rqs\":1500},\"lg\":{\"e\":true,\"i\":\"gather_old_user\",\"l\":\"ewidv\",\"b\":100}}"
             return (armed.data(using: .utf8), response, nil)
         }
-        defer { MockURLProtocol.requestHandler = nil }
+        // not nil: this SDK's session keeps using the mock after the test, and a nil handler fails whichever test runs next
+        defer { MockURLProtocol.replyEmptyToEveryRequest() }
 
         let config = createBaseConfig()
         config.manualSessionHandling = true

@@ -105,6 +105,8 @@ static dispatch_once_t onceToken;
 
     [self recordUnknownFeatures:features];
 
+    BOOL givesAttribution = [features containsObject:CLYConsentAttribution] && !self.consentForAttribution;
+
     //NOTE: Due to some legacy Countly Server location info problems, giving consent for location should be the first.
     //NOTE: Otherwise, if location consent is given after sessions consent, begin_session request will be sent with an empty string as location.
     if ([features containsObject:CLYConsentLocation] && !self.consentForLocation)
@@ -150,6 +152,14 @@ static dispatch_once_t onceToken;
 #if (TARGET_OS_IOS || TARGET_OS_VISION)
     [CountlyContentBuilderInternal.sharedInstance onContentTriggerWithKey:kCountlyContentTriggerKeyConsent viewName:nil viewEnd:NO properties:nil customEvent:NO];
 #endif
+
+    // after the consent request, so the server knows the consent when the signals reach it;
+    // at start the SDK sends them itself once the configuration is in place
+    if (givesAttribution && CountlyCommon.sharedInstance.hasFinishedInit)
+    {
+        [Countly.sharedInstance sendAppleAdsAttributionIfNeeded];
+        [Countly.sharedInstance sendDeepLinksAwaitingConsent];
+    }
 
     [CountlyCommon.sharedInstance redecideSdkLogLinesConsent];
 }
