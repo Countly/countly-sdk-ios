@@ -30,25 +30,44 @@ jobs:
       # The notice carries the CHANGELOG.md section of the tag, so it keeps the changelog format whatever is typed into the release form.
       - name: Read the changelog section of the tag
         id: notes
+        shell: python
         env:
           RELEASE_BODY: ${{ github.event.release.body }}
+          CHANGELOG_URL: ${{ github.server_url }}/${{ github.repository }}/blob/${{ env.TAG }}/CHANGELOG.md
         run: |
-          notes=$(tr -d '\r' < CHANGELOG.md | awk -v header="## ${TAG}" '
-            $0 == header { found = 1; next }
-            found && /^## / { exit }
-            found && /^[[:space:]]*$/ { if (started) blanks++; next }
-            found { for (; blanks > 0; blanks--) print ""; print; started = 1 }
-          ')
-          if [ -z "${notes}" ]; then
-            echo "::warning::CHANGELOG.md has no \"## ${TAG}\" section, sending the release body instead."
-            notes=$(printf '%s' "${RELEASE_BODY}" | tr -d '\r')
-          fi
-          delimiter="NOTES_$(openssl rand -hex 8)"
-          {
-            echo "body<<${delimiter}"
-            printf '%s\n' "${notes}"
-            echo "${delimiter}"
-          } >> "${GITHUB_OUTPUT}"
+          import os, re, secrets
+
+          # Slack caps a message text block at 3000 characters; the rest is room for the Slack workflow's own text.
+          SLACK_LIMIT = 2800
+
+
+          def clip(notes, limit, tail):
+              """The notes cut after the last whole line that fits in limit characters together with tail, which then ends them; notes that fit are returned unchanged."""
+              if len(notes) <= limit:
+                  return notes
+              kept = []
+              size = len(tail)
+              for line in notes.split("\n"):
+                  if size + len(line) + 1 > limit:
+                      break
+                  kept.append(line)
+                  size += len(line) + 1
+              return "\n".join(kept).rstrip() + "\n" + tail
+
+
+          tag = os.environ["TAG"]
+          with open("CHANGELOG.md", encoding="utf-8") as handle:
+              changelog = handle.read().replace("\r\n", "\n")
+          match = re.search(rf"^## {re.escape(tag)}[ \t]*$(.*?)(?=^## |\Z)", changelog, re.MULTILINE | re.DOTALL)
+          notes = match.group(1).strip() if match else ""
+          if not notes:
+              print(f'::warning::CHANGELOG.md has no "## {tag}" section, sending the release body instead.')
+              notes = os.environ.get("RELEASE_BODY", "").replace("\r\n", "\n").strip()
+          values = {"body": notes, "slack_body": clip(notes, SLACK_LIMIT, f"...\nFull changelog: {os.environ['CHANGELOG_URL']}")}
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              for key, value in values.items():
+                  delimiter = f"EOF_{secrets.token_hex(16)}"
+                  handle.write(f"{key}<<{delimiter}\n{value}\n{delimiter}\n")
       - name: Send custom JSON data to Slack workflow
         id: slack
         uses: slackapi/slack-github-action@007b2c3c751a190b6f0f040e47ed024deaa72844 # v1.23.0
@@ -59,7 +78,7 @@ jobs:
               "repository": "${{ github.repository }}",
               "tag_name": "${{ env.TAG }}",
               "actor": "${{ github.actor }}",
-              "body": ${{ toJSON(steps.notes.outputs.body) }},
+              "body": ${{ toJSON(steps.notes.outputs.slack_body) }},
               "html_url": "${{ env.RELEASE_URL }}"
             }
         env:
