@@ -1,3 +1,19 @@
+## 26.8.1
+* Added content triggers. While the content zone is entered, an event, view, session, user property, recorded exception or consent change that starts a journey or campaign with content now requests that content immediately. Turn them off with "disableAutoContentTriggers" on the content config.
+* Added "disableHealthCheck" to the init config for turning off the SDK health check.
+* Added "enableRequestCompression" to the init config for sending requests gzip-compressed to servers that support it.
+* Improved journey triggers set in SDK behavior settings. Their events and views now request content immediately, the same way as content triggers.
+
+* Mitigated an issue where crashes were not passed on to crash reporting tools started before the SDK.
+* Mitigated an issue where the "enter content zone" SDK behavior setting could exit a content zone the app entered. The setting now applies only when the SDK starts.
+* Mitigated an issue where journey trigger events and views with keys longer than the key length limit never matched.
+* Mitigated an issue where changing the device clock distorted the durations of sessions, views, timed events and traces.
+* Mitigated an issue where events recorded with a negative duration kept it.
+* Mitigated an issue where the orientation was not recorded at start, and not at all on iOS 27 in apps that use the UIScene lifecycle.
+* Mitigated an issue where the health check sent the app version without the metrics consent.
+* Mitigated an issue where the SDK could crash at start when the app bundle has no version string.
+* Mitigated an issue where building the SDK produced nullability warnings.
+
 ## 26.8.0
 * ! Minor breaking change ! Raised the minimum supported deployment targets to iOS 15, tvOS 15, watchOS 9 and macOS 12 (previously iOS 12, tvOS 12, watchOS 4 and macOS 10.14, and iOS 10 and tvOS 10 for "Countly-PL") for compatibility with Xcode 27. Apps targeting older versions are no longer supported and can keep using 26.1.4.
 * ! Minor breaking change ! "changeDeviceIDWithMerge:" and "changeDeviceIDWithoutMerge:" now ignore nil, an empty string and "CLYDefaultDeviceID" instead of switching back to the default device ID.

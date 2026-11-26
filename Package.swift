@@ -40,7 +40,8 @@ let package = Package(
                 "format.sh",
                 "CHANGELOG.md",
                 "SECURITY.md",
-                "CountlyTests/"
+                "CountlyTests/",
+                "api/"
             ],
 
             resources:

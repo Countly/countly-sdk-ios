@@ -57,6 +57,14 @@ extern NSString* const kCountlySCKeySC;
 - (NSDictionary *)filterSegmentation:(NSDictionary *)segmentation eventKey:(NSString *)eventKey;
 - (BOOL)isJourneyTriggerEvent:(NSString *)eventKey;
 - (BOOL)isJourneyTriggerView:(NSString *)viewName;
+/// Whether the behavior settings in use carry content triggers ("jt"), even empty ones
+- (BOOL)hasContentTriggers;
+/// The event keys of the content triggers, and the keys of what the SDK records besides events
+- (NSSet<NSString *> *)contentTriggerKeys;
+/// The view names of the content triggers
+- (NSSet<NSString *> *)contentTriggerViews;
+/// The user properties of the content triggers: a user detail ("email"), or "custom." and a custom property key
+- (NSSet<NSString *> *)contentTriggerProperties;
 - (NSInteger)userPropertyCacheLimit;
 - (void)applyAutomaticTrackingState;
 /// The consent requirement start sends the consent state for. It is remembered, so applyConsentRequirement acts on a change behavior settings make after start handled consent, also one that lands before init has finished.

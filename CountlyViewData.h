@@ -19,8 +19,13 @@
  */
 @property (nonatomic) NSString* viewName;
 /**
+ * Name of the view as the app passed it, before the internal limits cut it.
+ * @discussion Journey trigger views are compared with this name.
+ */
+@property (nonatomic) NSString* viewNameAsGiven;
+/**
  * Starting time of view.
- * @discussion set the start time when starting a view.
+ * @discussion set the start time when starting a view. It is a "monotonicTime" reading of "CountlyCommon", so it is only meaningful for the view's duration.
  */
 @property (nonatomic) NSTimeInterval viewStartTime;
 /**

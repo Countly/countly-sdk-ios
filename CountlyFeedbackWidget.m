@@ -399,6 +399,7 @@ NSString* const kCountlyFBKeyShown          = @"shown";
     if (!eventName)
     {
         CLY_LOG_W(@"%s widget result event is dropped, unsupported widget type, widgetID: [%@], widgetType: [%@]", __FUNCTION__, self.ID, self.type);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
     

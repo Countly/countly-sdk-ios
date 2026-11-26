@@ -1,0 +1,987 @@
+{
+  "ABIRoot": {
+    "kind": "Root",
+    "name": "CountlyNotificationService",
+    "printedName": "CountlyNotificationService",
+    "children": [
+      {
+        "kind": "Import",
+        "name": "Foundation",
+        "printedName": "Foundation",
+        "declKind": "Import",
+        "moduleName": "CountlyNotificationService",
+        "declAttributes": [
+          "Exported"
+        ]
+      },
+      {
+        "kind": "Import",
+        "name": "UserNotifications",
+        "printedName": "UserNotifications",
+        "declKind": "Import",
+        "moduleName": "CountlyNotificationService",
+        "declAttributes": [
+          "Exported"
+        ]
+      },
+      {
+        "kind": "TypeDecl",
+        "name": "CountlyNotificationService",
+        "printedName": "CountlyNotificationService",
+        "children": [
+          {
+            "kind": "Function",
+            "name": "didReceive",
+            "printedName": "didReceive(_:withContentHandler:)",
+            "children": [
+              {
+                "kind": "TypeNameAlias",
+                "name": "Void",
+                "printedName": "Swift.Void",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Void",
+                    "printedName": "()"
+                  }
+                ]
+              },
+              {
+                "kind": "TypeNominal",
+                "name": "UNNotificationRequest",
+                "printedName": "UserNotifications.UNNotificationRequest",
+                "usr": "c:objc(cs)UNNotificationRequest"
+              },
+              {
+                "kind": "TypeFunc",
+                "name": "Function",
+                "printedName": "(UserNotifications.UNNotificationContent) -> Swift.Void",
+                "children": [
+                  {
+                    "kind": "TypeNameAlias",
+                    "name": "Void",
+                    "printedName": "Swift.Void",
+                    "children": [
+                      {
+                        "kind": "TypeNominal",
+                        "name": "Void",
+                        "printedName": "()"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "TypeNominal",
+                    "name": "UNNotificationContent",
+                    "printedName": "UserNotifications.UNNotificationContent",
+                    "usr": "c:objc(cs)UNNotificationContent"
+                  }
+                ]
+              }
+            ],
+            "declKind": "Func",
+            "usr": "c:objc(cs)CountlyNotificationService(cm)didReceiveNotificationRequest:withContentHandler:",
+            "moduleName": "CountlyNotificationService",
+            "static": true,
+            "isOpen": true,
+            "intro_iOS": "10.0",
+            "objc_name": "didReceiveNotificationRequest:withContentHandler:",
+            "declAttributes": [
+              "Available",
+              "ObjC",
+              "Dynamic"
+            ],
+            "funcSelfKind": "NonMutating"
+          },
+          {
+            "kind": "Constructor",
+            "name": "init",
+            "printedName": "init()",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "CountlyNotificationService",
+                "printedName": "CountlyNotificationService.CountlyNotificationService",
+                "usr": "c:objc(cs)CountlyNotificationService"
+              }
+            ],
+            "declKind": "Constructor",
+            "usr": "c:objc(cs)NSObject(im)init",
+            "moduleName": "CountlyNotificationService",
+            "overriding": true,
+            "implicit": true,
+            "objc_name": "init",
+            "declAttributes": [
+              "Override",
+              "ObjC",
+              "Dynamic"
+            ],
+            "init_kind": "Designated"
+          }
+        ],
+        "declKind": "Class",
+        "usr": "c:objc(cs)CountlyNotificationService",
+        "moduleName": "CountlyNotificationService",
+        "isOpen": true,
+        "objc_name": "CountlyNotificationService",
+        "declAttributes": [
+          "ObjC",
+          "Dynamic"
+        ],
+        "superclassUsr": "c:objc(cs)NSObject",
+        "inheritsConvenienceInitializers": true,
+        "superclassNames": [
+          "ObjectiveC.NSObject"
+        ],
+        "conformances": [
+          {
+            "kind": "Conformance",
+            "name": "NSObjectProtocol",
+            "printedName": "NSObjectProtocol",
+            "usr": "c:objc(pl)NSObject"
+          },
+          {
+            "kind": "Conformance",
+            "name": "CVarArg",
+            "printedName": "CVarArg",
+            "usr": "s:s7CVarArgP",
+            "mangledName": "$ss7CVarArgP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Copyable",
+            "printedName": "Copyable",
+            "usr": "s:s8CopyableP",
+            "mangledName": "$ss8CopyableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "CustomDebugStringConvertible",
+            "printedName": "CustomDebugStringConvertible",
+            "usr": "s:s28CustomDebugStringConvertibleP",
+            "mangledName": "$ss28CustomDebugStringConvertibleP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "CustomStringConvertible",
+            "printedName": "CustomStringConvertible",
+            "usr": "s:s23CustomStringConvertibleP",
+            "mangledName": "$ss23CustomStringConvertibleP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Equatable",
+            "printedName": "Equatable",
+            "usr": "s:SQ",
+            "mangledName": "$sSQ"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Escapable",
+            "printedName": "Escapable",
+            "usr": "s:s9EscapableP",
+            "mangledName": "$ss9EscapableP"
+          },
+          {
+            "kind": "Conformance",
+            "name": "Hashable",
+            "printedName": "Hashable",
+            "usr": "s:SH",
+            "mangledName": "$sSH"
+          }
+        ]
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Float16x4_t",
+        "printedName": "__Float16x4_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD4",
+            "printedName": "Swift.SIMD4<Swift.Float16>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Float16",
+                "printedName": "Swift.Float16",
+                "usr": "s:s7Float16V"
+              }
+            ],
+            "usr": "s:s5SIMD4V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Float16x4_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Float16x8_t",
+        "printedName": "__Float16x8_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD8",
+            "printedName": "Swift.SIMD8<Swift.Float16>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Float16",
+                "printedName": "Swift.Float16",
+                "usr": "s:s7Float16V"
+              }
+            ],
+            "usr": "s:s5SIMD8V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Float16x8_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Float32x2_t",
+        "printedName": "__Float32x2_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD2",
+            "printedName": "Swift.SIMD2<Swift.Float>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Float",
+                "printedName": "Swift.Float",
+                "usr": "s:Sf"
+              }
+            ],
+            "usr": "s:s5SIMD2V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Float32x2_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Float32x4_t",
+        "printedName": "__Float32x4_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD4",
+            "printedName": "Swift.SIMD4<Swift.Float>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Float",
+                "printedName": "Swift.Float",
+                "usr": "s:Sf"
+              }
+            ],
+            "usr": "s:s5SIMD4V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Float32x4_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Float64x2_t",
+        "printedName": "__Float64x2_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD2",
+            "printedName": "Swift.SIMD2<Swift.Double>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Double",
+                "printedName": "Swift.Double",
+                "usr": "s:Sd"
+              }
+            ],
+            "usr": "s:s5SIMD2V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Float64x2_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Int16x4_t",
+        "printedName": "__Int16x4_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD4",
+            "printedName": "Swift.SIMD4<Swift.Int16>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Int16",
+                "printedName": "Swift.Int16",
+                "usr": "s:s5Int16V"
+              }
+            ],
+            "usr": "s:s5SIMD4V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Int16x4_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Int16x8_t",
+        "printedName": "__Int16x8_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD8",
+            "printedName": "Swift.SIMD8<Swift.Int16>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Int16",
+                "printedName": "Swift.Int16",
+                "usr": "s:s5Int16V"
+              }
+            ],
+            "usr": "s:s5SIMD8V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Int16x8_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Int32x2_t",
+        "printedName": "__Int32x2_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD2",
+            "printedName": "Swift.SIMD2<Swift.Int32>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Int32",
+                "printedName": "Swift.Int32",
+                "usr": "s:s5Int32V"
+              }
+            ],
+            "usr": "s:s5SIMD2V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Int32x2_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Int32x4_t",
+        "printedName": "__Int32x4_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD4",
+            "printedName": "Swift.SIMD4<Swift.Int32>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Int32",
+                "printedName": "Swift.Int32",
+                "usr": "s:s5Int32V"
+              }
+            ],
+            "usr": "s:s5SIMD4V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Int32x4_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Int64x2_t",
+        "printedName": "__Int64x2_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD2",
+            "printedName": "Swift.SIMD2<Swift.Int>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Int",
+                "printedName": "Swift.Int",
+                "usr": "s:Si"
+              }
+            ],
+            "usr": "s:s5SIMD2V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Int64x2_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Int8x16_t",
+        "printedName": "__Int8x16_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD16",
+            "printedName": "Swift.SIMD16<Swift.Int8>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Int8",
+                "printedName": "Swift.Int8",
+                "usr": "s:s4Int8V"
+              }
+            ],
+            "usr": "s:s6SIMD16V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Int8x16_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Int8x8_t",
+        "printedName": "__Int8x8_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD8",
+            "printedName": "Swift.SIMD8<Swift.Int8>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "Int8",
+                "printedName": "Swift.Int8",
+                "usr": "s:s4Int8V"
+              }
+            ],
+            "usr": "s:s5SIMD8V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Int8x8_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__NSConstantString",
+        "printedName": "__NSConstantString",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "__NSConstantString_tag",
+            "printedName": "__ObjC.__NSConstantString_tag",
+            "usr": "c:@S@__NSConstantString_tag"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__NSConstantString",
+        "moduleName": "__ObjC",
+        "declAttributes": [
+          "Unsafe"
+        ]
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Poly16x4_t",
+        "printedName": "__Poly16x4_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD4",
+            "printedName": "Swift.SIMD4<Swift.UInt16>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "UInt16",
+                "printedName": "Swift.UInt16",
+                "usr": "s:s6UInt16V"
+              }
+            ],
+            "usr": "s:s5SIMD4V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Poly16x4_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Poly16x8_t",
+        "printedName": "__Poly16x8_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD8",
+            "printedName": "Swift.SIMD8<Swift.UInt16>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "UInt16",
+                "printedName": "Swift.UInt16",
+                "usr": "s:s6UInt16V"
+              }
+            ],
+            "usr": "s:s5SIMD8V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Poly16x8_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Poly64x2_t",
+        "printedName": "__Poly64x2_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD2",
+            "printedName": "Swift.SIMD2<Swift.UInt>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "UInt",
+                "printedName": "Swift.UInt",
+                "usr": "s:Su"
+              }
+            ],
+            "usr": "s:s5SIMD2V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Poly64x2_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Poly8x16_t",
+        "printedName": "__Poly8x16_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD16",
+            "printedName": "Swift.SIMD16<Swift.UInt8>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "UInt8",
+                "printedName": "Swift.UInt8",
+                "usr": "s:s5UInt8V"
+              }
+            ],
+            "usr": "s:s6SIMD16V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Poly8x16_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Poly8x8_t",
+        "printedName": "__Poly8x8_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD8",
+            "printedName": "Swift.SIMD8<Swift.UInt8>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "UInt8",
+                "printedName": "Swift.UInt8",
+                "usr": "s:s5UInt8V"
+              }
+            ],
+            "usr": "s:s5SIMD8V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Poly8x8_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Uint16x4_t",
+        "printedName": "__Uint16x4_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD4",
+            "printedName": "Swift.SIMD4<Swift.UInt16>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "UInt16",
+                "printedName": "Swift.UInt16",
+                "usr": "s:s6UInt16V"
+              }
+            ],
+            "usr": "s:s5SIMD4V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Uint16x4_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Uint16x8_t",
+        "printedName": "__Uint16x8_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD8",
+            "printedName": "Swift.SIMD8<Swift.UInt16>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "UInt16",
+                "printedName": "Swift.UInt16",
+                "usr": "s:s6UInt16V"
+              }
+            ],
+            "usr": "s:s5SIMD8V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Uint16x8_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Uint32x2_t",
+        "printedName": "__Uint32x2_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD2",
+            "printedName": "Swift.SIMD2<Swift.UInt32>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "UInt32",
+                "printedName": "Swift.UInt32",
+                "usr": "s:s6UInt32V"
+              }
+            ],
+            "usr": "s:s5SIMD2V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Uint32x2_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Uint32x4_t",
+        "printedName": "__Uint32x4_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD4",
+            "printedName": "Swift.SIMD4<Swift.UInt32>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "UInt32",
+                "printedName": "Swift.UInt32",
+                "usr": "s:s6UInt32V"
+              }
+            ],
+            "usr": "s:s5SIMD4V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Uint32x4_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Uint64x2_t",
+        "printedName": "__Uint64x2_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD2",
+            "printedName": "Swift.SIMD2<Swift.UInt>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "UInt",
+                "printedName": "Swift.UInt",
+                "usr": "s:Su"
+              }
+            ],
+            "usr": "s:s5SIMD2V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Uint64x2_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Uint8x16_t",
+        "printedName": "__Uint8x16_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD16",
+            "printedName": "Swift.SIMD16<Swift.UInt8>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "UInt8",
+                "printedName": "Swift.UInt8",
+                "usr": "s:s5UInt8V"
+              }
+            ],
+            "usr": "s:s6SIMD16V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Uint8x16_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__Uint8x8_t",
+        "printedName": "__Uint8x8_t",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "SIMD8",
+            "printedName": "Swift.SIMD8<Swift.UInt8>",
+            "children": [
+              {
+                "kind": "TypeNominal",
+                "name": "UInt8",
+                "printedName": "Swift.UInt8",
+                "usr": "s:s5UInt8V"
+              }
+            ],
+            "usr": "s:s5SIMD8V"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__Uint8x8_t",
+        "moduleName": "__ObjC"
+      },
+      {
+        "kind": "TypeAlias",
+        "name": "__builtin_ms_va_list",
+        "printedName": "__builtin_ms_va_list",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "UnsafeMutablePointer",
+            "printedName": "Swift.UnsafeMutablePointer<Swift.CChar>",
+            "children": [
+              {
+                "kind": "TypeNameAlias",
+                "name": "CChar",
+                "printedName": "Swift.CChar",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "Int8",
+                    "printedName": "Swift.Int8",
+                    "usr": "s:s4Int8V"
+                  }
+                ]
+              }
+            ],
+            "usr": "s:Sp"
+          }
+        ],
+        "declKind": "TypeAlias",
+        "usr": "c:@T@__builtin_ms_va_list",
+        "moduleName": "__ObjC",
+        "declAttributes": [
+          "Unsafe"
+        ]
+      },
+      {
+        "kind": "Var",
+        "name": "kCountlyActionIdentifier",
+        "printedName": "kCountlyActionIdentifier",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "String",
+            "printedName": "Swift.String",
+            "usr": "s:SS"
+          }
+        ],
+        "declKind": "Var",
+        "usr": "c:@kCountlyActionIdentifier",
+        "moduleName": "CountlyNotificationService",
+        "isLet": true,
+        "hasStorage": true
+      },
+      {
+        "kind": "Var",
+        "name": "kCountlyPNKeyActionButtonIndex",
+        "printedName": "kCountlyPNKeyActionButtonIndex",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "String",
+            "printedName": "Swift.String",
+            "usr": "s:SS"
+          }
+        ],
+        "declKind": "Var",
+        "usr": "c:@kCountlyPNKeyActionButtonIndex",
+        "moduleName": "CountlyNotificationService",
+        "isLet": true,
+        "hasStorage": true
+      },
+      {
+        "kind": "Var",
+        "name": "kCountlyPNKeyActionButtonTitle",
+        "printedName": "kCountlyPNKeyActionButtonTitle",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "String",
+            "printedName": "Swift.String",
+            "usr": "s:SS"
+          }
+        ],
+        "declKind": "Var",
+        "usr": "c:@kCountlyPNKeyActionButtonTitle",
+        "moduleName": "CountlyNotificationService",
+        "isLet": true,
+        "hasStorage": true
+      },
+      {
+        "kind": "Var",
+        "name": "kCountlyPNKeyActionButtonURL",
+        "printedName": "kCountlyPNKeyActionButtonURL",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "String",
+            "printedName": "Swift.String",
+            "usr": "s:SS"
+          }
+        ],
+        "declKind": "Var",
+        "usr": "c:@kCountlyPNKeyActionButtonURL",
+        "moduleName": "CountlyNotificationService",
+        "isLet": true,
+        "hasStorage": true
+      },
+      {
+        "kind": "Var",
+        "name": "kCountlyPNKeyAttachment",
+        "printedName": "kCountlyPNKeyAttachment",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "String",
+            "printedName": "Swift.String",
+            "usr": "s:SS"
+          }
+        ],
+        "declKind": "Var",
+        "usr": "c:@kCountlyPNKeyAttachment",
+        "moduleName": "CountlyNotificationService",
+        "isLet": true,
+        "hasStorage": true
+      },
+      {
+        "kind": "Var",
+        "name": "kCountlyPNKeyButtons",
+        "printedName": "kCountlyPNKeyButtons",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "String",
+            "printedName": "Swift.String",
+            "usr": "s:SS"
+          }
+        ],
+        "declKind": "Var",
+        "usr": "c:@kCountlyPNKeyButtons",
+        "moduleName": "CountlyNotificationService",
+        "isLet": true,
+        "hasStorage": true
+      },
+      {
+        "kind": "Var",
+        "name": "kCountlyPNKeyCountlyPayload",
+        "printedName": "kCountlyPNKeyCountlyPayload",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "String",
+            "printedName": "Swift.String",
+            "usr": "s:SS"
+          }
+        ],
+        "declKind": "Var",
+        "usr": "c:@kCountlyPNKeyCountlyPayload",
+        "moduleName": "CountlyNotificationService",
+        "isLet": true,
+        "hasStorage": true
+      },
+      {
+        "kind": "Var",
+        "name": "kCountlyPNKeyDefaultURL",
+        "printedName": "kCountlyPNKeyDefaultURL",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "String",
+            "printedName": "Swift.String",
+            "usr": "s:SS"
+          }
+        ],
+        "declKind": "Var",
+        "usr": "c:@kCountlyPNKeyDefaultURL",
+        "moduleName": "CountlyNotificationService",
+        "isLet": true,
+        "hasStorage": true
+      },
+      {
+        "kind": "Var",
+        "name": "kCountlyPNKeyNotificationID",
+        "printedName": "kCountlyPNKeyNotificationID",
+        "children": [
+          {
+            "kind": "TypeNominal",
+            "name": "String",
+            "printedName": "Swift.String",
+            "usr": "s:SS"
+          }
+        ],
+        "declKind": "Var",
+        "usr": "c:@kCountlyPNKeyNotificationID",
+        "moduleName": "CountlyNotificationService",
+        "isLet": true,
+        "hasStorage": true
+      }
+    ],
+    "json_format_version": 8
+  }
+}

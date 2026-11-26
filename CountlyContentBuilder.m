@@ -62,6 +62,7 @@
     if (!contentId || contentId.length == 0)
     {
         CLY_LOG_W(@"%s contentId is null or empty, skipping", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 

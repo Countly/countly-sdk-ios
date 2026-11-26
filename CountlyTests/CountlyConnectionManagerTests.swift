@@ -511,4 +511,58 @@ class CountlyConnectionManagerTests: CountlyBaseTestCase {
         XCTAssertTrue(queue.contains { $0.contains("bounded_wait_probe") },
                       "a send that did not complete is queued for the next start")
     }
+
+    /**
+     * <pre>
+     * The session duration is measured on the monotonic clock, which a change of the system clock does not move.
+     *
+     * 1- Begin a session and move its start 5 seconds back on the monotonic clock
+     * 2- Update the session
+     * 3- Verify the update reports exactly 5 seconds
+     * </pre>
+     */
+    func test_sessionDuration_isMeasuredOnTheMonotonicClock() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        MockURLProtocol.replyEmptyToEveryRequest()
+        Countly.sharedInstance().start(with: mockedConfig())
+        Countly.sharedInstance().beginSession()
+        let connectionManager = try XCTUnwrap(CountlyConnectionManager.sharedInstance())
+        connectionManager.setValue(CountlyCommon.sharedInstance().monotonicTime() - 5, forKey: "lastSessionStartTime")
+
+        Countly.sharedInstance().updateSession()
+
+        let update = try XCTUnwrap(TestUtils.getCurrentRQ()?.first { $0.contains("session_duration=") }, "the session update is queued")
+        XCTAssertEqual("5", TestUtils.parseQueryString(update)["session_duration"] as? String)
+    }
+
+    /**
+     * <pre>
+     * A custom trace is measured on the monotonic clock, which a change of the system clock does not move, and is sent
+     * with a start, an end and a duration that agree.
+     *
+     * 1- Start a custom trace and move its start 3 seconds back on the monotonic clock
+     * 2- End the trace
+     * 3- Verify it reports 3 seconds, an end from the system clock and a start that is the end minus the duration
+     * </pre>
+     */
+    func test_customTraceDuration_isMeasuredOnTheMonotonicClock() throws {
+        try TestPlatform.skipUnlessHTTPInterceptable()
+        MockURLProtocol.replyEmptyToEveryRequest()
+        Countly.sharedInstance().start(with: mockedConfig())
+        Countly.sharedInstance().startCustomTrace("clock_trace")
+        let startedTraces = try XCTUnwrap(CountlyPerformanceMonitoring.sharedInstance().value(forKey: "startedCustomTraces") as? NSMutableDictionary)
+        startedTraces["clock_trace"] = NSNumber(value: CountlyCommon.sharedInstance().monotonicTime() - 3)
+
+        Countly.sharedInstance().endCustomTrace("clock_trace", metrics: nil)
+
+        let request = try XCTUnwrap(TestUtils.getCurrentRQ()?.first { $0.contains("clock_trace") }, "the trace is queued")
+        let trace = try XCTUnwrap(TestUtils.parseQueryString(request)["apm"] as? [String: Any])
+        let duration = try XCTUnwrap(((trace["apm_metrics"] as? [String: Any])?["duration"] as? NSNumber)?.int64Value)
+        let start = try XCTUnwrap((trace["stz"] as? NSNumber)?.int64Value)
+        let end = try XCTUnwrap((trace["etz"] as? NSNumber)?.int64Value)
+        XCTAssertGreaterThanOrEqual(duration, 3000)
+        XCTAssertLessThan(duration, 3500, "the duration does not follow the system clock")
+        XCTAssertEqual(Date().timeIntervalSince1970 * 1000, Double(end), accuracy: 5000, "the end does")
+        XCTAssertEqual(end - duration, start, "the start is the end minus the duration")
+    }
 }

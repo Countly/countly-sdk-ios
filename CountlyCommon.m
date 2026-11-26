@@ -59,7 +59,7 @@ static atomic_bool s_isSdkLogCapturePausedUntilStart = false;
 @interface CountlyCommon ()
 {
     NSCalendar* gregorianCalendar;
-    NSTimeInterval startTime;
+    NSTimeInterval startTime; // a monotonicTime reading, for timeSinceLaunch
     // lines dropped while undecided, per level: only the levels the adopted directive asks for become part of 'd'
     NSInteger sdkLogsUndecidedDrops[sizeof(kCountlySDKLogsLevelChars) - 1];
 }
@@ -119,7 +119,7 @@ static NSUInteger CountlySDKLogsLevelMask(NSString* levels)
     return mask;
 }
 
-NSString* const kCountlySDKVersion = @"26.8.0";
+NSString* const kCountlySDKVersion = @"26.8.1";
 NSString* const kCountlySDKName = @"objc-native-ios";
 
 NSString* const kCountlyErrorDomain = @"ly.count.ErrorDomain";
@@ -144,7 +144,7 @@ static dispatch_once_t onceToken;
     if (self = [super init])
     {
         gregorianCalendar = [NSCalendar.alloc initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
-        startTime = NSDate.date.timeIntervalSince1970;
+        startTime = self.monotonicTime;
         
         self.lastTimestamp = 0;
         self.SDKVersion = kCountlySDKVersion;
@@ -180,6 +180,7 @@ static dispatch_once_t onceToken;
     //under the lock like every other write to it: a reset races the log lines that other threads are
     //still capturing, and mutating the array from two threads at once crashes
     atomic_store(&s_isSdkLogCapturePausedUntilStart, true);
+    atomic_store(&s_isSdkLogCaptureStoppedForCrash, false);
     @synchronized (_sdkLogsLock) {
         [self setLogGatheringOffLocked];
     }
@@ -285,9 +286,17 @@ void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...)
     return self.sdkLogsState != CLYSDKLogsStateOff && !atomic_load(&s_isSdkLogCaptureStoppedForCrash);
 }
 
+/// Stops gathering log lines while an automatically detected crash is reported. Halt and a new start of crash reporting
+/// lift it, since the app can outlive a reported crash whose signal goes on to a handler of the app's own.
 void CountlySDKLogsStopCaptureForCrash(void)
 {
     atomic_store(&s_isSdkLogCaptureStoppedForCrash, true);
+}
+
+/// Gathers log lines again after a reported crash the app outlived, once crash reporting starts again.
+void CountlySDKLogsResumeCaptureAfterCrash(void)
+{
+    atomic_store(&s_isSdkLogCaptureStoppedForCrash, false);
 }
 
 - (BOOL)isCapturingSdkLogLevel:(CLYInternalLogLevel)level
@@ -1164,7 +1173,7 @@ void CountlyRunOnMainThread(dispatch_block_t block)
 
 - (NSInteger)timeSinceLaunch
 {
-    return (int)NSDate.date.timeIntervalSince1970 - startTime;
+    return (NSInteger)(self.monotonicTime - startTime);
 }
 
 - (NSTimeInterval)uniqueTimestamp
@@ -1177,6 +1186,12 @@ void CountlyRunOnMainThread(dispatch_block_t block)
         self.lastTimestamp = now;
 
     return (NSTimeInterval)(self.lastTimestamp / 1000.0);
+}
+
+- (NSTimeInterval)monotonicTime
+{
+    // CLOCK_MONOTONIC_RAW, unlike CACurrentMediaTime and systemUptime, keeps counting while the device sleeps, so time asleep stays in a duration
+    return clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW) / (double)NSEC_PER_SEC;
 }
 
 - (NSString *)randomEventID
@@ -1210,20 +1225,44 @@ void CountlyRunOnMainThread(dispatch_block_t block)
     [self performSelector:@selector(recordOrientation) withObject:nil afterDelay:0.5];
 }
 
+#if (TARGET_OS_IOS)
+/**
+ * The interface orientation of the app's window scene. On iOS 27 an app that uses the scene lifecycle reports no
+ * orientation through the status bar, so the status bar is only asked when no window scene knows one.
+ * @return the current interface orientation, or @c UIInterfaceOrientationUnknown when none can be read
+ */
+- (UIInterfaceOrientation)currentInterfaceOrientation
+{
+    UIInterfaceOrientation interfaceOrientation = CountlyCommon.keyWindow.windowScene.interfaceOrientation;
+    if (interfaceOrientation != UIInterfaceOrientationUnknown)
+        return interfaceOrientation;
+
+    // early in launch no window is key yet, while the connected scene already has its orientation
+    for (UIScene* scene in UIApplication.sharedApplication.connectedScenes)
+    {
+        if ([scene isKindOfClass:UIWindowScene.class] && ((UIWindowScene *)scene).interfaceOrientation != UIInterfaceOrientationUnknown)
+            return ((UIWindowScene *)scene).interfaceOrientation;
+    }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    return UIApplication.sharedApplication.statusBarOrientation;
+#pragma GCC diagnostic pop
+}
+#endif
+
 - (void)recordOrientation
 {
 #if (TARGET_OS_IOS)
     if (!self.enableOrientationTracking)
         return;
-    
+
     if ([UIApplication sharedApplication].applicationState == UIApplicationStateBackground) {
         CLY_LOG_D(@"%s app is in the background, orientation recording will be ignored", __FUNCTION__);
         return;
     }
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-    UIInterfaceOrientation interfaceOrientation = UIApplication.sharedApplication.statusBarOrientation;
-#pragma GCC diagnostic pop
+
+    UIInterfaceOrientation interfaceOrientation = [self currentInterfaceOrientation];
 
     NSString* mode = nil;
     if (UIInterfaceOrientationIsPortrait(interfaceOrientation))
@@ -1437,8 +1476,26 @@ void CountlyRunOnMainThread(dispatch_block_t block)
 
 - (NSURLSessionDataTask *)immediateDataTaskWithRequest:(NSURLRequest *)request completionHandler:(void (^)(NSData *, NSURLResponse *, NSError *))completionHandler
 {
+    NSURLRequest* sentRequest = request;
+    void (^handler)(NSData *, NSURLResponse *, NSError *) = completionHandler;
+    NSMutableURLRequest* compressedRequest = CountlyConnectionManager.sharedInstance.requestCompressionEnabled ? request.mutableCopy : nil;
+    if (compressedRequest && [CountlyConnectionManager.sharedInstance compressRequestIfAllowed:compressedRequest])
+    {
+        sentRequest = compressedRequest;
+        handler = ^(NSData *data, NSURLResponse *response, NSError *error)
+        {
+            NSInteger code = [response isKindOfClass:NSHTTPURLResponse.class] ? ((NSHTTPURLResponse *)response).statusCode : 0;
+            BOOL isAccepted = code >= 200 && code < 300 && data.length > 0 && [NSJSONSerialization JSONObjectWithData:data options:0 error:nil] != nil;
+            if (!error && response && !isAccepted)
+                [CountlyConnectionManager.sharedInstance blockRequestCompression];
+
+            if (completionHandler)
+                completionHandler(data, response, error);
+        };
+    }
+
     @synchronized (self) {
-        return [self.ImmediateURLSession dataTaskWithRequest:request completionHandler:completionHandler];
+        return [self.ImmediateURLSession dataTaskWithRequest:sentRequest completionHandler:handler];
     }
 }
 
@@ -1749,7 +1806,8 @@ NSString* CountlyJSONFromObject(id object)
 {
     if (self.length > CountlyCommon.sharedInstance.maxKeyLength)
     {
-        CLY_LOG_D(@"%s key exceeds the SDK key length limit and will be truncated, target: [%@], key: [%@], keyLength: [%lu], truncatedTo: [%lu]", __FUNCTION__, explanation, self, (unsigned long)self.length, (unsigned long)CountlyCommon.sharedInstance.maxKeyLength);
+        CLY_LOG_W(@"%s key exceeds the SDK key length limit and will be truncated, target: [%@], key: [%@], keyLength: [%lu], truncatedTo: [%lu]", __FUNCTION__, explanation, self, (unsigned long)self.length, (unsigned long)CountlyCommon.sharedInstance.maxKeyLength);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w201"];
         return [self substringToIndex:CountlyCommon.sharedInstance.maxKeyLength];
     }
 
@@ -1761,8 +1819,9 @@ NSString* CountlyJSONFromObject(id object)
     NSUInteger limit = CountlyCommon.sharedInstance.maxValueLengthPicture;
     if (self.length > limit)
     {
-        CLY_LOG_D(@"%s value exceeds the SDK picture value limit and will be truncated, target: [%@], valueLength: [%lu], truncatedTo: [%lu]", __FUNCTION__, explanation, (unsigned long)self.length, (unsigned long)limit);
+        CLY_LOG_W(@"%s value exceeds the SDK picture value limit and will be truncated, target: [%@], valueLength: [%lu], truncatedTo: [%lu]", __FUNCTION__, explanation, (unsigned long)self.length, (unsigned long)limit);
         CLY_LOG_D(@"%s truncated picture value detail, target: [%@], fullValue: [%@]", __FUNCTION__, explanation, self);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w202"];
         return [self substringToIndex:limit];
     }
     return self;
@@ -1772,8 +1831,9 @@ NSString* CountlyJSONFromObject(id object)
 {
     if (self.length > CountlyCommon.sharedInstance.maxValueLength)
     {
-        CLY_LOG_D(@"%s value exceeds the SDK value length limit and will be truncated, target: [%@], valueLength: [%lu], truncatedTo: [%lu]", __FUNCTION__, explanation, (unsigned long)self.length, (unsigned long)CountlyCommon.sharedInstance.maxValueLength);
+        CLY_LOG_W(@"%s value exceeds the SDK value length limit and will be truncated, target: [%@], valueLength: [%lu], truncatedTo: [%lu]", __FUNCTION__, explanation, (unsigned long)self.length, (unsigned long)CountlyCommon.sharedInstance.maxValueLength);
         CLY_LOG_D(@"%s truncated value detail, target: [%@], fullValue: [%@]", __FUNCTION__, explanation, self);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w202"];
         return [self substringToIndex:CountlyCommon.sharedInstance.maxValueLength];
     }
 
@@ -1794,7 +1854,8 @@ NSString* CountlyJSONFromObject(id object)
         if (CountlyIsSupportedNumber(obj) || [obj isKindOfClass:[NSString class]]) {
             [filteredArray addObject:obj];
         } else {
-            CLY_LOG_D(@"%s dropping array element with an unsupported type, only NSNumber and NSString are allowed, receivedType: [%@]", __FUNCTION__, [obj class]);
+            CLY_LOG_W(@"%s dropping array element with an unsupported type, only NSNumber and NSString are allowed, receivedType: [%@]", __FUNCTION__, [obj class]);
+            [CountlyHealthTracker.sharedInstance recordLogCode:@"w206"];
         }
     }
     return filteredArray.copy;
@@ -1842,7 +1903,8 @@ NSString* CountlyJSONFromObject(id object)
     NSMutableArray* excessKeys = allKeys.mutableCopy;
     [excessKeys removeObjectsInRange:(NSRange){0, CountlyCommon.sharedInstance.maxSegmentationValues}];
 
-    CLY_LOG_D(@"%s segmentation exceeds the SDK segmentation value limit and will be trimmed, target: [%@], keyCount: [%lu], trimmedTo: [%lu], droppedKeyCount: [%lu], droppedKeys: [%@]", __FUNCTION__, explanation, (unsigned long)allKeys.count, (unsigned long)CountlyCommon.sharedInstance.maxSegmentationValues, (unsigned long)excessKeys.count, excessKeys);
+    CLY_LOG_W(@"%s segmentation exceeds the SDK segmentation value limit and will be trimmed, target: [%@], keyCount: [%lu], trimmedTo: [%lu], droppedKeyCount: [%lu], droppedKeys: [%@]", __FUNCTION__, explanation, (unsigned long)allKeys.count, (unsigned long)CountlyCommon.sharedInstance.maxSegmentationValues, (unsigned long)excessKeys.count, excessKeys);
+    [CountlyHealthTracker.sharedInstance recordLogCode:@"w203"];
 
     NSMutableDictionary* limitedDict = self.mutableCopy;
     [limitedDict removeObjectsForKeys:excessKeys];
@@ -1862,7 +1924,8 @@ NSString* CountlyJSONFromObject(id object)
             ([value isKindOfClass:[NSArray class]] && (value = [(NSArray *)value cly_filterSupportedDataTypes]))) {
             [filteredDictionary setObject:value forKey:key];
         } else {
-            CLY_LOG_D(@"%s dropping dictionary entry with an unsupported value type, key: [%@], receivedType: [%@]", __FUNCTION__, key, [value class]);
+            CLY_LOG_W(@"%s dropping dictionary entry with an unsupported value type, key: [%@], receivedType: [%@]", __FUNCTION__, key, [value class]);
+            [CountlyHealthTracker.sharedInstance recordLogCode:@"w206"];
         }
     }
     
@@ -1871,9 +1934,56 @@ NSString* CountlyJSONFromObject(id object)
 
 @end
 
+/// CRC-32 (IEEE 802.3, the one gzip uses) of the given bytes.
+static uint32_t CountlyCRC32(const uint8_t *bytes, NSUInteger length)
+{
+    static uint32_t table[256];
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        for (uint32_t i = 0; i < 256; i++)
+        {
+            uint32_t c = i;
+            for (int k = 0; k < 8; k++)
+                c = (c & 1) ? (0xEDB88320u ^ (c >> 1)) : (c >> 1);
+            table[i] = c;
+        }
+    });
+
+    uint32_t crc = 0xFFFFFFFFu;
+    for (NSUInteger i = 0; i < length; i++)
+        crc = table[(crc ^ bytes[i]) & 0xFF] ^ (crc >> 8);
+
+    return crc ^ 0xFFFFFFFFu;
+}
+
 @implementation NSData (Countly)
 - (NSString *)cly_stringUTF8
 {
     return [NSString.alloc initWithData:self encoding:NSUTF8StringEncoding];
+}
+
+- (NSData *)cly_gzipCompressed
+{
+    NSError* error = nil;
+    NSData* deflated = [self compressedDataUsingAlgorithm:NSDataCompressionAlgorithmZlib error:&error];
+    if (!deflated)
+    {
+        CLY_LOG_D(@"%s compressing failed, the body is sent uncompressed, error: [%@]", __FUNCTION__, error.localizedDescription);
+        return nil;
+    }
+
+    static const uint8_t header[10] = {0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xff};
+    uint32_t crc = CountlyCRC32(self.bytes, self.length);
+    uint32_t size = (uint32_t)self.length;
+    uint8_t trailer[8] = {
+        crc & 0xff, (crc >> 8) & 0xff, (crc >> 16) & 0xff, (crc >> 24) & 0xff,
+        size & 0xff, (size >> 8) & 0xff, (size >> 16) & 0xff, (size >> 24) & 0xff
+    };
+
+    NSMutableData* gzip = [NSMutableData dataWithCapacity:sizeof(header) + deflated.length + sizeof(trailer)];
+    [gzip appendBytes:header length:sizeof(header)];
+    [gzip appendData:deflated];
+    [gzip appendBytes:trailer length:sizeof(trailer)];
+    return gzip;
 }
 @end

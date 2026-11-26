@@ -120,6 +120,7 @@ static dispatch_once_t onceToken;
     if (CountlyCommon.sharedInstance.hasStarted_)
     {
         CLY_LOG_W(@"%s omitting the call, the SDK has already been started", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w110"];
         return;
     }
     
@@ -129,6 +130,9 @@ static dispatch_once_t onceToken;
     CountlyCommon.sharedInstance.shouldIgnoreTrustCheck = config.shouldIgnoreTrustCheck;
     CountlyCommon.sharedInstance.loggerDelegate = config.loggerDelegate;
     CountlyCommon.sharedInstance.internalLogLevel = config.internalLogLevel;
+
+    if (config.disableHealthCheck)
+        [CountlyHealthTracker.sharedInstance disableHealthCheck];
 
     config = [self checkAndFixInternalLimitsConfig:config];
     _startConfig = config;
@@ -172,6 +176,7 @@ static dispatch_once_t onceToken;
     CountlyConnectionManager.sharedInstance.appKey = config.appKey;
     CountlyConnectionManager.sharedInstance.host = config.host;
     CountlyConnectionManager.sharedInstance.alwaysUsePOST = config.alwaysUsePOST;
+    CountlyConnectionManager.sharedInstance.requestCompressionEnabled = config.enableRequestCompression;
     CountlyConnectionManager.sharedInstance.pinnedCertificates = config.pinnedCertificates;
     CountlyConnectionManager.sharedInstance.secretSalt = config.secretSalt;
     CountlyConnectionManager.sharedInstance.URLSessionConfiguration = config.URLSessionConfiguration;
@@ -213,6 +218,10 @@ static dispatch_once_t onceToken;
         [CountlyLocationManager.sharedInstance updateLocation:config.location city:config.city ISOCountryCode:config.ISOCountryCode IP:config.IP];
     }
     
+    // before the session starts, which records the orientation the app starts in
+    CountlyCommon.sharedInstance.enableOrientationTracking = config.enableOrientationTracking;
+    [CountlyCommon.sharedInstance observeDeviceOrientationChanges];
+
     // Automatic session tracking is resolved through the SBS precedence chain (server can override the developer's manual session control choice)
     if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
         [CountlyConnectionManager.sharedInstance beginSession];
@@ -235,10 +244,8 @@ static dispatch_once_t onceToken;
 #endif
 #endif
     
-    if(config.crashes.crashFilterCallback) {
-        [CountlyCrashReporter.sharedInstance setCrashFilterCallback:config.crashes.crashFilterCallback];
-    }
-    
+    CountlyCrashReporter.sharedInstance.crashFilterCallback = config.crashes.crashFilterCallback;
+
     CountlyCrashReporter.sharedInstance.crashSegmentation = config.crashSegmentation;
     CountlyCrashReporter.sharedInstance.crashLogLimit = config.sdkInternalLimits.getMaxBreadcrumbCount;
     CountlyCrashReporter.sharedInstance.crashFilter = config.crashFilter;
@@ -311,9 +318,6 @@ static dispatch_once_t onceToken;
     
     [CountlyPerformanceMonitoring.sharedInstance startWithConfig:config.apm];
     
-    CountlyCommon.sharedInstance.enableOrientationTracking = config.enableOrientationTracking;
-    [CountlyCommon.sharedInstance observeDeviceOrientationChanges];
-    
     [CountlyConnectionManager.sharedInstance proceedOnQueue];
     
     //TODO: Should move at the top after checking the the edge cases of current implementation
@@ -358,6 +362,12 @@ static dispatch_once_t onceToken;
     [CountlyServerConfig.sharedInstance applyConsentRequirement];
     [CountlyServerConfig.sharedInstance applyAutomaticTrackingState];
     [CountlyServerConfig.sharedInstance applyLocationTrackingState];
+
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+    // "ecz" decides only the entry at start; a later behavior settings answer neither enters nor exits the content zone
+    if (CountlyServerConfig.sharedInstance.enterContentZone)
+        [CountlyContentBuilderInternal.sharedInstance enterContentZone:@[]];
+#endif
 }
 
 - (CountlyConfig *) checkAndFixInternalLimitsConfig:(CountlyConfig *)config
@@ -365,6 +375,7 @@ static dispatch_once_t onceToken;
     if (config.sdkInternalLimits.getMaxKeyLength == 0) {
         [config.sdkInternalLimits setMaxKeyLength:kCountlyMaxKeyLength];
         CLY_LOG_W(@"%s ignoring the provided 'maxKeyLength' because it is less than 1, falling back to: [%lu]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxKeyLength);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w121"];
     }
     else if(config.sdkInternalLimits.getMaxKeyLength != kCountlyMaxKeyLength)
     {
@@ -374,6 +385,7 @@ static dispatch_once_t onceToken;
     if (config.sdkInternalLimits.getMaxValueSize == 0) {
         [config.sdkInternalLimits setMaxValueSize:kCountlyMaxValueSize];
         CLY_LOG_W(@"%s ignoring the provided 'maxValueSize' because it is less than 1, falling back to: [%lu]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxValueSize);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w121"];
     }
     else if(config.sdkInternalLimits.getMaxValueSize != kCountlyMaxValueSize)
     {
@@ -383,6 +395,7 @@ static dispatch_once_t onceToken;
     if (config.sdkInternalLimits.getMaxSegmentationValues == 0) {
         [config.sdkInternalLimits setMaxSegmentationValues:kCountlyMaxSegmentationValues];
         CLY_LOG_W(@"%s ignoring the provided 'maxSegmentationValues' because it is less than 1, falling back to: [%lu]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxSegmentationValues);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w121"];
     }
     else if(config.sdkInternalLimits.getMaxSegmentationValues != kCountlyMaxSegmentationValues)
     {
@@ -392,6 +405,7 @@ static dispatch_once_t onceToken;
     if (config.sdkInternalLimits.getMaxBreadcrumbCount == 0) {
         [config.sdkInternalLimits setMaxBreadcrumbCount:kCountlyMaxBreadcrumbCount];
         CLY_LOG_W(@"%s ignoring the provided 'maxBreadcrumbCount' because it is less than 1, falling back to: [%lu]", __FUNCTION__, (unsigned long)config.sdkInternalLimits.getMaxBreadcrumbCount);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w121"];
     }
     else if(config.sdkInternalLimits.getMaxBreadcrumbCount != kCountlyMaxBreadcrumbCount)
     {
@@ -412,6 +426,10 @@ static dispatch_once_t onceToken;
 
 #pragma mark -
 
+/// Runs every session update period while the app is active: sends the session update the SDK makes by itself, counted for the
+/// health check only when a session is there to update, and moves the recorded events into a request. It does not store the
+/// health counters: a save ends the run of backoffs in a row the health check reports, and a backoff pause lasts about as long
+/// as this period, so saving here would cut every run.
 - (void)onTimer:(NSTimer *)timer
 {
     CLY_LOG_D(@"%s session timer fired, automaticSessions: [%@], hybridSessions: [%@], isSuspended: [%@]", __FUNCTION__, CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled ? @"YES" : @"NO", CountlyCommon.sharedInstance.enableManualSessionControlHybridMode ? @"YES" : @"NO", isSuspended ? @"YES" : @"NO");
@@ -421,6 +439,8 @@ static dispatch_once_t onceToken;
     // Hybrid mode keeps the automatic session update going even when automatic session tracking is not active
     if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled || CountlyCommon.sharedInstance.enableManualSessionControlHybridMode)
     {
+        if (CountlyConnectionManager.sharedInstance.isSessionStarted && CountlyServerConfig.sharedInstance.sessionTrackingEnabled)
+            [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"update:a"];
         [CountlyConnectionManager.sharedInstance updateSession];
     }
     
@@ -428,6 +448,8 @@ static dispatch_once_t onceToken;
 
     // a buffer that never reaches the batch size would otherwise sit in memory for the whole run
     [CountlyCommon.sharedInstance scheduleSdkLogsFlush];
+
+    [CountlyHealthTracker.sharedInstance saveState];
 }
 
 - (void)suspend
@@ -514,9 +536,10 @@ static dispatch_once_t onceToken;
 - (void)applicationDidEnterBackground:(NSNotification *)notification
 {
     CLY_LOG_D(@"%s the app did enter background, saving the state and suspending", __FUNCTION__);
-    [CountlyHealthTracker.sharedInstance saveState];
     [CountlyConnectionTest.sharedInstance noteAppSuspended];
     [self suspend];
+    // after suspend, so the counts it makes are stored before the app may be killed in the background
+    [CountlyHealthTracker.sharedInstance saveState];
 }
 
 - (void)applicationWillEnterForeground:(NSNotification *)notification
@@ -566,6 +589,7 @@ static dispatch_once_t onceToken;
     if (!newHost.length)
     {
         CLY_LOG_E(@"%s omitting the call, the provided host is nil or empty", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"e102"];
         return;
     }
     
@@ -586,6 +610,7 @@ static dispatch_once_t onceToken;
     if (!newAppKey.length)
     {
         CLY_LOG_E(@"%s omitting the call, the provided app key is nil or empty", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"e103"];
         return;
     }
     
@@ -646,6 +671,7 @@ static dispatch_once_t onceToken;
     // Ignore nil or empty dictionary
     if (customHeaderValues == nil || customHeaderValues.count == 0) {
         CLY_LOG_W(@"%s omitting the call, no custom network request header is provided", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
     
@@ -658,10 +684,19 @@ static dispatch_once_t onceToken;
 - (void)beginSession
 {
     CLY_LOG_I(@"%s a manual session begin is requested, automaticSessions: [%@]", __FUNCTION__, CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled ? @"YES" : @"NO");
+    [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"begin"];
 
     if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
     {
         CLY_LOG_W(@"%s omitting the session begin, automatic session tracking is active", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740" forUsageArea:@"sessions"];
+        return;
+    }
+
+    if ([self isSessionRunningForManualSessionBegin])
+    {
+        CLY_LOG_W(@"%s the session begin will be ignored, a session is already running", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w760" forUsageArea:@"sessions"];
         return;
     }
 
@@ -671,11 +706,19 @@ static dispatch_once_t onceToken;
 - (void)updateSession
 {
     CLY_LOG_I(@"%s a manual session update is requested, automaticSessions: [%@]", __FUNCTION__, CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled ? @"YES" : @"NO");
+    [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"update"];
 
     if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
     {
         CLY_LOG_W(@"%s omitting the session update, automatic session tracking is active", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740" forUsageArea:@"sessions"];
         return;
+    }
+
+    if ([self isSessionMissingForManualSessionCall])
+    {
+        CLY_LOG_W(@"%s the session update will be ignored, no session is running", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w760" forUsageArea:@"sessions"];
     }
 
     [CountlyConnectionManager.sharedInstance updateSession];
@@ -684,15 +727,44 @@ static dispatch_once_t onceToken;
 - (void)endSession
 {
     CLY_LOG_I(@"%s a manual session end is requested, automaticSessions: [%@]", __FUNCTION__, CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled ? @"YES" : @"NO");
+    [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"end"];
 
     if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
     {
         CLY_LOG_W(@"%s omitting the session end, automatic session tracking is active", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w740" forUsageArea:@"sessions"];
         return;
+    }
+
+    if ([self isSessionMissingForManualSessionCall])
+    {
+        CLY_LOG_W(@"%s the session end will be ignored, no session is running", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w760" forUsageArea:@"sessions"];
     }
 
     [CountlyConnectionManager.sharedInstance sendEventsWithSaveIfNeeded];
     [CountlyConnectionManager.sharedInstance endSession];
+    [CountlyHealthTracker.sharedInstance saveState];
+}
+
+/// Whether a manual session update or end finds no running session while sessions can otherwise be tracked, with consent given
+/// and session tracking allowed by the behavior settings. The connection manager ignores such a call at debug level, as the
+/// automatic session paths reach it as well, so the manual call logs the warning that the health check counts. A stray end
+/// still moves the pending events and user details into requests.
+- (BOOL)isSessionMissingForManualSessionCall
+{
+    return CountlyConsentManager.sharedInstance.consentForSessions &&
+           CountlyServerConfig.sharedInstance.sessionTrackingEnabled &&
+           !CountlyConnectionManager.sharedInstance.isSessionStarted;
+}
+
+/// Whether a manual session begin finds a session already running while sessions can otherwise be tracked, with consent given
+/// and session tracking allowed by the behavior settings. Such a begin is out of order and ignored.
+- (BOOL)isSessionRunningForManualSessionBegin
+{
+    return CountlyConsentManager.sharedInstance.consentForSessions &&
+           CountlyServerConfig.sharedInstance.sessionTrackingEnabled &&
+           CountlyConnectionManager.sharedInstance.isSessionStarted;
 }
 
 - (void)applyAutomaticSessionTracking
@@ -753,6 +825,7 @@ static dispatch_once_t onceToken;
     if (deviceID == nil || !deviceID.length)
     {
         CLY_LOG_W(@"%s omitting the call, passing nil or an empty string as the device ID is not allowed", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w601"];
         return;
     }
     
@@ -790,12 +863,14 @@ static dispatch_once_t onceToken;
     if (!CountlyCommon.sharedInstance.hasStarted)
     {
         CLY_LOG_W(@"%s omitting the device ID change, the SDK has not been started yet", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w101"];
         return;
     }
 
     if (!deviceID.length)
     {
         CLY_LOG_W(@"%s omitting the call, passing nil or an empty string as the device ID is not allowed", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w601"];
         return;
     }
 
@@ -820,6 +895,12 @@ static dispatch_once_t onceToken;
 
         [CountlyServerConfig.sharedInstance fetchServerConfig:_startConfig];
 
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+        // a start that began in temporary device ID mode finishes only now, so "ecz" decides the content zone entry now
+        if (CountlyServerConfig.sharedInstance.enterContentZone)
+            [CountlyContentBuilderInternal.sharedInstance enterContentZone:@[]];
+#endif
+
         [CountlyRemoteConfigInternal.sharedInstance downloadRemoteConfigAutomatically];
 
         [CountlyHealthTracker.sharedInstance sendHealthCheck];
@@ -830,6 +911,7 @@ static dispatch_once_t onceToken;
     if ([deviceID isEqualToString:CLYTemporaryDeviceID] && onServer)
     {
         CLY_LOG_W(@"%s 'CLYTemporaryDeviceID' cannot be set with the onServer option, onServer is overridden as NO", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         onServer = NO;
     }
 
@@ -883,7 +965,8 @@ static dispatch_once_t onceToken;
 
     if (!featureName.length)
     {
-        CLY_LOG_E(@"%s omitting the call, the provided feature name is empty", __FUNCTION__);
+        CLY_LOG_W(@"%s omitting the call, the provided feature name is empty", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w402"];
         return;
     }
 
@@ -907,7 +990,8 @@ static dispatch_once_t onceToken;
 
     if (!featureName.length)
     {
-        CLY_LOG_E(@"%s omitting the call, the feature name to cancel consent for is empty", __FUNCTION__);
+        CLY_LOG_W(@"%s omitting the call, the feature name to cancel consent for is empty", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w402"];
         return;
     }
 
@@ -969,6 +1053,14 @@ static dispatch_once_t onceToken;
 }
 
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration
+{
+    [CountlyHealthTracker.sharedInstance recordUsage:@"events" method:@"record"];
+    [self recordEventInternal:key segmentation:segmentation count:count sum:sum duration:duration];
+}
+
+/// Records an event the app asked for through recordEvent or endEvent. Kept apart from the public recordEvent, so the health check
+/// counts an ended timed event as an endEvent call only.
+- (void)recordEventInternal:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration
 {
     CLY_LOG_I(@"%s recording an event, key: [%@], segmentation keys: [%@], segmentation key count: [%lu], count: [%lu], sum: [%f], duration: [%f]", __FUNCTION__, key, segmentation.allKeys, (unsigned long)segmentation.count, (unsigned long)count, sum, duration);
     CLY_LOG_D(@"%s event segmentation detail, key: [%@], segmentation: [%@]", __FUNCTION__, key, [self loggableSegmentation:segmentation eventKey:key]);
@@ -1055,8 +1147,24 @@ static dispatch_once_t onceToken;
 - (void)recordEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration ID:(NSString *)ID timestamp:(NSTimeInterval)timestamp
 {
     if (key.length == 0) {
-        CLY_LOG_E(@"%s omitting the call, the event key is nil or empty", __FUNCTION__);
+        CLY_LOG_W(@"%s omitting the call, the event key is nil or empty", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w701" forUsageArea:@"events"];
         return;
+    }
+
+    NSString* keyAsGiven = key;
+
+    if (count < 1)
+    {
+        CLY_LOG_W(@"%s the event count is below 1, the default count 1 is used, key: [%@]", __FUNCTION__, key);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w750" forUsageArea:@"events"];
+    }
+
+    if (duration < 0)
+    {
+        CLY_LOG_W(@"%s the event duration is negative, it is ignored, key: [%@], duration: [%f]", __FUNCTION__, key, duration);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w750" forUsageArea:@"events"];
+        duration = 0;
     }
 
     CountlyEvent *event = CountlyEvent.new;
@@ -1111,12 +1219,10 @@ static dispatch_once_t onceToken;
         }
         event.key = key;
         event.segmentation = [self processSegmentation:filteredSegmentations eventKey:key];
-        CLYRequestCallback callback = nil;
-        if ([CountlyServerConfig.sharedInstance isJourneyTriggerEvent:key])
-        {
-            callback = [self journeyTriggerCallback];
-        }
-        [CountlyPersistency.sharedInstance recordEvent:event callback:callback];
+        [CountlyPersistency.sharedInstance recordEvent:event];
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+        [CountlyContentBuilderInternal.sharedInstance onContentTriggerWithKey:keyAsGiven viewName:nil viewEnd:NO properties:nil customEvent:YES];
+#endif
 #if __has_include(<os/lock.h>)
         os_unfair_lock_unlock(&previousEventLock);
 #endif
@@ -1125,35 +1231,21 @@ static dispatch_once_t onceToken;
     {
         event.key = key;
         event.segmentation = [self processSegmentation:filteredSegmentations eventKey:key];
-        CLYRequestCallback callback = nil;
-        // Journey trigger views mirror the journey trigger events behavior. The 'name' segmentation value is
-        // matched as sent (after truncation and filtering), same as the wire format.
+        [CountlyPersistency.sharedInstance recordEvent:event];
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
         if ([key isEqualToString:kCountlyReservedEventView])
         {
-            NSString* viewName = event.segmentation[kCountlyVTKeyName];
-            if ([viewName isKindOfClass:NSString.class] && [CountlyServerConfig.sharedInstance isJourneyTriggerView:viewName])
-            {
-                callback = [self journeyTriggerCallback];
-            }
+            // the view name is matched as the app passed it, before the internal limits cut it
+            NSString* viewName = [CountlyViewTrackingInternal.sharedInstance viewNameAsGivenForViewID:event.ID] ?: event.segmentation[kCountlyVTKeyName];
+            if ([viewName isKindOfClass:NSString.class])
+                [CountlyContentBuilderInternal.sharedInstance onContentTriggerWithKey:key viewName:viewName viewEnd:event.segmentation[kCountlyVTKeyVisit] == nil properties:nil customEvent:NO];
         }
-        [CountlyPersistency.sharedInstance recordEvent:event callback:callback];
-    }
-}
-
-// Callback used for both journey trigger kinds: recording an event with a callback force-flushes the event
-// queue, and the content zone is refreshed once that request succeeds.
-- (CLYRequestCallback)journeyTriggerCallback
-{
-    return ^(NSString *response, BOOL success) {
-        if (success)
+        else
         {
-#if (TARGET_OS_IOS || TARGET_OS_VISION)
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [CountlyContentBuilderInternal.sharedInstance refreshContentZoneJTE];
-            });
-#endif
+            [CountlyContentBuilderInternal.sharedInstance onContentTriggerWithKey:key viewName:nil viewEnd:NO properties:nil customEvent:NO];
         }
-    };
+#endif
+    }
 }
 
 - (NSDictionary *)processSegmentation:(NSMutableDictionary *)segmentation eventKey:(NSString *)eventKey {
@@ -1217,6 +1309,7 @@ static dispatch_once_t onceToken;
 - (void)startEvent:(NSString *)key
 {
     CLY_LOG_I(@"%s starting a timed event, key: [%@]", __FUNCTION__, key);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"events" method:@"start"];
 
     if (!CountlyConsentManager.sharedInstance.consentForEvents)
     {
@@ -1227,6 +1320,7 @@ static dispatch_once_t onceToken;
     CountlyEvent *event = CountlyEvent.new;
     event.key = key;
     event.timestamp = CountlyCommon.sharedInstance.uniqueTimestamp;
+    event.monotonicStartTime = CountlyCommon.sharedInstance.monotonicTime;
 
     [CountlyPersistency.sharedInstance recordTimedEvent:event];
 }
@@ -1240,6 +1334,7 @@ static dispatch_once_t onceToken;
 {
     CLY_LOG_I(@"%s ending a timed event, key: [%@], segmentation keys: [%@], segmentation key count: [%lu], count: [%lu], sum: [%f]", __FUNCTION__, key, segmentation.allKeys, (unsigned long)segmentation.count, (unsigned long)count, sum);
     CLY_LOG_D(@"%s timed event end segmentation detail, key: [%@], segmentation: [%@]", __FUNCTION__, key, [self loggableSegmentation:segmentation eventKey:key]);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"events" method:@"end"];
 
     if (!CountlyConsentManager.sharedInstance.consentForEvents)
     {
@@ -1252,16 +1347,18 @@ static dispatch_once_t onceToken;
     if (!event)
     {
         CLY_LOG_W(@"%s omitting the call, the timed event was not started or was already ended, key: [%@]", __FUNCTION__, key);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w720"];
         return;
     }
 
-    NSTimeInterval duration = NSDate.date.timeIntervalSince1970 - event.timestamp;
-    [self recordEvent:key segmentation:segmentation count:count sum:sum duration:duration];
+    NSTimeInterval duration = CountlyCommon.sharedInstance.monotonicTime - event.monotonicStartTime;
+    [self recordEventInternal:key segmentation:segmentation count:count sum:sum duration:duration];
 }
 
 - (void)cancelEvent:(NSString *)key
 {
     CLY_LOG_I(@"%s cancelling a timed event, key: [%@]", __FUNCTION__, key);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"events" method:@"cancel"];
 
     if (!CountlyConsentManager.sharedInstance.consentForEvents)
     {
@@ -1274,6 +1371,7 @@ static dispatch_once_t onceToken;
     if (!event)
     {
         CLY_LOG_W(@"%s nothing to cancel, no timed event is running for the key, key: [%@]", __FUNCTION__, key);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w721"];
         return;
     }
 
@@ -1340,30 +1438,35 @@ static dispatch_once_t onceToken;
 - (void)recordException:(NSException *)exception
 {
     CLY_LOG_D(@"%s exception detail, exception: [%@]", __FUNCTION__, exception);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"crashes" method:@"record"];
     [CountlyCrashReporter.sharedInstance recordException:exception isFatal:NO stackTrace:nil segmentation:nil];
 }
 
 - (void)recordException:(NSException *)exception isFatal:(BOOL)isFatal
 {
     CLY_LOG_D(@"%s exception detail with fatality, exception: [%@], isFatal: [%@]", __FUNCTION__, exception, isFatal ? @"YES" : @"NO");
+    [CountlyHealthTracker.sharedInstance recordUsage:@"crashes" method:@"record"];
     [CountlyCrashReporter.sharedInstance recordException:exception isFatal:isFatal stackTrace:nil segmentation:nil];
 }
 
 - (void)recordException:(NSException *)exception isFatal:(BOOL)isFatal stackTrace:(NSArray *)stackTrace segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_D(@"%s exception detail with stack trace and segmentation, exception: [%@], isFatal: [%@], stackTrace: [%@], segmentation: [%@]", __FUNCTION__, exception, isFatal ? @"YES" : @"NO", stackTrace, segmentation);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"crashes" method:@"record"];
     [CountlyCrashReporter.sharedInstance recordException:exception isFatal:isFatal stackTrace:stackTrace segmentation:segmentation];
 }
 
 - (void)recordError:(NSString *)errorName stackTrace:(NSArray * _Nullable)stackTrace
 {
     CLY_LOG_D(@"%s error detail with stack trace, errorName: [%@], stackTrace: [%@]", __FUNCTION__, errorName, stackTrace);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"crashes" method:@"record"];
     [CountlyCrashReporter.sharedInstance recordError:errorName isFatal:NO stackTrace:stackTrace segmentation:nil];
 }
 
 - (void)recordError:(NSString *)errorName isFatal:(BOOL)isFatal stackTrace:(NSArray * _Nullable)stackTrace segmentation:(NSDictionary *)segmentation
 {
     CLY_LOG_D(@"%s error detail with stack trace and segmentation, errorName: [%@], isFatal: [%@], stackTrace: [%@], segmentation: [%@]", __FUNCTION__, errorName, isFatal ? @"YES" : @"NO", stackTrace, segmentation);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"crashes" method:@"record"];
     [CountlyCrashReporter.sharedInstance recordError:errorName isFatal:isFatal stackTrace:stackTrace segmentation:segmentation];
 }
 
@@ -1371,12 +1474,14 @@ static dispatch_once_t onceToken;
 {
     CLY_LOG_I(@"%s recording a crash breadcrumb, length: [%lu]", __FUNCTION__, (unsigned long)log.length);
     CLY_LOG_D(@"%s crash breadcrumb detail, log: [%@]", __FUNCTION__, log);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"crashes" method:@"log"];
     [CountlyCrashReporter.sharedInstance log:log];
 }
 
 - (void)clearCrashLogs
 {
     CLY_LOG_I(@"%s clearing the recorded crash breadcrumbs", __FUNCTION__);
+    [CountlyHealthTracker.sharedInstance recordUsage:@"crashes" method:@"clear"];
     [CountlyCrashReporter.sharedInstance clearCrashLogs];
 }
 
@@ -1423,13 +1528,15 @@ static dispatch_once_t onceToken;
 
     if (!campaignType.length)
     {
-        CLY_LOG_E(@"%s omitting the call, campaignType must be a non zero length string, campaignType: [%@]", __FUNCTION__, campaignType);
+        CLY_LOG_W(@"%s omitting the call, campaignType must be a non zero length string, campaignType: [%@]", __FUNCTION__, campaignType);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 
     if (!campaignData.length)
     {
-        CLY_LOG_E(@"%s omitting the call, campaignData must be a non zero length string, campaignType: [%@]", __FUNCTION__, campaignType);
+        CLY_LOG_W(@"%s omitting the call, campaignData must be a non zero length string, campaignType: [%@]", __FUNCTION__, campaignType);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 
@@ -1442,6 +1549,7 @@ static dispatch_once_t onceToken;
     if (![campaignType isEqualToString:@"countly"])
     {
         CLY_LOG_W(@"%s omitting the call, direct attribution is only supported for the 'countly' campaign type, campaignType: [%@]", __FUNCTION__, campaignType);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 
@@ -1449,14 +1557,16 @@ static dispatch_once_t onceToken;
     NSDictionary* campaignDataDictionary = [NSJSONSerialization JSONObjectWithData:[campaignData cly_dataUTF8] options:0 error:&error];
     if (error)
     {
-        CLY_LOG_E(@"%s omitting the call, the campaign data is not valid JSON, error: [%@]", __FUNCTION__, error.localizedDescription);
+        CLY_LOG_W(@"%s omitting the call, the campaign data is not valid JSON, error: [%@]", __FUNCTION__, error.localizedDescription);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 
     NSString* campaignID = campaignDataDictionary[@"cid"];
     if (!campaignID.length)
     {
-        CLY_LOG_E(@"%s omitting the call, the campaign ID in the campaign data is missing or empty", __FUNCTION__);
+        CLY_LOG_W(@"%s omitting the call, the campaign ID in the campaign data is missing or empty", __FUNCTION__);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return;
     }
 

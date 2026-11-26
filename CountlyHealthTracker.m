@@ -7,8 +7,11 @@
 //
 
 #import <Foundation/Foundation.h>
+#import <stdatomic.h>
 #import "CountlyHealthTracker.h"
 #import "CountlyCommon.h"
+
+static atomic_bool s_isRecordingStoppedForCrash = false;
 
 @interface CountlyHealthTracker ()
 
@@ -23,6 +26,8 @@
 @property (nonatomic, assign) BOOL healthCheckSent;
 // NO while the counters of the previous run are still to be read, the storage can not be read before the SDK starts
 @property (nonatomic, assign) BOOL persistedStateLoaded;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSMutableDictionary<NSString *, NSNumber *> *> *methodUsage;
+@property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *logCodes;
 
 @property (nonatomic, strong) dispatch_queue_t hcQueue;
 @end
@@ -35,6 +40,8 @@ NSString * const keyStatusCode = @"RStatC";
 NSString * const keyErrorMessage = @"REMsg";
 NSString * const keyBackoffRequest = @"BReq";
 NSString * const keyConsecutiveBackoffRequest = @"CBReq";
+NSString * const keyMethodUsage = @"MU";
+NSString * const keyLogCodes = @"LC";
 
 NSString * const requestKeyErrorCount = @"el";
 NSString * const requestKeyWarningCount = @"wl";
@@ -42,6 +49,20 @@ NSString * const requestKeyStatusCode = @"sc";
 NSString * const requestKeyRequestError = @"em";
 NSString * const requestKeyBackoffRequest = @"bom";
 NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
+NSString * const requestKeyMethodUsage = @"fu";
+NSString * const requestKeyLogCodes = @"lc";
+
+static const long kCountlyHealthCheckCountCap = 65535;
+
+void CountlyHealthTrackerStopRecordingForCrash(void)
+{
+    atomic_store(&s_isRecordingStoppedForCrash, true);
+}
+
+void CountlyHealthTrackerResumeRecordingAfterCrash(void)
+{
+    atomic_store(&s_isRecordingStoppedForCrash, false);
+}
 
 + (instancetype)sharedInstance {
     static CountlyHealthTracker *instance = nil;
@@ -59,6 +80,8 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
         _statusCode = -1;
         _healthCheckSent = NO;
         _healthCheckEnabled = YES;
+        _methodUsage = NSMutableDictionary.new;
+        _logCodes = NSMutableDictionary.new;
 
         // queue for health tracker state
         _hcQueue = dispatch_queue_create("ly.count.healthtracker.queue", DISPATCH_QUEUE_SERIAL);
@@ -69,7 +92,9 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
     return self;
 }
 
-/// Adds the counters the previous run stored to the current ones, once the storage can be read. Call from init or on the health tracker queue.
+/// Adds the counters the previous run stored to the current ones, once the storage can be read, together with the automatically
+/// detected crashes it reported. Those are kept with the request queue, since the crash handler must not call into this class.
+/// Call from init or on the health tracker queue.
 - (void)loadPersistedStateIfNeeded {
     if (self.persistedStateLoaded) {
         return;
@@ -82,6 +107,12 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
 
     self.persistedStateLoaded = YES;
     [self setupInitialCounters:[persistency retrieveHealthCheckTrackerState]];
+
+    NSUInteger automaticCrashReportCount = [persistency takeAutomaticCrashReportCount];
+    if (automaticCrashReportCount > 0) {
+        [self addCount:(long)automaticCrashReportCount toUsageOfArea:@"crashes" method:@"record:a"];
+        [persistency storeHealthCheckTrackerState:[self currentState]];
+    }
 }
 
 /// Adds the stored counters to the ones counted so far, which may include warnings logged before the SDK started.
@@ -101,56 +132,208 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
     self.countBackoffRequest += [initialState[keyBackoffRequest] longValue];
     self.consecutiveBackoffRequest = MAX(self.consecutiveBackoffRequest, [initialState[keyConsecutiveBackoffRequest] longValue]);
 
+    NSDictionary *storedUsage = initialState[keyMethodUsage];
+    if ([storedUsage isKindOfClass:NSDictionary.class]) {
+        [storedUsage enumerateKeysAndObjectsUsingBlock:^(id area, id methods, BOOL *stop) {
+            if (![area isKindOfClass:NSString.class] || ![methods isKindOfClass:NSDictionary.class]) {
+                return;
+            }
+            [(NSDictionary *)methods enumerateKeysAndObjectsUsingBlock:^(id method, id count, BOOL *innerStop) {
+                if ([method isKindOfClass:NSString.class] && [count isKindOfClass:NSNumber.class]) {
+                    [self addCount:[count longValue] toUsageOfArea:area method:method];
+                }
+            }];
+        }];
+    }
+
+    NSDictionary *storedLogCodes = initialState[keyLogCodes];
+    if ([storedLogCodes isKindOfClass:NSDictionary.class]) {
+        [storedLogCodes enumerateKeysAndObjectsUsingBlock:^(id code, id count, BOOL *stop) {
+            if ([code isKindOfClass:NSString.class] && [count isKindOfClass:NSNumber.class]) {
+                [self addCount:[count longValue] toLogCode:code];
+            }
+        }];
+    }
+
     // NOTE: this runs from -init inside the sharedInstance dispatch_once, and CountlyInternalLog
     // calls back into this class for Error and Warning levels. Keep every log on this path at
     // Debug or lower, otherwise the shared instance would be re-entered while being created.
     CLY_LOG_D(@"%s restored persisted counters, errorCount: [%ld], warningCount: [%ld], statusCode: [%ld], errorMessageLength: [%lu], backoffRequestCount: [%ld], consecutiveBackoffRequestCount: [%ld]", __FUNCTION__, self.countLogError, self.countLogWarning, (long)self.statusCode, (unsigned long)self.errorMessage.length, self.countBackoffRequest, self.consecutiveBackoffRequest);
 }
 
+/// Counts one warning log line. Ignored while an automatically detected crash is being reported, as that code may run in a
+/// signal handler, where queuing work can deadlock.
 - (void)logWarning {
+    if (atomic_load(&s_isRecordingStoppedForCrash)) {
+        return;
+    }
+
     dispatch_async(self.hcQueue, ^{
         self.countLogWarning++;
     });
 }
 
+/// Counts one error log line. Ignored while an automatically detected crash is being reported, as that code may run in a
+/// signal handler, where queuing work can deadlock.
 - (void)logError {
+    if (atomic_load(&s_isRecordingStoppedForCrash)) {
+        return;
+    }
+
     dispatch_async(self.hcQueue, ^{
         self.countLogError++;
     });
 }
 
+- (void)recordUsage:(NSString *)area method:(NSString *)method {
+    if (area.length == 0 || method.length == 0 || atomic_load(&s_isRecordingStoppedForCrash)) {
+        return;
+    }
+
+    if (![self hasConsentForUsageArea:area]) {
+        return;
+    }
+
+    dispatch_async(self.hcQueue, ^{
+        [self addCount:1 toUsageOfArea:area method:method];
+    });
+}
+
+/// Whether the feature behind a method usage area has consent right now. Knowing which methods an app calls is itself
+/// tracking information, so a call of a feature without consent is not counted. An unknown area is not counted either.
+/// Every consent counts as given while the app does not require consent.
+- (BOOL)hasConsentForUsageArea:(NSString *)area {
+    CountlyConsentManager *consent = CountlyConsentManager.sharedInstance;
+    if ([area isEqualToString:@"sessions"]) {
+        return consent.consentForSessions;
+    }
+    if ([area isEqualToString:@"events"]) {
+        return consent.consentForEvents;
+    }
+    if ([area isEqualToString:@"views"]) {
+        return consent.consentForViewTracking;
+    }
+    if ([area isEqualToString:@"crashes"]) {
+        return consent.consentForCrashReporting;
+    }
+    return NO;
+}
+
+- (void)recordLogCode:(NSString *)code {
+    [self recordLogCode:code count:1];
+}
+
+- (void)recordLogCode:(NSString *)code count:(NSUInteger)count {
+    if (code.length == 0 || count == 0 || atomic_load(&s_isRecordingStoppedForCrash)) {
+        return;
+    }
+
+    long cappedCount = (long)MIN(count, (NSUInteger)kCountlyHealthCheckCountCap);
+    dispatch_async(self.hcQueue, ^{
+        [self addCount:cappedCount toLogCode:code];
+    });
+}
+
+- (void)recordLogCode:(NSString *)code forUsageArea:(NSString *)area {
+    if (![self hasConsentForUsageArea:area]) {
+        return;
+    }
+
+    [self recordLogCode:code];
+}
+
+/// Adds to the count of a method, up to the cap a health check reports. Call from init or on the health tracker queue.
+- (void)addCount:(long)count toUsageOfArea:(NSString *)area method:(NSString *)method {
+    if (count <= 0) {
+        return;
+    }
+
+    NSMutableDictionary<NSString *, NSNumber *> *methods = self.methodUsage[area];
+    if (!methods) {
+        methods = NSMutableDictionary.new;
+        self.methodUsage[area] = methods;
+    }
+    methods[method] = @(MIN([methods[method] longValue] + count, kCountlyHealthCheckCountCap));
+}
+
+/// Adds to the count of a log code, up to the cap a health check reports. Call from init or on the health tracker queue.
+- (void)addCount:(long)count toLogCode:(NSString *)code {
+    if (count <= 0) {
+        return;
+    }
+
+    self.logCodes[code] = @(MIN([self.logCodes[code] longValue] + count, kCountlyHealthCheckCountCap));
+}
+
+/// A copy of the method usage map that later counts do not change. Call from init or on the health tracker queue.
+- (NSDictionary *)methodUsageSnapshot {
+    NSMutableDictionary *snapshot = NSMutableDictionary.new;
+    [self.methodUsage enumerateKeysAndObjectsUsingBlock:^(NSString *area, NSMutableDictionary *methods, BOOL *stop) {
+        snapshot[area] = methods.copy;
+    }];
+    return snapshot.copy;
+}
+
+/// The counters in the form they are persisted in. Call from init or on the health tracker queue.
+- (NSDictionary *)currentState {
+    return @{
+        keyLogWarning: @(self.countLogWarning),
+        keyLogError: @(self.countLogError),
+        keyStatusCode: @(self.statusCode),
+        keyErrorMessage: self.errorMessage ?: @"",
+        keyBackoffRequest: @(self.countBackoffRequest),
+        keyConsecutiveBackoffRequest: @(self.consecutiveBackoffRequest),
+        keyMethodUsage: [self methodUsageSnapshot],
+        keyLogCodes: self.logCodes.copy
+    };
+}
+
 - (void)logFailedNetworkRequestWithStatusCode:(NSInteger)statusCode
                                 errorResponse:(NSString *)errorResponse {
-    if (statusCode <= 0 || statusCode >= 1000 || errorResponse == nil) {
+    if (statusCode <= 0 || statusCode >= 1000) {
         return;
     }
     
+    NSString *response = errorResponse ?: @"";
     dispatch_async(self.hcQueue, ^{
         self.statusCode = statusCode;
 
-        if (errorResponse.length > 1000) {
+        if (response.length > 1000) {
             // copy ensures immutability even if errorResponse was NSMutableString
-            self.errorMessage = [errorResponse substringToIndex:1000];
+            self.errorMessage = [response substringToIndex:1000];
         } else {
-            self.errorMessage = [errorResponse copy];
+            self.errorMessage = [response copy];
         }
-        CLY_LOG_D(@"%s recorded failed network request, statusCode: [%ld], errorResponseLength: [%lu], storedErrorMessageLength: [%lu]", __FUNCTION__, (long)statusCode, (unsigned long)errorResponse.length, (unsigned long)self.errorMessage.length);
+        CLY_LOG_D(@"%s recorded failed network request, statusCode: [%ld], errorResponseLength: [%lu], storedErrorMessageLength: [%lu]", __FUNCTION__, (long)statusCode, (unsigned long)response.length, (unsigned long)self.errorMessage.length);
     });
 }
 
+/// Counts a backoff of the request queue and extends the current run of backoffs in a row. The longest run ("cbom") is raised
+/// right away, so no save or later call has to end the run to keep it. Records log code w320, and w321 when the backoff
+/// continues a run. The run itself is kept in memory only, so a restart ends it.
 - (void)logBackoffRequest {
+    BOOL recordsLogCodes = !atomic_load(&s_isRecordingStoppedForCrash);
     dispatch_async(self.hcQueue, ^{
+        BOOL continuesRun = self.countConsecutiveBackoffRequest > 0;
         self.countBackoffRequest++;
         self.countConsecutiveBackoffRequest++;
-        CLY_LOG_D(@"%s recorded a backed off request, backoffRequestCount: [%ld], currentConsecutiveBackoffRequestCount: [%ld]", __FUNCTION__, self.countBackoffRequest, self.countConsecutiveBackoffRequest);
+        self.consecutiveBackoffRequest = MAX(self.consecutiveBackoffRequest, self.countConsecutiveBackoffRequest);
+
+        if (recordsLogCodes) {
+            [self addCount:1 toLogCode:@"w320"];
+            if (continuesRun) {
+                [self addCount:1 toLogCode:@"w321"];
+            }
+        }
+        CLY_LOG_D(@"%s recorded a backed off request, backoffRequestCount: [%ld], currentConsecutiveBackoffRequestCount: [%ld], peakConsecutiveBackoffRequestCount: [%ld]", __FUNCTION__, self.countBackoffRequest, self.countConsecutiveBackoffRequest, self.consecutiveBackoffRequest);
     });
 }
 
+/// Ends the current run of backoffs in a row, when a queued request was answered in time. The longest run is already kept by
+/// logBackoffRequest.
 - (void)logConsecutiveBackoffRequest {
     dispatch_async(self.hcQueue, ^{
-        self.consecutiveBackoffRequest = MAX(self.consecutiveBackoffRequest, self.countConsecutiveBackoffRequest);
         self.countConsecutiveBackoffRequest = 0;
-        CLY_LOG_D(@"%s consecutive backoff streak closed, peakConsecutiveBackoffRequestCount: [%ld]", __FUNCTION__, self.consecutiveBackoffRequest);
     });
 }
 
@@ -165,32 +348,29 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
 - (void)saveState {
     dispatch_async(self.hcQueue, ^{
         [self loadPersistedStateIfNeeded];
-        [self logConsecutiveBackoffRequest];
 
-        NSDictionary *healthCheckState = @{
-            keyLogWarning: @(self.countLogWarning),
-            keyLogError: @(self.countLogError),
-            keyStatusCode: @(self.statusCode),
-            keyErrorMessage: self.errorMessage ?: @"",
-            keyBackoffRequest: @(self.countBackoffRequest),
-            keyConsecutiveBackoffRequest: @(self.consecutiveBackoffRequest)
-        };
-
-        [CountlyPersistency.sharedInstance storeHealthCheckTrackerState:healthCheckState];
+        [CountlyPersistency.sharedInstance storeHealthCheckTrackerState:[self currentState]];
         CLY_LOG_D(@"%s counters persisted, errorCount: [%ld], warningCount: [%ld], statusCode: [%ld], errorMessageLength: [%lu], backoffRequestCount: [%ld], peakConsecutiveBackoffRequestCount: [%ld]", __FUNCTION__, self.countLogError, self.countLogWarning, (long)self.statusCode, (unsigned long)self.errorMessage.length, self.countBackoffRequest, self.consecutiveBackoffRequest);
     });
 }
 
+/// Clears the counters and their stored state, and only then restores the sent and enabled flags, so a health check the
+/// halted run tries to send while the counters are cleared still finds the flag set and does not mark the next run as sent.
 - (void)resetInstance {
+    CountlyHealthTrackerResumeRecordingAfterCrash();
+
     // synchronous: halt goes on to free the shared state this block uses, and nothing on hcQueue waits for the caller
     dispatch_sync(self.hcQueue, ^{
         [self clearValues];
-        self->_healthCheckSent = NO;
-        self->_healthCheckEnabled = YES;
         self->_persistedStateLoaded = YES;
         [CountlyPersistency.sharedInstance storeHealthCheckTrackerState:@{}];
-        CLY_LOG_D(@"%s health tracker reset, healthCheckSent and healthCheckEnabled restored to their initial values", __FUNCTION__);
     });
+
+    @synchronized (self) {
+        _healthCheckSent = NO;
+        _healthCheckEnabled = YES;
+    }
+    CLY_LOG_D(@"%s health tracker reset, healthCheckSent and healthCheckEnabled restored to their initial values", __FUNCTION__);
 }
 
 - (void)clearValues {
@@ -205,6 +385,48 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
     self.countBackoffRequest = 0;
     self.consecutiveBackoffRequest = 0;
     self.countConsecutiveBackoffRequest = 0;
+    [self.methodUsage removeAllObjects];
+    [self.logCodes removeAllObjects];
+}
+
+/// Takes away what a health check the server accepted reported, so what was counted while it was on the way is reported next time.
+/// The last failed request and the consecutive backoff peak are only cleared when they did not change since the report.
+- (void)clearSentValues:(NSDictionary *)sent {
+    dispatch_async(self.hcQueue, ^{
+        self.countLogError = MAX(0, self.countLogError - [sent[requestKeyErrorCount] longValue]);
+        self.countLogWarning = MAX(0, self.countLogWarning - [sent[requestKeyWarningCount] longValue]);
+        self.countBackoffRequest = MAX(0, self.countBackoffRequest - [sent[requestKeyBackoffRequest] longValue]);
+
+        if (self.consecutiveBackoffRequest == [sent[requestKeyConsecutiveBackoffRequest] longValue]) {
+            self.consecutiveBackoffRequest = 0;
+        }
+
+        if (self.statusCode == [sent[requestKeyStatusCode] integerValue] && [self.errorMessage isEqualToString:sent[requestKeyRequestError] ?: @""]) {
+            self.statusCode = -1;
+            self.errorMessage = @"";
+        }
+
+        NSDictionary *sentUsage = sent[requestKeyMethodUsage];
+        [sentUsage enumerateKeysAndObjectsUsingBlock:^(NSString *area, NSDictionary *methods, BOOL *stop) {
+            NSMutableDictionary<NSString *, NSNumber *> *counted = self.methodUsage[area];
+            [methods enumerateKeysAndObjectsUsingBlock:^(NSString *method, NSNumber *count, BOOL *innerStop) {
+                long left = [counted[method] longValue] - count.longValue;
+                counted[method] = left > 0 ? @(left) : nil;
+            }];
+            if (counted.count == 0) {
+                [self.methodUsage removeObjectForKey:area];
+            }
+        }];
+
+        NSDictionary *sentLogCodes = sent[requestKeyLogCodes];
+        [sentLogCodes enumerateKeysAndObjectsUsingBlock:^(NSString *code, NSNumber *count, BOOL *stop) {
+            long left = [self.logCodes[code] longValue] - count.longValue;
+            self.logCodes[code] = left > 0 ? @(left) : nil;
+        }];
+
+        [CountlyPersistency.sharedInstance storeHealthCheckTrackerState:[self currentState]];
+        CLY_LOG_D(@"%s reported counters taken away, errorCount left: [%ld], warningCount left: [%ld], usage areas left: [%lu], log codes left: [%lu]", __FUNCTION__, self.countLogError, self.countLogWarning, (unsigned long)self.methodUsage.count, (unsigned long)self.logCodes.count);
+    });
 }
 
 - (void)sendHealthCheck {
@@ -219,17 +441,28 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
         return;
     }
 
-    if (!_healthCheckEnabled || _healthCheckSent) {
-        CLY_LOG_D(@"%s health check send skipped, healthCheckSent: [%@], healthCheckEnabled: [%@]", __FUNCTION__, _healthCheckSent ? @"YES" : @"NO", _healthCheckEnabled ? @"YES" : @"NO");
-        return;
+    @synchronized (self) {
+        if (!_healthCheckEnabled || _healthCheckSent) {
+            CLY_LOG_D(@"%s health check send skipped, healthCheckSent: [%@], healthCheckEnabled: [%@]", __FUNCTION__, _healthCheckSent ? @"YES" : @"NO", _healthCheckEnabled ? @"YES" : @"NO");
+            return;
+        }
+        _healthCheckSent = YES;
     }
 
-    NSURLSessionTask* task = [CountlyCommon.sharedInstance immediateDataTaskWithRequest:[self healthCheckRequest] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
+    NSDictionary* healthCheck = [self healthCheckSnapshot];
+    NSURLSessionTask* task = [CountlyCommon.sharedInstance immediateDataTaskWithRequest:[self healthCheckRequestWithHealthCheck:healthCheck] completionHandler:^(NSData* data, NSURLResponse* response, NSError* error)
     {
         // IMMEDIATE REQUEST to find them better in search
         if (error)
         {
-            CLY_LOG_D(@"%s health check request failed at the transport level, it will be retried later, error: [%@]", __FUNCTION__, error.localizedDescription);
+            CLY_LOG_D(@"%s health check request failed at the transport level, the counters are kept for the next start, error: [%@]", __FUNCTION__, error.localizedDescription);
+            return;
+        }
+
+        NSInteger statusCode = [response isKindOfClass:NSHTTPURLResponse.class] ? ((NSHTTPURLResponse *)response).statusCode : 0;
+        if (statusCode < 200 || statusCode >= 300)
+        {
+            CLY_LOG_D(@"%s health check was not accepted by the server, the counters are kept for the next start, statusCode: [%ld]", __FUNCTION__, (long)statusCode);
             return;
         }
 
@@ -237,7 +470,7 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
         NSDictionary *jsonResponse = [NSJSONSerialization JSONObjectWithData:data options:0 error:&jsonError];
 
         if (jsonError || ![jsonResponse isKindOfClass:NSDictionary.class]) {
-            CLY_LOG_E(@"%s could not parse the health check response, counters will not be cleared, error: [%@]", __FUNCTION__, jsonError.localizedDescription);
+            CLY_LOG_D(@"%s could not parse the health check response, counters will not be cleared, error: [%@]", __FUNCTION__, jsonError.localizedDescription);
             return;
         }
 
@@ -246,67 +479,64 @@ NSString * const requestKeyConsecutiveBackoffRequest = @"cbom";
             return;
         }
 
-        CLY_LOG_D(@"%s health check accepted by the server, counters will be cleared", __FUNCTION__);
-        [self clearAndSave];
-        self->_healthCheckSent = YES;
+        CLY_LOG_D(@"%s health check accepted by the server, the reported counters will be cleared", __FUNCTION__);
+        [self clearSentValues:healthCheck];
     }];
 
     [task resume];
 }
 
-- (NSString *)dictionaryToJsonString:(NSDictionary *)json {
-    NSError *error;
-    NSData *data = [NSJSONSerialization dataWithJSONObject:json options:0 error:&error];
-    NSString *encodedData = @"";
-
-    if (!error && data) {
-        NSString *jsonString = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-        encodedData = [jsonString stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
-    } else {
-        CLY_LOG_E(@"%s could not build the json payload for the health check request, an empty value will be sent, keyCount: [%lu], error: [%@]", __FUNCTION__, (unsigned long)json.count, error.localizedDescription);
+- (void)disableHealthCheck {
+    @synchronized (self) {
+        _healthCheckEnabled = NO;
     }
-
-    return encodedData;
+    CLY_LOG_I(@"%s the health check is disabled by the configuration, the counters keep counting but are not sent", __FUNCTION__);
 }
 
-- (NSURLRequest *)healthCheckRequest {
-    __block long snapshotLogError;
-    __block long snapshotLogWarning;
-    __block NSInteger snapshotStatusCode;
-    __block NSString *snapshotErrorMessage;
-    __block long snapshotBackoffRequest;
-    __block long snapshotConsecutiveBackoffRequest;
-
+/// The health check parameter as it is sent, taken from the current counters. "fu" and "lc" are always present, empty when
+/// nothing was counted, so the server can tell an SDK that reports them from one that does not.
+- (NSDictionary *)healthCheckSnapshot {
+    __block NSDictionary *healthCheck;
     dispatch_sync(self.hcQueue, ^{
         [self loadPersistedStateIfNeeded];
-        snapshotLogError = self.countLogError;
-        snapshotLogWarning = self.countLogWarning;
-        snapshotStatusCode = self.statusCode;
-        snapshotErrorMessage = [self.errorMessage copy] ?: @"";
-        snapshotBackoffRequest = self.countBackoffRequest;
-        snapshotConsecutiveBackoffRequest = self.consecutiveBackoffRequest;
+        healthCheck = @{
+            requestKeyErrorCount: @(self.countLogError),
+            requestKeyWarningCount: @(self.countLogWarning),
+            requestKeyStatusCode: @(self.statusCode),
+            requestKeyRequestError: [self.errorMessage copy] ?: @"",
+            requestKeyBackoffRequest: @(self.countBackoffRequest),
+            requestKeyConsecutiveBackoffRequest: @(self.consecutiveBackoffRequest),
+            requestKeyMethodUsage: [self methodUsageSnapshot],
+            requestKeyLogCodes: self.logCodes.copy
+        };
     });
+    return healthCheck;
+}
 
+/// The health check request for the current counters.
+- (NSURLRequest *)healthCheckRequest {
+    return [self healthCheckRequestWithHealthCheck:[self healthCheckSnapshot]];
+}
+
+/// The health check request carrying the given health check parameter. Its metrics hold only the app version, the one the
+/// developer set through the custom metrics when there is one, as in the metrics of a session. The metrics are left out while
+/// consent is required and the metrics consent is not given; the health check itself needs no consent.
+- (NSURLRequest *)healthCheckRequestWithHealthCheck:(NSDictionary *)healthCheck {
     NSString *queryString = [CountlyConnectionManager.sharedInstance queryEssentials];
 
-    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"hc", [self dictionaryToJsonString:@{
-        requestKeyErrorCount: @(snapshotLogError),
-        requestKeyWarningCount: @(snapshotLogWarning),
-        requestKeyStatusCode: @(snapshotStatusCode),
-        requestKeyRequestError: snapshotErrorMessage,
-        requestKeyBackoffRequest: @(snapshotBackoffRequest),
-        requestKeyConsecutiveBackoffRequest: @(snapshotConsecutiveBackoffRequest)
-    }]];
-    
-    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"metrics", [self dictionaryToJsonString:@{
-        CLYMetricKeyAppVersion: CountlyDeviceInfo.appVersion
-     }]];
-
+    // fully escaped, as the error message is a server response that can hold '&', '=' or '+'
+    queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"hc", [healthCheck cly_JSONify]];
+    if (CountlyConsentManager.sharedInstance.consentForMetrics)
+    {
+        NSMutableDictionary *metrics = NSMutableDictionary.new;
+        metrics[CLYMetricKeyAppVersion] = CountlyDeviceInfo.sharedInstance.customMetrics[CLYMetricKeyAppVersion] ?: CountlyDeviceInfo.appVersion;
+        queryString = [queryString stringByAppendingFormat:@"&%@=%@", @"metrics", [metrics cly_JSONify]];
+    }
 
     queryString = [CountlyConnectionManager.sharedInstance appendChecksum:queryString];
     NSString* hcSendURL = [CountlyConnectionManager.sharedInstance.host stringByAppendingFormat:@"%@",kCountlyEndpointI];
     
-    CLY_LOG_I(@"%s sending health check request, errorCount: [%ld], warningCount: [%ld], statusCode: [%ld], errorMessageLength: [%lu], backoffRequestCount: [%ld], consecutiveBackoffRequestCount: [%ld]", __FUNCTION__, snapshotLogError, snapshotLogWarning, (long)snapshotStatusCode, (unsigned long)snapshotErrorMessage.length, snapshotBackoffRequest, snapshotConsecutiveBackoffRequest);
+    CLY_LOG_I(@"%s sending health check request, errorCount: [%@], warningCount: [%@], statusCode: [%@], errorMessageLength: [%lu], backoffRequestCount: [%@], consecutiveBackoffRequestCount: [%@], usageAreaCount: [%lu], logCodeCount: [%lu]", __FUNCTION__, healthCheck[requestKeyErrorCount], healthCheck[requestKeyWarningCount], healthCheck[requestKeyStatusCode], (unsigned long)[healthCheck[requestKeyRequestError] length], healthCheck[requestKeyBackoffRequest], healthCheck[requestKeyConsecutiveBackoffRequest], (unsigned long)[healthCheck[requestKeyMethodUsage] count], (unsigned long)[healthCheck[requestKeyLogCodes] count]);
 
     if (queryString.length > kCountlyGETRequestMaxLength || CountlyConnectionManager.sharedInstance.alwaysUsePOST)
     {

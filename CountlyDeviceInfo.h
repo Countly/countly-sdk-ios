@@ -6,6 +6,8 @@
 
 #import <Foundation/Foundation.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 @interface CountlyDeviceInfo : NSObject <Resettable>
 
 typedef enum : NSUInteger
@@ -17,29 +19,29 @@ typedef enum : NSUInteger
 } CLYDeviceIDTypeValue;
 
 
-@property (nonatomic) NSString *deviceID;
-@property (nonatomic) NSDictionary<NSString *, NSString *>* customMetrics;
+@property (nonatomic, nullable) NSString *deviceID;
+@property (nonatomic, nullable) NSDictionary<NSString *, NSString *>* customMetrics;
 
 + (instancetype)sharedInstance;
-- (void)initializeDeviceID:(NSString *)deviceID;
-- (NSString *)ensafeDeviceID:(NSString *)deviceID;
+- (void)initializeDeviceID:(nullable NSString *)deviceID;
+- (NSString *)ensafeDeviceID:(nullable NSString *)deviceID;
 - (BOOL)isDeviceIDTemporary;
 - (CLYDeviceIDTypeValue)deviceIDTypeValue;
 
-+ (NSString *)device;
-+ (NSString *)deviceType;
-+ (NSString *)architecture;
-+ (NSString *)osName;
-+ (NSString *)osVersion;
-+ (NSString *)carrier;
-+ (NSString *)resolution;
-+ (NSString *)density;
++ (nullable NSString *)device;
++ (nullable NSString *)deviceType;
++ (nullable NSString *)architecture;
++ (nullable NSString *)osName;
++ (nullable NSString *)osVersion;
++ (nullable NSString *)carrier;
++ (nullable NSString *)resolution;
++ (nullable NSString *)density;
 + (NSString *)locale;
-+ (NSString *)appVersion;
-+ (NSString *)appBuild;
++ (nullable NSString *)appVersion;
++ (nullable NSString *)appBuild;
 
 + (NSDictionary *)metricsDictionary;
-+ (NSString *)metrics;
++ (nullable NSString *)metrics;
 
 + (NSUInteger)connectionType;
 + (unsigned long long)freeRAM;
@@ -47,7 +49,7 @@ typedef enum : NSUInteger
 + (unsigned long long)freeDisk;
 + (unsigned long long)totalDisk;
 + (NSInteger)batteryLevel;
-+ (NSString *)orientation;
++ (nullable NSString *)orientation;
 + (BOOL)isJailbroken;
 + (BOOL)isInBackground;
 + (NSString *)architectureNameForCPUType:(cpu_type_t)cpuType subtype:(cpu_subtype_t)cpuSubtype;
@@ -66,3 +68,5 @@ typedef enum : NSUInteger
 // the separator/omission logic is testable independently of the runtime interface style.
 + (NSString *)URLString:(NSString *)urlString byAppendingThemeMode:(nullable NSString *)theme;
 @end
+
+NS_ASSUME_NONNULL_END

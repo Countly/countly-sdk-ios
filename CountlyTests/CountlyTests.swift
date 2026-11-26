@@ -253,6 +253,51 @@ class CountlyTests: CountlyBaseTestCase {
 
     /**
      * <pre>
+     * The system clock moving an hour forward between "startEvent" and "endEvent" does not change the timed event's duration.
+     *
+     * 1- Start a timed event and move its stored system clock start an hour back
+     * 2- End the timed event
+     * 3- Verify its duration is near zero and its timestamp is still from the system clock
+     * </pre>
+     */
+    func testTimedEvent_systemClockMovedForward_durationUnchanged() throws {
+        try endTimedEventAfterSystemClockChange(by: 3600)
+    }
+
+    /**
+     * <pre>
+     * The system clock moving an hour back between "startEvent" and "endEvent" does not change the timed event's duration.
+     *
+     * 1- Start a timed event and move its stored system clock start an hour forward
+     * 2- End the timed event
+     * 3- Verify its duration is near zero and its timestamp is still from the system clock
+     * </pre>
+     */
+    func testTimedEvent_systemClockMovedBack_durationUnchanged() throws {
+        try endTimedEventAfterSystemClockChange(by: -3600)
+    }
+
+    /// Ends a timed event right after moving its stored system clock start by `clockChange` the other way, which is how a
+    /// change of the system clock between start and end looks to the SDK, and verifies the recorded event.
+    private func endTimedEventAfterSystemClockChange(by clockChange: TimeInterval) throws {
+        let config = createBaseConfig()
+        config.manualSessionHandling = true
+        Countly.sharedInstance().start(with: config)
+
+        Countly.sharedInstance().startEvent("clock_change_event")
+        let startedEvents = try XCTUnwrap(CountlyPersistency.sharedInstance().value(forKey: "startedEvents") as? NSDictionary)
+        let startedEvent = try XCTUnwrap(startedEvents["clock_change_event"] as? CountlyEvent)
+        startedEvent.timestamp -= clockChange
+
+        Countly.sharedInstance().endEvent("clock_change_event")
+
+        let event = try XCTUnwrap(TestUtils.getCurrentEQ()?.first { $0.key == "clock_change_event" }, "the timed event is recorded")
+        XCTAssertEqual(0, event.duration, accuracy: 0.5, "the duration does not follow the system clock")
+        XCTAssertEqual(Date().timeIntervalSince1970, event.timestamp, accuracy: 5, "the timestamp does")
+    }
+
+    /**
+     * <pre>
      * "halt" gives the configuration given at start its own values back. Behavior settings write their resolved values
      * into it, and its internal limits are shared by every configuration, so without this the next start would take the
      * halted run's behavior settings for the developer's values.
@@ -547,6 +592,43 @@ class CountlyTests: CountlyBaseTestCase {
 
         XCTAssertEqual(0, tracker.value(forKey: "countLogWarning") as? Int, "the health tracker is reset by the time halt returns")
     }
+
+#if os(iOS)
+    /**
+     * <pre>
+     * The start records the orientation the app starts in, with automatic and with manual sessions, and records none when
+     * orientation tracking is off.
+     *
+     * 1- Make the orientation the SDK reads portrait, since a test run without a host app has no window scene
+     * 2- Start with orientation tracking on, with automatic and then with manual sessions, and verify one portrait event
+     * 3- Start with orientation tracking off and verify there is no orientation event
+     * </pre>
+     */
+    func testOrientation_theStartRecordsTheOrientationTheAppStartsIn() throws {
+        let orientationRead = try XCTUnwrap(class_getInstanceMethod(CountlyCommon.self, NSSelectorFromString("currentInterfaceOrientation")))
+        let portrait: @convention(block) (AnyObject) -> Int = { _ in UIInterfaceOrientation.portrait.rawValue }
+        let originalOrientationRead = method_setImplementation(orientationRead, imp_implementationWithBlock(portrait))
+        defer { method_setImplementation(orientationRead, originalOrientationRead) }
+
+        for manualSessionHandling in [false, true] {
+            let config = createBaseConfig()
+            config.enableOrientationTracking = true
+            config.manualSessionHandling = manualSessionHandling
+            Countly.sharedInstance().start(with: config)
+
+            let orientationEvents = TestUtils.getCurrentEQ()?.filter { $0.key == "[CLY]_orientation" } ?? []
+            XCTAssertEqual(1, orientationEvents.count, "the start records the orientation, manualSessionHandling: \(manualSessionHandling)")
+            XCTAssertEqual("portrait", orientationEvents.first?.segmentation?["mode"] as? String)
+            Countly.sharedInstance().halt(true)
+        }
+
+        let trackingOff = createBaseConfig()
+        trackingOff.manualSessionHandling = true
+        Countly.sharedInstance().start(with: trackingOff)
+        XCTAssertFalse(TestUtils.getCurrentEQ()?.contains { $0.key == "[CLY]_orientation" } ?? false, "orientation tracking off records none")
+        Countly.sharedInstance().halt(true)
+    }
+#endif
 
     func testPerformanceExample() async throws {
         // This is an example of a performance test case.

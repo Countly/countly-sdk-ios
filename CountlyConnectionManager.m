@@ -94,6 +94,10 @@ NSString* const kCountlyEndpointWidget = @"/widget";
 NSString* const kCountlyEndpointSurveys = @"/surveys";
 
 const NSInteger kCountlyGETRequestMaxLength = 2048;
+const NSUInteger kCountlyRequestCompressionMinBytes = 1024;
+// the server refuses a compressed body that is larger than this once decoded
+const NSUInteger kCountlyRequestCompressionMaxBytes = 1024 * 1024;
+NSString* const kCountlyRequestCompressionMarker = @"content_encoding=gzip";
 // how long a crashing app waits for the immediate crash report before queueing it for the next start
 static const NSTimeInterval kCountlyCrashReportSendTimeout = 5.0;
 
@@ -203,6 +207,7 @@ static dispatch_once_t onceToken;
     if (skippedHeaderCount)
     {
         CLY_LOG_W(@"%s some custom network request headers are skipped, reason: nil or empty key or nil value, skipped header count: [%lu]", __FUNCTION__, (unsigned long)skippedHeaderCount);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
     }
 
     // Apply updated headers
@@ -315,6 +320,7 @@ static dispatch_once_t onceToken;
     if(isOldRequest)
     {
         CLY_LOG_W(@"%s dropping the request at the head of the queue, reason: request age exceeded the configured drop age, request size: [%lu] bytes", __FUNCTION__, (unsigned long)firstItemInQueue.length);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w330"];
         [CountlyPersistency.sharedInstance removeFromQueue:firstItemInQueue];
         
         [CountlyPersistency.sharedInstance saveToFile];
@@ -407,13 +413,13 @@ static dispatch_once_t onceToken;
     }
 
     request.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
-    NSDate *startTimeRequest = [NSDate date];
+    BOOL isCompressed = [self compressRequestIfAllowed:request];
+    NSTimeInterval requestStartTime = CountlyCommon.sharedInstance.monotonicTime;
     self.connection = [self.URLSession dataTaskWithRequest:request completionHandler:^(NSData * data, NSURLResponse * response, NSError * error)
     {
         [CountlyCommon.sharedInstance setSdkLogsTransportWork:isSdkLogsTransport];
         self.connection = nil;
-        NSDate *endTimeRequest = [NSDate date];
-        long duration = (long)[endTimeRequest timeIntervalSinceDate:startTimeRequest];
+        long duration = (long)(CountlyCommon.sharedInstance.monotonicTime - requestStartTime);
         
         if(response) {
             NSInteger code = ((NSHTTPURLResponse*)response).statusCode;
@@ -469,6 +475,9 @@ static dispatch_once_t onceToken;
 
                 self.hasAnyRequestFailed = YES; // Mark that a request has failed
 
+                if (isCompressed)
+                    [self blockRequestCompression];
+
                 if(requestCallback){
                     requestCallback([data cly_stringUTF8], NO);
                     // Clean up callback after execution
@@ -479,7 +488,8 @@ static dispatch_once_t onceToken;
                     }
                 }
 
-                [CountlyHealthTracker.sharedInstance logFailedNetworkRequestWithStatusCode:((NSHTTPURLResponse*)response).statusCode errorResponse: [data cly_stringUTF8]];
+                NSInteger responseStatusCode = ((NSHTTPURLResponse*)response).statusCode;
+                [CountlyHealthTracker.sharedInstance logFailedNetworkRequestWithStatusCode:responseStatusCode errorResponse: [data cly_stringUTF8]];
                 [CountlyHealthTracker.sharedInstance saveState];
                 self.startTime = nil;
                 atomic_store(&self->_isProcessingQueue, NO);
@@ -631,7 +641,7 @@ static dispatch_once_t onceToken;
         {
             bodyAsString = [request.HTTPBody cly_stringUTF8];
             if (!bodyAsString)
-                bodyAsString = @"Picture uploading...";
+                bodyAsString = [CountlyConnectionManager isCompressedRequest:request] ? @"gzip-compressed" : @"Picture uploading...";
         }
 
         CLY_LOG_D(@"%s request detail, request: [<%p>], method: [%@], URL: [%@], body: [%@]", __FUNCTION__, request, request.HTTPMethod, request.URL.absoluteString, bodyAsString);
@@ -678,7 +688,9 @@ static dispatch_once_t onceToken;
     isSessionStarted = YES;
     // the manual session API refuses to begin while automatic session tracking is on, so a session begun now is the SDK's own
     isSessionStartedAutomatically = CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled;
-    lastSessionStartTime = NSDate.date.timeIntervalSince1970;
+    if (isSessionStartedAutomatically)
+        [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"begin:a"];
+    lastSessionStartTime = CountlyCommon.sharedInstance.monotonicTime;
     unsentSessionLength = 0.0;
 
     NSString* queryString = [[self queryEssentials] stringByAppendingFormat:@"&%@=%@&%@=%@",
@@ -696,6 +708,10 @@ static dispatch_once_t onceToken;
     [CountlyCommon.sharedInstance recordOrientation];
     
     [self proceedOnQueue];
+
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+    [CountlyContentBuilderInternal.sharedInstance onContentTriggerWithKey:kCountlyContentTriggerKeySession viewName:nil viewEnd:NO properties:nil customEvent:NO];
+#endif
 }
 
 - (void)updateSession
@@ -736,6 +752,10 @@ static dispatch_once_t onceToken;
         CLY_LOG_D(@"%s No session is running, this 'endSession' will be ignored", __FUNCTION__);
         return;
     }
+
+    // a crash report ends the session from what can be a signal handler, where the health tracker must not be touched
+    if (isSessionStartedAutomatically && !isCrashing)
+        [CountlyHealthTracker.sharedInstance recordUsage:@"sessions" method:@"end:a"];
 
     isSessionStarted = NO;
     isSessionStartedAutomatically = NO;
@@ -849,6 +869,39 @@ static dispatch_once_t onceToken;
     [CountlyPersistency.sharedInstance addToQueue:queryString];
 
     [self proceedOnQueue];
+
+#if (TARGET_OS_IOS || TARGET_OS_VISION)
+    NSArray<NSString *> *sentProperties = [self userPropertyNamesInUserDetails:userDetails];
+    if (sentProperties.count)
+        [CountlyContentBuilderInternal.sharedInstance onContentTriggerWithKey:kCountlyContentTriggerKeyUserProperties viewName:nil viewEnd:NO properties:sentProperties customEvent:NO];
+#endif
+}
+
+/// The user properties a user details request sends, as content triggers name them: a user detail ("email"), or
+/// "custom." and the key of a custom property. The local picture path counts as the picture.
+- (NSArray<NSString *> *)userPropertyNamesInUserDetails:(NSString *)userDetails
+{
+    id parsed = [NSJSONSerialization JSONObjectWithData:[userDetails cly_dataUTF8] options:0 error:nil];
+    if (![parsed isKindOfClass:NSDictionary.class])
+        return @[];
+
+    NSMutableArray<NSString *> *names = NSMutableArray.new;
+    [(NSDictionary *)parsed enumerateKeysAndObjectsUsingBlock:^(NSString *key, id value, BOOL *stop) {
+        if ([key isEqualToString:@"custom"] && [value isKindOfClass:NSDictionary.class])
+        {
+            for (NSString *customKey in (NSDictionary *)value)
+                [names addObject:[@"custom." stringByAppendingString:customKey]];
+        }
+        else if ([key isEqualToString:kCountlyLocalPicturePath])
+        {
+            [names addObject:@"picture"];
+        }
+        else
+        {
+            [names addObject:key];
+        }
+    }];
+    return names;
 }
 
 - (void)sendCrashReport:(NSString *)report immediately:(BOOL)immediately;
@@ -907,6 +960,7 @@ static dispatch_once_t onceToken;
     NSMutableURLRequest* request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:serverInputEndpoint]];
     request.HTTPMethod = @"POST";
     request.HTTPBody = [[self appendChecksum:queryString] cly_dataUTF8];
+    BOOL isCompressed = [self compressRequestIfAllowed:request];
 
     CLY_LOG_I(@"%s sending crash report immediately, endpoint: [%@], method: [%@], body size: [%lu] bytes", __FUNCTION__, kCountlyEndpointI, request.HTTPMethod, (unsigned long)request.HTTPBody.length);
 
@@ -929,6 +983,9 @@ static dispatch_once_t onceToken;
     [[crashReportSession dataTaskWithRequest:request completionHandler:^(NSData* data, NSURLResponse* response, NSError*  error)
     {
         BOOL isFailed = error || ![self isRequestSuccessful:response data:data];
+        if (isFailed && isCompressed && !error)
+            [self blockRequestCompression];
+
         if (isFailed)
         {
             CLY_LOG_D(@"[CountlyConnectionManager] sendCrashReport completion, immediate crash report request failed and it is queued to be sent later, endpoint: [%@], status code: [%ld], response size: [%ld] bytes, error domain: [%@], error code: [%ld], error description: [%@]", request.URL.path, (long)((NSHTTPURLResponse*)response).statusCode, (long)data.length, error.domain ?: @"none", (long)error.code, error.localizedDescription ?: @"none");
@@ -1101,6 +1158,7 @@ static dispatch_once_t onceToken;
         if (mutableRequestParameters[reservedKey])
         {
             CLY_LOG_W(@"%s a reserved query string key is detected in the direct request parameters and it will be removed, key: [%@]", __FUNCTION__, reservedKey);
+            [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
             [mutableRequestParameters removeObjectForKey:reservedKey];
         }
     }
@@ -1224,6 +1282,7 @@ static dispatch_once_t onceToken;
     if (fileExtIndex == NSNotFound)
     {
         CLY_LOG_W(@"%s picture upload is skipped, reason: unsupported file extension, extension: [%@]", __FUNCTION__, fileExt);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return nil;
     }
 
@@ -1232,6 +1291,7 @@ static dispatch_once_t onceToken;
     if (!imageData)
     {
         CLY_LOG_W(@"%s picture upload is skipped, reason: local picture data can not be read, extension: [%@]", __FUNCTION__, fileExt);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w700"];
         return nil;
     }
 
@@ -1281,6 +1341,60 @@ static dispatch_once_t onceToken;
     return queryString;
 }
 
+- (BOOL)compressRequestIfAllowed:(NSMutableURLRequest *)request
+{
+    NSString* acceptingHost = self.gzipAcceptingHost;
+    if (!self.requestCompressionEnabled || self.requestCompressionBlocked || !acceptingHost || ![acceptingHost isEqualToString:self.host])
+        return NO;
+
+    if (![request.HTTPMethod isEqualToString:@"POST"] || request.URL.query.length > 0)
+        return NO;
+
+    if (request.HTTPBody.length < kCountlyRequestCompressionMinBytes || request.HTTPBody.length > kCountlyRequestCompressionMaxBytes)
+        return NO;
+
+    if ([[request valueForHTTPHeaderField:@"Content-Type"] hasPrefix:@"multipart/form-data"])
+        return NO;
+
+    NSData* compressed = [request.HTTPBody cly_gzipCompressed];
+    if (!compressed || compressed.length >= request.HTTPBody.length)
+        return NO;
+
+    NSURLComponents* components = [NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
+    components.percentEncodedQuery = kCountlyRequestCompressionMarker;
+    if (!components.URL)
+        return NO;
+
+    if (CountlyInternalLogIsEnabled(CLYInternalLogLevelDebug))
+        CLY_LOG_D(@"%s the request body is sent gzip-compressed, endpoint: [%@], [%lu] -> [%lu] bytes, plain body: [%@]", __FUNCTION__, request.URL.path, (unsigned long)request.HTTPBody.length, (unsigned long)compressed.length, [request.HTTPBody cly_stringUTF8]);
+    request.URL = components.URL;
+    request.HTTPBody = compressed;
+    return YES;
+}
+
++ (BOOL)isCompressedRequest:(NSURLRequest *)request
+{
+    return [request.URL.query isEqualToString:kCountlyRequestCompressionMarker];
+}
+
+- (void)blockRequestCompression
+{
+    if (self.requestCompressionBlocked)
+        return;
+
+    self.requestCompressionBlocked = YES;
+    CLY_LOG_I(@"%s a compressed request was refused, requests are sent uncompressed until a behavior settings answer says that the server reads compressed bodies, or the SDK starts again", __FUNCTION__);
+}
+
+- (void)unblockRequestCompression
+{
+    if (!self.requestCompressionBlocked)
+        return;
+
+    self.requestCompressionBlocked = NO;
+    CLY_LOG_I(@"%s a behavior settings answer says that the server reads compressed bodies, requests are compressed again", __FUNCTION__);
+}
+
 - (NSString *)appendRemainingRequest:(NSString *)queryString
 {
     NSUInteger rrCount = [CountlyPersistency.sharedInstance remainingRequestCount] - 1;
@@ -1303,14 +1417,14 @@ static dispatch_once_t onceToken;
 
         if (error)
         {
-            CLY_LOG_E(@"%s server reply is not a valid JSON, the request is considered failed, response size: [%ld] bytes, error description: [%@]", __FUNCTION__, (long)data.length, error.localizedDescription);
+            CLY_LOG_D(@"%s server reply is not a valid JSON, the request is considered failed, response size: [%ld] bytes, error description: [%@]", __FUNCTION__, (long)data.length, error.localizedDescription);
             return NO;
         }
 
         // a proxy or a misconfigured host can answer a list, which has no result field to read
         if (![serverReply isKindOfClass:NSDictionary.class])
         {
-            CLY_LOG_E(@"%s server reply is not a JSON object, the request is considered failed, response size: [%ld] bytes, replyType: [%@]", __FUNCTION__, (long)data.length, NSStringFromClass([serverReply class]));
+            CLY_LOG_D(@"%s server reply is not a JSON object, the request is considered failed, response size: [%ld] bytes, replyType: [%@]", __FUNCTION__, (long)data.length, NSStringFromClass([serverReply class]));
             return NO;
         }
         
@@ -1323,7 +1437,7 @@ static dispatch_once_t onceToken;
             return YES;
         }
 
-        CLY_LOG_E(@"%s server reply does not contain the result field, the request is considered failed, response size: [%ld] bytes", __FUNCTION__, (long)data.length);
+        CLY_LOG_D(@"%s server reply does not contain the result field, the request is considered failed, response size: [%ld] bytes", __FUNCTION__, (long)data.length);
         
         return NO;
         
@@ -1338,7 +1452,7 @@ static dispatch_once_t onceToken;
 
 - (NSInteger)sessionLengthInSeconds
 {
-    NSTimeInterval currentTime = NSDate.date.timeIntervalSince1970;
+    NSTimeInterval currentTime = CountlyCommon.sharedInstance.monotonicTime;
     unsentSessionLength += (currentTime - lastSessionStartTime);
     lastSessionStartTime = currentTime;
     int sessionLengthInSeconds = (int)unsentSessionLength;

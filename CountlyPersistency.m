@@ -10,10 +10,12 @@
 @property (nonatomic) NSMutableArray* recordedEvents;
 @property (nonatomic) NSMutableDictionary* startedEvents;
 @property (nonatomic) BOOL isQueueBeingModified;
+@property (nonatomic) NSUInteger automaticCrashReportCount;
 @end
 
 @implementation CountlyPersistency
 NSString* const kCountlyQueuedRequestsPersistencyKey = @"kCountlyQueuedRequestsPersistencyKey";
+NSString* const kCountlyAutomaticCrashReportCountPersistencyKey = @"kCountlyAutomaticCrashReportCountPersistencyKey";
 NSString* const kCountlyStartedEventsPersistencyKey = @"kCountlyStartedEventsPersistencyKey";
 NSString* const kCountlyHealthCheckStatePersistencyKey = @"kCountlyHealthCheckStatePersistencyKey";
 NSString* const kCountlyStoredDeviceIDKey = @"kCountlyStoredDeviceIDKey";
@@ -24,6 +26,7 @@ NSString* const kCountlyNotificationPermissionKey = @"kCountlyNotificationPermis
 NSString* const kCountlyIsCustomDeviceIDKey = @"kCountlyIsCustomDeviceIDKey";
 NSString* const kCountlyRemoteConfigKey = @"kCountlyRemoteConfigKey";
 NSString* const kCountlyServerConfigPersistencyKey = @"kCountlyServerConfigPersistencyKey";
+NSString* const kCountlyContentTriggerGapsPersistencyKey = @"kCountlyContentTriggerGapsPersistencyKey";
 NSString* const kCountlyPLCrashCaptureSuppressedSinceKey = @"kCountlyPLCrashCaptureSuppressedSinceKey";
 
 
@@ -57,6 +60,7 @@ static dispatch_once_t onceToken;
 #pragma GCC diagnostic pop
 
             self.queuedRequests = [readDict[kCountlyQueuedRequestsPersistencyKey] mutableCopy];
+            self.automaticCrashReportCount = [readDict[kCountlyAutomaticCrashReportCountPersistencyKey] unsignedIntegerValue];
 
             CLY_LOG_D(@"%s persistent storage file is loaded, data size: [%lu] bytes, restored request count: [%lu]", __FUNCTION__, (unsigned long)readData.length, (unsigned long)self.queuedRequests.count);
         }
@@ -77,13 +81,13 @@ static dispatch_once_t onceToken;
 
 - (BOOL)addToQueue:(NSString *)queryString
 {
-    // NOTE: reachable from CountlySignalHandler through CountlyConnectionManager sendCrashReport,
-    // so every log here and in removeOldAgeRequestsFromQueue stays at Debug or lower, even the
-    // request dropping ones. CountlyInternalLog re-enters CountlyHealthTracker, which uses
-    // dispatch_once and dispatch_async, and neither is async-signal-safe.
+    // NOTE: reachable from CountlySignalHandler through CountlyConnectionManager sendCrashReport. The warnings here and in
+    // removeOldAgeRequestsFromQueue are safe there only because CountlyExceptionHandler stops the health tracker and the log
+    // capture first, so CountlyInternalLog queues no work for them while an automatic crash is reported.
     if (!CountlyServerConfig.sharedInstance.trackingEnabled)
     {
-        CLY_LOG_D(@"%s request is not queued, reason: SDK tracking is disabled from server config, query string length: [%lu]", __FUNCTION__, (unsigned long)queryString.length);
+        CLY_LOG_W(@"%s request is not queued, reason: SDK tracking is disabled from server config, query string length: [%lu]", __FUNCTION__, (unsigned long)queryString.length);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"w505"];
         return NO;
     }
     
@@ -115,7 +119,8 @@ static dispatch_once_t onceToken;
                 // for example if exceeded count is 136 and our limit is 100 we should remove 100 items
                 // in other case if exceeded count is 36 and out limit is 100 we can only remove 36 items because we have that amount
                 NSUInteger gonnaRemoveSize = MIN(exceededSize, kCountlyRequestRemovalLoopLimit) + 1;
-                CLY_LOG_D(@"%s request queue size: [%lu] exceeded the limit: [%lu], the first [%lu] request(s) will be dropped", __FUNCTION__, (unsigned long)self.queuedRequests.count, (unsigned long)self.storedRequestsLimit, (unsigned long)gonnaRemoveSize);
+                CLY_LOG_W(@"%s request queue size: [%lu] exceeded the limit: [%lu], the first [%lu] request(s) will be dropped", __FUNCTION__, (unsigned long)self.queuedRequests.count, (unsigned long)self.storedRequestsLimit, (unsigned long)gonnaRemoveSize);
+                [CountlyHealthTracker.sharedInstance recordLogCode:@"w310" count:gonnaRemoveSize];
                 NSRange itemsToRemove = NSMakeRange(0, gonnaRemoveSize);
                 [self.queuedRequests removeObjectsInRange:itemsToRemove];
             }
@@ -177,6 +182,24 @@ static dispatch_once_t onceToken;
     @synchronized (self)
     {
         return [self.queuedRequests count];
+    }
+}
+
+- (NSString *)lastItemInQueue
+{
+    @synchronized (self)
+    {
+        return self.queuedRequests.lastObject;
+    }
+}
+
+/// How many queued requests there are up to and including the given one, 0 when it is not queued any more
+- (NSUInteger)queuedRequestCountUpToItem:(NSString *)queryString
+{
+    @synchronized (self)
+    {
+        NSUInteger index = [self.queuedRequests indexOfObject:queryString];
+        return index == NSNotFound ? 0 : index + 1;
     }
 }
 
@@ -323,7 +346,8 @@ static dispatch_once_t onceToken;
             
             if (requestCountBeforeAgeFilter > self.queuedRequests.count)
             {
-                CLY_LOG_D(@"%s dropped [%lu] old age queued request(s), request drop age in hours: [%lu], remaining request count: [%lu]", __FUNCTION__, (unsigned long)(requestCountBeforeAgeFilter - self.queuedRequests.count), (unsigned long)self.requestDropAgeHours, (unsigned long)self.queuedRequests.count);
+                CLY_LOG_W(@"%s dropped [%lu] old age queued request(s), request drop age in hours: [%lu], remaining request count: [%lu]", __FUNCTION__, (unsigned long)(requestCountBeforeAgeFilter - self.queuedRequests.count), (unsigned long)self.requestDropAgeHours, (unsigned long)self.queuedRequests.count);
+                [CountlyHealthTracker.sharedInstance recordLogCode:@"w330" count:requestCountBeforeAgeFilter - self.queuedRequests.count];
             }
             
             self.isQueueBeingModified = NO;
@@ -433,6 +457,7 @@ static dispatch_once_t onceToken;
     {
         [self flushQueue];
         [self saveToFile];
+        [NSUserDefaults.standardUserDefaults removeObjectForKey:kCountlyContentTriggerGapsPersistencyKey];
     }
     else
     {
@@ -452,6 +477,7 @@ static dispatch_once_t onceToken;
         if (self.startedEvents[event.key])
         {
             CLY_LOG_W(@"%s timed event is not started, reason: a timed event with the same key is already started, key: [%@]", __FUNCTION__, event.key);
+            [CountlyHealthTracker.sharedInstance recordLogCode:@"w722"];
             return;
         }
 
@@ -514,6 +540,7 @@ static dispatch_once_t onceToken;
             if (error)
             {
                 CLY_LOG_W(@"[CountlyPersistency] writeCustomCrashLogToFile, custom crash log file can not be created, error domain: [%@], error code: [%ld], error description: [%@]", error.domain, (long)error.code, error.localizedDescription);
+                [CountlyHealthTracker.sharedInstance recordLogCode:@"w504" forUsageArea:@"crashes"];
             }
         }
     });
@@ -546,6 +573,7 @@ static dispatch_once_t onceToken;
         if (error)
         {
             CLY_LOG_W(@"%s custom crash log file can not be deleted, error domain: [%@], error code: [%ld], error description: [%@]", __FUNCTION__, error.domain, (long)error.code, error.localizedDescription);
+            [CountlyHealthTracker.sharedInstance recordLogCode:@"w504" forUsageArea:@"crashes"];
         }
     }
 }
@@ -577,6 +605,7 @@ static dispatch_once_t onceToken;
             if (error)
             {
                 CLY_LOG_E(@"[CountlyPersistency] storageDirectoryURL, storage directory can not be created, error domain: [%@], error code: [%ld], error description: [%@]", error.domain, (long)error.code, error.localizedDescription);
+                [CountlyHealthTracker.sharedInstance recordLogCode:@"e501"];
             }
         }
     });
@@ -618,7 +647,7 @@ static dispatch_once_t onceToken;
     {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-        saveData = [NSKeyedArchiver archivedDataWithRootObject:@{kCountlyQueuedRequestsPersistencyKey: self.queuedRequests}];
+        saveData = [NSKeyedArchiver archivedDataWithRootObject:@{kCountlyQueuedRequestsPersistencyKey: self.queuedRequests, kCountlyAutomaticCrashReportCountPersistencyKey: @(self.automaticCrashReportCount)}];
         queuedRequestCountForLog = self.queuedRequests.count;
 #pragma GCC diagnostic pop
     }
@@ -628,7 +657,8 @@ static dispatch_once_t onceToken;
 
     if (!writeResult)
     {
-        CLY_LOG_D(@"%s writing the request queue to the persistent storage file failed, data size: [%lu] bytes, request count: [%lu]", __FUNCTION__, (unsigned long)saveData.length, (unsigned long)queuedRequestCountForLog);
+        CLY_LOG_E(@"%s writing the request queue to the persistent storage file failed, data size: [%lu] bytes, request count: [%lu]", __FUNCTION__, (unsigned long)saveData.length, (unsigned long)queuedRequestCountForLog);
+        [CountlyHealthTracker.sharedInstance recordLogCode:@"e501"];
     }
 
     [CountlyCommon.sharedInstance finishBackgroundTask];
@@ -761,6 +791,18 @@ static dispatch_once_t onceToken;
     CLY_LOG_D(@"%s server config is stored, key count: [%lu]", __FUNCTION__, (unsigned long)serverConfig.count);
 }
 
+/// When each content trigger last started a round, in milliseconds by gap key, so that its gap holds after a restart
+- (NSDictionary *)retrieveContentTriggerGaps
+{
+    NSDictionary* gaps = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyContentTriggerGapsPersistencyKey];
+    return [gaps isKindOfClass:NSDictionary.class] ? gaps : NSDictionary.new;
+}
+
+- (void)storeContentTriggerGaps:(NSDictionary *)gaps
+{
+    [NSUserDefaults.standardUserDefaults setObject:gaps forKey:kCountlyContentTriggerGapsPersistencyKey];
+}
+
 - (NSDictionary *)retrieveHealthCheckTrackerState
 {
     NSDictionary* healthCheckTrackerState = [NSUserDefaults.standardUserDefaults objectForKey:kCountlyHealthCheckStatePersistencyKey];
@@ -781,12 +823,38 @@ static dispatch_once_t onceToken;
         CLY_LOG_D(@"%s health check tracker state is stored, key count: [%lu]", __FUNCTION__, (unsigned long)healthCheckTrackerState.count);
     }
     @catch (NSException *exception) {
-        // NOTE: Debug on purpose. This method is only ever called from inside CountlyHealthTracker's
-        // hcQueue, and CountlyInternalLog re-enters that class for Error and Warning levels, which
-        // would repopulate the very counters this write is persisting or clearing.
+        // NOTE: Debug on purpose. This method is only ever called by CountlyHealthTracker, from its
+        // hcQueue or while it is created, and CountlyInternalLog re-enters that class for Error and Warning
+        // levels, which would repopulate the very counters this write is persisting or clearing.
         CLY_LOG_D(@"%s exception while storing the health check tracker state, exception name: [%@], reason: [%@]", __FUNCTION__,
                   exception.name, exception.reason);
     }
+}
+
+- (void)recordAutomaticCrashReport
+{
+    @synchronized (self)
+    {
+        self.automaticCrashReportCount++;
+    }
+}
+
+- (NSUInteger)takeAutomaticCrashReportCount
+{
+    NSUInteger count = 0;
+    @synchronized (self)
+    {
+        count = self.automaticCrashReportCount;
+        self.automaticCrashReportCount = 0;
+    }
+
+    if (count > 0)
+    {
+        CLY_LOG_D(@"%s automatically detected crash reports taken for the health check, count: [%lu]", __FUNCTION__, (unsigned long)count);
+        [self saveToFile];
+    }
+
+    return count;
 }
 
 - (NSDate *)retrievePLCrashCaptureSuppressedSince

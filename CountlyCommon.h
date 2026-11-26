@@ -114,9 +114,12 @@ void CountlyInternalLog(CLYInternalLogLevel level, NSString *format, ...) NS_FOR
 BOOL CountlyInternalLogIsEnabled(CLYInternalLogLevel level);
 /// YES when anything at all wants a line of this level: a developer facing sink, or the log gathering capture.
 BOOL CountlyInternalLogIsWanted(CLYInternalLogLevel level);
-/// Stops log gathering capture for the rest of the process, so the threads that log while a crash is reported never wait
-/// for a gathering lock the crashing thread may hold. Async signal safe.
+/// Stops log gathering capture until crash reporting starts again or the SDK is halted, so the threads that log while a
+/// crash is reported never wait for a gathering lock the crashing thread may hold. Async signal safe.
 void CountlySDKLogsStopCaptureForCrash(void);
+/// Lifts CountlySDKLogsStopCaptureForCrash once crash reporting starts again, since the app can outlive a reported crash
+/// through a handler of its own.
+void CountlySDKLogsResumeCaptureAfterCrash(void);
 void CountlyPrint(NSString *stringToPrint);
 NSString* CountlyJSONFromObject(id object);
 /// Runs the block right away when called on the main thread, so the state it reads is the state at the call, and queues it there otherwise.
@@ -128,6 +131,8 @@ void CountlyRunOnMainThread(dispatch_block_t block);
 - (NSInteger)timeZone;
 - (NSInteger)timeSinceLaunch;
 - (NSTimeInterval)uniqueTimestamp;
+/// Seconds on a clock that a change of the system clock does not move and that keeps counting while the device sleeps. Only the difference of two readings means anything, so it is for durations, never for timestamps.
+- (NSTimeInterval)monotonicTime;
 - (NSString *)randomEventID;
 
 - (void)startBackgroundTask;
@@ -247,6 +252,8 @@ void CountlyRunOnMainThread(dispatch_block_t block);
 
 @interface NSData (Countly)
 - (NSString *)cly_stringUTF8;
+/// The data in gzip format (RFC 1952), or nil when compressing fails.
+- (nullable NSData *)cly_gzipCompressed;
 @end
 
 @interface Countly (RecordReservedEvent)
@@ -255,6 +262,8 @@ void CountlyRunOnMainThread(dispatch_block_t block);
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation;
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation ID:(NSString *)ID;
 - (void)recordReservedEvent:(NSString *)key segmentation:(NSDictionary *)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration ID:(NSString *)ID timestamp:(NSTimeInterval)timestamp;
+/// Records an event as the public recordEvent does, without counting it as a recordEvent call of the app for the health check.
+- (void)recordEventInternal:(NSString *)key segmentation:(NSDictionary<NSString *, id> * _Nullable)segmentation count:(NSUInteger)count sum:(double)sum duration:(NSTimeInterval)duration;
 @end
 
 @interface Countly (AutomaticSessionTracking)
