@@ -1,3 +1,6 @@
+## XX.XX.XX
+* Mitigated an issue where the orientation was recorded once, when the SDK started, instead of at every session begin. With manual sessions or after a device ID change, later sessions had no orientation event.
+
 ## 26.8.1
 * Added content triggers. While the content zone is entered, an event, view, session, user property, recorded exception or consent change that starts a journey or campaign with content now requests that content immediately. Turn them off with "disableAutoContentTriggers" on the content config.
 * Added "disableHealthCheck" to the init config for turning off the SDK health check.

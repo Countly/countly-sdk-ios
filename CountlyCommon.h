@@ -153,6 +153,8 @@ void CountlyRunOnMainThread(dispatch_block_t block);
 - (void)observeDeviceOrientationChanges;
 
 - (void)recordOrientation;
+/** Records the current orientation also when it is the last recorded one, as every session begin reports it. */
+- (void)recordOrientationOnSessionBegin;
 
 - (BOOL)hasStarted_;
 

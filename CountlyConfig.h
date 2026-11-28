@@ -601,7 +601,7 @@ typedef enum : NSUInteger
 /**
  * For enabling automatic user interface orientation tracking.
  * @discussion If set, user interface orientation tracking feature will be enabled.
- * @discussion An event will be sent whenever user interface orientation changes.
+ * @discussion An event will be sent whenever user interface orientation changes, and every time a session begins.
  * @discussion Orientation event will not be sent if consent for @c CLYConsentUserDetails is not given,
  * while @c requiresConsent flag is set on initial configuration.
  * @discussion Automatic user interface orientation tracking is enabled by default.
