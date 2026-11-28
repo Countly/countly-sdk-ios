@@ -1253,6 +1253,20 @@ void CountlyRunOnMainThread(dispatch_block_t block)
 
 - (void)recordOrientation
 {
+    [self recordOrientationEvenIfUnchanged:NO];
+}
+
+- (void)recordOrientationOnSessionBegin
+{
+    [self recordOrientationEvenIfUnchanged:YES];
+}
+
+/**
+ * Records the current interface orientation as a "[CLY]_orientation" event, with the "users" consent.
+ * @param evenIfUnchanged YES records it also when it is the last recorded orientation, as a session begin reports it
+ */
+- (void)recordOrientationEvenIfUnchanged:(BOOL)evenIfUnchanged
+{
 #if (TARGET_OS_IOS)
     if (!self.enableOrientationTracking)
         return;
@@ -1276,13 +1290,13 @@ void CountlyRunOnMainThread(dispatch_block_t block)
         return;
     }
 
-    if ([mode isEqualToString:self.lastInterfaceOrientation])
+    if (!evenIfUnchanged && [mode isEqualToString:self.lastInterfaceOrientation])
     {
         CLY_LOG_V(@"%s interface orientation did not change, orientation event will be skipped, mode: [%@]", __FUNCTION__, self.lastInterfaceOrientation);
         return;
     }
 
-    CLY_LOG_D(@"%s interface orientation changed, previousMode: [%@], mode: [%@]", __FUNCTION__, self.lastInterfaceOrientation, mode);
+    CLY_LOG_D(@"%s recording interface orientation, previousMode: [%@], mode: [%@]", __FUNCTION__, self.lastInterfaceOrientation, mode);
 
     if (!CountlyConsentManager.sharedInstance.consentForUserDetails)
         return;

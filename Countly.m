@@ -218,15 +218,13 @@ static dispatch_once_t onceToken;
         [CountlyLocationManager.sharedInstance updateLocation:config.location city:config.city ISOCountryCode:config.ISOCountryCode IP:config.IP];
     }
     
-    // before the session starts, which records the orientation the app starts in
+    // before the session begins, which records the current orientation
     CountlyCommon.sharedInstance.enableOrientationTracking = config.enableOrientationTracking;
     [CountlyCommon.sharedInstance observeDeviceOrientationChanges];
 
     // Automatic session tracking is resolved through the SBS precedence chain (server can override the developer's manual session control choice)
     if (CountlyServerConfig.sharedInstance.automaticSessionTrackingEnabled)
         [CountlyConnectionManager.sharedInstance beginSession];
-    else
-        [CountlyCommon.sharedInstance recordOrientation];
     
     //NOTE: If there is no consent for sessions, location info should be sent separately, as it cannot be sent with begin_session request.
 

@@ -596,37 +596,64 @@ class CountlyTests: CountlyBaseTestCase {
 #if os(iOS)
     /**
      * <pre>
-     * The start records the orientation the app starts in, with automatic and with manual sessions, and records none when
-     * orientation tracking is off.
+     * Every session begin records the current orientation, also when it did not change, and the start records it only
+     * through a session it begins. Orientation tracking off records none.
      *
      * 1- Make the orientation the SDK reads portrait, since a test run without a host app has no window scene
-     * 2- Start with orientation tracking on, with automatic and then with manual sessions, and verify one portrait event
-     * 3- Start with orientation tracking off and verify there is no orientation event
+     * 2- Start with automatic sessions and verify one portrait event
+     * 3- Start with manual sessions and verify there is no orientation event before "beginSession"
+     * 4- Begin a session, end it and begin another, and verify one portrait event for each session begin
+     * 5- Start with orientation tracking off, begin a session and verify there is no orientation event
      * </pre>
      */
-    func testOrientation_theStartRecordsTheOrientationTheAppStartsIn() throws {
+    func testOrientation_everySessionBeginRecordsTheCurrentOrientation() throws {
         let orientationRead = try XCTUnwrap(class_getInstanceMethod(CountlyCommon.self, NSSelectorFromString("currentInterfaceOrientation")))
         let portrait: @convention(block) (AnyObject) -> Int = { _ in UIInterfaceOrientation.portrait.rawValue }
         let originalOrientationRead = method_setImplementation(orientationRead, imp_implementationWithBlock(portrait))
         defer { method_setImplementation(orientationRead, originalOrientationRead) }
 
-        for manualSessionHandling in [false, true] {
-            let config = createBaseConfig()
-            config.enableOrientationTracking = true
-            config.manualSessionHandling = manualSessionHandling
-            Countly.sharedInstance().start(with: config)
+        let automatic = createBaseConfig()
+        automatic.enableOrientationTracking = true
+        Countly.sharedInstance().start(with: automatic)
+        XCTAssertEqual(["portrait"], recordedOrientationModes(), "the automatic session that begins at start records the orientation")
+        Countly.sharedInstance().halt(true)
 
-            let orientationEvents = TestUtils.getCurrentEQ()?.filter { $0.key == "[CLY]_orientation" } ?? []
-            XCTAssertEqual(1, orientationEvents.count, "the start records the orientation, manualSessionHandling: \(manualSessionHandling)")
-            XCTAssertEqual("portrait", orientationEvents.first?.segmentation?["mode"] as? String)
-            Countly.sharedInstance().halt(true)
-        }
+        let manual = createBaseConfig()
+        manual.enableOrientationTracking = true
+        manual.manualSessionHandling = true
+        Countly.sharedInstance().start(with: manual)
+        XCTAssertEqual([], recordedOrientationModes(), "with manual sessions the start records none")
+        Countly.sharedInstance().beginSession()
+        XCTAssertEqual(["portrait"], recordedOrientationModes(), "beginSession records the orientation")
+        Countly.sharedInstance().endSession()
+        Countly.sharedInstance().beginSession()
+        XCTAssertEqual(["portrait", "portrait"], recordedOrientationModes(), "every session begin records it, also when it did not change")
+        Countly.sharedInstance().halt(true)
 
         let trackingOff = createBaseConfig()
         trackingOff.manualSessionHandling = true
         Countly.sharedInstance().start(with: trackingOff)
-        XCTAssertFalse(TestUtils.getCurrentEQ()?.contains { $0.key == "[CLY]_orientation" } ?? false, "orientation tracking off records none")
+        Countly.sharedInstance().beginSession()
+        XCTAssertEqual([], recordedOrientationModes(), "orientation tracking off records none")
         Countly.sharedInstance().halt(true)
+    }
+
+    /**
+     * The modes of the orientation events in the events requests of the request queue and in the event queue, oldest first.
+     * @return the "mode" segmentation of each "[CLY]_orientation" event
+     */
+    private func recordedOrientationModes() -> [String] {
+        var modes: [String] = []
+        for request in TestUtils.getCurrentRQ() ?? [] {
+            guard let events = TestUtils.parseQueryString(request)["events"] as? String,
+                  let data = events.data(using: .utf8),
+                  let array = (try? JSONSerialization.jsonObject(with: data)) as? [[String: Any]] else {
+                continue
+            }
+            modes += array.filter { $0["key"] as? String == "[CLY]_orientation" }.compactMap { ($0["segmentation"] as? [String: Any])?["mode"] as? String }
+        }
+        modes += (TestUtils.getCurrentEQ() ?? []).filter { $0.key == "[CLY]_orientation" }.compactMap { $0.segmentation?["mode"] as? String }
+        return modes
     }
 #endif
 

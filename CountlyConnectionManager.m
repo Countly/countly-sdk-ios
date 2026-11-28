@@ -705,7 +705,7 @@ static dispatch_once_t onceToken;
 
     [CountlyPersistency.sharedInstance addToQueue:queryString];
     
-    [CountlyCommon.sharedInstance recordOrientation];
+    [CountlyCommon.sharedInstance recordOrientationOnSessionBegin];
     
     [self proceedOnQueue];
 
